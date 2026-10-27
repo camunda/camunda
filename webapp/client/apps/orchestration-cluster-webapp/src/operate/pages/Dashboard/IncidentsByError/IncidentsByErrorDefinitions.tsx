@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useSuspenseQuery} from '@tanstack/react-query';
+import {useTranslation} from 'react-i18next';
+import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
+import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
+import {truncateErrorMessage} from './truncateErrorMessage';
+import {dashboardTenantId, useDashboardTenants} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {Li, LinkWrapper} from '#/operate/pages/Dashboard/styled';
+
+type Props = {
+	errorHashCode: number;
+	errorMessage: string;
+	tabIndex?: number;
+};
+
+const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessage, tabIndex}) => {
+	const {t} = useTranslation();
+	const {isMultiTenancyEnabled, tenantsById} = useDashboardTenants();
+	const {data} = useSuspenseQuery(incidentsByErrorDefinitionsQuery(errorHashCode));
+
+	return (
+		<ul>
+			{data.items.map((item: IncidentProcessInstanceStatisticsByDefinition) => {
+				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
+				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
+				const name = item.processDefinitionName ?? item.processDefinitionId;
+				const labelText = tenantName
+					? t('operate.dashboard.versionWithTenant', {
+							name,
+							version: item.processDefinitionVersion,
+							tenant: tenantName,
+						})
+					: `${name} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}`;
+
+				return (
+					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>
+						<LinkWrapper
+							to="/operate/processes"
+							search={{
+								process: item.processDefinitionId,
+								version: item.processDefinitionVersion,
+								errorMessage: truncateErrorMessage(errorMessage),
+								incidentErrorHashCode: errorHashCode,
+								tenantId,
+								incidents: true,
+								active: false,
+								completed: false,
+								canceled: false,
+								suspended: false,
+							}}
+							tabIndex={tabIndex ?? 0}
+							title={labelText}
+						>
+							<InstancesBar
+								label={{type: 'incident', size: 'small', text: labelText}}
+								incidentsCount={item.activeInstancesWithErrorCount}
+								size="small"
+							/>
+						</LinkWrapper>
+					</Li>
+				);
+			})}
+		</ul>
+	);
+};
+
+export {IncidentsByErrorDefinitions};

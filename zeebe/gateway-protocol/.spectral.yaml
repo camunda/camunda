@@ -1,0 +1,517 @@
+# Spectral ruleset for OpenAPI validation
+# Replaces Vacuum for comprehensive OpenAPI linting and validation
+description: Recommended ruleset with additional customizations.
+extends: [[spectral:oas, recommended]]
+ignoreUnknownFormat: true
+functions:
+  - verifyKeyTypesPaths
+  - verifyKeyTypesSchemas
+  - verifyEventuallyConsistent
+  - verifyRequiredPropertiesExist
+  - verifyNoRedundantRequired
+  - verifyArrayPropertiesRequired
+  - verifyResponsePropertiesRequired
+  - verifyDeprecatedEnumMembers
+  - verifyAddedInVersion
+  - verifyScope
+  - verifySemanticKindsRegistered
+  - verifyPresentWhenRequestResolves
+  - verifyNoAmbiguousIdentifierProperty
+  - verifySecurityDeclared
+  - verifyRequiredPermissions
+functionsDir: ./spectral-functions
+rules:
+  # Tag validation
+  operation-tag-defined: error
+
+  # Schema example validation — @camunda8/spectral-cli supports unicodeRegExp,
+  # so false-positive pattern failures are resolved.
+  # oas3-valid-schema-example remains at warn because ScopeKey uses oneOf with
+  # structurally identical branches (ProcessInstanceKey, ElementInstanceKey),
+  # causing "must match exactly one schema in oneOf" on any ScopeKey example.
+  # Changing oneOf→anyOf would fix the warning but breaks Java code generation.
+  oas3-valid-schema-example: warn
+  oas3-valid-media-example: error
+
+  # Custom validation rules migrated from Vacuum
+  no-period-in-summary:
+    description: Path summary must not include period
+    severity: error
+    given: $.paths[*][*].summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: ^.*\.$
+    message: Summaries are short descriptions often used in navigation bars, they must not contain periods at the end. Please remove the period at the end of the summary text.
+
+  no-flow-node-in-path-summary:
+    description: Path summary must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    message: Please replace the term "flow node" with "element".
+
+  no-flow-node-in-path-description:
+    description: Path description must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].description
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    message: Please replace the term "flow node" with "element".
+
+  no-flow-node-in-operation-id:
+    description: Path operation ID must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].operationId
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|FlowNode|Flownode).*
+    message: Please replace the term "flow node" with "element".
+
+  no-flow-node-in-path:
+    description: Paths must not include term "flow node"
+    severity: error
+    given: $.paths.*~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode).*
+    message: Please replace the term "flow node" with "element".
+
+  no-flow-node-in-component-property:
+    description: Component properties must not include term "flow node"
+    severity: error
+    given: $.components[*][*].properties.*~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flownode|flowNode).*
+    message: Please replace the term "flow node" with "element".
+
+  require-property-descriptions:
+    description: Schema properties must have a description.
+    severity: error
+    given: $.components.schemas[*].properties[*]
+    then:
+      field: description
+      function: truthy
+
+  operation-key-properties-must-be-strings:
+    description: "`...Key` parameters must be of type `string`."
+    severity: warn
+    given: $.paths[*][*].parameters[*]
+    then:
+      function: verifyKeyTypesPaths
+    message: Make the `...Key` property a `string`.
+
+  schema-key-properties-must-be-strings:
+    description: "`...Key` properties must be of type `string`."
+    severity: warn
+    given: $.components.schemas[*].properties
+    then:
+      function: verifyKeyTypesSchemas
+    message: Make the `...Key` property a `string`.
+
+  required-properties-must-exist:
+    description: "Every entry in `required` must match a key in `properties`."
+    severity: error
+    given: "$.components.schemas[*]"
+    then:
+      function: verifyRequiredPropertiesExist
+
+  no-redundant-required:
+    description: "A schema's own `required` list must not duplicate a field already required by an allOf-composed schema."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoRedundantRequired
+
+  array-properties-must-be-required:
+    description: "Response array properties must be `required` and not `nullable`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyArrayPropertiesRequired
+
+  response-properties-must-be-required:
+    description: "All response body properties must be listed in `required`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyResponsePropertiesRequired
+
+  no-eventually-consistent-on-commands:
+    description: "Command (mutating) operations must not have x-eventually-consistent: true."
+    severity: error
+    given: $.paths[*][*]
+    then:
+      function: verifyEventuallyConsistent
+    message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."
+
+  valid-deprecated-enum-members:
+    description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
+    severity: error
+    # Matches named schemas and inline (property-level) enums alike. resolved:
+    # false reports at the schema's source location instead of at every $ref
+    # consumer (mirrors properties-added-in-version-shape below). The parent
+    # operator (^) is required over a [?(@['x-deprecated-enum-members'])]
+    # filter: Spectral crashes walking into a `x-deprecated-enum-members:`
+    # with no value (e.g. a YAML indentation mistake), since the filter
+    # dereferences the property on every visited node, including once it is
+    # null.
+    resolved: false
+    given: "$..x-deprecated-enum-members^"
+    message: "{{error}}"
+    then:
+      function: verifyDeprecatedEnumMembers
+
+  require-added-in-version:
+    description: "Every operation must have `x-added-in-version` declaring the Camunda version in which it was introduced."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyAddedInVersion
+
+  # ── x-scope (camunda/camunda#61157) ──
+  # Marks whether an operation is cluster-wide or scoped to a single physical
+  # tenant, so the docs API reference can render a scope badge without
+  # fragmenting the existing tag-based grouping. See
+  # https://github.com/camunda/camunda-docs/issues/8886#issuecomment-5414815612.
+  require-scope:
+    description: "Every operation must have a valid `x-scope` (`cluster-wide` or `physical-tenant`)."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyScope
+
+  # ── x-present-when ──
+  # Response-property marker declaring conditional presence: the annotated
+  # response property is present (required, non-null) iff the named top-level
+  # request-body field equals the given scalar; otherwise it is absent. This is
+  # the ground-truth SDK generators derive request→response dependent typing
+  # from (e.g. ActivatedJobResult.jobLeaseToken vs JobActivationRequest.withLease).
+  # The marker is inert on the wire: the property keeps its declared nullable
+  # shape for any consumer that does not derive from it.
+  #
+  # Scope: like the other `*-shape` rules here, this validates only the marker's
+  # local JSON shape. It does NOT cross-reference that `request` names a real
+  # top-level property on the operation's request body — that referential-
+  # integrity check lives in the `present-when-request-resolves` rule below,
+  # which resolves each operation against the real spec.
+  present-when-shape:
+    description: "Each `x-present-when` marker must declare a request field and a scalar `equals` value."
+    severity: error
+    given: $..x-present-when
+    message: "{{error}}"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          additionalProperties: false
+          required: [request, equals]
+          properties:
+            request:
+              type: string
+              minLength: 1
+              description: Top-level request-body property whose value governs presence of this response property.
+            equals:
+              type: [boolean, string, number]
+              description: Scalar literal the request field must equal for the property to be present (required, non-null).
+
+  # Referential integrity for `x-present-when` (complements `present-when-shape`).
+  # The shape rule cannot see that `request` names a real field, because the
+  # marker sits on a shared component schema with no back-reference to the
+  # operation whose request body it constrains. This rule resolves each
+  # operation, finds every marker reachable from its 2xx responses, and asserts
+  # `request` is a top-level property of that operation's request body (and that
+  # the annotated property stays nullable + required — inert on the wire). A
+  # dangling binding (`request: withLeese`) would otherwise silently degrade the
+  # dependent typing every SDK generator derives from the marker.
+  present-when-request-resolves:
+    description: "Each `x-present-when.request` must name a top-level property of its operation's request body, and the annotated response property must stay nullable and required."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyPresentWhenRequestResolves
+
+  # ── x-required-permissions (camunda/camunda#54727) ──
+  # Canonical endpoint -> required-permission(s) binding. Two rules:
+  #   1. Schema-shape lint for each entry (built-in `schema` function).
+  #   2. Completeness + registry-validity (custom verifyRequiredPermissions):
+  #      every operation must declare it, and each static pair must be valid
+  #      per resource-permissions.json.
+  # See docs/adr/security/001-endpoint-required-permission-mapping.md.
+  required-permissions-shape:
+    description: "Each `x-required-permissions` entry must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-required-permissions[*]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            resourceType:
+              type: string
+              pattern: "^[A-Z][A-Z0-9_]+$"
+              description: A member of AuthorizationResourceType. Pairs with permissionType.
+            permissionType:
+              type: string
+              pattern: "^[A-Z][A-Z0-9_]+$"
+              description: A member of PermissionType supported by resourceType.
+            anyOf:
+              type: array
+              minItems: 2
+              description: OR-group — at least one of the listed permissions suffices.
+              items:
+                type: object
+                required: [resourceType, permissionType]
+                additionalProperties: false
+                properties:
+                  resourceType: { type: string, pattern: "^[A-Z][A-Z0-9_]+$" }
+                  permissionType: { type: string, pattern: "^[A-Z][A-Z0-9_]+$" }
+            dynamic:
+              type: boolean
+              description: Set to `true` when the required permission is resolved at runtime from the request body/path.
+            note:
+              type: string
+              minLength: 1
+              description: Required when `dynamic` is true — explains how the permission is resolved.
+          dependentRequired:
+            dynamic: [note]
+          oneOf:
+            - required: [resourceType, permissionType]
+            - required: [anyOf]
+            - required: [dynamic, note]
+
+  verify-required-permissions:
+    description: "Every operation must declare `x-required-permissions` (or `[]` if unrestricted), and each static `{resourceType, permissionType}` pair must be valid per resource-permissions.json."
+    severity: error
+    given: "$"
+    message: "{{error}}"
+    then:
+      function: verifyRequiredPermissions
+
+  # ── x-permission-enforcement (camunda/camunda#54727) ──
+  # Optional operation-level marker describing the *deny outcome* when the caller
+  # lacks the required permission(s):
+  #   - `reject` (default when absent): the caller receives a 4xx (403 for writes,
+  #     404/not-found for single-resource point reads) and no data.
+  #   - `filter`: the caller receives 200 with results scoped to the resources they
+  #     are authorized for (collection/aggregate reads pushed through the search
+  #     client as an authorization filter; also `activateJobs`).
+  # Consumed by the spec-driven runtime auth test (api-test-generator#374) to assert
+  # the correct deny shape. See docs/adr/security/001-endpoint-required-permission-mapping.md (D8).
+  permission-enforcement-shape:
+    description: "`x-permission-enforcement` must be either `reject` or `filter`."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-permission-enforcement
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: string
+          enum: [reject, filter]
+
+  # ── x-semantic-establishes / x-semantic-requires (camunda/camunda#52272) ──
+  # Three rules:
+  #   1. Schema-shape lint for x-semantic-establishes (operation-level).
+  #   2. Schema-shape lint for x-semantic-requires (operation-level).
+  #   3. Cross-document check: every kind: must be in semantic-kinds.json,
+  #      and every required kind must be established somewhere.
+  # The first two use Spectral's built-in `schema` function (no custom code);
+  # the third uses verifySemanticKindsRegistered.
+
+  semantic-establishes-shape:
+    description: "`x-semantic-establishes` must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-semantic-establishes
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [kind, identifiedBy]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              pattern: "^[A-Z][A-Za-z0-9]+$"
+              description: PascalCase singular noun. The symbolic name of the established thing, not of the operation.
+            shape:
+              type: string
+              enum: [entity, edge]
+              description: Optional discriminator. Defaults to `entity`. Use `edge` for membership-style relationships observable only via member-list search.
+            identifiedBy:
+              type: array
+              minItems: 1
+              description: Ordered tuple of identifying members. Length 1 for single-key entities, length ≥ 2 for composite-key entities and edges.
+              items:
+                type: object
+                required: [in, name, semanticType]
+                additionalProperties: false
+                properties:
+                  in: { type: string, enum: [body, path, query, header] }
+                  name: { type: string, minLength: 1 }
+                  semanticType:
+                    type: string
+                    pattern: "^[A-Z][A-Za-z0-9]+$"
+                  acceptsExternal:
+                    type: boolean
+                    description: |
+                      Per-tuple opt-out for the producer-existence cross-reference (camunda/camunda#52322).
+                      Set to `true` when this specific edge endpoint accepts either an in-API producer
+                      (the canonical local entity) OR an externally-minted ID (e.g. BYOG/OIDC IdP-supplied
+                      group IDs at `assignGroupToRole` / `assignGroupToTenant`). The single-owner
+                      identifier resolution still runs (typo / config check), but the resolved entity kind
+                      is NOT pushed onto the producer-existence required-set for this tuple. Distinct from
+                      kind-level `shape: external-entity` (which marks the kind as having no in-API
+                      producer at all).
+
+  semantic-requires-shape:
+    description: "`x-semantic-requires` must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-semantic-requires
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [kind, bind]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              pattern: "^[A-Z][A-Za-z0-9]+$"
+            bind:
+              type: object
+              minProperties: 1
+              description: Maps members of the established tuple to local parameters of the consumer.
+              additionalProperties:
+                type: object
+                required: [from, name]
+                additionalProperties: false
+                properties:
+                  from: { type: string, enum: [body, path, query, header] }
+                  name: { type: string, minLength: 1 }
+
+  verify-semantic-kinds-registered:
+    description: "Every `kind:` referenced by x-semantic-establishes / x-semantic-requires must appear in semantic-kinds.json, every required kind must be established somewhere in the spec, and every identifiedBy/bind member must reference a parameter or top-level requestBody property that actually exists on the operation."
+    severity: error
+    given: "$"
+    message: "{{error}}"
+    then:
+      function: verifySemanticKindsRegistered
+
+  properties-added-in-version-shape:
+    description: "`x-properties-added-in-version` must be a non-empty array of objects, each requiring `propertyName` plus at least one of `addedInVersion`/`addedInVersionOverride`, and no other keys."
+    severity: error
+    # Report at the schema's source location, not at every $ref consumer.
+    resolved: false
+    given: $..x-properties-added-in-version
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [propertyName]
+            additionalProperties: false
+            anyOf:
+              - required: [addedInVersion]
+              - required: [addedInVersionOverride]
+            properties:
+              propertyName:
+                type: string
+                minLength: 1
+                description: Name of the property (or filter operator like "$eq") this version annotation applies to.
+              addedInVersion:
+                type: string
+                pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                description: Camunda version in which the property was introduced, e.g. "8.8".
+              addedInVersionOverride:
+                type: string
+                pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                description: >-
+                  A documented, reviewed exception: replaces the version the bundler computed
+                  for this property before the usual Rule 1/2/3 evaluation, so `addedInVersion`
+                  is only required alongside it when the overridden value still needs an
+                  explicit annotation (i.e. it isn't inferred from the endpoint/ancestor
+                  version). See "Overriding the computed version" in
+                  .github/scripts/x-added-in-version-check/README.md.
+
+  added-in-version-override-shape:
+    description: "`x-added-in-version-override`, when present on an operation, must be a version string."
+    severity: error
+    given: $.paths[*][*].x-added-in-version-override
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: string
+          pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+
+  # Guard against new schemas introducing ambiguous bare identifier properties.
+  # Existing schemas are grandfathered via the allowlist below — do not add new
+  # entries without discussion. See https://github.com/camunda/camunda/issues/52510
+  no-ambiguous-identifier-property:
+    description: "Schema properties must not use bare `id` or `key` — use qualified names like `entityNameId`."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
+      functionOptions:
+        allowlist:
+          # Grandfathered schemas — these pre-date the naming convention and
+          # cannot be renamed without breaking published SDK consumers.
+          CreateGlobalTaskListenerRequest: [id]
+          GlobalTaskListenerResult: [id]
+          GlobalTaskListenerSearchQueryFilterRequest: [id]
+
+  # Same ban for truly-inline schemas (request/response bodies, parameters).
+  # Uses `resolved: false` so $ref pointers (which point at component schemas
+  # already covered above) are NOT followed — only schemas literally defined
+  # inline are checked. No allowlist: inline schemas are new code by definition.
+  no-ambiguous-identifier-property-inline:
+    description: "Inline schema properties must not use bare `id` or `key` — use qualified names like `entityNameId`."
+    severity: error
+    resolved: false
+    given:
+      - "$.paths[*][*].requestBody.content[*].schema"
+      - "$.paths[*][*].responses[*].content[*].schema"
+      - "$.paths[*][*].parameters[*].schema"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
+
+  # Every operation must declare its security modes (camunda/camunda#54268).
+  # See verifySecurityDeclared.js for the accepted shapes — either
+  # `security: []` for publicly unauthenticated endpoints, or a list of the
+  # conditionally-enforced schemes (`bearerAuth`, `basicAuth`) with empty
+  # scopes. The conditional-enforcement metadata on the schemes themselves is
+  # set in rest-api.yaml (camunda/camunda#53708).
+  require-security-declared:
+    description: "Every operation must declare a `security:` block."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifySecurityDeclared

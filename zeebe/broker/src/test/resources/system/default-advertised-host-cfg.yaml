@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    network:
+      advertisedHost: zeebe.io

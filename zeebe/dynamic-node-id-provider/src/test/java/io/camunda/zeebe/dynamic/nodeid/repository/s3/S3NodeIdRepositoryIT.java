@@ -1,0 +1,566 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.nodeid.repository.s3;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+
+import io.camunda.zeebe.dynamic.nodeid.ControlledInstantSource;
+import io.camunda.zeebe.dynamic.nodeid.Lease;
+import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
+import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus.RestoreStatus;
+import io.camunda.zeebe.dynamic.nodeid.Version;
+import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+
+@Testcontainers
+class S3NodeIdRepositoryIT {
+
+  private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
+
+  @Container
+  private static final LocalStackContainer S3 =
+      new LocalStackContainer(DockerImageName.parse("localstack/localstack:4.10"))
+          .withServices(Service.S3)
+          .withEnv("LS_LOG", "trace");
+
+  @AutoClose private static S3Client client;
+  S3NodeIdRepository.Config config;
+  @AutoClose private S3NodeIdRepository repository;
+  private String taskId;
+  private ControlledInstantSource clock;
+
+  @BeforeAll
+  static void setUpAll() {
+    client =
+        S3NodeIdRepository.buildClient(
+            new S3ClientConfig(
+                Optional.of(new Credentials(S3.getAccessKey(), S3.getSecretKey())),
+                Optional.of(Region.of(S3.getRegion())),
+                Optional.of(S3.getEndpoint())));
+  }
+
+  @BeforeEach
+  void setUp() {
+    final var bucketName = UUID.randomUUID().toString();
+    taskId = UUID.randomUUID().toString();
+    config = new Config(bucketName, EXPIRY_DURATION, Duration.ofMinutes(2));
+    client.createBucket(b -> b.bucket(config.bucketName()));
+  }
+
+  @Test
+  void shouldCloseS3Client() throws Exception {
+    // given
+    final var clientMock = Mockito.mock(S3Client.class);
+    repository = new S3NodeIdRepository(clientMock, config, Clock.systemUTC(), true);
+    // when
+    repository.close();
+
+    // then
+    verify(clientMock).close();
+  }
+
+  private S3NodeIdRepository fixed(final long time) {
+    clock = new ControlledInstantSource(Instant.ofEpochMilli(time));
+    return new S3NodeIdRepository(client, config, clock, false);
+  }
+
+  @Nested
+  class LeaseInitializationTests {
+
+    @Test
+    void shouldInitializeAllFiles() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+
+      // when
+      assertThat(repository.initialize(2)).isEqualTo(2);
+
+      // then
+      for (int i = 0; i < 2; i++) {
+        final var lease = repository.getLease(i);
+        assertThat(lease).isInstanceOf(StoredLease.Uninitialized.class);
+        assertThat(lease.eTag()).isNotEmpty();
+      }
+    }
+
+    @Test
+    void shouldNotInitializeIfAlreadyInitialized() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      final var restartedRepository = fixed(Clock.systemUTC().millis());
+
+      // then
+      assertThat(restartedRepository.initialize(4))
+          .describedAs("Expected to not initialize leases for new node ids")
+          .isEqualTo(2);
+      assertThat(restartedRepository.getLease(0)).isEqualTo(lease0);
+      assertThat(restartedRepository.getLease(1)).isEqualTo(lease1);
+      assertThatException()
+          .isThrownBy(() -> restartedRepository.getLease(3))
+          .isInstanceOf(NoSuchKeyException.class)
+          .withMessageContaining("The specified key does not exist");
+    }
+
+    @Test
+    void shouldInitializeNewNodesWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+
+      // when
+      repository.scale(4);
+
+      // then
+      for (int i = 0; i < 4; i++) {
+        final var lease = repository.getLease(i);
+        assertThat(lease).isInstanceOf(StoredLease.Uninitialized.class);
+        assertThat(lease.eTag()).isNotEmpty();
+      }
+    }
+
+    @Test
+    void shouldNotReinitializeExistingNodesWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(4);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+    }
+
+    @Test
+    void shouldMarkLeaseUnusableWhenScalingDown() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(3))
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
+
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
+    }
+
+    @Test
+    void shouldScaleWithSameSize() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+    }
+
+    @Test
+    void shouldNotAllowNegativeClusterSize() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+
+      // when/then
+      assertThatThrownBy(() -> repository.initialize(-1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("initialCount must be greater than 0");
+      repository.initialize(2);
+      assertThatThrownBy(() -> repository.scale(-1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("newCount must be greater than 0");
+    }
+
+    @Test
+    void shouldMarkActiveLeasesAsUnusableWhenScalingDown() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      final var lease2 = repository.getLease(2);
+      final var toAcquire = lease2.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease2.eTag());
+      assertThat(acquired).isNotNull();
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
+    }
+
+    @Test
+    void shouldMakeUnusableLeasesAcquirableWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      repository.scale(2);
+
+      // verify leases 2 and 3 are not acquirable
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(IllegalStateException.class);
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(3))
+          .isInstanceOf(IllegalStateException.class);
+
+      // when
+      repository.scale(4);
+
+      // then - all leases should be acquirable again
+      for (int i = 0; i < 4; i++) {
+        final var lease = repository.getLease(i);
+        assertThat(lease.isAcquirable()).isTrue();
+      }
+    }
+
+    @Test
+    void shouldPreserveVersionWhenScalingDownAndBackUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(3);
+
+      // Acquire lease 2 to increment its version
+      final var lease2 = repository.getLease(2);
+      final var toAcquire = lease2.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease2.eTag());
+      assertThat(acquired.node().version()).isEqualTo(Version.of(1));
+
+      // Release the lease
+      repository.release(acquired);
+      final var released = repository.getLease(2);
+      assertThat(released.version()).isEqualTo(Version.of(1));
+
+      // Scale down to 2 nodes
+      repository.scale(2);
+
+      // when - scale back up
+      repository.scale(3);
+
+      // then - version should be preserved
+      final var leaseAfterScaleUp = repository.getLease(2);
+      assertThat(leaseAfterScaleUp.version()).isEqualTo(Version.of(1));
+    }
+
+    @Test
+    void shouldReturnOnlyAcquirableLeasesInGetAvailableLeaseCount() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(4);
+
+      // when - scale down
+      repository.scale(2);
+
+      // then - only 2 leases should be available
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(2);
+
+      // when - scale back up
+      repository.scale(4);
+
+      // then - all 4 leases should be available
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldFailAcquireOnUnusableLease() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(3);
+
+      // Get lease 2 before scaling down to get its eTag
+      final var lease2 = repository.getLease(2);
+      final var eTag = lease2.eTag();
+
+      // Scale down to make lease 2 unusable
+      repository.scale(2);
+
+      // Create a lease to acquire
+      final var leaseToAcquire =
+          new Lease(
+              taskId,
+              clock.millis() + EXPIRY_DURATION.toMillis(),
+              new NodeInstance(2, Version.of(1)),
+              VersionMappings.of(new NodeInstance(2, Version.of(1))));
+
+      // when/then - should fail to acquire
+      assertThatException()
+          .isThrownBy(() -> repository.acquire(leaseToAcquire, eTag))
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
+    }
+  }
+
+  @Nested
+  class LeaseAcquisitionTests {
+
+    @Test
+    void shouldAcquireFirstLease() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+
+      // when
+      final var uninitialized = repository.getLease(0);
+      final var toAcquire = uninitialized.acquireInitialLease(taskId, clock, EXPIRY_DURATION);
+      assertThat(toAcquire).isPresent();
+      assertThat(uninitialized.eTag()).isNotEmpty();
+      final var acquired = repository.acquire(toAcquire.get(), uninitialized.eTag());
+
+      // then
+      final var expectedNodeInstance = new NodeInstance(0, Version.of(1));
+      assertThat(acquired.node()).isEqualTo(expectedNodeInstance);
+      assertThat(acquired.eTag()).isNotEqualTo(uninitialized.eTag());
+      assertThat(acquired.lease())
+          .isEqualTo(
+              new Lease(
+                  taskId,
+                  clock.millis() + EXPIRY_DURATION.toMillis(),
+                  expectedNodeInstance,
+                  VersionMappings.of(expectedNodeInstance)));
+    }
+
+    @Test
+    void shouldAcquireOneLeaseWhenEtagMatches() {
+      // given
+      final var now = Clock.systemUTC().millis();
+      repository = fixed(now);
+      repository.initialize(3);
+      final var id = 2;
+      // when
+      final var lease = repository.getLease(id);
+
+      final var toAcquire = lease.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease.eTag());
+      final var fromGet = repository.getLease(id);
+
+      // then
+      assertThat(fromGet).isEqualTo(acquired);
+      assertThat(acquired.lease()).isEqualTo(toAcquire);
+      final var expectedNodeInstance = new NodeInstance(id, Version.of(1));
+      assertThat(acquired.node()).isEqualTo(expectedNodeInstance);
+      assertThat(acquired.lease())
+          .isEqualTo(
+              new Lease(
+                  taskId,
+                  clock.millis() + EXPIRY_DURATION.toMillis(),
+                  expectedNodeInstance,
+                  VersionMappings.of(expectedNodeInstance)));
+      assertThat(acquired.eTag()).isNotEmpty();
+      final var metadata = acquired.metadata();
+      assertThat(metadata.asMap()).isNotEmpty();
+      assertThat(metadata.task())
+          .isPresent()
+          .hasValueSatisfying(t -> assertThat(t).isEqualTo(taskId));
+      assertThat(metadata.version()).isEqualTo(Version.of(1));
+    }
+
+    @Test
+    void shouldNotAcquireAnExpiredLease() {
+      // given
+      final var now = Clock.systemUTC().millis();
+      repository = fixed(now);
+      repository.initialize(3);
+      final var id = 2;
+
+      // when
+      final var lease = repository.getLease(id);
+
+      final var toAcquire =
+          new Lease(
+              taskId, now - 10000L, new NodeInstance(id, Version.of(1)), VersionMappings.empty());
+      assertThatThrownBy(() -> repository.acquire(toAcquire, lease.eTag()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not valid anymore");
+    }
+
+    @Test
+    void shouldNotAcquireOneLeaseWhenETagMismatch() {
+      // given
+      final var now = Clock.systemUTC().millis();
+      repository = fixed(now);
+      repository.initialize(1);
+      final var id = 0;
+      // when
+      final var lease = repository.getLease(id);
+
+      final var toAcquire = lease.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+
+      // then
+      assertThatThrownBy(() -> repository.acquire(toAcquire, "10298301928309128"))
+          .isInstanceOf(S3Exception.class)
+          .hasMessageContaining("At least one of the pre-conditions you specified did not hold");
+    }
+
+    @Test
+    void shouldReleaseALeaseCorrectly() {
+      // given
+      final var now = Clock.systemUTC().millis();
+      repository = fixed(now);
+      repository.initialize(3);
+      final var id = 2;
+      final var lease = repository.getLease(id);
+      final var toAcquire = lease.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease.eTag());
+
+      // when
+      repository.release(acquired);
+
+      // then
+      final var afterRelease = repository.getLease(id);
+      assertThat(afterRelease)
+          .isInstanceOf(StoredLease.Uninitialized.class)
+          .returns(acquired.node(), StoredLease::node);
+    }
+  }
+
+  @Nested
+  class RestoreStatusTests {
+    @Test
+    void shouldReturnNullWhenRestoreStatusNotInitialized() {
+      // given
+      final String restoreId = "123";
+      repository = fixed(Clock.systemUTC().millis());
+
+      // when
+      final var restoreStatus = repository.getRestoreStatus(restoreId);
+
+      // then
+      assertThat(restoreStatus).isNull();
+    }
+
+    @Test
+    void shouldUpdateAndGetRestoreStatus() {
+      // given
+      final String restoreId = "123";
+      repository = fixed(Clock.systemUTC().millis());
+      final var restoreStatus = new RestoreStatus(restoreId, Set.of());
+
+      // when
+      repository.updateRestoreStatus(restoreStatus, null);
+      final var storedRestoreStatus = repository.getRestoreStatus(restoreId);
+
+      // then
+      assertThat(storedRestoreStatus).isNotNull();
+      assertThat(storedRestoreStatus.restoreStatus()).isEqualTo(restoreStatus);
+      assertThat(storedRestoreStatus.etag()).isNotEmpty();
+    }
+
+    @Test
+    void shouldUpdateRestoreStatusWithRestoredNodes() {
+      // given
+      final String restoreId = "test-id";
+      repository = fixed(Clock.systemUTC().millis());
+      final var initialStatus = new RestoreStatus(restoreId, Set.of());
+      repository.updateRestoreStatus(initialStatus, null);
+      final var storedInitial = repository.getRestoreStatus(restoreId);
+
+      // when
+      final var updatedStatus = new RestoreStatus(restoreId, Set.of(0, 1));
+      repository.updateRestoreStatus(updatedStatus, storedInitial.etag());
+      final var storedUpdated = repository.getRestoreStatus(restoreId);
+
+      // then
+      assertThat(storedUpdated).isNotNull();
+      assertThat(storedUpdated.restoreStatus().restoredNodes()).containsExactlyInAnyOrder(0, 1);
+      assertThat(storedUpdated.etag()).isNotEqualTo(storedInitial.etag());
+    }
+
+    @Test
+    void shouldFailToUpdateRestoreStatusWhenEtagMismatch() {
+      // given
+      final String restoreId = "test-id";
+      repository = fixed(Clock.systemUTC().millis());
+      final var initialStatus = new RestoreStatus(restoreId, Set.of());
+      repository.updateRestoreStatus(initialStatus, null);
+
+      // when/then
+      final var updatedStatus = new RestoreStatus(restoreId, Set.of(0));
+      assertThatThrownBy(() -> repository.updateRestoreStatus(updatedStatus, "invalid-etag"))
+          .isInstanceOf(S3Exception.class)
+          .hasMessageContaining("At least one of the pre-conditions you specified did not hold");
+    }
+
+    @Test
+    void shouldGetAndUpdateMultipleRestoreId() {
+      // given
+      final String restoreId1 = "test-id-1";
+      final String restoreId2 = "test-id-2";
+      repository = fixed(Clock.systemUTC().millis());
+      final var status1 = new RestoreStatus(restoreId1, Set.of(1));
+      final var status2 = new RestoreStatus(restoreId2, Set.of(2));
+      repository.updateRestoreStatus(status1, null);
+      repository.updateRestoreStatus(status2, null);
+
+      // when
+      final var storedStatus1 = repository.getRestoreStatus(restoreId1);
+      final var storedStatus2 = repository.getRestoreStatus(restoreId2);
+
+      // then
+      assertThat(storedStatus1).isNotNull();
+      assertThat(storedStatus1.restoreStatus()).isEqualTo(status1);
+      assertThat(storedStatus2).isNotNull();
+      assertThat(storedStatus2.restoreStatus()).isEqualTo(status2);
+    }
+  }
+}

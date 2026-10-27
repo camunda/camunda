@@ -1,0 +1,244 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.handlers;
+
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_MODEL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
+
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.AgentContentMapper;
+import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
+import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
+import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.util.DateUtil;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AgentInstanceHandler
+    implements OrdinalIndexExportHandler<AgentInstanceEntity, AgentInstanceRecordValue> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AgentInstanceHandler.class);
+
+  private static final Set<AgentInstanceIntent> HANDLED_INTENTS =
+      Set.of(
+          AgentInstanceIntent.CREATED,
+          AgentInstanceIntent.UPDATED,
+          AgentInstanceIntent.COMPLETED,
+          AgentInstanceIntent.MIGRATED);
+
+  private final String indexName;
+
+  public AgentInstanceHandler(final String indexName) {
+    this.indexName = indexName;
+  }
+
+  @Override
+  public ValueType getHandledValueType() {
+    return ValueType.AGENT_INSTANCE;
+  }
+
+  @Override
+  public Class<AgentInstanceEntity> getEntityType() {
+    return AgentInstanceEntity.class;
+  }
+
+  @Override
+  public boolean handlesRecord(final Record<AgentInstanceRecordValue> record) {
+    final AgentInstanceIntent intent = (AgentInstanceIntent) record.getIntent();
+    return HANDLED_INTENTS.contains(intent);
+  }
+
+  @Override
+  public List<String> generateIds(final Record<AgentInstanceRecordValue> record) {
+    return List.of(String.valueOf(record.getKey()));
+  }
+
+  @Override
+  public AgentInstanceEntity createNewEntity(final String id) {
+    return new AgentInstanceEntity().setId(id);
+  }
+
+  @Override
+  public void updateEntity(
+      final Record<AgentInstanceRecordValue> record, final AgentInstanceEntity entity) {
+    final AgentInstanceRecordValue value = record.getValue();
+    final AgentInstanceIntent intent = (AgentInstanceIntent) record.getIntent();
+    final OffsetDateTime timestamp =
+        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+
+    entity
+        .setKey(record.getKey())
+        .setAgentDefinitionKey(value.getAgentDefinitionKey())
+        .setPartitionId(record.getPartitionId())
+        .setElementId(value.getElementId())
+        .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setRootProcessInstanceKey(value.getRootProcessInstanceKey())
+        .setBpmnProcessId(value.getBpmnProcessId())
+        .setProcessDefinitionKey(value.getProcessDefinitionKey())
+        .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
+        .setProcessDefinitionVersionTag(
+            ExporterUtil.emptyToNull(value.getProcessDefinitionVersionTag()))
+        .setTenantId(value.getTenantId())
+        .setStatus(mapStatus(value.getStatus()))
+        .setModel(value.getDefinition().getModel())
+        .setProvider(value.getDefinition().getProvider())
+        .setMaxTokens(value.getLimits().getMaxTokens())
+        .setMaxModelCalls(value.getLimits().getMaxModelCalls())
+        .setMaxToolCalls(value.getLimits().getMaxToolCalls())
+        .setInputTokens(value.getMetrics().getInputTokens())
+        .setOutputTokens(value.getMetrics().getOutputTokens())
+        .setReasoningTokenCount(value.getMetrics().getReasoningTokenCount())
+        .setCacheCreationTokenCount(value.getMetrics().getCacheCreationTokenCount())
+        .setCacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
+        .setModelCalls(value.getMetrics().getModelCalls())
+        .setToolCalls(value.getMetrics().getToolCalls())
+        .setElementInstanceKeys(value.getElementInstanceKeys())
+        .setLastUpdatedDate(timestamp);
+
+    // `systemPrompt`/`tools` can carry large payloads; on UPDATED, the engine only includes them
+    // in the event when they actually changed (see AgentHistoryBatchBehavior). Only overwrite the
+    // cached entity's value when this record actually carries it, so an unrelated UPDATED (e.g.
+    // metrics-only) doesn't null out a value set by an earlier record in the same batch cycle.
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_SYSTEM_PROMPT)) {
+      entity.setSystemPrompt(
+          AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()));
+    }
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_TOOLS)) {
+      entity.setTools(mapTools(value.getTools()));
+    }
+
+    if (intent == AgentInstanceIntent.CREATED) {
+      entity.setCreationDate(timestamp);
+    }
+    if (intent == AgentInstanceIntent.COMPLETED) {
+      entity.setCompletionDate(timestamp);
+    }
+  }
+
+  @Override
+  public void flush(
+      final TargetIndex index, final AgentInstanceEntity entity, final BatchRequest batchRequest) {
+    // `creationDate` is intentionally excluded: it is handler-derived from
+    // `record.getTimestamp()` and only populated by `updateEntity()` on the CREATED
+    // intent. Including it here would overwrite the existing index value with null on
+    // every UPDATED / COMPLETED event.
+    final Map<String, Object> updateFields = new HashMap<>();
+    // Identity fields: only MIGRATED changes these, but flush() can't see the intent, so
+    // always included.
+    updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    updateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
+    updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    updateFields.put(PROCESS_DEFINITION_VERSION_TAG, entity.getProcessDefinitionVersionTag());
+    updateFields.put(ELEMENT_ID, entity.getElementId());
+
+    // Runtime fields
+    updateFields.put(STATUS, entity.getStatus());
+    updateFields.put(MODEL, entity.getModel());
+    updateFields.put(PROVIDER, entity.getProvider());
+    putIfPresent(updateFields, SYSTEM_PROMPT, entity.getSystemPrompt());
+    updateFields.put(MAX_TOKENS, entity.getMaxTokens());
+    updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
+    updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
+    updateFields.put(INPUT_TOKENS, entity.getInputTokens());
+    updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    updateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    updateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
+    updateFields.put(MODEL_CALLS, entity.getModelCalls());
+    updateFields.put(TOOL_CALLS, entity.getToolCalls());
+    putIfPresent(updateFields, TOOLS, entity.getTools());
+    updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
+    updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
+    updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
+  }
+
+  /**
+   * A null value here means the field wasn't touched by any record in this batch cycle (see {@link
+   * #updateEntity}) — omitted rather than written, to avoid overwriting the existing index value
+   * with null.
+   */
+  private static void putIfPresent(
+      final Map<String, Object> updateFields, final String field, final Object value) {
+    if (value != null) {
+      updateFields.put(field, value);
+    }
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  private static AgentInstanceStatus mapStatus(
+      final io.camunda.zeebe.protocol.record.value.AgentInstanceStatus protocolStatus) {
+    return switch (protocolStatus) {
+      case INITIALIZING -> AgentInstanceStatus.INITIALIZING;
+      case IDLE -> AgentInstanceStatus.IDLE;
+      case THINKING -> AgentInstanceStatus.THINKING;
+      case TOOL_CALLING -> AgentInstanceStatus.TOOL_CALLING;
+      case TOOL_DISCOVERY -> AgentInstanceStatus.TOOL_DISCOVERY;
+      case COMPLETED -> AgentInstanceStatus.COMPLETED;
+      default -> {
+        LOGGER.warn(
+            "Received unexpected AgentInstanceStatus: {}, will be mapped to UNKNOWN",
+            protocolStatus);
+        yield AgentInstanceStatus.UNKNOWN;
+      }
+    };
+  }
+
+  private static List<AgentInstanceToolValue> mapTools(
+      final List<? extends AgentInstanceRecordValue.AgentInstanceToolValue> protocolTools) {
+    return protocolTools.stream()
+        .map(
+            t ->
+                new AgentInstanceToolValue(
+                    t.getName(),
+                    ExporterUtil.emptyToNull(t.getDescription()),
+                    ExporterUtil.emptyToNull(t.getElementId())))
+        .toList();
+  }
+}

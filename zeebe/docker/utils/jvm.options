@@ -1,0 +1,1 @@
+-XX:+UseCompactObjectHeaders --sun-misc-unsafe-memory-access=allow

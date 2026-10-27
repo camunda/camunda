@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="SrAsym" targetNamespace="http://bpmn.io/schema/bpmn">
+  <signal id="SrAsymSig" name="SrAsymSignal"/>
+  <message id="SrAsymMsg" name="sr-asym-msg">
+    <extensionElements>
+      <zeebe:subscription correlationKey="=asymKey"/>
+    </extensionElements>
+  </message>
+  <process id="sr_asym_signal_vs_message" name="SR signal drop vs message TTL across a suspension" isExecutable="true">
+    <startEvent id="start" name="Start"><outgoing>f1</outgoing></startEvent>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="split"/>
+    <parallelGateway id="split" name="Both waits">
+      <incoming>f1</incoming><outgoing>fSig</outgoing><outgoing>fMsg</outgoing>
+    </parallelGateway>
+
+    <sequenceFlow id="fSig" sourceRef="split" targetRef="signalCatch"/>
+    <intermediateCatchEvent id="signalCatch" name="Wait for SrAsymSignal">
+      <incoming>fSig</incoming><outgoing>fSig2</outgoing>
+      <signalEventDefinition id="sed1" signalRef="SrAsymSig"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="fSig2" sourceRef="signalCatch" targetRef="signalArrived"/>
+    <endEvent id="signalArrived" name="Signal arrived"><incoming>fSig2</incoming></endEvent>
+
+    <sequenceFlow id="fMsg" sourceRef="split" targetRef="messageCatch"/>
+    <intermediateCatchEvent id="messageCatch" name="Wait for sr-asym-msg">
+      <incoming>fMsg</incoming><outgoing>fMsg2</outgoing>
+      <messageEventDefinition id="med1" messageRef="SrAsymMsg"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="fMsg2" sourceRef="messageCatch" targetRef="messageArrived"/>
+    <endEvent id="messageArrived" name="Message arrived"><incoming>fMsg2</incoming></endEvent>
+  </process>
+
+  <bpmndi:BPMNDiagram id="Diagram_sr_asym_signal_vs_message">
+    <bpmndi:BPMNPlane id="Plane_sr_asym_signal_vs_message" bpmnElement="sr_asym_signal_vs_message">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="180" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="split_di" bpmnElement="split">
+        <dc:Bounds x="380" y="150" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="signalCatch_di" bpmnElement="signalCatch">
+        <dc:Bounds x="580" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="signalArrived_di" bpmnElement="signalArrived">
+        <dc:Bounds x="780" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="messageCatch_di" bpmnElement="messageCatch">
+        <dc:Bounds x="580" y="310" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="messageArrived_di" bpmnElement="messageArrived">
+        <dc:Bounds x="780" y="310" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="216" y="168" />
+        <di:waypoint x="380" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fSig_di" bpmnElement="fSig">
+        <di:waypoint x="430" y="175" />
+        <di:waypoint x="580" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fSig2_di" bpmnElement="fSig2">
+        <di:waypoint x="616" y="168" />
+        <di:waypoint x="780" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fMsg_di" bpmnElement="fMsg">
+        <di:waypoint x="430" y="175" />
+        <di:waypoint x="580" y="328" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fMsg2_di" bpmnElement="fMsg2">
+        <di:waypoint x="616" y="328" />
+        <di:waypoint x="780" y="328" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

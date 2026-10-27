@@ -1,0 +1,11 @@
+zeebe:
+  broker:
+    experimental:
+      features:
+        enableYieldingDueDateChecker: false
+        enableActorMetrics: true
+        enableMessageTTLCheckerAsync: true
+        enableTimerDueDateCheckerAsync: true
+        enableStraightThroughProcessingLoopDetector: false
+        enableMessageBodyOnExpired: false
+        evaluateBoundaryEventCorrelationKeyInActivityScope: false

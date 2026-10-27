@@ -1,0 +1,176 @@
+# description: Runs regression tests on C8Run. Tests are defined as .http files
+# test location: /qa/http/c8run-tests
+# type: CI
+# owner: @camunda/qa-engineering
+name: C8Run RDBMS Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - "c8run/**"
+      - "qa/http/c8run-tests/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'main'
+      camunda-version:
+        description: 'Camunda version to package (e.g. 8.10.0). Empty = version of the checked-out source (pom.xml parent)'
+        required: false
+        default: ''
+
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
+# Exception for deploy jobs that have to wait for each other to avoid overwriting
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
+
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
+jobs:
+  build_and_test_c8run:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        env: [ 'local' ]
+        config:
+          - 'config/application.yaml'
+          - 'qa/http/c8run-tests/application-h2.yaml'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.3"
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/qa/ci/nexus PASSWORD | NEXUS_PASSWORD;
+
+      # c8run/.env pins a released CAMUNDA_VERSION that goes stale as main moves on. Resolve the version
+      # explicitly instead: the dispatch input for release validation, otherwise the checked-out source.
+      - name: Resolve Camunda version
+        id: camunda
+        env:
+          INPUT_VERSION: ${{ inputs.camunda-version }}
+        run: |
+          if [[ -n "$INPUT_VERSION" ]]; then
+            version="$INPUT_VERSION"
+          else
+            version=$(awk '/<parent>/{p=1} p && /<version>/{gsub(/.*<version>|<\/version>.*/,""); print; exit}' pom.xml)
+          fi
+          if [[ -z "$version" ]]; then
+            echo "::error::Could not resolve Camunda version"
+            exit 1
+          fi
+          echo "Packaging Camunda version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build c8run
+        working-directory: ./c8run
+        run: go build -o c8run ./cmd/c8run
+
+      - name: Package c8run
+        run: ./package.sh
+        working-directory: ./c8run
+        env:
+          CAMUNDA_VERSION: ${{ steps.camunda.outputs.version }}
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: Run c8run
+        run: |
+          echo "Matrix config: $CONFIG"
+          if [[ "$CONFIG" == *"application-h2.yaml" ]]; then
+            echo "Using H2 configuration..."
+            cp "../$CONFIG" ./configuration/application.yaml
+          else
+            echo "Using default configuration (no override)"
+          fi
+          nohup ./start.sh --detached &
+        working-directory: ./c8run
+        env:
+          CONFIG: ${{ matrix.config }}
+
+      - name: Wait for app to start
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
+        timeout-minutes: 5
+
+      # Fail fast if the running broker is not the version we packaged (e.g. a stale .env leaked into the archive).
+      - name: Verify running Camunda version
+        env:
+          EXPECTED_VERSION: ${{ steps.camunda.outputs.version }}
+        run: |
+          actual=$(curl -fsS --retry 5 --retry-all-errors -u demo:demo http://localhost:8080/v2/topology | jq -r '.gatewayVersion')
+          echo "Expected: $EXPECTED_VERSION, running: $actual"
+          if [[ "$actual" != "$EXPECTED_VERSION" ]]; then
+            echo "::error::Running gateway version '$actual' does not match requested '$EXPECTED_VERSION'"
+            exit 1
+          fi
+
+      - name: Install IntelliJ HTTP Client
+        shell: bash
+        run: |
+          curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
+          unzip ijhttp.zip
+          ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --no-progress --report -t 60000
+
+      - name: Cleanup
+        shell: bash
+        if: always()
+        run: |
+          rm qa/http/http-client.private.env.json
+
+      - name: Shut down Docker Compose
+        if: always()
+        working-directory: ./c8run
+        run: ./shutdown.sh
+
+      - name: Publish Test Report
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
+        with:
+          files: '**/reports/report.xml'
+          comment_mode: off

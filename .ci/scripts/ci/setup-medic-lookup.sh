@@ -1,0 +1,134 @@
+
+declare -A lookupTeamMedic
+
+# @core-features-medic
+coreFeaturesMedic="<!subteam^S08P2CU9V8W|core-features-medic>"
+lookupTeamMedic["team-core-features"]=$coreFeaturesMedic
+lookupTeamMedic["Core Features"]=$coreFeaturesMedic
+lookupTeamMedic["CoreFeatures"]=$coreFeaturesMedic
+lookupTeamMedic["@camunda/core-features"]=$coreFeaturesMedic
+
+# @data-layer-medic
+dataLayerMedic="<!subteam^S08P2CSC06S|data-layer-medic>"
+lookupTeamMedic["team-data-layer"]=$dataLayerMedic
+lookupTeamMedic["Data Layer"]=$dataLayerMedic
+lookupTeamMedic["DataLayer"]=$dataLayerMedic
+lookupTeamMedic["@camunda/data-layer"]=$dataLayerMedic
+
+# @identity-medic
+identityMedic="<!subteam^S053MF48SSH|identity-medic>"
+lookupTeamMedic["team-identity"]=$identityMedic
+lookupTeamMedic["Identity"]=$identityMedic
+lookupTeamMedic["@camunda/identity"]=$identityMedic
+lookupTeamMedic["@camunda/identity-frontend"]=$identityMedic
+
+# @distributed-systems-medic
+distributedSystemsMedic="<!subteam^S09B7LXB77D|distributed-systems-medic>"
+lookupTeamMedic["team-distributed-systems"]=$distributedSystemsMedic
+lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
+lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
+lookupTeamMedic["@camunda/zeebe-distributed-platform"]=$distributedSystemsMedic
+
+# @cpt-medic
+cptMedic="<!subteam^S0BGRACEPPS|cpt-medic>"
+lookupTeamMedic["@camunda/c8-testing"]=$cptMedic
+
+# @pod-operate-admin-medic
+operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
+
+# @pod-employee-engagement-tasklist-medic
+tasklistMedic="<!subteam^S0BPB1RF1NZ|pod-employee-engagement-tasklist-medic>"
+lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
+
+# @bi-pod-medic
+optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
+lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+
+# @clients-sdks-ai-first-tooling-medic
+clientsSdksAiFirstToolingMedic="<!subteam^S0BFV0L5R2S|clients-sdks-ai-first-tooling-medic>"
+lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToolingMedic
+
+# @smx-medic
+distroMedic="<!subteam^S0CBB7Y72SV|smx-medic>"
+lookupTeamMedic["@camunda/distribution"]=$distroMedic
+lookupTeamMedic["@camunda/smx"]=$distroMedic
+
+# @reliability-testing-team
+reliabilityTestingTeam="<!subteam^S0A1Q2TJ6MB|reliability-testing-team>"
+lookupTeamMedic["@camunda/reliability-testing"]=$reliabilityTestingTeam
+
+# @qa-medic
+qaMedic="<!subteam^S09UBFWENKF|qa-medic>"
+lookupTeamMedic["@camunda/qa-engineering"]=$qaMedic
+
+# @test-automation-medic
+testAutomationMedic="<!subteam^S09UF0EV0HG|test-automation-medic>"
+lookupTeamMedic["@camunda/test-automation-team"]=$testAutomationMedic
+
+# @monorepo-ci-medic
+monorepoCIMedic="<!subteam^S07D6C6B18T|monorepo-ci-medic>"
+lookupTeamMedic["@camunda/engineering-operations"]=$monorepoCIMedic
+
+# failure in QA test
+lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
+
+# catch all for tests without an assigned team
+lookupTeamMedic["General"]="General Test, requires investigation"
+
+
+resolve_test_source_file() {
+    # Resolves a JUnit test class name to the exact repo-relative test source file path.
+    #
+    # Input: Java FQCN (e.g. io.camunda.foo.BarTest), webapp spec path
+    #        (e.g. src/operate/foo/Bar.test.tsx, a11y/foo.test.ts) or Orchestration
+    #        Cluster E2E spec path (e.g. tests/operate/processes.spec.ts)
+    # Output: prints a single repo-relative path or empty string.
+    local fqcn="$1"
+
+    if [[ "${fqcn}" == *.ts || "${fqcn}" == *.tsx ]]; then
+        local webapp_dir="webapp/client/apps/orchestration-cluster-webapp"
+        local e2e_suite_dir="qa/c8-orchestration-cluster-e2e-test-suite"
+        local candidate
+        for candidate in "${webapp_dir}/${fqcn}" "${webapp_dir}/test/${fqcn}" "${e2e_suite_dir}/${fqcn}"; do
+            if [[ -f "${candidate}" ]]; then
+                echo "${candidate}"
+                return 0
+            fi
+        done
+        echo ""
+        return 0
+    fi
+
+    # Strip nested class suffix (e.g. OuterClass$InnerClass -> OuterClass)
+    local outer_fqcn="${fqcn%%\$*}"
+    local rel_test_path="${outer_fqcn//./\/}.java"
+
+    # Find the test file location (first match is good enough)
+    local test_file
+    test_file="$(git ls-files "**/src/test/java/${rel_test_path}" 2>/dev/null | head -n 1)"
+    if [[ -z "${test_file}" ]]; then
+        # Some tests live under integrationTest or other conventions
+        test_file="$(git ls-files "**/src/*Test/java/${rel_test_path}" 2>/dev/null | head -n 1)"
+    fi
+
+    if [[ -n "${test_file}" && -f "${test_file}" ]]; then
+        echo "${test_file}"
+        return 0
+    fi
+
+    echo ""
+}
+
+resolve_codeowners_team() {
+    # Input: repo-relative file path
+    # Output: prints first required owner or empty string
+    local file_path="$1"
+
+    if [[ -z "${file_path}" || ! -f "${file_path}" ]]; then
+        echo ""
+        return 0
+    fi
+
+    codeowners-cli owner --format json "${file_path}" 2>/dev/null | jq -r --arg f "${file_path}" '(.[$f].required // [])[0] // ""' || true
+}

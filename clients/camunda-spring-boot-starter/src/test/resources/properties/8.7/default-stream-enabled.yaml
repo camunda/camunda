@@ -1,0 +1,5 @@
+camunda:
+  client:
+    zeebe:
+      defaults:
+        stream-enabled: true

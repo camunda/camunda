@@ -1,0 +1,98 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.api.worker;
+
+import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder;
+import io.camunda.client.impl.worker.metrics.MicrometerJobWorkerMetricsBuilderImpl;
+
+/** Worker metrics API. Allows basic instrumenting of job activation and handling. */
+public interface JobWorkerMetrics {
+
+  /**
+   * Called every time one or more jobs are activated.
+   *
+   * <p>NOTE: this is called <em>before</em> the job is worked on.
+   *
+   * @param count the amount of jobs that were activated
+   */
+  default void jobActivated(final int count) {}
+
+  /**
+   * Called every time one or more jobs are handled.
+   *
+   * <p>NOTE: this is called <em>after</em> a job has been worked on, successfully or not.
+   *
+   * @param count the amount of jobs that were handled
+   */
+  default void jobHandled(final int count) {}
+
+  /**
+   * Called every time one or more jobs are refused by the executor that runs the job handler,
+   * before the handler had a chance to run.
+   *
+   * <p>A refused job is neither worked on nor kept: one the worker polled for is handed straight
+   * back to the broker, and one the broker pushed to it is left to time out. Such a job is reported
+   * to {@link #jobActivated(int)} but never to {@link #jobHandled(int)}, so subtracting this count
+   * and {@link #jobExpired(int)} as well is what gives the number of jobs the worker is actually
+   * working on.
+   *
+   * @param count the amount of jobs that were refused
+   */
+  default void jobRefused(final int count) {}
+
+  /**
+   * Called every time one or more jobs are dropped for having waited for a free job handler thread
+   * for longer than the timeout they were activated with, before the handler had a chance to run.
+   *
+   * <p>Such a job may already have been offered to another worker, so running it would risk doing
+   * the same work twice. It is reported to {@link #jobActivated(int)} but never to {@link
+   * #jobHandled(int)}. A count that keeps climbing says the worker takes on more jobs than it can
+   * start within their timeout.
+   *
+   * @param count the amount of jobs that were dropped
+   */
+  default void jobExpired(final int count) {}
+
+  /**
+   * Called every time the streaming job worker recreates its stream because the configured stream
+   * inactivity timeout elapsed without any activity. Useful to monitor whether the inactivity
+   * watchdog is firing in a given deployment (e.g. due to an upstream proxy idle close), without
+   * relying on log scraping.
+   */
+  default void streamInactivityRecreated() {}
+
+  /**
+   * Returns a new builder for the Micrometer bridge.
+   *
+   * @throws UnsupportedOperationException if Micrometer is not found in the class path
+   */
+  static MicrometerJobWorkerMetricsBuilder micrometer() {
+    try {
+      Class.forName("io.micrometer.core.instrument.MeterRegistry");
+    } catch (final ClassNotFoundException e) {
+      throw new UnsupportedOperationException(
+          "Expected to create Micrometer worker metrics, but it seems Micrometer is not in your classpath",
+          e);
+    }
+
+    return new MicrometerJobWorkerMetricsBuilderImpl();
+  }
+
+  /** Returns an implementation which does nothing. */
+  static JobWorkerMetrics noop() {
+    return new JobWorkerMetrics() {};
+  }
+}

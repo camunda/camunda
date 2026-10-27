@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<!--
+  ~ Records the schema version before the schema is migrated, so the compatibility check reads a
+  ~ version this schema recorded instead of inferring one from which tables currently exist.
+  ~
+  ~ Inferring was wrong for almost all of a first migration: EXPORTER_POSITION comes from changeset
+  ~ 1 and RDBMS_SCHEMA_VERSION 129 later, and that window is indistinguishable from a pre-versioning
+  ~ 8.9.x schema. Peers starting into it inferred 8.9.0, refused the upgrade as skipping a minor, and
+  ~ never exported that tenant again (#62554).
+  ~
+  ~ LiquibaseSchemaManager runs this on its own before the master run, so the check sees the seeded
+  ~ row and the legacy-or-fresh decision happens under the changelog lock. It is kept out of
+  ~ changelog-master.xml and changesets/, which LiquibaseScriptGenerator turns into shipped SQL.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    The same table as create_rdbms_schema_version_table in changesets/8.10.0.xml. Whichever run
+    reaches it first creates the table and the other marks its changeset ran, so the two definitions
+    have to stay identical. Neither can be edited once released anyway — Liquibase checksums make an
+    executed changeset immutable — so changing this table later means a new addColumn changeset in
+    changesets/, which applies however the table was created.
+  -->
+  <changeSet id="create_rdbms_schema_version_table_before_migration" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}RDBMS_SCHEMA_VERSION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="ID" type="SMALLINT" defaultValueNumeric="1">
+        <constraints nullable="false" primaryKey="true" checkConstraint="ID = 1"/>
+      </column>
+      <column name="VERSION" type="VARCHAR(32)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <!--
+    The two changesets below record the version of a schema that predates version tracking — the one
+    case the check cannot otherwise know about, since an 8.9.x database carries no version row.
+
+    Both demand a schema that pre-8.10 code left at a released state, which a migration interrupted
+    part-way is not. The master changelog applies 8.9.0.xml, then 8.9.9.xml, then 8.10.0.xml, so:
+
+      - IDX_AUDIT_LOG_ACTOR_ID is the artifact of the last changeset in 8.9.0.xml, so its presence
+        means all of 8.9.0's changesets ran;
+      - FULL_RESULT and FULL_INPUT_VALUE are the first and last columns 8.9.9.xml adds, so they say
+        whether 8.9.9 finished or never started. Exactly one of them means a run died inside 8.9.9;
+        neither changeset then fires, and the master run resumes the schema instead of the upgrade
+        being refused as a skipped minor;
+      - DEPLOYED_RESOURCE is the first table 8.10.0.xml creates, so its absence means none of 8.10's
+        changesets ran.
+
+    A run interrupted exactly at a file boundary still reads as the release that ends there, because
+    it is byte-for-byte that schema. Only a recorded version separates those two, which is what this
+    changelog starts doing. Presence is a trustworthy signal at all only because this runs inside the
+    changelog lock, where no peer can be part-way through creating what it reads.
+
+    The row count keeps each insert idempotent — Liquibase commits a changeset's changes before it
+    records the changeset, so a crash in between would otherwise retry into a primary-key violation
+    on ID = 1 — and it stops the second insert once the first has run.
+  -->
+  <changeSet id="seed_completed_8_9_9_schema_version" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
+        <columnExists tableName="${prefix}DECISION_INSTANCE_INPUT" columnName="FULL_INPUT_VALUE"/>
+        <not>
+          <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
+        </not>
+        <sqlCheck expectedResult="0">SELECT COUNT(*) FROM ${prefix}RDBMS_SCHEMA_VERSION</sqlCheck>
+      </and>
+    </preConditions>
+    <insert tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="ID" valueNumeric="1"/>
+      <column name="VERSION" value="8.9.9"/>
+    </insert>
+  </changeSet>
+
+  <changeSet id="seed_pre_versioning_schema_version" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <indexExists indexName="${prefix}IDX_AUDIT_LOG_ACTOR_ID" tableName="${prefix}AUDIT_LOG"/>
+        <not>
+          <columnExists tableName="${prefix}DECISION_INSTANCE" columnName="FULL_RESULT"/>
+        </not>
+        <not>
+          <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
+        </not>
+        <sqlCheck expectedResult="0">SELECT COUNT(*) FROM ${prefix}RDBMS_SCHEMA_VERSION</sqlCheck>
+      </and>
+    </preConditions>
+    <insert tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="ID" valueNumeric="1"/>
+      <column name="VERSION" value="8.9.0"/>
+    </insert>
+  </changeSet>
+
+</databaseChangeLog>

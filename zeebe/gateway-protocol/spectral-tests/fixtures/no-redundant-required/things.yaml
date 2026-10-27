@@ -1,0 +1,97 @@
+# Domain file for no-redundant-required rule test fixture.
+# Schema-level rule (given: $.components.schemas[*]) — no paths needed, only
+# components.schemas exercising valid and invalid required/allOf shapes.
+openapi: "3.0.3"
+info:
+  title: No-redundant-required test schemas
+  version: "1.0"
+paths: {}
+
+components:
+  schemas:
+
+    # ── Base schemas used as allOf targets ────────────────────────────
+
+    BaseThing:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: The identifier.
+
+    WrapperOfBase:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BaseThing'
+
+    # ── Valid: no allOf at all ─────────────────────────────────────────
+    ValidNoAllOf:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name.
+
+    # ── Valid: allOf present, no overlap with own required ─────────────
+    ValidNoOverlap:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: '#/components/schemas/BaseThing'
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+          description: The items.
+
+    # ── Invalid: own required duplicates a direct allOf member's required ──
+    InvalidDirectDuplicate:
+      type: object
+      required:
+        - id
+        - items
+      allOf:
+        - $ref: '#/components/schemas/BaseThing'
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+          description: The items.
+
+    # ── Invalid: multiple redundant entries in one schema ───────────────
+    # (BaseThing requires `id`; this schema also redundantly requires
+    # a second field that happens to already be required elsewhere via a
+    # second allOf member.)
+    OtherBase:
+      type: object
+      required:
+        - otherId
+      properties:
+        otherId:
+          type: string
+          description: Another identifier.
+
+    InvalidMultipleDuplicates:
+      type: object
+      required:
+        - id
+        - otherId
+      allOf:
+        - $ref: '#/components/schemas/BaseThing'
+        - $ref: '#/components/schemas/OtherBase'
+      properties: {}
+
+    # ── Invalid: redundant against a transitive (allOf-of-allOf) parent ──
+    InvalidTransitiveDuplicate:
+      type: object
+      required:
+        - id
+      allOf:
+        - $ref: '#/components/schemas/WrapperOfBase'

@@ -1,0 +1,281 @@
+# description: Read-only early detection of release->target merge-back conflicts (issue #51430).
+#   For every currently-active release branch (version not yet released on its X.Y line), it checks
+#   whether merging it forward into its target (stable/X.Y, or main for a pre-branch alpha) would
+#   conflict, and posts a Block Kit alert to Slack only when a human actually needs to act. A clean
+#   or mechanical-only result is a quiet success; no active release branch is a no-op. If an
+#   actionable gap is found but Slack config is missing, the job fails loud rather than dropping the
+#   alert. Dispatch with dry_run: true to render the alert into the run summary instead of posting.
+# test location: .github/scripts/mergeback/mergeback.bats (run in ci.yml “Shell / Script Tests”).
+# type: CI Helper
+# owner: @camunda/engineering-operations
+---
+name: Release Merge-back Conflict Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: 'Release ref to check (e.g. release-8.9.0). Leave empty to auto-discover active release branches.'
+        required: false
+        default: ''
+        type: string
+      target_ref:
+        description: 'Target ref to merge back into (e.g. stable/8.9 or main). Only used together with release_ref; auto-derived if empty.'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run — render the alert and write it to the run summary instead of posting to Slack.'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Weekday mornings (02:00), mirroring the release dry-run cadence.
+    - cron: '0 2 * * 1-5'
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+
+jobs:
+  check-mergeback:
+    name: Detect and triage release merge-back conflicts
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      TEST_PRODUCT: Release Process
+      TEST_TYPE: CI Helper
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags are required: git merge-tree needs the real commit graph,
+          # and git cherry (patch-id equivalence, used by the triage) silently misbehaves
+          # on a shallow clone. Do NOT reduce this to a shallow fetch.
+          fetch-depth: 0
+          # Read-only git only (ls-remote / merge-tree / cherry). No pushes, no API writes.
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Resolve active release/target pairs
+        id: pairs
+        env:
+          INPUT_RELEASE_REF: ${{ inputs.release_ref }}
+          INPUT_TARGET_REF: ${{ inputs.target_ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_RELEASE_REF}" ]; then
+            # Manual override: check exactly this pair (target auto-derived if omitted).
+            target="${INPUT_TARGET_REF}"
+            if [ -z "$target" ]; then
+              minor="${INPUT_RELEASE_REF#release-}"; minor="${minor%.*}"; minor="${minor%%-*}"
+              # Fail CLOSED: distinguish "stable branch absent" from "ls-remote failed" — collapsing
+              # a lookup failure to `main` could check the WRONG merge direction for a maintenance
+              # release.
+              if ! stable_ls="$(git ls-remote --heads origin "stable/${minor}")"; then
+                echo "::error::Failed to look up stable/${minor} (ls-remote error) — cannot derive merge-back target."
+                exit 1
+              fi
+              if [ -n "$stable_ls" ]; then
+                target="stable/${minor}"
+              else
+                target="main"
+              fi
+            fi
+            printf '%s\t%s\n' "${INPUT_RELEASE_REF}" "$target" > pairs.tsv
+          else
+            .github/scripts/mergeback/resolve-active-release-pairs.sh origin > pairs.tsv
+          fi
+          echo "Active pairs (release -> target):"
+          cat pairs.tsv || true
+          count=$(awk 'NF' pairs.tsv | wc -l | tr -d ' ')
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ]; then
+            echo "No active release branch — nothing to check (quiet no-op)."
+          fi
+
+      # Puts codeowners-cli on PATH for the triage step's ownership lookup against `.codeowners`.
+      # Only needed when there is a pair to check.
+      - name: Setup codeowners-cli
+        if: ${{ steps.pairs.outputs.count != '0' }}
+        uses: ./.github/actions/codeowners-setup-cli
+
+      - name: Detect and triage merge-back conflicts
+        id: triage
+        if: ${{ steps.pairs.outputs.count != '0' }}
+        run: |
+          set -euo pipefail
+          : > actionable.ndjson
+          while IFS=$'\t' read -r release_ref target_ref; do
+            [ -z "$release_ref" ] && continue
+            echo "::group::${release_ref} -> ${target_ref}"
+
+            # ── Fetch refs ──
+            # Fetch both tips into namespaced local refs so merge-tree / cherry can read them (local
+            # ref writes only, remote never mutated). A fetch failure is operational, not "no
+            # conflict" — fail loud rather than let an unavailable ref look clean.
+            if ! git fetch --no-tags origin "${release_ref}:refs/mergeback/${release_ref}" >/dev/null 2>&1; then
+              echo "::error::Failed to fetch release ref ${release_ref} from origin — cannot assess merge-back."
+              exit 1
+            fi
+            if ! git fetch --no-tags origin "${target_ref}:refs/mergeback/${target_ref}" >/dev/null 2>&1; then
+              echo "::error::Failed to fetch target ref ${target_ref} from origin — cannot assess merge-back."
+              exit 1
+            fi
+            rel="refs/mergeback/${release_ref}"
+            tgt="refs/mergeback/${target_ref}"
+
+            # ── Validate refs ──
+            # Both refs must resolve to real commits before analysis.
+            if ! git rev-parse --verify --quiet "${rel}^{commit}" >/dev/null; then
+              echo "::error::Release ref ${release_ref} did not resolve to a commit after fetch."
+              exit 1
+            fi
+            if ! git rev-parse --verify --quiet "${tgt}^{commit}" >/dev/null; then
+              echo "::error::Target ref ${target_ref} did not resolve to a commit after fetch."
+              exit 1
+            fi
+
+            # ── Detect ──
+            # Invoke via `bash` so a lost exec bit can't break the run. Detector writes {status,paths}
+            # JSON to stdout, human context to stderr; keep them separate. Exit codes: 0 = clean,
+            # 2 = conflict, else operational (fail loud).
+            detect_rc=0
+            bash .github/scripts/mergeback/detect-mergeback-conflict.sh "$tgt" "$rel" \
+              > detect.json 2> detect.err || detect_rc=$?
+            cat detect.err || true
+            if [ "$detect_rc" -eq 0 ]; then
+              echo "CLEAN: ${release_ref} -> ${target_ref} (no conflict)"
+              echo "::endgroup::"
+              continue
+            elif [ "$detect_rc" -ne 2 ]; then
+              echo "::error::detect-mergeback-conflict.sh failed operationally (exit ${detect_rc}) for ${release_ref} -> ${target_ref}."
+              cat detect.json || true
+              exit 1
+            fi
+
+            # ── Triage ──
+            # Conflict exists. Triage emits its own JSON. An in-flight release always conflicts on
+            # poms (version bumps), so gate on action_count, not the raw conflict — mechanical /
+            # drift-only stays quiet.
+            triage_json="$(bash .github/scripts/mergeback/triage-mergeback.sh "$tgt" "$rel" detect.json)"
+            echo "$triage_json" | jq .
+            if echo "$triage_json" | jq -e '.action_count > 0' >/dev/null; then
+              # Re-stamp the human-facing branch names (the script saw the refs/mergeback/* aliases).
+              echo "$triage_json" | jq -c \
+                --arg release_ref "$release_ref" --arg target_ref "$target_ref" \
+                '.release_ref = $release_ref | .target_ref = $target_ref' >> actionable.ndjson
+            else
+              echo "Conflict is mechanical / text-drift only — no actionable gap, staying quiet."
+            fi
+            echo "::endgroup::"
+          done < pairs.tsv
+
+          actionable=$(wc -l < actionable.ndjson | tr -d ' ')
+          echo "actionable=${actionable}" >> "$GITHUB_OUTPUT"
+          if [ "$actionable" -eq 0 ]; then
+            echo "✅ No actionable merge-back gaps — nothing to report."
+          fi
+
+      - name: Render alert to run summary (dry run)
+        # Dry run: render each actionable alert with the same script the post step uses and write it
+        # to the run summary instead of posting — previews the exact Slack message without touching a
+        # channel.
+        if: ${{ inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## 🧪 Merge-back alert (dry run — not posted)"
+            while IFS= read -r doc; do
+              [ -z "$doc" ] && continue
+              echo "### $(jq -r '.release_ref + " → " + .target_ref' <<< "$doc")"
+              echo '```json'
+              RUN_URL="$RUN_URL" bash .github/scripts/mergeback/render-slack-message.sh <<< "$doc" | jq .
+              echo '```'
+            done < actionable.ndjson
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "🧪 Dry run — rendered $(wc -l < actionable.ndjson | tr -d ' ') alert(s) to the run summary, no Slack post."
+
+      - name: Get Slack webhook from Vault
+        id: slack-secrets
+        # Require a real positive count: the producing step is skipped when there is no pair, leaving
+        # `actionable` empty ('' != '0'), and dry runs need no secret.
+        if: ${{ !inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Render and post merge-back alert to Slack
+        # Same guard as the Vault step: never fire when the producing step was skipped ('' != '0'),
+        # and never on a dry run (that path renders to the summary instead).
+        if: ${{ !inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # Fail loud: we have an actionable gap. Dropping the alert because the webhook is missing
+          # would defeat the whole check.
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "::error::Actionable merge-back gap detected but the Slack webhook is missing. Refusing to silently drop the alert."
+            exit 1
+          fi
+
+          # One message per actionable pair. render-slack-message.sh turns the triage JSON into the
+          # Block Kit body; this step only renders and POSTs, no logic in the workflow.
+          while IFS= read -r doc; do
+            [ -z "$doc" ] && continue
+
+            # Log the full untruncated triage before rendering: the Slack post is capped at 50 blocks
+            # / 3000 chars, so a large conflict set can be truncated there — the run log keeps the
+            # complete doc.
+            echo "::group::Full merge-back triage — $(jq -r '.release_ref + " → " + .target_ref' <<< "$doc")"
+            jq . <<< "$doc"
+            echo "::endgroup::"
+
+            body="$(RUN_URL="$RUN_URL" bash .github/scripts/mergeback/render-slack-message.sh <<< "$doc")"
+
+            # Incoming webhooks answer HTTP 200 with the literal body "ok" on success.
+            http_body=$(curl -s -o /tmp/slack_resp.txt -w '%{http_code}' -X POST \
+              -H "Content-Type: application/json; charset=utf-8" \
+              --data "$body" "$SLACK_WEBHOOK_URL")
+            resp=$(cat /tmp/slack_resp.txt)
+            if [ "$http_body" != "200" ] || [ "$resp" != "ok" ]; then
+              echo "::error::Slack webhook post failed (HTTP ${http_body}): ${resp:-no body}"
+              exit 1
+            fi
+            echo "✅ Posted merge-back alert to the monorepo release channel."
+          done < actionable.ndjson
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

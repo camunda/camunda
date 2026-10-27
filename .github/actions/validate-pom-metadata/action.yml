@@ -1,0 +1,21 @@
+---
+name: Validate flattened POM metadata
+description: Installs xmllint and validates flattened Maven POM metadata
+
+inputs:
+  search-root:
+    description: Directory root to scan for .flattened-pom.xml files
+    default: "."
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install xmllint
+      uses: ./.github/actions/apt-install
+      with:
+        packages: libxml2-utils
+
+    - name: Validate flattened POM metadata
+      shell: bash
+      run: bash .github/scripts/validate-flattened-poms.sh "${{ inputs.search-root }}"

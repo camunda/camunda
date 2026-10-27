@@ -1,0 +1,1070 @@
+# description: Triage-driven fix agent for C8 Orchestration Cluster nightly E2E/API failures.
+#              Dispatched per version by c8-orchestration-cluster-e2e-nightly-triage.yml.
+#              Uses Claude Code CLI to read failing tests + screenshots, apply a minimal fix,
+#              and open a draft PR against stable/<version> (or main). After the PR is open,
+#              triggers the matching on-demand workflow(s) and patches the PR body with
+#              the run URL(s) for verification.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly Fix Agent
+
+# The run title carries the dispatched version, because the `serialize` job
+# below identifies sibling agents by it: `gh run list` exposes displayTitle, not
+# the dispatch inputs. It also makes the Actions list readable, where every run
+# was previously titled by the workflow name alone.
+run-name: >-
+  fix orchestration ${{ inputs.version }}
+  — ${{ inputs.triage_run_url }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Camunda version (8.7, 8.8, 8.9, 8.10, or main)'
+        required: true
+      test_specs:
+        description: 'JSON array of {file, test_name, error, test_type, tasklist_mode?, database?}'
+        required: true
+      e2e_run_id:
+        description: 'Run ID of the failing E2E nightly (empty if E2E did not fail)'
+        required: false
+        default: ''
+      api_es_run_id:
+        description: 'Run ID of the failing API ES nightly (empty if API ES did not fail)'
+        required: false
+        default: ''
+      api_rdbms_run_id:
+        description: 'Run ID of the failing API RDBMS nightly (empty / N/A for 8.7, 8.8)'
+        required: false
+        default: ''
+      triage_run_url:
+        description: 'URL of the triage run that dispatched this (for PR body)'
+        required: false
+        default: ''
+      slack_thread_ts:
+        description: 'Slack thread ts to reply to (posted by triage)'
+        required: false
+        default: ''
+      slack_channel:
+        description: 'Slack channel ID for thread reply'
+        required: false
+        default: ''
+      send_slack_notification:
+        description: 'Post a Slack reply when done (true for nightly cron dispatches, false for on-demand runs)'
+        type: boolean
+        required: false
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  actions: write
+  pull-requests: write
+
+jobs:
+  serialize:
+    # One fix agent per version at a time.
+    #
+    # Triage groups a night's failures by version, so a single triage run
+    # dispatches at most one agent per version. What this guards is everything
+    # else: a re-run of triage, a manual dispatch landing on top of a nightly
+    # one, or a second triage pass while a 100-minute agent is still working.
+    # Two agents on the same version would both branch from main, neither able
+    # to see the other's PR, and produce overlapping fixes for the same specs.
+    #
+    # NOT GitHub's `concurrency:` key: it keeps at most ONE pending run per
+    # group and cancels the rest, even with cancel-in-progress: false. The
+    # dispatcher has already written the version into its ledger as dispatched,
+    # so a cancelled run would silently lose those failures for the day. The
+    # queue is explicit instead: every run starts, each waits its turn.
+    name: Wait for sibling agents (${{ github.event.inputs.version }})
+    runs-on: ubuntu-latest
+    # Cumulative waiting budget, not a per-predecessor one: a fix agent runs
+    # for up to 100 minutes, so a run that is third in the queue has to sit
+    # through two of them. At 130 it would have been killed mid-queue while
+    # the gate was still working correctly. Near the 360-minute ceiling for
+    # hosted runners, which bounds a queue that has grown absurd: the gate
+    # then fails and `fix` is skipped, rather than releasing a blocked agent.
+    timeout-minutes: 350
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for in-flight agents of this version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ github.event.inputs.version }}
+          SELF_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # Wait only on runs AHEAD of us, ordered by when the current attempt
+          # started (`startedAt` is run_started_at, which GitHub resets on every
+          # re-run), with the run id breaking same-second ties.
+          #
+          # Ordering on the run id alone would be wrong for a re-run: a re-run
+          # keeps its original, LOWER run id, so it would see no predecessor and
+          # start immediately beside a newer agent already past this gate.
+          # Ordering on the attempt's start puts a re-run at the back of the
+          # queue, where it belongs. Still a total order, so the queue can
+          # neither deadlock (no two runs ever wait on each other) nor starve
+          # (every run has finitely many predecessors). A run never counts
+          # itself: its own startedAt equals self_started and its id is not
+          # less than its own.
+          #
+          # Match the run title, because `gh run list` exposes displayTitle but
+          # not the dispatch inputs. run-name renders
+          # "fix orchestration <version> — <triage_run_url>", so the version is
+          # the third token. The trailing space in the prefix matters: a bare
+          # contains("8.10") would also match a hypothetical "8.10.1".
+          prefix="fix orchestration ${VERSION} "
+
+          # Status is filtered in jq, NOT with --status: that flag takes a
+          # single value, so `--status in_progress --status queued` silently
+          # keeps only the last one and the gate sees no in-progress sibling at
+          # all. `!= "completed"` is also the safer test — it counts a run that
+          # is queued, waiting or pending approval, each of which will become
+          # in_progress and would otherwise race us. A cancelled run reports
+          # completed, so it correctly stops blocking.
+          #
+          # The listing is filtered by a separate jq invocation rather than
+          # `gh --jq`, so that the title prefix can be passed with --arg.
+          # `version` is a free-form dispatch input: interpolated into jq
+          # source, a value containing a quote would break every poll (holding
+          # the gate open for the whole budget) and a crafted fragment could
+          # change what the gate counts.
+          # shellcheck disable=SC2016
+          filter='[.[] | select(.status != "completed")
+                       | select(.startedAt < $self_started
+                                or (.startedAt == $self_started
+                                    and .databaseId < $self))
+                       | select(.displayTitle | startswith($prefix))]
+                  | length'
+
+          # The budget bounds a STALLED queue, not a busy one. Measured from
+          # this run's own start it would not serialize three runs queued
+          # together: the third would give up while the second was still
+          # legitimately working. It is therefore reset on every observed
+          # departure, so the gate only gives up when nothing ahead of it has
+          # finished for a full budget — longer than a fix agent's own
+          # 100-minute ceiling. The job's timeout-minutes is the hard cap on
+          # total waiting; exceeding it fails the gate rather than releasing a
+          # still-blocked agent.
+          stall_budget=$(( 120 * 60 ))
+          deadline=$(( $(date +%s) + stall_budget ))
+          prev_ahead=""
+          self_started=""
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            # Read once: this attempt's own start, which the queue is ordered on.
+            # While it is unreadable `ahead` stays empty, which the retry branch
+            # below already treats as a reason to wait rather than proceed.
+            if [ -z "$self_started" ]; then
+              self_started=$(gh run view "${SELF_RUN_ID}" \
+                               --json startedAt --jq '.startedAt' \
+                               2>/dev/null || echo "")
+            fi
+
+            runs=""
+            if [ -n "$self_started" ]; then
+              runs=$(gh run list \
+                       --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                       --limit 100 --json databaseId,displayTitle,status,startedAt \
+                       2>/dev/null || echo "")
+            fi
+            ahead=""
+            if [ -n "$runs" ]; then
+              ahead=$(printf '%s' "$runs" \
+                        | jq --arg prefix "$prefix" \
+                             --arg self_started "$self_started" \
+                             --argjson self "$SELF_RUN_ID" \
+                             "$filter" 2>/dev/null || echo "")
+            fi
+
+            # An empty result means the API call failed, not that the queue is
+            # clear. Treating that as 0 would let every agent through during a
+            # GitHub wobble — exactly when they all start at once — so retry.
+            if [ -z "$ahead" ]; then
+              echo "::warning::could not read the run queue, retrying"
+            elif [ "$ahead" -eq 0 ]; then
+              echo "queue clear for ${VERSION}"
+              exit 0
+            else
+              if [ -n "$prev_ahead" ] && [ "$ahead" -lt "$prev_ahead" ]; then
+                deadline=$(( $(date +%s) + stall_budget ))
+              fi
+              prev_ahead="$ahead"
+              echo "waiting: ${ahead} older ${VERSION} agent(s) still running"
+            fi
+            sleep 60
+          done
+
+          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+
+  fix:
+    name: Fix nightly failures (${{ github.event.inputs.version }})
+    needs: [serialize]
+    runs-on: ubuntu-latest
+    # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
+    # Camunda distribution from source for RDBMS-flagged failures, mirroring
+    # c8-orchestration-cluster-e2e-tests-on-demand.yml's own H2/RDBMS job.
+    # Raised from 90 after run 35684370785 (2026-09-22) hit that ceiling with
+    # real, uncommitted progress still in flight.
+    timeout-minutes: 100
+
+    steps:
+      - name: Record job start time
+        # Deliberately the very first step: timeout-minutes above counts from
+        # job start, not from when the "Run Claude Code fix agent" step
+        # happens to begin. Anchoring the agent's self-imposed deadline to
+        # this epoch (rather than a fresh $(date) taken inside that later
+        # step) keeps its safety margin accurate even if checkout/Vault/
+        # token/Go/npm/workspace setup ends up taking longer than usual.
+        id: job_start
+        run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve target branch
+        id: target
+        env:
+          # Read workflow_dispatch input through env to avoid template injection
+          # (zizmor: template-injection — github.event.inputs.* is attacker-controllable)
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          version="$INPUT_VERSION"
+          case "$version" in
+            main)
+              {
+                echo "ref=main"
+                echo "safe_version=main"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+            8.7|8.8|8.9|8.10)
+              {
+                echo "ref=stable/${version}"
+                echo "safe_version=stable-${version}"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, 8.10, or main)"
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout main for workflow tooling
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          # Intentionally NOT pinning to the target stable branch.
+          # The workspace manifest and guidance files live on main (introduced
+          # by this PR) and are absent from stable branches. workspace-cli
+          # handles cloning + switching to the correct stable branch inside
+          # ws_dir; nothing in the runner workspace needs the stable tree.
+          # We re-configure git with the bot PAT below; no need to keep the
+          # short-lived GITHUB_TOKEN around in .git/config (zizmor: artipacked).
+          persist-credentials: false
+
+      - name: Write test_specs to file
+        env:
+          # Read the (potentially large + arbitrary) JSON input through env to
+          # avoid template injection (zizmor: template-injection).
+          INPUT_TEST_SPECS: ${{ github.event.inputs.test_specs }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$INPUT_TEST_SPECS" > /tmp/test_specs.json
+          echo "test_specs entries: $(jq 'length' /tmp/test_specs.json)"
+          jq '.[0:3]' /tmp/test_specs.json || true
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+            secret/data/products/qa/ci/common GH_TOKEN | GH_PAT ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # The ownership-routing runbook lives in camunda/eng-kit-memory. A missing
+      # runbook must not stop the fix agent, so these steps may fail; the agent
+      # then routes with .codeowners only and the job summary says so.
+      - name: Generate eng-kit-memory read token
+        id: memory-token
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: eng-kit-memory
+          read-only: true
+
+      # Before the global insteadOf rewrite below, which would send the camunda-only
+      # token for this repository too.
+      - name: Check out the ownership-routing runbook
+        id: memory
+        if: steps.memory-token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/eng-kit-memory
+          token: ${{ steps.memory-token.outputs.token }}
+          path: eng-kit-memory
+          persist-credentials: false
+          sparse-checkout: |
+            skills
+            memory/teams
+
+      - name: Record the routing runbook version
+        id: routing
+        env:
+          MEMORY_OUTCOME: ${{ steps.memory.outcome }}
+        run: |
+          set -euo pipefail
+          if [ "$MEMORY_OUTCOME" = "success" ]; then
+            {
+              echo "dir=${GITHUB_WORKSPACE}/eng-kit-memory"
+              echo "sha=$(git -C eng-kit-memory rev-parse HEAD)"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::camunda/eng-kit-memory could not be read, so the fix agent routes with .codeowners only"
+            { echo "dir="; echo "sha="; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure git with GitHub App token
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name  "qa-processes[bot]"
+          git config --global user.email "qa-processes[bot]@users.noreply.github.com"
+
+      - name: Ensure failing-test-fix label exists
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          gh label create "failing-test-fix" \
+            --repo "${{ github.repository }}" \
+            --color "FF4444" \
+            --description "Bot-opened fix PR for failing nightly orchestration cluster tests" \
+            2>/dev/null || true
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27'
+          cache: false
+
+      - name: Install workspace-cli
+        env:
+          GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+        run: |
+          # workspace-cli is a private repo; the qa-processes app token doesn't have access.
+          # Add a more-specific insteadOf for workspace-cli that uses the Vault PAT.
+          # Git selects the longest-matching insteadOf, so this wins over the global
+          # qa-processes rewrite set in "Configure git with GitHub App token".
+          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
+          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      - name: Compute workspace name
+        id: ws
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          name="fix-oc-${VERSION}-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Stage workspace manifest and agent manual from main
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.workspace-templates"
+          git fetch --depth 1 origin main
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
+          # The agent manual (Time Budget rules, diagnosis steps, constraints) is
+          # kept up to date on main only. ws_dir gets checked out to the target
+          # stable/<version> branch below, which can carry an older or missing
+          # AGENTS.md, so stage main's copy separately rather than reading it out
+          # of ws_dir -- same pattern c8-orchestration-cluster-unskip-verify.yml
+          # uses for the same reason.
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md \
+            > /tmp/nightly-fix-agent-manual.md
+          # Ownership routing reads main's .codeowners for the same reason: a stable
+          # branch can predate the current owners of the test areas.
+          git show origin/main:.codeowners > /tmp/nightly-fix-agent-codeowners
+
+      - name: Create workspace
+        run: |
+          workspace create "${{ steps.ws.outputs.name }}" \
+            --manifest camunda-orchestration-cluster-nightly
+
+      - name: Switch workspace to target branch
+        env:
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
+          git -C "$ws_dir" checkout "${TARGET_REF}"
+
+      - name: Determine which artifact downloads + on-demand verifications are needed
+        id: scope
+        run: |
+          set -euo pipefail
+          has_e2e=$(jq '[.[] | select(.test_type == "e2e")] | length > 0' /tmp/test_specs.json)
+          has_api=$(jq '[.[] | select(.test_type == "api")] | length > 0' /tmp/test_specs.json)
+          has_api_es=$(jq '[.[] | select(.test_type == "api" and (.database == null or .database == "" or .database == "elasticsearch"))] | length > 0' /tmp/test_specs.json)
+          has_api_rdbms=$(jq '[.[] | select(.test_type == "api" and .database != null and .database != "" and .database != "elasticsearch")] | length > 0' /tmp/test_specs.json)
+          {
+            echo "has_e2e=$has_e2e"
+            echo "has_api=$has_api"
+            echo "has_api_es=$has_api_es"
+            echo "has_api_rdbms=$has_api_rdbms"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code fix agent
+        env:
+          ANTHROPIC_API_KEY:   ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          GH_TOKEN:            ${{ steps.github-token.outputs.token }}
+          # Fallback ONLY. The agent files/searches issues with the qa-processes
+          # GH_TOKEN above first; it falls back to this pre-existing PAT (already used
+          # for workspace-cli checkout above) only if a gh call fails (e.g. a repo the
+          # camunda-scoped App token cannot reach).
+          GH_PAT:        ${{ steps.secrets.outputs.GH_PAT }}
+          VERSION:             ${{ github.event.inputs.version }}
+          TARGET_REF:          ${{ steps.target.outputs.ref }}
+          SAFE_VERSION:        ${{ steps.target.outputs.safe_version }}
+          E2E_RUN_ID:          ${{ github.event.inputs.e2e_run_id }}
+          API_ES_RUN_ID:       ${{ github.event.inputs.api_es_run_id }}
+          API_RDBMS_RUN_ID:    ${{ github.event.inputs.api_rdbms_run_id }}
+          TRIAGE_RUN_URL:      ${{ github.event.inputs.triage_run_url }}
+          HAS_E2E:             ${{ steps.scope.outputs.has_e2e }}
+          HAS_API_ES:          ${{ steps.scope.outputs.has_api_es }}
+          HAS_API_RDBMS:       ${{ steps.scope.outputs.has_api_rdbms }}
+          REPO:                ${{ github.repository }}
+          WORKSPACE_NAME:      ${{ steps.ws.outputs.name }}
+          JOB_START_EPOCH:     ${{ steps.job_start.outputs.epoch }}
+          ROUTING_RUNBOOK_DIR: ${{ steps.routing.outputs.dir }}
+          ROUTING_RUNBOOK_SHA: ${{ steps.routing.outputs.sha }}
+          # Minutes from JOB start (not from this step's own start) at which the
+          # agent should self-stop, comfortably under the job's 100-minute
+          # timeout-minutes above -- keep these two numbers' 15-minute gap in
+          # sync if either changes. Anchoring to job start (captured by the
+          # "Record job start time" step) rather than a fresh $(date) taken
+          # here matters: checkout/Vault/token/Go/npm/workspace setup above
+          # this step is usually ~2 minutes but isn't guaranteed to be, and a
+          # deadline measured from *this* step's start would silently lose
+          # its safety margin -- or go negative -- if setup ever ran long.
+          AGENT_DEADLINE_MINUTES_FROM_JOB_START: 85
+        run: |
+          set -euo pipefail
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+
+          # Pre-create artifact dirs so Claude does not need to mkdir
+          mkdir -p /tmp/nightly-artifacts
+
+          # Seed /tmp/fix-meta.json deterministically before Claude ever runs. The
+          # agent's own first action (AGENTS.md's mandatory initial checkpoint)
+          # writes this same shape and immediately supersedes it -- this seed is
+          # the floor for the case that mandatory-first-action rule can't cover:
+          # the CLI process crashing, failing to authenticate, or being killed
+          # before it completes its first tool call. Without this, that case
+          # leaves no fix-meta.json at all and post-processing loses every
+          # dispatched entry instead of just reporting them unaddressed.
+          jq -n --slurpfile specs /tmp/test_specs.json '{"prs": [], "unaddressed": $specs[0]}' \
+            > /tmp/fix-meta.json.tmp
+          mv /tmp/fix-meta.json.tmp /tmp/fix-meta.json
+
+          # The prompt is deliberately terse: all diagnosis steps, artifact-download
+          # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
+          # read first). This keeps the per-run prompt small and the source-of-truth
+          # for behaviour in a single file the team can update without editing CI.
+
+          # Determine which AGENTS.md section to use based on whether test_specs is empty.
+          # Empty test_specs means a workflow-level failure (no test results produced).
+          test_spec_count=$(jq 'length' /tmp/test_specs.json 2>/dev/null || echo 0)
+          if [ "$test_spec_count" -eq 0 ]; then
+            agents_section="## Workflow-Level Failure Fix Agent"
+          else
+            agents_section="## Nightly Fix Agent"
+          fi
+
+          deadline_epoch=$((JOB_START_EPOCH + AGENT_DEADLINE_MINUTES_FROM_JOB_START * 60))
+
+          prompt=$(cat <<EOF
+          You are the Camunda orchestration-cluster nightly fix agent.
+          Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
+
+          STEP 0 — read /tmp/nightly-fix-agent-manual.md, the "${agents_section}" section.
+          That file is your full operating manual: diagnosis steps, artifact-download patterns,
+          constraints (no test.skip()/test.fixme() EXCEPT the gated product-bug skip described
+          below and in Product-Bug Escalation), PR conventions, and the /tmp/fix-meta.json
+          schema. It is main's copy of the suite AGENTS.md — authoritative even when
+          ${TARGET_REF} carries an older or missing AGENTS.md.
+
+          TIME BUDGET: your deadline is unix epoch ${deadline_epoch} -- this is YOUR voluntary
+          stop point, not the job's actual hard cutoff (which lands later; the gap between the
+          two is intentional safety margin, already baked into this number, so don't add more).
+          Treat your deadline as if it were the real wall anyway: once the job's actual timeout
+          hits, this step is hard-cancelled with no signal you can catch and no chance to write
+          anything, so stopping yourself at your own deadline first is the only way any
+          checkpoint survives. Follow the "## Time Budget and Incremental Checkpointing" section
+          in AGENTS.md (applies regardless of which agent section above you're following):
+          checkpoint /tmp/fix-meta.json as you go rather than only once at the very end, and
+          stop starting new root-cause groups once your deadline is close.
+
+          /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).
+          $(if [ "$test_spec_count" -gt 0 ]; then
+            echo "Fix ONLY the test failures listed in that file — do not address other failures visible in artifacts."
+          else
+            echo "The array is empty: this is a workflow-level failure. Follow the AGENTS.md section above to"
+            echo "inspect the failing run logs, trace the root cause to the owning file, and open a fix PR."
+          fi)
+
+          Context (env vars already exported):
+            VERSION=${VERSION}  TARGET_REF=${TARGET_REF}  SAFE_VERSION=${SAFE_VERSION}
+            E2E_RUN_ID=${E2E_RUN_ID}  API_ES_RUN_ID=${API_ES_RUN_ID}  API_RDBMS_RUN_ID=${API_RDBMS_RUN_ID}
+            HAS_E2E=${HAS_E2E}  HAS_API_ES=${HAS_API_ES}  HAS_API_RDBMS=${HAS_API_RDBMS}
+            TRIAGE_RUN_URL=${TRIAGE_RUN_URL}  REPO=${REPO}
+
+          Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
+          ci/<short-slug> for workflow-level fixes.
+
+          REUSE AN OPEN PR FOR THIS VERSION IF ONE EXISTS. Before cutting a branch, run
+          \`gh pr list --repo ${REPO} --label "failing-test-fix" --state open --json number,headRefName\`
+          and look for one whose \`headRefName\` STARTS WITH \`fix/nightly-${VERSION}-\`. The prefix
+          test is not optional: a branch for another version, or a \`ci/\` branch, is not yours to
+          push to.
+            - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
+              \`git fetch origin ${TARGET_REF} && git merge --no-edit origin/${TARGET_REF}\` — triage
+              may have REOPENED a PR opened on an earlier night, so its branch can be behind its
+              base. Merge ${TARGET_REF}, never main: this PR is opened against ${TARGET_REF}, and
+              for a stable version merging main would drag next-version commits into it. If that merge
+              conflicts and you cannot resolve it confidently within the scope of this fix, do NOT
+              force it: \`git merge --abort\`, say so in your summary, and cut a new branch instead.
+              Read the branch's own diff before re-fixing anything — it may already address one of
+              the failures you were dispatched for. Apply your fixes there, push, and do NOT open a
+              second PR; put that PR's number in /tmp/fix-meta.json.
+            - Otherwise: cut a new branch as named above.
+          Opening a second PR for a version that already has one is the duplication this check
+          exists to prevent — two PRs editing the same specs from the same base, neither aware of
+          the other.
+          Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
+          changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
+          commitlint rejects it).
+
+          CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
+          headRefName of the PR you opened — never null, never omitted. Obtain it
+          with: gh pr view <number> --repo ${REPO} --json headRefName --jq '.headRefName'
+
+          PRODUCT BUGS: if a failure is a genuine product regression (not a test defect), do NOT
+          mask it with a viewport/timeout/selector tweak or a weakened assertion. Follow the
+          "## Product-Bug Escalation" section: pass all three gates, FILE/REUSE a tracking issue
+          against the owning module (dedupe first — search by fingerprint AND by symptom; the issue
+          body MUST carry the 'Fingerprint: nightly-product-bug fp=<FP>' line), then SKIP the failing
+          test with the '// Skipped due to bug #<number>: <url>' annotation and open ONE skip PR. The
+          skip PR goes in the prs array of /tmp/fix-meta.json and every bug in product_bugs (with
+          issue_url + suspect_commit). Skipping is allowed ONLY for a confirmed product bug — never
+          for flakiness or any other reason. Use the default GH_TOKEN (qa-processes) to file/search
+          issues FIRST; ONLY if a call fails (e.g. a repo other than camunda/camunda) retry it once
+          with GH_TOKEN="\$GH_PAT". Always qa-processes first; the PAT is a backup.
+
+          OWNERSHIP ROUTING: name the owning team of every root-cause group as the "### Ownership routing"
+          section of the manual describes, and record it with exactly the keys of the "routing" example
+          under "### Result manifest", plus "job" for a workflow-level failure. Main's .codeowners is at
+          /tmp/nightly-fix-agent-codeowners.
+          $(if [ -n "$ROUTING_RUNBOOK_DIR" ]; then
+            echo "The routing runbook is checked out read-only at ${ROUTING_RUNBOOK_DIR}"
+            echo "(camunda/eng-kit-memory at ${ROUTING_RUNBOOK_SHA}). Never write to it."
+          else
+            echo "The routing runbook is not available in this run: route with .codeowners only, as that section says."
+          fi)
+
+          When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
+          EOF
+          )
+
+          cd "${ws_dir}"
+          claude -p "$prompt" --dangerously-skip-permissions
+
+      - name: Trigger on-demand verification runs and patch PR body
+        if: always()
+        env:
+          # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
+          # The Vault token lacks read:org, which causes gh CLI to fail its
+          # GraphQL auth check and never reach the workflow dispatch REST call.
+          # The job already has actions:write and pull-requests:write so the
+          # built-in token is sufficient for triggering workflows and patching PR bodies.
+          GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          REPO:       ${{ github.repository }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ ! -f /tmp/fix-meta.json ]; then
+            echo "No fix-meta.json produced — nothing to verify."
+            exit 0
+          fi
+
+          count=$(jq '.prs | length' /tmp/fix-meta.json)
+          category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+          if [ "$count" -eq 0 ]; then
+            echo "No PRs were opened — nothing to verify."
+            if [ "$category" = "not-determined" ]; then
+              echo "::warning::Fix agent could not determine a fix (category: not-determined)"
+            fi
+            exit 0
+          fi
+
+          jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
+            pr_number=$(echo "$pr_obj" | jq -r '.number')
+            branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
+
+            if [ -z "$branch" ] || [ "$branch" = "null" ]; then
+              echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
+              branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+              echo "Resolved branch: $branch"
+            fi
+
+            on_demand_run_url=""
+
+            if [ -n "$branch" ] && [ "$branch" != "null" ]; then
+              echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
+              dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+              # Recent gh versions print the run URL directly to stdout/stderr.
+              # Capture it — this is race-proof because it is the exact run we triggered.
+              # Note: the GitHub API does not expose workflow_dispatch inputs in the
+              # runs list or individual run endpoints, so we cannot filter by branch
+              # input after the fact.
+              trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                --repo "$REPO" -f branch="$branch" 2>&1)
+              dispatch_exit=$?
+              echo "$trigger_output"
+              on_demand_run_url=$(echo "$trigger_output" \
+                | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+
+              # Fallback: if gh did not print a URL (older gh version), poll by
+              # creation time. Only attempt when dispatch actually succeeded —
+              # if dispatch failed, the poll could pick up a different agent's run.
+              if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
+                echo "gh did not return run URL directly — falling back to time-based poll"
+                for _ in $(seq 1 18); do
+                  sleep 5
+                  run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                    2>/dev/null \
+                    | jq -r --arg t "$dispatched_at" \
+                      '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                    || echo "")
+                  if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                    on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                    break
+                  fi
+                done
+              elif [ "$dispatch_exit" -ne 0 ]; then
+                echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+              fi
+
+              [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
+            fi
+
+            # Patch PR body with the verification link (idempotent: strip any
+            # existing "## On-demand verification runs" section before appending
+            # so re-runs do not accumulate duplicate blocks)
+            current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
+            base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
+            if [ -n "$on_demand_run_url" ]; then
+              verification_block=$'\n\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
+              new_body="${base_body}${verification_block}"
+              printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            fi
+          done
+
+      - name: Re-label PRs (idempotent)
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO:     ${{ github.repository }}
+        run: |
+          if [ -f /tmp/fix-meta.json ]; then
+            jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_num; do
+              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null || true
+            done
+          fi
+
+      - name: Finalize PR verification status (verified/unverified)
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO:     ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh label create "verified" --repo "$REPO" --color "0E8A16" \
+            --description "Fix verified green in a local Docker environment" 2>/dev/null || true
+          gh label create "unverified" --repo "$REPO" --color "FBCA04" \
+            --description "Fix could not be verified green in a local Docker environment" 2>/dev/null || true
+
+          if [ ! -f /tmp/fix-meta.json ]; then
+            echo "No fix-meta.json — nothing to finalize."
+            exit 0
+          fi
+
+          jq -c '.prs[]?' /tmp/fix-meta.json | while read -r pr_obj; do
+            pr_num=$(echo "$pr_obj" | jq -r '.number')
+            verify=$(echo "$pr_obj" | jq -r '.verify // "skipped"')
+            echo "PR #${pr_num}: verify=${verify}"
+            case "$verify" in
+              verified)
+                gh pr edit "$pr_num" --repo "$REPO" --add-label "verified" --remove-label "unverified" 2>/dev/null || true
+                gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+                ;;
+              unverified)
+                gh pr edit "$pr_num" --repo "$REPO" --add-label "unverified" --remove-label "verified" 2>/dev/null || true
+                gh pr ready "$pr_num" --repo "$REPO" --undo 2>/dev/null || true
+                ;;
+              *)
+                # not-reproduced / skipped: leave the draft/ready state alone,
+                # just make sure no stale verified/unverified label lingers
+                # from a previous run of the same PR.
+                gh pr edit "$pr_num" --repo "$REPO" --remove-label "verified" --remove-label "unverified" 2>/dev/null || true
+                ;;
+            esac
+          done
+
+      - name: Write job summary
+        if: always()
+        env:
+          VERSION:        ${{ github.event.inputs.version }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          TRIAGE_RUN_URL: ${{ github.event.inputs.triage_run_url }}
+          REPO:           ${{ github.repository }}
+          ROUTING_RUNBOOK_SHA: ${{ steps.routing.outputs.sha }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Fix Agent — ${VERSION} (\`${TARGET_REF}\`)"
+            echo ""
+
+            if [ ! -f /tmp/fix-meta.json ]; then
+              echo ":x: **Agent did not produce \`/tmp/fix-meta.json\`** — see agent logs above."
+            else
+              pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
+              if [ "$pr_count" -eq 0 ]; then
+                verify=$(jq -r '.verify // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ "$verify" = "not-reproduced" ]; then
+                  echo ":grey_question: **Decision: not reproduced** — the dispatched failure(s) did not reproduce against a live Docker environment (Live Docker Verify). Likely a flake, or already fixed."
+                else
+                  echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
+                fi
+                # Surface an explanation from whichever field the agent wrote --
+                # .reason/.root_cause for the classic no-fix case, .note for a
+                # Live Docker Verify not-reproduced/skipped outcome.
+                reason=$(jq -r '.reason // .root_cause // .note // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ -n "$reason" ] && [ "$reason" != "null" ]; then
+                  echo ""
+                  echo "**Reason:** ${reason}"
+                fi
+              else
+                # Print each PR as a prominent header so the link is the first thing visible
+                jq -r --arg repo "$REPO" '
+                  .prs[] |
+                  (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+                   else $repo end) as $full_repo |
+                  (.verify // "skipped") as $verify |
+                  (if $verify == "verified" then ":white_check_mark: verified"
+                   elif $verify == "unverified" then ":warning: unverified — still red after 3 attempts"
+                   elif $verify == "not-reproduced" then ":grey_question: not-reproduced (likely flake)"
+                   else ":no_entry_sign: skipped" end) as $verify_badge |
+                  "### :white_check_mark: Decision: fix applied — [PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))",
+                  "",
+                  "**Branch:** `\(.branch)`  **Live Docker Verify:** \($verify_badge)"
+                ' /tmp/fix-meta.json
+                echo ""
+
+                # Root cause + fix description per PR
+                jq -c '.prs[]' /tmp/fix-meta.json | while IFS= read -r pr; do
+                  pr_num=$(echo "$pr" | jq -r '.number')
+                  root_cause=$(echo "$pr" | jq -r '.root_cause // ""')
+                  fix_desc=$(echo "$pr" | jq -r '.fix // ""')
+                  if [ -n "$root_cause" ] && [ "$root_cause" != "null" ]; then
+                    echo "#### PR #${pr_num} — Root cause"
+                    echo ""
+                    echo "${root_cause}"
+                    echo ""
+                  fi
+                  if [ -n "$fix_desc" ] && [ "$fix_desc" != "null" ]; then
+                    echo "#### PR #${pr_num} — Fix"
+                    echo ""
+                    echo "${fix_desc}"
+                    echo ""
+                  fi
+                done
+
+                echo "### Tests fixed"
+                echo ""
+                jq -r '.prs[] | .tests_fixed[]? |
+                  if type == "object" then "- `\(.file // "")` — \(.test_name // "")"
+                  else "- \(.)" end' \
+                  /tmp/fix-meta.json || true
+              fi
+
+              # Entries the agent never got to triaging at all -- shown regardless
+              # of whether any PR was also opened, so a partial run's gaps are
+              # visible instead of silently waiting a day for the next triage
+              # cycle to rediscover them. Worded neutrally: unaddressed just means
+              # "not yet triaged", not specifically "ran out of time budget" --
+              # the agent could also have stopped early for an unrelated reason.
+              unaddressed_count=$(jq '.unaddressed // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$unaddressed_count" -gt 0 ]; then
+                echo ""
+                echo "### :hourglass_flowing_sand: Not triaged: ${unaddressed_count}"
+                echo ""
+                jq -r '.unaddressed[] | "- `\(.file // "")` — \(.test_name // "")"' /tmp/fix-meta.json || true
+              fi
+            fi
+
+            # Product bugs filed this run. Shown regardless of whether a skip PR
+            # was also opened: the issue, its severity and its component are what
+            # tell a reader of this summary which team owns the regression.
+            if [ -f /tmp/fix-meta.json ]; then
+              pb_count=$(jq '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$pb_count" -gt 0 ]; then
+                echo ""
+                echo "### :bug: Product bugs filed: ${pb_count}"
+                echo ""
+                jq -r '[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] |
+                  "- [\(.issue_url // "issue link missing")](\(.issue_url // "")) in `\(.repo // "?")`"
+                  + " — **\(.severity // "severity?")** / `\(.component // "component?")`"
+                  + (if ((.affects // []) | length) > 0 then " (affects \((.affects | join(", "))))" else "" end)
+                  + (if ((.undetermined_fields // []) | length) > 0 then " :warning: needs triage: \((.undetermined_fields | join(", ")))" else "" end)
+                  + (if (.root_cause // "") != "" then "\n  - \(.root_cause)" else "" end)' \
+                  /tmp/fix-meta.json || true
+              fi
+            fi
+
+            # The owning team of each root-cause group, from the routing runbook.
+            echo ""
+            echo "### :compass: Ownership routing"
+            echo ""
+            if [ -z "${ROUTING_RUNBOOK_SHA:-}" ]; then
+              echo "Runbook: not available (camunda/eng-kit-memory could not be read), so only \`.codeowners\` was used."
+            else
+              echo "Runbook: camunda/eng-kit-memory@${ROUTING_RUNBOOK_SHA}"
+            fi
+            echo ""
+            if [ "$(jq '.routing // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)" -eq 0 ]; then
+              echo "The agent recorded no routing."
+            else
+              # An entry that names its owner under "owner" instead of "team" still shows as routed.
+              jq -r '.routing[] |
+                (if (.team // "") != "" then .team else (.owner // "") end) as $team |
+                (if (.github_handle // "") != "" then .github_handle else (.owner // "") end) as $handle |
+                (if $team != ""
+                   then "- **\($team)**"
+                     + (if $handle != "" and $handle != $team then " (`\($handle)`)" else "" end)
+                     + ", \(.tier // "tier?")"
+                   else "- **Unresolved**, \(.tier // "tier?")"
+                     + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+                + (if ((.tests // []) | length) > 0 then "\n  - Tests: \(.tests | join("; "))"
+                   else "\n  - Job: \(.job // "?")" end)
+                + ((.reasoning // []) | map("\n  - \(.)") | join(""))
+                + (if ((.sources // []) | length) > 0 then "\n  - Sources: \(.sources | join("; "))" else "" end)
+                + (if ((.gaps // []) | length) > 0 then "\n  - Gaps: \(.gaps | join("; "))" else "" end)' \
+                /tmp/fix-meta.json || true
+            fi
+
+            if [ -n "${TRIAGE_RUN_URL:-}" ]; then
+              echo ""
+              echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-fix-${{ github.event.inputs.version }}-${{ github.run_id }}
+          path: |
+            /tmp/test_specs.json
+            /tmp/fix-meta.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Slack thread reply
+        if: always() && github.event.inputs.send_slack_notification == 'true'
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
+          SLACK_CHANNEL:              ${{ github.event.inputs.slack_channel }}
+          VERSION:                    ${{ github.event.inputs.version }}
+          RUN_URL:                    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_STATUS:                 ${{ job.status }}
+        run: |
+          set -euo pipefail
+          prs_json="[]"
+          pbugs_json="[]"
+          category=""
+          verify=""
+          note=""
+          if [ -f /tmp/fix-meta.json ]; then
+            prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
+            category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+            verify=$(jq -r '.verify // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+            note=$(jq -r '.note // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+            # Accept product_bugs (array) and/or a singular product_bug (object).
+            pbugs_json=$(jq -c '(.product_bugs // []) + (if .product_bug then [.product_bug] else [] end)' /tmp/fix-meta.json 2>/dev/null || echo '[]')
+          fi
+          pr_count=$(echo "$prs_json" | jq 'length')
+          pb_count=$(echo "$pbugs_json" | jq 'length')
+          unaddressed_count=$( [ -f /tmp/fix-meta.json ] && jq '.unaddressed // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+          # A nonzero pr_count does not prove the product-bug tests were skipped: a
+          # dispatch can carry a normal fix PR for one failure and a product bug with
+          # no skip for another. Only each bug's own skipped_tests proves its test is
+          # out of the run.
+          pb_unskipped=$( [ -f /tmp/fix-meta.json ] && jq '[[(.product_bugs // [])[], (if .product_bug then .product_bug else empty end)][] | select(((.skipped_tests // []) | length) == 0)] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+
+          # One bullet per outcome, each carrying its findings (issue link, repo,
+          # root cause, suspected commit/PR).
+          lines=()
+          while IFS= read -r pb; do
+            [ -z "$pb" ] && continue
+            url=$(echo "$pb" | jq -r '.issue_url // ""')
+            repo=$(echo "$pb" | jq -r '.repo // "?"')
+            rc=$(echo "$pb" | jq -r '.root_cause // ""')
+            sc=$(echo "$pb" | jq -r '.suspect_commit // ""')
+            # Severity + component are what route the bug to a team. Without them
+            # in the thread the issue is filed but nobody knows it is theirs.
+            sev=$(echo "$pb" | jq -r '.severity // ""')
+            comp=$(echo "$pb" | jq -r '.component // ""')
+            # A dispatch can span versions, so the thread header cannot say which
+            # versions each individual bug affects.
+            aff=$(echo "$pb" | jq -r '(.affects // []) | join(", ")')
+            undet=$(echo "$pb" | jq -r '(.undetermined_fields // []) | join(", ")')
+            if [ -n "$url" ]; then
+              line="• product bug → <${url}|issue> in \`${repo}\`"
+            else
+              line="• product bug in \`${repo}\` (issue link missing in fix-meta)"
+            fi
+            if [ -n "$sev" ] || [ -n "$comp" ]; then
+              line="${line} [${sev:-severity?}/${comp:-component?}]"
+            fi
+            [ -n "$aff" ] && line="${line} affects ${aff}"
+            [ -n "$rc" ] && line="${line} — ${rc}"
+            [ -n "$sc" ] && line="${line} (suspect: ${sc})"
+            [ -n "$undet" ] && line="${line} :warning: needs triage: ${undet}"
+            # Whether this bug's test is out of the run is a per-bug fact.
+            [ "$(echo "$pb" | jq '(.skipped_tests // []) | length')" -eq 0 ] \
+              && line="${line} :rotating_light: NO skip — test still failing"
+            lines+=("$line")
+          done < <(echo "$pbugs_json" | jq -c '.[]')
+          if [ "$pr_count" -gt 0 ]; then
+            pr_links=$(echo "$prs_json" | jq -r --arg repo "${{ github.repository }}" '
+              .[] |
+              (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+               else $repo end) as $full_repo |
+              "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
+              | tr '\n' '  ')
+            lines+=("• PR(s) opened: ${pr_links}")
+          fi
+
+          # A confirmed product bug lands as a skip PR, so its bullets + the skip PR
+          # are reported together under the bug heading — but only when the skip PR
+          # actually exists; an issue filed with NO skip PR means the test still fails.
+          if [ "$pb_count" -gt 0 ] && [ "$pb_unskipped" -eq 0 ]; then
+            icon=":bug:"
+            summary="Product bug(s) — test(s) skipped pending fix:"$'\n'"$(printf '%s\n' "${lines[@]}")"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary}"$'\n'"_(post-processing failed — see run)_"
+          elif [ "$pb_count" -gt 0 ]; then
+            icon=":warning:"
+            summary="${pb_unskipped} product bug(s) with NO skip — test(s) still failing, needs attention:"$'\n'"$(printf '%s\n' "${lines[@]}")"
+          elif [ "$pr_count" -gt 0 ]; then
+            icon=":white_check_mark:"
+            summary="$(printf '%s\n' "${lines[@]}")"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
+          elif [ "$verify" = "not-reproduced" ]; then
+            icon=":grey_question:"
+            summary="Not reproduced against a live Docker environment — likely a flake, or already fixed"
+            [ -n "$note" ] && summary="${summary}: ${note}"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary}"$'\n'"_(post-processing failed — see run)_"
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            icon=":x:"; summary="Agent failed (no fix applied)"
+          elif [ "$category" = "not-determined" ]; then
+            icon=":question:"; summary="Could not determine a fix — manual investigation required"
+          else
+            icon=":warning:"; summary="No fix applied — manual investigation required"
+          fi
+
+          # Surfaced regardless of which branch above set the summary -- a run
+          # that opened PRs can still have left other dispatched entries
+          # completely untriaged. Worded neutrally: this could be a spent time
+          # budget, but could equally be an unrelated early stop -- the field
+          # itself doesn't record which, so don't assert a specific cause.
+          if [ "$unaddressed_count" -gt 0 ]; then
+            summary="${summary}"$'\n'"• :hourglass_flowing_sand: ${unaddressed_count} test(s) not triaged — see job summary"
+          fi
+
+          # Team names only: this names the owner, it does not notify them.
+          if [ -f /tmp/fix-meta.json ]; then
+            while IFS= read -r route; do
+              [ -n "$route" ] && summary="${summary}"$'\n'"${route}"
+            done < <(jq -r '.routing // [] | .[] |
+              (if (.team // "") != "" then .team else (.owner // "") end) as $team |
+              "• :compass: " +
+              (if $team != "" then "owner: *\($team)* (\(.tier // "tier?"))"
+               else "owner unresolved (\(.tier // "tier?"))"
+                 + (if ((.candidates // []) | length) > 0 then ", candidates: \(.candidates | join(", "))" else "" end) end)
+              + (if ((.tests // []) | length) > 0 then " — \(.tests | length) test(s)"
+                 else " — job \(.job // "?")" end)' /tmp/fix-meta.json 2>/dev/null || true)
+          fi
+
+          text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
+          payload=$(jq -nc \
+            --arg channel    "$SLACK_CHANNEL" \
+            --arg thread_ts  "$SLACK_THREAD_TS" \
+            --arg text       "$text" \
+            '{channel: $channel, thread_ts: $thread_ts, text: $text, mrkdwn: true}')
+
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" | jq '.' || true

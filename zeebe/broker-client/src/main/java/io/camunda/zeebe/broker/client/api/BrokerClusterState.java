@@ -1,0 +1,60 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.client.api;
+
+import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.util.List;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
+
+public interface BrokerClusterState {
+
+  int PARTITION_ID_NULL = -3;
+
+  boolean isInitialized();
+
+  int getClusterSize();
+
+  int getPartitionsCount();
+
+  int getReplicationFactor();
+
+  @Nullable BrokerMemberId getLeaderForPartition(int partition);
+
+  Set<BrokerMemberId> getFollowersForPartition(int partition);
+
+  Set<BrokerMemberId> getInactiveNodesForPartition(int partition);
+
+  /**
+   * @return the node id of a random broker or null if no brokers are known
+   */
+  @Nullable BrokerMemberId getRandomBroker();
+
+  List<Integer> getPartitions();
+
+  List<BrokerMemberId> getBrokers();
+
+  @Nullable String getBrokerAddress(BrokerMemberId brokerId);
+
+  @Nullable String getBrokerVersion(BrokerMemberId brokerId);
+
+  @Nullable PartitionHealthStatus getPartitionHealth(BrokerMemberId brokerId, int partition);
+
+  /**
+   * @return the operational state of the given partition on the given broker, as known from the
+   *     cluster configuration. Returns {@link PartitionState.State#UNKNOWN} if the broker or
+   *     partition is not (yet) known in the cluster configuration.
+   */
+  PartitionState.State getPartitionState(BrokerMemberId brokerId, int partition);
+
+  long getLastCompletedChangeId();
+
+  String getClusterId();
+}

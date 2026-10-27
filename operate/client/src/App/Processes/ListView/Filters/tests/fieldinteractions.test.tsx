@@ -1,0 +1,200 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen} from 'modules/testing-library';
+import {getWrapper} from './mocks';
+import {Filters} from '../index';
+import {
+  createProcessDefinition,
+  createUser,
+  mockProcessXML,
+  searchResult,
+} from 'modules/testUtils';
+import {
+  selectElement,
+  selectProcess,
+  selectProcessVersion,
+} from 'modules/testUtils/selectComboBoxOption';
+import {ERRORS} from 'modules/validators';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+
+describe('Interaction with other fields during validation', () => {
+  beforeEach(async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2}),
+        createProcessDefinition({version: 1}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 2})]),
+    );
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('validation for Instance IDs field should not affect other fields validation errors', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'a');
+
+    vi.runOnlyPendingTimers();
+
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key(s)'));
+
+    await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    expect(screen.getByText(ERRORS.batchOperationKey)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
+
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
+
+    expect(screen.getByText(ERRORS.batchOperationKey)).toBeInTheDocument();
+  });
+
+  it('validation for batch operation key field should not affect other fields validation errors', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key(s)'));
+    await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    vi.runOnlyPendingTimers();
+
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'abc');
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
+
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+  });
+
+  it('validation for Process, Version and Element fields should not affect other fields validation errors', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key(s)'));
+    await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    vi.runOnlyPendingTimers();
+
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
+
+    await selectProcess({user, option: 'Big variable process'});
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeEnabled();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await selectProcessVersion({user, option: '2'});
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await selectElement({user, option: 'Service Task 1'});
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+  });
+
+  it('clicking checkboxes should not affect other fields validation errors', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key(s)'));
+    await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    vi.runOnlyPendingTimers();
+
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/^active$/i));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/^incidents$/i));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/^completed$/i));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/^canceled$/i));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('filter-running-instances'));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('filter-finished-instances'));
+
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+  });
+
+  it('should continue validation on blur', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Parent Process Instance Key'));
+
+    await user.type(screen.getByLabelText(/^batch operation key$/i), '1');
+
+    await user.type(
+      screen.getByLabelText(/^parent process instance key$/i),
+      '1',
+    );
+
+    vi.runOnlyPendingTimers();
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
+  });
+});

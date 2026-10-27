@@ -1,0 +1,74 @@
+# description: Verifies a load test deployment is healthy: pods are ready and the client is connected
+#              to the gateway, and the k6 TestRuns (if any) are healthy.
+# called-by: camunda-scheduled-release-load-tests.yml, camunda-verify-and-cleanup-load-test.yml
+# type: CI
+# owner: @camunda/reliability-testing
+name: Verify load test
+run-name: "Verify load test: ${{ inputs.namespace }}"
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Kubernetes namespace where the load test is deployed'
+        type: string
+        required: true
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  NAMESPACE: ${{ inputs.namespace }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    # Worst case of `loadtestctl verify` (~115 min with 2 k6 TestRuns), plus setup and final steps.
+    timeout-minutes: 130
+    permissions:
+      contents: read
+      id-token: write # Teleport cluster auth
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: teleport-actions/setup@10b5e9f760190f027a1e04e342178d8d6e7eae30 # v2.0.0
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      # Prometheus credentials are required by `loadtestctl verify` below.
+      - name: Import Prometheus credentials
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common LDAP_QA_USER | LOADTESTCTL_PROMETHEUS_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | LOADTESTCTL_PROMETHEUS_PASSWORD;
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+
+      - name: Verify Load test
+        env:
+          LOADTESTCTL_PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
+        run: load-tests/loadtestctl/loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

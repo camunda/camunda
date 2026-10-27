@@ -1,0 +1,154 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect, test} from '@playwright/test';
+import {deploy} from '../../../../utils/zeebeClient';
+import {
+  assertBadRequest,
+  assertNotFoundRequest,
+  assertStatusCode,
+  assertUnauthorizedRequest,
+  buildUrl,
+  jsonHeaders,
+} from '../../../../utils/http';
+import {validateResponseShape} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {readFileSync} from 'node:fs';
+
+/* eslint-disable playwright/expect-expect */
+test.describe.parallel('Process Definition Get Start Form API', () => {
+  const state: Record<string, unknown> = {};
+
+  test.beforeAll(async () => {
+    const formPath = './resources/sign_up_form.form';
+    const deployment = await deploy([
+      './resources/process_with_linked_start_form.bpmn',
+      formPath,
+      './resources/Process_with_embedded_Form.bpmn',
+    ]);
+
+    deployment.processes.forEach((processDefinition) => {
+      if (
+        processDefinition.processDefinitionId ==
+        'process_with_linked_start_form'
+      ) {
+        state['processDefinitionKey_withLinkedForm'] =
+          processDefinition.processDefinitionKey;
+      } else if (
+        processDefinition.processDefinitionId == 'Process_with_embedded_form'
+      ) {
+        state['processDefinitionKey_withEmbeddedForm'] =
+          processDefinition.processDefinitionKey;
+      } else {
+        throw new Error(
+          `Unrecognized processDefinition definition id: ${processDefinition.processDefinitionId}`,
+        );
+      }
+    });
+
+    state['expectedForm'] = readFileSync(formPath, 'utf-8');
+    // The form version comes from the deployment rather than being assumed to
+    // be 1: deploying the same form again on a cluster that already has it
+    // mints a new version, so a hardcoded 1 fails on every run after the first.
+    const deployedForm = deployment.forms.find(
+      (form) => form.formId === 'sign_up_form',
+    );
+    if (deployedForm === undefined) {
+      throw new Error(
+        `Deployment did not contain the 'sign_up_form' form: ${JSON.stringify(
+          deployment.forms,
+        )}`,
+      );
+    }
+    state['expectedFormVersion'] = deployedForm.version;
+  });
+
+  test('Get Process Definition Start Form - Success 200', async ({request}) => {
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/process-definitions/{processDefinitionKey}/form', {
+          processDefinitionKey:
+            state.processDefinitionKey_withLinkedForm as string,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/{processDefinitionKey}/form',
+          method: 'GET',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.formId).toBe('sign_up_form');
+      expect(body.version).toBe(state['expectedFormVersion']);
+      expect(body.formKey).toBeDefined();
+      expect(body.tenantId).toBe('<default>');
+      expect(body.schema).toBe(state['expectedForm']);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Process Definition Start Form - Success 204 No Content', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/process-definitions/{processDefinitionKey}/form', {
+          processDefinitionKey:
+            state.processDefinitionKey_withEmbeddedForm as string,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Process Definition Start Form - Not Found', async ({request}) => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey: '123456',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      "Process Definition with key '123456' not found",
+    );
+  });
+
+  test('Get Process Definition Start Form - Unauthorized', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey:
+          state.processDefinitionKey_withLinkedForm as string,
+      }),
+    );
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Get Process Definition Start Form - Invalid Key', async ({request}) => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey: 'invalidKey',
+      }),
+      {
+        headers: {...jsonHeaders()},
+      },
+    );
+    await assertBadRequest(
+      res,
+      "Failed to convert 'processDefinitionKey' with value: 'invalidKey'",
+    );
+  });
+});

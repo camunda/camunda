@@ -1,0 +1,18 @@
+# Shared search models — simulates search-models.yaml from the real spec.
+# Provides the SearchQueryResponse base schema used in allOf compositions.
+components:
+  schemas:
+    SearchQueryResponse:
+      type: object
+      required:
+        - page
+      properties:
+        page:
+          type: object
+          description: Pagination information about the search results.
+          required:
+            - totalItems
+          properties:
+            totalItems:
+              type: integer
+              description: The total number of items matching the query.

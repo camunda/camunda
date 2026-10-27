@@ -1,0 +1,17 @@
+plugins { id("buildlogic.server-conventions") }
+
+java { disableAutoTargetJvm() }
+
+tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
+
+sourceSets {
+  main {
+    resources {
+      srcDir("src/main/proto")
+      include("**/*.proto")
+      include("v2/*.yaml")
+    }
+  }
+}
+
+description = "Zeebe Gateway Protocol"

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="bb4fb0c" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="Process_EmbeddedSubprocess" name="EmbeddedSubprocess" isExecutable="true">
+    <bpmn:startEvent id="StartGlobal" name="StartGlobal">
+      <bpmn:outgoing>Flow_0g7rbn8</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="FirstSubprocess" name="FirstSubprocess">
+      <bpmn:incoming>Flow_07amn95</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kpkair</bpmn:outgoing>
+      <bpmn:startEvent id="StartFirstSubProcess">
+        <bpmn:outgoing>Flow_06dbvp3</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_06dbvp3" sourceRef="StartFirstSubProcess" targetRef="CollectMoney" />
+      <bpmn:sequenceFlow id="Flow_09r7m0m" sourceRef="CollectMoney" targetRef="FetchItems" />
+      <bpmn:endEvent id="EndFirstSubProcess">
+        <bpmn:incoming>Flow_1lrsb76</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_1lrsb76" sourceRef="FetchItems" targetRef="EndFirstSubProcess" />
+      <bpmn:userTask id="FetchItems" name="FetchItems">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_09r7m0m</bpmn:incoming>
+        <bpmn:outgoing>Flow_1lrsb76</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="CollectMoney" name="CollectMoney">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_06dbvp3</bpmn:incoming>
+        <bpmn:outgoing>Flow_09r7m0m</bpmn:outgoing>
+      </bpmn:userTask>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="OrderCanceled" name="OrderCanceled" attachedToRef="FirstSubprocess">
+      <bpmn:outgoing>Flow_0mv2lgu</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1b83q3n" messageRef="Message_308hg45" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="OrderCancelledEnd">
+      <bpmn:incoming>Flow_0mv2lgu</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0mv2lgu" sourceRef="OrderCanceled" targetRef="OrderCancelledEnd" />
+    <bpmn:sequenceFlow id="Flow_0g7rbn8" sourceRef="StartGlobal" targetRef="Node" />
+    <bpmn:sequenceFlow id="Flow_07amn95" sourceRef="Node" targetRef="FirstSubprocess" />
+    <bpmn:userTask id="Node" name="Node">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0g7rbn8</bpmn:incoming>
+      <bpmn:outgoing>Flow_07amn95</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0kpkair" sourceRef="FirstSubprocess" targetRef="SecondSubprocess" />
+    <bpmn:subProcess id="SecondSubprocess" name="SecondSubprocess">
+      <bpmn:incoming>Flow_0kpkair</bpmn:incoming>
+      <bpmn:outgoing>Flow_1reshi7</bpmn:outgoing>
+      <bpmn:startEvent id="StartSecondSubProcess">
+        <bpmn:outgoing>Flow_1l6c623</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_1l6c623" sourceRef="StartSecondSubProcess" targetRef="SendItems" />
+      <bpmn:userTask id="SendItems" name="SendItems">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_1l6c623</bpmn:incoming>
+        <bpmn:outgoing>Flow_09o62lp</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndSecondSubProcess">
+        <bpmn:incoming>Flow_09o62lp</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_09o62lp" sourceRef="SendItems" targetRef="EndSecondSubProcess" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_1reshi7" sourceRef="SecondSubprocess" targetRef="EndGlobal" />
+    <bpmn:endEvent id="EndGlobal" name="EndGlobal">
+      <bpmn:incoming>Flow_1reshi7</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_308hg45" name="order canceled">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=meow" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_EmbeddedSubprocess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartGlobal">
+        <dc:Bounds x="-18" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-27" y="143" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1irq61y_di" bpmnElement="FirstSubprocess" isExpanded="true">
+        <dc:Bounds x="260" y="18" width="590" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0xff6k0_di" bpmnElement="StartFirstSubProcess">
+        <dc:Bounds x="300" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1bv0a08_di" bpmnElement="EndFirstSubProcess">
+        <dc:Bounds x="712" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0skvzsk_di" bpmnElement="FetchItems">
+        <dc:Bounds x="550" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0la24vn_di" bpmnElement="CollectMoney">
+        <dc:Bounds x="390" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_06dbvp3_di" bpmnElement="Flow_06dbvp3">
+        <di:waypoint x="336" y="118" />
+        <di:waypoint x="390" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09r7m0m_di" bpmnElement="Flow_09r7m0m">
+        <di:waypoint x="490" y="118" />
+        <di:waypoint x="550" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lrsb76_di" bpmnElement="Flow_1lrsb76">
+        <di:waypoint x="650" y="118" />
+        <di:waypoint x="712" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0oh1ygw_di" bpmnElement="OrderCancelledEnd">
+        <dc:Bounds x="632" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dyu342_di" bpmnElement="Node">
+        <dc:Bounds x="90" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1w8qele_di" bpmnElement="SecondSubprocess" isExpanded="true">
+        <dc:Bounds x="920" y="18" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0qn7lba_di" bpmnElement="StartSecondSubProcess">
+        <dc:Bounds x="960" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1d0nwks_di" bpmnElement="SendItems">
+        <dc:Bounds x="1050" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_096gam2_di" bpmnElement="EndSecondSubProcess">
+        <dc:Bounds x="1212" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1l6c623_di" bpmnElement="Flow_1l6c623">
+        <di:waypoint x="996" y="118" />
+        <di:waypoint x="1050" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09o62lp_di" bpmnElement="Flow_09o62lp">
+        <di:waypoint x="1150" y="118" />
+        <di:waypoint x="1212" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0ri4nye_di" bpmnElement="EndGlobal">
+        <dc:Bounds x="1362" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1355" y="143" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0jkbwqi_di" bpmnElement="OrderCanceled">
+        <dc:Bounds x="537" y="200" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="519" y="243" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0mv2lgu_di" bpmnElement="Flow_0mv2lgu">
+        <di:waypoint x="555" y="236" />
+        <di:waypoint x="555" y="300" />
+        <di:waypoint x="632" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0g7rbn8_di" bpmnElement="Flow_0g7rbn8">
+        <di:waypoint x="18" y="118" />
+        <di:waypoint x="90" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07amn95_di" bpmnElement="Flow_07amn95">
+        <di:waypoint x="190" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kpkair_di" bpmnElement="Flow_0kpkair">
+        <di:waypoint x="850" y="118" />
+        <di:waypoint x="920" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1reshi7_di" bpmnElement="Flow_1reshi7">
+        <di:waypoint x="1270" y="118" />
+        <di:waypoint x="1362" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

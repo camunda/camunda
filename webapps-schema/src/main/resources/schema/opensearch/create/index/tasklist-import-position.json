@@ -1,0 +1,28 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "aliasName": {
+        "type": "keyword"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "indexName": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "position": {
+        "type": "long"
+      },
+      "sequence": {
+        "type": "long"
+      },
+      "completed": {
+        "type": "boolean"
+      }
+    }
+  }
+}

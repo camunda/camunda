@@ -1,0 +1,262 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+# If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
+
+# Testing guide
+/docs/testing.md       @npepinpe @ChrisKujawa
+/docs/assets/testing*  @npepinpe @ChrisKujawa
+
+# Observability
+/docs/observability.md       @npepinpe @ChrisKujawa
+/docs/assets/observability*  @npepinpe @ChrisKujawa
+
+# C8Run by Distro team
+.github/actions/setup-c8run/* @camunda/distribution
+.github/workflows/c8run* @camunda/distribution
+/c8run/ @camunda/distribution
+
+# General Automation, Unified CI and release helpers by Engineering Operations team
+/.github/actions/build*/*                                @camunda/engineering-operations
+/.github/actions/is-fork/*                               @camunda/engineering-operations
+/.github/actions/observe*/*                              @camunda/engineering-operations
+/.github/actions/paths-filter/*                          @camunda/engineering-operations
+/.github/actions/setup-build/*                           @camunda/engineering-operations
+/.github/actions/setup-maven*/*                          @camunda/engineering-operations
+/.github/actions/renew-github-token/*                    @camunda/engineering-operations
+/.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
+/.github/dependency-review-config.json                   @camunda/engineering-operations
+/.github/actions/release-notes/**                        @camunda/engineering-operations
+/.github/workflows/release-notes*                        @camunda/engineering-operations
+/.github/workflows/gradle-ci.yml                          @camunda/engineering-operations
+
+# Gradle build (parallel path to Maven)
+/build.gradle.kts                                        @camunda/orchestration-cluster
+/settings.gradle.kts                                     @camunda/orchestration-cluster
+/gradle.properties                                       @camunda/orchestration-cluster
+/gradlew                                                 @camunda/orchestration-cluster
+/gradlew.bat                                             @camunda/orchestration-cluster
+/gradle/                                                 @camunda/orchestration-cluster
+# Convention-plugin exceptions (owned by the domain team, last match wins)
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
+
+###################
+## Core Features ##
+###################
+
+# CI Files
+/.github/workflows/operate-playwright.yml                 @camunda/core-features
+/.github/workflows/ci-operate.yml                         @camunda/core-features
+/.github/workflows/ci-optimize.yml                        @camunda/core-features
+/.github/workflows/optimize-check-c4.yml                  @camunda/core-features
+/.github/workflows/optimize-e2e-smoke.yml                 @camunda/bi-intelligence
+/.github/workflows/optimize-ci-data-upgrade-nightly.yml                       @camunda/core-features
+/.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
+/.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features
+/.github/workflows/c8-orchestration-cluster-responses-regenerate.yml          @camunda/core-features
+/.github/workflows/frontend-snyk-nightly.yml                                  @camunda/orchestration-cluster-webapps
+/.github/workflows/optimize-release-optimize-c8-only.yml                      @camunda/core-features
+/.github/workflows/publish-zod-schemas.yml                                    @camunda/core-features
+/.github/workflows/verify-x-added-in-version-annotations.yml                 @camunda/core-features
+/.github/workflows/zeebe-aws-aurora-dispatch-tests.yml                        @camunda/core-features
+/.github/workflows/zeebe-aws-os-dispatch-tests.yml                            @camunda/core-features
+/.github/workflows/zeebe-daily-qa.yml                                         @camunda/core-features
+/.github/workflows/zeebe-snyk.yml                                             @camunda/core-features
+/.github/workflows/zeebe-version-compatibility.yml                            @camunda/core-features
+/.github/workflows/zeebe-weekly-e2e.yml                                       @camunda/core-features
+
+# Unit Test Suites
+/operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
+/operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
+
+# Workflows
+/.github/workflows/gh-inherit-core-fields.yml            @camunda/core-features
+
+################
+## Data Layer ##
+################
+
+# CI Files
+/.github/actions/read-db-versions/                                @camunda/data-layer
+/.github/workflows/check-saas-version.yml                         @camunda/data-layer
+/.github/workflows/zeebe-rdbms-integration-tests.yml              @camunda/data-layer
+/.github/workflows/zeebe-search-integration-tests.yml             @camunda/data-layer
+/.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
+/.github/workflows/operate-test-importer.yml                      @camunda/data-layer
+/.github/workflows/data-layer-nightly-tests.yml                   @camunda/data-layer
+/.github/workflows/ci-operate.yml                                 @camunda/core-features @camunda/data-layer
+
+# Unit Test Suites
+/operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
+/operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
+
+# Secondary storage schema
+/webapps-schema/src/main/resources/schema/                                                                          @camunda/data-layer
+/webapps-schema/src/test/java/io/camunda/webapps/schema/SecondaryStorageSchemaConstraintsTest.java                 @camunda/data-layer
+/db/rdbms-schema/src/main/resources/db/changelog/                                                                  @camunda/data-layer
+/db/rdbms-schema/src/test/java/io/camunda/db/rdbms/schema/RdbmsSchemaConstraintsTest.java                          @camunda/data-layer
+
+##########################
+## Distributed Platform ##
+##########################
+
+/zeebe/atomix @camunda/zeebe-distributed-platform
+/zeebe/backup @camunda/zeebe-distributed-platform
+/zeebe/backup-stores @camunda/zeebe-distributed-platform
+/zeebe/broker-client @camunda/zeebe-distributed-platform
+/zeebe/docker @camunda/zeebe-distributed-platform
+/zeebe/dynamic-config @camunda/zeebe-distributed-platform
+/zeebe/journal @camunda/zeebe-distributed-platform
+/zeebe/logstreams @camunda/zeebe-distributed-platform
+/zeebe/restore @camunda/zeebe-distributed-platform
+/zeebe/restore-standalone @camunda/zeebe-distributed-platform
+/zeebe/scheduler @camunda/zeebe-distributed-platform
+/zeebe/snapshot @camunda/zeebe-distributed-platform
+/zeebe/stream-platform @camunda/zeebe-distributed-platform
+/zeebe/transport @camunda/zeebe-distributed-platform
+/zeebe/dynamic-node-id-provider @camunda/zeebe-distributed-platform
+
+# Broker packages
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/backup @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/clustering @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
+
+###############
+## Identity  ##
+###############
+
+/identity/        @camunda/operate-admin-pod
+/authentication/  @camunda/identity
+/security/        @camunda/identity
+
+###################################
+## Orchestration Cluster Webapp  ##
+###################################
+
+# Default for the unified webapp frontend; pod areas below override it.
+/webapp/client/                                                       @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/routes/          @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/shared/          @camunda/orchestration-cluster-webapps
+
+# Pod areas
+/webapp/client/apps/orchestration-cluster-webapp/src/admin/                    @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/operate/                  @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/tasklist/                 @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/admin/       @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/operate/     @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/tasklist/    @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/shared/      @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/admin/              @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/operate/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/tasklist/           @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/shared/             @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/test/fixtures/operate/        @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/admin/             @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/operate/           @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/tasklist/          @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/admin/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/operate/          @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/tasklist/         @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/shared/           @camunda/orchestration-cluster-webapps
+
+
+##########################
+## Reliability Testing  ##
+##########################
+
+# Performance + Load testing
+/.github/renovate/team-reliability-testing.json5 @camunda/reliability-testing
+/.github/scripts/load-test* @camunda/reliability-testing
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
+/.tool-versions @camunda/reliability-testing
+/load-tests/ @camunda/reliability-testing
+
+#################
+## Agentic AI  ##
+#################
+
+# AI Assistant Instructions
+/CLAUDE.md      @camunda/orchestration-cluster
+/AGENTS.md      @camunda/orchestration-cluster
+/.agents/skills/README.md    @camunda/orchestration-cluster
+/.agents/skills/create-issue/ @camunda/orchestration-cluster
+/.agents/skills/grill-me/    @camunda/orchestration-cluster
+/.agents/skills/load-test-ops/ @camunda/reliability-testing
+
+# CI skills
+/.agents/skills/act-testing/**                   @camunda/engineering-operations
+/.agents/skills/agentic-workflows/**             @camunda/engineering-operations
+/.agents/skills/ci-fix-failure/**                @camunda/engineering-operations
+/.agents/skills/ci-incident/**                   @camunda/engineering-operations
+/.agents/skills/ci-push-workflow-health/**       @camunda/engineering-operations
+/.agents/skills/ci-runner-utilization/**         @camunda/engineering-operations
+/.agents/skills/ci-scheduled-workflow-health/**  @camunda/engineering-operations
+/.agents/skills/ci-security-compliance/**        @camunda/engineering-operations
+/.agents/skills/ci-validation/**                 @camunda/engineering-operations
+/.agents/skills/ci-workflow-authoring/**         @camunda/engineering-operations
+/.agents/skills/gradle-build-parity/**           @camunda/engineering-operations
+
+
+# Engine-expert skill
+/.agents/skills/engine-expert/  @korthout @camunda/core-features
+
+# Experience FE frontend skills
+/.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+
+# Operate frontend skills
+/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
+
+# Tasklist frontend skills
+/.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
+
+#################
+## Camunda Ex  ##
+#################
+/clients/        @camunda/c8-api-team
+/library-parent/ @camunda/c8-java-sdk
+/testing/        @camunda/c8-testing
+
+# CI Files
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml          @camunda/core-features
+/.github/workflows/camunda-client-compatibility-test.yml                             @camunda/core-features
+/.github/workflows/camunda-client-compatibility-test-trigger.yml                     @camunda/core-features
+/.github/workflows/camunda-process-test-compatibility.yml                            @camunda/c8-testing
+/.github/workflows/camunda-process-test-compatibility-trigger.yml                    @camunda/c8-testing
+/.github/workflows/camunda-process-test-compatibility.yml                                 @camunda/c8-testing
+/.github/workflows/camunda-spring-boot-starter-compatibility-test.yml               @camunda/core-features
+/.github/workflows/camunda-spring-boot-starter-compatibility-test-trigger.yml       @camunda/core-features
+
+# C8 REST OpenAPI specification
+/zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+/docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team
+
+############################
+## Test Automation Team   ##
+############################
+
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.7-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.8-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.8-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-api-rdbms.yml             @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-api-es.yml               @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
+/.github/workflows/trigger-coverage-gate.yml                                      @camunda/test-automation-team

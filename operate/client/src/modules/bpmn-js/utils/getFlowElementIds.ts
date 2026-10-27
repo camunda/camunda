@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
+
+const getFlowElementIds = (element?: BusinessObject): string[] => {
+  if (element?.flowElements === undefined) {
+    return [];
+  }
+
+  return element.flowElements.reduce<string[]>((elementIds, element) => {
+    if (hasType({businessObject: element, types: ['bpmn:SequenceFlow']})) {
+      return elementIds;
+    }
+
+    return [...elementIds, element.id, ...getFlowElementIds(element)];
+  }, []);
+};
+
+export {getFlowElementIds};

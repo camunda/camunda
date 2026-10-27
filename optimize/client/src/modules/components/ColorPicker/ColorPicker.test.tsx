@@ -1,0 +1,48 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {shallow} from 'enzyme';
+
+import ColorPicker from './ColorPicker';
+import colorsObj from './colors.json';
+
+it('should include 16 colors by default', () => {
+  const node = shallow(<ColorPicker onChange={() => {}} />);
+
+  expect(node.find('.color').length).toBe(16);
+});
+
+it('should add class active to the selected color', () => {
+  const node = shallow(<ColorPicker selectedColor="#FEF3BD" onChange={() => {}} />);
+  expect(node.find('.active').props().color).toBe('#FEF3BD');
+});
+
+it('should invoke onChange when a color is selected', () => {
+  const spy = jest.fn();
+  const node = shallow(<ColorPicker onChange={spy} />);
+
+  node
+    .find('.color')
+    .first()
+    .simulate('click', {target: {getAttribute: () => 'testColor'}});
+
+  expect(spy).toHaveBeenCalledWith('testColor');
+});
+
+it('should generate correct amount of colors', () => {
+  const colors = ColorPicker.getGeneratedColors(18);
+  expect(colors.length).toBe(18);
+});
+
+it('should should repeat generated colors if they are not enough', () => {
+  const {colors: palette} = colorsObj;
+
+  const colors = ColorPicker.getGeneratedColors(200);
+
+  expect(colors).toEqual(Array.from({length: 200}, (_, idx) => palette[idx % palette.length]));
+});

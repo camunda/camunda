@@ -1,0 +1,1350 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {
+	endpoints as unifiedAPIEndpoints,
+	type QueryUserTasksRequestBody,
+	type QueryVariablesByUserTaskRequestBody,
+	type QueryProcessDefinitionsRequestBody,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionStatisticsRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type QueryProcessInstancesRequestBody,
+	type QueryElementInstancesRequestBody,
+	type QueryAgentInstancesRequestBody,
+	type QueryAgentInstanceHistoryRequestBody,
+	type QueryProcessInstanceIncidentsRequestBody,
+	type QueryElementInstanceIncidentsRequestBody,
+	type UpdateElementInstanceVariablesRequestBody,
+	type UpdateJobRequestBody,
+	type CancelProcessInstanceRequestBody,
+	type DeleteProcessInstanceRequestBody,
+	type ModifyProcessInstanceRequestBody,
+	type SuspendProcessInstanceRequestBody,
+	type ResumeProcessInstanceRequestBody,
+	type QueryBatchOperationsRequestBody,
+	type QueryBatchOperationItemsRequestBody,
+	type QueryDecisionDefinitionsRequestBody,
+	type QueryDecisionInstancesRequestBody,
+	type DeleteResourceRequestBody,
+	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
+	type CreateCancellationBatchOperationRequestBody,
+	type CreateModificationBatchOperationRequestBody,
+	type CreateMigrationBatchOperationRequestBody,
+	type CreateIncidentResolutionBatchOperationRequestBody,
+	type CreateDeletionBatchOperationRequestBody,
+	type SuspendProcessInstancesBatchOperationRequestBody,
+	type ResumeProcessInstancesBatchOperationRequestBody,
+	type AssignTaskRequestBody,
+	type CompleteTaskRequestBody,
+	type CreateProcessInstanceRequestBody,
+	type QueryUserTaskAuditLogsRequestBody,
+	type QueryAuditLogsRequestBody,
+	type QueryMessageSubscriptionsRequestBody,
+	type QueryJobsRequestBody,
+	type QueryElementInstanceInspectionRequestBody,
+	type UserTask,
+	type ProcessDefinition,
+	type DecisionDefinition,
+	type AuditLog,
+	type DecisionInstance,
+	type Variable,
+	type QueryVariablesRequestBody,
+	type ProcessInstance,
+	type MappingRule,
+	type CreateMappingRuleRequestBody,
+	type UpdateMappingRuleRequestBody,
+	type QueryMappingRulesRequestBody,
+	type User,
+	type CreateUserRequestBody,
+	type UpdateUserRequestBody,
+	type QueryUsersRequestBody,
+	type QueryUsersByGroupRequestBody,
+	type QueryClientsByGroupRequestBody,
+	type QueryRolesByGroupRequestBody,
+	type QueryMappingRulesByGroupRequestBody,
+	type Group,
+	type CreateGroupRequestBody,
+	type UpdateGroupRequestBody,
+	type ClusterVariable,
+	type CreateClusterVariableRequestBody,
+	type UpdateClusterVariableRequestBody,
+	type QueryClusterVariablesRequestBody,
+	type Tenant,
+	type CreateTenantRequestBody,
+	type UpdateTenantRequestBody,
+	type QueryTenantsRequestBody,
+	type QueryUsersByTenantRequestBody,
+	type QueryGroupsByTenantRequestBody,
+	type QueryRolesByTenantRequestBody,
+	type QueryClientsByTenantRequestBody,
+	type QueryMappingRulesByTenantRequestBody,
+	type GlobalTaskListener,
+	type CreateGlobalTaskListenerRequestBody,
+	type UpdateGlobalTaskListenerRequestBody,
+	type QueryGlobalTaskListenersRequestBody,
+	type Authorization,
+	type CreateAuthorizationRequestBody,
+	type QueryAuthorizationsRequestBody,
+	type QueryRolesRequestBody,
+	type QueryGroupsRequestBody,
+	type Role,
+	type CreateRoleRequestBody,
+	type UpdateRoleRequestBody,
+	type QueryUsersByRoleRequestBody,
+	type QueryClientsByRoleRequestBody,
+	type QueryGroupsByRoleRequestBody,
+	type QueryMappingRulesByRoleRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
+import {getBootConfig} from '#/shared/config/getBootConfig';
+import {mergePathname} from './mergePathname';
+
+const BASE_REQUEST_OPTIONS: RequestInit = {
+	credentials: 'include',
+	mode: 'cors',
+};
+
+type CreateDocumentMetadata = {
+	customProperties?: Record<string, unknown>;
+};
+
+type CreateDocumentsFileEntry = {
+	files: File[];
+	metadata?: CreateDocumentMetadata;
+};
+
+function buildDocumentMultipart(documentPayload: Map<string, CreateDocumentsFileEntry>): {
+	body: Blob;
+	headers: Record<string, string>;
+} {
+	const boundary = `----FormBoundary${Math.random().toString(36).substring(2)}`;
+	const contentType = `multipart/form-data; boundary=${boundary}`;
+	const startBoundary = `--${boundary}`;
+	const endBoundary = `--${boundary}--`;
+	const CRLF = '\r\n';
+	const parts = Array.from(documentPayload.values())
+		.map(({files, metadata}) => {
+			const fileParts = files.map((file) => {
+				const header = [
+					startBoundary,
+					`Content-Disposition: form-data; name="files"; filename="${file.name}"`,
+					`Content-Type: ${file.type}`,
+					...(metadata === undefined ? [] : [`X-Document-Metadata: ${JSON.stringify(metadata)}`]),
+					'',
+					'',
+				].join(CRLF);
+
+				return new Blob([header, file, CRLF], {type: file.type});
+			});
+
+			fileParts.push(new Blob([CRLF, startBoundary, CRLF]));
+
+			return fileParts;
+		})
+		.flat();
+
+	parts.pop();
+	parts.push(new Blob([endBoundary]));
+
+	return {
+		body: new Blob(parts, {type: contentType}),
+		headers: {'Content-Type': contentType},
+	};
+}
+
+function getFullURL(url: string) {
+	if (typeof window.location.origin !== 'string') {
+		throw new Error('window.location.origin is not set');
+	}
+
+	return new URL(mergePathname(getBootConfig().contextPath, url), window.location.origin);
+}
+
+const endpoints = {
+	// The login endpoint sends a CSRF token with the response to a GET, and the login POST must send
+	// that token back. Asks for HTML, because this GET returns the login page.
+	loginCsrfToken: () =>
+		new Request(getFullURL('/login'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+			headers: {Accept: 'text/html'},
+		}),
+
+	login: (body: {username: string; password: string}) =>
+		new Request(getFullURL('/login'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'POST',
+			body: new URLSearchParams(body).toString(),
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		}),
+
+	logout: () =>
+		new Request(getFullURL('/logout'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'POST',
+		}),
+
+	sessionHeartbeatUrl: () => getFullURL('/session/heartbeat').toString(),
+
+	getCurrentUser: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getCurrentUser.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getCurrentUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSystemConfiguration: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getSystemConfiguration.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getSystemConfiguration.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getLicense: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getLicense.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getLicense.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSaasUserToken: () =>
+		new Request(getFullURL('/v2/authentication/me/token'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTasks: (body: QueryUserTasksRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTasks.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTasks.method,
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+				'x-is-polling': 'true',
+			},
+		}),
+
+	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMessageSubscriptions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMessageSubscriptions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryJobs: (body: QueryJobsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryJobs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryJobs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstanceInspection: (body: QueryElementInstanceInspectionRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceInspection.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstanceInspection.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsers: (body: QueryUsersRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsers.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsers.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUser: ({username}: Pick<User, 'username'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createUser: (body: CreateUserRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createUser.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createUser.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateUser: ({username, ...body}: Pick<User, 'username'> & UpdateUserRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateUser.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteUser: ({username}: Pick<User, 'username'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getGroup: ({groupId}: Pick<Group, 'groupId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getGroup.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createGroup: (body: CreateGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createGroup.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateGroup: ({groupId, ...body}: Pick<Group, 'groupId'> & UpdateGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteGroup: ({groupId}: Pick<Group, 'groupId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteGroup.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsersByGroup: ({groupId, ...body}: {groupId: string} & QueryUsersByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryClientsByGroup: ({groupId, ...body}: {groupId: string} & QueryClientsByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryRolesByGroup: ({groupId, ...body}: {groupId: string} & QueryRolesByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRolesByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRolesByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMappingRulesByGroup: ({groupId, ...body}: {groupId: string} & QueryMappingRulesByGroupRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByGroup.getUrl({groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByGroup.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToGroup: ({groupId, username}: {groupId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToGroup.getUrl({groupId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToGroup.method,
+		}),
+
+	unassignUserFromGroup: ({groupId, username}: {groupId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignUserFromGroup.getUrl({groupId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignUserFromGroup.method,
+		}),
+
+	assignClientToGroup: ({groupId, clientId}: {groupId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToGroup.getUrl({groupId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToGroup.method,
+		}),
+
+	unassignClientFromGroup: ({groupId, clientId}: {groupId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignClientFromGroup.getUrl({groupId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignClientFromGroup.method,
+		}),
+
+	assignMappingToGroup: ({groupId, mappingRuleId}: {groupId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignMappingToGroup.getUrl({groupId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignMappingToGroup.method,
+		}),
+
+	unassignMappingFromGroup: ({groupId, mappingRuleId}: {groupId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignMappingFromGroup.getUrl({groupId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignMappingFromGroup.method,
+		}),
+
+	getProcessDefinition: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinition.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinition.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessStartForm: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessStartForm.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessStartForm.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createProcessInstance: (body: CreateProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createProcessInstance.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createProcessInstance.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceVersionStatistics: (body: GetProcessDefinitionInstanceVersionStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	resolveProcessInstanceIncidents: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resolveProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resolveProcessInstanceIncidents.method,
+		}),
+
+	getProcessInstance: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstance.method,
+		}),
+
+	// Both bodies are optional, but an empty object is not a valid one — `operationReference` is
+	// required once the body is present — so send no body at all when there is no payload.
+	cancelProcessInstance: (processInstanceKey: string, body?: CancelProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.cancelProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.cancelProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	deleteProcessInstance: (processInstanceKey: string, body?: DeleteProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	modifyProcessInstance: (processInstanceKey: string, body: ModifyProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.modifyProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.modifyProcessInstance.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	suspendProcessInstance: (processInstanceKey: string, body?: SuspendProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	resumeProcessInstance: (processInstanceKey: string, body?: ResumeProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeProcessInstance.method,
+			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstances: (body: QueryElementInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getElementInstance: (elementInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getElementInstance.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getElementInstance.method,
+		}),
+
+	updateElementInstanceVariables: (elementInstanceKey: string, body: UpdateElementInstanceVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateElementInstanceVariables.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateElementInstanceVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAgentInstances: (body: QueryAgentInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAgentInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAgentInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAgentInstanceHistory: (agentInstanceKey: string, body: QueryAgentInstanceHistoryRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAgentInstanceHistory.getUrl({agentInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAgentInstanceHistory.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryProcessInstanceIncidents: (processInstanceKey: string, body: QueryProcessInstanceIncidentsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstanceIncidents.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstanceIncidents: (elementInstanceKey: string, body: QueryElementInstanceIncidentsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstanceIncidents.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	resolveIncident: (incidentKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resolveIncident.getUrl({incidentKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resolveIncident.method,
+		}),
+
+	getIncident: (incidentKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncident.getUrl({incidentKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncident.method,
+		}),
+
+	updateJob: (jobKey: string, body: UpdateJobRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateJob.getUrl({jobKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateJob.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryBatchOperations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryBatchOperationItems: (body: QueryBatchOperationItemsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperationItems.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryBatchOperationItems.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionInstances: (body: QueryDecisionInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createCancellationBatchOperation: (body: CreateCancellationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createCancellationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createCancellationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createModificationBatchOperation: (body: CreateModificationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createModificationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createModificationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createMigrationBatchOperation: (body: CreateMigrationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createMigrationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createMigrationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createIncidentResolutionBatchOperation: (body: CreateIncidentResolutionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createIncidentResolutionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createIncidentResolutionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDeletionBatchOperation: (body: CreateDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createSuspensionBatchOperation: (body: SuspendProcessInstancesBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendProcessInstancesBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendProcessInstancesBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createResumptionBatchOperation: (body: ResumeProcessInstancesBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeProcessInstancesBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeProcessInstancesBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDecisionInstancesDeletionBatchOperation: (body: CreateDecisionInstancesDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteResource: (resourceKey: string, body: DeleteResourceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteResource.getUrl({resourceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteResource.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionDefinitionXml: ({decisionDefinitionKey}: Pick<DecisionDefinition, 'decisionDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionDefinitionXml.getUrl({decisionDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionDefinitionXml.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByDefinition: (
+		body: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getBatchOperation.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	suspendBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.suspendBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.suspendBatchOperation.method,
+		}),
+
+	resumeBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resumeBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resumeBatchOperation.method,
+		}),
+
+	cancelBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.cancelBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.cancelBatchOperation.method,
+		}),
+
+	getUserTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUserTaskForm: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTaskForm.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTaskForm.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariablesByUserTask: ({
+		userTaskKey,
+		truncateValues,
+		...body
+	}: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody & {truncateValues?: boolean}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariablesByUserTask.getUrl({userTaskKey, truncateValues})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariablesByUserTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariables.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getVariable: ({variableKey}: Pick<Variable, 'variableKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getVariable.getUrl({variableKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getVariable.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDocuments: ({documentsPayload}: {documentsPayload: Map<string, CreateDocumentsFileEntry>}) => {
+		const {body, headers} = buildDocumentMultipart(documentsPayload);
+
+		return new Request(getFullURL(unifiedAPIEndpoints.createDocuments.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDocuments.method,
+			body,
+			headers,
+		});
+	},
+
+	getDocument: ({documentId, storeId, contentHash}: {documentId: string; storeId?: string; contentHash?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDocument.getUrl({documentId, storeId, contentHash})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDocument.method,
+		}),
+
+	getProcessDefinitionXml: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionXml.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionXml.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionStatistics: ({
+		processDefinitionKey,
+		...body
+	}: Pick<ProcessDefinition, 'processDefinitionKey'> & GetProcessDefinitionStatisticsRequestBody) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessDefinitionStatistics.getUrl({
+					processDefinitionKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessDefinitionStatistics.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	assignTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & AssignTaskRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	unassignTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	completeTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & CompleteTaskRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.completeTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.completeTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTaskAuditLogs: ({userTaskKey, ...body}: {userTaskKey: string} & QueryUserTaskAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTaskAuditLogs.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTaskAuditLogs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getAuditLog: ({auditLogKey}: Pick<AuditLog, 'auditLogKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuditLog.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionInstance: ({decisionEvaluationInstanceKey}: Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionInstance.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuditLogs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuditLogs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceCallHierarchy: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceCallHierarchy.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceWaitStateStatistics: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceElementInstanceStatistics: (processInstanceKey: string) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessInstanceStatistics.getUrl({
+					processInstanceKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessInstanceStatistics.method,
+			},
+		),
+
+	getProcessInstanceSequenceFlows: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceSequenceFlows.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceSequenceFlows.method,
+		}),
+	queryMappingRules: (body: QueryMappingRulesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRules.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRules.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createMappingRule: (body: CreateMappingRuleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createMappingRule.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createMappingRule.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateMappingRule: ({mappingRuleId, ...body}: Pick<MappingRule, 'mappingRuleId'> & UpdateMappingRuleRequestBody) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.updateMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.updateMappingRule.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	deleteMappingRule: ({mappingRuleId}: Pick<MappingRule, 'mappingRuleId'>) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.deleteMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.deleteMappingRule.method,
+			},
+		),
+
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.searchClusterVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchGlobalTaskListeners.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.searchGlobalTaskListeners.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getClusterVariable: ({name, scope, tenantId}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.getTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.getGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: 'GET'},
+		);
+	},
+
+	createClusterVariable: ({
+		scope,
+		tenantId,
+		...body
+	}: Pick<ClusterVariable, 'scope' | 'tenantId'> & CreateClusterVariableRequestBody) =>
+		new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.createTenantClusterVariable.getUrl({tenantId: encodeURIComponent(tenantId ?? '')})
+					: unifiedAPIEndpoints.createGlobalClusterVariable.getUrl(),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: 'POST',
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	updateClusterVariable: ({
+		name,
+		scope,
+		tenantId,
+		...body
+	}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'> & UpdateClusterVariableRequestBody) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.updateTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.updateGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: 'PUT',
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		);
+	},
+
+	deleteClusterVariable: ({name, scope, tenantId}: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) => {
+		const encodedName = encodeURIComponent(name);
+		return new Request(
+			getFullURL(
+				scope === 'TENANT'
+					? unifiedAPIEndpoints.deleteTenantClusterVariable.getUrl({
+							tenantId: encodeURIComponent(tenantId ?? ''),
+							name: encodedName,
+						})
+					: unifiedAPIEndpoints.deleteGlobalClusterVariable.getUrl({name: encodedName}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: 'DELETE'},
+		);
+	},
+
+	queryTenants: (body: QueryTenantsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryTenants.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryTenants.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getGlobalTaskListener: ({id}: Pick<GlobalTaskListener, 'id'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getGlobalTaskListener.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createGlobalTaskListener: (body: CreateGlobalTaskListenerRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createGlobalTaskListener.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createGlobalTaskListener.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuthorizations.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuthorizations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateGlobalTaskListener: ({id, ...body}: Pick<GlobalTaskListener, 'id'> & UpdateGlobalTaskListenerRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateGlobalTaskListener.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	getAuthorization: ({authorizationKey}: Pick<Authorization, 'authorizationKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuthorization.getUrl({authorizationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuthorization.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createAuthorization: (body: CreateAuthorizationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createAuthorization.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createAuthorization.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteGlobalTaskListener: ({id}: Pick<GlobalTaskListener, 'id'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteGlobalTaskListener.getUrl({id: encodeURIComponent(id)})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteGlobalTaskListener.method,
+		}),
+
+	deleteAuthorization: ({authorizationKey}: Pick<Authorization, 'authorizationKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteAuthorization.getUrl({authorizationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteAuthorization.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRoles.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRoles.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroups.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroups.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getRole: ({roleId}: Pick<Role, 'roleId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getRole.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createRole: (body: CreateRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createRole.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	getTenant: ({tenantId}: Pick<Tenant, 'tenantId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getTenant.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createTenant: (body: CreateTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createTenant.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateRole: ({roleId, ...body}: Pick<Role, 'roleId'> & UpdateRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	updateTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & UpdateTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteRole: ({roleId}: Pick<Role, 'roleId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteRole.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsersByRole: ({roleId, ...body}: {roleId: string} & QueryUsersByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	deleteTenant: ({tenantId}: Pick<Tenant, 'tenantId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteTenant.method,
+		}),
+
+	queryUsersByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryUsersByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryGroupsByRole: ({roleId, ...body}: {roleId: string} & QueryGroupsByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroupsByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroupsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryGroupsByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryGroupsByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroupsByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroupsByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMappingRulesByRole: ({roleId, ...body}: {roleId: string} & QueryMappingRulesByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryRolesByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryRolesByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRolesByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRolesByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryClientsByRole: ({roleId, ...body}: {roleId: string} & QueryClientsByRoleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByRole.getUrl({roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryClientsByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryClientsByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToRole: ({roleId, username}: {roleId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToRole.getUrl({roleId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToRole.method,
+		}),
+
+	unassignUserFromRole: ({roleId, username}: {roleId: string; username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignUserFromRole.getUrl({roleId, username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignUserFromRole.method,
+		}),
+
+	assignGroupToRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignGroupToRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignGroupToRole.method,
+		}),
+
+	unassignGroupFromRole: ({roleId, groupId}: {roleId: string; groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignGroupFromRole.getUrl({roleId, groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignGroupFromRole.method,
+		}),
+
+	assignMappingToRole: ({roleId, mappingRuleId}: {roleId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignMappingToRole.getUrl({roleId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignMappingToRole.method,
+		}),
+
+	unassignMappingFromRole: ({roleId, mappingRuleId}: {roleId: string; mappingRuleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignMappingFromRole.getUrl({roleId, mappingRuleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignMappingFromRole.method,
+		}),
+
+	assignClientToRole: ({roleId, clientId}: {roleId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToRole.getUrl({roleId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToRole.method,
+		}),
+
+	unassignClientFromRole: ({roleId, clientId}: {roleId: string; clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignClientFromRole.getUrl({roleId, clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignClientFromRole.method,
+		}),
+	queryMappingRulesByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryMappingRulesByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToTenant: ({tenantId, username}: Pick<Tenant, 'tenantId'> & {username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToTenant.getUrl({tenantId: tenantId, username: username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToTenant.method,
+		}),
+
+	unassignUserFromTenant: ({tenantId, username}: Pick<Tenant, 'tenantId'> & {username: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignUserFromTenant.getUrl({tenantId: tenantId, username: username})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignUserFromTenant.method},
+		),
+
+	assignGroupToTenant: ({tenantId, groupId}: Pick<Tenant, 'tenantId'> & {groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignGroupToTenant.getUrl({tenantId: tenantId, groupId: groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignGroupToTenant.method,
+		}),
+
+	unassignGroupFromTenant: ({tenantId, groupId}: Pick<Tenant, 'tenantId'> & {groupId: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignGroupFromTenant.getUrl({tenantId: tenantId, groupId: groupId})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignGroupFromTenant.method},
+		),
+
+	assignRoleToTenant: ({tenantId, roleId}: Pick<Tenant, 'tenantId'> & {roleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignRoleToTenant.getUrl({tenantId: tenantId, roleId: roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignRoleToTenant.method,
+		}),
+
+	unassignRoleFromTenant: ({tenantId, roleId}: Pick<Tenant, 'tenantId'> & {roleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignRoleFromTenant.getUrl({tenantId: tenantId, roleId: roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignRoleFromTenant.method,
+		}),
+
+	assignClientToTenant: ({tenantId, clientId}: Pick<Tenant, 'tenantId'> & {clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToTenant.getUrl({tenantId: tenantId, clientId: clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToTenant.method,
+		}),
+
+	unassignClientFromTenant: ({tenantId, clientId}: Pick<Tenant, 'tenantId'> & {clientId: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignClientFromTenant.getUrl({tenantId: tenantId, clientId: clientId})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignClientFromTenant.method},
+		),
+
+	assignMappingRuleToTenant: ({tenantId, mappingRuleId}: Pick<Tenant, 'tenantId'> & {mappingRuleId: string}) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.assignMappingRuleToTenant.getUrl({tenantId: tenantId, mappingRuleId: mappingRuleId}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.assignMappingRuleToTenant.method},
+		),
+
+	unassignMappingRuleFromTenant: ({tenantId, mappingRuleId}: Pick<Tenant, 'tenantId'> & {mappingRuleId: string}) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.unassignMappingRuleFromTenant.getUrl({tenantId: tenantId, mappingRuleId: mappingRuleId}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignMappingRuleFromTenant.method},
+		),
+
+	// Served as `window.clientConfig = {...};` by the Admin client config controller.
+	getAdminClientConfig: () =>
+		new Request(getFullURL('/admin/config.js'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+		}),
+};
+
+export {endpoints};

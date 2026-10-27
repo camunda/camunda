@@ -1,0 +1,11 @@
+/* Parts of the page that differ between runs (random collection names, user avatar). */
+nav[aria-label='Breadcrumb'],
+[data-slot='user-menu-trigger'] {
+  visibility: hidden !important;
+}
+
+/* Opening a submenu moves keyboard focus into it at a varying moment. */
+:focus,
+:focus-visible {
+  outline: none !important;
+}

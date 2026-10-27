@@ -1,0 +1,165 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
+# If no version is given, the version is set to the Maven project version.
+
+---
+name: Build Docker Image
+
+# owner: @camunda/engineering-operations
+
+description: Builds the Docker image
+
+inputs:
+  repository:
+    description: 'The image repository, e.g. camunda/camunda'
+    default: 'camunda/camunda'
+    required: true
+  version:
+    description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
+    required: false
+  distball:
+    description: 'The path to the Camunda platform distribution TAR ball'
+    required: false
+    default: 'dist/target/camunda-zeebe-*.tar.gz'
+  revision:
+    description: 'The revision of the source the content of this image is based on.'
+    required: false
+  push:
+    description: 'If true, will push the image'
+    required: false
+    default: 'false'
+  platforms:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64'
+    required: false
+    default: 'linux/amd64'
+  dockerfile:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Path to the dockerfile, that should be used; defaults to camunda.Dockerfile'
+    required: false
+    default: 'camunda.Dockerfile'
+  debug:
+    description: 'Enable debug logging for BuildKit daemon'
+    required: false
+    default: 'false'
+
+outputs:
+  image:
+    description: "Fully qualified image name available in your local Docker daemon"
+    value: ${{ steps.get-image-output.outputs.result }}
+  date:
+    description: "The ISO 8601 date at which the image was created"
+    value: ${{ steps.get-date.outputs.result }}
+  version:
+    description: "The semantic version of the packaged artifact"
+    value: ${{ steps.get-version.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - name: Detect branch type
+      id: branch-detect
+      shell: bash
+      env:
+        IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      run: |
+        echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
+    - name: Check for Fork
+      uses: ./.github/actions/is-fork
+      id: is-fork
+
+    - name: Set up multi-platform support
+      uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      with:
+        # only cache on persistent branches where reuse is likely
+        cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
+
+    # Creating a context is required when installing buildx on self-hosted runners
+    - name: Create context
+      shell: bash
+      run: |
+        if ! docker context ls --format '{{.Name}}' | grep -q "^zeebe-context$"; then
+          docker context create zeebe-context
+        fi
+
+    - name: Set up Docker Buildx
+      uses: ./.github/actions/setup-buildx-with-retry
+      with:
+        # to be able to push to local registry, which we use in our tests, we need to use host network
+        driver-opts: network=host
+        buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
+        endpoint: zeebe-context
+
+    - name: Set semantic version from Maven project
+      id: get-version
+      if: ${{ inputs.version == ''}}
+      shell: bash
+      run: echo "result=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
+    - name: Set image build label from ISO 8601 DATE
+      id: get-date
+      shell: bash
+      run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
+
+    - name: Build image names from params and/or project version
+      id: get-image
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      with:
+        images: ${{ inputs.repository }}
+        tags: ${{ inputs.version || steps.get-version.outputs.result }}
+
+    # Pick one (the first) out of multiple tags for the image name out, all
+    # should work equally well in a local Docker daemon
+    - name: Set fully qualified image name for output
+      id: get-image-output
+      shell: bash
+      run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
+
+    # The `version` input accepts a list, and the snapshot deploy jobs in ci.yml pass two versions.
+    # The VERSION build arg takes a single one. Keeping the first matches both the image name output
+    # above and what build-push-action already resolved this to: it splits build args on newlines,
+    # so any further line was never a VERSION value to begin with.
+    - name: Reduce a multi-valued version to the first value
+      id: get-version-build-arg
+      shell: bash
+      env:
+        VERSION_INPUT: ${{ inputs.version }}
+        MAVEN_VERSION: ${{ steps.get-version.outputs.result }}
+      run: |
+        version="${VERSION_INPUT:-$MAVEN_VERSION}"
+        echo "version=$(echo "$version" | head -n 1)" >> "$GITHUB_OUTPUT"
+
+    - name: Set DISTBALL path relative to the build context
+      id: get-distball
+      shell: bash
+      run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
+
+    - name: Set additional build args dynamically based on workflow run context
+      id: get-additional-build-args
+      shell: bash
+      run: |
+        # Check if current workflow run is related to a fork PR
+        if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
+          echo "The current workflow run is related to a fork PR."
+          echo "As a result, private Minimus hardened base images will be replaced with public images."
+
+          {
+            echo 'result<<EOF'
+            echo 'BASE=public'
+            echo 'EOF'
+          } | tee -a $GITHUB_OUTPUT
+        fi
+
+    - name: Build Docker image
+      uses: ./.github/actions/docker-build-with-retry
+      with:
+        dockerfile: ${{ inputs.dockerfile }}
+        tags: ${{ steps.get-image.outputs.tags }}
+        platforms: ${{ inputs.platforms }}
+        push: ${{ inputs.push }}
+        build-args: |
+          DISTBALL=${{ steps.get-distball.outputs.result }}
+          DATE=${{ steps.get-date.outputs.result }}
+          REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
+          VERSION=${{ steps.get-version-build-arg.outputs.version }}
+          ${{ steps.get-additional-build-args.outputs.result }}

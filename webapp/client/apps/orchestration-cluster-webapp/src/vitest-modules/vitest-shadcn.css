@@ -1,0 +1,18 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@import '@camunda/design-system/styles.css';
+
+/*
+ * Utility-only Tailwind layer (no preflight/base reset, no project-wide
+ * source scanning) so ComposedCell's arbitrary-variant hide rule compiles in
+ * tests without disturbing Carbon-based components that share this project.
+ */
+@import 'tailwindcss/theme.css' theme(reference);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@source inline("[&_tr:has([data-expandable=false])_[data-slot=data-table-expand-toggle]]:hidden!");

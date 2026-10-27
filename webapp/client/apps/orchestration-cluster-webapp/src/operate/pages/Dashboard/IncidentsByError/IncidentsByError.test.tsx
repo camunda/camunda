@@ -1,0 +1,418 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {afterEach, describe, expect} from 'vitest';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
+import {userEvent} from 'vitest/browser';
+import {createInstance} from 'i18next';
+import {I18nextProvider} from 'react-i18next';
+import {translationResources} from '#/shared/i18n';
+import {
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockCurrentUserEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {
+	createIncidentProcessInstanceStatisticsByDefinition,
+	createIncidentProcessInstanceStatisticsByError,
+} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {IncidentsByError} from './IncidentsByError';
+
+const REQUEST_SCHEMA = z.object({
+	page: z.object({from: z.number(), limit: z.literal(50)}),
+	sort: z.tuple([
+		z.object({field: z.literal('activeInstancesWithErrorCount'), order: z.literal('DESC')}),
+		z.object({field: z.literal('errorMessage'), order: z.literal('ASC')}),
+	]),
+});
+const DEFINITIONS_REQUEST_SCHEMA = z.object({
+	sort: z.tuple([
+		z.object({field: z.literal('activeInstancesWithErrorCount'), order: z.literal('DESC')}),
+		z.object({field: z.literal('processDefinitionKey'), order: z.literal('DESC')}),
+		z.object({field: z.literal('tenantId'), order: z.literal('DESC')}),
+	]),
+});
+const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
+const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
+
+const PAGE_1_RESPONSE = HttpResponse.json(
+	createPaginatedResponse({
+		items: [
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 1,
+				errorMessage: 'Alpha Connection Timeout',
+				activeInstancesWithErrorCount: 5,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 2,
+				errorMessage: 'Beta Null Pointer',
+				activeInstancesWithErrorCount: 3,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 3,
+				errorMessage: 'Gamma Service Unavailable',
+				activeInstancesWithErrorCount: 2,
+			}),
+		],
+		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: true},
+	}),
+);
+
+const PAGE_2_RESPONSE = HttpResponse.json(
+	createPaginatedResponse({
+		items: [
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 51,
+				errorMessage: 'Page Two Only Error',
+				activeInstancesWithErrorCount: 1,
+			}),
+		],
+		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
+
+describe('<IncidentsByError />', () => {
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	it('should render the list of incidents by error', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
+		await expect.element(screen.getByText('Beta Null Pointer')).toBeVisible();
+		await expect.element(screen.getByText('Gamma Service Unavailable')).toBeVisible();
+	});
+
+	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '100px', display: 'flex', flexDirection: 'column'}}>
+					<IncidentsByError />
+				</div>
+			),
+			{path: '/operate'},
+		);
+
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
+
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_2_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		await userEvent.wheel(screen.getByTestId('incidents-by-error-list'), {delta: {y: 10000}});
+
+		await expect.element(screen.getByText('Page Two Only Error')).toBeVisible();
+	});
+
+	it('should link each row to the processes page filtered by incidents', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
+		await expect
+			.element(screen.getByText('Alpha Connection Timeout').element().closest('a')!)
+			.toHaveAttribute(
+				'href',
+				'/operate/processes?errorMessage=Alpha+Connection+Timeout&incidentErrorHashCode=1&incidents=true&active=false&completed=false&canceled=false&suspended=false',
+			);
+	});
+
+	it('should distinguish similar incident messages by hash in drill-down links', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createIncidentProcessInstanceStatisticsByError({
+								errorMessage: 'Connection timeout',
+								errorHashCode: -481,
+							}),
+							createIncidentProcessInstanceStatisticsByError({
+								errorMessage: 'Connection timeout',
+								errorHashCode: 0,
+							}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+
+		await expect
+			.element(screen.getByTestId('incident-byError').getByRole('link').nth(0))
+			.toHaveAttribute('href', expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=-481'));
+		await expect
+			.element(screen.getByTestId('incident-byError').getByRole('link').nth(1))
+			.toHaveAttribute('href', expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=0'));
+	});
+
+	it('should request the affected processes ordered by most affected instances', async ({worker}) => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+				schema: DEFINITIONS_REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncidentProcessInstanceStatisticsByDefinition({processDefinitionName: 'Orders'})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}).first());
+
+		await expect.element(screen.getByRole('link', {name: /Orders/})).toBeVisible();
+	});
+
+	it('should truncate long incident messages to 100 characters at a word boundary in drill-down links', async ({
+		worker,
+	}) => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		const errorMessage =
+			"Expected to evaluate decision 'decision-a', but Assertion failure on evaluate the expression 'assert(0,1)': The condition is not fulfilled";
+		const truncated = "Expected to evaluate decision 'decision-a', but Assertion failure on evaluate the expression";
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncidentProcessInstanceStatisticsByError({errorMessage, errorHashCode: -481})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createIncidentProcessInstanceStatisticsByDefinition({
+								processDefinitionId: 'orders',
+								processDefinitionName: 'Orders',
+								processDefinitionVersion: 2,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const expectedSearch = `errorMessage=${new URLSearchParams({m: truncated}).toString().slice(2)}&incidentErrorHashCode=-481`;
+
+		await expect
+			.element(screen.getByTestId('incident-byError').getByRole('link').nth(0))
+			.toHaveAttribute('href', expect.stringContaining(expectedSearch));
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+		await expect
+			.element(screen.getByRole('link', {name: /Orders/}))
+			.toHaveAttribute('href', expect.stringContaining(expectedSearch));
+	});
+
+	it('should preserve incident hash, version and tenant for expanded process links', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
+		);
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createIncidentProcessInstanceStatisticsByError({errorMessage: 'Connection timeout', errorHashCode: -481}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createIncidentProcessInstanceStatisticsByDefinition({
+								processDefinitionId: 'orders',
+								processDefinitionName: 'Orders',
+								processDefinitionVersion: 2,
+								tenantId: '<tenant-A>',
+							}),
+							createIncidentProcessInstanceStatisticsByDefinition({
+								processDefinitionId: 'orders',
+								processDefinitionName: 'Orders',
+								processDefinitionVersion: 2,
+								tenantId: '<tenant-B>',
+							}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: '<tenant-A>', name: 'Tenant A', description: null},
+							{tenantId: '<tenant-B>', name: 'Tenant B', description: null},
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		await expect.element(screen.getByRole('button', {name: 'Expand current row'})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+
+		for (const [name, tenant] of [
+			['Tenant A', '<tenant-A>'],
+			['Tenant B', '<tenant-B>'],
+		] as const) {
+			await expect
+				.element(screen.getByRole('link', {name: new RegExp(name)}))
+				.toHaveAttribute(
+					'href',
+					expect.stringContaining(
+						`process=orders&version=2&errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId=${encodeURIComponent(tenant)}`,
+					),
+				);
+		}
+	});
+
+	it.for([
+		{language: 'en', label: 'Orders – version 2 – Tenant A'},
+		{language: 'de', label: 'Orders (Tenant A) – Version 2'},
+		{language: 'fr', label: 'Orders – version 2 (Tenant A)'},
+		{language: 'es', label: 'Orders – versión 2 – Tenant A'},
+	] as const)(
+		'should localize the complete tenant-scoped incident link in $language',
+		async ({language, label}, {worker}) => {
+			const translations = createInstance();
+			await translations.init({lng: language, resources: translationResources, interpolation: {escapeValue: false}});
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({
+						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					}),
+				),
+			);
+			worker.use(
+				mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createIncidentProcessInstanceStatisticsByError({
+									errorMessage: 'Connection timeout',
+									errorHashCode: -481,
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createIncidentProcessInstanceStatisticsByDefinition({
+									processDefinitionId: 'orders',
+									processDefinitionName: 'Orders',
+									processDefinitionVersion: 2,
+									tenantId: '<tenant-A>',
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(
+						createCurrentUser({
+							tenants: [{tenantId: '<tenant-A>', name: 'Tenant A', description: null}],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderWithRouter(
+				() => (
+					<I18nextProvider i18n={translations}>
+						<IncidentsByError />
+					</I18nextProvider>
+				),
+				{path: '/operate'},
+			);
+
+			await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+			await expect
+				.element(screen.getByTitle(label))
+				.toHaveAttribute(
+					'href',
+					expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId='),
+				);
+		},
+	);
+
+	it('should show an error state when the request fails', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: ERROR_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+	});
+});

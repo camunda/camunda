@@ -1,0 +1,1 @@
+cd monorepo-docs-site && npm run lint-staged 

@@ -1,0 +1,536 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.validator;
+
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
+
+import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
+import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
+import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
+import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operator;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.ProblemDetail;
+
+public class ProcessInstanceRequestValidator {
+
+  private static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
+
+  private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
+  private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name());
+  private static final List<String> SUSPENDED_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.SUSPENDED.name());
+
+  public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
+      final ProcessInstanceCreationInstruction request) {
+    if (request instanceof final ProcessInstanceCreationInstructionById byId) {
+      return validateById(byId);
+    }
+    if (request instanceof final ProcessInstanceCreationInstructionByVersionTag byVersionTag) {
+      return validateByVersionTag(byVersionTag);
+    }
+    return validateByKey((ProcessInstanceCreationInstructionByKey) request);
+  }
+
+  private static Optional<ProblemDetail> validateByKey(
+      final ProcessInstanceCreationInstructionByKey request) {
+    return validate(
+        violations -> {
+          if (request.getProcessDefinitionKey() == null) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
+          validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  private static Optional<ProblemDetail> validateById(
+      final ProcessInstanceCreationInstructionById request) {
+    return validate(
+        violations -> {
+          if (request.getProcessDefinitionId() == null) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  private static Optional<ProblemDetail> validateByVersionTag(
+      final ProcessInstanceCreationInstructionByVersionTag request) {
+    return validate(
+        violations -> {
+          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          if (StringUtils.isBlank(request.getProcessDefinitionVersionTag())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
+          validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateSimpleCreateProcessInstanceRequest(
+      final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction request) {
+    return validate(
+        violations -> {
+          final var byIdSet = StringUtils.isNotBlank(request.getProcessDefinitionId());
+          final var byKeySet = StringUtils.isNotBlank(request.getProcessDefinitionKey());
+
+          if (!byIdSet && !byKeySet) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+
+          if (byIdSet && byKeySet) {
+            violations.add(
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+
+          if (byIdSet) {
+            validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          }
+
+          final var versionSet =
+              request.getProcessDefinitionVersion() != null
+                  && request.getProcessDefinitionVersion() != -1;
+
+          if (byKeySet && versionSet) {
+            violations.add(
+                "processDefinitionVersion can only be set when using processDefinitionId");
+          }
+
+          final var versionTag = request.getProcessDefinitionVersionTag();
+          if (versionTag != null && versionTag.isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
+          final var versionTagSet = StringUtils.isNotBlank(versionTag);
+          if (versionTagSet && !byIdSet) {
+            violations.add(ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID);
+          }
+          if (versionTagSet && versionSet) {
+            violations.add(
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("processDefinitionVersion", PROCESS_DEFINITION_VERSION_TAG)));
+          }
+
+          validateBusinessId(request.getBusinessId(), violations);
+        });
+  }
+
+  private static void validateTags(
+      final @Nullable Set<String> tags, final List<String> violations) {
+    violations.addAll(TagsValidator.validate(tags));
+  }
+
+  public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(
+      final CancelProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be cancelled. */
+  public static Optional<ProblemDetail> validateCancelProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, CANCELLABLE_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be suspended. */
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be resumed. */
+  public static Optional<ProblemDetail> validateResumeProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, SUSPENDED_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects an explicitly named top-level state other than ACTIVE. */
+  public static Optional<ProblemDetail> validateResolveIncidentBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /**
+   * Rejects explicitly named top-level states outside {@code allowedStates}. Only {@code $eq} and
+   * {@code $in} are checked; other operators ({@code $neq}, {@code $notIn}, {@code $exists}, {@code
+   * $like}) are applied as given and ANDed with the required state by the item provider, so they
+   * can yield an empty batch. States inside orFilters are not validated either; a conflicting
+   * branch yields no items instead of a 400.
+   */
+  private static void validateProcessInstanceStateFilter(
+      final ProcessInstanceFilter filter,
+      final List<String> allowedStates,
+      final List<String> violations) {
+    filter.stateOperations().stream()
+        .filter(
+            operation ->
+                operation.operator() == Operator.EQUALS || operation.operator() == Operator.IN)
+        .flatMap(operation -> operation.values().stream())
+        .filter(state -> !allowedStates.contains(state))
+        .distinct()
+        .forEach(
+            state ->
+                violations.add(
+                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                        "state", toProtocolStateName(state), "one of " + allowedStates)));
+  }
+
+  // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.
+  private static String toProtocolStateName(final String state) {
+    return ProcessInstanceState.CANCELED.name().equals(state)
+        ? ProcessInstanceStateEnum.TERMINATED.getValue()
+        : state;
+  }
+
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceRequest(
+      final SuspendProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateResumeProcessInstanceRequest(
+      final ResumeProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
+      final ProcessInstanceMigrationBatchOperationRequest request) {
+    return validate(
+        violations -> {
+          final var filter =
+              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
+          filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+
+          final var migrationPlan = request.getMigrationPlan();
+          if (migrationPlan == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("migrationPlan"));
+            return;
+          }
+
+          if (migrationPlan.getTargetProcessDefinitionKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+          } else {
+            // Validate targetProcessDefinitionKey format
+            validateKeyFormat(
+                migrationPlan.getTargetProcessDefinitionKey(),
+                "targetProcessDefinitionKey",
+                violations);
+          }
+
+          if (migrationPlan.getMappingInstructions() == null
+              || migrationPlan.getMappingInstructions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
+          } else {
+            validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMigrateProcessInstanceRequest(
+      final ProcessInstanceMigrationInstruction request) {
+    return validate(
+        violations -> {
+          if (request.getTargetProcessDefinitionKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+          } else {
+            // Validate targetProcessDefinitionKey format
+            validateKeyFormat(
+                request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
+          }
+          if (request.getMappingInstructions() == null
+              || request.getMappingInstructions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
+          } else {
+            validateMappingInstructions(request.getMappingInstructions(), violations);
+          }
+          validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateAssignProcessInstanceBusinessIdRequest(
+      final ProcessInstanceBusinessIdAssignmentInstruction request) {
+    return validate(
+        violations -> {
+          if (StringUtils.isBlank(request.getBusinessId())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("businessId"));
+          } else {
+            validateBusinessId(request.getBusinessId(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateModifyProcessInstanceRequest(
+      final ProcessInstanceModificationInstruction request) {
+    return validate(
+        violations -> {
+          validateActivateInstructions(request.getActivateInstructions(), violations);
+          validateTerminateInstructions(request.getTerminateInstructions(), violations);
+          validateMoveInstructions(request.getMoveInstructions(), violations);
+          validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateModifyProcessInstanceBatchOperationRequest(
+      final ProcessInstanceModificationBatchOperationRequest request) {
+    return validate(
+        violations -> {
+          final var filter =
+              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
+          filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+          if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
+          } else {
+            validateMoveBatchInstructions(request.getMoveInstructions(), violations);
+          }
+        });
+  }
+
+  private static void validateMappingInstructions(
+      final List<MigrateProcessInstanceMappingInstruction> mappingInstructions,
+      final List<String> violations) {
+    validateInstructions(
+        mappingInstructions,
+        (instruction) ->
+            (instruction.getSourceElementId() != null
+                    && !instruction.getSourceElementId().isEmpty())
+                && (instruction.getTargetElementId() != null
+                    && !instruction.getTargetElementId().isEmpty()),
+        violations,
+        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
+  }
+
+  private static void validateActivateInstructions(
+      final @Nullable List<ProcessInstanceModificationActivateInstruction> instructions,
+      final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
+    validateInstructions(
+        instructions,
+        (instruction) -> instruction.getElementId() != null,
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
+    instructions.forEach(
+        instruction ->
+            validateKeyFormat(
+                instruction.getAncestorElementInstanceKey(),
+                "ancestorElementInstanceKey",
+                violations));
+    final var variableInstructions =
+        instructions.stream()
+            .flatMap(
+                instruction -> {
+                  final var vi = instruction.getVariableInstructions();
+                  return vi == null ? java.util.stream.Stream.empty() : vi.stream();
+                })
+            .toList();
+    validateInstructions(
+        variableInstructions,
+        (variableInstruction) ->
+            variableInstruction.getVariables() != null
+                && !variableInstruction.getVariables().isEmpty(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
+  }
+
+  private static void validateTerminateInstructions(
+      final @Nullable List<ProcessInstanceModificationTerminateInstruction> instructions,
+      final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
+    instructions.forEach(
+        instruction -> {
+          if (instruction
+              instanceof final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
+            if (byKey.getElementInstanceKey() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+            } else {
+              validateKeyFormat(byKey.getElementInstanceKey(), "elementInstanceKey", violations);
+            }
+          } else {
+            final String elementId =
+                ((ProcessInstanceModificationTerminateByIdInstruction) instruction).getElementId();
+            if (elementId == null || elementId.isBlank()) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
+            }
+          }
+        });
+  }
+
+  private static void validateMoveInstructions(
+      final @Nullable List<ProcessInstanceModificationMoveInstruction> instructions,
+      final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
+    instructions.forEach(
+        instruction -> {
+          switch (instruction.getSourceElementInstruction()) {
+            case final SourceElementIdInstruction byId -> {
+              if (byId.getSourceElementId() == null || byId.getSourceElementId().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+              }
+            }
+            case final SourceElementInstanceKeyInstruction byKey -> {
+              validateKeyFormat(
+                  byKey.getSourceElementInstanceKey(), "sourceElementInstanceKey", violations);
+            }
+            case null -> {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstruction"));
+            }
+            default -> {
+              // no-op for forward compatibility
+            }
+          }
+        });
+
+    validateInstructions(
+        instructions,
+        instruction ->
+            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
+    instructions.forEach(
+        instruction -> {
+          if (instruction.getAncestorScopeInstruction()
+              instanceof final DirectAncestorKeyInstruction direct) {
+            validateKeyFormat(
+                direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
+          }
+        });
+    final var variableInstructions =
+        instructions.stream()
+            .flatMap(
+                instruction -> {
+                  final var vi = instruction.getVariableInstructions();
+                  return vi == null ? java.util.stream.Stream.empty() : vi.stream();
+                })
+            .toList();
+    validateInstructions(
+        variableInstructions,
+        (variableInstruction) ->
+            variableInstruction.getVariables() != null
+                && !variableInstruction.getVariables().isEmpty(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
+  }
+
+  private static void validateMoveBatchInstructions(
+      final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions,
+      final List<String> violations) {
+    validateInstructions(
+        instructions,
+        instruction ->
+            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+    validateInstructions(
+        instructions,
+        instruction ->
+            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
+  }
+
+  private static <T> void validateInstructions(
+      final List<T> instructions,
+      final Predicate<T> match,
+      final List<String> violations,
+      final String message) {
+    final boolean areInstructionsValid = instructions.stream().allMatch(match);
+    if (!areInstructionsValid) {
+      violations.add(message);
+    }
+  }
+}

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_17ojz6y" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="c00115a7-7647-4f2f-9032-8b2a2efe752d">
+  <decision id="determine-fraud-rating-1dmmwcu" name="Determine fraud rating confidence">
+    <decisionTable id="DecisionTable_1xgcg4h" hitPolicy="COLLECT">
+      <input id="InputClause_1abpx7l" label="1-year customer claim frequency" biodi:width="192">
+        <inputExpression id="LiteralExpression_0ftj8n5" typeRef="number">
+          <text>customer_claim_frequency</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_1yzzr92" label="1-year vendor claim frequency">
+        <inputExpression id="LiteralExpression_1uwvnqx" typeRef="number">
+          <text>vendor_claim_frequency</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_16ezqsg" label="dispute amount">
+        <inputExpression id="LiteralExpression_1ihjohf" typeRef="number">
+          <text>disputeDetails.disputeAmount.amount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="fraud rating score" name="fraud_rating_score" typeRef="number" />
+      <output id="OutputClause_0qrneh2" label="fraud rating confidence score" name="fraud_rating_confidence_score" typeRef="number" />
+      <rule id="DecisionRule_1k4nzuh">
+        <description>fraud unlikely with high confidence</description>
+        <inputEntry id="UnaryTests_108zqig">
+          <text>&lt;5</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0qgv8na">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_18zmpl0">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_17gakzg">
+          <text>-3</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_10r1rn5">
+          <text>10</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_15rafmd">
+        <description>fraud likely with low confidence</description>
+        <inputEntry id="UnaryTests_1s3a13z">
+          <text>&gt;=5</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_135cutp">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1uamk6n">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1lszvnc">
+          <text>8</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0x4wis1">
+          <text>-5</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0dhr0b7">
+        <description>fraud very unlikely with good confidence</description>
+        <inputEntry id="UnaryTests_1a1a2l7">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0yfjqnp">
+          <text>&lt;5</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1xoznzi">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0x5qshn">
+          <text>-10</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_05784dw">
+          <text>7</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0a70ym2">
+        <description>fraud unclear with low confidence</description>
+        <inputEntry id="UnaryTests_0bz3lez">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_17rh7sa">
+          <text>[5..20]</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0qytqw5">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0wswszt">
+          <text>3</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0v722sb">
+          <text>-3</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1nzk71e">
+        <description>fraud very likely with good confidence</description>
+        <inputEntry id="UnaryTests_0gws02u">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_049n2gn">
+          <text>&gt;20</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0jitm8g">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0cbfsr9">
+          <text>10</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0ehxyre">
+          <text>5</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0tzzmhp">
+        <description>fraud unlikely with good confidence</description>
+        <inputEntry id="UnaryTests_0441qln">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0kd8ftv">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0mrwftr">
+          <text>&lt;1000</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_128ie24">
+          <text>-5</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_14y5lrv">
+          <text>5</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0t3no5s">
+        <description>fraud likely with low confidence</description>
+        <inputEntry id="UnaryTests_0wkkwnz">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1sgcq64">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1b2ur4a">
+          <text>[1000..10000]</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0km0sb7">
+          <text>5</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0fr5fz1">
+          <text>-3</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0syhagr">
+        <description>fraud very likely with very low confidence</description>
+        <inputEntry id="UnaryTests_1xt7d6s">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_15pubck">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_00ncl7p">
+          <text>&gt;10000</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ojlycx">
+          <text>8</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0za9zis">
+          <text>-10</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="determine-fraud-rating-1dmmwcu">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

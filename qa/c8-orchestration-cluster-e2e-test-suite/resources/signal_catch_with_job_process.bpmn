@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="SrP3Signal" targetNamespace="http://bpmn.io/schema/bpmn">
+  <signal id="SrP3Sig" name="SrP3Signal"/>
+  <process id="sr_p3_signal" name="SR P3 signal catch" isExecutable="true">
+    <startEvent id="start"><outgoing>f1</outgoing></startEvent>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="catchSignal"/>
+    <intermediateCatchEvent id="catchSignal" name="Catch SrP3Signal">
+      <incoming>f1</incoming><outgoing>f2</outgoing>
+      <signalEventDefinition id="sed1" signalRef="SrP3Sig"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="f2" sourceRef="catchSignal" targetRef="signalDone"/>
+    <serviceTask id="signalDone" name="Signal caught">
+      <extensionElements><zeebe:taskDefinition type="sr-p3-signal-done"/></extensionElements>
+      <incoming>f2</incoming><outgoing>f3</outgoing>
+    </serviceTask>
+    <sequenceFlow id="f3" sourceRef="signalDone" targetRef="end"/>
+    <endEvent id="end"><incoming>f3</incoming></endEvent>
+  </process>
+
+  <bpmndi:BPMNDiagram id="Diagram_sr_p3_signal">
+    <bpmndi:BPMNPlane id="Plane_sr_p3_signal" bpmnElement="sr_p3_signal">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="180" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catchSignal_di" bpmnElement="catchSignal">
+        <dc:Bounds x="380" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="signalDone_di" bpmnElement="signalDone">
+        <dc:Bounds x="580" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="780" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="216" y="168" />
+        <di:waypoint x="380" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
+        <di:waypoint x="416" y="168" />
+        <di:waypoint x="580" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f3_di" bpmnElement="f3">
+        <di:waypoint x="680" y="190" />
+        <di:waypoint x="780" y="168" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,47 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.zeebe.protocol.record.value;
+
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import org.immutables.value.Value;
+
+/**
+ * Represents a stream clock event or command.
+ *
+ * <p>See {@link ClockIntent} for intents.
+ */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableClockRecordValue.Builder.class)
+public interface ClockRecordValue extends RecordValue {
+  /**
+   * Returns the value of this clock modification, if any.
+   *
+   * <ol>
+   *   <li>If the associated intent is a pin, then the time is a Unix timestamp as epoch
+   *       milliseconds
+   *   <li>If the associated intent is {@link ClockIntent#ADD}, then the time is the duration in
+   *       milliseconds to add to the clock; it may be negative
+   *   <li>If the associated intent is an offset, then the time is the total duration in
+   *       milliseconds between the clock and the system time
+   *   <li>If the associated intent is a reset, then this value has no meaning, and will be 0
+   *   <li>If the associated intent is {@link ClockIntent#FETCHED}, then the time is the current
+   *       time of the clock as epoch milliseconds; for {@link ClockIntent#FETCH} it has no meaning
+   * </ol>
+   */
+  long getTime();
+}

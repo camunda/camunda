@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             targetNamespace="http://bpmn.io/schema/bpmn" id="srLongSuspendDefs" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <message id="SrLongMsg" name="sr-long-msg">
+    <extensionElements><zeebe:subscription correlationKey="=corrId"/></extensionElements>
+  </message>
+  <process id="sr_long_suspend" name="SR long suspension: message subscription + PT5M timer" isExecutable="true">
+    <startEvent id="start"><outgoing>f1</outgoing></startEvent>
+    <parallelGateway id="split"><incoming>f1</incoming><outgoing>f2</outgoing><outgoing>f3</outgoing></parallelGateway>
+    <receiveTask id="waitMsg" name="Wait for sr-long-msg" messageRef="SrLongMsg">
+      <incoming>f2</incoming><outgoing>f4</outgoing>
+    </receiveTask>
+    <serviceTask id="msgDone" name="Message arrived">
+      <extensionElements><zeebe:taskDefinition type="sr-long-msg-done" retries="3"/></extensionElements>
+      <incoming>f4</incoming><outgoing>f6</outgoing>
+    </serviceTask>
+    <intermediateCatchEvent id="waitTimer" name="PT5M">
+      <incoming>f3</incoming><outgoing>f5</outgoing>
+      <timerEventDefinition id="ted1"><timeDuration>PT5M</timeDuration></timerEventDefinition>
+    </intermediateCatchEvent>
+    <serviceTask id="timerDone" name="Timer fired">
+      <extensionElements><zeebe:taskDefinition type="sr-long-timer-done" retries="3"/></extensionElements>
+      <incoming>f5</incoming><outgoing>f7</outgoing>
+    </serviceTask>
+    <parallelGateway id="join"><incoming>f6</incoming><incoming>f7</incoming><outgoing>f8</outgoing></parallelGateway>
+    <endEvent id="end"><incoming>f8</incoming></endEvent>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="split"/>
+    <sequenceFlow id="f2" sourceRef="split" targetRef="waitMsg"/>
+    <sequenceFlow id="f3" sourceRef="split" targetRef="waitTimer"/>
+    <sequenceFlow id="f4" sourceRef="waitMsg" targetRef="msgDone"/>
+    <sequenceFlow id="f5" sourceRef="waitTimer" targetRef="timerDone"/>
+    <sequenceFlow id="f6" sourceRef="msgDone" targetRef="join"/>
+    <sequenceFlow id="f7" sourceRef="timerDone" targetRef="join"/>
+    <sequenceFlow id="f8" sourceRef="join" targetRef="end"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="Diagram_sr_long_suspend">
+    <bpmndi:BPMNPlane id="Plane_sr_long_suspend" bpmnElement="sr_long_suspend">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="180" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="split_di" bpmnElement="split">
+        <dc:Bounds x="380" y="150" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="waitMsg_di" bpmnElement="waitMsg">
+        <dc:Bounds x="580" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msgDone_di" bpmnElement="msgDone">
+        <dc:Bounds x="780" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="waitTimer_di" bpmnElement="waitTimer">
+        <dc:Bounds x="580" y="310" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timerDone_di" bpmnElement="timerDone">
+        <dc:Bounds x="780" y="310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="join_di" bpmnElement="join">
+        <dc:Bounds x="980" y="150" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="1180" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="216" y="168" />
+        <di:waypoint x="380" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
+        <di:waypoint x="430" y="175" />
+        <di:waypoint x="580" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f3_di" bpmnElement="f3">
+        <di:waypoint x="430" y="175" />
+        <di:waypoint x="580" y="328" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f4_di" bpmnElement="f4">
+        <di:waypoint x="680" y="190" />
+        <di:waypoint x="780" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f5_di" bpmnElement="f5">
+        <di:waypoint x="616" y="328" />
+        <di:waypoint x="780" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f6_di" bpmnElement="f6">
+        <di:waypoint x="880" y="190" />
+        <di:waypoint x="980" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f7_di" bpmnElement="f7">
+        <di:waypoint x="880" y="350" />
+        <di:waypoint x="980" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f8_di" bpmnElement="f8">
+        <di:waypoint x="1030" y="175" />
+        <di:waypoint x="1180" y="168" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

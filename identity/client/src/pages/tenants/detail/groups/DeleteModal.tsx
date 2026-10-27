@@ -1,0 +1,82 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import useTranslate from "src/utility/localization";
+import {
+  DeleteModal as Modal,
+  UseEntityModalCustomProps,
+} from "src/components/modal";
+import { useNotifications } from "src/components/notifications";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
+
+type RemoveTenantGroupModalProps = UseEntityModalCustomProps<
+  Group,
+  {
+    tenant: string;
+  }
+>;
+
+const DeleteModal: FC<RemoveTenantGroupModalProps> = ({
+  entity: group,
+  open,
+  onClose,
+  onSuccess,
+  tenant,
+}) => {
+  const { t, Translate } = useTranslate("tenants");
+  const { enqueueNotification } = useNotifications();
+
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignGroup(qc),
+  );
+
+  const handleSubmit = () => {
+    if (tenant && group) {
+      mutate(
+        { tenantId: tenant, groupId: group.groupId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("tenantGroupRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      headline={t("removeGroup")}
+      onSubmit={handleSubmit}
+      loading={loading}
+      loadingDescription={t("removingGroup")}
+      onClose={onClose}
+      confirmLabel={t("removeGroup")}
+    >
+      <p>
+        <Translate
+          i18nKey="removeGroupFromTenant"
+          values={{ groupId: group.groupId }}
+        >
+          Are you sure you want to remove <strong>{group.groupId}</strong> from
+          this tenant?
+        </Translate>
+      </p>
+    </Modal>
+  );
+};
+
+export default DeleteModal;

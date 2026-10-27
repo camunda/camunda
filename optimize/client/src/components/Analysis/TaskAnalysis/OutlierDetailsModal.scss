@@ -1,0 +1,32 @@
+@use '@carbon/styles/scss/spacing';
+
+.OutlierDetailsModal {
+  .cds--modal-container {
+    min-height: 90%;
+  }
+
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+      margin-bottom: spacing.$spacing-04;
+      font-weight: bold;
+    }
+  }
+
+  .description {
+    > span {
+      margin-left: 1.5rem;
+    }
+  }
+
+  .DurationChart {
+    flex: 1 0 30%;
+  }
+
+  .VariablesTable {
+    max-height: 30%;
+    flex: 1;
+  }
+}

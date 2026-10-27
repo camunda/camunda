@@ -1,0 +1,52 @@
+[
+  {
+    "case": "cycle-time under target",
+    "input":  { "kpi": "cycleTime", "value": 6.0, "target": 8.0, "direction": "LOWER_IS_BETTER" },
+    "expect": { "value": 6.0, "target": 8.0, "met": true, "gapPct": 25.0, "direction": "under" }
+  },
+  {
+    "case": "cycle-time over target",
+    "input":  { "kpi": "cycleTime", "value": 10.0, "target": 8.0, "direction": "LOWER_IS_BETTER" },
+    "expect": { "value": 10.0, "target": 8.0, "met": false, "gapPct": 25.0, "direction": "over" }
+  },
+  {
+    "case": "cycle-time exactly at target (edge)",
+    "input":  { "kpi": "cycleTime", "value": 8.0, "target": 8.0, "direction": "LOWER_IS_BETTER" },
+    "expect": { "value": 8.0, "target": 8.0, "met": true, "gapPct": 0.0, "direction": "at" }
+  },
+  {
+    "case": "automation above target",
+    "input":  { "kpi": "automationRate", "value": 90.0, "target": 85.0, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": 90.0, "target": 85.0, "met": true, "gapPct": 5.882352941176472, "direction": "over" }
+  },
+  {
+    "case": "automation below target",
+    "input":  { "kpi": "automationRate", "value": 70.0, "target": 85.0, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": 70.0, "target": 85.0, "met": false, "gapPct": 17.647058823529413, "direction": "under" }
+  },
+  {
+    "case": "null target = unset",
+    "input":  { "kpi": "automationRate", "value": 80.0, "target": null, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": 80.0, "target": null, "met": null, "gapPct": null, "direction": null }
+  },
+  {
+    "case": "null value = no data (target preserved)",
+    "input":  { "kpi": "automationRate", "value": null, "target": 85.0, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": null, "target": 85.0, "met": null, "gapPct": null, "direction": null }
+  },
+  {
+    "case": "cycle-time huge numbers (over)",
+    "input":  { "kpi": "cycleTime", "value": 1.0e12, "target": 1.0e11, "direction": "LOWER_IS_BETTER" },
+    "expect": { "value": 1.0e12, "target": 1.0e11, "met": false, "gapPct": 900.0, "direction": "over" }
+  },
+  {
+    "case": "automation tiny floats (below)",
+    "input":  { "kpi": "automationRate", "value": 0.001, "target": 0.002, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": 0.001, "target": 0.002, "met": false, "gapPct": 50.0, "direction": "under" }
+  },
+  {
+    "case": "automation exactly at target (edge)",
+    "input":  { "kpi": "automationRate", "value": 85.0, "target": 85.0, "direction": "HIGHER_IS_BETTER" },
+    "expect": { "value": 85.0, "target": 85.0, "met": true, "gapPct": 0.0, "direction": "at" }
+  }
+]

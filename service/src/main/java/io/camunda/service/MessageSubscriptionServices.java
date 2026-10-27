@@ -1,0 +1,84 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.service;
+
+import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
+
+import io.camunda.search.clients.MessageSubscriptionSearchClient;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
+import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+
+public class MessageSubscriptionServices
+    extends SearchQueryService<
+        MessageSubscriptionServices, MessageSubscriptionQuery, MessageSubscriptionEntity> {
+
+  private final MessageSubscriptionSearchClient searchClient;
+
+  public MessageSubscriptionServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final MessageSubscriptionSearchClient searchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+    this.searchClient = searchClient;
+  }
+
+  @Override
+  public SearchQueryResult<MessageSubscriptionEntity> search(
+      final MessageSubscriptionQuery query, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .searchMessageSubscriptions(query));
+  }
+
+  public MessageSubscriptionEntity getByKey(
+      final long key, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        RequiredAuthorization.withRequiredAuthorization(
+                            MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION,
+                            MessageSubscriptionEntity::processDefinitionId)))
+                .getMessageSubscription(key));
+  }
+
+  public SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelated(
+      final CorrelatedMessageSubscriptionQuery query, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .searchCorrelatedMessageSubscriptions(query));
+  }
+}

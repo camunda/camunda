@@ -1,0 +1,144 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.db.os.writer;
+
+import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.FLOW_NODE_DATA;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.ONBOARDED;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
+import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.slf4j.Logger;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+@Component
+@Conditional(OpenSearchCondition.class)
+public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
+    implements ProcessDefinitionWriter {
+
+  private static final Script MARK_AS_DELETED_SCRIPT =
+      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "ctx._source.deleted = true;"
+              + " ctx._source."
+              + PROCESS_DEFINITION_XML
+              + " = null;"
+              + " ctx._source."
+              + FLOW_NODE_DATA
+              + " = null;"
+              + " ctx._source."
+              + USER_TASK_NAMES
+              + " = null",
+          Collections.emptyMap());
+
+  private static final Script MARK_AS_ONBOARDED_SCRIPT =
+      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "ctx._source.onboarded = true", Collections.emptyMap());
+
+  /**
+   * Update-by-query defaults to a scroll page size of 1000. Because each definition contains the
+   * full BPMN XML, limit the scroll page size to reduce server pressure.
+   */
+  private static final int MARK_AS_ONBOARDED_SCROLL_SIZE = 50;
+
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
+
+  private final ConfigurationService configurationService;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
+
+  public ProcessDefinitionWriterOS(
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
+    super(objectMapper, osClient);
+    this.configurationService = configurationService;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
+  }
+
+  @Override
+  public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
+    final List<ProcessDefinitionOptimizeDto> filteredProcDefs =
+        deletedProcessDefinitionFilter.filterOutSuppressed(
+            procDefs, ProcessDefinitionOptimizeDto::getId);
+    LOG.debug("Writing [{}] process definitions to opensearch", filteredProcDefs.size());
+    writeProcessDefinitionInformation(filteredProcDefs);
+  }
+
+  @Override
+  public void softDeleteDefinition(final String definitionId) {
+    LOG.debug("Soft-deleting process definition with ID {}", definitionId);
+    // Refresh immediately: callers rely on a subsequent search seeing this delete right away
+    final UpdateRequest.Builder updateReqBuilder =
+        new UpdateRequest.Builder<>()
+            .index(PROCESS_DEFINITION_INDEX_NAME)
+            .id(definitionId)
+            .script(MARK_AS_DELETED_SCRIPT)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .refresh(Refresh.True);
+    final String errorMessage =
+        String.format(
+            "There was a problem when trying to soft-delete process definition with ID %s",
+            definitionId);
+    osClient.update(updateReqBuilder, errorMessage);
+  }
+
+  @Override
+  public void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys) {
+    osClient.updateByQuery(
+        PROCESS_DEFINITION_INDEX_NAME,
+        new BoolQuery.Builder()
+            .must(QueryDSL.terms(PROCESS_DEFINITION_KEY, definitionKeys, FieldValue::of))
+            .must(QueryDSL.term(ONBOARDED, false))
+            .must(QueryDSL.term(DEFINITION_DELETED, false))
+            .build()
+            .toQuery(),
+        MARK_AS_ONBOARDED_SCRIPT,
+        false,
+        MARK_AS_ONBOARDED_SCROLL_SIZE);
+  }
+
+  @Override
+  Script createUpdateScript(final ProcessDefinitionOptimizeDto processDefinitionDto) {
+    return OpenSearchWriterUtil.createFieldUpdateScript(
+        FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
+  }
+
+  private void writeProcessDefinitionInformation(
+      final List<ProcessDefinitionOptimizeDto> procDefs) {
+    final String importItemName = "process definition information";
+    LOG.debug("Writing [{}] {} to OpenSearch.", procDefs.size(), importItemName);
+
+    osClient.doImportBulkRequestWithList(
+        importItemName,
+        procDefs,
+        this::addImportProcessDefinitionToRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached(),
+        PROCESS_DEFINITION_INDEX_NAME);
+  }
+}

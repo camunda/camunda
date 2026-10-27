@@ -1,0 +1,22 @@
+/* Preserve stroke-based Lucide icons under Carbon's global SVG fill. */
+:where(.c4-ui) svg.lucide:not([class*='fill-']) {
+  fill: none;
+}
+
+.c4-ui,
+.c4-ui.dark {
+  --background: var(--cds-background);
+}
+
+@media (width < 48rem) {
+  .operate-nav-v2-license-tag {
+    display: none;
+  }
+
+  [data-slot='app-header'] > div:has(.operate-nav-v2-logo),
+  .operate-nav-v2-breadcrumb [data-slot='nav-breadcrumb-separator'],
+  .operate-nav-v2-breadcrumb
+    [data-slot='nav-breadcrumb-item']:not(:last-child) {
+    display: none;
+  }
+}

@@ -1,0 +1,322 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.system.configuration.engine;
+
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
+import org.jspecify.annotations.Nullable;
+
+public final class EngineCfg implements ConfigurationEntry {
+
+  private MessagesCfg messages = new MessagesCfg();
+  private CachesCfg caches = new CachesCfg();
+  private JobsCfg jobs = new JobsCfg();
+  private ValidatorsCfg validators = new ValidatorsCfg();
+  private BatchOperationCfg batchOperations = new BatchOperationCfg();
+  private SecretResolutionCfg secretResolution = new SecretResolutionCfg();
+  private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
+  private JobMetricsCfg jobMetrics = new JobMetricsCfg();
+  private DistributionCfg distribution = new DistributionCfg();
+  private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private EngineConfiguration.InputMappingMode inputMappingMode =
+      EngineConfiguration.InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
+  private EngineConfiguration.OutputMappingMode outputMappingMode =
+      EngineConfiguration.OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
+  private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+  private ExpressionCfg expression = new ExpressionCfg();
+  private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
+  private StartupCfg startup = new StartupCfg();
+  private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    messages.init(globalConfig, brokerBase);
+    caches.init(globalConfig, brokerBase);
+    jobs.init(globalConfig, brokerBase);
+    jobMetrics.init(globalConfig, brokerBase);
+    batchOperations.init(globalConfig, brokerBase);
+    secretResolution.init(globalConfig, brokerBase);
+    validators.init(globalConfig, brokerBase);
+    distribution.init(globalConfig, brokerBase);
+    usageMetrics.init(globalConfig, brokerBase);
+    globalListeners.init(globalConfig, brokerBase);
+    expression.init(globalConfig, brokerBase);
+    processInstanceCreation.init(globalConfig, brokerBase);
+    startup.init(globalConfig, brokerBase);
+    storageOrdinals.init(globalConfig, brokerBase);
+  }
+
+  public MessagesCfg getMessages() {
+    return messages;
+  }
+
+  public void setMessages(final MessagesCfg messages) {
+    this.messages = messages;
+  }
+
+  public CachesCfg getCaches() {
+    return caches;
+  }
+
+  public void setCaches(final CachesCfg caches) {
+    this.caches = caches;
+  }
+
+  public JobsCfg getJobs() {
+    return jobs;
+  }
+
+  public void setJobs(final JobsCfg jobs) {
+    this.jobs = jobs;
+  }
+
+  public ValidatorsCfg getValidators() {
+    return validators;
+  }
+
+  public void setValidators(final ValidatorsCfg validators) {
+    this.validators = validators;
+  }
+
+  public BatchOperationCfg getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final BatchOperationCfg batchOperations) {
+    this.batchOperations = batchOperations;
+  }
+
+  public SecretResolutionCfg getSecretResolution() {
+    return secretResolution;
+  }
+
+  public void setSecretResolution(final SecretResolutionCfg secretResolution) {
+    this.secretResolution = secretResolution;
+  }
+
+  public UsageMetricsCfg getUsageMetrics() {
+    return usageMetrics;
+  }
+
+  public void setUsageMetrics(final UsageMetricsCfg usageMetrics) {
+    this.usageMetrics = usageMetrics;
+  }
+
+  public DistributionCfg getDistribution() {
+    return distribution;
+  }
+
+  public void setDistribution(final DistributionCfg distribution) {
+    this.distribution = distribution;
+  }
+
+  public int getMaxProcessDepth() {
+    return maxProcessDepth;
+  }
+
+  public void setMaxProcessDepth(final int maxProcessDepth) {
+    this.maxProcessDepth = maxProcessDepth;
+  }
+
+  public EngineConfiguration.InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public void setInputMappingMode(final EngineConfiguration.InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public void setInputComparisonMode(final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+  }
+
+  public EngineConfiguration.OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public void setOutputMappingMode(final EngineConfiguration.OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+  }
+
+  public GlobalListenersCfg getGlobalListeners() {
+    return globalListeners;
+  }
+
+  public void setGlobalListeners(final GlobalListenersCfg globalListeners) {
+    this.globalListeners = globalListeners;
+  }
+
+  public JobMetricsCfg getJobMetrics() {
+    return jobMetrics;
+  }
+
+  public void setJobMetrics(final JobMetricsCfg jobMetrics) {
+    this.jobMetrics = jobMetrics;
+  }
+
+  public ExpressionCfg getExpression() {
+    return expression;
+  }
+
+  public void setExpression(final ExpressionCfg expression) {
+    this.expression = expression;
+  }
+
+  public ProcessInstanceCreationCfg getProcessInstanceCreation() {
+    return processInstanceCreation;
+  }
+
+  public void setProcessInstanceCreation(final ProcessInstanceCreationCfg processInstanceCreation) {
+    this.processInstanceCreation = processInstanceCreation;
+  }
+
+  public StartupCfg getStartup() {
+    return startup;
+  }
+
+  public void setStartup(final StartupCfg startupCfg) {
+    startup = startupCfg;
+  }
+
+  public StorageOrdinalsCfg getStorageOrdinals() {
+    return storageOrdinals;
+  }
+
+  public void setStorageOrdinals(final StorageOrdinalsCfg storageOrdinals) {
+    this.storageOrdinals = storageOrdinals;
+  }
+
+  @Override
+  public String toString() {
+    return "EngineCfg{"
+        + "jobMetrics="
+        + jobMetrics
+        + ", messages="
+        + messages
+        + ", caches="
+        + caches
+        + ", jobs="
+        + jobs
+        + ", validators="
+        + validators
+        + ", jobMetrics="
+        + jobMetrics
+        + ", batchOperations="
+        + batchOperations
+        + ", secretResolution="
+        + secretResolution
+        + ", usageMetrics="
+        + usageMetrics
+        + ", distribution="
+        + distribution
+        + ", maxProcessDepth="
+        + maxProcessDepth
+        + ", expression="
+        + expression
+        + ", processInstanceCreation="
+        + processInstanceCreation
+        + ", startup="
+        + startup
+        + ", storageOrdinals="
+        + storageOrdinals
+        + ", inputMappingMode="
+        + inputMappingMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
+        + ", outputMappingMode="
+        + outputMappingMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
+        + '}';
+  }
+
+  public EngineConfiguration createEngineConfiguration() {
+    return new EngineConfiguration()
+        .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
+        .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
+        .setDrgCacheCapacity(caches.getDrgCacheCapacity())
+        .setFormCacheCapacity(caches.getFormCacheCapacity())
+        .setResourceCacheCapacity(caches.getResourceCacheCapacity())
+        .setProcessCacheCapacity(caches.getProcessCacheCapacity())
+        .setProcessCacheSoftValues(caches.isProcessCacheSoftValues())
+        .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
+        .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
+        .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
+        .setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution())
+        .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
+        .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
+        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+        .setMaxIdFieldLength(validators.getMaxIdFieldLength())
+        .setMaxNameFieldLength(validators.getMaxNameFieldLength())
+        .setMaxWorkerTypeLength(validators.getMaxWorkerTypeLength())
+        .setBatchOperationSchedulerInterval(batchOperations.getSchedulerInterval())
+        .setBatchOperationChunkSize(batchOperations.getChunkSize())
+        .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
+        .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
+        .setBatchOperationQueryRetryMax(batchOperations.getQueryRetryMax())
+        .setBatchOperationQueryRetryInitialDelay(batchOperations.getQueryRetryInitialDelay())
+        .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
+        .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
+        .setSecretResolutionInterval(secretResolution.getInterval())
+        .setSecretResolutionRetryMaxAttempts(secretResolution.getRetryMaxAttempts())
+        .setSecretResolutionRetryInitialDelay(secretResolution.getRetryInitialDelay())
+        .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
+        .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
+        .setSecretResolutionBatchLimit(secretResolution.getBatchResolutionLimit())
+        .setSecretResolutionWakeDelay(secretResolution.getWakeDelay())
+        .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setJobMetricsExportInterval(jobMetrics.getExportInterval())
+        .setJobMetricsExportEnabled(jobMetrics.isEnabled())
+        .setJobMetricsMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())
+        .setJobMetricsMaxTypeLength(jobMetrics.getMaxJobTypeLength())
+        .setJobMetricsMaxTenantIdLength(jobMetrics.getMaxTenantIdLength())
+        .setJobMetricsMaxUniqueKeys(jobMetrics.getMaxUniqueKeys())
+        .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
+        .setCommandRedistributionInterval(distribution.getRedistributionInterval())
+        .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
+        .setMaxProcessDepth(getMaxProcessDepth())
+        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
+        .setExpressionEvaluationTimeout(expression.getTimeout())
+        .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
+        .setMessageStartDedupExpirationSweepInterval(
+            processInstanceCreation.getMessageStartDedupExpirationSweepInterval())
+        .setMessageStartDedupExpirationSweepBatchLimit(
+            processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit())
+        .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
+        .setMessageStartLockReleasePollInterval(
+            processInstanceCreation.getMessageStartLockReleasePollInterval())
+        .setMessageStartLockReleasePollBatchLimit(
+            processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
+        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setEnableProcessDefinitionRestore(startup.isProcessDefinitionRestoreEnabled())
+        .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
+        .setFixedStorageOrdinal(storageOrdinals.getFixedStorageOrdinal())
+        .setInputMappingMode(inputMappingMode)
+        .setInputComparisonMode(inputComparisonMode)
+        .setOutputMappingMode(outputMappingMode)
+        .setOutputComparisonMode(outputComparisonMode);
+  }
+}

@@ -1,0 +1,241 @@
+# description: Smoke-tests the load-test setup on every push that touches load-test infra.
+#              Runs two independent chains in parallel, each in its own namespace:
+#              - install (deploys the PR ref from scratch to check the installation)
+#              - upgrade (deploys the base-ref first, then updates to the PR ref to check upgrading from an older setup-code version).
+#              Both chains wait for pod readiness and gateway connectivity after each deploy,
+#              and check the k6 TestRuns, then delete their namespace.
+#              In the upgrade chain, the k6 operator does not restart a TestRun when it is updated, so
+#              the TestRun status left by the base-ref deployment satisfies the check after the update.
+# calls: camunda-load-test.yml (scenario: realistic),
+#        camunda-verify-load-test.yml (verify connectivity),
+#        camunda-delete-load-test.yml (delete namespace)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Smoke Load Test
+on:
+  workflow_call:
+    inputs:
+      target-version:
+        description: 'Setup version subfolder (main, stable-89, stable-88, stable-87)'
+        type: string
+        default: "main"
+        required: false
+      orchestration-tag:
+        description: 'Docker Hub image tag to use (e.g. SNAPSHOT, 8.9-SNAPSHOT)'
+        type: string
+        default: "SNAPSHOT"
+        required: false
+      ref:
+        description: 'Git ref to checkout (branch or SHA). Defaults to PR head.'
+        type: string
+        default: ""
+        required: false
+      base-ref:
+        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
+        type: string
+        default: "main"
+        required: false
+  workflow_dispatch:
+    inputs:
+      target-version:
+        description: 'Setup version subfolder (main, stable-89, stable-88, stable-87)'
+        type: string
+        default: "main"
+        required: false
+      orchestration-tag:
+        description: 'Docker Hub image tag to use (e.g. SNAPSHOT, 8.9-SNAPSHOT)'
+        type: string
+        default: "SNAPSHOT"
+        required: false
+      ref:
+        description: 'Git ref to checkout for the smoke test (branch or SHA)'
+        type: string
+        default: ""
+        required: false
+      base-ref:
+        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
+        type: string
+        default: "main"
+        required: false
+
+concurrency:
+  group: smoke-load-test-${{ github.event.pull_request.id || inputs.ref }}-${{ inputs.target-version || 'main' }}
+  cancel-in-progress: true
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  TARGET_VERSION: ${{ inputs.target-version }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+    steps:
+      - id: sanitize-author
+        name: Sanitize author name
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
+        with:
+          branch: ${{ github.event.pull_request.user.login || github.actor }}
+          max_length: 10
+      - id: compute-namespace
+        name: Compute safe namespace from PR author, number and version
+        env:
+          AUTHOR: ${{ steps.sanitize-author.outputs.branch_name || github.actor }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.run_id }}
+        run: |
+          author="${AUTHOR}"
+          pr_number="${PR_NUMBER}"
+          version_slug="${TARGET_VERSION:-main}"
+          version_slug_sanitized="${version_slug//-/}"
+          echo "namespace=c8-smoke-${author}-${pr_number}-${version_slug_sanitized}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ---------------------------------------------------------------------------
+  # Install chain: deploys the PR's own setup code from scratch, then re-applies
+  # it unchanged to check that updates are idempotent (e.g. don't regenerate
+  # credentials on every update, which can cause downtime and failed updates).
+  # ---------------------------------------------------------------------------
+
+  smoke-install:
+    name: Smoke Install
+    needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
+      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      target-version: ${{ inputs.target-version || 'main' }}
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
+
+  verify-install:
+    name: Verify Install
+    needs: [sanitize-branch-name, smoke-install]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
+
+  cleanup-install:
+    name: Cleanup (install chain)
+    needs: [sanitize-branch-name, verify-install]
+    if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
+
+  # ---------------------------------------------------------------------------
+  # Upgrade chain: deploys base-ref's setup code (the version already on main
+  # before this PR), then updates it to the PR ref. This exercises upgrading
+  # from an older setup-code version, which the install chain above cannot
+  # catch since it only ever deploys the PR's own code.
+  # ---------------------------------------------------------------------------
+
+  smoke-upgrade-install:
+    name: Smoke Upgrade - Install (base ref)
+    needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+      ref: ${{ inputs.base-ref || 'main' }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      ttl: 1
+      target-version: ${{ inputs.target-version || 'main' }}
+      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
+
+  verify-upgrade-install:
+    name: Verify Upgrade Install
+    needs: [sanitize-branch-name, smoke-upgrade-install]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+
+  smoke-upgrade-update:
+    name: Smoke Upgrade - Update (PR ref)
+    needs: [sanitize-branch-name, verify-upgrade-install]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      ttl: 1
+      target-version: ${{ inputs.target-version || 'main' }}
+      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
+
+  verify-upgrade-update:
+    name: Verify Upgrade Update
+    needs: [sanitize-branch-name, smoke-upgrade-update]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+
+  cleanup-upgrade:
+    name: Cleanup (upgrade chain)
+    needs: [sanitize-branch-name, verify-upgrade-update]
+    if: always()
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade

@@ -1,0 +1,33 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useQuery} from '@tanstack/react-query';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {fetchCallHierarchy} from 'modules/api/v2/processInstances/fetchCallHierarchy';
+import {queryKeys} from '../queryKeys';
+
+const useCallHierarchy = (
+  {processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>,
+  {enabled}: {enabled: boolean},
+) => {
+  return useQuery({
+    queryKey: queryKeys.callHierarchy.get(processInstanceKey),
+    queryFn: async () => {
+      const {response, error} = await fetchCallHierarchy(processInstanceKey);
+
+      if (response !== null) {
+        return response;
+      }
+
+      throw error;
+    },
+    enabled,
+  });
+};
+
+export {useCallHierarchy};

@@ -1,0 +1,33 @@
+---
+name: Collect test artifacts
+
+# owner: @camunda/engineering-operations
+
+description: Collects test outputs and uploads them as artifact
+
+inputs:
+  name:
+    description: 'Name of the test artifact.'
+    required: true
+  path:
+    description: 'List of paths to test outputs.'
+    required: false
+    default: |
+      **/target/failsafe-reports/
+      **/target/surefire-reports/
+      **/*.log
+  retention-days:
+    description: 'Number of days to keep the test artifact'
+    required: false
+    default: "7"
+
+runs:
+  using: composite
+  steps:
+  - name: Archive Test Results
+    uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+    with:
+      name: Test results for ${{ inputs.name  }}
+      path: ${{ inputs.path }}
+      retention-days: ${{ inputs.retention-days }}
+      if-no-files-found: ignore

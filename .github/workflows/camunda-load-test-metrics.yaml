@@ -1,0 +1,226 @@
+# description: Renders load-test metrics for a given namespace as a job
+#              summary. Reusable via workflow_call (publishes JSON for other
+#              workflows as an artifact) or runnable ad-hoc via workflow_dispatch.
+#              The results are a `load-test-results-<namespace>` artifact holding
+#              results.json, a JSON object {name: number, ...} (metrics that scrape no data are
+#              omitted). They are not a workflow output: the Prometheus credentials are masked in
+#              this job, and GitHub silently drops a $GITHUB_OUTPUT write whose value contains a
+#              substring of a masked secret
+#              (https://github.com/orgs/community/discussions/26636).
+# calls: loadtestctl report (load-tests/loadtestctl)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Load Test Metrics
+run-name: "Camunda Load Test Metrics: ${{ inputs.namespace }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: 'Namespace (e.g. c8-pgoyal-quicker-pr-1234 or c8-medic-daily-2026-05-08-abc1234-test)'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Duration of the load-test run window in seconds, also the PromQL range each query covers'
+        required: false
+        type: string
+        default: '600'
+      at:
+        description: 'Optional Prometheus `time` anchor (RFC3339, e.g. 2026-05-09T12:00:00Z, or Unix timestamp). Queries end at this instant instead of "now" — use to snapshot a run whose namespace TTL has already expired.'
+        required: false
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Namespace passed to loadtestctl report'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Duration of the load-test run window in seconds, also the PromQL range each query covers.'
+        required: false
+        type: string
+        default: '600'
+      at:
+        description: 'Optional Prometheus `time` anchor (RFC3339 or Unix timestamp). When set, queries end at this instant instead of "now".'
+        required: false
+        type: string
+        default: ''
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  AT: ${{ inputs.at }}
+  LOADTESTCTL_REPORT_DURATION_SECONDS: ${{ inputs.duration-seconds }}
+  NAMESPACE: ${{ inputs.namespace }}
+  LOADTESTCTL_PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
+
+jobs:
+  query-and-summarize:
+    name: Query Prometheus and render summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    steps:
+      - name: Validate namespace prefix
+        run: |
+          if [[ ! "$NAMESPACE" =~ ^c8- ]]; then
+            echo "::error::Namespace '$NAMESPACE' must start with 'c8-' (e.g. c8-pgoyal-quicker-pr-1234)."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Import Prometheus credentials from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common LDAP_QA_USER | LOADTESTCTL_PROMETHEUS_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | LOADTESTCTL_PROMETHEUS_PASSWORD;
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+
+      - name: Run PromQL queries via loadtestctl report
+        env:
+          LOADTESTCTL_REPORT_END: ${{ env.AT }}
+        # `report-queries-comparison.yaml` holds the metrics of the comparison table. Metrics that
+        # scrape no data are null in the report and dropped here. `AT` is the end of the window
+        # (RFC3339 or Unix timestamp); empty means the window ends now. The resolved end is shared
+        # with the full report step so both cover the same window. A failing report leaves
+        # every metric out of the summary instead of failing the workflow.
+        run: |
+          if ! load-tests/loadtestctl/loadtestctl report "$NAMESPACE" \
+              --queries report-queries-comparison.yaml > "$RUNNER_TEMP/comparison.json"; then
+            echo "::warning::loadtestctl report failed; some metrics may be missing from the summary"
+            echo '{"metrics": {}}' > "$RUNNER_TEMP/comparison.json"
+          fi
+          end=$(jq -r '.end // empty' "$RUNNER_TEMP/comparison.json")
+          end=${end:-$AT}
+          if [[ -n "$end" ]]; then echo "LOADTESTCTL_REPORT_END=$end" >> "$GITHUB_ENV"; fi
+          jq '.metrics | with_entries(select(.value != null))' "$RUNNER_TEMP/comparison.json" > /tmp/results.json
+          echo "--- /tmp/results.json (null entries stripped) ---"
+          cat /tmp/results.json
+
+      - name: Upload results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: load-test-results-${{ inputs.namespace }}
+          path: /tmp/results.json
+          retention-days: 7
+          overwrite: true
+
+      - name: Build full load test report
+        # Artifact for later analysis; the comparison above does not depend on it.
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          load-tests/loadtestctl/loadtestctl report "$NAMESPACE" \
+            --output "$RUNNER_TEMP/report.json"
+
+      - name: Upload full load test report
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: load-test-report-${{ inputs.namespace }}
+          path: ${{ runner.temp }}/report.json
+          retention-days: 90
+          if-no-files-found: ignore
+          overwrite: true
+
+      - name: Convert queries.yaml to JSON for render step
+        run: |
+          yq -o=json '.' load-tests/docs/scripts/queries.yaml > /tmp/queries.json
+
+      - name: Render summary
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+
+            const namespace = process.env.NAMESPACE;
+            const durationSeconds = parseInt(process.env.LOADTESTCTL_REPORT_DURATION_SECONDS, 10);
+            const at = process.env.AT || '';
+
+            // queries.yaml drives row order, description, and formatting.
+            const queriesDoc = JSON.parse(
+              fs.readFileSync('/tmp/queries.json', 'utf8'),
+            );
+
+            let results = {};
+            let rawJson = '{}';
+            try {
+              rawJson = fs.readFileSync('/tmp/results.json', 'utf8');
+              results = JSON.parse(rawJson);
+            } catch (e) {
+              core.warning(`No /tmp/results.json — every metric will render as n/a (${e.message})`);
+            }
+
+            const numericOrNull = (v) =>
+              (typeof v === 'number' && Number.isFinite(v)) ? v : null;
+
+            const formatValue = (n, q) => {
+              if (n == null || !Number.isFinite(n)) return 'n/a';
+              const decimals = q.decimals ?? 2;
+              const unit = q.unit ?? '';
+              switch (q.format) {
+                case 'integer':
+                  return Math.round(n).toLocaleString();
+                case 'percent':
+                  return n.toFixed(decimals) + (unit || '%');
+                case 'float':
+                  return n.toFixed(decimals) + (unit ? ' ' + unit : '');
+                default:
+                  return String(n);
+              }
+            };
+
+            // Missing keys = "no data scraped" — skip the row entirely.
+            const tableLines = [
+              '| Metric | Value |',
+              '|---|---:|',
+            ];
+            for (const q of queriesDoc.queries) {
+              const value = numericOrNull(results[q.name]);
+              if (value == null) continue;
+              tableLines.push(`| ${q.description} | ${formatValue(value, q)} |`);
+            }
+            if (tableLines.length === 2) {
+              tableLines.push('| _no metrics scraped_ | - |');
+            }
+
+            // `at` may be a Unix-epoch (seconds) or an RFC3339 string — resolve both to epoch ms.
+            const endMs   = at ? (Number.isNaN(Number(at)) ? Date.parse(at) : Number(at) * 1000) : Date.now();
+            const startMs = endMs - durationSeconds * 1000;
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}&from=${startMs}&to=${endMs}`;
+            const atLabel = at ? new Date(endMs).toISOString() : '';
+            const body = [
+              `## 🔍 Load Test Metrics`,
+              '',
+              `Namespace: \`${namespace}\` · Window: ${durationSeconds}s${atLabel ? ` ending at \`${atLabel}\`` : ''}`,
+              '',
+              ...tableLines,
+              '',
+              '<details><summary>Raw JSON</summary>',
+              '',
+              '```json',
+              rawJson.trim(),
+              '```',
+              '',
+              '</details>',
+              '',
+              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+            ].join('\n');
+
+            await core.summary.addRaw(body).write();

@@ -1,0 +1,56 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    ports:
+      - "4318:4318"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    depends_on:
+      - prometheus
+      - loki
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3333:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    depends_on:
+      - prometheus
+      - loki
+
+  # Optional: uncomment to run Camunda in Docker instead of from IntelliJ.
+  # Uses the docker network — endpoint is otel-collector:4318 (not localhost).
+  #
+  # camunda:
+  #   image: camunda/camunda:SNAPSHOT
+  #   ports:
+  #     - "8080:8080"
+  #     - "26500:26500"
+  #   environment:
+  #     - CAMUNDA_LICENSE_KEY=local-test-license-key
+  #     - ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
+  #     - ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=http://otel-collector:4318
+  #     - ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT10S
+  #   depends_on:
+  #     - otel-collector

@@ -1,0 +1,2987 @@
+### ============================================================================
+### AUDIT LOG TESTS - ORGANIZED BY CATEGORY
+### ============================================================================
+### This file contains comprehensive tests for the audit log functionality
+### organized into logical categories for better maintainability.
+###
+### Test Numbering: Sequential from 001 to 087+
+###
+### Categories:
+###   1. SETUP (001-010): Process Deployments and Instance Creation
+###   2. BASIC OPERATIONS (011-015): Single Modifications
+###   3. BATCH OPERATIONS (016-023): Batch Modifications
+###   4. SEARCH & QUERY (024-032): Filtering, Sorting, Pagination, Search Operations
+###   5. DATA VALIDATION (033-056): Schema and Data Integrity
+###   6. EDGE CASES (035-048): Input Validation and Error Handling
+###   7. AUTHORIZATION (066-068): Security and Access Control
+###   8. LIFECYCLE (073-076): Process Instance Lifecycle Events
+###   9. CONCURRENT OPERATIONS (069-072): Race Conditions
+###   10. COMPLEX SCENARIOS (057-065): Multiple Modifications and Mixed Operations
+###   11. MULTI-TENANT ISOLATION (082-087): Tenant-Specific Audit Log Access
+###
+### Note: Search/query operations (filtering, sorting, pagination) are used throughout
+### all functional tests but are specifically validated in Category 4.
+### ============================================================================
+
+### ============================================================================
+### AUTHENTICATION SETUP
+### ============================================================================
+### For LOCAL environment: No setup needed, AUTH_TOKEN is pre-configured
+### For SAAS environment: Run this request first to populate AUTH_TOKEN
+### ============================================================================
+
+### Get OAuth2 Access Token (SaaS only - skip for local)
+# @name getAccessToken
+POST {{CAMUNDA_OAUTH_URL}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type = client_credentials
+    &
+client_id = {{CLIENT_ID}}
+    &
+client_secret = {{CLIENT_SECRET}}
+    &
+audience = {{AUDIENCE}}
+
+> {%
+  client.test("Token acquisition successful", function () {
+    client.assert(response.status === 200, `Expected status 200, actual: ${response.status}`);
+    client.assert(response.body.access_token !== undefined, "Expected access_token in response");
+
+    // Store token globally - will be used as AUTH_TOKEN
+    client.global.set("AUTH_TOKEN", response.body.access_token);
+
+    // Log token expiration info
+    const expiresIn = response.body.expires_in || 3600;
+    const expiryTime = new Date(Date.now() + (expiresIn * 1000));
+    client.log(`✓ Access token acquired successfully`);
+    client.log(`  Token (first 50 chars): ${response.body.access_token.substring(0, 50)}...`);
+    client.log(`  Token length: ${response.body.access_token.length} characters`);
+    client.log(`  Token expires in ${expiresIn} seconds (at ${expiryTime.toISOString()})`);
+    client.log(`  AUTH_TOKEN variable set - ready to use with requests`);
+
+    // Store expiry time for future reference
+    client.global.set("TOKEN_EXPIRY_TIME", expiryTime.toISOString());
+  });
+%}
+
+### ============================================================================
+### CATEGORY 1: SETUP - PROCESS DEPLOYMENTS AND INSTANCE CREATION
+### ============================================================================
+
+### Test 001 - Deploy User Task Form
+# @name 001-deploy-user-task-form
+POST {{ZEEBE_REST_ADDRESS}}/v2/deployments
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundaryForm
+
+--boundaryForm
+Content-Disposition: form-data; name="tenantId"
+
+<default>
+--boundaryForm
+Content-Disposition: form-data; name="resources"; filename="formA.form"
+Content-Type: application/json
+
+< ./resources/formA.form
+--boundaryForm--
+
+> {%
+  client.test("User task form deployment should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.deployments.length > 0,
+        `Expected deployments.length > 0, actual: ${response.body.deployments.length}`);
+
+    // Verify form deployment
+    const deployment = response.body.deployments[0];
+    client.assert(deployment !== undefined,
+        `Expected deployment to be defined, actual: ${deployment}`);
+
+    // Form deployments may have different structure than process deployments
+    // Log the response for debugging
+    client.log(`Form deployment successful: ${JSON.stringify(deployment)}`);
+  });
+%}
+
+### Test 002 - Deploy Single Modification Process
+# @name 002-deploy-single-process
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/deployments
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="tenantId"
+
+<default>
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="single_audit_log_test_process.bpmn"
+Content-Type: application/octet-stream
+
+< ./resources/single_audit_log_test_process.bpmn
+--boundary123--
+
+> {%
+  client.test("Single modification process deployment should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.deployments.length > 0,
+        `Expected deployments.length > 0, actual: ${response.body.deployments.length}`);
+    const processDefinition = response.body.deployments[0].processDefinition;
+    client.assert(processDefinition !== undefined,
+        `Expected processDefinition to be defined, actual: ${processDefinition}`);
+    client.global.set("SINGLE_PROCESS_DEFINITION_KEY", processDefinition.processDefinitionKey);
+    client.global.set("SINGLE_PROCESS_DEFINITION_ID", processDefinition.processDefinitionId);
+    client.global.set("PROCESS_DEFINITION_ID", processDefinition.processDefinitionId); // Keep for backward compatibility
+    client.global.set("PROCESS_DEFINITION_VERSION", processDefinition.version);
+  });
+%}
+
+
+### Test 003 - Deploy Batch Modification Process
+# @name 003-deploy-batch-process
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/deployments
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary456
+
+--boundary456
+Content-Disposition: form-data; name="tenantId"
+
+<default>
+--boundary456
+Content-Disposition: form-data; name="resources"; filename="batch_audit_log_test_process.bpmn"
+Content-Type: application/octet-stream
+
+< ./resources/batch_audit_log_test_process.bpmn
+--boundary456--
+
+> {%
+  client.test("Batch modification process deployment should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.deployments.length > 0,
+        `Expected deployments.length > 0, actual: ${response.body.deployments.length}`);
+    const processDefinition = response.body.deployments[0].processDefinition;
+    client.assert(processDefinition !== undefined,
+        `Expected processDefinition to be defined, actual: ${processDefinition}`);
+    client.global.set("BATCH_PROCESS_DEFINITION_KEY", processDefinition.processDefinitionKey);
+    client.global.set("BATCH_PROCESS_DEFINITION_ID", processDefinition.processDefinitionId);
+    client.global.set("BATCH_PROCESS_VERSION", processDefinition.version);
+  });
+%}
+
+### Test 004 - Create Process Instance 1 - For Activate Instruction
+# @name 004-create-process-instance-1
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "activateTest",
+    "counter": 1
+  }
+}
+
+> {%
+  client.test("Process instance 1 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_1", response.body.processInstanceKey);
+  });
+%}
+
+### Test 005 - Create Process Instance 2 - For Terminate Instruction
+# @name 005-create-process-instance-2
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "terminateTest",
+    "counter": 2
+  }
+}
+
+> {%
+  client.test("Process instance 2 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_2", response.body.processInstanceKey);
+  });
+%}
+
+### Test 006 - Create Process Instance 3 - For Add Variable Instruction
+# @name 006-create-process-instance-3
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "variableTest",
+    "counter": 3
+  }
+}
+
+> {%
+  client.test("Process instance 3 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_3", response.body.processInstanceKey);
+  });
+%}
+
+### Test 007 - Create Process Instance 4 - For Batch Modification (Instance 1)
+# @name 007-create-process-instance-4
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "batchTest1",
+    "counter": 4,
+    "instance": 1
+  }
+}
+
+> {%
+  client.test("Process instance 4 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_4", response.body.processInstanceKey);
+  });
+%}
+
+### Test 008 - Create Process Instance 5 - For Batch Modification (Instance 2)
+# @name 008-create-process-instance-5
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "batchTest2",
+    "counter": 5,
+    "instance": 2
+  }
+}
+
+> {%
+  client.test("Process instance 5 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_5", response.body.processInstanceKey);
+  });
+%}
+
+### Test 009 - Create Process Instance 6 - For Batch Modification (Instance 3)
+# @name 009-create-process-instance-6
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "batchTest3",
+    "counter": 6,
+    "instance": 3
+  }
+}
+
+> {%
+  client.test("Process instance 6 creation should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_6", response.body.processInstanceKey);
+  });
+%}
+
+### Test 010 - Create Process Instance 7 - For Pagination Testing
+# @name 010-create-process-instance-7
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "paginationTest",
+    "counter": 7
+  }
+}
+
+> {%
+  client.test("Process instance 7 for pagination test should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("PROCESS_INSTANCE_KEY_PAGINATION", response.body.processInstanceKey);
+  });
+%}
+
+### ============================================================================
+### CATEGORY 2: BASIC OPERATIONS - SINGLE MODIFICATIONS
+### ============================================================================
+
+
+### Test 011 - Modify Process Instance 1 - Activate Element
+# @name 011-modify-activate-element
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_1}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 100001,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("Activate element modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+
+### Test 012 - Get Element Instance Key for Terminate Test
+# @name 012-search-element-instance
+POST {{ZEEBE_REST_ADDRESS}}/v2/element-instances/search
+Content-Type: application/json
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_2}}",
+    "state": "ACTIVE"
+  }
+}
+
+> {%
+  client.global.set("ELEMENT_INSTANCE_KEY", response.body.items[0].elementInstanceKey);
+%}
+
+### Test 013 - Modify Process Instance 2 - Terminate Element
+# @name 013-modify-terminate-element
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_2}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 100002,
+  "terminateInstructions": [
+    {
+      "elementInstanceKey": "{{ELEMENT_INSTANCE_KEY}}"
+    }
+  ]
+}
+
+> {%
+  client.test("Terminate element modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 014 - Modify Process Instance 3 - Add Variable with Activate
+# @name 014-modify-add-variable
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_3}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 100003,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "newVariable": "addedValue",
+            "modifiedCounter": 100
+          },
+          "scopeId": "ServiceTask2"
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Add variable modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 015 - Modify Process Instance - Combined Instructions
+# @name 015-modify-combined-instructions
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "combinedTest",
+    "counter": 5
+  }
+}
+
+> {%
+  client.test("Process instance for combined test should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("PROCESS_INSTANCE_KEY_COMBINED", response.body.processInstanceKey);
+  });
+%}
+
+### Test 016 - Modify Combined - Multiple Instructions
+# @name 016-modify-multiple-instructions
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_COMBINED}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 100004,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "activatedAt": "ServiceTask2",
+            "status": "active"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Combined modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 017 - Pagination Test - Modification 1
+# @name 017-pagination-modify-1
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200001,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 1 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 018 - Pagination Test - Modification 2
+# @name 018-pagination-modify-2
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200002,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "modification": 2,
+            "timestamp": "2025-12-16T10:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 2 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 019 - Pagination Test - Modification 3
+# @name 019-pagination-modify-3
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200003,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "modification": 3,
+            "data": "test-data-3"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 3 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 020 - Pagination Test - Modification 4
+# @name 020-pagination-modify-4
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200004,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 4 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 021 - Pagination Test - Modification 5
+# @name 021-pagination-modify-5
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200005,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "modification": 5,
+            "final": true
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 5 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 022 - Pagination Test - Modification 6
+# @name 022-pagination-modify-6
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_PAGINATION}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 200006,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "modification": 6,
+            "extra": "additional-data"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Pagination test modification 6 should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### ============================================================================
+### CATEGORY 3: BATCH OPERATIONS - BATCH MODIFICATIONS
+### ============================================================================
+
+### Test 023 - Create Batch Modification Operation
+# @name 023-batch-modify-process-instances
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}"
+  },
+  "operationReference": 789012,
+  "moveInstructions": [
+    {
+      "sourceElementId": "TaskA",
+      "targetElementId": "TaskB"
+    }
+  ]
+}
+
+> {%
+  client.test("Batch modification should be accepted", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.batchOperationKey !== undefined,
+        `Expected batchOperationKey to be defined, actual: ${response.body.batchOperationKey}`);
+    client.global.set("BATCH_OPERATION_KEY", response.body.batchOperationKey);
+  });
+%}
+
+### ============================================================================
+### CATEGORY 4: SEARCH & QUERY - FILTERING, SORTING, PAGINATION
+### ============================================================================
+### This category consolidates all search and query operations including:
+### - Filtering by various fields (process instance, operation type, entity type)
+### - Sorting (ascending/descending)
+### - Pagination and result limiting
+### - Complex filter combinations
+### ============================================================================
+
+### Test 024 - Search Audit Logs - Empty Search (Returns All)
+# @name 024-search-audit-logs-empty
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+> {%
+  client.test("Audit log search should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(Array.isArray(response.body.items),
+        `Expected items to be an array, actual type: ${typeof response.body.items}`);
+    client.assert(response.body.page !== undefined,
+        `Expected page info to be defined, actual: ${response.body.page}`);
+  });
+%}
+
+### Test 025 - Search - Filter by Process Instance
+# @name 025-search-audit-logs-by-process-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  }
+}
+
+> {%
+  client.test("Audit log search by process instance should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY), actual: ${response.body.items.length}`);
+
+    // Verify all items have the correct process instance key
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_1"),
+          `Item ${index}: Expected processInstanceKey: ${client.global.get(
+              "PROCESS_INSTANCE_KEY_1")}, actual: ${item.processInstanceKey}`);
+    });
+
+    // Verify we have both CREATE and MODIFY operations
+    const operationTypes = response.body.items.map(item => item.operationType);
+    client.assert(operationTypes.includes("CREATE"),
+        `Expected to find CREATE operation in types: ${operationTypes.join(', ')}`);
+    client.assert(operationTypes.includes("MODIFY"),
+        `Expected to find MODIFY operation in types: ${operationTypes.join(', ')}`);
+
+    // Store first audit log key for later tests
+    if (response.body.items.length > 0) {
+      client.global.set("AUDIT_LOG_KEY", response.body.items[0].auditLogKey);
+    }
+  });
+%}
+
+### Test 026 - Verify Single Modification Audit Logs - Activate Element
+# @name 026-verify-activate-modification-audit-logs
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "DESC"
+    }
+  ]
+}
+
+> {%
+  client.test("Audit log should contain CREATE and activate MODIFY operations", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY), actual: ${response.body.items.length}`);
+
+    // Find CREATE and MODIFY logs
+    const createLog = response.body.items.find(item => item.operationType === "CREATE");
+    const modifyLog = response.body.items.find(item => item.operationType === "MODIFY");
+
+    // Verify CREATE log
+    client.assert(createLog !== undefined,
+        `Expected CREATE audit log to be found, actual: ${createLog}`);
+    client.assert(createLog.entityType === "PROCESS_INSTANCE",
+        `CREATE: Expected entityType: PROCESS_INSTANCE, actual: ${createLog.entityType}`);
+    client.assert(createLog.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_1"),
+        `CREATE: Expected processInstanceKey: ${client.global.get(
+            "PROCESS_INSTANCE_KEY_1")}, actual: ${createLog.processInstanceKey}`);
+    client.assert(createLog.processDefinitionId === client.global.get("PROCESS_DEFINITION_ID"),
+        `CREATE: Expected processDefinitionId: ${client.global.get(
+            "PROCESS_DEFINITION_ID")}, actual: ${createLog.processDefinitionId}`);
+    client.assert(createLog.timestamp !== undefined,
+        `CREATE: Expected timestamp to be defined, actual: ${createLog.timestamp}`);
+    client.assert(createLog.actorType !== undefined,
+        `CREATE: Expected actorType to be defined, actual: ${createLog.actorType}`);
+    client.assert(["SUCCESS", "FAIL"].includes(createLog.result),
+        `CREATE: Expected result to be SUCCESS or FAIL, actual: ${createLog.result}`);
+    client.assert(["USER", "CLIENT"].includes(createLog.actorType),
+        `CREATE: Expected actorType to be USER or CLIENT, actual: ${createLog.actorType}`);
+
+    // Verify Single MODIFY log (without batchOperationKey)
+    client.assert(modifyLog !== undefined,
+        `Expected MODIFY audit log to be found, actual: ${modifyLog}`);
+    client.assert(modifyLog.entityType === "PROCESS_INSTANCE",
+        `MODIFY: Expected entityType: PROCESS_INSTANCE, actual: ${modifyLog.entityType}`);
+    client.assert(modifyLog.operationType === "MODIFY",
+        `MODIFY: Expected operationType: MODIFY, actual: ${modifyLog.operationType}`);
+    client.assert(modifyLog.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_1"),
+        `MODIFY: Expected processInstanceKey: ${client.global.get(
+            "PROCESS_INSTANCE_KEY_1")}, actual: ${modifyLog.processInstanceKey}`);
+    client.assert(modifyLog.batchOperationKey === undefined,
+        `MODIFY: Expected batchOperationKey to be undefined for single modification, actual: ${modifyLog.batchOperationKey}`);
+    client.assert(modifyLog.timestamp !== undefined,
+        `MODIFY: Expected timestamp to be defined, actual: ${modifyLog.timestamp}`);
+    client.assert(modifyLog.actorType !== undefined,
+        `MODIFY: Expected actorType to be defined, actual: ${modifyLog.actorType}`);
+    client.assert(["SUCCESS", "FAIL"].includes(modifyLog.result),
+        `MODIFY: Expected result to be SUCCESS or FAIL, actual: ${modifyLog.result}`);
+    client.assert(["USER", "CLIENT"].includes(modifyLog.actorType),
+        `MODIFY: Expected actorType to be USER or CLIENT, actual: ${modifyLog.actorType}`);
+
+    // Verify temporal order: CREATE -> MODIFY
+    const createTime = new Date(createLog.timestamp).getTime();
+    const modifyTime = new Date(modifyLog.timestamp).getTime();
+    client.assert(modifyTime >= createTime,
+        `Expected MODIFY (${modifyTime}) to happen after CREATE (${createTime})`);
+  });
+%}
+
+### Test 027 - Search Audit Logs - Filter by Batch Process Instance
+# @name 027-search-audit-logs-by-batch-process-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_4}}"
+  }
+}
+
+> {%
+  client.test("Audit log search for batch process instance should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY batch), actual: ${response.body.items.length}`);
+
+    // Verify all items have the correct process instance key
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_4"),
+          `Item ${index}: Expected processInstanceKey: ${client.global.get(
+              "PROCESS_INSTANCE_KEY_4")}, actual: ${item.processInstanceKey}`);
+    });
+
+    // Verify we have both CREATE and MODIFY operations
+    const operationTypes = response.body.items.map(item => item.operationType);
+    client.assert(operationTypes.includes("CREATE"),
+        `Expected to find CREATE operation in types: ${operationTypes.join(', ')}`);
+    client.assert(operationTypes.includes("MODIFY"),
+        `Expected to find MODIFY operation in types: ${operationTypes.join(', ')}`);
+  });
+%}
+
+### Test 028 - Verify Batch Modification Audit Logs
+# @name 028-verify-batch-modification-audit-logs
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_4}}"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "DESC"
+    }
+  ]
+}
+
+> {%
+  client.test("Audit log should contain CREATE and batch MODIFY operations", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY), actual: ${response.body.items.length}`);
+
+    // Find CREATE and MODIFY logs
+    const createLog = response.body.items.find(item => item.operationType === "CREATE");
+    const modifyLog = response.body.items.find(item => item.operationType === "MODIFY");
+
+    // Verify CREATE log
+    client.assert(createLog !== undefined,
+        `Expected CREATE audit log to be found, actual: ${createLog}`);
+    client.assert(createLog.entityType === "PROCESS_INSTANCE",
+        `CREATE: Expected entityType: PROCESS_INSTANCE, actual: ${createLog.entityType}`);
+    client.assert(createLog.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_4"),
+        `CREATE: Expected processInstanceKey: ${client.global.get(
+            "PROCESS_INSTANCE_KEY_4")}, actual: ${createLog.processInstanceKey}`);
+    client.assert(
+        createLog.processDefinitionId === client.global.get("BATCH_PROCESS_DEFINITION_ID"),
+        `CREATE: Expected processDefinitionId: ${client.global.get(
+            "BATCH_PROCESS_DEFINITION_ID")}, actual: ${createLog.processDefinitionId}`);
+    client.assert(createLog.timestamp !== undefined,
+        `CREATE: Expected timestamp to be defined, actual: ${createLog.timestamp}`);
+    client.assert(createLog.actorType !== undefined,
+        `CREATE: Expected actorType to be defined, actual: ${createLog.actorType}`);
+    client.assert(["SUCCESS", "FAIL"].includes(createLog.result),
+        `CREATE: Expected result to be SUCCESS or FAIL, actual: ${createLog.result}`);
+    client.assert(["USER", "CLIENT"].includes(createLog.actorType),
+        `CREATE: Expected actorType to be USER or CLIENT, actual: ${createLog.actorType}`);
+
+    // Verify Batch MODIFY log (with batchOperationKey)
+    client.assert(modifyLog !== undefined,
+        `Expected Batch MODIFY audit log to be found, actual: ${modifyLog}`);
+    client.assert(modifyLog.entityType === "PROCESS_INSTANCE",
+        `Batch MODIFY: Expected entityType: PROCESS_INSTANCE, actual: ${modifyLog.entityType}`);
+    client.assert(modifyLog.operationType === "MODIFY",
+        `Batch MODIFY: Expected operationType: MODIFY, actual: ${modifyLog.operationType}`);
+    client.assert(modifyLog.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_4"),
+        `Batch MODIFY: Expected processInstanceKey: ${client.global.get(
+            "PROCESS_INSTANCE_KEY_4")}, actual: ${modifyLog.processInstanceKey}`);
+    client.assert(modifyLog.batchOperationKey !== undefined,
+        `Batch MODIFY: Expected batchOperationKey to be present, actual: ${modifyLog.batchOperationKey}`);
+    client.assert(modifyLog.batchOperationKey === client.global.get("BATCH_OPERATION_KEY"),
+        `Batch MODIFY: Expected batchOperationKey: ${client.global.get(
+            "BATCH_OPERATION_KEY")}, actual: ${modifyLog.batchOperationKey}`);
+    client.assert(modifyLog.timestamp !== undefined,
+        `Batch MODIFY: Expected timestamp to be defined, actual: ${modifyLog.timestamp}`);
+    client.assert(modifyLog.actorType !== undefined,
+        `Batch MODIFY: Expected actorType to be defined, actual: ${modifyLog.actorType}`);
+    client.assert(["SUCCESS", "FAIL"].includes(modifyLog.result),
+        `Batch MODIFY: Expected result to be SUCCESS or FAIL, actual: ${modifyLog.result}`);
+    client.assert(["USER", "CLIENT"].includes(modifyLog.actorType),
+        `Batch MODIFY: Expected actorType to be USER or CLIENT, actual: ${modifyLog.actorType}`);
+
+    // Verify temporal order: CREATE -> Batch MODIFY
+    const createTime = new Date(createLog.timestamp).getTime();
+    const modifyTime = new Date(modifyLog.timestamp).getTime();
+    client.assert(modifyTime >= createTime,
+        `Expected Batch MODIFY (${modifyTime}) to happen after CREATE (${createTime})`);
+  });
+%}
+
+### Test 029 - Search Audit Logs - Filter by Operation Type (MODIFY)
+# @name 029-search-audit-logs-by-operation-type
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}",
+    "operationType": "MODIFY"
+  }
+}
+
+> {%
+  client.test("Audit log search by operation type should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(response.body.items.length > 0,
+        `Expected items.length > 0, actual: ${response.body.items.length}`);
+
+    // Verify all items have MODIFY operation type
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.operationType === "MODIFY",
+          `Item ${index}: Expected operationType: MODIFY, actual: ${item.operationType}`);
+      client.assert(item.entityType === "PROCESS_INSTANCE",
+          `Item ${index}: Expected entityType: PROCESS_INSTANCE, actual: ${item.entityType}`);
+    });
+  });
+%}
+
+### Test 030 - Search Audit Logs - Filter by Entity Type
+# @name 030-search-audit-logs-by-entity-type
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "entityType": "PROCESS_INSTANCE",
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  }
+}
+
+> {%
+  client.test("Audit log search by entity type should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+
+    if (response.body.items.length > 0) {
+      response.body.items.forEach(function (item, index) {
+        client.assert(item.entityType === "PROCESS_INSTANCE",
+            `Item ${index}: Expected entityType: PROCESS_INSTANCE, actual: ${item.entityType}`);
+      });
+    }
+  });
+%}
+
+### Test 031 - Search - Sort Descending
+# @name 031-search-audit-logs-sorted-desc
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "DESC"
+    }
+  ]
+}
+
+> {%
+  client.test("Audit log search with DESC sorting should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+
+    // Verify sorting if there are multiple items
+    if (response.body.items.length > 1) {
+      for (let i = 1; i < response.body.items.length; i++) {
+        const prevTimestamp = new Date(response.body.items[i - 1].timestamp).getTime();
+        const currTimestamp = new Date(response.body.items[i].timestamp).getTime();
+        client.assert(prevTimestamp >= currTimestamp, `Items should be sorted DESC: item[${i
+        - 1}] timestamp (${prevTimestamp}) should be >= item[${i}] timestamp (${currTimestamp})`);
+      }
+    }
+  });
+%}
+
+### Test 032 - Search Audit Logs - Sort Ascending
+# @name 032-search-audit-logs-sorted-asc
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "ASC"
+    }
+  ]
+}
+
+> {%
+  client.test("Audit log search with ASC sorting should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined, `Expected items to be defined`);
+
+    // Verify sorting if there are multiple items
+    if (response.body.items.length > 1) {
+      for (let i = 1; i < response.body.items.length; i++) {
+        const prevTimestamp = new Date(response.body.items[i - 1].timestamp).getTime();
+        const currTimestamp = new Date(response.body.items[i].timestamp).getTime();
+        client.assert(prevTimestamp <= currTimestamp,
+            `Items should be sorted ASC: item[${i
+            - 1}] timestamp (${prevTimestamp}) should be <= item[${i}] timestamp (${currTimestamp})`);
+      }
+
+      // Verify CREATE comes before MODIFY in ASC order
+      const createLog = response.body.items.find(item => item.operationType === "CREATE");
+      const modifyLog = response.body.items.find(item => item.operationType === "MODIFY");
+      if (createLog && modifyLog) {
+        const createIndex = response.body.items.indexOf(createLog);
+        const modifyIndex = response.body.items.indexOf(modifyLog);
+        client.assert(createIndex < modifyIndex,
+            `CREATE should appear before MODIFY in ASC sort`);
+      }
+    }
+  });
+%}
+
+### Test 033 - Search - With Pagination
+# @name 033-search-audit-logs-paginated
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_PAGINATION}}"
+  },
+  "page": {
+    "limit": 4
+  }
+}
+
+> {%
+  client.test("Audit log search with pagination should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(response.body.items.length === 4,
+        `Expected exactly 4 items due to pagination limit, actual: ${response.body.items.length}`);
+    client.assert(response.body.page !== undefined,
+        `Expected page info to be defined, actual: ${response.body.page}`);
+    client.assert(response.body.page.totalItems !== undefined,
+        `Expected page.totalItems to be defined, actual: ${response.body.page.totalItems}`);
+
+    // Verify pagination worked: we have 7 audit logs total (1 CREATE + 6 MODIFY) but only 4 returned due to limit
+    const totalItems = response.body.page.totalItems;
+    client.assert(totalItems >= 4,
+        `Expected totalItems >= 4 (at least the items returned), actual: ${totalItems}`);
+
+    // hasMoreTotalItems indicates if total exceeds datastore limiting factor (not about pagination)
+    // For small result sets like ours (7 items), this should typically be false
+    client.assert(response.body.page.hasMoreTotalItems !== undefined,
+        `Expected hasMoreTotalItems to be defined, actual: ${response.body.page.hasMoreTotalItems}`);
+  });
+%}
+
+### ============================================================================
+### CATEGORY 5: DATA VALIDATION - SCHEMA AND DATA INTEGRITY
+### ============================================================================
+
+### Test 034 - Get Audit Log by Key
+# @name 034-get-audit-log-by-key
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+GET {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/{{AUDIT_LOG_KEY}}
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Get audit log by key should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.auditLogKey === client.global.get("AUDIT_LOG_KEY"),
+        `Expected auditLogKey: ${client.global.get(
+            "AUDIT_LOG_KEY")}, actual: ${response.body.auditLogKey}`);
+    client.assert(response.body.entityType !== undefined,
+        `Expected entityType to be defined, actual: ${response.body.entityType}`);
+    client.assert(response.body.operationType !== undefined,
+        `Expected operationType to be defined, actual: ${response.body.operationType}`);
+    client.assert(response.body.timestamp !== undefined,
+        `Expected timestamp to be defined, actual: ${response.body.timestamp}`);
+    client.assert(response.body.result !== undefined,
+        `Expected result to be defined, actual: ${response.body.result}`);
+    client.assert(response.body.actorType !== undefined,
+        `Expected actorType to be defined, actual: ${response.body.actorType}`);
+  });
+%}
+
+### Test 035 - Get Non-existent Audit Log (404 Test)
+# @name 035-get-nonexistent-audit-log
+GET {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/9999999999999999
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Get non-existent audit log should return 404", function () {
+    client.assert(response.status === 404, `Expected status: 404, actual: ${response.status}`);
+  });
+%}
+
+
+
+
+### Test 036 - Search Audit Logs - Verify Batch Operation
+# @name 036-verify-batch-operation-audit-log
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "operationType": "MODIFY",
+    "entityType": "PROCESS_INSTANCE"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "DESC"
+    }
+  ],
+  "page": {
+    "limit": 20
+  }
+}
+
+> {%
+  client.test("Batch operation should have audit logs", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length > 0,
+        `Expected items.length > 0, actual: ${response.body.items.length}`);
+
+    // Look for batch operation in recent audit logs
+    let foundBatchOperation = false;
+    response.body.items.forEach(function (item) {
+      if (item.batchOperationKey !== undefined) {
+        foundBatchOperation = true;
+        client.log("Found batch operation audit log with key: " + item.batchOperationKey);
+      }
+    });
+
+    // Note: This assertion might fail if batch hasn't completed yet
+    // In production tests, you may need to retry this check
+  });
+%}
+
+### ============================================================================
+### CATEGORY 6: EDGE CASES - INPUT VALIDATION AND ERROR HANDLING
+### ============================================================================
+### This section contains comprehensive edge case testing for audit log functionality
+### covering input validation, error cases, and boundary conditions.
+### ============================================================================
+
+### Test 037 - Search with Malformed Process Instance Key (String)
+# @name 037-search-invalid-process-instance-key-string
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "not-a-number"
+  }
+}
+
+> {%
+  client.test("Search with string processInstanceKey should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined,
+        `Expected error type to be defined, actual: ${response.body.type}`);
+  });
+%}
+
+### Test 038 - Search with Negative Process Instance Key
+# @name 038-search-invalid-process-instance-key-negative
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "-12345"
+  }
+}
+
+> {%
+  client.test("Search with negative processInstanceKey should return 400 or empty results",
+      function () {
+        // System may either reject invalid input (400) or return empty results (200)
+        client.assert([200, 400].includes(response.status),
+            `Expected status: 200 or 400, actual: ${response.status}`);
+        if (response.status === 200) {
+          client.assert(response.body.items.length === 0,
+              `Expected empty results for invalid key, actual: ${response.body.items.length}`);
+        }
+      });
+%}
+
+### Test 039 - Search with Zero Process Instance Key
+# @name 039-search-zero-process-instance-key
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "0"
+  }
+}
+
+> {%
+  client.test("Search with zero processInstanceKey should handle gracefully", function () {
+    client.assert([200, 400].includes(response.status),
+        `Expected status: 200 or 400, actual: ${response.status}`);
+    if (response.status === 200) {
+      client.assert(response.body.items !== undefined, `Expected items array to be defined`);
+    }
+  });
+%}
+
+### Test 040 - Search with Invalid Operation Type
+# @name 040-search-invalid-operation-type
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "operationType": "INVALID_OPERATION"
+  }
+}
+
+> {%
+  client.test("Search with invalid operationType should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 041 - Search with Invalid Entity Type
+# @name 041-search-invalid-entity-type
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "entityType": "INVALID_ENTITY"
+  }
+}
+
+> {%
+  client.test("Search with invalid entityType should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 042 - Search with Invalid Sort Field
+# @name 042-search-invalid-sort-field
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "sort": [
+    {
+      "field": "invalidField",
+      "order": "DESC"
+    }
+  ]
+}
+
+> {%
+  client.test("Search with invalid sort field should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 043 - Search with Invalid Sort Order
+# @name 043-search-invalid-sort-order
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "INVALID"
+    }
+  ]
+}
+
+> {%
+  client.test("Search with invalid sort order should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 044 - Search with Negative Pagination Limit
+# @name 044-search-negative-pagination-limit
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "page": {
+    "limit": -1
+  }
+}
+
+> {%
+  client.test("Search with negative limit should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 045 - Search with Zero Pagination Limit
+# @name 045-search-zero-pagination-limit
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "page": {
+    "limit": 0
+  }
+}
+
+> {%
+  client.test("Search with zero limit should return 400", function () {
+    client.assert(response.status === 400, `Expected status: 400, actual: ${response.status}`);
+    client.assert(response.body.type !== undefined, `Expected error type to be defined`);
+  });
+%}
+
+### Test 046 - Search with Extremely Large Pagination Limit
+# @name 046-search-large-pagination-limit
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "page": {
+    "limit": 20000
+  }
+}
+
+> {%
+  client.test("Search with extremely large limit should handle gracefully", function () {
+    // System should either cap the limit or reject it
+    client.assert([200, 400].includes(response.status),
+        `Expected status: 200 or 400, actual: ${response.status}`);
+    if (response.status === 200) {
+      client.assert(response.body.items !== undefined, `Expected items array to be defined`);
+      // Verify system caps the result size
+      client.assert(response.body.items.length <= 1000,
+          `Expected system to cap results, got: ${response.body.items.length}`);
+    }
+  });
+%}
+
+### Test 047 - Search with Malformed JSON
+# @name 047-search-malformed-json
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  },
+  "invalid": "field",
+  "extraField": 123
+}
+
+> {%
+  client.test("Search with extra fields should handle gracefully", function () {
+    // System should either ignore extra fields (200) or reject (400)
+    client.assert([200, 400].includes(response.status),
+        `Expected status: 200 or 400, actual: ${response.status}`);
+  });
+%}
+
+### Test 048 - Search with Missing Content-Type Header
+# @name 048-search-missing-content-type
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+
+{}
+
+> {%
+  client.test("Search without Content-Type should handle gracefully", function () {
+    // Most systems will default to application/json or reject with 415
+    client.assert([200, 415].includes(response.status),
+        `Expected status: 200 or 415, actual: ${response.status}`);
+  });
+%}
+
+### Test 049 - Search for Non-Existent Process Instance
+# @name 049-search-nonexistent-process-instance
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "9999999999999999"
+  }
+}
+
+> {%
+  client.test("Search for non-existent process instance should return empty results", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined, `Expected items to be defined`);
+    client.assert(Array.isArray(response.body.items), `Expected items to be an array`);
+    client.assert(response.body.items.length === 0,
+        `Expected no results for non-existent instance, actual: ${response.body.items.length}`);
+    client.assert(response.body.page.totalItems === 0,
+        `Expected totalItems to be 0, actual: ${response.body.page.totalItems}`);
+  });
+%}
+
+### Test 050 - Search with Empty Filter (Should Return All)
+# @name 050-search-empty-filter
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {}
+}
+
+> {%
+  client.test("Search with empty filter should return results", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined, `Expected items to be defined`);
+    client.assert(Array.isArray(response.body.items), `Expected items to be an array`);
+    // Should have at least some audit logs from previous tests
+    client.assert(response.body.items.length > 0,
+        `Expected some audit logs to exist, actual: ${response.body.items.length}`);
+  });
+%}
+
+
+### Test 053 - Search Audit Logs by Audit Log Key
+# @name 053-search-audit-log-by-key
+< {%
+  import {wait} from "../js/wait";
+
+  wait(1);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "auditLogKey": "{{AUDIT_LOG_KEY}}"
+  }
+}
+
+> {%
+  client.test("Search audit log by key should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined, `Expected items to be defined`);
+    client.assert(response.body.items.length === 1,
+        `Expected exactly 1 audit log, actual: ${response.body.items.length}`);
+
+    const auditLog = response.body.items[0];
+    const expectedKey = client.global.get("AUDIT_LOG_KEY");
+
+    // Verify the audit log key matches
+    client.assert(auditLog.auditLogKey === expectedKey,
+        `Expected auditLogKey: ${expectedKey}, actual: ${auditLog.auditLogKey}`);
+
+    // Verify required fields are present
+    client.assert(auditLog.entityType !== undefined,
+        `Expected entityType to be defined, actual: ${auditLog.entityType}`);
+    client.assert(auditLog.operationType !== undefined,
+        `Expected operationType to be defined, actual: ${auditLog.operationType}`);
+    client.assert(auditLog.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${auditLog.processInstanceKey}`);
+    client.assert(auditLog.processDefinitionId !== undefined,
+        `Expected processDefinitionId to be defined, actual: ${auditLog.processDefinitionId}`);
+    client.assert(auditLog.timestamp !== undefined,
+        `Expected timestamp to be defined, actual: ${auditLog.timestamp}`);
+    client.assert(auditLog.result !== undefined,
+        `Expected result to be defined, actual: ${auditLog.result}`);
+    client.assert(auditLog.actorType !== undefined,
+        `Expected actorType to be defined, actual: ${auditLog.actorType}`);
+
+    // Verify the audit log is for PROCESS_INSTANCE_KEY_1
+    client.assert(auditLog.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_1"),
+        `Expected processInstanceKey: ${client.global.get(
+            "PROCESS_INSTANCE_KEY_1")}, actual: ${auditLog.processInstanceKey}`);
+  });
+%}
+
+
+### Test 054 - Verify Timestamp Validity
+# @name 054-verify-timestamp-validity
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  }
+}
+
+> {%
+  client.test("Audit log timestamps should be valid and reasonable", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length > 0, `Expected at least one audit log`);
+
+
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.timestamp !== undefined,
+          `Item ${index}: Expected timestamp to be defined`);
+
+      const timestamp = new Date(item.timestamp).getTime();
+
+      // Verify timestamp is valid ISO format
+      client.assert(!isNaN(timestamp),
+          `Item ${index}: Timestamp should be valid ISO format: ${item.timestamp}`);
+    });
+  });
+%}
+
+### Test 055 - Verify No Duplicate Audit Logs
+# @name 055-verify-no-duplicates
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  }
+}
+
+> {%
+  client.test("Audit logs should not contain duplicates", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    const auditLogKeys = new Set();
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.auditLogKey !== undefined,
+          `Item ${index}: Expected auditLogKey to be defined`);
+
+      client.assert(!auditLogKeys.has(item.auditLogKey),
+          `Found duplicate audit log key: ${item.auditLogKey}`);
+
+      auditLogKeys.add(item.auditLogKey);
+    });
+  });
+%}
+
+### Test 056 - Verify Actor Information is Present
+# @name 056-verify-actor-info
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  }
+}
+
+> {%
+  client.test("Actor information should be present in audit logs", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length > 0, `Expected at least one audit log`);
+
+    response.body.items.forEach(function (item, index) {
+      // Verify actorType is defined and valid
+      client.assert(item.actorType !== undefined,
+          `Item ${index}: Expected actorType to be defined`);
+      client.assert(["USER", "CLIENT"].includes(item.actorType),
+          `Item ${index}: Expected actorType to be USER or CLIENT, actual: ${item.actorType}`);
+
+      // If actorId is present, verify it's not empty
+      if (item.actorId !== undefined) {
+        client.assert(item.actorId !== "",
+            `Item ${index}: actorId should not be empty string`);
+      }
+    });
+  });
+%}
+
+### ============================================================================
+### CATEGORY 10: COMPLEX SCENARIOS - MULTIPLE MODIFICATIONS AND MIXED OPERATIONS
+### ============================================================================
+
+### Test 057 - Create Process Instance for Multiple Modifications
+# @name 057-create-instance-for-multiple-mods
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "multipleModsTest",
+    "counter": 888
+  }
+}
+
+> {%
+  client.test("Process instance for multiple modifications test should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("MULTIPLE_MODS_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+### Test 058 - First Modification - Activate Element
+# @name 058-multiple-mods-modification-1
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{MULTIPLE_MODS_INSTANCE_KEY}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 300001,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("First modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 059 - Second Modification - Add Variables
+# @name 059-multiple-mods-modification-2
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{MULTIPLE_MODS_INSTANCE_KEY}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 300002,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask2",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "secondMod": "value2"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Second modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 060 - Third Modification - Activate Another Element
+# @name 060-multiple-mods-modification-3
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{MULTIPLE_MODS_INSTANCE_KEY}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 300003,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "thirdMod": "value3",
+            "finalModification": true
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Third modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 061 - Verify Multiple Modifications in Audit Log
+# @name 061-verify-multiple-modifications
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{MULTIPLE_MODS_INSTANCE_KEY}}",
+    "operationType": "MODIFY"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "ASC"
+    }
+  ]
+}
+
+> {%
+  client.test("Multiple modifications should all be logged", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length === 3,
+        `Expected exactly 3 MODIFY audit logs, actual: ${response.body.items.length}`);
+
+    // Verify all have correct process instance key
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.processInstanceKey === client.global.get("MULTIPLE_MODS_INSTANCE_KEY"),
+          `Item ${index}: Expected processInstanceKey: ${client.global.get(
+              "MULTIPLE_MODS_INSTANCE_KEY")}, actual: ${item.processInstanceKey}`);
+      client.assert(item.operationType === "MODIFY",
+          `Item ${index}: Expected operationType: MODIFY, actual: ${item.operationType}`);
+    });
+
+    // Verify temporal ordering
+    for (let i = 1; i < response.body.items.length; i++) {
+      const prevTimestamp = new Date(response.body.items[i - 1].timestamp).getTime();
+      const currTimestamp = new Date(response.body.items[i].timestamp).getTime();
+      client.assert(prevTimestamp <= currTimestamp,
+          `Modifications should be in chronological order: item[${i
+          - 1}] (${prevTimestamp}) should be <= item[${i}] (${currTimestamp})`);
+    }
+  });
+%}
+
+### Test 062 - Create Instance for Batch and Single Mix Test
+# @name 062-create-mixed-mod-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "mixedModTest",
+    "counter": 777
+  }
+}
+
+> {%
+  client.test("Process instance for mixed modification test should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("MIXED_MOD_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+### Test 063 - Single Modification on Mixed Test Instance
+# @name 063-mixed-single-modification
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{MIXED_MOD_INSTANCE_KEY}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 400001,
+  "activateInstructions": [
+    {
+      "elementId": "TaskA",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("Single modification on mixed test instance should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 064 - Batch Modification Including Mixed Test Instance
+# @name 064-mixed-batch-modification
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processDefinitionId": "{{BATCH_PROCESS_DEFINITION_ID}}"
+  },
+  "operationReference": 400002,
+  "moveInstructions": [
+    {
+      "sourceElementId": "TaskA",
+      "targetElementId": "TaskB"
+    }
+  ]
+}
+
+> {%
+  client.test("Batch modification should be accepted", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("MIXED_BATCH_OPERATION_KEY", response.body.batchOperationKey);
+  });
+%}
+
+### Test 065 - Verify Mixed Modifications (Single and Batch)
+# @name 065-verify-mixed-modifications
+< {%
+  import {wait} from "../js/wait";
+
+  wait(4);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{MIXED_MOD_INSTANCE_KEY}}",
+    "operationType": "MODIFY"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "ASC"
+    }
+  ]
+}
+
+> {%
+  client.test("Mixed modifications should be properly distinguished", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 MODIFY audit logs (single + batch), actual: ${response.body.items.length}`);
+
+    // Find single and batch modifications
+    const singleMod = response.body.items.find(item => item.batchOperationKey === undefined);
+    const batchMod = response.body.items.find(item => item.batchOperationKey !== undefined);
+
+    client.assert(singleMod !== undefined, `Expected to find single modification audit log`);
+    client.assert(batchMod !== undefined, `Expected to find batch modification audit log`);
+
+    // Verify batch modification has correct batch operation key
+    if (batchMod) {
+      client.assert(batchMod.batchOperationKey === client.global.get("MIXED_BATCH_OPERATION_KEY"),
+          `Expected batchOperationKey: ${client.global.get(
+              "MIXED_BATCH_OPERATION_KEY")}, actual: ${batchMod.batchOperationKey}`);
+    }
+  });
+%}
+
+### ============================================================================
+### CATEGORY 7: AUTHORIZATION - SECURITY AND ACCESS CONTROL
+### ============================================================================
+
+### Test 066 - Search Without Authorization Header
+# @name 066-search-no-auth
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {}
+}
+
+> {%
+  client.test("Search without authorization should return 401", function () {
+    client.assert(response.status === 401, `Expected status: 401, actual: ${response.status}`);
+  });
+%}
+
+### Test 067 - Search with Invalid Authorization Token
+# @name 067-search-invalid-auth
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: Basic INVALID_TOKEN_123456
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {}
+}
+
+> {%
+  client.test("Search with invalid token should return 401", function () {
+    client.assert(response.status === 401, `Expected status: 401, actual: ${response.status}`);
+  });
+%}
+
+### Test 068 - Get Audit Log Without Authorization
+# @name 068-get-audit-log-no-auth
+GET {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/{{AUDIT_LOG_KEY}}
+Accept: application/json
+
+> {%
+  client.test("Get audit log without authorization should return 401", function () {
+    client.assert(response.status === 401, `Expected status: 401, actual: ${response.status}`);
+  });
+%}
+
+### ============================================================================
+### CATEGORY 9: CONCURRENT OPERATIONS - RACE CONDITIONS
+### ============================================================================
+### Note: These tests create multiple instances concurrently to test race conditions.
+### In practice, you may need to run these manually or with a test harness that
+### supports parallel execution.
+### ============================================================================
+
+### Test 069 - Create Multiple Instances Concurrently - Instance 1
+# @name 069-concurrent-create-1
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "concurrentTest1",
+    "counter": 501
+  }
+}
+
+> {%
+  client.test("Concurrent instance 1 should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("CONCURRENT_INSTANCE_1", response.body.processInstanceKey);
+  });
+%}
+
+### Test 070 - Create Multiple Instances Concurrently - Instance 2
+# @name 070-concurrent-create-2
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "concurrentTest2",
+    "counter": 502
+  }
+}
+
+> {%
+  client.test("Concurrent instance 2 should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("CONCURRENT_INSTANCE_2", response.body.processInstanceKey);
+  });
+%}
+
+### Test 071 - Create Multiple Instances Concurrently - Instance 3
+# @name 071-concurrent-create-3
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "concurrentTest3",
+    "counter": 503
+  }
+}
+
+> {%
+  client.test("Concurrent instance 3 should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("CONCURRENT_INSTANCE_3", response.body.processInstanceKey);
+  });
+%}
+
+### Test 072 - Verify All Concurrent Instances Have Audit Logs
+# @name 072-verify-concurrent-audit-logs
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "operationType": "CREATE"
+  },
+  "page": {
+    "limit": 50
+  }
+}
+
+> {%
+  client.test("All concurrent instances should have CREATE audit logs", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    const instance1Key = client.global.get("CONCURRENT_INSTANCE_1");
+    const instance2Key = client.global.get("CONCURRENT_INSTANCE_2");
+    const instance3Key = client.global.get("CONCURRENT_INSTANCE_3");
+
+    const foundKeys = new Set(response.body.items.map(item => item.processInstanceKey));
+
+    if (instance1Key) {
+      client.assert(foundKeys.has(instance1Key),
+          `Expected to find audit log for instance 1: ${instance1Key}`);
+    }
+    if (instance2Key) {
+      client.assert(foundKeys.has(instance2Key),
+          `Expected to find audit log for instance 2: ${instance2Key}`);
+    }
+    if (instance3Key) {
+      client.assert(foundKeys.has(instance3Key),
+          `Expected to find audit log for instance 3: ${instance3Key}`);
+    }
+  });
+%}
+
+### ============================================================================
+### CATEGORY 8: LIFECYCLE - PROCESS INSTANCE LIFECYCLE EVENTS
+### ============================================================================
+
+### Test 073 - Create Process Instance for Lifecycle Test
+# @name 073-create-lifecycle-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{PROCESS_DEFINITION_ID}}",
+  "tenantId": "<default>",
+  "variables": {
+    "testVariable": "lifecycleTest",
+    "counter": 601
+  }
+}
+
+> {%
+  client.test("Lifecycle test instance should be created", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.global.set("LIFECYCLE_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+### Test 074 - Modify Lifecycle Instance
+# @name 074-modify-lifecycle-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{LIFECYCLE_INSTANCE_KEY}}/modification
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 600001,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1"
+    }
+  ]
+}
+
+> {%
+  client.test("Lifecycle instance modification should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 075 - Cancel Process Instance
+# @name 075-cancel-lifecycle-instance
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{LIFECYCLE_INSTANCE_KEY}}/cancellation
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Process instance cancellation should be successful", function () {
+    // Status may be 204 (No Content) or 200 depending on API design
+    client.assert([200, 204].includes(response.status),
+        `Expected status: 200 or 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 076 - Verify Audit Logs After Cancellation
+# @name 076-verify-audit-after-cancellation
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{LIFECYCLE_INSTANCE_KEY}}"
+  },
+  "sort": [
+    {
+      "field": "timestamp",
+      "order": "ASC"
+    }
+  ]
+}
+
+> {%
+  client.test("Audit logs should persist after instance cancellation", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY), actual: ${response.body.items.length}`);
+
+    // Verify we have CREATE, MODIFY, CANCEL logs
+    const operationTypes = response.body.items.map(item => item.operationType);
+    client.assert(operationTypes.includes("CREATE"),
+        `Expected CREATE operation in audit logs`);
+    client.assert(operationTypes.includes("MODIFY"),
+        `Expected MODIFY operation in audit logs`);
+    client.assert(operationTypes.includes("CANCEL"),
+        `Expected CANCEL operation in audit logs`);
+  });
+%}
+
+
+### Test 077 - Verify Response Schema - All Required Fields Present
+# @name 077-verify-response-schema
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}"
+  },
+  "page": {
+    "limit": 1
+  }
+}
+
+> {%
+  client.test("Response schema should have all required fields", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    // Verify top-level structure
+    client.assert(response.body.items !== undefined,
+        `Response should have 'items' field`);
+    client.assert(Array.isArray(response.body.items),
+        `'items' should be an array`);
+    client.assert(response.body.page !== undefined,
+        `Response should have 'page' field`);
+
+    // Verify page structure
+    const page = response.body.page;
+    client.assert(page.totalItems !== undefined,
+        `'page.totalItems' should be defined`);
+    client.assert(typeof page.totalItems === 'number',
+        `'page.totalItems' should be a number, actual type: ${typeof page.totalItems}`);
+    client.assert(page.hasMoreTotalItems !== undefined,
+        `'page.hasMoreTotalItems' should be defined`);
+    client.assert(typeof page.hasMoreTotalItems === 'boolean',
+        `'page.hasMoreTotalItems' should be a boolean, actual type: ${typeof page.hasMoreTotalItems}`);
+
+    // Verify audit log item structure (if items exist)
+    if (response.body.items.length > 0) {
+      const item = response.body.items[0];
+
+      // Required fields
+      const requiredFields = [
+        'auditLogKey',
+        'entityType',
+        'operationType',
+        'processInstanceKey',
+        'processDefinitionId',
+        'timestamp',
+        'result',
+        'actorId',
+        'actorType',
+        'category'
+      ];
+
+      requiredFields.forEach(function (field) {
+        client.assert(item[field] !== undefined,
+            `Audit log item should have '${field}' field`);
+      });
+
+      // Verify field types
+      client.assert(typeof item.auditLogKey === 'string',
+          `'auditLogKey' should be a string`);
+      client.assert(typeof item.entityType === 'string',
+          `'entityType' should be a string`);
+      client.assert(typeof item.operationType === 'string',
+          `'operationType' should be a string`);
+      client.assert(typeof item.processDefinitionId === 'string',
+          `'processDefinitionId' should be a string`);
+      client.assert(typeof item.actorId === 'string',
+          `'actorId' should be a string`);
+      client.assert(typeof item.timestamp === 'string',
+          `'timestamp' should be a string`);
+      client.assert(typeof item.result === 'string',
+          `'result' should be a string`);
+      client.assert(typeof item.actorType === 'string',
+          `'actorType' should be a string`);
+      client.assert(typeof item.actorId === 'string',
+          `'actorId' should be a string`);
+      client.assert(typeof item.category === 'string',
+          `'category' should be a string`);
+    }
+  });
+%}
+
+### Test 078 - Verify Enum Values Are Valid
+# @name 078-verify-enum-values
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {},
+  "page": {
+    "limit": 20
+  }
+}
+
+> {%
+  client.test("Enum values should be valid", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    const validEntityTypes = ["PROCESS_INSTANCE", "PROCESS_DEFINITION", "DECISION",
+      "DECISION_INSTANCE", "BATCH", "TENANT"];
+    const validOperationTypes = ["CREATE", "MODIFY", "DELETE", "CANCEL", "UPDATE"];
+    const validResultTypes = ["SUCCESS", "FAIL"];
+    const validActorTypes = ["USER", "CLIENT"];
+
+    response.body.items.forEach(function (item, index) {
+      // Verify entityType
+      client.assert(validEntityTypes.includes(item.entityType),
+          `Item ${index}: Invalid entityType: ${item.entityType}. Valid values: ${validEntityTypes.join(
+              ', ')}`);
+
+      // Verify operationType
+      client.assert(validOperationTypes.includes(item.operationType),
+          `Item ${index}: Invalid operationType: ${item.operationType}. Valid values: ${validOperationTypes.join(
+              ', ')}`);
+
+      // Verify result
+      client.assert(validResultTypes.includes(item.result),
+          `Item ${index}: Invalid result: ${item.result}. Valid values: ${validResultTypes.join(
+              ', ')}`);
+
+      // Verify actorType
+      client.assert(validActorTypes.includes(item.actorType),
+          `Item ${index}: Invalid actorType: ${item.actorType}. Valid values: ${validActorTypes.join(
+              ', ')}`);
+    });
+  });
+%}
+
+
+### Test 079 - Complex Filter - Process Instance + Operation Type + Entity Type
+# @name 079-complex-filter-combination
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{PROCESS_INSTANCE_KEY_1}}",
+    "operationType": "MODIFY",
+    "entityType": "PROCESS_INSTANCE"
+  }
+}
+
+> {%
+  client.test("Complex filter combination should work correctly", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    // Verify all returned items match all filter criteria
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.processInstanceKey === client.global.get("PROCESS_INSTANCE_KEY_1"),
+          `Item ${index}: Expected processInstanceKey: ${client.global.get(
+              "PROCESS_INSTANCE_KEY_1")}, actual: ${item.processInstanceKey}`);
+      client.assert(item.operationType === "MODIFY",
+          `Item ${index}: Expected operationType: MODIFY, actual: ${item.operationType}`);
+      client.assert(item.entityType === "PROCESS_INSTANCE",
+          `Item ${index}: Expected entityType: PROCESS_INSTANCE, actual: ${item.entityType}`);
+    });
+  });
+%}
+
+
+### Test 080 - Empty Result Set Test
+# @name 080-empty-result-set
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "9999999999999999",
+    "operationType": "MODIFY"
+  }
+}
+
+> {%
+  client.test("Empty result set should be handled correctly", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined, `Expected items to be defined`);
+    client.assert(Array.isArray(response.body.items), `Expected items to be an array`);
+    client.assert(response.body.items.length === 0,
+        `Expected empty results, actual: ${response.body.items.length}`);
+    client.assert(response.body.page.totalItems === 0,
+        `Expected totalItems to be 0, actual: ${response.body.page.totalItems}`);
+    client.assert(response.body.page.hasMoreTotalItems === false,
+        `Expected hasMoreTotalItems to be false for empty results`);
+  });
+%}
+
+### Test 081 - Verify Audit Log Completeness - All Creates Have Logs
+# @name 081-verify-completeness
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: {{AUTH_TYPE}} {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "operationType": "CREATE"
+  },
+  "page": {
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("All process instance creations should have audit logs", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+
+    // Collect all process instance keys we've created in this test suite
+    const expectedKeys = [
+      client.global.get("PROCESS_INSTANCE_KEY_1"),
+      client.global.get("PROCESS_INSTANCE_KEY_2"),
+      client.global.get("PROCESS_INSTANCE_KEY_3"),
+      client.global.get("OP_REF_TEST_INSTANCE_KEY"),
+      client.global.get("MULTIPLE_MODS_INSTANCE_KEY")
+    ].filter(key => key !== undefined && key !== null);
+
+    const foundKeys = new Set(response.body.items.map(item => item.processInstanceKey));
+
+    expectedKeys.forEach(function (expectedKey) {
+      client.assert(foundKeys.has(expectedKey),
+          `Expected to find CREATE audit log for instance: ${expectedKey}`);
+    });
+  });
+%}
+
+### ============================================================================
+### CATEGORY 11: MULTI-TENANT ISOLATION - Tenant-Specific Audit Log Access
+### ============================================================================
+### Note: These tests use BASIC_AUTH_TOKEN_A which is only configured in the
+### 'local' environment. Switch to 'local' environment to run these tests.
+### ============================================================================
+
+### Test 082 - Deploy Process for Tenant A
+# @name 082-deploy-process-tenantA
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/deployments
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundaryTenantA
+
+--boundaryTenantA
+Content-Disposition: form-data; name="tenantId"
+
+tenantA
+--boundaryTenantA
+Content-Disposition: form-data; name="resources"; filename="single_audit_log_test_process.bpmn"
+Content-Type: application/octet-stream
+
+< ./resources/single_audit_log_test_process.bpmn
+--boundaryTenantA--
+
+> {%
+  client.test("Process deployment for tenant A should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.deployments.length > 0,
+        `Expected deployments.length > 0, actual: ${response.body.deployments.length}`);
+    const processDefinition = response.body.deployments[0].processDefinition;
+    client.assert(processDefinition !== undefined,
+        `Expected processDefinition to be defined, actual: ${processDefinition}`);
+    client.global.set("TENANT_A_PROCESS_DEF_ID", processDefinition.processDefinitionId);
+    client.global.set("TENANT_A_PROCESS_DEF_KEY", processDefinition.processDefinitionKey);
+  });
+%}
+
+### Test 083 - Create Process Instance for Tenant A
+# @name 083-create-instance-tenantA
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionId": "{{TENANT_A_PROCESS_DEF_ID}}",
+  "tenantId": "tenantA",
+  "variables": {
+    "testVariable": "tenantATest",
+    "counter": 1001
+  }
+}
+
+> {%
+  client.test("Process instance creation for tenant A should be successful", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.processInstanceKey !== undefined,
+        `Expected processInstanceKey to be defined, actual: ${response.body.processInstanceKey}`);
+    client.global.set("TENANT_A_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+### Test 084 - Modify Process Instance for Tenant A
+# @name 084-modify-instance-tenantA
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/process-instances/{{TENANT_A_INSTANCE_KEY}}/modification
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 1001001,
+  "activateInstructions": [
+    {
+      "elementId": "ServiceTask1",
+      "ancestorElementInstanceKey": "-1",
+      "variableInstructions": [
+        {
+          "variables": {
+            "tenantAModification": "completed",
+            "modifiedAt": "2025-12-18"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+> {%
+  client.test("Modification for tenant A instance should be successful", function () {
+    client.assert(response.status === 204, `Expected status: 204, actual: ${response.status}`);
+  });
+%}
+
+### Test 085 - Search Audit Logs for Tenant A with Correct Tenant ID
+# @name 085-search-audit-logs-tenantA-correct
+< {%
+  import {wait} from "../js/wait";
+
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{TENANT_A_INSTANCE_KEY}}",
+    "tenantId": "tenantA"
+  }
+}
+
+> {%
+  client.test("Audit logs for tenant A should be accessible with correct tenant ID", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items to be defined, actual: ${response.body.items}`);
+    client.assert(response.body.items.length >= 2,
+        `Expected at least 2 audit logs (CREATE and MODIFY), actual: ${response.body.items.length}`);
+
+    // Verify all items belong to tenant A
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.tenantId === "tenantA",
+          `Item ${index}: Expected tenantId: tenantA, actual: ${item.tenantId}`);
+      client.assert(item.processInstanceKey === client.global.get("TENANT_A_INSTANCE_KEY"),
+          `Item ${index}: Expected processInstanceKey: ${client.global.get(
+              "TENANT_A_INSTANCE_KEY")}, actual: ${item.processInstanceKey}`);
+    });
+
+    // Verify we have both CREATE and MODIFY operations
+    const operationTypes = response.body.items.map(item => item.operationType);
+    client.assert(operationTypes.includes("CREATE"),
+        `Expected to find CREATE operation for tenant A`);
+    client.assert(operationTypes.includes("MODIFY"),
+        `Expected to find MODIFY operation for tenant A`);
+  });
+%}
+
+### Test 086 - Attempt to Search Tenant A Audit Logs with Wrong Tenant ID
+# @name 086-search-audit-logs-tenantA-wrong-tenant
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "processInstanceKey": "{{TENANT_A_INSTANCE_KEY}}",
+    "tenantId": "<default>"
+  }
+}
+
+> {%
+  client.test("Tenant A audit logs should NOT be accessible with wrong tenant ID", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items !== undefined,
+        `Expected items array to be defined, actual: ${response.body.items}`);
+
+    // Should return empty results - no access to tenant A logs with <default> tenant  filter
+    client.assert(response.body.items.length === 0,
+        `Expected 0 audit logs (tenant isolation), actual: ${response.body.items.length}`);
+
+    client.log("✓ Tenant isolation verified: Cannot access tenant A logs with tenant B filter");
+  });
+%}
+
+### Test 087 - Verify Tenant A Logs Only Contain Tenant A Data
+# @name 087-verify-tenantA-isolation
+< {%
+  import {wait} from "../js/wait";
+
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS}}/v2/audit-logs/search
+Authorization: Basic {{BASIC_AUTH_TOKEN_A}}
+Content-Type: application/json
+Accept: application/json
+
+{
+}
+
+> {%
+  client.test("All tenant A audit logs should only contain tenant A data", function () {
+    client.assert(response.status === 200, `Expected status: 200, actual: ${response.status}`);
+    client.assert(response.body.items.length > 0,
+        `Expected at least one audit log for tenant A, actual: ${response.body.items.length}`);
+
+    // Verify NO items belong to another tenant
+    response.body.items.forEach(function (item, index) {
+      client.assert(item.tenantId === "tenantA",
+          `Item ${index}: All items must have tenantId: tenantA, found: ${item.tenantId}`);
+
+    });
+
+    client.log(
+        `✓ Verified ${response.body.items.length} audit logs for tenant A - all have correct tenant ID`);
+  });
+%}

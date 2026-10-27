@@ -1,0 +1,8 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:mysql://localhost:3307/camunda_secondary?serverTimezone=UTC
+        username: camunda
+        password: camunda

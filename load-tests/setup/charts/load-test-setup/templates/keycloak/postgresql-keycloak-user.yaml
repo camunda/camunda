@@ -1,0 +1,26 @@
+{{- if .Values.keycloak.enabled -}}
+{{- $secretKey := dict
+            "namespace" $.Release.Namespace
+            "user" "keycloak-postgresql-user"
+-}}
+{{- $keycloakDatabaseUsername := .Values.keycloak.postgresql.databaseUser -}}
+{{- $keycloakDatabasePassword := include "generate-secret" $secretKey -}}
+---
+# The Secret is used by:
+#
+#   1. The Keycloak deployment, to fetch the username/password to use when connecting to PostgreSQL
+#   2. The CNPG Operator to configure the password for the "keycloak" PostgreSQL role
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ include "load-test-setup.keycloak.postgresql.cnpg-secret-name" . }}"
+  labels:
+    cnpg.io/reload: "true"
+  annotations:
+    kubernetes.io/description: |-
+      The credentials for the "keycloak" user inside PostgreSQL.
+type: kubernetes.io/basic-auth
+data:
+  username: "{{ $keycloakDatabaseUsername | b64enc }}"
+  password: "{{ $keycloakDatabasePassword | b64enc }}"
+{{- end -}}

@@ -1,0 +1,42 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import styled from 'styled-components';
+import {Stack} from '@carbon/react';
+import {styles} from '@carbon/type';
+
+const Container = styled.div<{$isPending?: boolean}>`
+	height: ${({$isPending}) => ($isPending ? '100dvh' : '100%')};
+	position: relative;
+	padding-top: var(--cds-spacing-09);
+`;
+
+const Section = styled.section`
+	height: 100%;
+	overflow: auto;
+`;
+
+const IncidentBanner = styled.div`
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: var(--cds-spacing-09);
+	${styles.bodyShort01};
+	background-color: var(--cds-notification-background-error);
+	border: 1px solid var(--cds-support-error);
+	border-left: 4px solid var(--cds-support-error);
+	color: var(--cds-text-primary);
+`;
+
+const RetryError = styled(Stack)`
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+`;
+
+export {Container, Section, IncidentBanner, RetryError};

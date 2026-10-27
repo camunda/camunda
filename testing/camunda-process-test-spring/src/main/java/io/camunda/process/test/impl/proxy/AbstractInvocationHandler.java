@@ -1,0 +1,149 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.proxy;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import javax.annotation.CheckForNull;
+import org.jspecify.annotations.Nullable;
+
+public abstract class AbstractInvocationHandler<T> implements InvocationHandler {
+
+  private static final Object[] NO_ARGS = {};
+
+  private T delegate;
+
+  public void setDelegate(final T client) {
+    delegate = client;
+  }
+
+  public void removeDelegate() {
+    delegate = null;
+  }
+
+  protected abstract Class<T> getDelegateClass();
+
+  @Override
+  @CheckForNull
+  public final Object invoke(
+      final Object proxy, final Method method, @CheckForNull @Nullable Object[] args)
+      throws Throwable {
+    if (args == null) {
+      args = NO_ARGS;
+    }
+    if (args.length == 0 && method.getName().equals("hashCode")) {
+      return hashCode();
+    }
+    if (args.length == 1
+        && method.getName().equals("equals")
+        && method.getParameterTypes()[0] == Object.class) {
+      final Object arg = args[0];
+      if (arg == null) {
+        return false;
+      }
+      if (proxy == arg) {
+        return true;
+      }
+      return isProxyOfSameInterfaces(arg, proxy.getClass())
+          && equals(Proxy.getInvocationHandler(arg));
+    }
+    if (args.length == 0 && method.getName().equals("toString")) {
+      return toString();
+    }
+    return handleInvocation(proxy, method, args);
+  }
+
+  /**
+   * {@link #invoke} delegates to this method upon any method invocation on the proxy instance,
+   * except {@link Object#equals}, {@link Object#hashCode} and {@link Object#toString}. The result
+   * will be returned as the proxied method's return value.
+   *
+   * <p>Unlike {@link #invoke}, {@code args} will never be null. When the method has no parameter,
+   * an empty array is passed in.
+   */
+  @CheckForNull
+  private Object handleInvocation(
+      final Object proxy, final Method method, @Nullable final Object[] args) throws Throwable {
+    if (delegate == null) {
+      final String delegateClassName = getDelegateClass().getSimpleName();
+      throw new RuntimeException(
+          "Cannot invoke %s on %s, as %s is currently not initialized. Maybe you run outside of a testcase?"
+              .formatted(method, delegateClassName, delegateClassName));
+    }
+    try {
+      return method.invoke(delegate, args);
+
+    } catch (final InvocationTargetException e) {
+      final Throwable cause = e.getCause();
+      if (cause == null) {
+        // Defensive fallback: propagate the original InvocationTargetException
+        throw e;
+      }
+
+      // Propagate checked exceptions as-is, for example, assertion errors
+      throw cause;
+    }
+  }
+
+  /**
+   * By default delegates to {@link Object#hashCode}. The dynamic proxies' {@code hashCode()} will
+   * delegate to this method. Subclasses can override this method to provide custom equality.
+   */
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+
+  /**
+   * By default delegates to {@link Object#equals} so instances are only equal if they are
+   * identical. {@code proxy.equals(argument)} returns true if:
+   *
+   * <ul>
+   *   <li>{@code proxy} and {@code argument} are of the same type
+   *   <li>and this method returns true for the {@link InvocationHandler} of {@code argument}
+   * </ul>
+   *
+   * <p>Subclasses can override this method to provide custom equality.
+   */
+  @Override
+  public boolean equals(@CheckForNull final Object obj) {
+    return super.equals(obj);
+  }
+
+  /**
+   * By default delegates to {@link Object#toString}. The dynamic proxies' {@code toString()} will
+   * delegate to this method. Subclasses can override this method to provide custom string
+   * representation for the proxies.
+   */
+  @Override
+  public String toString() {
+    return super.toString();
+  }
+
+  private static boolean isProxyOfSameInterfaces(final Object arg, final Class<?> proxyClass) {
+    return proxyClass.isInstance(arg)
+        // Equal proxy instances should mostly be instance of proxyClass
+        // Under some edge cases (such as the proxy of JDK types serialized and then deserialized)
+        // the proxy type may not be the same.
+        // We first check isProxyClass() so that the common case of comparing with non-proxy objects
+        // is efficient.
+        || (Proxy.isProxyClass(arg.getClass())
+            && Arrays.equals(arg.getClass().getInterfaces(), proxyClass.getInterfaces()));
+  }
+}

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0qvzpv6" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="test_migration_process_v2" name="Test Migration of Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0g3m08x</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="shall_test_gateway" default="Flow_15agyw7">
+      <bpmn:incoming>Flow_0bs3xxk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1d7zrjo</bpmn:outgoing>
+      <bpmn:outgoing>Flow_15agyw7</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0g3m08x" sourceRef="StartEvent_1" targetRef="decide_what_to_do" />
+    <bpmn:sequenceFlow id="Flow_1d7zrjo" sourceRef="shall_test_gateway" targetRef="test_migration_api_user_task">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=shallTest</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15agyw7" sourceRef="shall_test_gateway" targetRef="do_something_else" />
+    <bpmn:endEvent id="Event_04vuu87">
+      <bpmn:incoming>Flow_0kq8z7e</bpmn:incoming>
+      <bpmn:incoming>Flow_0dkdha7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0kq8z7e" sourceRef="do_something_else" targetRef="Event_04vuu87" />
+    <bpmn:sequenceFlow id="Flow_0dkdha7" sourceRef="test_migration_api_user_task" targetRef="Event_04vuu87" />
+    <bpmn:sequenceFlow id="Flow_0bs3xxk" sourceRef="decide_what_to_do" targetRef="shall_test_gateway" />
+    <bpmn:userTask id="test_migration_api_user_task" name="test migration api">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1d7zrjo</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dkdha7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="decide_what_to_do" name="decide what to do">
+      <bpmn:incoming>Flow_0g3m08x</bpmn:incoming>
+      <bpmn:outgoing>Flow_0bs3xxk</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="do_something_else" name="do something else">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15agyw7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kq8z7e</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="test_migration_process_v2">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_18ofw6w_di" bpmnElement="shall_test_gateway" isMarkerVisible="true">
+        <dc:Bounds x="375" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_04vuu87_di" bpmnElement="Event_04vuu87">
+        <dc:Bounds x="772" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0tcdsiv_di" bpmnElement="test_migration_api_user_task">
+        <dc:Bounds x="490" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wzok9b_di" bpmnElement="decide_what_to_do">
+        <dc:Bounds x="230" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0osom9x_di" bpmnElement="do_something_else">
+        <dc:Bounds x="490" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0g3m08x_di" bpmnElement="Flow_0g3m08x">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="230" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1d7zrjo_di" bpmnElement="Flow_1d7zrjo">
+        <di:waypoint x="425" y="120" />
+        <di:waypoint x="490" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15agyw7_di" bpmnElement="Flow_15agyw7">
+        <di:waypoint x="400" y="145" />
+        <di:waypoint x="400" y="230" />
+        <di:waypoint x="490" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kq8z7e_di" bpmnElement="Flow_0kq8z7e">
+        <di:waypoint x="590" y="230" />
+        <di:waypoint x="772" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dkdha7_di" bpmnElement="Flow_0dkdha7">
+        <di:waypoint x="590" y="120" />
+        <di:waypoint x="681" y="120" />
+        <di:waypoint x="681" y="230" />
+        <di:waypoint x="772" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bs3xxk_di" bpmnElement="Flow_0bs3xxk">
+        <di:waypoint x="330" y="120" />
+        <di:waypoint x="375" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- Unsafe: add a FOREIGN KEY constraint on an existing write-path table -->
+  <changeSet id="add_fk_constraint" author="camunda">
+    <addForeignKeyConstraint
+      constraintName="FK_PROCESS_INSTANCE_DEFINITION"
+      baseTableName="PROCESS_INSTANCE"
+      baseColumnNames="PROCESS_DEFINITION_KEY"
+      referencedTableName="PROCESS_DEFINITION"
+      referencedColumnNames="PROCESS_DEFINITION_KEY"/>
+  </changeSet>
+
+</databaseChangeLog>

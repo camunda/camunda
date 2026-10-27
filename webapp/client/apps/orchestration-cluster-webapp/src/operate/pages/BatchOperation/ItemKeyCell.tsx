@@ -1,0 +1,35 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {ItemLink} from './styled';
+
+type Props = {
+	itemKey: string;
+	fallbackText: string;
+	href?: string;
+	label?: string;
+	children?: React.ReactNode;
+};
+
+const ItemKeyCell: React.FC<Props> = ({itemKey, fallbackText, href, label, children}) => {
+	if (itemKey === '-1') {
+		return <>{fallbackText}</>;
+	}
+
+	if (href !== undefined) {
+		return (
+			<ItemLink href={href} title={label} aria-label={label}>
+				{itemKey}
+			</ItemLink>
+		);
+	}
+
+	return <>{children ?? itemKey}</>;
+};
+
+export {ItemKeyCell};

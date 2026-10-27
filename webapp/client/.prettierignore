@@ -1,0 +1,12 @@
+**/routeTree.gen.ts
+apps/orchestration-cluster-webapp/src/modules/svg/
+**/node_modules/
+**/dist/
+**/build/
+**/target/
+**/playwright-report/
+**/test-results/
+**/coverage/
+**/.tanstack/
+package-lock.json
+**/CHANGELOG.md

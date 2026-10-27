@@ -1,0 +1,34 @@
+{
+  "policy": {
+    "description": "Archived index policy",
+    "default_state": "archived",
+    "states": [
+      {
+        "name": "archived",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "deleted",
+            "conditions": {
+              "min_index_age": "$MIN_INDEX_AGE"
+            }
+          }
+        ]
+      },
+      {
+        "name": "deleted",
+        "actions": [
+          {
+            "retry": {
+              "count": 3,
+              "backoff": "exponential",
+              "delay": "1m"
+            },
+            "delete": {}
+          }
+        ],
+        "transitions": []
+      }
+    ]
+  }
+}

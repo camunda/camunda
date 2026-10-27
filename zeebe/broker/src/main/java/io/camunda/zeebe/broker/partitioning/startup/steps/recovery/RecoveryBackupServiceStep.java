@@ -1,0 +1,54 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.partitioning.startup.steps.recovery;
+
+import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
+
+import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
+import io.camunda.zeebe.broker.partitioning.RecoveryPartitionStartupContext;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.startup.StartupStep;
+
+/**
+ * Registers the {@link ReadOnlyBackupService} that answers backup status, list and range queries
+ * from the backup store while the partition is in recovery mode. Skipped when no backup store is
+ * configured.
+ */
+public record RecoveryBackupServiceStep(PartitionId partitionId)
+    implements StartupStep<RecoveryPartitionStartupContext> {
+
+  @Override
+  public String getName() {
+    return "Recovery Partition %d - Backup Service".formatted(partitionId.number());
+  }
+
+  @Override
+  public ActorFuture<RecoveryPartitionStartupContext> startup(
+      final RecoveryPartitionStartupContext context) {
+    final var store = context.getBackupStore();
+    if (store == null) {
+      return CompletableActorFuture.completed(context.setBackupService(null));
+    }
+    final var service =
+        new ReadOnlyBackupService(
+            context.getBrokerInfo().getNodeId(), partitionId, store, context.meterRegistry());
+    return context
+        .schedulingService()
+        .submitActor(service)
+        .thenApply(ignored -> context.setBackupService(service), context.getConcurrencyControl());
+  }
+
+  @Override
+  public ActorFuture<RecoveryPartitionStartupContext> shutdown(
+      final RecoveryPartitionStartupContext context) {
+    return closeHelper(context.getBackupService())
+        .thenApply(ignored -> context.setBackupService(null), context.getConcurrencyControl());
+  }
+}

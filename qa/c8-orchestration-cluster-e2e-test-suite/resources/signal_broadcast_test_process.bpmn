@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1wklih5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="signal_broadcast_test_process" name="Signal Broadcast Test Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0re4hpc</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0re4hpc" sourceRef="StartEvent_1" targetRef="Event_Test_Signal" />
+    <bpmn:intermediateCatchEvent id="Event_Test_Signal" name="Receive Test Signal">
+      <bpmn:incoming>Flow_0re4hpc</bpmn:incoming>
+      <bpmn:outgoing>Flow_17f4264</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0neye28" signalRef="Signal_220k2ur" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_17f4264" sourceRef="Event_Test_Signal" targetRef="Activity_Work" />
+    <bpmn:scriptTask id="Activity_Work" name="Work">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=if orderId then true else false" resultVariable="result" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17f4264</bpmn:incoming>
+      <bpmn:outgoing>Flow_0sup4p0</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_1chpg7p">
+      <bpmn:incoming>Flow_0sup4p0</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0sup4p0" sourceRef="Activity_Work" targetRef="Event_1chpg7p" />
+  </bpmn:process>
+  <bpmn:signal id="Signal_220k2ur" name="Signal_220k2ur" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="signal_broadcast_test_process">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0y9p6z2_di" bpmnElement="Event_Test_Signal">
+        <dc:Bounds x="272" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="259" y="145" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1eg2acf_di" bpmnElement="Activity_Work">
+        <dc:Bounds x="370" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1chpg7p_di" bpmnElement="Event_1chpg7p">
+        <dc:Bounds x="532" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0re4hpc_di" bpmnElement="Flow_0re4hpc">
+        <di:waypoint x="218" y="120" />
+        <di:waypoint x="272" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17f4264_di" bpmnElement="Flow_17f4264">
+        <di:waypoint x="308" y="120" />
+        <di:waypoint x="370" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0sup4p0_di" bpmnElement="Flow_0sup4p0">
+        <di:waypoint x="470" y="120" />
+        <di:waypoint x="532" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

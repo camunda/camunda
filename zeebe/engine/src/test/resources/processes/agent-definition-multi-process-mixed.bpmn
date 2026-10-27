@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_agent_multi_process_mixed" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.5.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0">
+  <bpmn:collaboration id="Collaboration_agent_multi_process_mixed">
+    <bpmn:documentation>The Zeebe BPMN model Java Builder API has no fluent equivalent for authoring multiple &lt;process&gt; elements, collaborations, or pools/participants, so this fixture is hand-authored XML rather than generated via Bpmn.createProcess(...). Only the first process carries an agent marker; the second is plain, to prove the isAgentic() flag isn't leaked across sibling processes sharing one resource.</bpmn:documentation>
+    <bpmn:participant id="Participant_Marked" name="process-multi-mixed-marked" processRef="process-multi-mixed-marked" />
+    <bpmn:participant id="Participant_Plain" name="process-multi-mixed-plain" processRef="process-multi-mixed-plain" />
+  </bpmn:collaboration>
+  <bpmn:process id="process-multi-mixed-marked" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Marked">
+      <bpmn:outgoing>Flow_Marked_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="agent-task-marked" name="agent-task-marked">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="agent-task-job-marked" />
+        <zeebe:agentDefinition agentType="aiAgentTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Marked_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Marked_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Marked">
+      <bpmn:incoming>Flow_Marked_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Marked_1" sourceRef="StartEvent_Marked" targetRef="agent-task-marked" />
+    <bpmn:sequenceFlow id="Flow_Marked_2" sourceRef="agent-task-marked" targetRef="EndEvent_Marked" />
+  </bpmn:process>
+  <bpmn:process id="process-multi-mixed-plain" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Plain">
+      <bpmn:outgoing>Flow_Plain_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="plain-task" name="plain-task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="plain-task-job" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Plain_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Plain_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Plain">
+      <bpmn:incoming>Flow_Plain_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Plain_1" sourceRef="StartEvent_Plain" targetRef="plain-task" />
+    <bpmn:sequenceFlow id="Flow_Plain_2" sourceRef="plain-task" targetRef="EndEvent_Plain" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_agent_multi_process_mixed">
+      <bpmndi:BPMNShape id="Participant_Marked_di" bpmnElement="Participant_Marked" isHorizontal="true">
+        <dc:Bounds x="129" y="57" width="600" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Marked_di" bpmnElement="StartEvent_Marked">
+        <dc:Bounds x="192" y="129" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Marked_di" bpmnElement="agent-task-marked">
+        <dc:Bounds x="280" y="107" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Marked_di" bpmnElement="EndEvent_Marked">
+        <dc:Bounds x="432" y="129" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Marked_1_di" bpmnElement="Flow_Marked_1">
+        <di:waypoint x="228" y="147" />
+        <di:waypoint x="280" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Marked_2_di" bpmnElement="Flow_Marked_2">
+        <di:waypoint x="380" y="147" />
+        <di:waypoint x="432" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_Plain_di" bpmnElement="Participant_Plain" isHorizontal="true">
+        <dc:Bounds x="129" y="257" width="600" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Plain_di" bpmnElement="StartEvent_Plain">
+        <dc:Bounds x="192" y="329" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Plain_di" bpmnElement="plain-task">
+        <dc:Bounds x="280" y="307" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Plain_di" bpmnElement="EndEvent_Plain">
+        <dc:Bounds x="432" y="329" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Plain_1_di" bpmnElement="Flow_Plain_1">
+        <di:waypoint x="228" y="347" />
+        <di:waypoint x="280" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Plain_2_di" bpmnElement="Flow_Plain_2">
+        <di:waypoint x="380" y="347" />
+        <di:waypoint x="432" y="347" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,46 @@
+.cds--header {
+  z-index: var(--z-header);
+
+  // TODO: Remove this after enabling the carbon css reset
+  a:hover {
+    text-decoration: none;
+  }
+
+  .tooltipTrigger {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    outline: inherit;
+    font: inherit;
+    display: inline-block;
+    inline-size: 100%;
+
+    &.active {
+      background: none;
+    }
+  }
+
+  .cds--side-nav {
+    .NavItem {
+      flex-direction: column;
+
+      .arrow {
+        display: none;
+      }
+
+      .breadcrumb {
+        padding-left: 2rem;
+      }
+    }
+  }
+
+  .timezone {
+    padding: var(--cds-spacing-05);
+    color: var(--cds-text-secondary);
+    font-size: var(--cds-label-01-font-size);
+    font-weight: var(--cds-label-01-font-weight);
+    line-height: var(--cds-label-01-line-height);
+    letter-spacing: var(--cds-label-01-letter-spacing);
+  }
+}

@@ -1,0 +1,9 @@
+spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        type: sync
+        protocol: stateless
+        annotation-scanner:
+          enabled: true

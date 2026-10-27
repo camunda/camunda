@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_053dhtn" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.5.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0">
+  <bpmn:process id="dataStoreProcess" name="Data store process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0vh54nx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0vh54nx" sourceRef="StartEvent_1" targetRef="Activity_0pexf3b" />
+    <bpmn:endEvent id="Event_09va04e">
+      <bpmn:incoming>Flow_1jb34wj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1jb34wj" sourceRef="Activity_0pexf3b" targetRef="Event_09va04e" />
+    <bpmn:dataStoreReference id="DataStoreReference_1pd8ha8" name="Data store" />
+    <bpmn:dataObjectReference id="DataObjectReference_1auk73k" name="Data object" dataObjectRef="DataObject_0tk9ve9" />
+    <bpmn:dataObject id="DataObject_0tk9ve9" />
+    <bpmn:serviceTask id="Activity_0pexf3b" name="Process data">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="processData" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0vh54nx</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jb34wj</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="dataStoreProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_09va04e_di" bpmnElement="Event_09va04e">
+        <dc:Bounds x="442" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStoreReference_1pd8ha8_di" bpmnElement="DataStoreReference_1pd8ha8">
+        <dc:Bounds x="225" y="235" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="225" y="292" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_1auk73k_di" bpmnElement="DataObjectReference_1auk73k">
+        <dc:Bounds x="372" y="235" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="362" y="292" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04bqtbl_di" bpmnElement="Activity_0pexf3b">
+        <dc:Bounds x="280" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0vh54nx_di" bpmnElement="Flow_0vh54nx">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="280" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jb34wj_di" bpmnElement="Flow_1jb34wj">
+        <di:waypoint x="380" y="117" />
+        <di:waypoint x="442" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

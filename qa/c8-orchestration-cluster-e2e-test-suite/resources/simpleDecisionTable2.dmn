@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Generations_DMN" name="Generations_DMN" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0" camunda:diagramRelationId="ad1a3ef3-e97e-4585-8517-2e0a3d759e6c">
+  <decision id="GenerationsDecision" name="GenerationsDecision">
+    <decisionTable id="DecisionTable_1qn3ngy" hitPolicy="FIRST">
+      <input id="Input_1" label="trainName" biodi:width="192">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>trainName</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="baseGenerationId" name="baseGenerationId" typeRef="string" biodi:width="503" />
+      <rule id="DecisionRule_1fp46ws">
+        <description>Camunda 8.4.5</description>
+        <inputEntry id="UnaryTests_0t72zos">
+          <text>"8.4"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_15y0ymj">
+          <text>"8.4-generation"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0u44ngh">
+        <description>Camunda 8.3.8</description>
+        <inputEntry id="UnaryTests_157bn2k">
+          <text>"8.5"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1rvyvhb">
+          <text>"8.5-generation"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0z5aeou">
+        <description>Camunda 8.2.26</description>
+        <inputEntry id="UnaryTests_0n7p6y1">
+          <text>"8.6"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0mfbbej">
+          <text>"8.6-generation"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0k6wq2l">
+        <description>Camunda 8.5.0</description>
+        <inputEntry id="UnaryTests_0r60kwl">
+          <text>"8.7"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0xx7km2">
+          <text>"8.7-generation"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1d9up3i">
+        <description>Camunda 8.6.0</description>
+        <inputEntry id="UnaryTests_06yeejc">
+          <text>"8.8"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1tpkkpu">
+          <text>"8.8-generation"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="GenerationsDecision">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

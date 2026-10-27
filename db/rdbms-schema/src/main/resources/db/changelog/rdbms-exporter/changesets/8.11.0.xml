@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="add_is_suspended_column_to_user_task" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_TASK" columnName="IS_SUSPENDED"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_TASK">
+      <column name="IS_SUSPENDED" type="BOOLEAN"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="create_variable_protection_mode_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}VARIABLE_PROTECTION_MODE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}VARIABLE_PROTECTION_MODE">
+      <column name="VAR_KEY" type="BIGINT">
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_VARIABLE_PROTECTION_MODE_VARIABLE"
+          referencedTableName="${prefix}VARIABLE"
+          referencedColumnNames="VAR_KEY" deleteCascade="true"/>
+      </column>
+      <column name="PROTECTION_MODE" type="INTEGER">
+        <constraints primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="add_storage_ordinal_column_to_incident" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}INCIDENT" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}INCIDENT">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,566 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {APIRequestContext, APIResponse} from 'playwright-core';
+import {expect} from '@playwright/test';
+import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {
+  DEFAULT_PAGE_LIMIT,
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../constants';
+import {activateSingleJob, completeJob} from './job-requestHelpers';
+import {expectNoIncidents} from './incident-requestHelpers';
+import {cancelProcessInstance} from '../zeebeClient';
+import {validateResponse} from 'json-body-assertions';
+import {expectBatchState} from './batch-operation-requestHelpers';
+import {sleep} from '../sleep';
+
+// Starting many instances in parallel can make the gateway transiently shed a
+// request with a 5xx; retry only those (never a 4xx, which is a real error) so
+// a load blip does not fail the batch. Returns the first non-5xx response for
+// the caller to status-check as usual.
+async function startInstanceWithRetry(
+  request: APIRequestContext,
+  processDefinitionId: string,
+): Promise<APIResponse> {
+  const maxAttempts = 5;
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await request.post(buildUrl('/process-instances'), {
+      headers: jsonHeaders(),
+      data: {processDefinitionId},
+      timeout: 30_000,
+    });
+    if (res.status() < 500) {
+      return res;
+    }
+    lastStatus = res.status();
+    await sleep(500 * attempt);
+  }
+  throw new Error(
+    `Failed to start process instance '${processDefinitionId}' after ` +
+      `${maxAttempts} attempts (last status ${lastStatus})`,
+  );
+}
+
+export async function getProcessDefinitionKey(
+  request: APIRequestContext,
+  processDefinitionId: string,
+) {
+  const res = await request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data: {
+      processDefinitionId: processDefinitionId,
+    },
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: '/process-instances',
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  await cancelProcessInstance(json.processInstanceKey);
+  return json.processDefinitionKey;
+}
+
+export async function createProcessInstanceWithBusinessId(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  businessId: string,
+): Promise<string> {
+  const res = await request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data: {processDefinitionId, businessId},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances', method: 'POST', status: '200'},
+    res,
+  );
+  return String((await res.json()).processInstanceKey);
+}
+
+export async function createCancellationBatch(
+  request: APIRequestContext,
+  numberOfInstances = 3,
+  processDefinitionId = 'batch_cancellation_process',
+): Promise<string> {
+  const WAVE_SIZE = 30;
+  const processInstanceKeys: string[] = [];
+  for (let i = 0; i < numberOfInstances; i += WAVE_SIZE) {
+    const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
+    const waveResponses = await Promise.all(
+      Array.from({length: waveCount}, () =>
+        startInstanceWithRetry(request, processDefinitionId),
+      ),
+    );
+    for (const startRes of waveResponses) {
+      await assertStatusCode(startRes, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        startRes,
+      );
+      const startJson = await startRes.json();
+      processInstanceKeys.push(String(startJson.processInstanceKey));
+    }
+  }
+
+  // Wait for *every* instance to be searchable, not just the first one. The
+  // cancellation batch below resolves its items from secondary storage when it
+  // is created, so creating it while the rest are still propagating produces a
+  // batch of only the handful that happened to be indexed. Such a batch reaches
+  // a terminal state almost immediately, which makes the suspend/resume tests
+  // fail with a permanent 404 no matter how many instances they asked for.
+  await expect(async () => {
+    const searchRes = await request.post(
+      buildUrl('/process-instances/search'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $in: processInstanceKeys,
+            },
+          },
+        },
+      },
+    );
+    await assertStatusCode(searchRes, 200);
+    const json = await searchRes.json();
+    expect(json.page?.totalItems ?? 0).toBe(processInstanceKeys.length);
+  }).toPass({
+    ...defaultAssertionOptions,
+    // Propagation scales with the number of instances -- 60s is plenty for the
+    // 3-instance default but not for the 500-instance suspension batches.
+    timeout: Math.max(60_000, processInstanceKeys.length * 300),
+  });
+
+  const result: Record<string, string> = {};
+  await expect(async () => {
+    const batchRes = await request.post(
+      buildUrl('/process-instances/cancellation'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $in: processInstanceKeys,
+            },
+          },
+        },
+      },
+    );
+    await assertStatusCode(batchRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/cancellation',
+        method: 'POST',
+        status: '200',
+      },
+      batchRes,
+    );
+    const json = await batchRes.json();
+    expect(json).toHaveProperty('batchOperationKey');
+    result.batchKey = json.batchOperationKey;
+  }).toPass(defaultAssertionOptions);
+
+  return result.batchKey;
+}
+
+export async function searchJobKeysForProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  const localState: Record<string, unknown> = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/jobs/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          processInstanceKey: processInstanceKey,
+        },
+      },
+    });
+
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const json = await res.json();
+    expect(json.page.totalItems).toBeGreaterThan(0);
+    localState['jobKeys'] = json.items.map(
+      (job: {jobKey: number}) => job.jobKey,
+    );
+  }).toPass(defaultAssertionOptions);
+  return localState['jobKeys'] as Array<string>;
+}
+
+export async function failJob(
+  request: APIRequestContext,
+  jobKey: string,
+  retries = 0,
+  errorMessage = 'Simulated failure',
+) {
+  const failRes = await request.post(
+    buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+    {
+      headers: jsonHeaders(),
+      data: {
+        retries: retries,
+        errorMessage: errorMessage,
+      },
+    },
+  );
+  await assertStatusCode(failRes, 204);
+}
+
+export async function throwErrorForJob(
+  request: APIRequestContext,
+  jobKey: string,
+  errorCode: string,
+  errorMessage = 'Simulated error',
+) {
+  const throwRes = await request.post(
+    buildUrl('/jobs/{jobKey}/error', {jobKey}),
+    {
+      headers: jsonHeaders(),
+      data: {
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      },
+    },
+  );
+  await assertStatusCode(throwRes, 204);
+}
+
+export async function verifyIncidentsForProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expectedIncidentCount: number,
+) {
+  return await expect(async () => {
+    const res = await request.post(
+      buildUrl('/process-instances/{processInstanceKey}/incidents/search', {
+        processInstanceKey,
+      }),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            state: 'ACTIVE',
+          },
+        },
+      },
+    );
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: `/process-instances/{processInstanceKey}/incidents/search`,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const json = await res.json();
+    expect(
+      json.page.totalItems,
+      `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
+    ).toBe(expectedIncidentCount);
+  }).toPass(defaultAssertionOptions);
+}
+
+export async function expectProcessInstanceCanBeFound(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl('/process-instances/{processInstanceKey}', {processInstanceKey}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}',
+        method: 'GET',
+        status: '200',
+      },
+      statusRes,
+    );
+    const json = await statusRes.json();
+    expect(json.processInstanceKey).toBe(processInstanceKey);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 180_000,
+  });
+}
+
+async function countProcessInstances(
+  request: APIRequestContext,
+  state: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {state}, page: {limit: 1}},
+  });
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  return json.page.totalItems as number;
+}
+
+async function runBatchAndWaitForCompletion(
+  request: APIRequestContext,
+  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
+  filter: Record<string, unknown>,
+): Promise<void> {
+  const res = await request.post(buildUrl(endpoint), {
+    headers: jsonHeaders(),
+    data: {filter},
+  });
+
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: endpoint,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  const batchKey = json.batchOperationKey;
+
+  await expectBatchState(request, batchKey, 'COMPLETED');
+}
+
+export type SuspendableProcessInstance = ProcessInstanceItem & {
+  suspendedDate?: string | null;
+};
+
+export async function suspendProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: Record<string, unknown>,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/suspension', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function resumeProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: Record<string, unknown>,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/resumption', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function getProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<SuspendableProcessInstance> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey}},
+  });
+  await assertStatusCode(res, 200);
+  const items = (await res.json()).items ?? [];
+  expect(items).toHaveLength(1);
+  return items[0] as SuspendableProcessInstance;
+}
+
+export async function expectSuspendedDate(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  present: boolean,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const {suspendedDate} = await getProcessInstance(
+      request,
+      processInstanceKey,
+    );
+    if (present) {
+      expect(suspendedDate).toBeTruthy();
+    } else {
+      expect(suspendedDate ?? null).toBeNull();
+    }
+  }).toPass(assertionOptions);
+}
+
+/**
+ * The 204 and the exported state are separate guarantees, and only the second is
+ * what an operator or Operate sees — so callers wait for both before asserting
+ * anything that depends on the instance being suspended.
+ */
+export async function suspendAndExpectSuspended(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await assertStatusCode(
+    await suspendProcessInstance(request, processInstanceKey),
+    204,
+  );
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'SUSPENDED',
+    assertionOptions,
+  );
+  await expectSuspendedDate(
+    request,
+    processInstanceKey,
+    true,
+    assertionOptions,
+  );
+}
+
+export async function expectProcessState(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  state: string,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/process-instances/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey}},
+    });
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].state).toBe(state);
+  }).toPass(assertionOptions);
+}
+
+export async function clearAllProcessInstances(
+  request: APIRequestContext,
+): Promise<void> {
+  // Cancel all active instances first.
+  if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
+    await runBatchAndWaitForCompletion(
+      request,
+      '/process-instances/cancellation',
+      {state: 'ACTIVE'},
+    );
+  }
+  // Cancellation moves instances to TERMINATED; delete each terminal state
+  // individually to avoid relying on $or in the search pre-check.
+  for (const state of ['COMPLETED', 'TERMINATED']) {
+    if ((await countProcessInstances(request, state)) > 0) {
+      await runBatchAndWaitForCompletion(
+        request,
+        '/process-instances/deletion',
+        {state},
+      );
+    }
+  }
+}
+
+export type ProcessInstanceItem = {
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  processDefinitionId: string;
+  state: string;
+};
+
+export async function searchProcessInstances(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+): Promise<ProcessInstanceItem[]> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter, page: {limit: DEFAULT_PAGE_LIMIT}},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances/search', method: 'POST', status: '200'},
+    res,
+  );
+  return ((await res.json()).items ?? []) as ProcessInstanceItem[];
+}
+
+export async function expectProcessInstanceCount(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  expectedCount: number,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await searchProcessInstances(request, filter)).toHaveLength(
+      expectedCount,
+    );
+  }).toPass(assertionOptions);
+}
+
+/**
+ * Runs the instance's service task and waits for it to finish with no open
+ * incident.
+ *
+ * Every suspend/resume case ends this way: a refusal proves a request was
+ * turned down, not that the instance came through the suspension able to work.
+ */
+export async function completeServiceTaskInstance(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
+  await completeJob(request, jobKey);
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'COMPLETED',
+    extendedAssertionOptions,
+  );
+  await expectNoIncidents(request, processInstanceKey);
+}
+
+/**
+ * Resumes the instance and then runs it to a finish.
+ *
+ * The resume response is not asserted: a caller that already resumed through
+ * the UI answers 409 here. The completion is the assertion — a job cannot be
+ * activated while the instance is still suspended.
+ */
+export async function resumeAndCompleteServiceTask(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  await resumeProcessInstance(request, processInstanceKey);
+  await completeServiceTaskInstance(request, jobType, processInstanceKey);
+}

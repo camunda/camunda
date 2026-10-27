@@ -1,0 +1,206 @@
+# description: Runs Integration tests on min and max versions of each supported major series of Elasticsearch and OpenSearch
+# test location: /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Search DB Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".ci/db-versions.yml"
+      - ".github/actions/read-db-versions/**"
+      - ".github/workflows/zeebe-search-integration-tests.yml"
+  schedule:
+    - cron: "0 5 * * Mon-Fri"
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  # Reads search DB versions from .ci/db-versions.yml and generates a min/max matrix.
+  # Add or remove versions there — this workflow updates automatically.
+  generate-matrix:
+    name: "Generate search DB matrix"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read-versions.outputs.es-os-matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read DB versions
+        id: read-versions
+        uses: ./.github/actions/read-db-versions
+
+  # Builds the distball once and shares it with every matrix shard below via GCS,
+  # replacing a per-shard reactor build (~18 shards). See #56931.
+  # This job block is duplicated verbatim in zeebe-rdbms-integration-tests.yml --
+  # GHA has no way to share a job stanza across workflow files. Keep both in sync.
+  build-distball:
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
+    with:
+      skip-artifact-upload: true  # no docker-checks-style GH-artifact consumer in this workflow
+
+  # If build-distball fails/is cancelled, every matrix job below is skipped by its
+  # needs: dependency (not failed), so their own send-slack-notification never runs.
+  # Without this job that failure would be silent on scheduled runs.
+  notify-build-distball-failure:
+    name: "Send slack notification on build-distball fail"
+    needs: build-distball
+    if: always() && (needs.build-distball.result == 'failure' || needs.build-distball.result == 'cancelled') && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      # Stay quiet when rerun-failed-jobs is about to retry this run, otherwise a build-distball
+      # killed by a runner shutdown that the retry goes on to fix leaves a false alarm behind. A
+      # genuine failure, a cancellation, or one on the last permitted attempt still alerts.
+      - name: Decide whether this run will be retried
+        id: detect-if-retry
+        uses: ./.github/actions/detect-runner-shutdown
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # !cancelled() replaces the implicit success(), so a failing detector still lets the alert out.
+      - name: Import secrets from Vault
+        id: secrets
+        if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+      - name: Send notification
+        if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            text: "Scheduled Search Integration Tests shared build (build-distball) on ${{ github.ref_name }} failed or was cancelled — all matrix shards were skipped"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Scheduled *Search Integration Tests* shared build (`build-distball`) on *${{ github.ref_name }}* FAILED or WAS CANCELLED — every matrix shard was skipped as a result\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "notify-build-distball-failure"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  search-integration-tests:
+    name: "Search ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-container: ${{ matrix.database-container }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
+      # This job isn't PR/merge-blocking, so it can take more job budget and longer failsafe timeout
+      timeout-minutes: 25
+      failsafe-timeout-seconds: 1020
+
+  search-history-tests:
+    name: "Search History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "history"
+      test-type: "history-tests"
+      test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
+
+  search-identity-tests:
+    name: "Search Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
+
+  # Auto-retry when one of the jobs above failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure. No run here has been lost that way yet, but these
+  # shards use the same gcp-perf runner classes as the RDBMS ones that have, so the exposure is
+  # identical.
+  #
+  # generate-matrix is deliberately not in `needs`: it runs on a GitHub-hosted runner and so is
+  # not exposed to spot preemption. build-distball is, and a shutdown there skips every shard
+  # below it, so it is covered. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: [ build-distball, search-integration-tests, search-history-tests, search-identity-tests ]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/data-layer'
+    secrets: inherit

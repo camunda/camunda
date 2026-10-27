@@ -1,0 +1,218 @@
+# description: Tests rolling updates for Zeebe. Detailed information can be found at /docs/zeebe/rolling_updates.md
+# test location: /zeebe/qa/update-tests
+# type: CI
+# owner: @camunda/core-features
+name: Zeebe Version Compatibility
+on:
+  workflow_dispatch:
+  schedule:
+    # Run at 6:00 every day
+    - cron: '0 6 * * *'
+concurrency:
+  group: zeebe-version-compatibility
+  cancel-in-progress: false
+
+permissions:
+  actions: read # Required to get the previous report
+  contents: read # Required for authenticated GitHub API calls in RollingUpdateTest (releases, tags)
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+
+jobs:
+  prepare-report:
+    name: Prepare Previous Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download previous report
+        # Resolved once here and shared with all shards: the shards assign pending version pairs
+        # based on this report, so they must all see the exact same one or pairs get skipped or
+        # run twice. Looked up by artifact name (newest first) rather than by listing workflow
+        # runs, as the runs listing has returned stale or ancient runs, leaving shards without
+        # a report and re-running the whole matrix.
+        run: |
+          artifact_id=$(gh api '/repos/${{ github.repository }}/actions/artifacts?name=zeebe-version-compatibility&per_page=100' \
+            | jq -r '[.artifacts[] | select(.expired | not) | select(.workflow_run.head_branch == "main")]
+              | sort_by(.created_at) | reverse | .[0].id // empty')
+          if [ -z "$artifact_id" ]; then
+            echo "No previous report found, starting with an empty report"
+            touch zeebe-version-compatibility
+            exit 0
+          fi
+          echo "Using report artifact $artifact_id"
+          gh api "/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip" > report.zip
+          unzip -o report.zip zeebe-version-compatibility
+          wc -l zeebe-version-compatibility
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload base report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: previous-zeebe-version-compatibility
+          path: ${{ github.workspace }}/zeebe-version-compatibility
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  released-versions:
+    name: Released Versions
+    needs: prepare-report
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shards: [ 1, 2, 3, 4, 5, 6] # Values are not used, we just need an array of the right length
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Cache Zeebe versions (scoped to this run)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/camunda
+          # Scoped to this run+attempt, with no restore-keys fallback: this only shares one
+          # run's freshly-verified release data across its shards. A key/fallback that could
+          # match another run (an hour, a day, ...) would let a cache created before this
+          # file's per-tag release check went in keep bypassing that check indefinitely, since
+          # discoverVersions() only fetches and re-verifies when the local cache file is absent.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Download report shared by prepare-report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: previous-zeebe-version-compatibility
+          path: ${{ github.workspace }}
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - name: Test rolling update
+        timeout-minutes: 300
+        run: >
+          ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
+          -D it.test=io.camunda.zeebe.test.RollingUpdateTest
+          -D failsafe.rerunFailingTestsCount=3
+          -D skipChecks
+          verify
+        env:
+          ZEEBE_CI_CHECK_VERSION_COMPATIBILITY: true
+          ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_INDEX: ${{ strategy.job-index }}
+          ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL: ${{ strategy.job-total }}
+          ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT: ${{ github.workspace }}/zeebe-version-compatibility
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: "Version compatibility ${{ strategy.job-index }}"
+      - name: Upload report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: zeebe-version-compatibility-${{ strategy.job-index }}
+          path: ${{ github.workspace }}/zeebe-version-compatibility
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "released-versions/${{ matrix.shards }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  current-snapshot:
+    name: Current Snapshot
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Cache Zeebe versions (scoped to this run)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/camunda
+          # See the "Released Versions" job's cache step for why this is scoped to this
+          # run+attempt with no restore-keys fallback.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          version: current-test
+          repository: 'camunda/camunda'
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+          platforms: linux/amd64
+          push: false
+          dockerfile: 'camunda.Dockerfile'
+      - name: Test snapshot
+        timeout-minutes: 300
+        run: >
+          ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
+          -D it.test=io.camunda.zeebe.test.RollingUpdateTest
+          -D failsafe.rerunFailingTestsCount=3
+          -D skipChecks
+          verify
+        env:
+          ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY: true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: "Snapshot version compatibility"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  update-shared-report:
+    name: Update Report
+    runs-on: ubuntu-latest
+    needs: released-versions
+    if: always()
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download all reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: zeebe-version-compatibility-*
+      - name: Merge reports
+        run: |
+          cat zeebe-version-compatibility-*/** | sort | uniq > ${{ github.workspace }}/zeebe-version-compatibility
+          if [ ! -s ${{ github.workspace }}/zeebe-version-compatibility ]; then
+            exit 1
+          fi
+      - name: Upload shared report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zeebe-version-compatibility
+          path: ${{ github.workspace }}/zeebe-version-compatibility
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

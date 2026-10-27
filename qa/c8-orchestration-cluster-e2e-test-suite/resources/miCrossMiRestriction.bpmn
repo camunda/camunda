@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_miCross" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="1.0">
+  <bpmn:process id="miCrossMiRestriction" name="MI Cross-MI Restriction" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_crossMi">
+      <bpmn:outgoing>Flow_cross_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Fork_crossMi" name="Fork">
+      <bpmn:incoming>Flow_cross_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_cross_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_cross_3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:subProcess id="MICrossSubprocess1" name="MI Subprocess 1">
+      <bpmn:incoming>Flow_cross_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_cross_4</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart_cross1">
+        <bpmn:outgoing>SubFlow_cross1_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="CrossTask1" name="Cross Task 1">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="crossMiTask1" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_cross1_1</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_cross1_2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd_cross1">
+        <bpmn:incoming>SubFlow_cross1_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_cross1_1" sourceRef="SubStart_cross1" targetRef="CrossTask1" />
+      <bpmn:sequenceFlow id="SubFlow_cross1_2" sourceRef="CrossTask1" targetRef="SubEnd_cross1" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="MICrossSubprocess2" name="MI Subprocess 2">
+      <bpmn:incoming>Flow_cross_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_cross_5</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart_cross2">
+        <bpmn:outgoing>SubFlow_cross2_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="CrossTask2" name="Cross Task 2">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="crossMiTask2" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_cross2_1</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_cross2_2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd_cross2">
+        <bpmn:incoming>SubFlow_cross2_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_cross2_1" sourceRef="SubStart_cross2" targetRef="CrossTask2" />
+      <bpmn:sequenceFlow id="SubFlow_cross2_2" sourceRef="CrossTask2" targetRef="SubEnd_cross2" />
+    </bpmn:subProcess>
+    <bpmn:parallelGateway id="Join_crossMi" name="Join">
+      <bpmn:incoming>Flow_cross_4</bpmn:incoming>
+      <bpmn:incoming>Flow_cross_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_cross_6</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent_crossMi">
+      <bpmn:incoming>Flow_cross_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_cross_1" sourceRef="StartEvent_crossMi" targetRef="Fork_crossMi" />
+    <bpmn:sequenceFlow id="Flow_cross_2" sourceRef="Fork_crossMi" targetRef="MICrossSubprocess1" />
+    <bpmn:sequenceFlow id="Flow_cross_3" sourceRef="Fork_crossMi" targetRef="MICrossSubprocess2" />
+    <bpmn:sequenceFlow id="Flow_cross_4" sourceRef="MICrossSubprocess1" targetRef="Join_crossMi" />
+    <bpmn:sequenceFlow id="Flow_cross_5" sourceRef="MICrossSubprocess2" targetRef="Join_crossMi" />
+    <bpmn:sequenceFlow id="Flow_cross_6" sourceRef="Join_crossMi" targetRef="EndEvent_crossMi" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_crossMi">
+    <bpmndi:BPMNPlane id="BPMNPlane_crossMi" bpmnElement="miCrossMiRestriction">
+      <bpmndi:BPMNShape id="StartEvent_crossMi_di" bpmnElement="StartEvent_crossMi">
+        <dc:Bounds x="152" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Fork_crossMi_di" bpmnElement="Fork_crossMi" isMarkerVisible="true">
+        <dc:Bounds x="252" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="259" y="201" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MICrossSubprocess1_di" bpmnElement="MICrossSubprocess1" isExpanded="true">
+        <dc:Bounds x="360" y="80" width="280" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_cross1_di" bpmnElement="SubStart_cross1">
+        <dc:Bounds x="392" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CrossTask1_di" bpmnElement="CrossTask1">
+        <dc:Bounds x="470" y="122" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_cross1_di" bpmnElement="SubEnd_cross1">
+        <dc:Bounds x="612" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MICrossSubprocess2_di" bpmnElement="MICrossSubprocess2" isExpanded="true">
+        <dc:Bounds x="360" y="310" width="280" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_cross2_di" bpmnElement="SubStart_cross2">
+        <dc:Bounds x="392" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CrossTask2_di" bpmnElement="CrossTask2">
+        <dc:Bounds x="470" y="352" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_cross2_di" bpmnElement="SubEnd_cross2">
+        <dc:Bounds x="612" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Join_crossMi_di" bpmnElement="Join_crossMi" isMarkerVisible="true">
+        <dc:Bounds x="700" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="707" y="201" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_crossMi_di" bpmnElement="EndEvent_crossMi">
+        <dc:Bounds x="802" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_cross_1_di" bpmnElement="Flow_cross_1">
+        <di:waypoint x="188" y="250" />
+        <di:waypoint x="252" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cross_2_di" bpmnElement="Flow_cross_2">
+        <di:waypoint x="277" y="225" />
+        <di:waypoint x="277" y="160" />
+        <di:waypoint x="360" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cross_3_di" bpmnElement="Flow_cross_3">
+        <di:waypoint x="277" y="275" />
+        <di:waypoint x="277" y="390" />
+        <di:waypoint x="360" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cross_4_di" bpmnElement="Flow_cross_4">
+        <di:waypoint x="640" y="160" />
+        <di:waypoint x="725" y="160" />
+        <di:waypoint x="725" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cross_5_di" bpmnElement="Flow_cross_5">
+        <di:waypoint x="640" y="390" />
+        <di:waypoint x="725" y="390" />
+        <di:waypoint x="725" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cross_6_di" bpmnElement="Flow_cross_6">
+        <di:waypoint x="750" y="250" />
+        <di:waypoint x="802" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_cross1_1_di" bpmnElement="SubFlow_cross1_1">
+        <di:waypoint x="428" y="160" />
+        <di:waypoint x="470" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_cross1_2_di" bpmnElement="SubFlow_cross1_2">
+        <di:waypoint x="570" y="160" />
+        <di:waypoint x="612" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_cross2_1_di" bpmnElement="SubFlow_cross2_1">
+        <di:waypoint x="428" y="390" />
+        <di:waypoint x="470" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_cross2_2_di" bpmnElement="SubFlow_cross2_2">
+        <di:waypoint x="570" y="390" />
+        <di:waypoint x="612" y="390" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

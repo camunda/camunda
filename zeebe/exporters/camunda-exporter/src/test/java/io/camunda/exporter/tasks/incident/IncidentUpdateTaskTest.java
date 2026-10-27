@@ -1,0 +1,1002 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.tasks.incident;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.notifier.IncidentNotifier;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
+import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.operate.TreePath;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+final class IncidentUpdateTaskTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskTest.class);
+  private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
+  @AutoClose
+  private static final ScheduledThreadPoolExecutor EXECUTOR = new ScheduledThreadPoolExecutor(1);
+
+  private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
+  private final IncidentNotifier incidentNotifier = Mockito.spy(createIncidentNotifier());
+  private final IncidentUpdateRepository repository = Mockito.mock(IncidentUpdateRepository.class);
+  private final CamundaExporterMetrics metrics = Mockito.mock(CamundaExporterMetrics.class);
+
+  private final ArgumentCaptor<IncidentBulkUpdate> incidentBulkUpdateCaptor =
+      ArgumentCaptor.forClass(IncidentBulkUpdate.class);
+  private final ArgumentCaptor<NonIncidentBulkUpdate> nonIncidentBulkUpdateCaptor =
+      ArgumentCaptor.forClass(NonIncidentBulkUpdate.class);
+
+  @BeforeEach
+  void beforeEach() {
+    when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new PendingIncidentUpdateBatch(-1, Collections.emptyMap())));
+  }
+
+  @Test
+  void shouldReturnNothingDoneOnEmptyPendingBatch() {
+    // given
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+
+    // when
+    final var result = task.execute();
+
+    // then
+    assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(0);
+    verify(incidentNotifier, times(0)).notifyAsync(any());
+  }
+
+  @Test
+  void shouldUseMetadataPositionToFetchPendingBatch() {
+    // given
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    metadata.setLastIncidentUpdatePosition(5);
+
+    // when
+    task.execute().toCompletableFuture().join();
+
+    // then
+    Mockito.verify(repository).getPendingIncidentsBatch(Mockito.eq(5L), anyInt());
+  }
+
+  @Test
+  void shouldUseBatchSizeToFetchPendingBatch() {
+    // given
+    final var task =
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+
+    // when
+    task.execute().toCompletableFuture().join();
+
+    // then
+    Mockito.verify(repository).getPendingIncidentsBatch(anyLong(), Mockito.eq(10));
+  }
+
+  private IncidentNotifier createIncidentNotifier() {
+    final var config = new IncidentNotifierConfiguration();
+    config.setWebhook(null);
+    final var processCache = mock(ExporterEntityCache.class);
+    final var objectMapper = new ObjectMapper();
+
+    return new IncidentNotifier(processCache, config, EXECUTOR, objectMapper);
+  }
+
+  /**
+   * All tests in this class have the following set up:
+   *
+   * <p>We deployed a process consisting of a call activity, which calls a process with a single
+   * task.
+   *
+   * <p>An instance of that parent process instance (1) has a call activity instance flow node (2)
+   * with a child process instance (3), with a task flow node (4).
+   *
+   * <p>There is a single incident update by default (5) which is being created.
+   *
+   * <p>The pending update has a position of 10.
+   */
+  @Nested
+  final class IncidentTreePathTest {
+    private final int highestPosition = 10;
+
+    private final ProcessInstanceDocument parentProcessInstance =
+        new ProcessInstanceDocument(
+            "1", "list-view", 1, new TreePath().startTreePath(1).toString());
+    private final ProcessInstanceDocument childProcessInstance =
+        new ProcessInstanceDocument(
+            "3",
+            "list-view",
+            3,
+            new TreePath()
+                .startTreePath(1)
+                .appendFlowNodeInstance(2)
+                .appendProcessInstance(3)
+                .toString());
+    private final Document callActivityFlowNode = new Document("2", "flow-nodes");
+    private final Document callActivityFlowNodeInListView = new Document("2", "list-view");
+    private final Document taskFlowNode = new Document("4", "flow-nodes");
+    private final Document taskFlowNodeInListView = new Document("4", "list-view");
+    private final IncidentEntity incidentEntity =
+        new IncidentEntity()
+            .setKey(5L)
+            .setId("5")
+            .setState(IncidentState.PENDING)
+            .setProcessInstanceKey(3L)
+            .setFlowNodeInstanceKey(4L)
+            .setTreePath(
+                new TreePath()
+                    .startTreePath(1)
+                    .appendFlowNodeInstance(2)
+                    .appendProcessInstance(3)
+                    .appendFlowNodeInstance(4)
+                    .toString());
+    private final IncidentDocument incident =
+        new IncidentDocument("5", "incidents", incidentEntity);
+
+    @BeforeEach
+    void beforeEach() {
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(incident)));
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(callActivityFlowNodeInListView, taskFlowNodeInListView)));
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(List.of(callActivityFlowNode, taskFlowNode)));
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childProcessInstance)));
+      when(repository.deletedProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(Set.of()));
+      when(repository.analyzeTreePath(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .then(
+              inv -> {
+                final IncidentBulkUpdate update = inv.getArgument(0);
+                return CompletableFuture.completedFuture(
+                    update.stream().map(IncidentTaskUpdate::id).toList());
+              });
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .then(
+              inv -> {
+                final NonIncidentBulkUpdate update = inv.getArgument(0);
+                return CompletableFuture.completedFuture(
+                    update.stream().map(IncidentTaskUpdate::id).toList());
+              });
+    }
+
+    @Test
+    void shouldUpdateMetadataOnSuccess() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+
+      // when
+      task.execute().toCompletableFuture().join();
+
+      // then
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
+    }
+
+    @Test
+    void shouldReturnNumberOfDocumentsUpdated() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result)
+          .succeedsWithin(TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.INTEGER)
+          .isEqualTo(7);
+    }
+
+    @Test
+    void shouldFailOnMissingIncident() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseExactlyInstanceOf(ExporterException.class)
+          .withMessageContaining("Failed to fetch incidents");
+      verify(incidentNotifier, times(0)).notifyAsync(any());
+    }
+
+    @Test
+    void shouldRetryOnMissingProcessInstance() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
+
+      verify(metrics).recordIncidentUpdatesRetriesNeeded(1);
+      verify(repository, never()).bulkUpdate(any(NonIncidentBulkUpdate.class));
+      verify(repository, never()).bulkUpdate(any(IncidentBulkUpdate.class));
+      verify(incidentNotifier, never()).notifyAsync(any());
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+    }
+
+    @Test
+    void shouldApplySparseTreePathWhenProcessInstanceImportedWithoutTreePath() {
+      // given - the child process instance document exists (is imported) but carries no treePath,
+      // e.g. migrated 8.7 data or a partial list-view document re-created via upsert. Putting a
+      // null treePath into the ConcurrentHashMap used to throw an NPE; and merely skipping the
+      // entry would stall the batch forever in a MISSING_DATA retry loop. Instead a sparse tree
+      // path is applied so the incident update makes progress.
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      final var childWithoutTreePath = new ProcessInstanceDocument("3", "list-view", 3, null);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childWithoutTreePath)));
+
+      // when
+      final var result = task.execute();
+
+      // then - no NPE, no retry: the batch is processed with a sparse tree path rooted at the PI
+      assertThat(result).succeedsWithin(TIMEOUT);
+      verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      // only the PI and flow node referenced by the sparse path are touched (no parent ancestry)
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(new FlowNodeInstanceUpdate("4", "flow-nodes", true));
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(4);
+    }
+
+    @Test
+    void shouldApplySparseTreePathWhenProcessInstanceImportedWithEmptyTreePath() {
+      // given - same as above but the treePath is an empty string rather than null; both are
+      // treated as "imported but without a usable tree path".
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      final var childWithEmptyTreePath = new ProcessInstanceDocument("3", "list-view", 3, "");
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childWithEmptyTreePath)));
+
+      // when
+      final var result = task.execute();
+
+      // then - processed with the sparse fallback, not retried
+      assertThat(result).succeedsWithin(TIMEOUT);
+      verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = incidentBulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_3/FNI_4"));
+
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
+    }
+
+    @Test
+    void shouldFailOnMissingFlowNodeInstance() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseExactlyInstanceOf(ExporterException.class)
+          .withMessageContaining("Flow node instance 2 affected by incident 5");
+      verify(incidentNotifier, times(0)).notifyAsync(any());
+    }
+
+    @Test
+    void shouldFailOnMissingFlowNode() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseExactlyInstanceOf(ExporterException.class)
+          .withMessageContaining("Flow node instance 2 affected by incident 5");
+      verify(incidentNotifier, times(0)).notifyAsync(any());
+    }
+
+    @Test
+    void shouldUpdateIncidents() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = incidentBulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_2/PI_3/FNI_4"));
+
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(4L)
+              .setTreePath("PI_1/FNI_2/PI_3/FNI_4")
+              .setProcessInstanceKey(3L)
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
+    }
+
+    @Test
+    void shouldUpdateListView() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(update.listViewRequests())
+          .hasSize(4)
+          .containsExactlyInAnyOrder(
+              new ListViewInstanceUpdate("1", "list-view", "1", true),
+              new ListViewInstanceUpdate("2", "list-view", "1", true),
+              new ListViewInstanceUpdate("3", "list-view", "3", true),
+              new ListViewInstanceUpdate("4", "list-view", "3", true));
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(4L)
+              .setTreePath("PI_1/FNI_2/PI_3/FNI_4")
+              .setProcessInstanceKey(3L)
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
+    }
+
+    @Test
+    void shouldUpdateFlowNode() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var update = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(update.flowNodeInstanceRequests())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              new FlowNodeInstanceUpdate("2", "flow-nodes", true),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", true));
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(4L)
+              .setTreePath("PI_1/FNI_2/PI_3/FNI_4")
+              .setProcessInstanceKey(3L)
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
+    }
+
+    @Test
+    void shouldNotUpdateFlowNodesForProcessLevelIncidents() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+
+      incidentEntity.setProcessInstanceKey(parentProcessInstance.key());
+      incidentEntity.setTreePath(
+          new TreePath()
+              .startTreePath(parentProcessInstance.key())
+              .appendFlowNodeInstance(parentProcessInstance.key())
+              .toString());
+      incidentEntity.setFlowNodeInstanceKey(parentProcessInstance.key());
+
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(parentProcessInstance)));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.ACTIVE, "PI_1/FNI_1"));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests()).isEmpty();
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(new ListViewInstanceUpdate("1", "list-view", "1", true));
+
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(parentProcessInstance.key())
+              .setTreePath("PI_1/FNI_1")
+              .setProcessInstanceKey(parentProcessInstance.key())
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(2);
+    }
+
+    @Test
+    void shouldResolveIncident() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      incidentEntity.setState(IncidentState.ACTIVE);
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(new ActiveIncident(incident.id(), incidentEntity.getTreePath()))));
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.RESOLVED))));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
+          .hasSize(4)
+          .containsExactlyInAnyOrder(
+              new ListViewInstanceUpdate("1", "list-view", "1", false),
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
+
+      verify(incidentNotifier, times(0)).notifyAsync(any());
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
+    }
+
+    @Test
+    void shouldNotMarkIncidentFalseIfMoreActiveIncidents() {
+      // given - we have another active incident with an overlapping tree path, but only covering
+      // process instance
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      incidentEntity.setState(IncidentState.ACTIVE);
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new ActiveIncident("30", new TreePath().startTreePath("1").toString()),
+                      new ActiveIncident(incident.id(), incidentEntity.getTreePath()))));
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      highestPosition,
+                      Map.of(incident.incident().getKey(), IncidentState.RESOLVED))));
+
+      // when
+      final var result = task.execute();
+
+      // then - we should mark the child process instance, the call activity, and the task as
+      // incident free, but NOT the parent process instance as it still has an active incident
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests())
+          .hasSize(1)
+          .containsExactlyInAnyOrder(
+              new IncidentUpdate("5", "incidents", IncidentState.RESOLVED, null));
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              new FlowNodeInstanceUpdate("2", "flow-nodes", false),
+              new FlowNodeInstanceUpdate("4", "flow-nodes", false));
+      assertThat(nonIncidentBulkUpdate.listViewRequests())
+          .hasSize(3)
+          .containsExactlyInAnyOrder(
+              new ListViewInstanceUpdate("2", "list-view", "1", false),
+              new ListViewInstanceUpdate("3", "list-view", "3", false),
+              new ListViewInstanceUpdate("4", "list-view", "3", false));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(6);
+    }
+
+    @Test
+    void shouldIgnoreDeletedProcessInstance() {
+      // given
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(parentProcessInstance)));
+      final long deletedProcessInstanceKey = childProcessInstance.key();
+      when(repository.deletedProcessInstances(Set.of(deletedProcessInstanceKey)))
+          .thenReturn(CompletableFuture.completedFuture(Set.of(deletedProcessInstanceKey)));
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(TIMEOUT);
+      final var inOrder = inOrder(repository);
+      inOrder.verify(repository).bulkUpdate(nonIncidentBulkUpdateCaptor.capture());
+      inOrder.verify(repository).bulkUpdate(incidentBulkUpdateCaptor.capture());
+
+      final var incidentBulkUpdate = incidentBulkUpdateCaptor.getValue();
+      assertThat(incidentBulkUpdate.incidentRequests()).isEmpty();
+
+      final var nonIncidentBulkUpdate = nonIncidentBulkUpdateCaptor.getValue();
+      assertThat(nonIncidentBulkUpdate.listViewRequests()).isEmpty();
+      assertThat(nonIncidentBulkUpdate.flowNodeInstanceRequests()).isEmpty();
+
+      verify(incidentNotifier, times(0)).notifyAsync(any());
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(0);
+    }
+  }
+
+  @Nested
+  final class BatchSizeReductionTest {
+    private static final int CONFIGURED_BATCH_SIZE = 100;
+    private final IncidentEntity incidentEntity =
+        new IncidentEntity()
+            .setKey(5L)
+            .setId("5")
+            .setState(IncidentState.PENDING)
+            .setProcessInstanceKey(1L)
+            .setFlowNodeInstanceKey(2L)
+            .setTreePath(new TreePath().startTreePath(1).appendFlowNodeInstance(2).toString());
+    private final IncidentDocument incident =
+        new IncidentDocument("5", "incidents", incidentEntity);
+
+    @BeforeEach
+    void beforeEach() {
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      10, Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(incident)));
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new ProcessInstanceDocument(
+                          "1", "list-view", 1, new TreePath().startTreePath(1).toString()))));
+      when(repository.deletedProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(Set.of()));
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "list-view"))));
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "flow-nodes"))));
+      when(repository.analyzeTreePath(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of("5")));
+    }
+
+    @Test
+    void shouldHalveTheReadWhenTheStoreRefusesTheWriteAsTooLarge() {
+      // given - the write is refused for its size
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      failCycle(task);
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+
+      // then
+      assertThat(readSizes()).containsExactly(CONFIGURED_BATCH_SIZE, CONFIGURED_BATCH_SIZE / 2);
+    }
+
+    @Test
+    void shouldNotRestoreTheReadWhenABatchIsSkippedForMissingData() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the next cycle finds data missing, so it skips the batch without writing or
+      // advancing the position
+      succeedNonIncidentWrite();
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - the read stays reduced: restoring it here would rebuild the same oversized write
+      // against the same unadvanced position
+      assertThat(readSizes()).containsExactly(100, 50, 50);
+    }
+
+    @Test
+    void shouldResetTheReadAfterACycleGetsThrough() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the smaller cycle succeeds
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - not sticky, since the fan-out depends on which incidents the batch holds
+      assertThat(readSizes()).containsExactly(100, 50, 100);
+    }
+
+    @Test
+    void shouldAlsoHalveWhenTheIncidentWriteIsTheOneRefused() {
+      // given - the second of the two flushes is the one refused
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 50);
+    }
+
+    @Test
+    void shouldNotChangeTheReadOnAnUnrelatedFailure() {
+      // given - a failure that writing less would not help with
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ExporterException("version conflict")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 100);
+    }
+
+    @Test
+    void shouldNotCommitThePositionWhenTheWriteIsRefused() {
+      // given
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      final var result = task.execute();
+
+      // then - the same pending updates are read again on the next cycle, now in smaller pieces
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseInstanceOf(BulkRequestTooLargeException.class);
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1);
+    }
+
+    private IncidentUpdateTask createTask(final int batchSize) {
+      return new IncidentUpdateTask(
+          metadata, repository, false, batchSize, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    }
+
+    private void refuseNonIncidentWriteAsTooLarge() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+    }
+
+    private void succeedNonIncidentWrite() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+    }
+
+    private void failCycle(final IncidentUpdateTask task) {
+      assertThat(task.execute()).failsWithin(TIMEOUT);
+    }
+
+    private List<Integer> readSizes() {
+      final var sizes = ArgumentCaptor.forClass(Integer.class);
+      verify(repository, atLeastOnce()).getPendingIncidentsBatch(anyLong(), sizes.capture());
+      return sizes.getAllValues();
+    }
+  }
+}

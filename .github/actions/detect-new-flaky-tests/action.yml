@@ -1,0 +1,114 @@
+# owner: @camunda/engineering-operations
+name: Detect New Flaky Tests
+
+description: >
+  Compares flaky tests from the current PR run against known flaky tests from BigQuery
+  and sticky per-PR state stored in the gate's PR comment. Once a test is flagged it
+  stays flagged until the method body is modified and 3 subsequent gate runs observe it
+  clean, or until the ci:flaky-test-bypass label is applied. Posts/updates a single PR
+  comment that renders the current state and embeds it as a hidden base64 marker for the
+  next run to read (durable across re-runs / force-push).
+
+inputs:
+  pr-flaky-tests-data:
+    description: 'JSON array of {job, flaky_tests} from collect-flaky-tests'
+    required: true
+  known-flaky-tests-file:
+    description: 'Path to a JSON file containing an array of {test_class_name, test_name} from BigQuery'
+    required: true
+  pr-number:
+    description: 'Pull request number'
+    required: true
+  blocking:
+    description: 'If true, fail the job when any sticky entry is still active. If false, only post a comment.'
+    required: false
+    default: 'true'
+  ran-jobs-json:
+    description: 'JSON array of parent job names whose result is not "skipped" in this CI run. Used to decide whether a clean run advances the per-test counter.'
+    required: false
+    default: '[]'
+  bypass-label-present:
+    description: '"true" if the PR has the ci:flaky-test-bypass label, otherwise "false".'
+    required: false
+    default: 'false'
+  head-sha:
+    description: 'Current PR head SHA. Used as the modification anchor and for git log -L.'
+    required: true
+  base-ref:
+    description: 'PR base branch (e.g. "main" or "stable/8.7"). Used as a fallback merge-base candidate for git log -L.'
+    required: true
+  base-sha:
+    description: 'PR base commit SHA (github.event.pull_request.base.sha). Preferred merge-base candidate — local main/origin refs are absent in a PR merge-ref checkout.'
+    required: false
+    default: ''
+  repo-root:
+    description: 'Absolute path to the checked-out repo. Defaults to GITHUB_WORKSPACE.'
+    required: false
+    default: ''
+
+outputs:
+  has-new-flaky-tests:
+    description: 'Whether any sticky entries remain active (true/false)'
+    value: ${{ steps.detect.outputs.has-new-flaky-tests }}
+
+runs:
+  using: composite
+  steps:
+    # Sticky state lives in the gate's PR comment (a hidden base64 marker),
+    # read and written by the detector via the GitHub API.
+
+    # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
+    # language-aware funcname driver to locate Java methods. The repo has no
+    # `*.java diff=java` gitattributes, so without this the -L call fails with
+    # "no match" for every method, method_last_modified is never resolved, and the
+    # clean-run clearance counter can never advance (cleared_via_fix unreachable).
+    # Enable the built-in Java driver for this checkout only (.git/info/attributes
+    # is local and not committed), scoping the change to the gate rather than
+    # committing a repo-wide `.gitattributes` change.
+    #
+    # The whole clearance mechanism silently depends on this driver being active,
+    # so verify it took effect and fail loud otherwise. Without the check, a
+    # future change to the gate's checkout (a linked worktree or `path:` makes
+    # `.git` a file, not a dir) would skip the driver silently — and under
+    # blocking a genuinely-fixed test could then never clear, with no error to
+    # explain why.
+    - name: Enable Java funcname driver for method-fix detection
+      if: always()
+      shell: bash
+      env:
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
+      run: |
+        git_info="${REPO_ROOT}/.git/info"
+        mkdir -p "$git_info"
+        if ! grep -qxF '*.java diff=java' "${git_info}/attributes" 2>/dev/null; then
+          printf '*.java diff=java\n' >> "${git_info}/attributes"
+          echo "enabled Java funcname driver in ${git_info}/attributes"
+        fi
+        # Verify git actually honors the driver (probe path need not exist).
+        if git -C "$REPO_ROOT" check-attr diff -- Probe.java | grep -q 'diff: java'; then
+          echo "Java funcname driver active"
+        else
+          echo "::error::Java funcname driver NOT active for *.java in ${REPO_ROOT} — flaky-gate method-fix detection would silently fail (a fixed test could never clear). Check the checkout topology / repo-root input."
+          exit 1
+        fi
+
+    - name: Detect new flaky tests
+      id: detect
+      shell: bash
+      env:
+        PR_FLAKY_TESTS_DATA: ${{ inputs.pr-flaky-tests-data }}
+        KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        BLOCKING: ${{ inputs.blocking }}
+        # STATE_FILE_OUT is a debug dump of the run's state — not uploaded, not read back.
+        STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
+        RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
+        BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        BASE_REF: ${{ inputs.base-ref }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
+    # Updated state is persisted by the detector into the PR comment's hidden
+    # marker (durable across re-runs / force-push).

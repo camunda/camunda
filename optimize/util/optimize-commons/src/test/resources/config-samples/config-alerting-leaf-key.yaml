@@ -1,0 +1,3 @@
+alerting:
+  email:
+    username: 'test@camunda.com'

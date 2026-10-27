@@ -1,0 +1,14 @@
+{
+  "ref": "refs/heads/gh-readonly-queue/main/pr-123-abc",
+  "repository": {
+    "html_url": "https://github.com/camunda/camunda"
+  },
+  "pusher": {
+    "name": "github-merge-queue[bot]"
+  },
+  "head_commit": {
+    "id": "abcdef1234567890",
+    "message": "Merge queue entry for PR #123",
+    "url": "https://github.com/camunda/camunda/commit/abcdef1234567890"
+  }
+}

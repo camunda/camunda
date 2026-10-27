@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_06bfilu" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.45.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <decision id="auto-approve-invoice" name="Auto-approve invoice">
+    <decisionTable id="DecisionTable_02qm9h0" hitPolicy="FIRST">
+      <input id="Input_1" label="Amount">
+        <inputExpression id="InputExpression_1" typeRef="number">
+          <text>invoice.amount</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_1b7ial8" label="Supplier ID">
+        <inputExpression id="LiteralExpression_1mtja9e" typeRef="string">
+          <text>invoice.supplier.id</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Auto-approve" name="auto-approve-invoice" typeRef="boolean" />
+      <rule id="DecisionRule_13pb0nf">
+        <description>Approve all invoices below 50€</description>
+        <inputEntry id="UnaryTests_18iz4mt">
+          <text>&lt; 50</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0gpq6e9">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_128wfy4">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1jmcsh6">
+        <description>Supplier with low credibility score</description>
+        <inputEntry id="UnaryTests_0c5b3as">
+          <text>&lt; 100</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0muk4bd">
+          <text>"0815"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0vmmt12">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1adwsvr">
+        <description>Supplier with mid credibility score</description>
+        <inputEntry id="UnaryTests_0gjoxj0">
+          <text>&lt; 500</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0fi41in">
+          <text>"1234"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_18dw05w">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0ocsrzw">
+        <description>Supplier with high credibility score</description>
+        <inputEntry id="UnaryTests_0eseicn">
+          <text>&lt; 5000</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0vxy06w">
+          <text>"0405"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1odehec">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1yj08b6">
+        <description>Manual approval required</description>
+        <inputEntry id="UnaryTests_07e0nui">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0w0stoa">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0fam3o3">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape id="Decision_0jyitp3_di" dmnElementRef="auto-approve-invoice">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

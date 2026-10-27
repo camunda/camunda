@@ -1,0 +1,647 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.dto.optimize;
+
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Represents a process instance as stored in Optimize's ES/OS index.
+ *
+ * <p><b>Terminology note:</b> Optimize retains C7 identifier conventions, which are the
+ * <em>inverse</em> of C8 / Zeebe conventions. The table below shows how Optimize field names map to
+ * their C8 equivalents:
+ *
+ * <table border="1">
+ *   <tr><th>Optimize field name</th><th>Zeebe field name</th><th>Meaning</th></tr>
+ *   <tr><td>{@link #processDefinitionKey}</td><td>{@code bpmnProcessId}</td>
+ *       <td>Non-unique BPMN process ID string, e.g. {@code "invoice-process"}</td></tr>
+ *   <tr><td>{@link #processDefinitionId}</td><td>{@code processDefinitionKey}</td>
+ *       <td>Unique {@code Long} key for a specific definition version (stored as {@code String})</td></tr>
+ *   <tr><td>{@link #processInstanceId}</td><td>{@code processInstanceKey}</td>
+ *       <td>Unique {@code Long} key for this process instance (stored as {@code String})</td></tr>
+ * </table>
+ *
+ * <p>This naming is intentional and must not be changed. See {@code
+ * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+ */
+public class ProcessInstanceDto implements OptimizeDto {
+
+  /** Maps to Zeebe's {@code bpmnProcessId}. See class-level Javadoc for the naming rationale. */
+  private String processDefinitionKey;
+
+  private String processDefinitionVersion;
+
+  /** Maps to Zeebe's {@code processDefinitionKey}. See class-level Javadoc. */
+  private String processDefinitionId;
+
+  /** Maps to Zeebe's {@code processInstanceKey}. See class-level Javadoc. */
+  private String processInstanceId;
+
+  private String businessKey;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+  private Long duration; // duration in ms
+  private String state;
+  private List<FlowNodeInstanceDto> flowNodeInstances = new ArrayList<>();
+  private List<SimpleProcessVariableDto> variables = new ArrayList<>();
+  private List<IncidentDto> incidents = new ArrayList<>();
+  private List<AgentInstanceDto> agentInstances = new ArrayList<>();
+  private Long agentTotalInputTokens;
+  private Long agentTotalOutputTokens;
+  private Long agentTotalModelCalls;
+  private Long agentTotalToolCalls;
+  private Long agentTotalTokens;
+  private DataSourceDto dataSource;
+  private String tenantId;
+
+  protected ProcessInstanceDto(
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final String processDefinitionId,
+      final String processInstanceId,
+      final String businessKey,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final Long duration,
+      final String state,
+      final List<FlowNodeInstanceDto> flowNodeInstances,
+      final List<SimpleProcessVariableDto> variables,
+      final List<IncidentDto> incidents,
+      final DataSourceDto dataSource,
+      final String tenantId) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersion = processDefinitionVersion;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.businessKey = businessKey;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.duration = duration;
+    this.state = state;
+    this.flowNodeInstances = flowNodeInstances;
+    this.variables = variables;
+    this.incidents = incidents;
+    this.dataSource = dataSource;
+    this.tenantId = tenantId;
+  }
+
+  public ProcessInstanceDto() {}
+
+  protected ProcessInstanceDto(final ProcessInstanceDtoBuilder<?, ?> b) {
+    processDefinitionKey = b.processDefinitionKey;
+    processDefinitionVersion = b.processDefinitionVersion;
+    processDefinitionId = b.processDefinitionId;
+    processInstanceId = b.processInstanceId;
+    businessKey = b.businessKey;
+    startDate = b.startDate;
+    endDate = b.endDate;
+    duration = b.duration;
+    state = b.state;
+    if (b.flowNodeInstancesSet) {
+      flowNodeInstances = b.flowNodeInstancesValue;
+    } else {
+      flowNodeInstances = defaultFlowNodeInstances();
+    }
+    if (b.variablesSet) {
+      variables = b.variablesValue;
+    } else {
+      variables = defaultVariables();
+    }
+    if (b.incidentsSet) {
+      incidents = b.incidentsValue;
+    } else {
+      incidents = defaultIncidents();
+    }
+    if (b.agentInstancesSet) {
+      agentInstances = b.agentInstancesValue;
+    } else {
+      agentInstances = defaultAgentInstances();
+    }
+    agentTotalInputTokens = b.agentTotalInputTokens;
+    agentTotalOutputTokens = b.agentTotalOutputTokens;
+    agentTotalModelCalls = b.agentTotalModelCalls;
+    agentTotalToolCalls = b.agentTotalToolCalls;
+    agentTotalTokens = b.agentTotalTokens;
+    dataSource = b.dataSource;
+    tenantId = b.tenantId;
+  }
+
+  @JsonIgnore
+  public List<FlowNodeInstanceDto> getUserTasks() {
+    return flowNodeInstances.stream()
+        .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getFlowNodeType()))
+        .toList();
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(final String processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public void setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public void setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
+  }
+
+  public String getBusinessKey() {
+    return businessKey;
+  }
+
+  public void setBusinessKey(final String businessKey) {
+    this.businessKey = businessKey;
+  }
+
+  public OffsetDateTime getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(final OffsetDateTime startDate) {
+    this.startDate = startDate;
+  }
+
+  public OffsetDateTime getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(final OffsetDateTime endDate) {
+    this.endDate = endDate;
+  }
+
+  public Long getDuration() {
+    return duration;
+  }
+
+  public void setDuration(final Long duration) {
+    this.duration = duration;
+  }
+
+  public String getState() {
+    return state;
+  }
+
+  public void setState(final String state) {
+    this.state = state;
+  }
+
+  public List<FlowNodeInstanceDto> getFlowNodeInstances() {
+    return flowNodeInstances;
+  }
+
+  public void setFlowNodeInstances(final List<FlowNodeInstanceDto> flowNodeInstances) {
+    this.flowNodeInstances = flowNodeInstances;
+  }
+
+  public List<SimpleProcessVariableDto> getVariables() {
+    return variables;
+  }
+
+  public void setVariables(final List<SimpleProcessVariableDto> variables) {
+    this.variables = variables;
+  }
+
+  public List<IncidentDto> getIncidents() {
+    return incidents;
+  }
+
+  public void setIncidents(final List<IncidentDto> incidents) {
+    this.incidents = incidents;
+  }
+
+  public List<AgentInstanceDto> getAgentInstances() {
+    return agentInstances;
+  }
+
+  public void setAgentInstances(final List<AgentInstanceDto> agentInstances) {
+    this.agentInstances = agentInstances;
+  }
+
+  public Long getAgentTotalInputTokens() {
+    return agentTotalInputTokens;
+  }
+
+  public void setAgentTotalInputTokens(final Long agentTotalInputTokens) {
+    this.agentTotalInputTokens = agentTotalInputTokens;
+  }
+
+  public Long getAgentTotalOutputTokens() {
+    return agentTotalOutputTokens;
+  }
+
+  public void setAgentTotalOutputTokens(final Long agentTotalOutputTokens) {
+    this.agentTotalOutputTokens = agentTotalOutputTokens;
+  }
+
+  public Long getAgentTotalModelCalls() {
+    return agentTotalModelCalls;
+  }
+
+  public void setAgentTotalModelCalls(final Long agentTotalModelCalls) {
+    this.agentTotalModelCalls = agentTotalModelCalls;
+  }
+
+  public Long getAgentTotalToolCalls() {
+    return agentTotalToolCalls;
+  }
+
+  public void setAgentTotalToolCalls(final Long agentTotalToolCalls) {
+    this.agentTotalToolCalls = agentTotalToolCalls;
+  }
+
+  public Long getAgentTotalTokens() {
+    return agentTotalTokens;
+  }
+
+  public void setAgentTotalTokens(final Long agentTotalTokens) {
+    this.agentTotalTokens = agentTotalTokens;
+  }
+
+  public DataSourceDto getDataSource() {
+    return dataSource;
+  }
+
+  public void setDataSource(final DataSourceDto dataSource) {
+    this.dataSource = dataSource;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessInstanceDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey,
+        processDefinitionVersion,
+        processDefinitionId,
+        processInstanceId,
+        businessKey,
+        startDate,
+        endDate,
+        duration,
+        state,
+        flowNodeInstances,
+        variables,
+        incidents,
+        agentInstances,
+        agentTotalInputTokens,
+        agentTotalOutputTokens,
+        agentTotalModelCalls,
+        agentTotalToolCalls,
+        agentTotalTokens,
+        dataSource,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstanceDto that = (ProcessInstanceDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(businessKey, that.businessKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(duration, that.duration)
+        && Objects.equals(state, that.state)
+        && Objects.equals(flowNodeInstances, that.flowNodeInstances)
+        && Objects.equals(variables, that.variables)
+        && Objects.equals(incidents, that.incidents)
+        && Objects.equals(agentInstances, that.agentInstances)
+        && Objects.equals(agentTotalInputTokens, that.agentTotalInputTokens)
+        && Objects.equals(agentTotalOutputTokens, that.agentTotalOutputTokens)
+        && Objects.equals(agentTotalModelCalls, that.agentTotalModelCalls)
+        && Objects.equals(agentTotalToolCalls, that.agentTotalToolCalls)
+        && Objects.equals(agentTotalTokens, that.agentTotalTokens)
+        && Objects.equals(dataSource, that.dataSource)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessInstanceDto(processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", processDefinitionVersion="
+        + getProcessDefinitionVersion()
+        + ", processDefinitionId="
+        + getProcessDefinitionId()
+        + ", processInstanceId="
+        + getProcessInstanceId()
+        + ", businessKey="
+        + getBusinessKey()
+        + ", startDate="
+        + getStartDate()
+        + ", endDate="
+        + getEndDate()
+        + ", duration="
+        + getDuration()
+        + ", state="
+        + getState()
+        + ", flowNodeInstances="
+        + getFlowNodeInstances()
+        + ", variables="
+        + getVariables()
+        + ", incidents="
+        + getIncidents()
+        + ", agentInstances="
+        + getAgentInstances()
+        + ", agentTotalInputTokens="
+        + getAgentTotalInputTokens()
+        + ", agentTotalOutputTokens="
+        + getAgentTotalOutputTokens()
+        + ", agentTotalModelCalls="
+        + getAgentTotalModelCalls()
+        + ", agentTotalToolCalls="
+        + getAgentTotalToolCalls()
+        + ", agentTotalTokens="
+        + getAgentTotalTokens()
+        + ", dataSource="
+        + getDataSource()
+        + ", tenantId="
+        + getTenantId()
+        + ")";
+  }
+
+  private static List<FlowNodeInstanceDto> defaultFlowNodeInstances() {
+    return new ArrayList<>();
+  }
+
+  private static List<SimpleProcessVariableDto> defaultVariables() {
+    return new ArrayList<>();
+  }
+
+  private static List<IncidentDto> defaultIncidents() {
+    return new ArrayList<>();
+  }
+
+  private static List<AgentInstanceDto> defaultAgentInstances() {
+    return new ArrayList<>();
+  }
+
+  public static ProcessInstanceDtoBuilder<?, ?> builder() {
+    return new ProcessInstanceDtoBuilderImpl();
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
+  public static final class Fields {
+
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String processDefinitionVersion = "processDefinitionVersion";
+    public static final String processDefinitionId = "processDefinitionId";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String businessKey = "businessKey";
+    public static final String startDate = "startDate";
+    public static final String endDate = "endDate";
+    public static final String duration = "duration";
+    public static final String state = "state";
+    public static final String flowNodeInstances = "flowNodeInstances";
+    public static final String variables = "variables";
+    public static final String incidents = "incidents";
+    public static final String agentInstances = "agentInstances";
+    public static final String agentTotalInputTokens = "agentTotalInputTokens";
+    public static final String agentTotalOutputTokens = "agentTotalOutputTokens";
+    public static final String agentTotalModelCalls = "agentTotalModelCalls";
+    public static final String agentTotalToolCalls = "agentTotalToolCalls";
+    public static final String agentTotalTokens = "agentTotalTokens";
+    public static final String dataSource = "dataSource";
+    public static final String tenantId = "tenantId";
+  }
+
+  public abstract static class ProcessInstanceDtoBuilder<
+      C extends ProcessInstanceDto, B extends ProcessInstanceDtoBuilder<C, B>> {
+
+    private String processDefinitionKey;
+    private String processDefinitionVersion;
+    private String processDefinitionId;
+    private String processInstanceId;
+    private String businessKey;
+    private OffsetDateTime startDate;
+    private OffsetDateTime endDate;
+    private Long duration;
+    private String state;
+    private List<FlowNodeInstanceDto> flowNodeInstancesValue;
+    private boolean flowNodeInstancesSet;
+    private List<SimpleProcessVariableDto> variablesValue;
+    private boolean variablesSet;
+    private List<IncidentDto> incidentsValue;
+    private boolean incidentsSet;
+    private List<AgentInstanceDto> agentInstancesValue;
+    private boolean agentInstancesSet;
+    private Long agentTotalInputTokens;
+    private Long agentTotalOutputTokens;
+    private Long agentTotalModelCalls;
+    private Long agentTotalToolCalls;
+    private Long agentTotalTokens;
+    private DataSourceDto dataSource;
+    private String tenantId;
+
+    public B processDefinitionKey(final String processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return self();
+    }
+
+    public B processDefinitionVersion(final String processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
+      return self();
+    }
+
+    public B processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return self();
+    }
+
+    public B processInstanceId(final String processInstanceId) {
+      this.processInstanceId = processInstanceId;
+      return self();
+    }
+
+    public B businessKey(final String businessKey) {
+      this.businessKey = businessKey;
+      return self();
+    }
+
+    public B startDate(final OffsetDateTime startDate) {
+      this.startDate = startDate;
+      return self();
+    }
+
+    public B endDate(final OffsetDateTime endDate) {
+      this.endDate = endDate;
+      return self();
+    }
+
+    public B duration(final Long duration) {
+      this.duration = duration;
+      return self();
+    }
+
+    public B state(final String state) {
+      this.state = state;
+      return self();
+    }
+
+    public B flowNodeInstances(final List<FlowNodeInstanceDto> flowNodeInstances) {
+      flowNodeInstancesValue = flowNodeInstances;
+      flowNodeInstancesSet = true;
+      return self();
+    }
+
+    public B variables(final List<SimpleProcessVariableDto> variables) {
+      variablesValue = variables;
+      variablesSet = true;
+      return self();
+    }
+
+    public B incidents(final List<IncidentDto> incidents) {
+      incidentsValue = incidents;
+      incidentsSet = true;
+      return self();
+    }
+
+    public B agentInstances(final List<AgentInstanceDto> agentInstances) {
+      agentInstancesValue = agentInstances;
+      agentInstancesSet = true;
+      return self();
+    }
+
+    public B agentTotalInputTokens(final Long agentTotalInputTokens) {
+      this.agentTotalInputTokens = agentTotalInputTokens;
+      return self();
+    }
+
+    public B agentTotalOutputTokens(final Long agentTotalOutputTokens) {
+      this.agentTotalOutputTokens = agentTotalOutputTokens;
+      return self();
+    }
+
+    public B agentTotalModelCalls(final Long agentTotalModelCalls) {
+      this.agentTotalModelCalls = agentTotalModelCalls;
+      return self();
+    }
+
+    public B agentTotalToolCalls(final Long agentTotalToolCalls) {
+      this.agentTotalToolCalls = agentTotalToolCalls;
+      return self();
+    }
+
+    public B agentTotalTokens(final Long agentTotalTokens) {
+      this.agentTotalTokens = agentTotalTokens;
+      return self();
+    }
+
+    public B dataSource(final DataSourceDto dataSource) {
+      this.dataSource = dataSource;
+      return self();
+    }
+
+    public B tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "ProcessInstanceDto.ProcessInstanceDtoBuilder(processDefinitionKey="
+          + processDefinitionKey
+          + ", processDefinitionVersion="
+          + processDefinitionVersion
+          + ", processDefinitionId="
+          + processDefinitionId
+          + ", processInstanceId="
+          + processInstanceId
+          + ", businessKey="
+          + businessKey
+          + ", startDate="
+          + startDate
+          + ", endDate="
+          + endDate
+          + ", duration="
+          + duration
+          + ", state="
+          + state
+          + ", flowNodeInstancesValue="
+          + flowNodeInstancesValue
+          + ", variablesValue="
+          + variablesValue
+          + ", incidentsValue="
+          + incidentsValue
+          + ", dataSource="
+          + dataSource
+          + ", tenantId="
+          + tenantId
+          + ")";
+    }
+  }
+
+  private static final class ProcessInstanceDtoBuilderImpl
+      extends ProcessInstanceDtoBuilder<ProcessInstanceDto, ProcessInstanceDtoBuilderImpl> {
+
+    private ProcessInstanceDtoBuilderImpl() {}
+
+    @Override
+    protected ProcessInstanceDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public ProcessInstanceDto build() {
+      return new ProcessInstanceDto(this);
+    }
+  }
+}

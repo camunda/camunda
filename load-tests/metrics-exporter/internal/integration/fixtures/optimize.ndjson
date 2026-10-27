@@ -1,0 +1,12 @@
+{"index": {"_id": "pi-running-1"}}
+{}
+{"index": {"_id": "pi-running-2"}}
+{}
+{"index": {"_id": "pi-completed-1"}}
+{"endDate": "2024-01-01T00:00:00"}
+{"index": {"_id": "pi-completed-2"}}
+{"endDate": "2024-01-02T00:00:00"}
+{"index": {"_id": "pi-completed-3"}}
+{"endDate": "2024-01-03T00:00:00"}
+{"index": {"_id": "pi-completed-4"}}
+{"endDate": "2024-01-04T00:00:00"}

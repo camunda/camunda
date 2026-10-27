@@ -1,0 +1,263 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients;
+
+import static io.camunda.webapps.schema.entities.listview.ProcessInstanceState.ACTIVE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.clients.core.SearchQueryHit;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
+import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.UserFilter;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.function.Function;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class SearchClientBasedQueryExecutorTest {
+
+  private final ProcessInstanceForListViewEntity demoProcessInstance =
+      new ProcessInstanceForListViewEntity()
+          .setProcessInstanceKey(123L)
+          .setProcessName("Demo Process")
+          .setBpmnProcessId("demoProcess")
+          .setProcessVersion(5)
+          .setProcessVersionTag("42")
+          .setProcessDefinitionKey(789L)
+          .setTenantId("default")
+          .setStartDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
+          .setState(ACTIVE)
+          .setIncident(false);
+
+  @Mock private DocumentBasedSearchClient searchClient;
+  private final ServiceTransformers serviceTransformers =
+      ServiceTransformers.newInstance(new IndexDescriptors("", true));
+
+  private SearchClientBasedQueryExecutor queryExecutor;
+
+  @BeforeEach
+  void setUp() {
+    queryExecutor = new SearchClientBasedQueryExecutor(searchClient, serviceTransformers);
+  }
+
+  @Test
+  void shouldSearchUsingTransformers() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance, 1, false);
+
+    when(searchClient.search(
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    final List<ProcessInstanceEntity> items = searchResult.items();
+    assertThat(items).hasSize(1);
+    assertThat(items.getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldSearchQueryResultHaveMoreTotalItemsFalse() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance, 1, false);
+
+    when(searchClient.search(
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
+  void shouldSearchQueryResultHaveMoreTotalItemsTrue() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance, 10000, true);
+
+    when(searchClient.search(
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
+
+    assertThat(searchResult.total()).isEqualTo(10000);
+    assertThat(searchResult.hasMoreTotalItems()).isTrue();
+  }
+
+  @Test
+  void shouldFindAllUsingTransformers() {
+    // Given our search Query
+    final var searchAllQuery = ProcessInstanceQuery.of(AbstractQueryBuilder::unlimited);
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        SearchQueryResponse.of(
+            b ->
+                b.hits(
+                    List.of(
+                        new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
+                            .source(demoProcessInstance)
+                            .build())));
+
+    when(searchClient.scroll(
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
+
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldIncludeTenantFilterForTenantScopedEntities() {
+    // given
+    final var tenantIds = List.of("<default>", "T1");
+    final var tenantCheck = TenantCheck.enabled(tenantIds);
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var query =
+        new ProcessDefinitionQuery.Builder()
+            .filter(new ProcessDefinitionFilter.Builder().processDefinitionIds("x").build())
+            .build();
+
+    // when
+    final SearchQueryRequest searchQueryRequest =
+        queryExecutor.executeSearch(
+            query, Function.identity(), ResourceAccessChecks.of(authorizationCheck, tenantCheck));
+
+    // then
+    assertThat(searchQueryRequest.query())
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    new ProcessDefinitionFilterTransformer(
+                                            new ProcessIndex("", true))
+                                        .toSearchQuery(query.filter()),
+                                    SearchQuery.of(
+                                        q2 ->
+                                            q2.terms(
+                                                t ->
+                                                    t.field(ProcessIndex.TENANT_ID)
+                                                        .terms(
+                                                            TypedValue.of(
+                                                                tenantIds, TypedValue::of)))))))));
+  }
+
+  @Test
+  void shouldNotIncludeTenantFilterForNonTenantScopedEntities() {
+    // given
+    final var tenantIds = List.of("<default>", "T1");
+    final var tenantCheck = TenantCheck.enabled(tenantIds);
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var securityContext =
+        SecurityContext.of(
+            builder ->
+                builder.withAuthentication(
+                    CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds))));
+
+    final var query =
+        new UserQuery.Builder().filter(new UserFilter.Builder().usernames("x").build()).build();
+
+    // when
+    final SearchQueryRequest searchQueryRequest =
+        queryExecutor.executeSearch(
+            query, Function.identity(), ResourceAccessChecks.of(authorizationCheck, tenantCheck));
+
+    // then
+    assertThat(searchQueryRequest.query())
+        .isEqualTo(
+            new UserFilterTransformer(new UserIndex("", true)).toSearchQuery(query.filter()));
+  }
+
+  private SearchQueryResponse<ProcessInstanceForListViewEntity> createProcessInstanceEntityResponse(
+      final ProcessInstanceForListViewEntity demoProcessInstance,
+      final long totalHits,
+      final boolean hasMoreFields) {
+    final SearchQueryHit<ProcessInstanceForListViewEntity> hit =
+        new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
+            .id("1000")
+            .source(demoProcessInstance)
+            .build();
+
+    return SearchQueryResponse.of(
+        (f) -> {
+          f.totalHits(totalHits, hasMoreFields).hits(List.of(hit));
+          return f;
+        });
+  }
+}

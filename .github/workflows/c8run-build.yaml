@@ -1,0 +1,602 @@
+# description: For C8Run, this workflow runs a linting check, unit tests, a build, tests on unix, and end to end tests on windows
+# test location: c8run/e2e_tests/ and c8run/cmd/c8run/physicaltenants_e2e_test.go
+# type: CI
+# owner: @camunda/distribution
+---
+name: "C8Run: build/test"
+
+on:
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release/**"
+    paths:
+      - "c8run/**"
+      - ".github/actions/setup-c8run/action.yml"
+      - ".github/workflows/c8run-build.yaml"
+  pull_request:
+    paths:
+      - "c8run/**"
+      - ".github/actions/setup-c8run/action.yml"
+      - ".github/workflows/c8run-build.yaml"
+  schedule:
+    # Run at 23:30 UTC every day
+    - cron: "30 23 * * *"
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.27.3"
+  TEST_OWNER: '@camunda/distribution'
+
+permissions:
+  actions: none
+  attestations: none
+  checks: none
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  linting:
+    name: C8Run linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache-dependency-path: c8run/go.sum
+          cache: false
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          working-directory: ./c8run
+          skip-cache: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_unittests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+    name: C8Run Unit Tests ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache-dependency-path: c8run/go.sum
+          cache: false
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Unit tests
+        run: go test ./...
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_unittests/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  camunda-dist-build:
+    name: Build camunda-dist
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Package camunda-dist
+        shell: bash
+        id: build-dist
+        run: |
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
+          ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          export ARTIFACT
+          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Upload camunda-dist
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: camunda-platform-dist
+          path: ${{ steps.build-dist.outputs.distball }}
+
+      - name: Upload camunda-dist-zip
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: camunda-platform-dist-zip
+          path: ${{ steps.build-dist.outputs.distzip }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_on_unix:
+    strategy:
+      matrix:
+        # macos-latest is ARM, macos-15-intel will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-15-intel]
+    name: C8Run Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    needs: camunda-dist-build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Camunda Core Dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: camunda-platform-dist
+          path: c8run
+
+      - name: Setup C8Run
+        uses: ./.github/actions/setup-c8run
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          os: ${{ matrix.os }}
+          github-token: ${{ github.token }}
+          local-archive-build: "true"
+          checkout: "false"
+
+      - name: Run v2 API endpoint test
+        run: ./api_tests.sh
+        working-directory: ./c8run/e2e_tests
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: c8run-logs-${{ matrix.os }}
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
+          retention-days: 10
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+
+      - name: Upload message to Slack on failure
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          JOB_NAME: ${{ github.job }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"text\": \"Job *${JOB_NAME}* in workflow *${WORKFLOW_NAME}* failed for *${REPO}*!\nBranch: ${REF}\nCommit: ${SHA}\nRun: <${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}|View Run>\nLogs: <${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}/artifacts|View Artifacts>\"
+          }" \
+          "$SLACK_WEBHOOK_URL"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_on_unix/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_e2e_on_windows:
+    name: C8Run Test Windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    needs: camunda-dist-build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache-dependency-path: c8run/go.sum
+          cache: false
+
+      - name: Setup Java 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: "temurin"
+          java-version: "25"
+
+      - name: Download Camunda Core Dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: camunda-platform-dist-zip
+          path: c8run
+
+      - name: Get version of camunda-dist
+        id: dist-version
+        run: |
+          for file in camunda-zeebe*.zip; do
+            version=$(echo "$file" | sed -E 's/camunda-zeebe-(.*)\.zip/\1/')
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            break  # just use the first matching file
+          done
+        shell: bash
+        working-directory: .\c8run
+
+      - name: Build c8run runtime
+        run: go build -o c8run.exe ./cmd/c8run
+        working-directory: .\c8run
+
+      - name: Build c8run packager
+        run: go build -o packager.exe ./cmd/packager
+        working-directory: .\c8run
+
+      - name: make a package
+        timeout-minutes: 5
+        run: .\packager.exe package
+        working-directory: .\c8run
+        env:
+          CAMUNDA_VERSION: ${{ steps.dist-version.outputs.version }}
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: Extract packaged C8Run for E2E
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
+          $distribution = (Get-ChildItem e2e-distribution -Directory).FullName
+          "C8RUN_E2E_DIR=$distribution" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        working-directory: .\c8run
+
+      - name: Configure packaged C8Run E2E secret
+        shell: bash
+        run: printf '%s' 'c8run-centralized-secret-test-value' | ./c8run.exe secrets set C8RUN_E2E_SECRET --stdin
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+      - name: ls
+        run: ls
+        working-directory: .\c8run
+
+      - name: Run c8run
+        timeout-minutes: 3
+        run: bash -c './c8run.exe start --config ../../e2e_tests/config-flag.yaml'
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+        shell: bash
+
+      - name: Install jq
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
+        with:
+          version: 1.8.2
+
+      - name: Wait for camunda process to start
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
+        shell: bash
+        timeout-minutes: 5
+
+      - name: Run test
+        shell: bash
+        run: ./api_tests.sh
+        working-directory: .\c8run\e2e_tests
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: camunda8-run-build-windows
+          path: .\c8run\camunda8-run*
+          retention-days: 1
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: c8run-logs
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
+          retention-days: 10
+
+      - name: Upload message to Slack on failure
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          JOB_NAME: ${{ github.job }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"text\": \"Job *${JOB_NAME}* in workflow *${WORKFLOW_NAME}* failed for *${REPO}*!\nBranch: ${REF}\nCommit: ${SHA}\nRun: <${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}|View Run>\nLogs: <${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}/artifacts|View Artifacts>\"
+          }" \
+          "$SLACK_WEBHOOK_URL"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_physical_tenant_selection:
+    name: C8Run Tenant Selection ${{ matrix.os }}
+    needs: [test_c8run_on_unix, test_c8run_e2e_on_windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: camunda8-run-build-ubuntu-latest
+          - os: macos-latest
+            artifact: camunda8-run-build-macos-latest
+          - os: macos-15-intel
+            artifact: camunda8-run-build-macos-15-intel
+          - os: windows-latest
+            artifact: camunda8-run-build-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Download packaged C8Run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ matrix.artifact }}
+          path: c8run
+
+      - name: Extract packaged C8Run on Unix
+        if: runner.os != 'Windows'
+        run: |
+          mkdir e2e-distribution
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            tar -xzf camunda8-run-*.tar.gz -C e2e-distribution
+          else
+            unzip -q camunda8-run-*.zip -d e2e-distribution
+          fi
+          shopt -s nullglob
+          distributions=("$PWD"/e2e-distribution/c8run-*)
+          if [[ ${#distributions[@]} -ne 1 || ! -d "${distributions[0]}" ]]; then
+            echo "Expected exactly one extracted C8Run distribution" >&2
+            exit 1
+          fi
+          echo "C8RUN_E2E_DIR=${distributions[0]}" >> "$GITHUB_ENV"
+
+      - name: Extract packaged C8Run on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
+          $distributions = @(Get-ChildItem e2e-distribution -Directory -Filter 'c8run-*')
+          if ($distributions.Count -ne 1) {
+            throw "Expected exactly one extracted C8Run distribution"
+          }
+          "C8RUN_E2E_DIR=$($distributions[0].FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Run physical tenant selection auth regression
+        run: |
+          test -n "$C8RUN_E2E_DIR"
+          go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
+
+      - name: Upload physical tenant selection logs
+        if: ${{ (failure() || cancelled()) && env.C8RUN_E2E_DIR != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: c8run-tenant-selection-logs-${{ matrix.os }}
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_physical_tenant_selection/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test_c8run_physical_tenant_isolation:
+    name: C8Run Tenant Isolation ${{ matrix.os }}
+    needs: [test_c8run_on_unix, test_c8run_e2e_on_windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: camunda8-run-build-ubuntu-latest
+          - os: macos-latest
+            artifact: camunda8-run-build-macos-latest
+          - os: macos-15-intel
+            artifact: camunda8-run-build-macos-15-intel
+          - os: windows-latest
+            artifact: camunda8-run-build-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download packaged C8Run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ matrix.artifact }}
+          path: c8run
+
+      - name: Extract packaged C8Run on Unix
+        if: runner.os != 'Windows'
+        run: |
+          mkdir e2e-distribution
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            tar -xzf camunda8-run-*.tar.gz -C e2e-distribution
+          else
+            unzip -q camunda8-run-*.zip -d e2e-distribution
+          fi
+          shopt -s nullglob
+          distributions=("$PWD"/e2e-distribution/c8run-*)
+          if [[ ${#distributions[@]} -ne 1 || ! -d "${distributions[0]}" ]]; then
+            echo "Expected exactly one extracted C8Run distribution" >&2
+            exit 1
+          fi
+          echo "C8RUN_E2E_DIR=${distributions[0]}" >> "$GITHUB_ENV"
+
+      - name: Extract packaged C8Run on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
+          $distributions = @(Get-ChildItem e2e-distribution -Directory -Filter 'c8run-*')
+          if ($distributions.Count -ne 1) {
+            throw "Expected exactly one extracted C8Run distribution"
+          }
+          "C8RUN_E2E_DIR=$($distributions[0].FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install jq
+        if: runner.os == 'Windows'
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
+        with:
+          version: 1.8.2
+
+      - name: Start c8run with a physical tenant (own user, own secrets, authorizations on)
+        run: |
+          c8run=./c8run
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            c8run=./c8run.exe
+          fi
+          cp ../../e2e_tests/physical-tenants-auth.yaml .
+          printf '%s' 'pt1-e2e-password' | "$c8run" physical-tenants add pt1 --username alice --password-stdin
+          printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+          "$c8run" start --no-browser --config physical-tenants-auth.yaml
+        working-directory: ${{ env.C8RUN_E2E_DIR }}
+
+      - name: Run physical tenant isolation test
+        run: ./physical_tenants_tests.sh
+        env:
+          PHYSICAL_TENANT: pt1
+          C8RUN_AUTH: alice:pt1-e2e-password
+          C8RUN_DEFAULT_AUTH: demo:demo
+          TENANT_SECRET_VALUE: pt1-only-secret-value
+          CHECK_CONNECTORS: "1"
+          C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
+        working-directory: ./c8run/e2e_tests
+
+      - name: Upload physical tenant isolation logs
+        if: ${{ (failure() || cancelled()) && env.C8RUN_E2E_DIR != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: c8run-tenant-isolation-logs-${{ matrix.os }}
+          path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_physical_tenant_isolation/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

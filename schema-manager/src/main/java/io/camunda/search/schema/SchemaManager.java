@@ -1,0 +1,791 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.schema;
+
+import static java.util.Optional.ofNullable;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.agrona.LangUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class SchemaManager implements CloseableSilently {
+
+  public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+  @VisibleForTesting static final int CLOSE_GRACE_PERIOD_SECONDS = 5;
+  private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
+  private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
+  private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
+  private final SearchEngineClient searchEngineClient;
+  private final Collection<IndexDescriptor> allIndexDescriptors;
+  private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
+  private final SearchEngineConfiguration config;
+  private final IndexSchemaValidator schemaValidator;
+  private final ExecutorService virtualThreadExecutor;
+  private final SchemaManagerMetrics schemaManagerMetrics;
+  private final SchemaMetadataStore schemaMetadataStore;
+  private final String currentVersion;
+
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        objectMapper,
+        null);
+  }
+
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper,
+      final SchemaManagerMetrics schemaManagerMetrics) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        new IndexSchemaValidator(objectMapper),
+        VersionUtil.getVersion(),
+        schemaManagerMetrics);
+  }
+
+  @VisibleForTesting
+  SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final IndexSchemaValidator schemaValidator,
+      final String currentVersion,
+      final SchemaManagerMetrics schemaManagerMetrics) {
+    virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    this.searchEngineClient = searchEngineClient;
+    this.indexTemplateDescriptors = indexTemplateDescriptors;
+    allIndexDescriptors =
+        Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
+    this.config = config;
+    this.schemaValidator = schemaValidator;
+    this.schemaManagerMetrics = schemaManagerMetrics;
+    schemaMetadataStore =
+        new SchemaMetadataStore(
+            searchEngineClient,
+            new MetadataIndex(
+                config.connect().getIndexPrefix(),
+                config.connect().getTypeEnum().isElasticSearch()),
+            LOG);
+    this.currentVersion = currentVersion;
+  }
+
+  /**
+   * Applies the schema in a single attempt, propagating any failure to the caller. Retrying is the
+   * caller's decision, so that a caller managing several independent schemas can retry, classify
+   * and report each of them on its own — see {@code PerTenantSchemaInitialization} in the
+   * distribution for the production caller that owns that loop.
+   *
+   * <p>Bounded retries that belong to one attempt stay inside it; only the unbounded outer loop
+   * moves out.
+   */
+  public void startupOnce() {
+    if (skipSchemaCreation()) {
+      return;
+    }
+
+    timed(this::initializeSchema);
+
+    // Cleaning up after the schema is in place rather than before keeps a caller that retries a
+    // failing attempt from re-running the cleanup on every one of them.
+    startSchemaCleanup();
+  }
+
+  private boolean skipSchemaCreation() {
+    if (config.schemaManager().isCreateSchema()) {
+      return false;
+    }
+    LOG.info("Will not make any changes to indices and index templates as [createSchema] is false");
+    return true;
+  }
+
+  private void timed(final Runnable initialization) {
+    final var timer =
+        ofNullable(schemaManagerMetrics)
+            .map(SchemaManagerMetrics::startSchemaInitTimer)
+            .orElse(() -> {});
+    initialization.run();
+    // record the time taken to initialize schema only if it was successful
+    timer.close();
+  }
+
+  private void initializeSchema() {
+    LOG.info("Schema creation is enabled. Start Schema management.");
+    final boolean upgradeSchema;
+    final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
+    final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
+    switch (checkResult) {
+      case final Compatible.SameVersion ignored:
+        upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
+        break;
+      case final Incompatible.PatchDowngrade ignored:
+        return; // no upgrade, no settings update
+      case final Incompatible.MinorDowngrade ignored:
+        return; // no upgrade, no settings update
+      default:
+        LOG.info("Triggering schema upgrade for: {}", checkResult);
+        upgradeSchema = true;
+        break;
+    }
+    // create any missing index templates, it is done even outside an upgrade scenario, to create
+    // missing index templates after a backup restore
+    initialiseIndexTemplates();
+    if (upgradeSchema) {
+      final var newIndexProperties = validateIndices();
+      // create any missing indices
+      initialiseIndices();
+
+      //  used to update existing indices/templates
+      if (!newIndexProperties.isEmpty()) {
+        LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
+        updateSchemaMappings(newIndexProperties);
+      }
+      // Store the current version as schema version after successful initialization
+      schemaMetadataStore.storeSchemaVersion(currentVersion);
+    }
+    updateSchemaSettings();
+    checkShardConfiguration();
+    createLifecyclePolicies();
+    LOG.info("Schema management completed.");
+  }
+
+  private CheckResult checkVersionCompatibility(
+      final String previousVersion, final String currentVersion) {
+    final var checkResult = VersionCompatibilityCheck.check(previousVersion, currentVersion);
+    final boolean versionCheckRestrictionEnabled =
+        config.schemaManager().isVersionCheckRestrictionEnabled();
+    switch (checkResult) {
+      case final Indeterminate.PreviousVersionUnknown previousVersionUnknown ->
+          LOG.trace(
+              "Schema is from an unknown version, not checking compatibility with current version: {}",
+              previousVersionUnknown);
+      case final Indeterminate indeterminate ->
+          LOG.warn(
+              "Could not check compatibility of schema with current version: {}", indeterminate);
+      case final Incompatible.UseOfPreReleaseVersion preRelease -> {
+        final String errorMsg =
+            "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Incompatible.MinorDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible.PatchDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible incompatible -> {
+        final String errorMsg =
+            "Schema is not compatible with current version: %s".formatted(incompatible);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Compatible.SameVersion sameVersion ->
+          LOG.trace("Schema is from the same version as the current version: {}", sameVersion);
+      case final Compatible compatible ->
+          LOG.debug("Schema is compatible with current version: {}", compatible);
+    }
+    return checkResult;
+  }
+
+  private void createLifecyclePolicies() {
+    final RetentionConfiguration retention = config.retention();
+    if (retention.isEnabled()) {
+      LOG.info(
+          "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",
+          retention.getPolicyName(),
+          retention.getMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getPolicyName(), retention.getMinimumAge());
+
+      LOG.info(
+          "Create usage metrics ILM policy [name: '{}', retention: '{}']",
+          retention.getUsageMetricsPolicyName(),
+          retention.getUsageMetricsMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
+    }
+  }
+
+  private void startSchemaCleanup() {
+    LOG.debug("Starting legacy indexes cleanup...");
+    final boolean performCleanup = config.schemaManager().isPerformCleanup();
+    final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
+    CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
+  }
+
+  /**
+   * Reports per-index shard configuration that will not do what the operator expects.
+   *
+   * <p>Runs once per startup rather than from {@link #getIndexSettingsFromConfig}: that resolver is
+   * called again for every descriptor during template creation, index creation and the settings
+   * update, so warning from there would repeat each message up to three times.
+   */
+  private void checkShardConfiguration() {
+    final var explicitShards = config.index().getShardsByIndexName();
+    if (explicitShards.isEmpty()) {
+      return;
+    }
+
+    // Smaller than explicitShards when a configured name matches no descriptor here — a typo, or a
+    // component running with a subset of the schema. Those names are simply not ours to check.
+    final var configuredShardsByIndexName = new HashMap<String, Integer>();
+    allIndexDescriptors.forEach(
+        descriptor ->
+            ofNullable(explicitShards.get(descriptor.getIndexName()))
+                .ifPresent(
+                    shards -> {
+                      warnIfOverridingPinnedShardCount(descriptor, shards);
+                      configuredShardsByIndexName.put(descriptor.getFullQualifiedName(), shards);
+                    }));
+
+    warnOnUnappliedShardCounts(configuredShardsByIndexName);
+  }
+
+  /**
+   * Reports configured shard counts that an existing index does not actually have.
+   *
+   * <p>{@link #updateIndexSettings} only pushes {@code number_of_replicas}, because shards are
+   * immutable once an index exists. Changing {@code number-of-shards-per-index} on a running
+   * installation is therefore a silent no-op: the operator sees the setting they asked for in their
+   * configuration and a differently sharded index in the engine, with nothing connecting the two.
+   *
+   * <p>Only indices that already exist are compared — a missing one was either just created with
+   * the configured count or is not in use.
+   */
+  private void warnOnUnappliedShardCounts(final Map<String, Integer> configuredShardsByIndexName) {
+    final Map<String, Integer> actualShardsByIndexName;
+    try {
+      actualShardsByIndexName =
+          searchEngineClient.getNumberOfShards(configuredShardsByIndexName.keySet());
+    } catch (final Exception e) {
+      // A diagnostic must never be the thing that fails a startup that would otherwise succeed.
+      LOG.debug("Could not read shard counts to check them against the configuration", e);
+      return;
+    }
+
+    actualShardsByIndexName.forEach(
+        (indexName, actual) -> {
+          final var configured = configuredShardsByIndexName.get(indexName);
+          if (configured != null && !configured.equals(actual)) {
+            LOG.warn(
+                "Index '{}' is configured with '{}' primary shards but was created with '{}'. "
+                    + "Shards cannot be changed after creation, so the configured value has no "
+                    + "effect on this index; it applies only to newly created indices.",
+                indexName,
+                configured,
+                actual);
+          }
+        });
+  }
+
+  private void updateSchemaSettings() {
+    // fetched once, not once per descriptor, and submitted to the executor so a stalled request
+    // is bounded by joinOnFutures()'s timeout instead of blocking startupOnce() forever
+    final var currentReplicaCountsFuture =
+        CompletableFuture.supplyAsync(this::fetchCurrentReplicaCounts, virtualThreadExecutor);
+
+    final var futures =
+        allIndexDescriptors.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    currentReplicaCountsFuture.thenAcceptAsync(
+                        currentReplicaCounts ->
+                            updateIndexSettings(descriptor, currentReplicaCounts),
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    joinOnFutures(futures);
+  }
+
+  private Map<String, Integer> fetchCurrentReplicaCounts() {
+    final var prefix = AbstractIndexDescriptor.formatIndexPrefix(config.connect().getIndexPrefix());
+    final var componentPatterns =
+        allIndexDescriptors.stream()
+            .map(IndexDescriptor::getComponentName)
+            .distinct()
+            .sorted()
+            .map(component -> "%s%s-*".formatted(prefix, component))
+            .toList();
+    return searchEngineClient.getNumberOfReplicas(componentPatterns);
+  }
+
+  /**
+   * Writes replica settings only where they have actually drifted from configuration. A settings
+   * PUT is a cluster-state operation that the search engine's master serializes, so writing every
+   * descriptor unconditionally on every attempt turns a large tenant fleet's schema-init retries
+   * into thousands of redundant master tasks, most of them re-applying a value that is already in
+   * effect.
+   */
+  private void updateIndexSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, Integer> currentReplicaCounts) {
+    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
+    if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+      // already no-ops internally when unchanged, so it stays unconditional
+      searchEngineClient.updateIndexTemplateSettings(
+          indexTemplateDescriptor, indexSettingsFromConfig);
+    }
+
+    final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
+    if (replicaCountDrifted(indexDescriptor, targetReplicas, currentReplicaCounts)) {
+      searchEngineClient.putSettings(
+          indexDescriptor, Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
+    }
+  }
+
+  private boolean replicaCountDrifted(
+      final IndexDescriptor descriptor,
+      final int target,
+      final Map<String, Integer> currentReplicaCounts) {
+    final var namePattern = Pattern.quote(descriptor.getFullQualifiedName()) + ".*";
+    // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
+    // null replica count for it, so this unboxing comparison is safe
+    return currentReplicaCounts.entrySet().stream()
+        .filter(entry -> entry.getKey().matches(namePattern))
+        .anyMatch(entry -> entry.getValue() != target);
+  }
+
+  @VisibleForTesting
+  void initialiseIndices() {
+    if (allIndexDescriptors.isEmpty()) {
+      LOG.info("Do not create any indices, as descriptors are missing");
+      return;
+    }
+
+    final var missingIndices = getMissingIndices(allIndexDescriptors);
+    LOG.info("Found '{}' missing indices", missingIndices.size());
+    final var futures =
+        missingIndices.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices has been created successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
+  }
+
+  private List<IndexDescriptor> getMissingIndices(
+      final Collection<IndexDescriptor> indexDescriptors) {
+    if (indexDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingIndexNames = existingIndexNames(indexDescriptors);
+
+    return indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
+  }
+
+  @VisibleForTesting
+  void initialiseIndexTemplates() {
+    if (indexTemplateDescriptors.isEmpty()) {
+      LOG.info("Do not create any index templates, as descriptors are missing");
+      return;
+    }
+    final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
+    LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
+    final var futures =
+        missingIndexTemplates.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> createIndexTemplate(descriptor), virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices and templates have been created
+    // successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
+  }
+
+  private List<IndexTemplateDescriptor> getMissingIndexTemplates(
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
+    if (indexTemplateDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+
+    return indexTemplateDescriptors.stream()
+        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+        .toList();
+  }
+
+  /**
+   * Create an index template
+   *
+   * @param descriptor a description of the index template to create
+   */
+  private void createIndexTemplate(final IndexTemplateDescriptor descriptor) {
+    try {
+      searchEngineClient.createIndexTemplate(
+          descriptor, getIndexSettingsFromConfig(descriptor), true);
+      LOG.debug(
+          "Index template '{}', has been created / already exists", descriptor.getTemplateName());
+
+    } catch (final SearchEngineException e) {
+      final var errMsg =
+          String.format("Index template '%s' could not be created", descriptor.getTemplateName());
+      LOG.error(errMsg, e);
+      throw new IllegalStateException(errMsg, e);
+    }
+  }
+
+  /**
+   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   *
+   * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
+   * boilerplate (exception handling), but make sure startup fails.
+   *
+   * @param futures futures that be joined on
+   */
+  private void joinOnFutures(final CompletableFuture<?>[] futures) {
+    try {
+      CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  public void updateSchemaMappings(
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    for (final var newFieldEntry : newFields.entrySet()) {
+      final var descriptor = newFieldEntry.getKey();
+      final var newProperties = newFieldEntry.getValue();
+
+      if (descriptor instanceof IndexTemplateDescriptor) {
+        LOG.debug(
+            "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
+        searchEngineClient.createIndexTemplate(
+            (IndexTemplateDescriptor) descriptor, getIndexSettingsFromConfig(descriptor), false);
+      } else {
+        LOG.info(
+            "Index alias: '{}'. New fields will be added '{}'",
+            descriptor.getAlias(),
+            newProperties);
+      }
+      searchEngineClient.putMapping(descriptor, newProperties);
+    }
+  }
+
+  public List<String> truncateIndices() {
+    final var indices =
+        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    indices.forEach(searchEngineClient::truncateIndex);
+    return indices;
+  }
+
+  public void deleteArchivedIndices() {
+    final var liveIndices =
+        indexTemplateDescriptors.stream()
+            .map(IndexDescriptor::getFullQualifiedName)
+            .collect(Collectors.toSet());
+    final String indexPatterns =
+        indexTemplateDescriptors.stream()
+            .map(IndexTemplateDescriptor::getIndexPattern)
+            .collect(Collectors.joining(","));
+    final var archivedIndices =
+        searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
+            .filter(index -> !liveIndices.contains(index))
+            .toList();
+    archivedIndices.forEach(searchEngineClient::deleteIndex);
+    LOG.debug("Deleted archived indices '{}'", archivedIndices);
+  }
+
+  private IndexConfiguration getIndexSettingsFromConfig(final IndexDescriptor descriptor) {
+    final var indexName = descriptor.getIndexName();
+    final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
+    final var templateShards = getNumberOfShardsFromConfig(indexName, descriptor);
+
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(templateShards);
+    settings.setNumberOfReplicas(templateReplicas);
+    settings.setTemplatePriority(config.index().getTemplatePriority());
+    final var refreshInterval = getRefreshIntervalFromConfig(indexName);
+    settings.setRefreshInterval(refreshInterval);
+    return settings;
+  }
+
+  private int getNumberOfShardsFromConfig(
+      final String indexName, final IndexDescriptor descriptor) {
+    final var explicit = config.index().getShardsByIndexName().get(indexName);
+    if (explicit != null) {
+      return explicit;
+    }
+    return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
+  }
+
+  /**
+   * Explicit configuration wins over the descriptor default by design, so this only warns.
+   *
+   * <p>Descriptors that pin a count do so for a reason the operator cannot see from their own
+   * configuration file, so overriding one deserves a line in the log. The linked issue carries why
+   * it matters — post-importer-queue skipped entries once it was spread over several shards — which
+   * keeps that detail out of a message most readers only need to act on.
+   */
+  private void warnIfOverridingPinnedShardCount(
+      final IndexDescriptor descriptor, final int configured) {
+    final var pinned = descriptor.getDefaultShardCount();
+    if (pinned.isEmpty() || pinned.getAsInt() == configured) {
+      return;
+    }
+    LOG.warn(
+        "Index '{}' is pinned to '{}' primary shards by design but is configured with '{}'; "
+            + "the configuration wins. See https://github.com/camunda/camunda/issues/56117.",
+        descriptor.getIndexName(),
+        pinned.getAsInt(),
+        configured);
+  }
+
+  private int getNumberOfReplicasFromConfig(final String indexName) {
+    return config
+        .index()
+        .getReplicasByIndexName()
+        .getOrDefault(indexName, config.index().getNumberOfReplicas());
+  }
+
+  private String getRefreshIntervalFromConfig(final String indexName) {
+    return config
+        .index()
+        .getRefreshIntervalByIndexName()
+        .getOrDefault(indexName, config.index().getRefreshInterval());
+  }
+
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices() {
+    if (allIndexDescriptors.isEmpty()) {
+      LOG.info("No validation of indices, as there are no descriptors");
+      return Map.of();
+    }
+
+    final var currentIndices =
+        searchEngineClient.getMappings(allIndexNames(allIndexDescriptors), MappingSource.INDEX);
+    LOG.info(
+        "Validate '{}' existing indices based on '{}' descriptors",
+        currentIndices.size(),
+        allIndexDescriptors.size());
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+    return schemaValidator.validateIndexMappings(
+        currentIndices, allIndexDescriptors, currentTemplates);
+  }
+
+  private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
+    final String allIndexNames = allIndexNames(indexDescriptors);
+    return allIndexNames.isBlank()
+        ? Set.of()
+        : searchEngineClient.getMappings(allIndexNames, MappingSource.INDEX).keySet();
+  }
+
+  private String allIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
+
+    // The wildcard is required as without it, requests would fail if the index didn't exist.
+    // this way all descriptors can be retrieved in one request without errors due to not created
+    // indices
+
+    return indexDescriptors.stream()
+        .map(descriptor -> descriptor.getFullQualifiedName() + "*")
+        .collect(Collectors.joining(","));
+  }
+
+  public boolean isSchemaReadyForUse() {
+    if (!config.schemaManager().isCreateSchema()) {
+      return true;
+    }
+
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty()
+        && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
+        && validateIndices().isEmpty()
+        && isAliasIntegrityValid(false);
+  }
+
+  public boolean isAllIndicesExist() {
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty();
+  }
+
+  /**
+   * Shuts the executor down within a bounded amount of time, whatever its tasks are doing.
+   *
+   * <p>{@code ExecutorService.close()} shuts down and then loops {@code awaitTermination(1, DAYS)}
+   * until every task finishes on its own. A schema mutation that the search engine accepted but has
+   * not acknowledged keeps its task running long after {@link #joinOnFutures} gave up on it, and
+   * cancelling that future does not stop it — the JDK never interrupts a task to cancel a {@link
+   * CompletableFuture}. So a caller that times out and retries, building a fresh {@link
+   * SchemaManager} per attempt and closing the previous one first, ends up parked here for as long
+   * as the abandoned request runs. That is the hang this bounds.
+   *
+   * <p>Shutdown stays graceful first, so {@link #startSchemaCleanup()}'s fire-and-forget cleanup —
+   * the one task legitimately still running at close on a successful startup — is left to finish.
+   * Only once that short grace is exhausted does this escalate to {@code shutdownNow()}. Either way
+   * the method returns; a task that somehow survives the interrupt keeps running in the background
+   * without holding up the caller.
+   */
+  @Override
+  public void close() {
+    virtualThreadExecutor.shutdown();
+    try {
+      if (!virtualThreadExecutor.awaitTermination(CLOSE_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
+        LOG.warn(
+            "Schema manager tasks did not finish within {}s of shutdown; interrupting them and giving up the wait.",
+            CLOSE_GRACE_PERIOD_SECONDS);
+        virtualThreadExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      virtualThreadExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  public boolean isAliasIntegrityValid(final boolean throwException) {
+    final var descriptorsWithAliasValidation = descriptorsWithAliasValidation();
+    final List<String> indexNames =
+        descriptorsWithAliasValidation.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+
+    final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(indexNames);
+
+    final Set<String> indexesWithMissingAliases = new LinkedHashSet<>();
+    final Map<String, Set<String>> aliasToIndices = new HashMap<>();
+
+    for (final IndexDescriptor indexDescriptor : descriptorsWithAliasValidation) {
+      final Set<String> aliases =
+          aliasByIndex.getOrDefault(indexDescriptor.getFullQualifiedName(), Set.of());
+
+      /* index with missing alias */
+      if (!aliases.contains(indexDescriptor.getAlias())) {
+        indexesWithMissingAliases.add(indexDescriptor.getFullQualifiedName());
+      }
+
+      /* alias that points to multiple indexes */
+      for (final String alias : aliases) {
+        aliasToIndices
+            .computeIfAbsent(alias, k -> new HashSet<>())
+            .add(indexDescriptor.getFullQualifiedName());
+      }
+    }
+
+    final var duplicateAliases =
+        aliasToIndices.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    if (indexesWithMissingAliases.isEmpty() && duplicateAliases.isEmpty()) {
+      return true;
+    }
+
+    final StringBuilder sb = new StringBuilder();
+    if (!indexesWithMissingAliases.isEmpty()) {
+      sb.append(INDICES_MISSING_ALIAS)
+          .append(String.join(", ", indexesWithMissingAliases))
+          .append("\n");
+    }
+    duplicateAliases.forEach(
+        (alias, indices) -> {
+          sb.append(String.format(ALIAS_INTEGRITY_ERR, alias, String.join(", ", indices)));
+          sb.append("\n");
+        });
+
+    final String errorMessage =
+        String.format("Errors when validating alias integrity: %s", sb.toString());
+    if (throwException) {
+      throw new IllegalStateException(errorMessage);
+    }
+
+    LOG.warn(errorMessage);
+    return false;
+  }
+
+  private List<IndexDescriptor> requiredIndexDescriptors() {
+    return allIndexDescriptors.stream().filter(descriptor -> !descriptor.allowMissing()).toList();
+  }
+
+  private List<IndexDescriptor> descriptorsWithAliasValidation() {
+    final var existingIndexNames = existingIndexNames(allIndexDescriptors);
+    return allIndexDescriptors.stream()
+        .filter(
+            descriptor ->
+                !descriptor.allowMissing()
+                    || existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
+  }
+}

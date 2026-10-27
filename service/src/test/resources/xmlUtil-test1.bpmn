@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_09jlb3q" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
+  <bpmn:process id="testProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_007nkah</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_007nkah" sourceRef="StartEvent_1" targetRef="taskA" />
+    <bpmn:sequenceFlow id="Flow_0qc07xr" sourceRef="taskA" targetRef="taskB" />
+    <bpmn:endEvent id="Event_0692jdh" name="End">
+      <bpmn:incoming>Flow_0lsd3t8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0lsd3t8" sourceRef="taskB" targetRef="Event_0692jdh" />
+    <bpmn:userTask id="taskA">
+      <bpmn:incoming>Flow_007nkah</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qc07xr</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="taskB" name="Task B">
+      <bpmn:incoming>Flow_0qc07xr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0lsd3t8</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+</bpmn:definitions>

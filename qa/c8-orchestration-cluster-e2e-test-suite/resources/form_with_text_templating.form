@@ -1,0 +1,16 @@
+{
+  "components": [
+    {
+      "text": "# Hello {{ name }} \n\n You are {{ age }} years old",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_1ie54my",
+        "columns": null
+      },
+      "id": "Field_08hxldt"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_text_templating"
+}

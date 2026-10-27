@@ -1,0 +1,51 @@
+---
+# Web Modeler PostgreSQL for the C8SM 8.10 preview environment.
+#
+# camunda-platform 15.0.0-alpha2 dropped the bundled Bitnami `webModelerPostgresql`
+# subchart, so the database is now provided out-of-chart via a CloudNativePG Cluster.
+# CNPG watches all namespaces on camunda-ci, so this lives in the preview namespace
+# and Web Modeler reaches it via the CNPG-managed `-rw` Service
+# (web-modeler-postgresql-rw:5432), wired through `webModeler.restapi.externalDatabase`.
+#
+# Preview-only throwaway credentials (fixed, mirrors the former Bitnami placeholder).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: web-modeler-postgresql-db
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+type: kubernetes.io/basic-auth
+stringData:
+  username: web-modeler
+  password: web-modeler
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: web-modeler-postgresql
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  instances: 1
+  imageName: europe-west1-docker.pkg.dev/ci-30-162810/ghcr/cloudnative-pg/postgresql:17
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: web-modeler
+      owner: web-modeler
+      secret:
+        name: web-modeler-postgresql-db
+  affinity:
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: previews
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

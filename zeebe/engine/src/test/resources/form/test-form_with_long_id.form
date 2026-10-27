@@ -1,0 +1,26 @@
+{
+  "components": [
+    {
+      "label": "Number",
+      "type": "number",
+      "id": "Field_1ojq0w2",
+      "key": "field_16vwphu"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_1vctv3h",
+      "key": "field_01t07du"
+    }
+  ],
+  "type": "default",
+  "id": "this_is_a_form_document_with_an_extreme_and_very_long_id",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.1.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.9.0"
+  },
+  "schemaVersion": 7
+}

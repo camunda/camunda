@@ -1,0 +1,6 @@
+# An operator's own Optimize configuration file, the documented alternative to the environment
+# variables. Loaded through Spring's spring.config.additional-location, the way a real deployment
+# supplies it, so the bridge sees exactly what it would see in production.
+api:
+  audience: my-yaml-audience
+  jwtSetUri: https://public-api-idp.example.com/.well-known/jwks.json

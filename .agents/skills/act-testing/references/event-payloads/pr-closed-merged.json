@@ -1,0 +1,19 @@
+{
+  "action": "closed",
+  "pull_request": {
+    "number": 12345,
+    "merged": true,
+    "draft": false,
+    "head": {
+      "ref": "feature/merged-pr",
+      "repo": {
+        "owner": {
+          "login": "test-user"
+        }
+      }
+    },
+    "base": {
+      "ref": "main"
+    }
+  }
+}

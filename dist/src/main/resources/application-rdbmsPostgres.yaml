@@ -1,0 +1,13 @@
+# Local development configuration for Camunda with the RDBMS Postgres database from db/docker-compose.yml
+
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:postgresql:camunda
+        username: camunda
+        password: camunda
+logging:
+  level:
+    io.camunda.db.rdbms: DEBUG

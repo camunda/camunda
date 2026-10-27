@@ -1,0 +1,378 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.backup.azure;
+
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+
+import com.azure.core.http.rest.Response;
+import com.azure.core.util.BinaryData;
+import com.azure.core.util.Context;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobRequestConditions;
+import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.models.BlockBlobItem;
+import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.options.BlobParallelUploadOptions;
+import com.azure.storage.common.implementation.Constants.HeaderConstants;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.CheckpointIds;
+import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.PagedReads;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class ManifestManager {
+
+  public static final int PRECONDITION_FAILED = 412;
+
+  /**
+   * A sweep batch selects up to a thousand manifests; downloading them one blocking HTTP GET after
+   * another would cost that many sequential round trips. Bounded to the same width GCS and S3
+   * already use for the same reason.
+   */
+  static final int MANIFEST_READ_PARALLELISM = 16;
+
+  static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS)
+          .setSerializationInclusion(Include.NON_ABSENT);
+
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
+
+  /**
+   * The path format consists of the following elements:
+   *
+   * <ul>
+   *   <li>{@code "manifests"}
+   *   <li>{@code partitionId}
+   *   <li>{@code checkpointId}
+   *   <li>{@code nodeId}
+   *   <li>{@code "manifest.json"}
+   * </ul>
+   *
+   * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
+   */
+  private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
+
+  private static final int LIST_PAGE_SIZE = 1000;
+
+  private volatile boolean containerCreated;
+  private final ReentrantLock containerCreationLock = new ReentrantLock();
+  private final BlobContainerClient blobContainerClient;
+  private final Executor executor;
+  private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
+
+  ManifestManager(
+      final BlobContainerClient blobContainerClient,
+      final boolean createContainer,
+      final Executor executor) {
+    this.blobContainerClient = blobContainerClient;
+    this.executor = executor;
+    containerCreated = !createContainer;
+  }
+
+  PersistedManifest createInitialManifest(final Backup backup) {
+
+    final var manifest = Manifest.createInProgress(backup);
+    final byte[] serializedManifest;
+    assureContainerCreated();
+    try {
+      serializedManifest = MAPPER.writeValueAsBytes(manifest);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
+
+    try {
+      final BlobRequestConditions blobRequestConditions = new BlobRequestConditions();
+      disableOverwrite(blobRequestConditions);
+      final Response<BlockBlobItem> blockBlobItemResponse =
+          blobClient.uploadWithResponse(
+              new BlobParallelUploadOptions(BinaryData.fromBytes(serializedManifest))
+                  .setRequestConditions(blobRequestConditions),
+              null,
+              Context.NONE);
+
+      return new PersistedManifest(blockBlobItemResponse.getValue().getETag(), manifest);
+    } catch (final BlobStorageException e) {
+      if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
+        throw new UnexpectedManifestState("Manifest already exists.", e);
+      }
+      throw e;
+    }
+  }
+
+  void completeManifest(final PersistedManifest inProgressManifest) {
+    final byte[] serializedManifest;
+    final var completed = inProgressManifest.manifest().complete();
+    try {
+      serializedManifest = MAPPER.writeValueAsBytes(completed);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(completed));
+    try {
+      final Manifest manifest = getManifest(inProgressManifest.manifest().id());
+
+      if (manifest == null) {
+        throw new UnexpectedManifestState("Manifest does not exist.");
+      } else if (manifest.statusCode() != StatusCode.IN_PROGRESS) {
+        throw new UnexpectedManifestState(
+            "Expected manifest to be in progress but was in %s"
+                .formatted(manifest.statusCode().name()));
+      }
+
+      // we only complete the manifest if the eTag matches, thus
+      // assuring no other client has written in the meantime.
+      final BlobRequestConditions blobRequestConditions =
+          new BlobRequestConditions().setIfMatch(inProgressManifest.eTag());
+      blobClient.uploadWithResponse(
+          new BlobParallelUploadOptions(BinaryData.fromBytes(serializedManifest))
+              .setRequestConditions(blobRequestConditions),
+          null,
+          Context.NONE);
+    } catch (final BlobStorageException e) {
+      // will throw precondition failed if etag does not match.
+      if (e.getStatusCode() == PRECONDITION_FAILED) {
+        throw new UnexpectedManifestState(e.getMessage());
+      }
+      throw new RuntimeException(e);
+    }
+  }
+
+  void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
+
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
+    final Manifest manifest = getManifest(manifestId);
+    if (manifest == null) {
+      upload(blobClient, Manifest.createFailed(manifestId, failureReason));
+      return;
+    }
+
+    final var updatedManifest =
+        switch (manifest.statusCode()) {
+          case FAILED -> manifest.asFailed();
+          case COMPLETED -> manifest.asCompleted().fail(failureReason);
+          case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
+          case DELETED ->
+              throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
+        };
+
+    if (manifest != updatedManifest) {
+      upload(blobClient, updatedManifest);
+    }
+  }
+
+  private static void upload(final BlobClient blobClient, final Manifest manifest) {
+    try {
+      blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(manifest)), true);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  void markAsDeleted(final Manifest manifest) {
+
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+
+    if (manifest != deletedManifest) {
+      try {
+        final BlobClient blobClient =
+            blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+        blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  public void deleteManifest(final Manifest manifest) {
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+    blobClient.delete();
+  }
+
+  Manifest getManifest(final BackupIdentifier id) {
+    assureContainerCreated();
+    return getManifestWithPath(
+        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.brokerId().id()));
+  }
+
+  private Manifest getManifestWithPath(final String path) {
+    final BlobClient blobClient;
+    final BinaryData binaryData;
+    blobClient = blobContainerClient.getBlobClient(path);
+    try {
+      binaryData = blobClient.downloadContent();
+    } catch (final BlobStorageException e) {
+      if (e.getErrorCode() == BlobErrorCode.CONTAINER_NOT_FOUND
+          || e.getErrorCode() == BlobErrorCode.BLOB_NOT_FOUND) {
+        return null;
+      }
+      throw new RuntimeException(e);
+    }
+
+    try {
+      return MAPPER.readValue(binaryData.toStream(), Manifest.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  /**
+   * Lists the page of manifests selected by the options. All matching blob names are enumerated
+   * page by page, but only the selected manifests are downloaded, up to {@link
+   * #manifestReadConcurrencyLimit} at a time.
+   */
+  public List<Manifest> listManifests(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    assureContainerCreated();
+    final var pathPattern = manifestPathPattern(wildcard);
+    final var manifestBlobs = new ArrayList<ManifestBlob>();
+    final var listOptions =
+        new ListBlobsOptions()
+            .setPrefix(wildcardPrefix(wildcard))
+            .setMaxResultsPerPage(LIST_PAGE_SIZE);
+    for (final var page : blobContainerClient.listBlobs(listOptions, null).iterableByPage()) {
+      for (final BlobItem blob : page.getValue()) {
+        final var matcher = pathPattern.matcher(blob.getName());
+        if (!matcher.matches()) {
+          continue;
+        }
+        parseIdentifier(matcher, blob.getName())
+            .filter(wildcard::matches)
+            .ifPresent(id -> manifestBlobs.add(new ManifestBlob(id, blob.getName())));
+      }
+    }
+    return PagedReads.readPageAsync(manifestBlobs, ManifestBlob::id, options, this::readManifest)
+        .join();
+  }
+
+  /**
+   * Downloads one manifest, bounded by {@link #manifestReadConcurrencyLimit}. Empty if it was
+   * deleted between listing and this read — retention's own deletes race with its next sweep, so
+   * this is expected, not a failure.
+   */
+  private CompletableFuture<Optional<Manifest>> readManifest(final ManifestBlob manifestBlob) {
+    return SemaphoreLeasedScheduler.schedule(
+        () -> Optional.ofNullable(getManifestWithPath(manifestBlob.path())),
+        executor,
+        manifestReadConcurrencyLimit);
+  }
+
+  public static String manifestPath(final Manifest manifest) {
+    return manifestIdPath(manifest.id());
+  }
+
+  private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
+    return MANIFEST_PATH_FORMAT.formatted(
+        backupIdentifier.partitionId(),
+        backupIdentifier.checkpointId(),
+        backupIdentifier.brokerId().id());
+  }
+
+  /** Matches the manifest paths of the wildcard and captures the identifier's path segments. */
+  private static Pattern manifestPathPattern(final BackupIdentifierWildcard wildcard) {
+    return Pattern.compile(
+        MANIFEST_PATH_FORMAT.formatted(
+            "(?<partitionId>%s)"
+                .formatted(wildcard.partitionId().map(Number::toString).orElse("\\d+")),
+            "(?<checkpointId>%s)".formatted(wildcard.checkpointPattern().asRegex()),
+            "(?<memberId>%s)".formatted(BackupIdentifierWildcard.memberIdRegex(wildcard))));
+  }
+
+  /**
+   * Parses the identifier captured by {@link #manifestPathPattern}. Empty if the checkpoint id
+   * segment is a digit run too long to fit a {@code long} — a foreign or corrupted blob rather than
+   * one this store wrote, skipped instead of failing the whole listing.
+   */
+  private static Optional<BackupIdentifier> parseIdentifier(
+      final Matcher manifestPath, final String blobName) {
+    final var checkpointId = CheckpointIds.tryParse(manifestPath.group("checkpointId"));
+    if (checkpointId.isEmpty()) {
+      LOG.warn("Tried interpreting blob {} as a backup manifest but failed", blobName);
+      return Optional.empty();
+    }
+    final var memberId = BrokerMemberId.from(manifestPath.group("memberId"));
+    return Optional.of(
+        new BackupIdentifierImpl(
+            memberId.nodeIdx(),
+            memberId.zone(),
+            Integer.parseInt(manifestPath.group("partitionId")),
+            checkpointId.getAsLong()));
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   */
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    return "manifests/" + BackupIdentifierWildcard.asPrefix(wildcard);
+  }
+
+  void assureContainerCreated() {
+    if (!containerCreated) {
+      containerCreationLock.lock();
+      try {
+        if (!containerCreated) {
+          blobContainerClient.createIfNotExists();
+          containerCreated = true;
+        }
+      } finally {
+        containerCreationLock.unlock();
+      }
+    }
+  }
+
+  public static void disableOverwrite(final BlobRequestConditions blobRequestConditions) {
+    // Optionally limit requests to resources that do not match the passed ETag.
+    // None will match therefore it will not overwrite.
+    blobRequestConditions.setIfNoneMatch(HeaderConstants.ETAG_WILDCARD);
+  }
+
+  record PersistedManifest(String eTag, InProgressManifest manifest) {}
+
+  private record ManifestBlob(BackupIdentifier id, String path) {}
+}

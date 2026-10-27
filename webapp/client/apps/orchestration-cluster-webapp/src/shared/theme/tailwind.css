@@ -1,0 +1,199 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@import 'tailwindcss';
+
+/*
+ * Tailwind's automatic source scanner cannot extract this compound
+ * arbitrary-variant candidate (nested `:has()` + attribute selectors) from
+ * ComposedCell.tsx, so it must be declared explicitly here to be generated.
+ */
+@source inline("[&_tr:has([data-expandable=false])_[data-slot=data-table-expand-toggle]]:hidden!");
+
+/*
+ * Same scanner limitation for this compound arbitrary-variant candidate
+ * (attribute selector + an arbitrary-value `border-b` color) used in
+ * ComposedCell.tsx and NativeExpansionCell.tsx to harden the DS
+ * `<TableRow>`'s row-divider color against a Chromium invalidation bug on
+ * subtree remount.
+ */
+@source inline("[&_[data-slot=table-row]]:border-b-[var(--border)]");
+
+/*
+ * Same scanner limitation for the selected-row highlight in the DS SortableTable
+ * (nested `:has()` + attribute selector).
+ */
+@source inline("[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]");
+@source inline("[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden");
+
+/*
+ * Same scanner limitation for the compound arbitrary-variant candidates that
+ * strip the DS DataTable's rounded border in Decisions' InstancesTable.tsx;
+ * important is needed because the DS stylesheet's rounded-xl is unlayered.
+ */
+@source inline("[&_[data-slot=table-container]]:{rounded-none!,border-0!,shadow-none!}");
+@source inline("[&_[data-slot=data-table]>div.rounded-xl]:{rounded-none!,border-0!}");
+
+/*
+ * Maps the DS tokens onto the CSS variables dmn-js reads, so DecisionViewer
+ * does not carry ~20 arbitrary-variant classes. Kept as plain unlayered rules
+ * (not `@utility`, which lands in the `utilities` layer) so they win over the
+ * unlayered dmn-js stylesheet by specificity instead of `!important`.
+ */
+.dmn-viewer-theme {
+	--viewer-panel: var(--neutral-background-medium);
+	--viewer-layer: var(--neutral-background-subtle);
+	background-color: var(--viewer-panel);
+
+	.dark & {
+		--viewer-panel: var(--background);
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.powered-by {
+		display: none;
+	}
+
+	.dmn-decision-table-container {
+		--decision-table-font-family: inherit;
+		--table-head-clause-color: var(--neutral-foreground-subtle);
+		--table-head-variable-color: var(--neutral-foreground-subtle);
+		--table-head-separator-color: var(--neutral-border-subtle);
+		--table-color: var(--neutral-foreground-subtle);
+		--table-cell-color: var(--neutral-foreground-subtle);
+		--decision-table-color: var(--neutral-foreground-subtle);
+		--decision-table-properties-color: var(--neutral-foreground-subtle);
+		--table-head-border-color: var(--neutral-border-strong);
+		--table-cell-border-color: var(--neutral-border-strong);
+		--decision-table-background-color: var(--viewer-layer);
+		--table-row-alternative-background-color: var(--viewer-layer);
+	}
+
+	.decision-table-properties {
+		border-width: 1px;
+	}
+
+	.tjs-table-container tbody tr[data-highlighted],
+	.tjs-table-container tbody tr[data-highlighted] td {
+		background-color: var(--info-background-subtle);
+		color: var(--neutral-foreground-subtle);
+	}
+
+	@media (forced-colors: active) {
+		.tjs-table-container tbody tr[data-highlighted] td {
+			border-top: 2px solid Highlight;
+			border-bottom: 2px solid Highlight;
+		}
+	}
+
+	.tjs-table-container {
+		background-color: var(--viewer-layer);
+		border-width: 1px;
+	}
+
+	.dmn-literal-expression-container {
+		--literal-expression-font-family: inherit;
+		--literal-expression-font-family-monospace: var(--font-mono);
+		--decision-properties-background-color: var(--viewer-layer);
+		--decision-properties-border-color: var(--neutral-border-strong);
+		--decision-properties-color: var(--neutral-foreground-subtle);
+		--textarea-border-color: var(--neutral-border-strong);
+		--textarea-color: var(--neutral-foreground-subtle);
+		--literal-expression-properties-border-color: var(--neutral-border-strong);
+		--literal-expression-properties-color: var(--neutral-foreground-subtle);
+
+		table {
+			border-collapse: unset;
+			padding: 0;
+		}
+	}
+
+	.decision-properties {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		border-width: 1px;
+	}
+
+	.textarea {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		min-height: 0;
+		border-width: 1px 2px;
+	}
+
+	.literal-expression-properties {
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-strong);
+		border-width: 1px 2px 2px 2px;
+	}
+}
+
+/*
+ * dmn-js falls back to hard-coded light `--bio-*` tokens on `.bio-theme-parent` for
+ * every variable the themes below do not set, which renders light surfaces in dark mode.
+ */
+.dmn-viewer-theme .bio-theme-parent,
+.drd-viewer-theme .bio-theme-parent {
+	--bio-surface: var(--neutral-background-subtle);
+	--bio-surface-subtle: var(--neutral-background-subtle);
+	--bio-surface-medium: var(--neutral-background-medium);
+	--bio-text: var(--neutral-foreground-strong);
+	--bio-text-subtle: var(--neutral-foreground-subtle);
+	--bio-text-subtlest: var(--neutral-foreground-subtle);
+	--bio-border: var(--neutral-border-strong);
+	--bio-primary: var(--primary-action-default);
+	--bio-primary-hover: var(--primary-action-hover);
+	--bio-focus: var(--ring);
+
+	.dark & {
+		--bio-surface: var(--neutral-background-medium);
+		--bio-surface-subtle: var(--neutral-background-medium);
+	}
+}
+
+/*
+ * Same approach as .dmn-viewer-theme for the DRD viewer: plain unlayered rules
+ * beat the unlayered dmn-js-drd stylesheet by specificity, with no `!important`.
+ */
+.drd-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.dmn-drd-container {
+		--drd-font-family: inherit;
+	}
+
+	.dmn-drd-container svg:not(.lucide) {
+		background-color: var(--viewer-layer);
+	}
+
+	.ope-selectable {
+		cursor: pointer;
+	}
+
+	.ope-selectable.hover .djs-outline,
+	.ope-selectable:focus-visible .djs-outline,
+	.ope-selected .djs-outline {
+		stroke: var(--primary-action-default);
+		stroke-width: 2px;
+	}
+
+	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
+	.ope-selected .djs-visual rect {
+		fill: var(--info-background-subtle) !important;
+	}
+}
+
+@media (forced-colors: active) {
+	[role='tab'][data-state='active'] {
+		border-bottom: 2px solid Highlight;
+	}
+}

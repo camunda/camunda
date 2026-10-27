@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_miSeq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="1.0">
+  <bpmn:process id="miSeqSubprocess" name="MI Sequential Subprocess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_miSeq">
+      <bpmn:outgoing>Flow_miSeq_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="MISeqSubprocess" name="Sequential MI Subprocess">
+      <bpmn:incoming>Flow_miSeq_start</bpmn:incoming>
+      <bpmn:outgoing>Flow_miSeq_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart_miSeq">
+        <bpmn:outgoing>SubFlow_miSeq_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="SubTaskA_miSeq" name="Task A">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="miSeqSubTaskA" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_miSeq_1</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_miSeq_2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="SubTaskB_miSeq" name="Task B">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="miSeqSubTaskB" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_miSeq_2</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_miSeq_3</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd_miSeq">
+        <bpmn:incoming>SubFlow_miSeq_3</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_miSeq_1" sourceRef="SubStart_miSeq" targetRef="SubTaskA_miSeq" />
+      <bpmn:sequenceFlow id="SubFlow_miSeq_2" sourceRef="SubTaskA_miSeq" targetRef="SubTaskB_miSeq" />
+      <bpmn:sequenceFlow id="SubFlow_miSeq_3" sourceRef="SubTaskB_miSeq" targetRef="SubEnd_miSeq" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_miSeq">
+      <bpmn:incoming>Flow_miSeq_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_miSeq_start" sourceRef="StartEvent_miSeq" targetRef="MISeqSubprocess" />
+    <bpmn:sequenceFlow id="Flow_miSeq_end" sourceRef="MISeqSubprocess" targetRef="EndEvent_miSeq" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_miSeq">
+    <bpmndi:BPMNPlane id="BPMNPlane_miSeq" bpmnElement="miSeqSubprocess">
+      <bpmndi:BPMNShape id="StartEvent_miSeq_di" bpmnElement="StartEvent_miSeq">
+        <dc:Bounds x="152" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MISeqSubprocess_di" bpmnElement="MISeqSubprocess" isExpanded="true">
+        <dc:Bounds x="250" y="160" width="560" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_miSeq_di" bpmnElement="SubStart_miSeq">
+        <dc:Bounds x="282" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubTaskA_miSeq_di" bpmnElement="SubTaskA_miSeq">
+        <dc:Bounds x="380" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubTaskB_miSeq_di" bpmnElement="SubTaskB_miSeq">
+        <dc:Bounds x="550" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_miSeq_di" bpmnElement="SubEnd_miSeq">
+        <dc:Bounds x="722" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_miSeq_di" bpmnElement="EndEvent_miSeq">
+        <dc:Bounds x="882" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_miSeq_start_di" bpmnElement="Flow_miSeq_start">
+        <di:waypoint x="188" y="310" />
+        <di:waypoint x="250" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miSeq_1_di" bpmnElement="SubFlow_miSeq_1">
+        <di:waypoint x="318" y="310" />
+        <di:waypoint x="380" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miSeq_2_di" bpmnElement="SubFlow_miSeq_2">
+        <di:waypoint x="480" y="310" />
+        <di:waypoint x="550" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miSeq_3_di" bpmnElement="SubFlow_miSeq_3">
+        <di:waypoint x="650" y="310" />
+        <di:waypoint x="722" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_miSeq_end_di" bpmnElement="Flow_miSeq_end">
+        <di:waypoint x="810" y="310" />
+        <di:waypoint x="882" y="310" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,153 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {makeAutoObservable} from 'mobx';
+import {hasType} from 'modules/bpmn-js/utils/hasType';
+import {getEventType} from 'modules/bpmn-js/utils/getEventType';
+import {getEventSubProcessType} from 'modules/bpmn-js/utils/getEventSubProcessType';
+import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+type State = {
+  isMappedFilterEnabled: boolean;
+};
+
+const DEFAULT_STATE: State = {
+  isMappedFilterEnabled: false,
+};
+
+class ProcessInstanceMigrationMappingStore {
+  state: State = {...DEFAULT_STATE};
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  getMappableSequenceFlows(
+    selectableSourceSequenceFlows?: BusinessObject[],
+    selectableTargetSequenceFlows?: BusinessObject[],
+  ) {
+    if (!selectableTargetSequenceFlows) {
+      return [];
+    }
+
+    return selectableSourceSequenceFlows?.map((sourceSequenceFlow) => {
+      return {
+        sourceElement: {
+          id: sourceSequenceFlow.id,
+          name: sourceSequenceFlow.name,
+        },
+        selectableTargetElement: selectableTargetSequenceFlows.map(
+          ({id, name}) => ({
+            id,
+            name,
+          }),
+        ),
+      };
+    });
+  }
+
+  getMappableElements(
+    selectableSourceElements?: BusinessObject[],
+    selectableTargetElements?: BusinessObject[],
+  ) {
+    if (!selectableTargetElements) {
+      return [];
+    }
+
+    const sourceElementMappings = selectableSourceElements?.map(
+      (sourceElement) => {
+        return {
+          sourceElement: {id: sourceElement.id, name: sourceElement.name},
+          selectableTargetElement: selectableTargetElements
+            .filter((targetElement) => {
+              /**
+               * For events allow only target elements with the same event type
+               */
+              if (
+                hasType({
+                  businessObject: sourceElement,
+                  types: [
+                    'bpmn:StartEvent',
+                    'bpmn:IntermediateCatchEvent',
+                    'bpmn:BoundaryEvent',
+                  ],
+                })
+              ) {
+                return (
+                  sourceElement.$type === targetElement.$type &&
+                  getEventType(sourceElement) === getEventType(targetElement)
+                );
+              }
+
+              /**
+               * For event sub processes allow only mapping with the same event type (message, timer or error)
+               */
+              if (isEventSubProcess({businessObject: sourceElement})) {
+                return (
+                  getEventSubProcessType({businessObject: sourceElement}) ===
+                  getEventSubProcessType({businessObject: targetElement})
+                );
+              }
+
+              /**
+               * Prevent mapping between event and non-event sub processes
+               */
+              if (
+                (isEventSubProcess({businessObject: sourceElement}) &&
+                  !isEventSubProcess({businessObject: targetElement})) ||
+                (!isEventSubProcess({businessObject: sourceElement}) &&
+                  isEventSubProcess({businessObject: targetElement}))
+              ) {
+                return false;
+              }
+
+              /**
+               * Allow mapping only between the same multi instance types,
+               * e.g. sequential multi instance task -> sequential multi instance task
+               */
+              if (
+                isMultiInstance(sourceElement) ||
+                isMultiInstance(targetElement)
+              ) {
+                return (
+                  sourceElement.$type === targetElement.$type &&
+                  getMultiInstanceType(sourceElement) ===
+                    getMultiInstanceType(targetElement)
+                );
+              }
+
+              /**
+               * For all other elements allow target elements with the same element type
+               */
+              return sourceElement.$type === targetElement.$type;
+            })
+            .map(({id, name}) => ({
+              id,
+              name,
+            })),
+        };
+      },
+    );
+
+    return sourceElementMappings ?? [];
+  }
+
+  toggleMappedFilter = () => {
+    this.state.isMappedFilterEnabled = !this.state.isMappedFilterEnabled;
+  };
+
+  reset = () => {
+    this.state = {...DEFAULT_STATE};
+  };
+}
+
+export const processInstanceMigrationMappingStore =
+  new ProcessInstanceMigrationMappingStore();

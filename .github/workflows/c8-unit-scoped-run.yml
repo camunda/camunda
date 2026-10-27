@@ -1,0 +1,181 @@
+# description: Runs ONE unit (JUnit) case of a Maven module, on demand. The
+#              verify step of coverage-plan test generation — see
+#              camunda/team-test-automation#83.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Unit - Scoped Run
+
+# The third of the scoped runners, beside the orchestration-cluster E2E one and
+# the component one. The generation loop in
+# camunda/c8-cross-component-e2e-tests writes a JUnit test from a reviewed
+# coverage plan and needs one answer: did that case pass? Until this existed
+# the loop could write such a test but nothing could run it, so the pull
+# request carried code that had never been executed and said so.
+#
+# Dispatch-only. The full suites run in the CI workflows that guard the
+# monorepo; this runs one class and answers as fast as that module builds,
+# because the loop calls it on every iteration.
+#
+# THE MODULE IS THE SCOPE. `-pl` takes a module path, and Maven resolves the
+# class within it, so a wrong module either builds the wrong thing or fails to
+# find the test. `scripts/java-suite-run.mjs` in the cross-component repository
+# resolves it from the test's path by walking up to the nearest pom.xml, which
+# is what makes a sub-module like zeebe/engine come out instead of its parent.
+#
+# -Dquickly keeps the gate honest rather than fast: it skips checks and
+# Optimize, and `-DskipTests=false` is what puts the tests back, since
+# -Dquickly would otherwise skip them too. -DskipITs because a coverage-plan
+# `unit` case is a Surefire test; an `integration` case is not run here.
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Maven module holding the test (e.g. zeebe/engine)"
+        required: true
+        type: string
+      test_class:
+        description: "Test class, simple name (e.g. AuditLogTest)"
+        required: true
+        type: string
+      case_id:
+        description: "Coverage-plan case id carried in the test's @DisplayName (e.g. AL-CFG-01)"
+        required: true
+        type: string
+      branch:
+        description: "Branch to test"
+        required: false
+        default: main
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_PRODUCT: Camunda
+  TEST_OWNER: "@camunda/test-automation-team"
+
+jobs:
+  scoped-run:
+    name: ${{ inputs.case_id }} in ${{ inputs.test_class }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the branch under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      # The workspace above is the branch under test, which need not carry this
+      # workflow's own verdict helper — a branch cut before it was added would
+      # die on a missing module instead of producing a verdict. Take the helper
+      # from the revision the workflow itself is running from.
+      - name: Check out the verdict helper from this workflow's revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .scoped-run-helper
+          persist-credentials: false
+          sparse-checkout: .github/scripts/scoped-run-junit-verdict.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Validate the inputs
+        env:
+          MODULE: ${{ inputs.module }}
+          TEST_CLASS: ${{ inputs.test_class }}
+          CASE_ID: ${{ inputs.case_id }}
+        run: |
+          # All three reach a shell command, so each is checked rather than
+          # escaped: they are identifiers and a path, and anything else is a
+          # mistake upstream that should be seen there.
+          if [[ ! "$CASE_ID" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::case_id '$CASE_ID' must be letters, digits, hyphen or underscore"
+            exit 1
+          fi
+          if [[ ! "$TEST_CLASS" =~ ^[A-Za-z_][A-Za-z0-9_$]*$ ]]; then
+            echo "::error::test_class '$TEST_CLASS' must be a simple Java class name"
+            exit 1
+          fi
+          if [[ ! "$MODULE" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::module '$MODULE' must be a repository-relative module path"
+            exit 1
+          fi
+          # Named here rather than discovered by a Maven failure twenty minutes
+          # in, which reports the parent module and not the typo.
+          if [[ ! -f "$MODULE/pom.xml" ]]; then
+            echo "::error::no pom.xml in '$MODULE' — that is not a Maven module on this branch"
+            exit 1
+          fi
+
+      - name: Build the module's dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          # -am, because the module alone does not build against a clean local
+          # repository. -Dquickly here is right: nothing under test runs in
+          # this step, it only has to produce the jars the next one needs.
+          parameters: install -pl ${{ inputs.module }} -am -Dquickly
+
+      - name: Run the scoped case
+        id: run
+        continue-on-error: true
+        uses: ./.github/actions/run-maven
+        with:
+          threads: "1"
+          # No -am: the dependencies are installed above, and rebuilding them
+          # here would run their tests too.
+          parameters: >-
+            verify -pl ${{ inputs.module }}
+            -Dtest=${{ inputs.test_class }}
+            -DskipTests=false -DskipITs -Dquickly
+
+      - name: Read the verdict
+        if: always()
+        env:
+          MODULE: ${{ inputs.module }}
+          CASE_ID: ${{ inputs.case_id }}
+          RUN_OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          # The whole surefire-reports directory, not a filename built from the
+          # class: parent/pom.xml appends ${env.SUREFIRE_REPORT_NAME_SUFFIX} to
+          # report names, and the verdict script picks the case out of whatever
+          # is there by its id.
+          reports="$MODULE/target/surefire-reports"
+          if [[ ! -d "$reports" ]]; then
+            echo "::error::no surefire reports under $reports (maven outcome ${RUN_OUTCOME}); cannot verify that the case ran"
+            exit 1
+          fi
+          node "$GITHUB_WORKSPACE/.scoped-run-helper/.github/scripts/scoped-run-junit-verdict.mjs" \
+            "$reports" "$CASE_ID"
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: unit-scoped-run-${{ inputs.case_id }}
+          path: ${{ inputs.module }}/target/surefire-reports/**
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

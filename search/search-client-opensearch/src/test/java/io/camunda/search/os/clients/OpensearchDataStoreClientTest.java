@@ -1,0 +1,242 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.os.clients;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchIndexRequest;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
+import io.camunda.search.os.transformers.OpensearchTransformers;
+import java.io.IOException;
+import java.util.ArrayList;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
+
+public class OpensearchDataStoreClientTest {
+
+  private static final long TEST_HITS = 789;
+  private static final TotalHitsRelation HITS_RELATION = TotalHitsRelation.Eq;
+  private static final long CAPPED_HITS = 10_000;
+  private static final TotalHitsRelation CAPPED_HITS_RELATION = TotalHitsRelation.Gte;
+  private OpenSearchClient client;
+  private OpensearchSearchClient searchClient;
+
+  @BeforeEach
+  public void before() {
+    client = mock(OpenSearchClient.class);
+    searchClient = new OpensearchSearchClient(client, new OpensearchTransformers());
+  }
+
+  @Test
+  public void shouldTransformSearchRequest() throws IOException {
+    // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(searchRequestCaptor.getValue().index()).contains("operate-list-view-8.3.0_");
+  }
+
+  @Test
+  public void shouldTransformSearchResponse() throws IOException {
+    // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final var response = searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.totalHits()).isEqualTo(TEST_HITS);
+  }
+
+  @Test
+  public void shouldTransformGetRequest() throws IOException {
+    // given
+    final var getRequestCaptor = ArgumentCaptor.forClass(GetRequest.class);
+    final var getResponse = createDefaultGetResponse();
+    when(client.get(getRequestCaptor.capture(), eq(TestDocument.class))).thenReturn(getResponse);
+
+    final var searchGetRequest =
+        SearchGetRequest.of(b -> b.id("foo").index("bar").routing("foobar"));
+
+    // when
+    searchClient.get(searchGetRequest, TestDocument.class);
+
+    // then
+    assertThat(getRequestCaptor.getValue().id()).isEqualTo("foo");
+    assertThat(getRequestCaptor.getValue().index()).isEqualTo("bar");
+    assertThat(getRequestCaptor.getValue().routing()).isEqualTo("foobar");
+  }
+
+  @Test
+  public void shouldTransformGetResponse() throws IOException {
+    // given
+    final var getRequestCaptor = ArgumentCaptor.forClass(GetRequest.class);
+    final var getResponse = createDefaultGetResponse();
+    when(client.get(getRequestCaptor.capture(), eq(TestDocument.class))).thenReturn(getResponse);
+
+    final var searchGetRequest =
+        SearchGetRequest.of(b -> b.id("foo").index("bar").routing("foobar"));
+
+    // when
+    final var response = searchClient.get(searchGetRequest, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.found()).isTrue();
+    assertThat(response.source().id()).isEqualTo("123");
+  }
+
+  @Test
+  public void shouldTransformIndexRequest() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(indexRequestCaptor.getValue().id()).isEqualTo("foo");
+    assertThat(indexRequestCaptor.getValue().index()).isEqualTo("bar");
+    assertThat(indexRequestCaptor.getValue().routing()).isEqualTo("foobar");
+    assertThat(indexRequestCaptor.getValue().document()).isEqualTo(doc);
+  }
+
+  @Test
+  public void shouldTransformIndexResponse() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    final var response = searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
+  }
+
+  @Test
+  public void shouldHaveMoreTotalItemsFalse() throws IOException {
+    // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
+  public void shouldHaveMoreTotalItemsTrue() throws IOException {
+    // given
+    final var searchResponse = createDefaultSearchResponse(CAPPED_HITS, CAPPED_HITS_RELATION);
+    when(client.search((SearchRequest) any(), eq(TestDocument.class))).thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMoreTotalItems()).isTrue();
+  }
+
+  private SearchResponse<TestDocument> createDefaultSearchResponse(
+      long totalHits, TotalHitsRelation totalHitsRelation) {
+    return SearchResponse.searchResponseOf(
+        (f) ->
+            f.took(122)
+                .hits(
+                    HitsMetadata.of(
+                        (m) ->
+                            m.hits(new ArrayList<>())
+                                .total((t) -> t.value(totalHits).relation(totalHitsRelation))))
+                .shards((s) -> s.failed(0).successful(100).total(100))
+                .timedOut(false));
+  }
+
+  private GetResponse<TestDocument> createDefaultGetResponse() {
+    return GetResponse.of(
+        b -> b.id("foo").index("bar").found(true).source(new TestDocument("123")));
+  }
+
+  private IndexResponse createDefaultIndexResponse() {
+    return IndexResponse.of(
+        b ->
+            b.id("foo")
+                .index("bar")
+                .result(Result.Created)
+                .primaryTerm(1L)
+                .seqNo(1L)
+                .version(1L)
+                .shards(s -> s.total(1).successful(1).failed(0)));
+  }
+
+  record TestDocument(String id) {}
+}

@@ -1,0 +1,108 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.tasks.incident;
+
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+/** Copied from the old post-importer */
+public record IncidentsState(
+    Collection<IncidentDocument> incidentDocuments,
+    Set<String> incidentIdsToSkip,
+    Map<String, Set<String>> flowNodeInstanceIndices,
+    Map<String, Set<String>> flowNodeInstanceInListViewIndices,
+    Map<Long, String> processInstanceTreePaths,
+    Map<String, String> incidentTreePaths,
+    Map<String, Set<String>> processInstanceIndices,
+    Map<String, Set<String>> piIdsWithIncidentIds,
+    Map<String, Set<String>> fniIdsWithIncidentIds) {
+  public IncidentsState() {
+    this(
+        new ConcurrentLinkedQueue<>(),
+        ConcurrentHashMap.newKeySet(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>());
+  }
+
+  public void addIncidentDocument(final IncidentDocument incidentDocument) {
+    incidentDocuments.add(incidentDocument);
+  }
+
+  public Collection<IncidentDocument> getIncidentDocuments() {
+    return incidentDocuments.stream()
+        .filter(incidentDocument -> !incidentIdsToSkip.contains(incidentDocument.id()))
+        .toList();
+  }
+
+  public void skipIncident(final IncidentDocument incidentDocument) {
+    incidentIdsToSkip.add(incidentDocument.id());
+  }
+
+  public boolean addPiIdsWithIncidentIds(final String piId, final String incidentId) {
+    return addIncidentIdByInstanceId(piIdsWithIncidentIds, piId, incidentId);
+  }
+
+  public boolean removeIncidentIdByPiId(final String piId, final String incidentId) {
+    return deleteIncidentIdByInstance(piIdsWithIncidentIds, piId, incidentId);
+  }
+
+  public boolean addFniIdsWithIncidentIds(final String fniId, final String incidentId) {
+    return addIncidentIdByInstanceId(fniIdsWithIncidentIds, fniId, incidentId);
+  }
+
+  public boolean removeIncidentIdByFniId(final String fniId, final String incidentId) {
+    return deleteIncidentIdByInstance(fniIdsWithIncidentIds, fniId, incidentId);
+  }
+
+  public void addProcessInstance(final String id, final String index) {
+    processInstanceIndices.computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet()).add(index);
+  }
+
+  public void addFlowNodeInstanceInListView(final String id, final String index) {
+    flowNodeInstanceInListViewIndices
+        .computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet())
+        .add(index);
+  }
+
+  public void addFlowNodeInstance(final String id, final String index) {
+    flowNodeInstanceIndices.computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet()).add(index);
+  }
+
+  private boolean addIncidentIdByInstanceId(
+      final Map<String, Set<String>> incidentByInstanceIds,
+      final String instanceId,
+      final String incidentId) {
+    final var set = incidentByInstanceIds.computeIfAbsent(instanceId, k -> new HashSet<>());
+    final var added = set.add(incidentId);
+
+    return added && set.size() == 1;
+  }
+
+  private boolean deleteIncidentIdByInstance(
+      final Map<String, Set<String>> incidentByInstanceIds,
+      final String instanceId,
+      final String incidentId) {
+    final var incidentIds = incidentByInstanceIds.get(instanceId);
+    if (incidentIds == null) {
+      return false;
+    }
+
+    final boolean removed = incidentIds.remove(incidentId);
+    return removed && incidentIds.isEmpty();
+  }
+}

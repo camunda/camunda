@@ -1,0 +1,47 @@
+# Entry point for array-required rule tests.
+# Mirrors the real spec structure: paths $ref to domain files.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — array-properties-must-be-required
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid cases ──────────────────────────────────────────────
+  # Search result with required, non-nullable array + allOf composition
+  /valid-search/search:
+    $ref: 'things.yaml#/paths/~1valid-search~1search'
+
+  # Single-entity GET — no arrays in response
+  /valid-get/{thingKey}:
+    $ref: 'things.yaml#/paths/~1valid-get~1{thingKey}'
+
+  # Nested object with a required array
+  /valid-nested/get:
+    $ref: 'things.yaml#/paths/~1valid-nested~1get'
+
+  # allOf composition: required in one member, properties in another
+  /valid-allof-split/search:
+    $ref: 'things.yaml#/paths/~1valid-allof-split~1search'
+
+  # ── Invalid cases ───────────────────────────────────────────
+  # Array property not listed in required
+  /invalid-not-required/search:
+    $ref: 'things.yaml#/paths/~1invalid-not-required~1search'
+
+  # Array property is nullable (but required)
+  /invalid-nullable/search:
+    $ref: 'things.yaml#/paths/~1invalid-nullable~1search'
+
+  # Array property is both not-required and nullable
+  /invalid-both/search:
+    $ref: 'things.yaml#/paths/~1invalid-both~1search'
+
+  # Nested object with a non-required array
+  /invalid-nested/get:
+    $ref: 'things.yaml#/paths/~1invalid-nested~1get'
+
+  # Array items contain an object with a non-required array (recursion test)
+  /invalid-items-recurse/search:
+    $ref: 'things.yaml#/paths/~1invalid-items-recurse~1search'

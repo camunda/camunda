@@ -1,0 +1,378 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.config.api;
+
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.util.Either;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+/** Forwards all requests to the coordinator. */
+public final class ClusterConfigurationManagementRequestSender {
+  private static final Duration TIMEOUT = Duration.ofSeconds(10);
+  private final ClusterCommunicationService communicationService;
+  private final ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
+  private final ClusterConfigurationRequestsSerializer serializer;
+  private final MemberId localMemberId;
+
+  public ClusterConfigurationManagementRequestSender(
+      final ClusterCommunicationService communicationService,
+      final ClusterConfigurationCoordinatorSupplier coordinatorSupplier,
+      final ClusterConfigurationRequestsSerializer serializer,
+      final MemberId localMemberId) {
+    this.communicationService = communicationService;
+    this.coordinatorSupplier = coordinatorSupplier;
+    this.serializer = serializer;
+    this.localMemberId = localMemberId;
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> addMembers(
+      final AddMembersRequest addMembersRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ADD_MEMBER.topic(),
+        addMembersRequest,
+        serializer::encodeAddMembersRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeMembers(
+      final RemoveMembersRequest removeMembersRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.REMOVE_MEMBER.topic(),
+        removeMembersRequest,
+        serializer::encodeRemoveMembersRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> purge(
+      final PurgeRequest purgeRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.PURGE.topic(),
+        purgeRequest,
+        serializer::encodePurgeRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> joinPartition(
+      final JoinPartitionRequest joinPartitionRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.JOIN_PARTITION.topic(),
+        joinPartitionRequest,
+        serializer::encodeJoinPartitionRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      leavePartition(final LeavePartitionRequest leavePartitionRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.LEAVE_PARTITION.topic(),
+        leavePartitionRequest,
+        serializer::encodeLeavePartitionRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> scaleMembers(
+      final BrokerScaleRequest scaleRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.SCALE_MEMBERS.topic(),
+        scaleRequest,
+        serializer::encodeScaleRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      forceScaleDown(final BrokerScaleRequest forceScaleDownRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.FORCE_SCALE_DOWN.topic(),
+        forceScaleDownRequest,
+        serializer::encodeScaleRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getNextCoordinator(forceScaleDownRequest.members()),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> scaleCluster(
+      final ClusterScaleRequest clusterScaleRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.SCALE_CLUSTER.topic(),
+        clusterScaleRequest,
+        serializer::encodeClusterScaleRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> patchCluster(
+      final ClusterPatchRequest clusterPatchRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.PATCH_CLUSTER.topic(),
+        clusterPatchRequest,
+        serializer::encodeClusterPatchRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      forceRemoveBrokers(final ForceRemoveBrokersRequest forceRemoveBrokersRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.FORCE_REMOVE_BROKERS.topic(),
+        forceRemoveBrokersRequest,
+        serializer::encodeForceRemoveBrokersRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getNextCoordinatorExcluding(
+            forceRemoveBrokersRequest.membersToRemove()),
+        TIMEOUT);
+  }
+
+  /**
+   * Sent to the default coordinator like any other change, unless the request is {@code force}d. A
+   * forced request is the operator's bail-out for a disaster where the elected coordinator is
+   * unreachable: it must be handled by whichever broker actually received this HTTP call — i.e.
+   * this local member — rather than by the (possibly dead) default coordinator, since sending it
+   * there would simply reproduce the failure the operator is trying to route around.
+   */
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      removePhysicalTenant(final RemovePhysicalTenantRequest removePhysicalTenantRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.REMOVE_PHYSICAL_TENANT.topic(),
+        removePhysicalTenantRequest,
+        serializer::encodeRemovePhysicalTenantRequest,
+        serializer::decodeTopologyChangeResponse,
+        removePhysicalTenantRequest.force()
+            ? localMemberId
+            : coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      disableExporter(final ExporterDisableRequest exporterDisableRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.DISABLE_EXPORTER.topic(),
+        exporterDisableRequest,
+        serializer::encodeExporterDisableRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      deleteExporter(final ExporterDeleteRequest exporterDeleteRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.DELETE_EXPORTER.topic(),
+        exporterDeleteRequest,
+        serializer::encodeExporterDeleteRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      enableExporter(final ExporterEnableRequest enableRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ENABLE_EXPORTER.topic(),
+        enableRequest,
+        serializer::encodeExporterEnableRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> getTopology() {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.QUERY_TOPOLOGY.topic(),
+        new byte[0],
+        Function.identity(),
+        serializer::decodeClusterConfigurationResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> cancelTopologyChange(
+      final ClusterConfigurationManagementRequest.CancelChangeRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.CANCEL_CHANGE.topic(),
+        request,
+        serializer::encodeCancelChangeRequest,
+        serializer::decodeClusterConfigurationResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updateRoutingState(final UpdateRoutingStateRequest updateRoutingStateRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_ROUTING_STATE.topic(),
+        updateRoutingStateRequest,
+        serializer::encodeUpdateRoutingStateRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updatePartitionDistribution(final UpdatePartitionDistributorConfigRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_PARTITIONING.topic(),
+        request,
+        serializer::encodeUpdatePartitionDistributorConfigRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      migrateToZones(final ClusterZoneMigrationRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ZONE_MIGRATION.topic(),
+        request,
+        serializer::encodeClusterZoneMigrationRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  /**
+   * Routes forced removal to a broker outside the zone being removed, which is necessary when the
+   * zone is not reachable from the surviving zones. A non-forced removal is routed to the elected
+   * coordinator, which can gracefully hand off coordination before leaving.
+   */
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
+      final RemoveZoneRequest request) {
+    final MemberId coordinator;
+    if (request.force()) {
+      final var outsideTheZone =
+          coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
+      if (outsideTheZone.isEmpty()) {
+        // No member outside the zone means it is the only remaining zone; removing it is invalid
+        // and there is no live coordinator to reject it, so short-circuit here.
+        return CompletableFuture.completedFuture(
+            Either.left(
+                new ErrorResponse(
+                    ErrorResponse.ErrorCode.INVALID_REQUEST,
+                    "Cannot remove zone '%s' because it is the last remaining zone."
+                        .formatted(request.zoneId()))));
+      }
+      coordinator = outsideTheZone.get();
+    } else {
+      coordinator = coordinatorSupplier.getDefaultCoordinator();
+    }
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.REMOVE_ZONE.topic(),
+        request,
+        serializer::encodeRemoveZoneRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinator,
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> addZone(
+      final AddZoneRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ADD_ZONE.topic(),
+        request,
+        serializer::encodeAddZoneRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updateZonePriorities(final UpdateZonePrioritiesRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_ZONE_PRIORITIES.topic(),
+        request,
+        serializer::encodeUpdateZonePrioritiesRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> modeChange(
+      final ModeChangeRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
+        request,
+        serializer::encodeModeChangeRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      changeExportingState(final ExportingStateChangeRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.EXPORTING_STATE_CHANGE.topic(),
+        request,
+        serializer::encodeExportingStateChangeRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(
+      final RestoreRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.RESTORE.topic(),
+        request,
+        serializer::encodeRestoreRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      clusterRestore(final ClusterRestoreRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.CLUSTER_ADMIN_RESTORE.topic(),
+        request,
+        serializer::encodeClusterRestoreRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+}

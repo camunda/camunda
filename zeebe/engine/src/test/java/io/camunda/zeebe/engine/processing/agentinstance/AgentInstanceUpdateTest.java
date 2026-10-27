@@ -1,0 +1,1470 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.agentinstance;
+
+import static io.camunda.zeebe.engine.util.client.AgentInstanceClient.tool;
+import static io.camunda.zeebe.engine.util.client.AgentInstanceClient.tools;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.Map;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+public class AgentInstanceUpdateTest {
+
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final String PROCESS_ID = "process";
+  private static final String SERVICE_TASK_ID = "service-task";
+
+  @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldEmitUpdatedEventForValidUpdateCommand() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then
+    assertThat(updated.getKey()).isEqualTo(agentInstanceKey);
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldOnlyUpdateAttributesNamedInChangedAttributes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — the command attempts to set status, metrics, and tools, but only "status" is
+    // named in changedAttributes, so the metrics and tools payload on the command must not land.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withMetricsDelta(99L, 88L, 7, 5)
+            .withTools(tools(tool("calc", "Calculator", "calc-task")))
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — only status is applied; metrics stay zero, tools stay empty.
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
+    assertThat(updated.getValue().getTools()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldOmitSystemPromptFromUpdatedEventWhenUnchanged() {
+    // given — the instance already carries a real system prompt from creation.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    // a CONFIGURATION history item is applied inline by CREATE (unlike UPDATE, where it's only
+    // queued until committed), so this seeds a real, non-empty baseline system prompt.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("You are a helpful agent."));
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — status is updated; the system prompt is not named in changedAttributes and does not
+    // change, even though the instance's stored value is non-empty.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — the emitted event must not re-transmit the unchanged system prompt.
+    assertThat(updated.getValue().getDefinition().getSystemPrompt()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldOmitSystemPromptAndToolsFromBothUpdatedEventsAroundJobCompletionCommit() {
+    // given — the instance already carries a real system prompt and tools from creation.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    // a CONFIGURATION history item is applied inline by CREATE (unlike UPDATE, where it's only
+    // queued until committed), so this seeds a real, non-empty baseline system prompt and tools.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("You are a helpful agent."));
+    baselineConfigItem.setTools(tools(tool("calc", "Calculator", "calc-task")));
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt", "tools"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — a few USER history items (not CONFIGURATION) are queued alongside a CONFIGURATION
+    // item that only touches maxTokens; completing the job commits the batch, which is the path —
+    // separate from an explicit UPDATE or an explicit commit command — that korthout's review
+    // flagged as untested. The commit's own UPDATED event is only emitted for the CONFIGURATION
+    // item, so one must be present in the batch for the scenario to produce an event at all.
+    final var maxTokensOnlyConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config-update")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(2);
+    maxTokensOnlyConfigItem.getLimits().setMaxTokens(5_000);
+    maxTokensOnlyConfigItem.setChangedAttributes(List.of("maxTokens"));
+    final var queuedUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-user")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi")),
+                    maxTokensOnlyConfigItem))
+            .update();
+
+    // then — the queuing UPDATE's own event must not re-transmit the unchanged system
+    // prompt/tools, even though the instance's stored definition is non-empty. Nothing is
+    // applied yet — maxTokens isn't reflected either.
+    assertThat(queuedUpdate.getValue().getDefinition().getSystemPrompt()).isEmpty();
+    assertThat(queuedUpdate.getValue().getTools()).isEmpty();
+    assertThat(queuedUpdate.getValue().getChangedAttributes()).isEmpty();
+
+    // when — completing the job commits the batch, independently emitting the commit's own
+    // UPDATED event. Skip the queuing UPDATE's own UPDATED event above so this fetches the
+    // commit's event, not the same one already asserted on.
+    ENGINE.job().withKey(jobKey).withType("agent").withJobLeaseToken(jobLeaseToken).complete();
+
+    // then — the commit's own event reflects the maxTokens change once applied, but still must
+    // not re-transmit the unchanged system prompt/tools.
+    final var committedUpdate =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .skip(1)
+            .getFirst();
+    assertThat(committedUpdate.getValue().getDefinition().getSystemPrompt()).isEmpty();
+    assertThat(committedUpdate.getValue().getTools()).isEmpty();
+    assertThat(committedUpdate.getValue().getChangedAttributes()).containsExactly("maxTokens");
+  }
+
+  @Test
+  public void shouldRejectUnknownAttributeInChangedAttributes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    for (final var unknownAttr : List.of("foo", "elementInstanceKey")) {
+      // when
+      final Record<?> rejection =
+          ENGINE
+              .agentInstances()
+              .withAgentInstanceKey(agentInstanceKey)
+              .withElementInstanceKey(serviceTaskInstance.getKey())
+              .withJobKey(jobKey)
+              .withJobLeaseToken(jobLeaseToken)
+              .withChangedAttributes(List.of(unknownAttr))
+              .expectRejection()
+              .update();
+
+      // then
+      assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+      assertThat(rejection.getRejectionReason()).contains(unknownAttr);
+    }
+  }
+
+  @Test
+  public void shouldRejectAttemptToUpdateLimits() {
+    // given — limits is a legitimate field on CREATE but is intentionally not in the
+    // ALLOWED_ATTRIBUTES set for UPDATE, so naming it must be rejected as unknown.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withChangedAttributes(List.of("limits"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("limits");
+  }
+
+  @Test
+  public void shouldRejectWhenAgentInstanceNotFound() {
+    // given
+    final var nonExistentKey = 987654321L;
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(nonExistentKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(nonExistentKey));
+  }
+
+  @Test
+  public void shouldDropStatusFromChangedAttributesOnNoOpStatusUpdate() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — set status to the same value as current (INITIALIZING)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — UPDATED is still emitted but without "status" in changedAttributes (no-op)
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+    assertThat(updated.getValue().getChangedAttributes()).isEmpty();
+  }
+
+  @Test
+  public void shouldRejectStatusUnspecifiedWhenStatusInChangedAttributes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — explicitly UNSPECIFIED with status named in changedAttributes; this falls into the
+    // transition matrix (UNSPECIFIED is not an active target state) and is rejected as such.
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.UNSPECIFIED)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then - the transition-matrix rejection cites both from and to so that a future change which
+    // accidentally accepts UNSPECIFIED (e.g. by adding it to ACTIVE_STATUSES) would not pass with a
+    // RejectionType-only assertion.
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(AgentInstanceStatus.INITIALIZING.name())
+        .contains(AgentInstanceStatus.UNSPECIFIED.name())
+        .contains("transition is not allowed");
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromToolDiscovery() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_DISCOVERY);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromThinking() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.THINKING);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromToolCalling() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_CALLING);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromIdle() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.IDLE);
+  }
+
+  @Test
+  public void shouldRejectUpdateSettingStatusToCompleted() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.COMPLETED)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldAllowStatusTransitionsBetweenActiveStates() {
+    // given — verify the matrix of active-state -> active-state transitions, including same-state.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var activeStates =
+        List.of(
+            AgentInstanceStatus.INITIALIZING,
+            AgentInstanceStatus.TOOL_DISCOVERY,
+            AgentInstanceStatus.THINKING,
+            AgentInstanceStatus.TOOL_CALLING,
+            AgentInstanceStatus.IDLE);
+
+    for (final var from : activeStates) {
+      for (final var to : activeStates) {
+        // Skip transitions to INITIALIZING from non-INITIALIZING states — those are rejected.
+        if (to == AgentInstanceStatus.INITIALIZING && from != AgentInstanceStatus.INITIALIZING) {
+          continue;
+        }
+        // Spin up a fresh process instance + agent instance per matrix cell so each transition
+        // starts from a known baseline.
+        final var processInstanceKey =
+            ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+        final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+        final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+        final var jobKey =
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("agent")
+                .getFirst()
+                .getKey();
+        final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+        assertThat(jobIndex)
+            .as("activated job batch contains job with key '%d'", jobKey)
+            .isNotEqualTo(-1);
+        final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+        final var agentInstanceKey =
+            ENGINE
+                .agentInstances()
+                .withElementInstanceKey(serviceTaskInstance.getKey())
+                .withJobKey(jobKey)
+                .withJobLeaseToken(jobLeaseToken)
+                .create()
+                .getValue()
+                .getAgentInstanceKey();
+        // Move the agent into the "from" state if necessary.
+        if (from != AgentInstanceStatus.INITIALIZING) {
+          ENGINE
+              .agentInstances()
+              .withAgentInstanceKey(agentInstanceKey)
+              .withElementInstanceKey(serviceTaskInstance.getKey())
+              .withJobKey(jobKey)
+              .withJobLeaseToken(jobLeaseToken)
+              .withStatus(from)
+              .withChangedAttributes(List.of("status"))
+              .update();
+        }
+        // when
+        final var updated =
+            ENGINE
+                .agentInstances()
+                .withAgentInstanceKey(agentInstanceKey)
+                .withElementInstanceKey(serviceTaskInstance.getKey())
+                .withJobKey(jobKey)
+                .withJobLeaseToken(jobLeaseToken)
+                .withStatus(to)
+                .withChangedAttributes(List.of("status"))
+                .update();
+
+        // then
+        assertThat(updated.getIntent())
+            .as("expected transition from %s to %s to be allowed", from, to)
+            .isEqualTo(AgentInstanceIntent.UPDATED);
+        assertThat(updated.getValue().getStatus()).isEqualTo(to);
+      }
+    }
+  }
+
+  @Test
+  public void shouldAssociateElementInstanceOnUpdate() {
+    // given — a multi-instance service task produces EI₁ and EI₂ simultaneously.
+    final var multiInstanceProcessId = "multi-instance-assoc";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0);
+    final var ei2 = children.get(1);
+    final var jobBatch =
+        ENGINE.jobs().withType("agent").withLease().withMaxJobsToActivate(2).activate();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1.getKey())
+            .getFirst()
+            .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getJobLeaseToken();
+    final var job2Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2.getKey())
+            .getFirst()
+            .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getJobLeaseToken();
+
+    // Create agent instance on EI₁.
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .withJobKey(job1Key)
+            .withJobLeaseToken(job1Lease)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // EI₁'s job fails (retries remaining, no backoff) so it retries immediately and stops
+    // being ACTIVATED, releasing it as the active writer (validateSingleActiveWriter).
+    ENGINE.job().withKey(job1Key).withRetries(1).withJobLeaseToken(job1Lease).fail();
+
+    // when — UPDATE supplying EI₂ (new association)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2.getKey())
+            .withJobKey(job2Key)
+            .withJobLeaseToken(job2Lease)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .update();
+
+    // then — plural list carries [EI₁, EI₂], scalar = EI₂
+    assertThat(updated.getValue().getElementInstanceKeys())
+        .containsExactly(ei1.getKey(), ei2.getKey());
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(ei2.getKey());
+  }
+
+  @Test
+  public void shouldUpdateScalarOnReEntryToAlreadyTrackedElementInstance() {
+    // given — multi-instance produces EI₁ and EI₂. Agent created on EI₁, then re-associated to EI₂.
+    // The plural list ends up as [EI₁, EI₂] with scalar = EI₂.
+    final var multiInstanceProcessId = "scalar-reentry";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0);
+    final var ei2 = children.get(1);
+    final var jobBatch =
+        ENGINE.jobs().withType("agent").withLease().withMaxJobsToActivate(2).activate();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1.getKey())
+            .getFirst()
+            .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getJobLeaseToken();
+    final var job2Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2.getKey())
+            .getFirst()
+            .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getJobLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .withJobKey(job1Key)
+            .withJobLeaseToken(job1Lease)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // EI₁'s job fails (retries remaining, no backoff) so it retries immediately and stops
+    // being ACTIVATED, releasing it as the active writer, so the agent can move to EI₂
+    // (validateSingleActiveWriter).
+    ENGINE.job().withKey(job1Key).withRetries(1).withJobLeaseToken(job1Lease).fail();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(ei2.getKey())
+        .withJobKey(job2Key)
+        .withJobLeaseToken(job2Lease)
+        .withStatus(AgentInstanceStatus.THINKING)
+        .update();
+
+    // EI₂'s job likewise retries immediately, releasing it as the active writer so the agent
+    // can move back to EI₁. EI₁'s job (still tied to the never-completed EI₁ element instance,
+    // and already activatable again since its own retry) is re-activated, producing a fresh
+    // lease for the re-entry.
+    ENGINE.job().withKey(job2Key).withRetries(1).withJobLeaseToken(job2Lease).fail();
+    // Cap at 1: EI₂'s job is activatable again too, and must stay that way so it keeps
+    // failing validateSingleActiveWriter's ACTIVATED check.
+    final var reactivation =
+        ENGINE.jobs().withType("agent").withLease().withMaxJobsToActivate(1).activate();
+    final var reactivatedJob1Lease =
+        reactivation
+            .getValue()
+            .getJobs()
+            .get(reactivation.getValue().getJobKeys().indexOf(job1Key))
+            .getJobLeaseToken();
+
+    // when — UPDATE re-supplies EI₁ (already in the plural list) alongside a status change
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei1.getKey())
+            .withJobKey(job1Key)
+            .withJobLeaseToken(reactivatedJob1Lease)
+            .withStatus(AgentInstanceStatus.IDLE)
+            .update();
+
+    // then — list is unchanged (no duplicates), but scalar moves back to the supplied key
+    // because it represents the currently-active element instance.
+    assertThat(updated.getValue().getElementInstanceKeys())
+        .containsExactly(ei1.getKey(), ei2.getKey());
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(ei1.getKey());
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenElementInstanceKeyMissing() {
+    // given — agent instance created on a service task.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE without elementInstanceKey (default scalar = -1 sentinel)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            // intentionally no withElementInstanceKey() call — default is -1 sentinel
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then — engine rejects the command (defense-in-depth against internal command bus misuse)
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("elementInstanceKey");
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceNotFound() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    final var nonExistentEiKey = 987654321L;
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(nonExistentEiKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(nonExistentEiKey));
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceNotActive() {
+    // given — a service task with a faulty output expression. Completing the job triggers output
+    // mapping evaluation, which fails and raises an incident. The element instance is left in
+    // ELEMENT_COMPLETING state (not active) and is not removed from state.
+    final var notActiveProcessId = "not-active-process";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(notActiveProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .zeebeOutputExpression("assert(x, x != null)", "y"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(notActiveProcessId).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // Complete the job — output mapping fails, raises incident, EI is stuck in COMPLETING.
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("agent")
+        .withJobLeaseToken(jobLeaseToken)
+        .complete();
+    RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).getFirst();
+
+    // when — attempt to UPDATE referencing the now-inactive (COMPLETING) element instance
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(serviceTaskInstance.getKey()));
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceElementIdMismatch() {
+    // given — agent instance on SERVICE_TASK_ID; attempt to UPDATE with an EI from a DIFFERENT
+    // task. A parallel gateway activates both tasks simultaneously.
+    final var mismatchProcessId = "mismatch-element-id";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(mismatchProcessId)
+                .startEvent()
+                .parallelGateway("split")
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .parallelGateway("merge")
+                .endEvent()
+                .moveToNode("split")
+                .serviceTask("other-task", t -> t.zeebeJobType("other"))
+                .connectTo("merge")
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(mismatchProcessId).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var otherTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("other-task")
+            .getFirst();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE with EI from "other-task" (different elementId)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(otherTaskInstance.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(SERVICE_TASK_ID).contains("other-task");
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceProcessInstanceKeyMismatch() {
+    // given — two separate process instances; agent instance on PI₁'s task,
+    // UPDATE supplies EI from PI₂.
+    final var piMismatchProcessId = "pi-mismatch";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(piMismatchProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var pi1Key = ENGINE.processInstance().ofBpmnProcessId(piMismatchProcessId).create();
+    final var pi2Key = ENGINE.processInstance().ofBpmnProcessId(piMismatchProcessId).create();
+    final var ei1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(pi1Key)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var ei2 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(pi2Key)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(pi1Key)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE with EI from PI₂ (different processInstanceKey)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(pi1Key))
+        .contains(String.valueOf(pi2Key));
+  }
+
+  @Test
+  public void
+      shouldRejectUpdateWhenAssociatedElementInstanceAlreadyAssociatedWithDifferentAgentInstance() {
+    // given — two multi-instance children; EI₁ → agentInstance₁, EI₂ → agentInstance₂.
+    // Attempt to UPDATE agentInstance₁ by supplying EI₂ (already associated with agentInstance₂).
+    final var alreadyAssocProcessId = "already-assoc";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(alreadyAssocProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(alreadyAssocProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1Key = children.get(0).getKey();
+    final var ei2Key = children.get(1).getKey();
+    final var jobBatch =
+        ENGINE.jobs().withType("agent").withLease().withMaxJobsToActivate(2).activate();
+    final var job1Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei1Key)
+            .getFirst()
+            .getKey();
+    final var job1Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
+            .getJobLeaseToken();
+    final var job2Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2Key)
+            .getFirst()
+            .getKey();
+    final var job2Lease =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
+            .getJobLeaseToken();
+
+    final var agentInstance1Key =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1Key)
+            .withJobKey(job1Key)
+            .withJobLeaseToken(job1Lease)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    final var agentInstance2Key =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei2Key)
+            .withJobKey(job2Key)
+            .withJobLeaseToken(job2Lease)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — try to associate EI₂ (already owned by agentInstance₂) with agentInstance₁
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstance1Key)
+            .withElementInstanceKey(ei2Key)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(ei2Key))
+        .contains(String.valueOf(agentInstance2Key));
+  }
+
+  private void assertRejectsTransitionToInitializingFrom(final AgentInstanceStatus from) {
+    // given — move the agent from INITIALIZING into the requested "from" state.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("activated job batch contains job with key '%d'", jobKey)
+        .isNotEqualTo(-1);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .withStatus(from)
+        .withChangedAttributes(List.of("status"))
+        .update();
+
+    // when — attempt to transition back to INITIALIZING.
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType())
+        .as("transition from %s -> INITIALIZING should be rejected", from)
+        .isEqualTo(RejectionType.INVALID_STATE);
+  }
+
+  private static Record<ProcessInstanceRecordValue> awaitServiceTaskActivated(
+      final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withElementId(SERVICE_TASK_ID)
+        .getFirst();
+  }
+}

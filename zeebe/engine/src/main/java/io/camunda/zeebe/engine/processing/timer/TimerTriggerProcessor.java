@@ -1,0 +1,255 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.timer;
+
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+@ExcludeAuthorizationCheck
+public final class TimerTriggerProcessor
+    implements TypedRecordProcessor<TimerRecord>, SuspensionAware<TimerRecord> {
+
+  private static final String NO_TIMER_FOUND_MESSAGE =
+      "Expected to trigger timer with key '%d', but no such timer was found";
+  private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
+      "Expected to find a process definition with key '%d', but no such definition was found";
+  private static final String NO_ACTIVE_TIMER_MESSAGE =
+      "Expected to trigger a timer with key '%d', but the timer is not active anymore";
+  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
+
+  private final CatchEventBehavior catchEventBehavior;
+  private final ProcessState processState;
+  private final ElementInstanceState elementInstanceState;
+  private final TimerInstanceState timerInstanceState;
+  private final ExpressionProcessor expressionProcessor;
+  private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+
+  private final EventHandle eventHandle;
+  private final InstantSource clock;
+
+  public TimerTriggerProcessor(
+      final MutableProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors,
+      final Writers writers,
+      final InstantSource clock) {
+    this.clock = clock;
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
+    timerInstanceState = processingState.getTimerState();
+    keyGenerator = processingState.getKeyGenerator();
+    eventHandle =
+        new EventHandle(
+            keyGenerator,
+            processingState.getEventScopeInstanceState(),
+            writers,
+            processState,
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
+  }
+
+  @Override
+  public void processRecord(final TypedRecord<TimerRecord> record) {
+    final var timer = record.getValue();
+    final var elementInstanceKey = timer.getElementInstanceKey();
+    final var processDefinitionKey = timer.getProcessDefinitionKey();
+    final var timerInstance = timerInstanceState.get(elementInstanceKey, record.getKey());
+    if (timerInstance == null) {
+      rejectionWriter.appendRejection(
+          record, RejectionType.NOT_FOUND, NO_TIMER_FOUND_MESSAGE.formatted(record.getKey()));
+      return;
+    }
+
+    restoreStorageOrdinal(timer, timerInstance);
+
+    final var tenantId = timer.getTenantId();
+    // this is an additional safeguard to avoid banning unrelated instances
+    // as noticed in https://github.com/camunda/camunda/issues/20677
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    if (deployedProcess == null) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.NOT_FOUND,
+          NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey));
+      return;
+    }
+
+    final var catchEvent =
+        processState.getFlowElement(
+            processDefinitionKey,
+            tenantId,
+            timer.getTargetElementIdBuffer(),
+            ExecutableCatchEvent.class);
+    if (isStartEvent(elementInstanceKey)) {
+      if (deployedProcess.isDraining()) {
+        // The definition is draining: never spawn a new instance. Still mark the timer as
+        // triggered so the command is consumed
+        stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+        // skip rescheduling since instances can't be created anymore
+        return;
+      }
+      final long processInstanceKey = keyGenerator.nextKey();
+      timer.setProcessInstanceKey(processInstanceKey);
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      eventHandle.activateProcessInstanceForStartEvent(
+          processDefinitionKey,
+          processInstanceKey,
+          timer.getTargetElementIdBuffer(),
+          NO_VARIABLES,
+          tenantId);
+    } else {
+      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+      if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
+        rejectNoActiveTimer(record);
+        return;
+      }
+
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue());
+    }
+
+    if (shouldReschedule(timer)) {
+      rescheduleTimer(timer, catchEvent);
+    }
+  }
+
+  private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
+    rejectionWriter.appendRejection(
+        record, RejectionType.INVALID_STATE, NO_ACTIVE_TIMER_MESSAGE.formatted(record.getKey()));
+  }
+
+  private boolean isStartEvent(final long elementInstanceKey) {
+    return elementInstanceKey < 0;
+  }
+
+  private boolean shouldReschedule(final TimerRecord timer) {
+    return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
+  }
+
+  private void rescheduleTimer(final TimerRecord record, final ExecutableCatchEvent event) {
+    final Either<Failure, Timer> timer =
+        event
+            .getTimerFactory()
+            .apply(expressionProcessor, record.getElementInstanceKey(), record.getTenantId());
+    if (timer.isLeft()) {
+      final String message =
+          "Expected to reschedule repeating timer for element with id '%s', but an error occurred: %s"
+              .formatted(BufferUtil.bufferAsString(event.getId()), timer.getLeft().getMessage());
+      throw new IllegalStateException(message);
+      // todo(#4208): raise incident instead of throwing an exception
+    }
+
+    final Timer refreshedTimer = refreshTimer(timer.get(), record);
+    catchEventBehavior.subscribeToTimerEvent(
+        record.getElementInstanceKey(),
+        record.getProcessInstanceKey(),
+        record.getProcessDefinitionKey(),
+        event.getId(),
+        record.getTenantId(),
+        record.getRootProcessInstanceKey(),
+        record.getStorageOrdinal(),
+        record.getBpmnProcessId(),
+        record.getElementType(),
+        refreshedTimer);
+  }
+
+  private Timer refreshTimer(final Timer timer, final TimerRecord record) {
+    return switch (timer) {
+      case final CronTimer cronTimer -> cronTimer;
+      case final RepeatingInterval repeatingInterval -> {
+        int repetitions = record.getRepetitions();
+        if (repetitions != RepeatingInterval.INFINITE) {
+          repetitions--;
+        }
+        yield repeatingInterval.nextOccurrenceAfter(
+            record.getDueDate(), clock.millis(), repetitions);
+      }
+      default ->
+          // Defensive gate; not expected to ever execute.
+          throw new IllegalStateException(
+              "Expected timer to reschedule as a CronTimer or RepeatingInterval, but was '%s'"
+                  .formatted(timer.getClass()));
+    };
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
+    restoreStorageOrdinal(record);
+    stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
+    final long timerKey = record.getKey();
+    final var timer = record.getValue();
+    restoreStorageOrdinal(record);
+    // RESUMED restores a missing due-date entry before the drained TRIGGER removes the timer.
+    stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
+    return SuspensionAction.PROCESS;
+  }
+
+  /** Variant for the suspension callbacks, which run without the NOT_FOUND check above. */
+  private void restoreStorageOrdinal(final TypedRecord<TimerRecord> record) {
+    final var timer = record.getValue();
+    final var timerInstance =
+        timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());
+    if (timerInstance != null) {
+      restoreStorageOrdinal(timer, timerInstance);
+    }
+  }
+
+  /**
+   * Populate the timer record with the storage ordinal of the timer instance to ensure that the
+   * correct ordinal is used for the rescheduled timer.
+   *
+   * <p>The state is the source of truth for the ordinal: a TRIGGER command written before the
+   * ordinal existed carries 0, and every follow-up event (SUSPENDED, RESUMED, TRIGGERED, the
+   * rescheduled CREATED) reuses this record.
+   */
+  private static void restoreStorageOrdinal(
+      final TimerRecord timer, final TimerInstance timerInstance) {
+    timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
+  }
+}

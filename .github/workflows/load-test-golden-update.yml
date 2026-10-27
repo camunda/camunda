@@ -1,0 +1,98 @@
+# description: Regenerates load-tests/setup golden files (rendered Kubernetes manifests) for
+#              Renovate branches or PRs labeled "generate-golden", and commits the diff back to
+#              the PR branch. Companion to the load-test-golden-tests job in ci.yml, which only verifies.
+# test location: load-tests/setup/test
+# type: ci
+# owner: @camunda/reliability-testing
+---
+name: Load Test Setup - Golden File Update
+
+on:
+  push:
+    branches:
+      - "renovate/**"
+    paths:
+      - "load-tests/setup/**"
+  pull_request:
+    types: [labeled, synchronize]
+    paths:
+      - "load-tests/setup/**"
+
+# Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs.
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref) }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
+permissions: {}
+
+jobs:
+  update-golden:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.state != 'closed' && github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.label.name == 'generate-golden' || contains(github.event.pull_request.labels.*.name, 'generate-golden')))
+    name: Update Golden Files
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: {} # Using GitHub App token instead of GITHUB_TOKEN
+
+    steps:
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@379e8654a5f25f22566f80c2e99a611fca365263 # generate-github-app-token-from-vault-secrets-1.2.0
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+          token: ${{ steps.github-token.outputs.token }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: load-tests/setup/test/go.mod
+          cache-dependency-path: load-tests/setup/test/go.sum
+
+      - name: Set up Helm
+        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        with:
+          minimum_release_age: 15d
+          install_args: helm
+          cache_save: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/') }}
+
+      - name: Regenerate golden files
+        run: make -C load-tests/setup/test update-golden
+
+      - name: Commit and push golden files
+        uses: camunda/action-git-commit@7aca5a200a50699bff14ac8e7950ce48be225aa0 # v1.9.0
+        with:
+          commit-message: "test: update load-test golden files"
+          github-token: ${{ steps.github-token.outputs.token }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

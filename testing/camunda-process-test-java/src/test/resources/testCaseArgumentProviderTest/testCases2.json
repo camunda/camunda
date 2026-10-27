@@ -1,0 +1,20 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "testCases": [
+    {
+      "name": "Scenario 2: Test Case 1",
+      "description": "Test case description",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "variables": {
+            "order_id": "order-1"
+          }
+        }
+      ]
+    }
+  ]
+}

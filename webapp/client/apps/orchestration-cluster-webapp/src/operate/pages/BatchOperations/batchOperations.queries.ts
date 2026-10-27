@@ -1,0 +1,68 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {queryOptions} from '@tanstack/react-query';
+import {z} from 'zod';
+import {
+	batchOperationSortFieldEnum,
+	type QueryBatchOperationsRequestBody,
+	type QueryBatchOperationsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
+import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
+import {endpoints} from '#/shared/http/endpoints';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
+
+type BatchOperationsSearch = {
+	page: number;
+	pageSize: number;
+	sort: string;
+};
+
+const DEFAULT_SORT = {field: 'endDate', order: 'DESC'} as const;
+const sortSearchParamSchema = createSortSearchParamSchema(batchOperationSortFieldEnum);
+
+function parseBatchOperationsSort(value: string | undefined) {
+	return sortSearchParamSchema.safeParse(value).data ?? DEFAULT_SORT;
+}
+
+const batchOperationsSearchSchema = z.object({
+	page: z.number().int().positive().default(1),
+	pageSize: z.number().int().positive().default(20),
+	sort: z
+		.unknown()
+		.optional()
+		.transform((value) => {
+			const {field, order} = parseBatchOperationsSort(typeof value === 'string' ? value : undefined);
+			return `${field}+${order}`;
+		}),
+});
+
+function getRequestBody({page, pageSize, sort}: BatchOperationsSearch): QueryBatchOperationsRequestBody {
+	return {
+		sort: [parseBatchOperationsSort(sort)],
+		page: {from: (page - 1) * pageSize, limit: pageSize},
+	};
+}
+
+function batchOperationsOptions(search: BatchOperationsSearch) {
+	const body = getRequestBody(search);
+
+	return queryOptions({
+		queryKey: ['batchOperations', body] as const,
+		queryFn: async (): Promise<QueryBatchOperationsResponseBody> => {
+			const {response, error} = await request(endpoints.queryBatchOperations(body));
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			return response.json();
+		},
+	});
+}
+
+export {batchOperationsOptions, batchOperationsSearchSchema};

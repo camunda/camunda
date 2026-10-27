@@ -1,0 +1,20 @@
+{
+  "operationsLog": "Operations Log",
+  "operationType": "Operation type",
+  "entityType": "Entity type",
+  "status": "Status",
+  "reference": "Reference to entity",
+  "property": "Property",
+  "actor": "Actor",
+  "actorPlaceholder": "Username or client ID",
+  "date": "Date",
+  "operationsLogCouldNotLoad": "Operations Log could not be loaded",
+  "filter": "Filter",
+  "reset": "Reset filters",
+  "errorCode": "Error code",
+  "owner": "Owner",
+  "assignee": "Assignee",
+  "ownerType": "Owner type",
+  "ownerKey": "Owner ID",
+  "ownerKeyPlaceholder": "Enter owner ID"
+}

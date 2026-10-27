@@ -1,0 +1,67 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.read.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.db.rdbms.sql.RoleMapper;
+import io.camunda.search.query.RoleMemberQuery;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class RoleMemberDbReaderTest {
+  private final RoleMapper roleMapper = mock(RoleMapper.class);
+  private final RoleMemberDbReader roleMemberDbReader =
+      new RoleMemberDbReader(roleMapper, AbstractEntityReaderTest.TEST_CONFIG);
+
+  @Test
+  void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.role().read())),
+            TenantCheck.disabled());
+
+    final var items = roleMemberDbReader.search(query, resourceAccessChecks).items();
+    assertThat(items).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    final var items = roleMemberDbReader.search(query, resourceAccessChecks).items();
+    assertThat(items).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenPageSizeIsZero() {
+    when(roleMapper.countMembers(any())).thenReturn(21L);
+
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b.page(p -> p.size(0)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var result = roleMemberDbReader.search(query, resourceAccessChecks);
+
+    assertThat(result.total()).isEqualTo(21L);
+    assertThat(result.items()).isEmpty();
+    verify(roleMapper, times(0)).search(any());
+  }
+}

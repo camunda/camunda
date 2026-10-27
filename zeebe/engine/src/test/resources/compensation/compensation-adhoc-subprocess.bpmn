@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_51c88d32-dc2c-4d83-a720-6aa1410b6644" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.37.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <process id="compensation-process" name="A" isExecutable="true">
+    <endEvent id="CompensationEndEvent" name="compensation-end-event">
+      <incoming>sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0</incoming>
+      <compensateEventDefinition id="compensateEventDefinition_5d72abc1-92ff-4ae5-aa58-87e240755e2d" />
+    </endEvent>
+    <sequenceFlow id="sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0" sourceRef="ad-hoc_sub-process" targetRef="CompensationEndEvent" />
+    <startEvent id="Event_1yfhzbl">
+      <outgoing>Flow_03ax6ho</outgoing>
+    </startEvent>
+    <adHocSubProcess id="ad-hoc_sub-process" name="ad-hoc sub-process">
+      <extensionElements>
+        <zeebe:adHoc activeElementsCollection="=[&#34;ActivityToCompensate&#34;, &#34;subprocess&#34;]" />
+      </extensionElements>
+      <incoming>Flow_03ax6ho</incoming>
+      <outgoing>sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0</outgoing>
+      <serviceTask id="ActivityToCompensate" name="A">
+        <extensionElements>
+          <zeebe:taskDefinition type="compensableActivity" />
+        </extensionElements>
+      </serviceTask>
+      <subProcess id="subprocess">
+        <startEvent id="Event_1dv5r5e">
+          <outgoing>Flow_1y9dj9o</outgoing>
+        </startEvent>
+        <sequenceFlow id="Flow_1y9dj9o" sourceRef="Event_1dv5r5e" targetRef="ActivityToCompensate2" />
+        <serviceTask id="ActivityToCompensate2" name="B">
+          <extensionElements>
+            <zeebe:taskDefinition type="compensableActivity2" />
+          </extensionElements>
+          <incoming>Flow_1y9dj9o</incoming>
+          <outgoing>Flow_0xiywb4</outgoing>
+        </serviceTask>
+        <endEvent id="Event_1czul0f">
+          <incoming>Flow_0xiywb4</incoming>
+        </endEvent>
+        <sequenceFlow id="Flow_0xiywb4" sourceRef="ActivityToCompensate2" targetRef="Event_1czul0f" />
+        <boundaryEvent id="Event_0okfsuj" attachedToRef="ActivityToCompensate2">
+          <compensateEventDefinition id="CompensateEventDefinition_1md4gy8" />
+        </boundaryEvent>
+        <serviceTask id="CompensationHandler2" name="undo B" isForCompensation="true">
+          <extensionElements>
+            <zeebe:taskDefinition type="compensationHandler2" />
+          </extensionElements>
+        </serviceTask>
+        <association id="Association_0w1o7k9" associationDirection="One" sourceRef="Event_0okfsuj" targetRef="CompensationHandler2" />
+      </subProcess>
+      <boundaryEvent id="Event_0u821xi" attachedToRef="ActivityToCompensate">
+        <compensateEventDefinition id="CompensateEventDefinition_1o7xvwo" />
+      </boundaryEvent>
+      <serviceTask id="CompensationHandler" name="undo A" isForCompensation="true">
+        <extensionElements>
+          <zeebe:taskDefinition type="compensationHandler" />
+        </extensionElements>
+      </serviceTask>
+      <association id="Association_03pbpib" associationDirection="One" sourceRef="Event_0u821xi" targetRef="CompensationHandler" />
+    </adHocSubProcess>
+    <sequenceFlow id="Flow_03ax6ho" sourceRef="Event_1yfhzbl" targetRef="ad-hoc_sub-process" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_d458583a-dbd3-44f4-9045-ef478ea1576c">
+    <bpmndi:BPMNPlane id="BPMNPlane_b1706292-8b4e-48dd-9ca2-e5d428c1f478" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="BPMNShape_d1c01a2c-653f-4d5a-ab99-3c3b4dad5202" bpmnElement="CompensationEndEvent">
+        <dc:Bounds x="892" y="367" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="874" y="403" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1yfhzbl_di" bpmnElement="Event_1yfhzbl">
+        <dc:Bounds x="172" y="367" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_12o9tv9_di" bpmnElement="ad-hoc_sub-process" isExpanded="true">
+        <dc:Bounds x="290" y="80" width="510" height="610" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nijovb_di" bpmnElement="ActivityToCompensate">
+        <dc:Bounds x="380" y="230" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14xtpaq_di" bpmnElement="CompensationHandler">
+        <dc:Bounds x="530" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14summf_di" bpmnElement="subprocess" isExpanded="true">
+        <dc:Bounds x="380" y="350" width="350" height="290" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1dv5r5e_di" bpmnElement="Event_1dv5r5e">
+        <dc:Bounds x="420" y="432" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_105pp9v_di" bpmnElement="ActivityToCompensate2">
+        <dc:Bounds x="510" y="410" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1czul0f_di" bpmnElement="Event_1czul0f">
+        <dc:Bounds x="672" y="432" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_16icj3e_di" bpmnElement="CompensationHandler2">
+        <dc:Bounds x="610" y="530" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0w1o7k9_di" bpmnElement="Association_0w1o7k9">
+        <di:waypoint x="570" y="508" />
+        <di:waypoint x="570" y="570" />
+        <di:waypoint x="610" y="570" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1ach2mb_di" bpmnElement="Event_0okfsuj">
+        <dc:Bounds x="552" y="472" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1y9dj9o_di" bpmnElement="Flow_1y9dj9o">
+        <di:waypoint x="456" y="450" />
+        <di:waypoint x="510" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xiywb4_di" bpmnElement="Flow_0xiywb4">
+        <di:waypoint x="610" y="450" />
+        <di:waypoint x="672" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_03pbpib_di" bpmnElement="Association_03pbpib">
+        <di:waypoint x="430" y="212" />
+        <di:waypoint x="430" y="160" />
+        <di:waypoint x="530" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0edlw69_di" bpmnElement="Event_0u821xi">
+        <dc:Bounds x="412" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_09a09196-11c6-4f3d-a22f-75c90adf2051" bpmnElement="sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0">
+        <di:waypoint x="800" y="385" />
+        <di:waypoint x="892" y="385" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03ax6ho_di" bpmnElement="Flow_03ax6ho">
+        <di:waypoint x="208" y="385" />
+        <di:waypoint x="290" y="385" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

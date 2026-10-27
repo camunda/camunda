@@ -1,0 +1,810 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.schema.elasticsearch;
+
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
+import co.elastic.clients.elasticsearch._types.Conflicts;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch._types.Slices;
+import co.elastic.clients.elasticsearch._types.SlicesCalculation;
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
+import co.elastic.clients.elasticsearch.indices.Alias;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.IndexTemplate;
+import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.JsonpDeserializer;
+import co.elastic.clients.json.JsonpSerializable;
+import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.schema.IndexMapping;
+import io.camunda.search.schema.IndexMappingProperty;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.SchemaResourceSerializer;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.utils.SearchEngineClientUtils;
+import io.camunda.search.schema.utils.SuppressLogger;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.slf4j.LoggerFactory;
+
+public class ElasticsearchEngineClient implements SearchEngineClient {
+  private static final SuppressLogger LOG =
+      new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
+  private static final Slices AUTO_SLICES =
+      Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private final ElasticsearchClient client;
+  private final SearchEngineClientUtils utils;
+  private final ObjectMapper mapper;
+  private final SchemaResourceSerializer schemaSerializer;
+
+  public ElasticsearchEngineClient(
+      final ElasticsearchClient client, final ObjectMapper objectMapper) {
+    this.client = client;
+    utils = new SearchEngineClientUtils(objectMapper);
+    mapper = objectMapper;
+    schemaSerializer = new SchemaResourceSerializer(mapper);
+  }
+
+  @Override
+  public void createIndex(
+      final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
+    final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
+    try {
+      client.indices().create(request);
+      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
+    } catch (final IOException ioe) {
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, ioe);
+      throw new SearchEngineException(errMsg, ioe);
+    } catch (final ElasticsearchException elsEx) {
+      if ("resource_already_exists_exception".equals(elsEx.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another instance
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
+                indexDescriptor.getFullQualifiedName());
+        LOG.debug(warnMsg, elsEx);
+        return;
+      }
+
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, elsEx);
+      throw new SearchEngineException(errMsg, elsEx);
+    }
+  }
+
+  @Override
+  public void createIndexTemplate(
+      final IndexTemplateDescriptor templateDescriptor,
+      final IndexConfiguration indexConfiguration,
+      final boolean create) {
+    final PutIndexTemplateRequest request =
+        putIndexTemplateRequest(templateDescriptor, indexConfiguration, create);
+
+    try {
+      client.indices().putIndexTemplate(request);
+      LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    } catch (final ElasticsearchException e) {
+      // Creation should only occur once during initialisation but multiple partitions with
+      // their own exporter will create race conditions where multiple exporters try to
+      // create the same template
+      final var errorReason = e.error().reason();
+      if (errorReason != null
+          && errorReason.equals(
+              "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+        LOG.debug(errorReason);
+        return;
+      }
+
+      LOG.error(errorReason, e);
+      throw new SearchEngineException(errorReason, e);
+    }
+  }
+
+  @Override
+  public void putMapping(
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+    final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
+
+    try {
+      client.indices().putMapping(request);
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getFullQualifiedName());
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg =
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, IndexMapping> getMappings(
+      final String namePattern, final MappingSource mappingSource) {
+    try {
+      final Map<String, TypeMapping> allMappings = new HashMap<>();
+      for (final String batch : SearchEngineClientUtils.batchPatterns(namePattern)) {
+        allMappings.putAll(getCurrentMappings(mappingSource, batch));
+      }
+
+      return allMappings.entrySet().stream()
+          .collect(
+              Collectors.toMap(
+                  Entry::getKey,
+                  entry -> {
+                    final var mappingsBlock = entry.getValue();
+                    return new IndexMapping.Builder()
+                        .indexName(entry.getKey())
+                        .dynamic(dynamicFromMappings(mappingsBlock))
+                        .properties(propertiesFromMappings(mappingsBlock))
+                        .metaProperties(metaFromMappings(mappingsBlock))
+                        .build();
+                  }));
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format(
+              "Failed retrieving mappings from index/index templates with pattern [%s]: %s",
+              namePattern, e.getMessage()),
+          e);
+    }
+  }
+
+  @Override
+  public Map<String, Set<String>> getAliases(final Collection<String> indexNames) {
+    try {
+      return client
+          .indices()
+          .getAlias(req -> req.index(List.copyOf(indexNames)))
+          .result()
+          .entrySet()
+          .stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().aliases().keySet()));
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg = String.format("Failed to retrieve aliases for indexes '%s'", indexNames);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg =
+          String.format(
+              "settings PUT failed for the following indices [%s]", indexDescriptor.getAlias());
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfShards(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfShards)
+                      .map(shards -> Map.entry(entry.getKey(), Integer.parseInt(shards)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      // Deliberately not logged here: this read only ever backs a best-effort startup diagnostic,
+      // and logging at ERROR would page an operator about a failure the caller goes on to ignore.
+      // The caller owns the severity.
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), Integer.parseInt(replicas)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
+  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    if (lifecyclePolicyMatches(policyName, deletionMinAge)) {
+      LOG.debug(
+          "Index lifecycle policy [{}] already matches configuration; skipping PUT", policyName);
+      return;
+    }
+
+    final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
+
+    try {
+      client.ilm().putLifecycle(request);
+    } catch (final IOException e) {
+      final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  /**
+   * Compares the full policy body the PUT would send, not just {@code min_age}, so that a changed
+   * or removed delete action/phase is repaired rather than silently skipped. The fetched and
+   * desired {@code IlmPolicy} instances are never {@code equals()} to one another (the client's
+   * generated types don't implement it), so both are serialized to their JSON representation first
+   * and compared as maps.
+   */
+  private boolean lifecyclePolicyMatches(final String policyName, final String deletionMinAge) {
+    try {
+      final var lifecycle =
+          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+      if (lifecycle == null) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var desiredPolicy = putLifecycleRequest(policyName, deletionMinAge).policy();
+      return serializeAsMap(lifecycle.policy()).equals(serializeAsMap(desiredPolicy));
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putIndexMeta(final String indexName, final Map<String, Object> meta) {
+    final var request = putMetaMappingRequest(indexName, meta);
+
+    try {
+      client.indices().putMapping(request);
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg = String.format("_meta PUT failed for %s", indexName);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  /**
+   * Overwrites the settings of the existing index template with the settings block in the
+   * descriptor schema json file.
+   *
+   * @param indexTemplateDescriptor of the index template to have its settings overwritten.
+   */
+  @Override
+  public void updateIndexTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final IndexConfiguration indexConfiguration) {
+    final var maybeRequest =
+        buildTemplateSettingsUpdateRequestIfChanged(indexTemplateDescriptor, indexConfiguration);
+
+    // If settings are equal, no update is needed
+    if (maybeRequest.isEmpty()) {
+      return;
+    }
+
+    try {
+      client.indices().putIndexTemplate(maybeRequest.get());
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format(
+              "Expected to update index template settings '%s' with '%s', but failed: %s",
+              indexTemplateDescriptor.getTemplateName(), maybeRequest.get(), e.getMessage()),
+          e);
+    }
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    final DeleteIndexRequest deleteIndexRequest =
+        new DeleteIndexRequest.Builder().index(indexName).build();
+    try {
+      final AcknowledgedResponse deleteIndexResponse = client.indices().delete(deleteIndexRequest);
+      LOG.debug("Delete index acknowledged: {}", deleteIndexResponse.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete index %s", indexName);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public boolean deleteIndexIfExists(final String indexName) {
+    try {
+      deleteIndex(indexName);
+      return true;
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        return false;
+      }
+
+      throw e;
+    }
+  }
+
+  @Override
+  public void truncateIndex(final String indexName) {
+    final DeleteByQueryRequest deleteByQueryRequest =
+        new DeleteByQueryRequest.Builder()
+            .waitForCompletion(true)
+            .slices(AUTO_SLICES)
+            .conflicts(Conflicts.Proceed)
+            .index(indexName)
+            .query(q -> q.matchAll(m -> m))
+            .refresh(true)
+            .build();
+    try {
+      client.indices().refresh(r -> r.index(indexName));
+      LOG.debug("Refreshed index {}", indexName);
+      final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
+      LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete docs from index %s", indexName);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public boolean isHealthy() {
+    try {
+      final var response = client.cluster().health(r -> r.timeout(Time.of(t -> t.time("500ms"))));
+      return !response.timedOut()
+          && response.status() != null
+          && !response.status().equals(HealthStatus.Red);
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(
+            "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
+                + "'monitor' cluster privilege required to verify cluster health during startup. "
+                + "The Camunda readiness probe will not pass until this is resolved. "
+                + "To fix: grant the 'monitor' cluster privilege to the service account, "
+                + "or disable the check by setting "
+                + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.",
+            e);
+      }
+      LOG.warn(
+          "Elasticsearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
+      return false;
+    } catch (final IOException e) {
+      LOG.warn("Couldn't connect to Elasticsearch: {}. Returning unhealthy.", e.getMessage(), e);
+      return false;
+    }
+  }
+
+  @Override
+  public boolean indexExists(final String indexName) {
+    try {
+      return client.indices().exists(r -> r.index(indexName)).value();
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg = String.format("Failed to check existence of index %s", indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public Map<String, Object> getDocument(final String indexName, final String documentId) {
+    try {
+      final GetResponse<Map> response =
+          client.get(g -> g.index(indexName).id(documentId), Map.class);
+      if (response.found()) {
+        return response.source();
+      } else {
+        LOG.debug("Document with ID [{}] not found in index [{}]", documentId, indexName);
+        return null;
+      }
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg =
+          String.format("Failed to get document [%s] from index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public void upsertDocument(
+      final String indexName, final String documentId, final Map<String, Object> document) {
+    final IndexRequest<Map<String, Object>> request =
+        IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
+    try {
+      client.index(request);
+      LOG.debug("Document [{}] was successfully upserted in index [{}]]", documentId, indexName);
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg =
+          String.format("Failed to upsert document [%s] in index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public Set<String> getIndexNames(final String pattern) {
+    try {
+      return new HashSet<>(
+          client
+              .indices()
+              .get(req -> req.index(pattern).ignoreUnavailable(true))
+              .result()
+              .keySet());
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg = String.format("Failed to retrieve index names for pattern '%s'", pattern);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public String getEngineName() {
+    return DatabaseConfig.ELASTICSEARCH;
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        utils.mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    final var builder =
+        new PutIndicesSettingsRequest.Builder()
+            .index(indexDescriptor.getAlias())
+            .allowNoIndices(indexDescriptor.allowMissing())
+            .ignoreUnavailable(indexDescriptor.allowMissing())
+            .settings(settings);
+    return builder.build();
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(
+                                        a ->
+                                            a.delete(
+                                                // matches the default Elasticsearch itself fills
+                                                // in, so the fetched and desired policies compare
+                                                // equal without ever having been PUT explicitly
+                                                d -> d.deleteSearchableSnapshot(true))))))
+        .build();
+  }
+
+  private Map<String, TypeMapping> getCurrentMappings(
+      final MappingSource mappingSource, final String namePattern) throws IOException {
+    if (mappingSource == MappingSource.INDEX) {
+      return client
+          .indices()
+          .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
+    } else if (mappingSource == MappingSource.INDEX_TEMPLATE) {
+      return client
+          .indices()
+          .getIndexTemplate(req -> req.name(namePattern))
+          .indexTemplates()
+          .stream()
+          .filter(
+              indexTemplateItem ->
+                  indexTemplateItem.indexTemplate().template() != null
+                      && indexTemplateItem.indexTemplate().template().mappings() != null)
+          .collect(
+              Collectors.toMap(
+                  IndexTemplateItem::name, item -> item.indexTemplate().template().mappings()));
+    } else {
+      throw new IndexSchemaValidationException(
+          "Invalid mapping source provided must be either INDEX or INDEX_TEMPLATE");
+    }
+  }
+
+  private Set<IndexMappingProperty> propertiesFromMappings(final TypeMapping mapping) {
+    return mapping.properties().entrySet().stream()
+        .map(
+            p ->
+                new IndexMappingProperty.Builder()
+                    .name(p.getKey())
+                    .typeDefinition(serializeAsMap(p.getValue()))
+                    .build())
+        .collect(Collectors.toSet());
+  }
+
+  private Map<String, Object> serializeAsMap(final JsonpSerializable serializable) {
+    if (serializable == null) {
+      return null;
+    }
+    try {
+      return schemaSerializer.serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              serializable.serialize(jacksonJsonpGenerator, client._transport().jsonpMapper()));
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          String.format("Failed to serialize [%s]", serializable.toString()), e);
+    }
+  }
+
+  private String dynamicFromMappings(final TypeMapping mapping) {
+    final var dynamic = mapping.dynamic();
+    return dynamic == null ? "true" : dynamic.toString().toLowerCase();
+  }
+
+  private Map<String, Object> metaFromMappings(final TypeMapping mapping) {
+    return mapping.meta().entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, ent -> ent.getValue().to(Object.class)));
+  }
+
+  private PutMappingRequest putMappingRequest(
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+
+    final var elsProperties =
+        newProperties.stream()
+            .map(p -> p.toElasticsearchProperty(client._jsonpMapper(), mapper))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    return new PutMappingRequest.Builder()
+        .index(indexDescriptor.getAlias())
+        .properties(elsProperties)
+        .build();
+  }
+
+  public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
+    try (final var parser = client._jsonpMapper().jsonProvider().createParser(json)) {
+      return deserializer.deserialize(parser, client._jsonpMapper());
+    }
+  }
+
+  private InputStream getResourceAsStream(final String classpathFileName) {
+    return getClass().getResourceAsStream(classpathFileName);
+  }
+
+  private PutIndexTemplateRequest putIndexTemplateRequest(
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final IndexConfiguration settings,
+      final Boolean create) {
+
+    try (final var templateFile =
+        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+              .withNumberOfShards(settings.getNumberOfShards().toString())
+              .withRefreshInterval(settings.getRefreshInterval());
+      final var priority = convertValue(settings.getTemplatePriority(), Long::valueOf);
+      final var templateFields =
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, templateSettings.build());
+      return PutIndexTemplateRequest.of(
+          b ->
+              b.name(indexTemplateDescriptor.getTemplateName())
+                  .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                  .template(
+                      t ->
+                          t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
+                              .mappings(templateFields.mappings())
+                              .settings(templateFields.settings()))
+                  .priority(priority)
+                  .meta(
+                      SETTINGS_FINGERPRINT_META_KEY,
+                      JsonData.of(templateSettings.settingsFingerprint(priority)))
+                  .composedOf(indexTemplateDescriptor.getComposedOf())
+                  .create(create));
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private Optional<PutIndexTemplateRequest> buildTemplateSettingsUpdateRequestIfChanged(
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final IndexConfiguration indexConfiguration) {
+    try (final var templateFile =
+        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+      final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
+      final var configuredSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfShards(indexConfiguration.getNumberOfShards().toString())
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas().toString())
+              .withRefreshInterval(indexConfiguration.getRefreshInterval());
+      final var configuredPriority =
+          convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
+
+      final var configuredFingerprint = configuredSettings.settingsFingerprint(configuredPriority);
+      if (configuredFingerprint.equals(storedSettingsFingerprint(currentTemplate))) {
+        LOG.debug(
+            "Index template settings for [{}] are already up to date",
+            indexTemplateDescriptor.getTemplateName());
+        return Optional.empty();
+      }
+      final var updatedTemplateSettings =
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, configuredSettings.build())
+              .settings();
+      LOG.debug(
+          "Applying to index template [{}]: settings={}, priority={}",
+          indexTemplateDescriptor.getTemplateName(),
+          updatedTemplateSettings,
+          configuredPriority);
+      return Optional.of(
+          PutIndexTemplateRequest.of(
+              b ->
+                  b.name(indexTemplateDescriptor.getTemplateName())
+                      .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+                      .template(
+                          t ->
+                              t.settings(updatedTemplateSettings)
+                                  .mappings(currentTemplate.template().mappings())
+                                  .aliases(currentTemplate.template().aliases()))
+                      .composedOf(currentTemplate.composedOf())
+                      .priority(configuredPriority)
+                      .meta(SETTINGS_FINGERPRINT_META_KEY, JsonData.of(configuredFingerprint))));
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private static String storedSettingsFingerprint(final IndexTemplate template) {
+    final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
+    return fingerprint == null ? null : fingerprint.to(String.class);
+  }
+
+  private IndexTemplate getIndexTemplateState(
+      final IndexTemplateDescriptor indexTemplateDescriptor) {
+    try {
+      return client
+          .indices()
+          .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
+          .indexTemplates()
+          .getFirst()
+          .indexTemplate();
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          String.format(
+              "Failed to retrieve index template '%s'", indexTemplateDescriptor.getTemplateName()),
+          e);
+    }
+  }
+
+  private CreateIndexRequest createIndexRequest(
+      final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
+    try (final var templateFile =
+        getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+                  .withNumberOfShards(settings.getNumberOfShards().toString())
+                  .withRefreshInterval(settings.getRefreshInterval())
+                  .build());
+
+      return new CreateIndexRequest.Builder()
+          .index(indexDescriptor.getFullQualifiedName())
+          .aliases(indexDescriptor.getAlias(), a -> a.isWriteIndex(false))
+          .mappings(templateFields.mappings())
+          .settings(templateFields.settings())
+          .build();
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          "Failed to load file "
+              + indexDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private PutMappingRequest putMetaMappingRequest(
+      final String indexName, final Map<String, Object> meta) {
+    final var jsonMeta =
+        meta.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())));
+    return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
+  }
+
+  @Override
+  public void close() {
+    if (client != null) {
+      try {
+        client.close();
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+}

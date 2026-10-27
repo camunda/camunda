@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="eb92200" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="Process_1ynf09m" name="NamedEventsProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderReceived" name="Order received">
+      <bpmn:outgoing>Flow_18wuolb</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_SendOrderConfirmation" name="Send order confirmation">
+      <bpmn:incoming>Flow_18wuolb</bpmn:incoming>
+      <bpmn:outgoing>Flow_1fudmr8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_18wuolb" sourceRef="StartEvent_OrderReceived" targetRef="Activity_SendOrderConfirmation" />
+    <bpmn:intermediateThrowEvent id="Event_OrderConfirmed" name="Order Confirmed">
+      <bpmn:incoming>Flow_1fudmr8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0pwra77</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_1fudmr8" sourceRef="Activity_SendOrderConfirmation" targetRef="Event_OrderConfirmed" />
+    <bpmn:task id="Activity_PackItems" name="Pack Items">
+      <bpmn:incoming>Flow_0pwra77</bpmn:incoming>
+      <bpmn:outgoing>Flow_1mrasjb</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0pwra77" sourceRef="Event_OrderConfirmed" targetRef="Activity_PackItems" />
+    <bpmn:task id="Activity_SendItems" name="Send items">
+      <bpmn:incoming>Flow_1mrasjb</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jqiolh</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1mrasjb" sourceRef="Activity_PackItems" targetRef="Activity_SendItems" />
+    <bpmn:endEvent id="Event_OrderFulfilled" name="Order fulfilled">
+      <bpmn:incoming>Flow_1jqiolh</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1jqiolh" sourceRef="Activity_SendItems" targetRef="Event_OrderFulfilled" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1ynf09m">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_OrderReceived">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="143" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lamzw9_di" bpmnElement="Activity_SendOrderConfirmation">
+        <dc:Bounds x="240" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1hpaa0w_di" bpmnElement="Event_OrderConfirmed">
+        <dc:Bounds x="402" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="380" y="143" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dgrk0t_di" bpmnElement="Activity_PackItems">
+        <dc:Bounds x="500" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1dh6toz_di" bpmnElement="Activity_SendItems">
+        <dc:Bounds x="670" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1dy1clr_di" bpmnElement="Event_OrderFulfilled">
+        <dc:Bounds x="842" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="828" y="143" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_18wuolb_di" bpmnElement="Flow_18wuolb">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="240" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fudmr8_di" bpmnElement="Flow_1fudmr8">
+        <di:waypoint x="340" y="118" />
+        <di:waypoint x="402" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0pwra77_di" bpmnElement="Flow_0pwra77">
+        <di:waypoint x="438" y="118" />
+        <di:waypoint x="500" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mrasjb_di" bpmnElement="Flow_1mrasjb">
+        <di:waypoint x="600" y="118" />
+        <di:waypoint x="670" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jqiolh_di" bpmnElement="Flow_1jqiolh">
+        <di:waypoint x="770" y="118" />
+        <di:waypoint x="842" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

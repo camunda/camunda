@@ -1,0 +1,664 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {VariablesTab} from '../index';
+import {render, screen} from 'modules/testing-library';
+import {
+  createVariable,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
+import {modificationsStore} from 'modules/stores/modifications';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
+import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
+import {Paths} from 'modules/Routes';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
+import {
+  useHasRunningOrFinishedTokens,
+  useIsPlaceholderSelected,
+} from 'modules/hooks/elementSelection';
+import {useVariableScopeKey} from 'modules/hooks/variables';
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from 'modules/queries/queryKeys';
+
+const TestScopeState: React.FC = () => {
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const scopeKey = useVariableScopeKey();
+
+  return (
+    <output>
+      {isPlaceholderSelected ? 'placeholder' : `pending scope: ${scopeKey}`}
+    </output>
+  );
+};
+
+const TestStatisticsState: React.FC = () => {
+  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  return (
+    <output>
+      {hasRunningOrFinishedTokens ? 'historical stats loaded' : 'loading stats'}
+    </output>
+  );
+};
+
+const TestStatisticsUpdate: React.FC = () => {
+  const queryClient = useQueryClient();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        queryClient.setQueryData(
+          queryKeys.elementInstancesStatistics.get('1'),
+          {
+            items: [
+              {
+                elementId: 'NEW_ELEMENT',
+                active: 0,
+                completed: 1,
+                canceled: 0,
+                incidents: 0,
+              },
+            ],
+          },
+        )
+      }
+    >
+      update statistics
+    </button>
+  );
+};
+
+const TestSelectionControls: React.FC = () => {
+  const {selectElement, selectElementInstance} =
+    useProcessInstanceElementSelectActions();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElement({
+            elementId: 'TEST_ELEMENT',
+          })
+        }
+      >
+        select element
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'TEST_ELEMENT',
+            elementInstanceKey: '2',
+          })
+        }
+      >
+        select element instance
+      </button>
+    </>
+  );
+};
+
+const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
+  const BaseWrapper = getBaseWrapper(...args);
+
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <BaseWrapper>
+      <>
+        <TestSelectionControls />
+        {children}
+      </>
+    </BaseWrapper>
+  );
+
+  return Wrapper;
+};
+
+const selectedElementInstance = {
+  elementInstanceKey: '2',
+  elementId: 'TEST_ELEMENT',
+  elementName: 'Test Element',
+  type: 'SERVICE_TASK' as const,
+  state: 'ACTIVE' as const,
+  startDate: '2018-06-21',
+  endDate: null,
+  processDefinitionId: 'someKey',
+  processInstanceKey: '1',
+  processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
+  hasIncident: false,
+  incidentKey: null,
+  tenantId: '<default>',
+};
+
+describe('VariablesTab placeholders', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+
+    const statistics = [
+      {
+        elementId: 'TEST_ELEMENT',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'Activity_0qtp1k6',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ];
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+  });
+
+  it.each([
+    {
+      selection: 'instance history',
+      search: (scopeId: string) =>
+        `?elementId=TEST_ELEMENT&elementInstanceKey=${scopeId}&isPlaceholder=true`,
+      elementId: 'TEST_ELEMENT',
+    },
+    {
+      selection: 'diagram',
+      search: () => '?elementId=NEW_ELEMENT',
+      elementId: 'NEW_ELEMENT',
+    },
+  ])(
+    'should keep unsaved variables visible without querying a planned scope selected from the $selection',
+    async ({search, elementId}) => {
+      const scopeId = crypto.randomUUID();
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId,
+          element: {id: elementId, name: 'New Element'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
+      if (elementId === 'NEW_ELEMENT') {
+        mockSearchElementInstances().withSuccess({
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        });
+      }
+      const invalidScopeQuery = vi.fn();
+      mockServer.use(
+        http.post('/v2/variables/search', async ({request}) => {
+          invalidScopeQuery(await request.json());
+          return HttpResponse.json({error: 'Invalid scopeKey'}, {status: 400});
+        }),
+      );
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}${search(scopeId)}`,
+        ]),
+      });
+      await user.click(
+        await screen.findByRole('button', {name: /add variable/i}),
+      );
+      const nameInput = await screen.findByTestId('new-variable-name');
+      await user.type(nameInput, 'plannedVariable');
+
+      expect(nameInput).toHaveValue('plannedVariable');
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+      expect(invalidScopeQuery).not.toHaveBeenCalled();
+    },
+  );
+
+  it('should keep a planned diagram token editable when statistics include an older instance', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'NEW_ELEMENT', name: 'New Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockServer.use(
+      http.get(
+        '/v2/process-instances/:processInstanceKey/statistics/element-instances',
+        () =>
+          HttpResponse.json({
+            items: [
+              {
+                elementId: 'NEW_ELEMENT',
+                active: 0,
+                completed: 1,
+                canceled: 0,
+                incidents: 0,
+              },
+            ],
+          }),
+      ),
+    );
+
+    const {user} = render(
+      <>
+        <VariablesTab />
+        <TestStatisticsState />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=NEW_ELEMENT`,
+        ]),
+      },
+    );
+    expect(await screen.findByText('historical stats loaded')).toBeVisible();
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    const nameInput = await screen.findByTestId('new-variable-name');
+    await user.type(nameInput, 'unsavedName');
+
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+    expect(nameInput).toHaveValue('unsavedName');
+  });
+
+  it('should preserve unsaved planned-token variables when statistics refresh', async () => {
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: crypto.randomUUID(),
+        element: {id: 'NEW_ELEMENT', name: 'New Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    const {user} = render(
+      <>
+        <VariablesTab />
+        <TestStatisticsState />
+        <TestStatisticsUpdate />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=NEW_ELEMENT`,
+        ]),
+      },
+    );
+    await user.click(
+      await screen.findByRole('button', {name: /add variable/i}),
+    );
+    const nameInput = await screen.findByTestId('new-variable-name');
+    await user.type(nameInput, 'unsavedName');
+
+    await user.click(screen.getByRole('button', {name: 'update statistics'}));
+
+    expect(await screen.findByText('historical stats loaded')).toBeVisible();
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+    expect(nameInput).toHaveValue('unsavedName');
+  });
+
+  it('should not query a planned scope when selecting an element with existing tokens', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'TEST_ELEMENT', name: 'Test Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [
+        selectedElementInstance,
+        {...selectedElementInstance, elementInstanceKey: '3'},
+      ],
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    const invalidScopeQuery = vi.fn();
+    mockServer.use(
+      http.post('/v2/variables/search', async ({request}) => {
+        invalidScopeQuery(await request.json());
+        return HttpResponse.json({error: 'Invalid scopeKey'}, {status: 400});
+      }),
+    );
+
+    render(
+      <>
+        <VariablesTab />
+        <TestScopeState />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=TEST_ELEMENT`,
+        ]),
+      },
+    );
+
+    expect(
+      await screen.findByText(`pending scope: ${scopeId}`),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'To view the variables, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+    expect(invalidScopeQuery).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText('Variables could not be fetched'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not display existing variables or query when a diagram node has one existing and one planned token', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'TEST_ELEMENT', name: 'Test Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [selectedElementInstance],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    const variablesSearch = vi.fn();
+    mockServer.use(
+      http.post('/v2/variables/search', async ({request}) => {
+        variablesSearch(await request.json());
+        return HttpResponse.json({error: 'Variables failed'}, {status: 400});
+      }),
+    );
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=TEST_ELEMENT`,
+      ]),
+    });
+
+    expect(
+      await screen.findByText(
+        'To view the variables, select a single element instance in the instance history.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', {name: /add variable/i})).toBeNull();
+    expect(variablesSearch).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])(
+    'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
+    async (enableModificationMode) => {
+      if (enableModificationMode) {
+        modificationsStore.enableModificationMode();
+      }
+
+      mockSearchElementInstances().withSuccess({
+        items: [
+          selectedElementInstance,
+          {
+            ...selectedElementInstance,
+            elementInstanceKey: '3',
+          },
+        ],
+        page: {
+          totalItems: 2,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: /^select element$/i}));
+
+      expect(
+        await screen.findByText(
+          'To view the variables, select a single element instance in the instance history.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([true, false])(
+    'should show failed placeholder if server error occurs while fetching variables - modification mode: %p',
+    async (enableModificationMode) => {
+      if (enableModificationMode) {
+        modificationsStore.enableModificationMode();
+      }
+
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
+
+      mockFetchElementInstance('2').withSuccess(selectedElementInstance);
+      mockSearchVariables().withServerError();
+
+      await user.click(
+        screen.getByRole('button', {name: /^select element instance$/i}),
+      );
+
+      expect(
+        await screen.findByText('Variables could not be fetched'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([true, false])(
+    'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
+    async (enableModificationMode) => {
+      if (enableModificationMode) {
+        modificationsStore.enableModificationMode();
+      }
+
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
+
+      mockFetchElementInstance('2').withSuccess(selectedElementInstance);
+      mockSearchVariables().withNetworkError();
+
+      await user.click(
+        screen.getByRole('button', {name: /^select element instance$/i}),
+      );
+
+      expect(
+        await screen.findByText('Variables could not be fetched'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([true, false])(
+    'should show failed placeholder if network error occurs while fetching selected element instance metadata - modification mode: %p',
+    async (enableModificationMode) => {
+      if (enableModificationMode) {
+        modificationsStore.enableModificationMode();
+      }
+
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
+
+      mockFetchElementInstance('2').withNetworkError();
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      await user.click(
+        screen.getByRole('button', {name: /^select element instance$/i}),
+      );
+
+      expect(
+        await screen.findByText('Variables could not be fetched'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    },
+  );
+});

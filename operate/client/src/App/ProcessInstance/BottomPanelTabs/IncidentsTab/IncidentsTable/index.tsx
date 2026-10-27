@@ -1,0 +1,372 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {IncidentOperation} from 'modules/components/IncidentOperation';
+import {formatDate} from 'modules/utils/date';
+import {observer} from 'mobx-react';
+import {
+  ExpandedContent,
+  ExpandedField,
+  FieldLabel,
+  ErrorMessageCell,
+  TruncatedText,
+  FlexContainer,
+  ChildIncidentContainer,
+} from './styled';
+import {Link} from 'modules/components/Link';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {Paths} from 'modules/Routes';
+import {tracking} from 'modules/tracking';
+import {Button, Stack, Tooltip} from '@carbon/react';
+import {SortableTable} from 'modules/components/SortableTable';
+import {useState, useMemo} from 'react';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
+import {
+  getIncidentErrorName,
+  isSingleIncidentSelected,
+} from 'modules/utils/incidents';
+import type {EnhancedIncident} from 'modules/hooks/incidents';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
+
+type DecisionInstanceLookup = Record<
+  string,
+  {decisionInstanceKey: string; decisionDefinitionName: string}
+>;
+
+type ElementNameCell = {
+  label: string;
+  content: React.ReactNode;
+  isInteractive: boolean;
+};
+
+const getElementName = (
+  incident: EnhancedIncident,
+  processInstanceKey: string,
+  decisionInstancesByElementKey?: DecisionInstanceLookup,
+): ElementNameCell => {
+  const decisionInstance =
+    decisionInstancesByElementKey &&
+    (incident.errorType === 'DECISION_EVALUATION_ERROR' ||
+      incident.errorType === 'CALLED_DECISION_ERROR') &&
+    decisionInstancesByElementKey[incident.elementInstanceKey];
+
+  if (decisionInstance) {
+    const label = `${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`;
+    return {
+      label,
+      isInteractive: true,
+      content: (
+        <Link
+          to={Paths.decisionInstance(decisionInstance.decisionInstanceKey)}
+          title={`View root cause decision ${label}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {label}
+        </Link>
+      ),
+    };
+  }
+
+  if (processInstanceKey !== incident.processInstanceKey) {
+    const label = `${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`;
+    return {
+      label,
+      isInteractive: true,
+      content: (
+        <Link
+          to={{
+            pathname: Paths.processInstance(incident.processInstanceKey),
+            search: `?elementId=${incident.elementId}`,
+          }}
+          title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {label}
+        </Link>
+      ),
+    };
+  }
+
+  return {
+    label: incident.elementName,
+    content: incident.elementName,
+    isInteractive: false,
+  };
+};
+
+function renderElementName(
+  incident: EnhancedIncident,
+  processInstanceKey: string,
+  decisionInstancesByElementKey?: DecisionInstanceLookup,
+): React.ReactNode {
+  const {label, content, isInteractive} = getElementName(
+    incident,
+    processInstanceKey,
+    decisionInstancesByElementKey,
+  );
+
+  return (
+    <Tooltip align="bottom-start" autoAlign description={label}>
+      <TruncatedText tabIndex={isInteractive ? undefined : 0}>
+        {content}
+      </TruncatedText>
+    </Tooltip>
+  );
+}
+
+// The expanded row wraps the full message, so the modal is reserved for
+// stack traces and unusually large single-line messages where its dedicated
+// viewer adds value over the inline content.
+const MODAL_WORTHY_ERROR_MESSAGE_LENGTH = 200;
+
+function shouldOfferErrorMessageModal(errorMessage: string): boolean {
+  return (
+    errorMessage.includes('\n') ||
+    errorMessage.length >= MODAL_WORTHY_ERROR_MESSAGE_LENGTH
+  );
+}
+
+type ChildInstanceWithIncident = {
+  type: 'process' | 'decision';
+  key: string;
+  name: string;
+};
+
+type IncidentsTableProps = {
+  processInstanceKey: string;
+  incidents: EnhancedIncident[];
+  decisionInstancesByElementKey?: DecisionInstanceLookup;
+  childInstanceWithIncident?: ChildInstanceWithIncident;
+  isProcessInstanceSuspended?: boolean;
+  state: React.ComponentProps<typeof SortableTable>['state'];
+  onVerticalScrollStartReach?: React.ComponentProps<
+    typeof SortableTable
+  >['onVerticalScrollStartReach'];
+  onVerticalScrollEndReach?: React.ComponentProps<
+    typeof SortableTable
+  >['onVerticalScrollEndReach'];
+};
+
+const IncidentsTable: React.FC<IncidentsTableProps> = observer(
+  function IncidentsTable({
+    state,
+    incidents,
+    processInstanceKey,
+    decisionInstancesByElementKey,
+    childInstanceWithIncident,
+    isProcessInstanceSuspended = false,
+    onVerticalScrollEndReach,
+    onVerticalScrollStartReach,
+  }) {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [modalContent, setModalContent] = useState<string>('');
+    const [modalTitle, setModalTitle] = useState<string>('');
+
+    const handleModalClose = () => {
+      setIsModalVisible(false);
+      setModalContent('');
+      setModalTitle('');
+    };
+
+    const handleMoreButtonClick = (
+      errorMessage: string,
+      elementName: string,
+    ) => {
+      setIsModalVisible(true);
+      setModalContent(errorMessage);
+      setModalTitle(`Element "${elementName}" Error`);
+    };
+
+    const {selectElementInstance, clearSelection} =
+      useProcessInstanceElementSelectActions();
+
+    const expandedContent = useMemo(
+      () =>
+        Object.fromEntries(
+          incidents.map((incident) => [
+            incident.incidentKey,
+            <ExpandedContent key={incident.incidentKey}>
+              <ExpandedField>
+                <FieldLabel>Job ID</FieldLabel>
+                <span>{incident.jobKey || '—'}</span>
+              </ExpandedField>
+              <ExpandedField>
+                <FieldLabel>Error message</FieldLabel>
+                <FlexContainer>
+                  <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
+                  {shouldOfferErrorMessageModal(incident.errorMessage) && (
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        tracking.track({
+                          eventName:
+                            'incidents-panel-full-error-message-opened',
+                        });
+
+                        handleMoreButtonClick(
+                          incident.errorMessage,
+                          incident.elementName,
+                        );
+                      }}
+                    >
+                      More
+                    </Button>
+                  )}
+                </FlexContainer>
+              </ExpandedField>
+            </ExpandedContent>,
+          ]),
+        ),
+      [incidents],
+    );
+
+    if (state === 'empty' && childInstanceWithIncident) {
+      const {type, key, name} = childInstanceWithIncident;
+      const linkTo =
+        type === 'process'
+          ? Paths.processInstance(key)
+          : Paths.decisionInstance(key);
+
+      return (
+        <ChildIncidentContainer>
+          <Stack gap={5}>
+            <EmptyMessage
+              message="No incidents found on this element."
+              additionalInfo="The incident may originate from a called instance."
+            />
+            <Link to={linkTo} title={`View in ${name}`}>
+              {`View in ${name}`}
+            </Link>
+          </Stack>
+        </ChildIncidentContainer>
+      );
+    }
+
+    return (
+      <>
+        <SortableTable
+          state={state}
+          isExpandable
+          emptyMessage={{
+            message: 'There are no incidents matching this filter set',
+          }}
+          selectionType="row"
+          columnsWithNoContentPadding={['operations']}
+          onSelect={(rowId) => {
+            const incident = incidents.find(
+              ({incidentKey}) => incidentKey === rowId,
+            );
+            if (incident === undefined) {
+              return;
+            }
+
+            if (
+              isSingleIncidentSelected(incidents, incident.elementInstanceKey)
+            ) {
+              clearSelection();
+            } else {
+              selectElementInstance({
+                elementId: incident.elementId,
+                elementInstanceKey: incident.elementInstanceKey,
+              });
+            }
+          }}
+          checkIsRowSelected={(rowId) => {
+            const incident = incidents.find(
+              ({incidentKey}) => incidentKey === rowId,
+            );
+            if (incident === undefined) {
+              return false;
+            }
+            return incident.isSelected;
+          }}
+          onSort={(sortKey: string) => {
+            tracking.track({
+              eventName: 'incidents-sorted',
+              column: sortKey,
+            });
+          }}
+          onVerticalScrollStartReach={onVerticalScrollStartReach}
+          onVerticalScrollEndReach={onVerticalScrollEndReach}
+          headerColumns={[
+            {
+              header: 'Error message',
+              key: 'errorMessage',
+              isDisabled: true,
+            },
+            {
+              header: 'Type',
+              key: 'errorType',
+            },
+            {
+              header: 'Failing Element',
+              key: 'elementName',
+              isDisabled: true,
+            },
+            {
+              header: 'Created',
+              key: 'creationTime',
+              isDefault: true,
+            },
+            {
+              header: 'Operations',
+              key: 'operations',
+              isDisabled: true,
+            },
+          ]}
+          rows={incidents.map((incident) => {
+            const areOperationsVisible =
+              processInstanceKey === incident.processInstanceKey;
+
+            return {
+              id: incident.incidentKey,
+              errorMessage: (
+                <Tooltip
+                  align="bottom-start"
+                  autoAlign
+                  description={incident.errorMessage}
+                >
+                  <TruncatedText tabIndex={0}>
+                    {incident.errorMessage}
+                  </TruncatedText>
+                </Tooltip>
+              ),
+              errorType: getIncidentErrorName(incident.errorType),
+              elementName: renderElementName(
+                incident,
+                processInstanceKey,
+                decisionInstancesByElementKey,
+              ),
+              creationTime: formatDate(incident.creationTime),
+              operations: areOperationsVisible ? (
+                <IncidentOperation
+                  incidentKey={incident.incidentKey}
+                  jobKey={incident.jobKey}
+                  disabled={isProcessInstanceSuspended}
+                />
+              ) : undefined,
+            };
+          })}
+          expandedContent={expandedContent}
+        />
+        <RichTextEditorModal
+          isVisible={isModalVisible}
+          title={modalTitle}
+          value={modalContent}
+          onClose={handleModalClose}
+          readOnly
+        />
+      </>
+    );
+  },
+);
+
+export {IncidentsTable};

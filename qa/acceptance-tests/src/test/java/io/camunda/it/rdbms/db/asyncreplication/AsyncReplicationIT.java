@@ -1,0 +1,193 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.rdbms.db.asyncreplication;
+
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
+import io.camunda.it.rdbms.db.util.MSSQLReplicationClusterContainer;
+import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
+import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@TestMethodOrder(OrderAnnotation.class)
+public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
+    extends AbstractAsyncReplicationIT<R> {
+  private static final Logger LOG = LoggerFactory.getLogger(AsyncReplicationIT.class);
+
+  @Test
+  void shouldAcknowledgeExportedRecordsWhenReplicated() {
+    final var exporterPosition = getCurrentExporterPosition();
+    LOG.info(
+        "Starting replication acknowledgement test at exporter position {}, acknowledged position {}",
+        exporterPosition,
+        getCurrentAcknowledgedExporterPosition());
+
+    // when - start some process instances to generate traffic
+    final int numProcessInstances = 10;
+    startProcessInstances(numProcessInstances);
+    waitForProcessInstancesToStart(camundaClient, numProcessInstances);
+    LOG.info(
+        "Generated {} process instances; exporter position is now {}, acknowledged position is {}",
+        numProcessInstances,
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    // then - exporter advances and fully catches up
+    awaitExporterPositionAdvances(exporterPosition);
+    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(30));
+    exporterAcknowledgedAll();
+    LOG.info(
+        "Replication acknowledgement test completed at exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+  }
+
+  // Outage and recovery stay in one test: recovery needs the paused state the outage creates, so a
+  // separate recovery test would run against a healthy cluster when failsafe reruns it alone.
+  @Test
+  @Order(1)
+  void shouldPauseExportingWhenReplicaIsRemovedAndResumeWhenItRecovers()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    // given - a stable, fully acknowledged state
+    final long acknowledgedPositionBeforeRemoval = getCurrentAcknowledgedExporterPosition();
+    LOG.info("Position before removing the replica {}", acknowledgedPositionBeforeRemoval);
+
+    // when - the required read replica is removed
+    final var beforeStopping = Instant.now();
+    LOG.info("Stopping replica at {}", beforeStopping);
+    final var stopFuture = cluster.stopReplica();
+    final var afterStopping = Instant.now();
+    LOG.info("Disconnected replica at {}", afterStopping);
+    startProcessInstances(10);
+    LOG.info(
+        "Generated traffic while replica is unavailable; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    final var maxLagWait = getMaxLag().plusSeconds(3);
+    LOG.info("Waiting {} for the exporter to observe the unavailable replica", maxLagWait);
+    wait(maxLagWait);
+    stopFuture.get(15, TimeUnit.MINUTES);
+    LOG.info(
+        "Stopped replica at {}; exporter position is {}, acknowledged position is {}",
+        Instant.now(),
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    // then - the exporter does not acknowledge them
+    assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+    LOG.info(
+        "Exporter correctly stopped acknowledging at position {}",
+        getCurrentAcknowledgedExporterPosition());
+
+    // when - more traffic is generated
+
+    final long exportedPositionAfterMaxLag = getCurrentExporterPosition();
+    startProcessInstances(10);
+    LOG.info(
+        "Generated additional traffic after max lag; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    // then - the exporter should not export anything
+    awaitExporterPositionStable(Duration.ofSeconds(5), Duration.ofMinutes(1));
+
+    assertThat(getCurrentExporterPosition()).isEqualTo(exportedPositionAfterMaxLag);
+    assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+    LOG.info(
+        "Replica outage phase completed with exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    // given - exporter is paused after the replica was removed
+    final long exportedPositionBeforeRecovery = getCurrentExporterPosition();
+    final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
+
+    // when - the replica is brought back, re-establishing the replication quorum
+    LOG.info(
+        "Starting replica recovery at exporter position {}, acknowledged position {}",
+        exportedPositionBeforeRecovery,
+        acknowledgedPositionBeforeRecovery);
+    cluster.startReplica().get(5, TimeUnit.MILLISECONDS);
+    LOG.info(
+        "Replica recovery command completed; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+
+    // then - the exporter resumes and fully catches up
+    awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
+    awaitAcknowledgedPositionAdvances(acknowledgedPositionBeforeRecovery);
+    exporterAcknowledgedAll();
+    LOG.info(
+        "Replica outage and recovery test completed at exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
+  }
+}
+
+class PostgresAsyncReplicationIT extends AsyncReplicationIT<PostgresReplicationClusterContainer> {
+
+  @Override
+  protected PostgresReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer();
+  }
+}
+
+class MssqlAsyncReplicationIT extends AsyncReplicationIT<MSSQLReplicationClusterContainer> {
+
+  @Override
+  protected MSSQLReplicationClusterContainer createCluster() {
+    return new MSSQLReplicationClusterContainer();
+  }
+}
+
+/**
+ * Exercises the same scenarios as {@link PostgresAsyncReplicationIT} but against {@code
+ * TimeMonitoringReplicationSignalStrategy} (lag-based, no LSN tracking) instead of {@code
+ * LsnReplicationSignalStrategy}.
+ */
+class PostgresTimeMonitoringReplicationIT
+    extends AsyncReplicationIT<PostgresReplicationClusterContainer> {
+
+  @Override
+  protected PostgresReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer();
+  }
+
+  @Override
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.TIME_LAG;
+  }
+}
+
+/** Same as {@link PostgresTimeMonitoringReplicationIT}, against an on-prem MSSQL Always On AG. */
+class MssqlTimeMonitoringReplicationIT
+    extends AsyncReplicationIT<MSSQLReplicationClusterContainer> {
+
+  @Override
+  protected MSSQLReplicationClusterContainer createCluster() {
+    return new MSSQLReplicationClusterContainer();
+  }
+
+  @Override
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.TIME_LAG;
+  }
+}

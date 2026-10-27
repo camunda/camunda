@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1s9dezj" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+  <bpmn:collaboration id="Collaboration_1fpiwsc">
+    <bpmn:participant id="Participant_1u4ys21" name="first-process" processRef="testProcessIdOne" />
+    <bpmn:participant id="Participant_1t57i5w" name="second-process" processRef="testProcessIdTwo" />
+  </bpmn:collaboration>
+  <bpmn:process id="testProcessIdOne" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="my-embedded-form-one">{
+  "components": [
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_14zv75q",
+        "columns": null
+      },
+      "id": "Field_0h71kwj",
+      "key": "textfield_t43iqk"
+    }
+  ],
+  "type": "default",
+  "id": "my-form",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "versionTag": "3",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.28.0"
+  },
+  "schemaVersion": 16
+}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-one" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1816u39</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1816u39" sourceRef="StartEvent_1" targetRef="Activity_079pxpl" />
+    <bpmn:endEvent id="Event_0nfajez">
+      <bpmn:incoming>Flow_1xi9gkp</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1xi9gkp" sourceRef="Activity_079pxpl" targetRef="Event_0nfajez" />
+    <bpmn:userTask id="Activity_079pxpl">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-one" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1816u39</bpmn:incoming>
+      <bpmn:outgoing>Flow_1xi9gkp</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmn:process id="testProcessIdTwo" isExecutable="false">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="my-embedded-form-two">{
+  "components": [
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_14zv75q",
+        "columns": null
+      },
+      "id": "Field_0h71kwj",
+      "key": "textfield_t43iqk"
+    }
+  ],
+  "type": "default",
+  "id": "my-form",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "versionTag": "3",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.28.0"
+  },
+  "schemaVersion": 16
+}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_0932d2x">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-two" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1mkteeo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1mkteeo" sourceRef="Event_0932d2x" targetRef="Activity_1p3y1iq" />
+    <bpmn:endEvent id="Event_12zxvyk">
+      <bpmn:incoming>Flow_0kfyqv0</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0kfyqv0" sourceRef="Activity_1p3y1iq" targetRef="Event_12zxvyk" />
+    <bpmn:userTask id="Activity_1p3y1iq">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-two" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1mkteeo</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kfyqv0</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1fpiwsc">
+      <bpmndi:BPMNShape id="Participant_1u4ys21_di" bpmnElement="Participant_1u4ys21" isHorizontal="true">
+        <dc:Bounds x="129" y="79" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="192" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0nfajez_di" bpmnElement="Event_0nfajez">
+        <dc:Bounds x="432" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ajdol7_di" bpmnElement="Activity_079pxpl">
+        <dc:Bounds x="280" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1816u39_di" bpmnElement="Flow_1816u39">
+        <di:waypoint x="228" y="200" />
+        <di:waypoint x="280" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xi9gkp_di" bpmnElement="Flow_1xi9gkp">
+        <di:waypoint x="380" y="200" />
+        <di:waypoint x="432" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_1t57i5w_di" bpmnElement="Participant_1t57i5w" isHorizontal="true">
+        <dc:Bounds x="129" y="360" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0932d2x_di" bpmnElement="Event_0932d2x">
+        <dc:Bounds x="202" y="462" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_12zxvyk_di" bpmnElement="Event_12zxvyk">
+        <dc:Bounds x="442" y="462" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1e76c22_di" bpmnElement="Activity_1p3y1iq">
+        <dc:Bounds x="290" y="440" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1mkteeo_di" bpmnElement="Flow_1mkteeo">
+        <di:waypoint x="238" y="480" />
+        <di:waypoint x="290" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kfyqv0_di" bpmnElement="Flow_0kfyqv0">
+        <di:waypoint x="390" y="480" />
+        <di:waypoint x="442" y="480" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

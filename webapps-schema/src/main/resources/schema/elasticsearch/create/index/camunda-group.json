@@ -1,0 +1,35 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "groupId" : {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "description": {
+        "type": "keyword"
+      },
+      "memberId": {
+        "type": "keyword"
+      },
+      "memberType": {
+        "type": "keyword"
+      },
+      "join": {
+        "type": "join",
+        "eager_global_ordinals": true,
+        "relations": {
+          "group": ["member"]
+        }
+      }
+    }
+  }
+}

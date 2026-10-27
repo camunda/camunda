@@ -1,0 +1,242 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application.commons.rdbms;
+
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
+import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.PerTenantSchemaConfig;
+import io.camunda.db.rdbms.RdbmsSchemaManagers;
+import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Properties;
+import javax.sql.DataSource;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+
+@NullMarked
+public class MyBatisConfiguration {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
+
+  /**
+   * The registry every consumer of "is this tenant's schema ready" resolves — the RDBMS exporter,
+   * the request-time rejection path and the per-tenant readiness gauge. It reports nothing as
+   * initialized until {@link #rdbmsSchemaInitializer} binds itself to it.
+   */
+  @Bean
+  @Profile("!restore")
+  public LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry() {
+    return new LazyInitializedRdbmsSchemaRegistry();
+  }
+
+  /** The bean that initializes each tenant's schema in isolation. */
+  @Bean
+  @Profile("!restore")
+  public RdbmsSchemaInitializer rdbmsSchemaInitializer(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerTopologyManager brokerTopologyManager,
+      final LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry,
+      // if present, then it will ensure that the broker is started first, so that the recovery
+      // check reads the broker's own cluster configuration
+      @Autowired(required = false) final @Nullable Broker broker) {
+    // VersionUtil.getVersion() may not be a valid semantic version during local development;
+    // the schema-version check is skipped in that case.
+    final var initializer =
+        new RdbmsSchemaInitializer(
+            RdbmsSchemaManagers.fromConfigs(
+                physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+                VersionUtil.getVersion()),
+            physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId),
+            PerTenantSchemaInitialization.DeferralCheck.of(
+                new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
+    rdbmsSchemaManagerRegistry.bind(initializer);
+    return initializer;
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators. Like the RDBMS status
+   * indicator, it is in no probe group.
+   */
+  @Bean
+  @Profile("!restore")
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final RdbmsSchemaInitializer rdbmsSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(rdbmsSchemaInitializer::statuses);
+  }
+
+  private static RetryConfiguration retryConfiguration(
+      final PhysicalTenantResolver physicalTenantResolver, final String physicalTenantId) {
+    final var retry =
+        physicalTenantResolver
+            .forPhysicalTenant(physicalTenantId)
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getRetry();
+    final var converted = new RetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
+  }
+
+  /**
+   * Reports whether every physical tenant's RDBMS schema has migrated to the running application
+   * version, for the upgrade-readiness endpoint (camunda/product-hub#3067). Built from the same
+   * per-tenant configs as {@link #rdbmsSchemaInitializer}, but independently — this needs to read
+   * the schema version regardless of whether this application's own Liquibase run applied it or an
+   * operator's external tooling did.
+   */
+  @Bean
+  public RdbmsSchemaMigrationStatusProvider rdbmsSchemaMigrationStatusProvider(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return RdbmsSchemaMigrationStatusProvider.fromConfigs(
+        physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+        VersionUtil.getVersion());
+  }
+
+  private Map<String, PerTenantSchemaConfig> physicalTenantSchemaConfigs(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final Map<String, PerTenantSchemaConfig> physicalTenantConfigs = new LinkedHashMap<>();
+    for (final String physicalTenantId : physicalTenantResolver.getAll().keySet()) {
+      final var rdbms =
+          physicalTenantResolver
+              .forPhysicalTenant(physicalTenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms();
+      final var trimmedPrefix = StringUtils.trimToEmpty(rdbms.getPrefix());
+      LOGGER.info(
+          "Initializing Liquibase for physical RDBMS tenant '{}' with table prefix '{}'.",
+          physicalTenantId,
+          trimmedPrefix);
+      physicalTenantConfigs.put(
+          physicalTenantId,
+          new PerTenantSchemaConfig(
+              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
+              trimmedPrefix,
+              rdbms.getAutoDdl(),
+              rdbms.getDdlLockWaitTimeout()));
+    }
+    return physicalTenantConfigs;
+  }
+
+  @Bean
+  public RdbmsDataSources rdbmsDataSources(
+      final PhysicalTenantResolver physicalTenantResolver, final MeterRegistry meterRegistry)
+      throws IOException {
+    return RdbmsDataSources.of(
+        physicalTenantResolver.mapValues(
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        meterRegistry);
+  }
+
+  @Bean
+  public Map<String, SqlSessionFactory> sqlSessionFactories(
+      final RdbmsDataSources rdbmsDataSources, final PhysicalTenantResolver physicalTenantResolver)
+      throws Exception {
+    final var factories = new LinkedHashMap<String, SqlSessionFactory>();
+    for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
+      final var prefix =
+          physicalTenantResolver
+              .forPhysicalTenant(tenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms()
+              .getPrefix();
+      factories.put(
+          tenantId,
+          buildSqlSessionFactory(
+              rdbmsDataSources.dataSourceFor(tenantId),
+              rdbmsDataSources.vendorPropertiesFor(tenantId),
+              prefix));
+    }
+    return Map.copyOf(factories);
+  }
+
+  @Bean
+  public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
+      final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final RdbmsDataSources rdbmsDataSources) {
+    final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
+    for (final var entry : sqlSessionFactories.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      final var factory = entry.getValue();
+      bundles.put(
+          physicalTenantId,
+          RdbmsMapperBundle.from(
+              factory,
+              new SqlSessionTemplate(factory),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+    }
+    return Map.copyOf(bundles);
+  }
+
+  private SqlSessionFactory buildSqlSessionFactory(
+      final DataSource dataSource,
+      final VendorDatabaseProperties databaseProperties,
+      final String prefix)
+      throws Exception {
+    final var configuration = new org.apache.ibatis.session.Configuration();
+    configuration.setJdbcTypeForNull(JdbcType.NULL);
+    configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
+    configuration.getTypeHandlerRegistry().register(EntityProtectionModeTypeHandler.class);
+    // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
+    // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
+    // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.
+    configuration.setDatabaseId(databaseProperties.databaseId());
+
+    final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
+    factoryBean.setConfiguration(configuration);
+    factoryBean.setDataSource(dataSource);
+    factoryBean.addMapperLocations(
+        new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
+
+    final Properties p = new Properties();
+    p.put("prefix", StringUtils.trimToEmpty(prefix));
+    p.putAll(databaseProperties.properties());
+    factoryBean.setConfigurationProperties(p);
+    final var factory = factoryBean.getObject();
+    // The bulk of the memory usage (~50-60%) for MyBatis with high tenant count is coming from the
+    // sql fragments.
+    // The <sql> fragments are only needed to resolve <include>s while the mappers are parsed, which
+    // is done by now. Each one holds on to the whole parsed mapper DOM, which is otherwise retained
+    // for the lifetime of the tenant's factory, once per physical tenant on every node.
+    configuration.getSqlFragments().clear();
+    return factory;
+  }
+}

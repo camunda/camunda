@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--
+  ~ The production changelog, followed by a changeset that hands control back to the test while
+  ~ Liquibase still holds this tenant's changelog lock. That window is what
+  ~ LiquibaseSchemaManagerConcurrentMigrationH2Test needs in order to decide the interleaving of two
+  ~ tenants' migrations instead of racing for it.
+  -->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="/db/changelog/rdbms-exporter/changelog-master.xml" />
+
+  <changeSet id="park-while-holding-the-changelog-lock" author="camunda" runAlways="true">
+    <customChange
+      class="io.camunda.db.rdbms.LiquibaseSchemaManagerConcurrentMigrationH2Test$ParkInsideUpdate" />
+  </changeSet>
+
+</databaseChangeLog>

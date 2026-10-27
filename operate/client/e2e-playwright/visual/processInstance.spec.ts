@@ -1,0 +1,795 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect, type Locator} from '@playwright/test';
+import {test} from '@/visual-fixtures';
+import {
+  compensationProcessInstance,
+  completedInstance,
+  instanceWithIncident,
+  mockResponses,
+  runningInstance,
+  waitStateRunningInstance,
+} from '@/mocks/processInstance';
+import {URL_API_PATTERN} from '@/constants';
+import {clientConfigMock} from '@/mocks/clientConfig';
+
+const expectInlineEditorToBeContained = async (inlineEditor: Locator) => {
+  const bounds = await inlineEditor.evaluate((wrapper) => {
+    const grid = wrapper.parentElement;
+    const editor = wrapper.querySelector('.cm-editor');
+    const content = wrapper.querySelector('.cm-content');
+
+    if (grid === null || editor === null || content === null) {
+      throw new Error('Inline editor grid structure was not found');
+    }
+
+    const gridRect = grid.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+
+    return {
+      gridLeft: gridRect.left,
+      gridRight: gridRect.right,
+      wrapperLeft: wrapperRect.left,
+      wrapperRight: wrapperRect.right,
+      editorRight: editorRect.right,
+      contentRight: contentRect.right,
+    };
+  });
+
+  expect(bounds.wrapperLeft).toBeGreaterThanOrEqual(bounds.gridLeft - 1);
+  expect(bounds.wrapperRight).toBeLessThanOrEqual(bounds.gridRight + 1);
+  expect(bounds.editorRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+  expect(bounds.contentRight).toBeLessThanOrEqual(bounds.wrapperRight + 1);
+};
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
+
+test.describe('process instance page', () => {
+  test('error page', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+
+    await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
+    await processInstancePage.resetZoomButton.click();
+
+    await expect(
+      page.getByText('Variables could not be fetched'),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('helper modal', async ({page}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await page.goto(
+      `/operate/processes/${runningInstance.detail.processInstanceKey}`,
+    );
+
+    await expect(page.getByText("Here's what moved in Operate")).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('running instance', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+        incidents: runningInstance.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('running instance - wait state details', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: waitStateRunningInstance.detail,
+        callHierarchy: waitStateRunningInstance.callHierarchy,
+        elementInstances: waitStateRunningInstance.elementInstances,
+        statistics: waitStateRunningInstance.statistics,
+        sequenceFlows: waitStateRunningInstance.sequenceFlows,
+        variables: waitStateRunningInstance.variables,
+        xml: waitStateRunningInstance.xml,
+        incidents: waitStateRunningInstance.incidents,
+        waitStates: waitStateRunningInstance.waitStates,
+        waitStateStatistics: waitStateRunningInstance.waitStateStatistics,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: waitStateRunningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    // allow the diagram (bpmn-js SVG) to finish rendering before screenshotting
+    await page.waitForTimeout(500);
+    await expect(
+      page.getByTestId('waiting-state-overlay').first(),
+    ).toBeVisible();
+
+    // labels cover single- and multi-digit counts (and the narrow-element offset)
+    await expect(page.getByText('2 waiting')).toBeVisible();
+    await expect(page.getByText('5 waiting')).toBeVisible();
+    await expect(page.getByText('11 waiting')).toBeVisible();
+    await expect(page.getByText('333 waiting')).toBeVisible();
+
+    // select the waiting user task and open its details
+    await processInstancePage.diagram
+      .getFlowNodeById('Activity_0dex012')
+      .click();
+    await page.getByRole('link', {name: 'Details', exact: true}).click();
+
+    // both wait states are listed for the selected element
+    await expect(page.getByTestId('waiting-status')).toBeVisible();
+    await expect(page.getByText('Waiting for task completion')).toBeVisible();
+    await expect(
+      page.getByText('Waiting for task listener: notify-assignee'),
+    ).toBeVisible();
+
+    // The double-ring signal catch events anti-alias slightly differently
+    // between CI runs; allow a small pixel budget to avoid flakiness.
+    await expect(page).toHaveScreenshot({maxDiffPixels: 60});
+  });
+
+  test('add variable state', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await processInstancePage.addVariableButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('variable modal overlays navigation at narrow desktop width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.setViewportSize({width: 1200, height: 720});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.addVariableButton.click();
+    await page.getByRole('button', {name: 'Open', exact: true}).last().click();
+
+    await expect(
+      page.getByRole('heading', {name: 'Edit a new Variable'}),
+    ).toBeVisible();
+    await processInstancePage.variablesEditor.hideCaret();
+    await page.addStyleTag({
+      content:
+        '.monaco-editor :is(.scrollbar, .decorationsOverviewRuler) {opacity: 0 !important;}',
+    });
+    await page.mouse.move(0, 0);
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('edit variable state', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByRole('button', {
+        name: /edit/i,
+      })
+      .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.hideCaret();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident expanded row', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    await page.getByRole('button', {name: /expand current row/i}).click();
+
+    const expandedRow = page.getByRole('row').last();
+    await expect(expandedRow.getByText('Job ID')).toBeVisible();
+    await expect(expandedRow.getByText('Error message')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident keeps operations reachable at narrow width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.setViewportSize({width: 600, height: 720});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    const tableContainer = page.getByTestId('data-table-container');
+    await expect(tableContainer).toBeVisible();
+    await expect
+      .poll(async () =>
+        tableContainer.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      )
+      .toBe(true);
+
+    await tableContainer.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+
+    await expect(
+      page.getByRole('columnheader', {name: 'Operations'}),
+    ).toBeVisible();
+  });
+
+  test('completed instance', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: completedInstance.detail,
+        callHierarchy: completedInstance.callHierarchy,
+        elementInstances: completedInstance.elementInstances,
+        statistics: completedInstance.statistics,
+        sequenceFlows: completedInstance.sequenceFlows,
+        variables: completedInstance.variables,
+        xml: completedInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: completedInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(processInstancePage.executionCountToggle).toBeEnabled();
+    await processInstancePage.executionCountToggle.click({force: true});
+
+    await processInstancePage.endDateToggle.click({force: true});
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('compensation process instance', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: compensationProcessInstance.detail,
+        callHierarchy: compensationProcessInstance.callHierarchy,
+        elementInstances: compensationProcessInstance.elementInstances,
+        statistics: compensationProcessInstance.statistics,
+        sequenceFlows: compensationProcessInstance.sequenceFlows,
+        variables: compensationProcessInstance.variables,
+        xml: compensationProcessInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: compensationProcessInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await processInstancePage.executionCountToggle.click({force: true});
+
+    await processInstancePage.endDateToggle.click({force: true});
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON view - running instance', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page.getByTestId('variable-payload')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON view - scrollable', async ({page, processInstancePage}) => {
+    const longJsonVariable = {
+      variableKey: '2251799813687144-longPayload',
+      name: 'longPayload',
+      value: '{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [longJsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page.getByTestId('variable-longPayload')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON edit - error state', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await expect(page.locator('.cm-editor .cm-line')).toHaveText([
+      '{',
+      '"status": "active",',
+      '"count": 42',
+      '}',
+    ]);
+    await expect(page.locator('.cm-editor')).toHaveCSS('height', '80px');
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('{invalid');
+
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await expect(page.locator('.cm-editor.cm-focused')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
+
+    await processInstancePage.variablesEditor.hideCaret();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON edit - edit mode before focus', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await processInstancePage.addVariableButton.click();
+
+    await processInstancePage.newVariableNameField.fill('newPayload');
+
+    const inlineEditor = page.getByTestId('json-editor-wrapper');
+    const codeMirrorEditor = inlineEditor.getByRole('textbox', {name: 'Value'});
+
+    await expect(codeMirrorEditor).toBeVisible();
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
+    await expectInlineEditorToBeContained(inlineEditor);
+
+    await expect(page).toHaveScreenshot();
+
+    const widthBeforeFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    await codeMirrorEditor.click();
+    await expect(codeMirrorEditor).toBeFocused();
+    const textColor = await codeMirrorEditor.evaluate(
+      (element) => getComputedStyle(element).color,
+    );
+    await expect(inlineEditor.locator('.cm-cursor').first()).toHaveCSS(
+      'border-left-color',
+      textColor,
+    );
+    await expect(inlineEditor.locator('.cm-editor')).toHaveCSS(
+      'outline-style',
+      'none',
+    );
+    expect(
+      await inlineEditor
+        .locator('.cm-editor')
+        .evaluate(
+          (element) => getComputedStyle(element, '::after').outlineWidth,
+        ),
+    ).toBe('2px');
+
+    const widthAfterFocus = await inlineEditor.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    expect(widthAfterFocus).toBeLessThanOrEqual(widthBeforeFocus + 1);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill(
+      `"${'long-value-'.repeat(100)}"`,
+    );
+    await expectInlineEditorToBeContained(inlineEditor);
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('["alpha", "al"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    const suggestion = page.getByRole('option', {name: 'alpha', exact: true});
+    await expect(suggestion).toBeVisible();
+    await expect(suggestion).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(codeMirrorEditor).toHaveText('["alpha", "alpha"]');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Control+Space');
+    await expect(suggestion).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(suggestion).not.toBeVisible();
+    await expect(codeMirrorEditor).not.toBeFocused();
+
+    await codeMirrorEditor.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(processInstancePage.newVariableNameField).toBeFocused();
+  });
+
+  test('inline JSON edit - error state after blur', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('{invalid');
+
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await processInstancePage.variablesEditor.blur();
+
+    await expect(
+      page.getByRole('textbox', {name: 'payload'}),
+    ).not.toBeFocused();
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('instance history panel at its minimum width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        // 10% is smaller than the configured minimum width, which will override it.
+        JSON.stringify({'process-instance-bottom-panel': [10, 90]}),
+      );
+    });
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+        incidents: runningInstance.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+
+    await expect(processInstancePage.instanceHistory).toBeVisible();
+    await expect(
+      processInstancePage.instanceHistory.getByRole('heading', {
+        name: 'Instance History',
+      }),
+    ).toBeVisible();
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await expect(page).toHaveScreenshot();
+  });
+});

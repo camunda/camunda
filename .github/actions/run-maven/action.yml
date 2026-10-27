@@ -1,0 +1,21 @@
+name: Run Maven
+description: |
+  Maven wrapper to abstract defaults for running maven
+inputs:
+  parameters:
+    description: Maven parameters to supply
+    required: true
+  threads:
+    description: Allows overwriting the amount of threads used, see https://cwiki.apache.org/confluence/display/MAVEN/Parallel+builds+in+Maven+3
+    required: false
+    default: 1C
+runs:
+  using: composite
+  steps:
+  - name: Run Maven
+    shell: bash
+    run: ${{ github.action_path }}/maven.sh
+    env:
+      PARAMETERS: ${{ inputs.parameters }}
+      TZ: Europe/Berlin
+      THREADS: ${{ inputs.threads }}

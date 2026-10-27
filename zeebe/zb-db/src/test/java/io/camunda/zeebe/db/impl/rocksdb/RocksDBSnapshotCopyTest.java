@@ -1,0 +1,267 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.impl.rocksdb;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.zip.CRC32;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+public class RocksDBSnapshotCopyTest {
+  final long rowsPerCF = 100;
+  @TempDir Path destinationPath;
+  @TempDir Path sourceDBPath;
+  @TempDir Path sourcePath;
+  Path sourceSnapshotPath;
+  private RocksDBSnapshotCopy copy;
+  private Random random;
+  private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
+
+  @BeforeEach
+  void setup() {
+    factory =
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new);
+    copy = new RocksDBSnapshotCopy(factory);
+    random = new Random(1212331);
+    sourceSnapshotPath = sourcePath.resolve("snapshot");
+  }
+
+  @AfterEach
+  public void tearDown() {
+    sourceSnapshotPath.toFile().delete();
+  }
+
+  @Test
+  public void shouldCopyOnlySomeColumns() throws Exception {
+    // given
+    final var expectedRowsPerCF = populateSnapshot(factory);
+    // when
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+
+    // then
+    final var sourceSize = computeDBSpace(sourcePath);
+    final var copySize = computeDBSpace(destinationPath);
+    assertThat(copySize).isLessThan(sourceSize);
+
+    final var copiedRows = initCounterMap();
+    try (final var fromDB = factory.createDb(sourceSnapshotPath.toFile());
+        final var toDB = factory.createDb(destinationPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      final var toCtx = toDB.createContext();
+      toCtx.runInTransaction(
+          () -> {
+            final var toTx = (ZeebeTransaction) toCtx.getCurrentTransaction();
+            for (final var cf : ZbColumnFamilies.values()) {
+              if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
+                final var fromCf = new RawTransactionalColumnFamily(fromDB, cf);
+                final var toCf = new RawTransactionalColumnFamily(toDB, cf);
+                fromCf.forEach(
+                    fromCtx,
+                    (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
+                      final byte[] toValue;
+                      try {
+                        toValue = toCf.get(toTx, key, keyLen);
+                      } catch (final Exception e) {
+                        throw new RuntimeException(e);
+                      }
+                      assertThat(toValue).isNotNull();
+                      final var original = new byte[valueLen - valueOffset];
+                      System.arraycopy(value, valueOffset, original, 0, valueLen - valueOffset);
+                      assertThat(toValue).isEqualTo(original);
+                      copiedRows.compute(cf, (k, v) -> v + 1);
+                      return true;
+                    });
+              }
+            }
+          });
+    }
+    assertThat(copiedRows).containsExactlyInAnyOrderEntriesOf(expectedRowsPerCF);
+  }
+
+  @Test
+  public void shouldNotChangeFilesOnDiskFromSourceSnapshot() throws IOException {
+    // given
+    final var expectedRowsPerCF = populateSnapshot(factory);
+    final var initialChecksums = computeChecksums(sourceSnapshotPath);
+
+    // when
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+
+    // then
+    final var afterChecksums = computeChecksums(sourceSnapshotPath);
+    assertThat(afterChecksums).containsExactlyInAnyOrderEntriesOf(initialChecksums);
+  }
+
+  @Test
+  public void shouldCompactCopyIntoCompressedFiles() throws Exception {
+    // given
+    final var rawBytes = populateCompressibleSnapshot(factory);
+
+    // when
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+
+    // then - without compaction the copy is a single uncompressed L0 file as big as the data
+    final var sstSizes = sstFileSizes(destinationPath);
+    final var sstTotal = sstSizes.stream().mapToLong(Long::longValue).sum();
+    assertThat(sstTotal).isLessThan(rawBytes / 4);
+  }
+
+  private List<Long> sstFileSizes(final Path dbPath) throws IOException {
+    try (final Stream<Path> files = Files.list(dbPath)) {
+      return files
+          .filter(p -> p.getFileName().toString().endsWith(".sst"))
+          .map(p -> p.toFile().length())
+          .toList();
+    }
+  }
+
+  private long populateCompressibleSnapshot(final ZeebeRocksDbFactory<ZbColumnFamilies> factory)
+      throws Exception {
+    final var rowsPerTransaction = 8;
+    final var transactions = 6;
+    final var valueSize = 1024 * 1024;
+    var rawBytes = 0L;
+    try (final var fromDB = factory.createDb(sourceDBPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      final var columnFamily =
+          new RawTransactionalColumnFamily(fromDB, ZbColumnFamilies.PROCESS_CACHE);
+      for (int tx = 0; tx < transactions; tx++) {
+        final var transactionIndex = tx;
+        fromCtx.runInTransaction(
+            () -> {
+              final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
+              for (int row = 0; row < rowsPerTransaction; row++) {
+                final var key =
+                    ByteBuffer.allocate(Long.BYTES)
+                        .putLong((long) transactionIndex * rowsPerTransaction + row)
+                        .array();
+                final var value = compressibleValue(valueSize);
+                try {
+                  columnFamily.put(ctx, key, key.length, value, value.length);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+        rawBytes += (long) rowsPerTransaction * valueSize;
+      }
+      fromDB.createSnapshot(sourceSnapshotPath.toFile());
+    }
+    return rawBytes;
+  }
+
+  private byte[] compressibleValue(final int size) {
+    final var element = "<bpmn:task id=\"Task_%d\" name=\"Do something useful\"/>\n";
+    final var builder = new StringBuilder(size + 128);
+    while (builder.length() < size) {
+      builder.append(element.formatted(random.nextInt(100)));
+    }
+    return builder.substring(0, size).getBytes(StandardCharsets.UTF_8);
+  }
+
+  private long computeDBSpace(final Path snapshotPath) throws IOException {
+    final var totalSize = new AtomicLong();
+    Files.walk(snapshotPath, 10).forEach(f -> totalSize.addAndGet(f.toFile().length()));
+    return totalSize.get();
+  }
+
+  private Map<String, Long> computeChecksums(final Path snapshotPath) throws IOException {
+    try (final var fileStream = Files.walk(snapshotPath)) {
+      return fileStream
+          .filter(p -> !p.toFile().isDirectory())
+          .parallel()
+          .map(
+              path -> {
+                try (final var channel = FileChannel.open(path)) {
+                  final var bb = ByteBuffer.allocate(4 * 1024);
+                  final var crc = new CRC32();
+                  while (true) {
+                    bb.clear();
+                    if (channel.read(bb) < 0) {
+                      break;
+                    }
+                    crc.update(bb);
+                  }
+                  return Map.entry(path.toString(), crc.getValue());
+                } catch (final IOException e) {
+                  throw new RuntimeException(e);
+                }
+              })
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+  }
+
+  private Map<ZbColumnFamilies, Long> initCounterMap() {
+    final var map = new java.util.EnumMap<ZbColumnFamilies, Long>(ZbColumnFamilies.class);
+    Arrays.stream(ZbColumnFamilies.values()).forEach(cf -> map.put(cf, 0L));
+    return map;
+  }
+
+  private Map<ZbColumnFamilies, Long> populateSnapshot(
+      final ZeebeRocksDbFactory<ZbColumnFamilies> factory) {
+    final Map<ZbColumnFamilies, Long> expectedRowsPerCF = initCounterMap();
+    try (final var fromDB = factory.createDb(sourceDBPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      fromCtx.runInTransaction(
+          () -> {
+            final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
+            for (final ZbColumnFamilies cf : ZbColumnFamilies.values()) {
+              final var transactionalColumnFamily = new RawTransactionalColumnFamily(fromDB, cf);
+              for (int i = 0; i < rowsPerCF; i++) {
+                // the key must be big enough to avoid generating duplicates.
+                // with 1024 and the seed in the setup no duplicates are created.
+                // otherwise, the number of rows per cf can be reduced to reduce the amount of
+                // collisions
+                final var key = new byte[random.nextInt(1024)];
+                random.nextBytes(key);
+
+                final var value = new byte[random.nextInt(64 * 1024)];
+                random.nextBytes(value);
+                transactionalColumnFamily.put(ctx, key, key.length, value, value.length);
+                if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
+                  expectedRowsPerCF.compute(cf, (k, v) -> v + 1);
+                }
+              }
+              ctx.commit();
+            }
+          });
+
+      fromDB.createSnapshot(sourceSnapshotPath.toFile());
+    }
+    return expectedRowsPerCF;
+  }
+}

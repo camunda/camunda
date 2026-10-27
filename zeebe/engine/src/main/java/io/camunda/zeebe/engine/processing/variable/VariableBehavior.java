@@ -1,0 +1,370 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.variable;
+
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.variable.DocumentEntry;
+import io.camunda.zeebe.engine.state.variable.IndexedDocument;
+import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.engine.util.validation.NestingDepthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * A behavior which allows processors to mutate the variable state. Use this anywhere where you
+ * would want to set a variable during processing.
+ *
+ * <p>Note that for {@link io.camunda.zeebe.engine.state.EventApplier}, you should just use the
+ * mutable state directly.
+ */
+public final class VariableBehavior {
+
+  private final VariableState variableState;
+  private final StateWriter stateWriter;
+  private final BpmnConditionalBehavior conditionalBehavior;
+  private final KeyGenerator keyGenerator;
+
+  private final IndexedDocument indexedDocument = new IndexedDocument();
+  private final VariableRecord variableRecord = new VariableRecord();
+  private final VariableSourceRecord variableSourceRecord;
+
+  public VariableBehavior(
+      final VariableState variableState,
+      final StateWriter stateWriter,
+      final BpmnConditionalBehavior conditionalBehavior,
+      final KeyGenerator keyGenerator) {
+    this.variableState = variableState;
+    this.stateWriter = stateWriter;
+    this.conditionalBehavior = conditionalBehavior;
+    this.keyGenerator = keyGenerator;
+    variableSourceRecord = VariableSourceRecord.none();
+  }
+
+  public VariableBehavior(
+      final VariableState variableState,
+      final StateWriter stateWriter,
+      final BpmnConditionalBehavior conditionalBehavior,
+      final KeyGenerator keyGenerator,
+      final VariableSourceRecord variableSourceRecord) {
+    this.variableState = variableState;
+    this.stateWriter = stateWriter;
+    this.conditionalBehavior = conditionalBehavior;
+    this.keyGenerator = keyGenerator;
+    this.variableSourceRecord = variableSourceRecord;
+  }
+
+  public VariableBehavior withVariableSource(final VariableSourceRecord source) {
+    return new VariableBehavior(
+        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+  }
+
+  /**
+   * Merges the given document directly on the given scope key.
+   *
+   * <p>If any variable from the document already exists on the current scope, a {@code
+   * Variable.UPDATED} record is produced as a follow up event.
+   *
+   * <p>For all variables from the document which do not exist in the current scope, a {@code
+   * Variable.CREATED} record is produced as a follow up event.
+   *
+   * @param scopeKey the scope key for each variable
+   * @param processDefinitionKey the process key to be associated with each variable
+   * @param processInstanceKey the process instance key to be associated with each variable
+   * @param rootProcessInstanceKey the associated root process instance key
+   * @param storageOrdinal the storage ordinal for the variable
+   * @param bpmnProcessId the BPMN process ID to be associated with each variable
+   * @param tenantId the tenant ID to be associated with each variable
+   * @param document the document to merge
+   * @param metadataLookup provides the metadata of each variable
+   */
+  public void mergeLocalDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
+    indexedDocument.index(document);
+    if (indexedDocument.isEmpty()) {
+      return;
+    }
+    variableRecord
+        .setScopeKey(scopeKey)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId)
+        .setSource(variableSourceRecord);
+    final List<VariableEvent> variableEvents = new ArrayList<>();
+    for (final DocumentEntry entry : indexedDocument) {
+      applyEntryToRecord(entry);
+      final Optional<VariableEvent> variableEvent =
+          setLocalVariable(variableRecord, metadataLookup.forVariable(entry.getName()));
+      variableEvent.ifPresent(variableEvents::add);
+    }
+
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
+  }
+
+  /**
+   * Merges the given document, propagating its changes from the bottom to the top of the scope
+   * hierarchy.
+   *
+   * <p>Starting at the given {@code scopeKey}, it will overwrite any variables that exist in that
+   * scope with the corresponding values from the given document. Variables that were not set
+   * because they did not exist in the current scope are collected as a sub document, which will
+   * then be merged with the parent scope, recursively, until there are no more. If we reach a scope
+   * with no parent, then any remaining variables are created there.
+   *
+   * <p>If any variable from the document already exists on the current scope, a {@code
+   * Variable.UPDATED} record is produced as a follow up event.
+   *
+   * <p>For all variables from the document which do not exist in the current scope, a {@code
+   * Variable.CREATED} record is produced as a follow up event.
+   *
+   * @param scopeKey the scope key for each variable
+   * @param processDefinitionKey the process key to be associated with each variable
+   * @param processInstanceKey the process instance key to be associated with each variable
+   * @param rootProcessInstanceKey the root process instance key to be associated with each variable
+   * @param storageOrdinal the storage ordinal for the variable
+   * @param document the document to merge
+   * @param metadataLookup provides the metadata of each variable
+   */
+  public void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
+    indexedDocument.index(document);
+    if (indexedDocument.isEmpty()) {
+      return;
+    }
+    long currentScope = scopeKey;
+    long parentScope;
+    final List<VariableEvent> variableEvents = new ArrayList<>();
+
+    variableRecord
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId)
+        .setSource(variableSourceRecord);
+    while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
+      final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
+
+      variableRecord.setScopeKey(currentScope);
+      while (entryIterator.hasNext()) {
+        final DocumentEntry entry = entryIterator.next();
+        final VariableInstance variableInstance =
+            variableState.getVariableInstanceLocal(currentScope, entry.getName());
+        if (variableInstance == null) {
+          continue;
+        }
+
+        applyEntryToRecord(entry);
+        final Optional<VariableEvent> variableEvent =
+            updateVariable(
+                variableInstance, variableRecord, metadataLookup.forVariable(entry.getName()));
+        if (variableEvent.isPresent()) {
+          variableEvents.add(variableEvent.get());
+          entryIterator.remove();
+        }
+      }
+
+      currentScope = parentScope;
+    }
+
+    variableRecord.setScopeKey(currentScope);
+    for (final DocumentEntry entry : indexedDocument) {
+      applyEntryToRecord(entry);
+      final Optional<VariableEvent> variableEvent =
+          setLocalVariable(variableRecord, metadataLookup.forVariable(entry.getName()));
+      variableEvent.ifPresent(variableEvents::add);
+    }
+
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
+  }
+
+  /**
+   * Publishes a follow up event to create or update the variable with name {@code name} on the
+   * given scope with key {@code scopeKey}, with additional {@code processDefinitionKey} and {@code
+   * processInstanceKey} context.
+   *
+   * <p>If the scope is the process instance itself, then {@code scopeKey} should be equal to {@code
+   * processInstanceKey}.
+   *
+   * @param scopeKey the key of the scope on which to set the variable
+   * @param processDefinitionKey the associated process key
+   * @param processInstanceKey the associated process instance key
+   * @param rootProcessInstanceKey the associated root process instance key
+   * @param storageOrdinal the storage ordinal for the variable
+   * @param name a buffer containing only the name of the variable
+   * @param value a buffer containing the value of the variable as MessagePack
+   * @param valueOffset the offset of the value in the {@code value} buffer
+   * @param valueLength the length of the value in the {@code value} buffer
+   * @param metadataLookup provides the metadata of the variable, it replaces the metadata of an
+   *     existing variable
+   */
+  public void setLocalVariable(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer name,
+      final DirectBuffer value,
+      final int valueOffset,
+      final int valueLength,
+      final VariableMetadataLookup metadataLookup) {
+
+    variableRecord
+        .setScopeKey(scopeKey)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId)
+        .setName(name)
+        .setValue(value, valueOffset, valueLength);
+
+    final Optional<VariableEvent> variableEvent =
+        setLocalVariable(variableRecord, metadataLookup.forVariable(name));
+    final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
+
+    conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
+  }
+
+  private Optional<VariableEvent> setLocalVariable(
+      final VariableRecord record, final @Nullable VariableMetadataRecord metadata) {
+    final VariableInstance variableInstance =
+        variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
+    if (variableInstance == null) {
+      return Optional.of(createVariable(record, metadata));
+    }
+    return updateVariable(variableInstance, record, metadata);
+  }
+
+  private VariableEvent createVariable(
+      final VariableRecord record, final @Nullable VariableMetadataRecord metadata) {
+    if (metadata != null) {
+      record.setMetadata(metadata);
+    } else {
+      record.getMetadata().setProtectionModes(Set.of());
+    }
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), VariableIntent.CREATED, record);
+    return new VariableEvent(
+        record.getScopeKey(), VariableIntent.CREATED, getVariableRecordCopy(record));
+  }
+
+  /**
+   * Updates the variable if its value changed, or if {@code metadata} differs from the stored one.
+   * Without {@code metadata} the variable keeps the metadata it has.
+   */
+  private Optional<VariableEvent> updateVariable(
+      final VariableInstance variableInstance,
+      final VariableRecord record,
+      final @Nullable VariableMetadataRecord metadata) {
+    if (!hasValueChanged(variableInstance, record)
+        && !hasMetadataChanged(variableInstance, metadata)) {
+      return Optional.empty();
+    }
+
+    record.setMetadata(metadata != null ? metadata : variableInstance.getMetadata());
+    stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
+    return Optional.of(
+        new VariableEvent(
+            record.getScopeKey(), VariableIntent.UPDATED, getVariableRecordCopy(record)));
+  }
+
+  private static boolean hasMetadataChanged(
+      final VariableInstance variableInstance, final @Nullable VariableMetadataRecord metadata) {
+    return metadata != null
+        && !metadata
+            .getProtectionModes()
+            .equals(variableInstance.getMetadata().getProtectionModes());
+  }
+
+  private static boolean hasValueChanged(
+      final VariableInstance variableInstance, final VariableRecord record) {
+    return !variableInstance.getValue().equals(record.getValueBuffer());
+  }
+
+  private void applyEntryToRecord(final DocumentEntry entry) {
+    variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {
+    final VariableRecord variableRecordCopy = new VariableRecord();
+    variableRecordCopy.copyFrom(variableRecord);
+
+    return variableRecordCopy;
+  }
+
+  /**
+   * Validates the given variable buffer. This is exposed for clients that need validation upfront
+   * or are not using {@code mergeDocument}/{@code mergeLocalDocument}.
+   *
+   * @param variableBuffer buffer to validate
+   * @return Either with Rejection if validation fails, or Void if validation succeeds
+   */
+  public Either<Rejection, Void> validateVariables(final DirectBuffer variableBuffer) {
+    return NestingDepthValidator.validate(variableBuffer)
+        .mapLeft(
+            failure ->
+                new Rejection(
+                    RejectionType.INVALID_ARGUMENT,
+                    "Failed to validate variables: " + failure.getMessage()));
+  }
+
+  private void validateBuffer(final long scopeKey, final DirectBuffer variableBuffer)
+      throws VariableValidationException {
+    final Either<Failure, Void> validate = NestingDepthValidator.validate(variableBuffer);
+    if (validate.isLeft()) {
+      throw new VariableValidationException(
+          String.format(
+              "Failed to validate variable document in scope %d: %s",
+              scopeKey, validate.getLeft().getMessage()));
+    }
+  }
+}

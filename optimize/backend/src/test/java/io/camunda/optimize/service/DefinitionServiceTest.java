@@ -1,0 +1,151 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.service.db.reader.DefinitionReader;
+import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
+import io.camunda.optimize.service.tenant.TenantService;
+import io.camunda.optimize.service.util.configuration.CacheConfiguration;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.GlobalCacheConfiguration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class DefinitionServiceTest {
+
+  @Mock private DefinitionReader definitionReader;
+  @Mock private DataSourceDefinitionAuthorizationService definitionAuthorizationService;
+  @Mock private TenantService tenantService;
+  @Mock private ConfigurationService configurationService;
+
+  private DefinitionService underTest;
+
+  @BeforeEach
+  void setUp() {
+    final CacheConfiguration cacheConfiguration = new CacheConfiguration();
+    cacheConfiguration.setMaxSize(10);
+    cacheConfiguration.setDefaultTtlMillis(10_000);
+    final GlobalCacheConfiguration globalCacheConfiguration = new GlobalCacheConfiguration();
+    globalCacheConfiguration.setDefinitions(cacheConfiguration);
+    when(configurationService.getCaches()).thenReturn(globalCacheConfiguration);
+    underTest =
+        new DefinitionService(
+            definitionReader, definitionAuthorizationService, tenantService, configurationService);
+  }
+
+  @Test
+  void shouldReturnEmptyFlowNodeNamesWhenProcessDefinitionVersionIsNull() {
+    // given
+    final ProcessInstanceDto instance = new ProcessInstanceDto();
+    instance.setProcessDefinitionKey("my-process");
+    instance.setProcessDefinitionVersion(null);
+
+    // when
+    final Map<String, String> result =
+        underTest.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(List.of(instance));
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyFlowNodeNamesWhenProcessInstanceListIsEmpty() {
+    // when
+    final Map<String, String> result =
+        underTest.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(Collections.emptyList());
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldEvictWhenDeletedVersionIsTheCachedLatestForTenant() {
+    // given
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    // populate the cache with tenant-a's latest at version 3
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when -- the deleted definition is version 3, the tenant's cached latest
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-a", "3");
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- the loader had to be called again since the entry was evicted
+    verify(definitionReader, times(2))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
+  }
+
+  @Test
+  void shouldNotEvictWhenDeletedVersionIsNotTheCachedLatestForTenant() {
+    // given
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    // populate the cache with tenant-a's latest at version 3
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when -- an older version than the cached latest was deleted
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-a", "2");
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- the cache entry is untouched, so the loader is not called again
+    verify(definitionReader, times(1))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
+  }
+
+  @Test
+  void shouldNotEvictWhenTenantHasNoCachedLatestDefinition() {
+    // given -- the cache only holds a latest definition for tenant-a
+    final String definitionKey = "invoice-process";
+    final ProcessDefinitionOptimizeDto definition = new ProcessDefinitionOptimizeDto();
+    definition.setKey(definitionKey);
+    definition.setTenantId("tenant-a");
+    definition.setVersion("3");
+    when(definitionReader.getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey))
+        .thenReturn(List.of(definition));
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // when -- a definition for a different, uncached tenant was deleted
+    underTest.invalidateProcessDefinitionIfLatest(definitionKey, "tenant-b", "1");
+    underTest.getCachedTenantToLatestDefinitionMap(DefinitionType.PROCESS, definitionKey);
+
+    // then -- nothing to invalidate, so the loader is not called again
+    verify(definitionReader, times(1))
+        .getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+            DefinitionType.PROCESS, definitionKey);
+  }
+}

@@ -1,0 +1,210 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.agenthistory;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+/**
+ * Verifies the suspension gate classifications of AgentHistory processors.
+ *
+ * <p>COMMIT and DISCARD are unconditionally classified {@code PROCESS}, so teardown bookkeeping
+ * cannot be orphaned when a suspended instance is cancelled.
+ */
+public class AgentHistorySuspensionGateTest {
+
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final String JOB_TYPE = "agentic-task";
+
+  @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldProcessDiscardCommandWhileSuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final var serviceTaskActivated = deployAndCreateProcessInstance(processId, taskId);
+    final long elementInstanceKey = serviceTaskActivated.getKey();
+    final long processInstanceKey = serviceTaskActivated.getValue().getProcessInstanceKey();
+
+    final var jobLeaseToken = activateJobForProcessInstance(processInstanceKey);
+    final long agentInstanceKey =
+        createAgentInstance(
+                elementInstanceKey, jobLeaseToken.jobKey(), jobLeaseToken.jobLeaseToken())
+            .getKey();
+    final long jobKey = jobLeaseToken.jobKey();
+    final long historyItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            jobLeaseToken.jobKey(),
+            jobLeaseToken.jobLeaseToken(),
+            elementInstanceKey);
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .agentHistory(
+                AgentHistoryIntent.DISCARD,
+                new AgentHistoryRecord()
+                    .setJobKey(jobKey)
+                    .setProcessInstanceKey(processInstanceKey)));
+
+    // then — DISCARD succeeds while the process instance is suspended (PROCESS classification)
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
+                .withRecordKey(historyItemKey)
+                .getFirst())
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldProcessCommitCommandWhileSuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final var serviceTaskActivated = deployAndCreateProcessInstance(processId, taskId);
+    final long elementInstanceKey = serviceTaskActivated.getKey();
+    final long processInstanceKey = serviceTaskActivated.getValue().getProcessInstanceKey();
+
+    final var jobLeaseToken = activateJobForProcessInstance(processInstanceKey);
+    final long agentInstanceKey =
+        createAgentInstance(
+                elementInstanceKey, jobLeaseToken.jobKey(), jobLeaseToken.jobLeaseToken())
+            .getKey();
+    final long jobKey = jobLeaseToken.jobKey();
+    final long historyItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            jobLeaseToken.jobKey(),
+            jobLeaseToken.jobLeaseToken(),
+            elementInstanceKey);
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .agentHistory(
+                AgentHistoryIntent.COMMIT,
+                new AgentHistoryRecord()
+                    .setJobKey(jobKey)
+                    .setProcessInstanceKey(processInstanceKey)));
+
+    // then — COMMIT succeeds while the process instance is suspended (PROCESS classification)
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+                .withRecordKey(historyItemKey)
+                .getFirst())
+        .isNotNull();
+  }
+
+  // --- helpers ---
+
+  private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance(
+      final String processId, final String taskId) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(taskId, t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withElementId(taskId)
+        .getFirst();
+  }
+
+  private static Record<?> createAgentInstance(
+      final long elementInstanceKey, final long jobKey, final String jobLeaseToken) {
+    return ENGINE
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .create();
+  }
+
+  private static LeasedJob activateJobForProcessInstance(final long processInstanceKey) {
+    final var jobBatch = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var jobLeaseToken =
+        jobBatch
+            .getValue()
+            .getJobs()
+            .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
+            .getJobLeaseToken();
+    return new LeasedJob(jobKey, jobLeaseToken);
+  }
+
+  // AGENT_HISTORY:CREATE is dead; AGENT_INSTANCE:UPDATE with a history batch is the only live
+  // path that produces AGENT_HISTORY:CREATED events, so this seeds the item through it.
+  private static long createHistoryItem(
+      final long agentInstanceKey,
+      final long jobKey,
+      final String jobLeaseToken,
+      final long elementInstanceKey) {
+    final var historyItemId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withJobKey(jobKey)
+        .withJobLeaseToken(jobLeaseToken)
+        .withHistory(
+            List.of(
+                new AgentHistoryRecord()
+                    .setHistoryItemId(historyItemId)
+                    .setRole(AgentHistoryRole.USER)
+                    .setLoopIteration(1)
+                    .addContent(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText("hi"))))
+        .update();
+    return RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+        .withAgentInstanceKey(agentInstanceKey)
+        .filter(r -> r.getValue().getHistoryItemId().equals(historyItemId))
+        .getFirst()
+        .getKey();
+  }
+
+  private record LeasedJob(long jobKey, String jobLeaseToken) {}
+}

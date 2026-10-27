@@ -1,0 +1,36 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+declare module '@tanstack/history' {
+	interface HistoryState {
+		tasklistAutoSelectSource?: 'task-completion';
+		operateDecisionFocus?: {decisionInstanceKey: string} | 'list';
+		operateVariableFilterDraft?: {name: string; value: string};
+		operateVariableFilterOpenedFromList?: true;
+		operateInstanceMigration?: unknown;
+	}
+}
+
+export declare global {
+	interface Window {
+		Osano?: {
+			cm?: {
+				analytics: boolean;
+				showDrawer: (arg: string) => void;
+				addEventListener: (eventType: string, callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void) => void;
+			};
+		};
+	}
+
+	interface ImportMetaEnv {
+		readonly VITE_VERSION: string;
+		readonly VITE_OSANO_DEV_ENV_URL: string;
+		readonly VITE_OSANO_INT_ENV_URL: string;
+		readonly VITE_OSANO_PROD_ENV_URL: string;
+	}
+}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  - one or more contributor license agreements. See the NOTICE file distributed
+  - with this work for additional information regarding copyright ownership.
+  - Licensed under the Camunda License 1.0. You may not use this file
+  - except in compliance with the Camunda License 1.0.
+  -->
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+  xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+  xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1whs8i1" name="DRD"
+  namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.36.1"
+  modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <decision id="shippingDecision" name="Shipping decision">
+    <decisionTable id="shippingTable" hitPolicy="FIRST">
+      <input id="Input_1" label="Amount">
+        <inputExpression id="InputExpression_1" typeRef="number">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Shipping" name="shipping" typeRef="string">
+        <outputValues id="UnaryTests_0dlr7qd">
+          <text>"STANDARD","EXPRESS"</text>
+        </outputValues>
+      </output>
+      <!-- Rule with ID (safe) -->
+      <rule id="rule_1_standard">
+        <inputEntry id="UnaryTests_0upjivp">
+          <text>&lt;= 100</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1pkzjur">
+          <text>"STANDARD"</text>
+        </outputEntry>
+      </rule>
+      <!-- Rule WITHOUT id on purpose -->
+      <rule>
+        <inputEntry id="UnaryTests_1pqn5oz">
+          <text>&gt; 100</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_17do8e0">
+          <text>"EXPRESS"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="shipping_decision">
+        <dc:Bounds height="80" width="180" x="160" y="100"/>
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

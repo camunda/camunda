@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="force_users" name="Force Users" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <decision id="labeled_input" name="Decision Table">
+    <decisionTable id="DecisionTable_14n3bx1">
+      <input id="Input_1" label="input_label_is_used_as_input_name" biodi:width="192">
+        <inputExpression id="InputExpression_1" typeRef="boolean">
+          <text>true</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Output" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj3461">
+          <text></text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_0zumzn1">
+        <inputEntry id="UnaryTests_0leuxq1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz1">
+          <text>"okay"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <decision id="unlabeled_input" name="Decision Table">
+    <decisionTable id="DecisionTable_14n3bx2">
+      <input id="Input_2" biodi:width="192">
+        <inputExpression id="InputExpression_2" typeRef="boolean">
+          <text>"expression is used as input name" = "expression is used as input name"</text>
+        </inputExpression>
+      </input>
+      <output id="Output_2" label="Output" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj3462">
+          <text></text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_0zumzn2">
+        <inputEntry id="UnaryTests_0leuxq2">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz2">
+          <text>"okay"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <decision id="labeled_output" name="Decision Table">
+    <decisionTable id="DecisionTable_14n3bx3">
+      <input id="Input_3" biodi:width="192">
+        <inputExpression id="InputExpression_3" typeRef="boolean">
+          <text>true</text>
+        </inputExpression>
+      </input>
+      <output id="Output_3" name="Output" label="output_label_is_used_as_output_name" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj3463">
+          <text></text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_0zumzn3">
+        <inputEntry id="UnaryTests_0leuxq3">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz3">
+          <text>"okay"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <decision id="unlabeled_output" name="Decision Table">
+    <decisionTable id="DecisionTable_14n3bx4">
+      <input id="Input_4" biodi:width="192">
+        <inputExpression id="InputExpression_4" typeRef="boolean">
+          <text>true</text>
+        </inputExpression>
+      </input>
+      <output id="Output_4" name="output_name_is_used_as_output_name" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj3464">
+          <text></text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_0zumzn4">
+        <inputEntry id="UnaryTests_0leuxq4">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz4">
+          <text>"okay"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="labeled_input">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0oy0qd3" dmnElementRef="unlabeled_input">
+        <dc:Bounds height="80" width="180" x="380" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0oy0qd4" dmnElementRef="labeled_output">
+        <dc:Bounds height="80" width="180" x="600" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0oy0qd5" dmnElementRef="unlabeled_output">
+        <dc:Bounds height="80" width="180" x="820" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

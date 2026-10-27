@@ -1,0 +1,151 @@
+name: 'Collect Flaky Tests'
+description: 'Collects and aggregates flaky test results from multiple CI jobs'
+
+# owner: @camunda/engineering-operations
+
+inputs:
+    general-unit-tests-result:
+        description: 'Result of the general unit tests job'
+        required: true
+    general-unit-tests-flaky:
+        description: 'Flaky tests from the general unit tests job'
+        required: true
+    database-integration-tests-result:
+      description: 'Result of the database integration tests job'
+      required: true
+    database-matrix-output-result:
+      description: 'Matrix output for database integration tests'
+      required: true
+    history-tests-result:
+      description: 'Result of the history tests job'
+      required: true
+    history-matrix-output-result:
+      description: 'Matrix output for history tests'
+      required: true
+    identity-tests-result:
+      description: 'Result of the identity tests job'
+      required: true
+    identity-matrix-output-result:
+      description: 'Matrix output for identity tests'
+      required: true
+    rdbms-tests-result:
+        description: 'Result of the RDBMS integration tests job'
+        required: true
+    rdbms-tests-flaky:
+        description: 'Flaky tests from the RDBMS integration tests job'
+        required: true
+    async-repl-tests-result:
+        description: 'Result of the async-replication integration tests job'
+        required: true
+    async-repl-tests-flaky:
+        description: 'Flaky tests from the async-replication integration tests job'
+        required: true
+    docker-checks-result:
+        description: 'Result of the Docker checks job'
+        required: true
+    docker-checks-flaky:
+        description: 'Flaky tests from the Docker checks job'
+        required: true
+    zeebe-tests-result:
+        description: 'Result of the Zeebe unit tests job'
+        required: true
+    zeebe-matrix-output-result:
+        description: 'Matrix output for Zeebe unit tests'
+        required: true
+    integration-tests-result:
+        description: 'Result of the integration tests job'
+        required: true
+    integration-matrix-output-result:
+        description: 'Matrix output for integration tests'
+        required: true
+    physical-tenant-acceptance-tests-result:
+        description: 'Result of the physical-tenant acceptance tests job'
+        required: true
+    physical-tenant-acceptance-matrix-output-result:
+        description: 'Matrix output for physical-tenant acceptance tests'
+        required: true
+    physical-tenant-identity-tests-result:
+        description: 'Result of the physical-tenant identity tests job'
+        required: true
+    physical-tenant-identity-matrix-output-result:
+        description: 'Matrix output for physical-tenant identity tests'
+        required: true
+    physical-tenant-history-tests-result:
+        description: 'Result of the physical-tenant history tests job'
+        required: true
+    physical-tenant-history-matrix-output-result:
+        description: 'Matrix output for physical-tenant history tests'
+        required: true
+
+
+outputs:
+  flaky_tests_data:
+    description: 'JSON array of flaky tests data'
+    value: ${{ steps.collect-results.outputs.flaky_tests_data }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Collect flaky test results
+      id: collect-results
+      shell: bash
+      env:
+        GENERAL_UNIT_TESTS_RESULT: ${{ inputs.general-unit-tests-result }}
+        GENERAL_UNIT_TESTS_FLAKY: ${{ inputs.general-unit-tests-flaky }}
+        RDBMS_TESTS_RESULT: ${{ inputs.rdbms-tests-result }}
+        RDBMS_TESTS_FLAKY: ${{ inputs.rdbms-tests-flaky }}
+        ASYNC_REPL_TESTS_RESULT: ${{ inputs.async-repl-tests-result }}
+        ASYNC_REPL_TESTS_FLAKY: ${{ inputs.async-repl-tests-flaky }}
+        DOCKER_CHECKS_RESULT: ${{ inputs.docker-checks-result }}
+        DOCKER_CHECKS_FLAKY: ${{ inputs.docker-checks-flaky }}
+        HISTORY_TESTS_RESULT: ${{ inputs.history-tests-result }}
+        HISTORY_MATRIX_OUTPUT_RESULT: ${{ inputs.history-matrix-output-result }}
+        DATABASE_INTEGRATION_TESTS_RESULT: ${{ inputs.database-integration-tests-result }}
+        DATABASE_MATRIX_OUTPUT_RESULT: ${{ inputs.database-matrix-output-result }}
+        IDENTITY_TESTS_RESULT: ${{ inputs.identity-tests-result }}
+        IDENTITY_MATRIX_OUTPUT_RESULT: ${{ inputs.identity-matrix-output-result }}
+        ZEEBE_TESTS_RESULT: ${{ inputs.zeebe-tests-result }}
+        ZEEBE_MATRIX_OUTPUT_RESULT: ${{ inputs.zeebe-matrix-output-result }}
+        INTEGRATION_TESTS_RESULT: ${{ inputs.integration-tests-result }}
+        INTEGRATION_MATRIX_OUTPUT_RESULT: ${{ inputs.integration-matrix-output-result }}
+        PHYSICAL_TENANT_ACCEPTANCE_TESTS_RESULT: ${{ inputs.physical-tenant-acceptance-tests-result }}
+        PHYSICAL_TENANT_ACCEPTANCE_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-acceptance-matrix-output-result }}
+        PHYSICAL_TENANT_IDENTITY_TESTS_RESULT: ${{ inputs.physical-tenant-identity-tests-result }}
+        PHYSICAL_TENANT_IDENTITY_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-identity-matrix-output-result }}
+        PHYSICAL_TENANT_HISTORY_TESTS_RESULT: ${{ inputs.physical-tenant-history-tests-result }}
+        PHYSICAL_TENANT_HISTORY_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-history-matrix-output-result }}
+      run: |
+        set -euo pipefail
+
+        # Source helper functions
+        source "${{ github.action_path }}/scripts/collect-flaky-tests.sh"
+
+        # Initialize flaky data array
+        flaky_data='[]'
+
+        # Collect from single jobs
+        collect_from_single_job "general-unit-tests" "$GENERAL_UNIT_TESTS_RESULT" "$GENERAL_UNIT_TESTS_FLAKY"
+        collect_from_single_job "rdbms-integration-tests" "$RDBMS_TESTS_RESULT" "$RDBMS_TESTS_FLAKY"
+        collect_from_single_job "async-replication-integration-tests" "$ASYNC_REPL_TESTS_RESULT" "$ASYNC_REPL_TESTS_FLAKY"
+        collect_from_single_job "docker-checks" "$DOCKER_CHECKS_RESULT" "$DOCKER_CHECKS_FLAKY"
+
+        # Collect from matrix jobs
+        collect_from_matrix_job "history-tests" "$HISTORY_TESTS_RESULT" "$HISTORY_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "database-integration-tests" "$DATABASE_INTEGRATION_TESTS_RESULT" "$DATABASE_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "identity-tests" "$IDENTITY_TESTS_RESULT" "$IDENTITY_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "zeebe-unit-tests" "$ZEEBE_TESTS_RESULT" "$ZEEBE_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "integration-tests" "$INTEGRATION_TESTS_RESULT" "$INTEGRATION_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "physical-tenant-acceptance-tests" "$PHYSICAL_TENANT_ACCEPTANCE_TESTS_RESULT" "$PHYSICAL_TENANT_ACCEPTANCE_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "physical-tenant-identity-tests" "$PHYSICAL_TENANT_IDENTITY_TESTS_RESULT" "$PHYSICAL_TENANT_IDENTITY_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "physical-tenant-history-tests" "$PHYSICAL_TENANT_HISTORY_TESTS_RESULT" "$PHYSICAL_TENANT_HISTORY_MATRIX_OUTPUT_RESULT"
+
+        # Output the collected data
+        {
+          echo "flaky_tests_data<<EOF"
+          echo "$flaky_data"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        # Log the collected data
+        echo "Collected flaky tests data:"
+        echo "$flaky_data" | jq '.'

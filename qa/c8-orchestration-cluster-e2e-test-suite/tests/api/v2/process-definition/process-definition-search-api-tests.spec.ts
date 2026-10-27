@@ -1,0 +1,427 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {randomUUID} from 'node:crypto';
+import {expect, test} from '@playwright/test';
+import {
+  assertBadRequest,
+  assertInvalidArgument,
+  assertStatusCode,
+  assertUnauthorizedRequest,
+  buildUrl,
+  jsonHeaders,
+} from '../../../../utils/http';
+import {validateResponseShape} from '../../../../json-body-assertions';
+import {createInstances, deploy} from '../../../../utils/zeebeClient';
+import {
+  DEFAULT_PAGE_LIMIT,
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
+import {
+  seedUniqueProcessDefinitions,
+  walkLatestVersionCursor,
+} from '@requestHelpers';
+
+/* eslint-disable playwright/expect-expect */
+test.describe.parallel('Process Definition Search API', () => {
+  const state: Record<string, unknown> = {};
+
+  test.beforeAll(async () => {
+    await deploy([
+      './resources/process_definition_tests_1.bpmn',
+      './resources/process_definition_tests_2.bpmn',
+    ]);
+    await createInstances('process_definition_tests_1', 1, 1).then(
+      (instances) => {
+        state['processDefinitionKey'] = instances[0].processDefinitionKey;
+        state['processDefinitionId'] = instances[0].processDefinitionId;
+      },
+    );
+  });
+
+  test('Search Process Definitions - Basic', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {}, // empty body for basic search
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBeGreaterThan(1);
+      expect(body.items.length).toBeGreaterThan(1);
+      // totalItems counts the whole result set while items holds one page, so
+      // the two only match while the cluster has fewer definitions than the
+      // default page size.
+      expect(body.items.length).toBeLessThanOrEqual(DEFAULT_PAGE_LIMIT);
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(body.items.length);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with one filter field', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId: state.processDefinitionId,
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBe(body.items.length);
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with multiple filter', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            version: 1,
+            processDefinitionKey: state.processDefinitionKey,
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBe(body.items.length);
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].version).toBe(1);
+      expect(body.items[0].processDefinitionKey).toBe(
+        state.processDefinitionKey,
+      );
+      expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - filter isLatestVersion & resourceName', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            isLatestVersion: true,
+            resourceName: 'process_definition_tests_2.bpmn',
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBe(body.items.length);
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].version).toBe(1);
+      expect(body.items[0].processDefinitionId).toBe(
+        'process_definition_tests_2',
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with empty result', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId: 'nonExistingProcessDefinitionId',
+            processDefinitionKey: '123456789',
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBe(0);
+      expect(body.items).toHaveLength(0);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with pagination', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          page: {
+            limit: 1,
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBeGreaterThan(1);
+      expect(body.items).toHaveLength(1);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with invalid pagination parameters', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-definitions/search'), {
+      headers: jsonHeaders(),
+      data: {
+        page: {
+          limit: -1,
+        },
+      },
+    });
+    await assertInvalidArgument(
+      res,
+      400,
+      "The value for page.limit is '-1' but must be a non-negative number.",
+    );
+  });
+
+  test('Search Process Definitions - with sorting', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          sort: [
+            {
+              field: 'processDefinitionKey',
+              order: 'DESC',
+            },
+          ],
+          // The suite shares an accumulating database across parallel tests, so
+          // the total definition count can exceed the default page size (100).
+          // Request all items in one page so totalItems == items.length holds
+          // and the sort assertion covers the full result set.
+          page: {
+            limit: 10000,
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        body,
+      );
+      expect(body.page.totalItems).toBeGreaterThan(0);
+      expect(body.items.length).toBeGreaterThan(0);
+      expect(body.page.totalItems).toBe(body.items.length);
+      for (let i = 1; i < body.items.length; i++) {
+        expect(
+          BigInt(body.items[i - 1].processDefinitionKey),
+        ).toBeGreaterThanOrEqual(BigInt(body.items[i].processDefinitionKey));
+      }
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Process Definitions - with missing required sorting field', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-definitions/search'), {
+      headers: jsonHeaders(),
+      data: {
+        sort: [
+          {
+            order: 'DESC',
+          },
+        ],
+      },
+    });
+    await assertBadRequest(
+      res,
+      'Sort field must not be null.',
+      'INVALID_ARGUMENT',
+    );
+  });
+
+  test('Search Process Definitions - with invalid sorting field', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-definitions/search'), {
+      headers: jsonHeaders(),
+      data: {
+        sort: [
+          {
+            field: 'invalidField',
+            order: 'DESC',
+          },
+        ],
+      },
+    });
+    await assertBadRequest(
+      res,
+      "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [processDefinitionKey, name, resourceName, version, versionTag, processDefinitionId, tenantId]",
+    );
+  });
+
+  test('Search Process Definitions - Unauthorized', async ({request}) => {
+    const res = await request.post(buildUrl('/process-definitions/search'), {
+      // No authentication headers
+      data: {},
+    });
+    await assertUnauthorizedRequest(res);
+  });
+
+  test.describe('isLatestVersion totalItems', () => {
+    let suffix: string;
+
+    test.beforeAll(async () => {
+      suffix = randomUUID().slice(0, 8);
+      await seedUniqueProcessDefinitions(suffix, 15, 5);
+    });
+
+    test('totalItems reflects unique count beyond page limit', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/process-definitions/search'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                isLatestVersion: true,
+                processDefinitionId: {$like: `pd-isLatest-${suffix}-*`},
+              },
+              page: {limit: 5},
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-definitions/search',
+            method: 'POST',
+            status: '200',
+          },
+          body,
+        );
+        expect(body.page.totalItems).toBe(15);
+        expect(body.items).toHaveLength(5);
+        expect(body.page.endCursor).toBeTruthy();
+      }).toPass(extendedAssertionOptions);
+    });
+
+    test('forward cursor pagination collects all unique latest-version items', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const items = await walkLatestVersionCursor(
+          request,
+          '/process-definitions/search',
+          {
+            isLatestVersion: true,
+            processDefinitionId: {$like: `pd-isLatest-${suffix}-*`},
+          },
+          5,
+        );
+        const uniqueIds = new Set(
+          (items as {processDefinitionId?: string}[]).map(
+            (item) => item.processDefinitionId,
+          ),
+        );
+        expect(uniqueIds.size).toBe(15);
+        expect(
+          [...uniqueIds].every((id) =>
+            id?.startsWith(`pd-isLatest-${suffix}-`),
+          ),
+        ).toBe(true);
+      }).toPass(extendedAssertionOptions);
+    });
+
+    test('rejects pagination with from when isLatestVersion is set', async ({
+      request,
+    }) => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {isLatestVersion: true},
+          page: {from: 5, limit: 5},
+        },
+      });
+      await assertInvalidArgument(
+        res,
+        400,
+        "The field 'from' is not supported",
+      );
+    });
+
+    test('rejects pagination with before when isLatestVersion is set', async ({
+      request,
+    }) => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {isLatestVersion: true},
+          page: {before: 'some-cursor', limit: 5},
+        },
+      });
+      await assertInvalidArgument(
+        res,
+        400,
+        "The field 'before' is not supported",
+      );
+    });
+  });
+});

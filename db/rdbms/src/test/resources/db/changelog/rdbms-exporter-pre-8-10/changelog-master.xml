@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--
+  ~ The production changelog as it stood before 8.10 — the real 8.9 changesets, without the ones
+  ~ that introduced version tracking. Running this produces a genuine pre-versioning database:
+  ~ no RDBMS_SCHEMA_VERSION, and DATABASECHANGELOG rows under the same file names the production
+  ~ changelog records, so a later production run correctly sees these changesets as already applied.
+  -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="/db/changelog/rdbms-exporter/changesets/8.9.0.xml" />
+  <include file="/db/changelog/rdbms-exporter/changesets/8.9.9.xml" />
+
+</databaseChangeLog>

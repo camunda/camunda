@@ -1,0 +1,292 @@
+/* eslint-disable */
+import {devices, defineConfig} from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+const junitOptions = {
+  embedAnnotationsAsProperties: true,
+  outputFile: './test-results/junit-report.xml',
+};
+
+const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
+const isApiTestsOnly = process.env.API_TESTS_ONLY === 'true';
+
+// Determine the test type for Slack reporting
+function getTestTypeLabel(): string {
+  if (isV2StatelessTestsOnly) {
+    return `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`;
+  }
+  if (isApiTestsOnly) {
+    const database = process.env.DATABASE
+      ? ` - Database ${process.env.DATABASE}${
+          process.env.DB_NAME ? ` (${process.env.DB_NAME})` : ''
+        }`
+      : '';
+    return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}${database}`;
+  }
+  return `Nightly Test Results for Mono Repo - ${process.env.VERSION}`;
+}
+
+// Reporters
+const useReportersWithoutSlack: any[] = [
+  ['list'],
+  ['junit', junitOptions],
+  ['html', {outputFolder: 'html-report'}],
+  ['json', {outputFile: `json-report/results.json`}],
+];
+
+const useReportersWithSlack: any[] = [
+  [
+    './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
+    {
+      slackOAuthToken: process.env.SLACK_BOT_USER_OAUTH_TOKEN!,
+      channels: ['c8-orchestration-cluster-e2e-test-results'],
+      sendResults: 'always',
+      showInThread: true,
+      meta: [
+        {
+          key: getTestTypeLabel(),
+          value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
+        },
+      ],
+    },
+  ],
+  ...useReportersWithoutSlack,
+];
+
+// Detect changed folders
+const args = process.argv.slice(2);
+const changedFoldersArgIndex = args.indexOf('--changed-folders');
+const changedFolders =
+  changedFoldersArgIndex !== -1
+    ? args[changedFoldersArgIndex + 1].split(',')
+    : [];
+
+const apiTestMatch = ['tests/api/v2/**/*.spec.ts'];
+
+const apiTestIgnore = [
+  'tests/api/v2/clock/*.spec.ts',
+  'tests/api/v2/usage-metrics/*.spec.ts',
+  'tests/api/v2/audit-log/*.spec.ts',
+  'tests/api/v2/job/job-statistics-*.spec.ts',
+  'tests/api/v2/global-task-listener/*.spec.ts',
+  'tests/api/v2/optimize/**/*.spec.ts',
+  'tests/api/v2/analytics-exporter/**/*.spec.ts',
+];
+// Projects
+const normalProjects = [
+  {
+    name: 'api-tests',
+    testMatch: apiTestMatch,
+    testIgnore: apiTestIgnore,
+    use: devices['Desktop Chrome'],
+    teardown: 'api-tests-subset',
+  },
+  {
+    name: 'api-tests-subset',
+    testMatch: [
+      'tests/api/v2/clock/*.spec.ts',
+      'tests/api/v2/usage-metrics/*.spec.ts',
+      'tests/api/v2/audit-log/*.spec.ts',
+      'tests/api/v2/job/job-statistics-*.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/api/v2/global-task-listener/*.spec.ts',
+    ],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
+  },
+  {
+    name: 'chromium',
+    use: devices['Desktop Chrome'],
+    testMatch: changedFolders.includes('chromium')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : ['tests/**/*.spec.ts'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
+    teardown: 'chromium-subset',
+  },
+  {
+    name: 'chromium-subset',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
+  },
+  {
+    name: 'firefox',
+    use: devices['Desktop Firefox'],
+    testMatch: changedFolders.includes('firefox')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : ['tests/**/*.spec.ts'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
+    teardown: 'firefox-subset',
+  },
+  {
+    name: 'firefox-subset',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
+    use: devices['Desktop Firefox'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
+  },
+  {
+    name: 'msedge',
+    use: devices['Desktop Edge'],
+    testMatch: changedFolders.includes('msedge')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : ['tests/**/*.spec.ts'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
+    teardown: 'msedge-subset',
+  },
+  {
+    name: 'msedge-subset',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
+    use: devices['Desktop Edge'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
+  },
+  {
+    name: 'tasklist-e2e',
+    testMatch: ['tests/tasklist/*.spec.ts'],
+    use: devices['Desktop Edge'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
+    teardown: 'tasklist-e2e-subset',
+  },
+  {
+    // A teardown project runs in full whatever the file or grep filter, so a
+    // Tasklist-scoped run gets its own instead of sharing chromium-subset.
+    name: 'tasklist-e2e-subset',
+    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'identity-e2e',
+    testMatch: ['tests/identity/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'operate-e2e',
+    testMatch: ['tests/operate/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'optimize-default-config',
+    testMatch: ['tests/api/v2/optimize/default-config.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
+  {
+    name: 'optimize-startup',
+    testMatch: ['tests/api/v2/optimize/optimize-startup.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
+  {
+    // Analytics exporter tests that can't share the main stack's
+    // long-running `camunda` container — the disabled-by-default test and
+    // the counter/raw-count parity test — each run against their own
+    // standalone, throwaway broker variant. See
+    // config/docker-compose.analytics-isolated.yml
+    // and utils/dockerComposeControl.ts. Kept as its own single-worker
+    // project so specs never run concurrently with each other and each
+    // test's container lifecycle stays isolated from every other project.
+    name: 'analytics-exporter-isolated',
+    testMatch: [
+      'tests/api/v2/analytics-exporter/analytics-exporter-isolated/*.spec.ts',
+    ],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
+  },
+];
+
+// The generated cluster and restore specs put the whole cluster into recovery mode for their
+// restore scenarios. While a tenant is recovering, its secondary-storage endpoints answer 503, so
+// these specs must not overlap with any other spec. They run as the teardown of the main project,
+// i.e. after every other spec has finished (and also when one of them failed).
+const recoveryModeSpecs = [
+  'v2-stateless-tests/tests/request-validation/cluster-validation-api-tests.spec.ts',
+  'v2-stateless-tests/tests/request-validation/restore-validation-api-tests.spec.ts',
+];
+
+const v2StatelessProjects = [
+  {
+    name: 'request-validation-tests',
+    testMatch: ['v2-stateless-tests/tests/request-validation/*.spec.ts'],
+    testIgnore: recoveryModeSpecs,
+    teardown: 'request-validation-recovery-mode-tests',
+    use: devices['Desktop Chrome'],
+  },
+  {
+    name: 'request-validation-recovery-mode-tests',
+    testMatch: recoveryModeSpecs,
+    use: devices['Desktop Chrome'],
+  },
+];
+
+export default defineConfig({
+  testDir: `./`,
+  timeout: 12 * 60 * 1000,
+  workers: 4,
+  retries: 1,
+  expect: {
+    timeout: 10_000,
+  },
+  use: {
+    baseURL: getBaseURL(),
+    actionTimeout: 10000,
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
+  },
+  projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
+  reporter:
+    process.env.INCLUDE_SLACK_REPORTER === 'true'
+      ? useReportersWithSlack
+      : useReportersWithoutSlack,
+});
+
+function getBaseURL(): string {
+  if (typeof process.env.PLAYWRIGHT_BASE_URL === 'string') {
+    return process.env.PLAYWRIGHT_BASE_URL;
+  }
+  return 'http://localhost:8080';
+}

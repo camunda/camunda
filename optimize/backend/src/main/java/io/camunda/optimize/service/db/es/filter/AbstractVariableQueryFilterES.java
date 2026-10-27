@@ -1,0 +1,111 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.db.es.filter;
+
+import static io.camunda.optimize.service.db.filter.util.OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto;
+
+import co.elastic.clients.elasticsearch._types.query_dsl.LongNumberRangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.NumberRangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.variable.VariableType;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.time.ZoneId;
+import java.util.List;
+import org.slf4j.Logger;
+
+public abstract class AbstractVariableQueryFilterES {
+
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(AbstractVariableQueryFilterES.class);
+
+  protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
+      final StringVariableFilterDataDto dto);
+
+  protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
+      final String variableName, final List<String> values);
+
+  protected abstract Query.Builder createContainsGivenStringQuery(
+      final String variableId, final String valueToContain);
+
+  protected abstract Query.Builder createEqualsOneOrMoreValuesQueryBuilder(
+      final OperatorMultipleValuesVariableFilterDataDto dto);
+
+  protected abstract Query.Builder createBooleanQueryBuilder(
+      final BooleanVariableFilterDataDto dto);
+
+  protected abstract Query.Builder createNumericQueryBuilder(
+      OperatorMultipleValuesVariableFilterDataDto dto);
+
+  protected abstract Query.Builder createDateQueryBuilder(
+      final DateVariableFilterDataDto dto, final ZoneId timezone);
+
+  protected Query.Builder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
+    validateMultipleValuesFilterDataDto(stringVarDto);
+
+    if (stringVarDto.hasContainsOperation()) {
+      return createContainsOneOfTheGivenStringsQueryBuilder(stringVarDto);
+    } else if (stringVarDto.hasEqualsOperation()) {
+      return createEqualsOneOrMoreValuesQueryBuilder(stringVarDto);
+    } else {
+      final String message =
+          String.format(
+              "String variable operator [%s] is not supported!",
+              stringVarDto.getData().getOperator().getId());
+      LOG.debug(message);
+      throw new OptimizeRuntimeException(message);
+    }
+  }
+
+  /**
+   * Builds the range query for a relative ({@code <}, {@code <=}, {@code >}, {@code >=}) numeric
+   * variable filter.
+   *
+   * <p>SHORT, INTEGER and LONG variables are indexed in a {@code long}-mapped value sub-field, so
+   * their bounds go through the exact-long range variant. Do not simplify this to the {@code
+   * number()} variant: it only accepts {@code double}, which cannot represent integers beyond 2^53
+   * exactly, so the bound would silently round and the filter would match the wrong instances.
+   */
+  protected static Query createNumericRangeQuery(
+      final String field,
+      final VariableType type,
+      final FilterOperator operator,
+      final Object value) {
+    final Number bound = (Number) value;
+
+    if (VariableType.DOUBLE == type) {
+      final NumberRangeQuery.Builder range = new NumberRangeQuery.Builder().field(field);
+      switch (operator) {
+        case LESS_THAN -> range.lt(bound.doubleValue());
+        case LESS_THAN_EQUALS -> range.lte(bound.doubleValue());
+        case GREATER_THAN -> range.gt(bound.doubleValue());
+        case GREATER_THAN_EQUALS -> range.gte(bound.doubleValue());
+        default -> throw new OptimizeRuntimeException(unsupportedRangeOperatorMessage(operator));
+      }
+      return Query.of(q -> q.range(r -> r.number(range.build())));
+    }
+
+    final LongNumberRangeQuery.Builder range = new LongNumberRangeQuery.Builder().field(field);
+    switch (operator) {
+      case LESS_THAN -> range.lt(bound.longValue());
+      case LESS_THAN_EQUALS -> range.lte(bound.longValue());
+      case GREATER_THAN -> range.gt(bound.longValue());
+      case GREATER_THAN_EQUALS -> range.gte(bound.longValue());
+      default -> throw new OptimizeRuntimeException(unsupportedRangeOperatorMessage(operator));
+    }
+    return Query.of(q -> q.range(r -> r.longNumber(range.build())));
+  }
+
+  private static String unsupportedRangeOperatorMessage(final FilterOperator operator) {
+    return String.format("Numeric variable range operator [%s] is not supported!", operator);
+  }
+}

@@ -1,0 +1,42 @@
+name: List maintained branches
+
+# owner: @camunda/engineering-operations
+
+description: |
+  Discovers the maintained branches (`main` plus every `stable/X.Y` at or above
+  `min-version`) from the git remote and exposes them as a JSON array ready for
+  `strategy.matrix` via `fromJSON()`.
+
+  Because it reads refs with `git ls-remote`, the list stays correct as new
+  `stable/*` branches are cut and older ones reach EOL — no hardcoded lists.
+
+  Prerequisites:
+    - The repository must be checked out (e.g. actions/checkout) before this
+      action runs, so the `origin` remote is configured.
+    - `jq` must be available on PATH (present on GitHub-hosted runners).
+
+  The order of the returned branches is not guaranteed; sort in the caller if a
+  specific order is required.
+
+inputs:
+  min-version:
+    description: Minimum stable version to include, as `MAJOR.MINOR` (e.g. `8.8`).
+    required: true
+
+outputs:
+  branches:
+    description: 'JSON array including main (unordered), e.g. ["main","stable/8.8","stable/8.9"].'
+    value: ${{ steps.list.outputs.branches }}
+  stable-branches:
+    description: 'JSON array of only the stable/X.Y branches (unordered), e.g. ["stable/8.8","stable/8.9"].'
+    value: ${{ steps.list.outputs.stable-branches }}
+
+runs:
+  using: composite
+  steps:
+    - name: List maintained branches
+      id: list
+      shell: bash
+      env:
+        MIN_VERSION: ${{ inputs.min-version }}
+      run: ${{ github.action_path }}/list-branches.sh

@@ -1,0 +1,115 @@
+# Scripts
+
+This folder contains several scripts we wrote to test or debug things.
+
+## Choosing a language for new tooling
+
+- **Shell**: thin wrappers and glue only: minimal branching, no assembly of structured data.
+  Fine for orchestrating existing CLIs (`kubectl`, `curl`, `jq`).
+- **Python**: the default for non-trivial operational/reporting scripts: anything that reads or
+  writes JSON/YAML/CSV/TSV, talks to HTTP APIs, validates input, or needs meaningful unit tests.
+  Prefer stdlib (`argparse`, `json`, `csv`, `datetime`, `urllib`) before adding dependencies. Keep
+  a thin shell wrapper around it when command compatibility with an existing script matters.
+- **Go**: for a maintained distributable binary, stronger compile-time guarantees, parallelism or
+  performance work, or a tool that naturally fits into an existing Go module.
+- **Cross-cutting**: use structured encoders instead of string-building; every non-trivial tool
+  needs targeted tests and a README section here (usage, examples, dependencies, exact test
+  command).
+
+This standard came out of comparing three implementations of the same load-test reporting script:
+[#61425](https://github.com/camunda/camunda/pull/61425) (shell), [#62289](https://github.com/camunda/camunda/pull/62289) (Python), and
+[#62361](https://github.com/camunda/camunda/pull/62361) (Go). Python is the default going forward for
+this class of tooling; Go remains an option once a tool becomes a maintained multi-command CLI or
+binary.
+
+Decided 2026-09-08, see the [team discussion](https://camunda.slack.com/archives/C0A22S6M4TF/p1788862132853069?thread_ts=1788811533.488189&cid=C0A22S6M4TF)
+for the full reasoning. Revisit this decision if the tooling grows more complex sub-commands or
+shared logic than a single script justifies.
+
+## Profile.sh
+
+**Usage:**
+Run executeProfiling.sh with a pod name, optional event type, and optional profiler options. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
+
+**Syntax:**
+
+```
+./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+```
+
+**Options:**
+- `-p`, `--prefix` - Filename prefix for the generated report. Default: `flamegraph-`
+
+**Event Types:**
+- `cpu` - CPU profiling (default)
+- `wall` - Wall clock time profiling (includes waiting/blocking time). Automatically uses `-t` flag to split by thread for better analysis.
+- `alloc` - Memory allocation profiling
+
+**Additional Options:**
+You can pass additional flags to async-profiler as the third parameter. Common options include:
+- `-t` - to profile threads separately
+- `--title "My Title"` - Set a custom title for the flamegraph
+- `--minwidth <percent>` - Omit frames smaller than specified percentage
+
+See [async-profiler documentation](https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md) for potential options.
+
+Example with CPU profiling (default):
+
+```
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2
+...
+Profiling for 100 seconds
+Done
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu.html
+tar: Removing leading `/' from member names
+
+```
+
+Example with wall clock profiling:
+
+```
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 wall
+...
+Profiling for 100 seconds
+Done
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall.html
+```
+
+Example with additional profiler options:
+
+```
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 cpu "-t"
+...
+Profiling for 100 seconds with flamegraph format
+Done
+```
+
+**GitHub Actions Workflow:**
+You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, event type (cpu/wall/alloc), and optional profiler options through the GitHub UI.
+
+## PartitionDistribution.sh
+
+**Usage:**
+
+```bash
+./partitionDistribution.sh {nodes} {partitionCount} {replicationFactor}
+```
+
+This script will calculate the distribution of partitions in a cluster.
+
+_Example Output:_
+
+```bash
+$ ./partitionDistribution.sh 3 3 3
+Distribution:
+P\N|	N 0|	N 1|	N 2
+P 0|	L  |	F  |	F
+P 1|	F  |	L  |	F
+P 2|	F  |	F  |	L
+
+Partitions per Node:
+N 0: 3
+N 1: 3
+N 2: 3
+```
+

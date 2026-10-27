@@ -1,0 +1,42 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients;
+
+import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
+import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
+import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.JobWorkerStatisticsQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.core.auth.SecurityContext;
+
+public interface JobSearchClient {
+
+  SearchQueryResult<JobEntity> searchJobs(JobQuery query);
+
+  GlobalJobStatisticsEntity getGlobalJobStatistics(GlobalJobStatisticsQuery query);
+
+  SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(JobTypeStatisticsQuery query);
+
+  SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
+      JobWorkerStatisticsQuery query);
+
+  SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
+      JobTimeSeriesStatisticsQuery query);
+
+  SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(JobErrorStatisticsQuery query);
+
+  JobSearchClient withSecurityContext(SecurityContext securityContext);
+}

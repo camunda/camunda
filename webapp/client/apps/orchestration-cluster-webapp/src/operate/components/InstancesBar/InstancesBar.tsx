@@ -1,0 +1,103 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Tooltip} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
+import {Timer} from '@carbon/react/icons';
+import {
+	Wrapper,
+	IncidentsCount,
+	Label,
+	BarContainer,
+	RightControls,
+	ActiveInstancesBar,
+	ActiveCount,
+	IncidentsBar,
+	DrainingIndicator,
+} from './styled';
+
+type Props = {
+	label?: {
+		type: 'process' | 'incident';
+		size: 'small' | 'medium';
+		text: string;
+	};
+	activeInstancesCount?: number;
+	incidentsCount: number;
+	isDraining?: boolean;
+	drainingDescription?: string;
+	size: 'small' | 'medium' | 'large';
+	className?: string;
+};
+
+const InstancesBar: React.FC<Props> = ({
+	label,
+	activeInstancesCount,
+	incidentsCount,
+	isDraining = false,
+	drainingDescription,
+	size,
+	className,
+}) => {
+	const {t} = useTranslation();
+	const total = (activeInstancesCount ?? 0) + incidentsCount;
+	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
+	const hasIncidents = incidentsCount > 0;
+	const hasActiveInstances = (activeInstancesCount ?? 0) > 0;
+	const showIncidentsBar = activeInstancesCount !== undefined;
+	const showActiveInstancesCount = activeInstancesCount !== undefined && activeInstancesCount >= 0;
+
+	return (
+		<div className={className}>
+			<Wrapper $size={size}>
+				<IncidentsCount
+					data-testid="incident-instances-badge"
+					role="img"
+					aria-label={t('operate.shared.instancesBar.incidents', {count: incidentsCount})}
+					$hasIncidents={hasIncidents}
+				>
+					{incidentsCount}
+				</IncidentsCount>
+				{label && (
+					<Label $size={label.size} $isRed={label.type === 'incident' && size === 'medium'}>
+						{label.text}
+					</Label>
+				)}
+				{((isDraining && drainingDescription !== undefined) || showActiveInstancesCount) && (
+					<RightControls>
+						{isDraining && drainingDescription !== undefined && (
+							<Tooltip label={drainingDescription} align="top" autoAlign>
+								<DrainingIndicator data-testid="draining-indicator">
+									<Timer size={16} aria-hidden="true" focusable="false" />
+								</DrainingIndicator>
+							</Tooltip>
+						)}
+						{showActiveInstancesCount && (
+							<ActiveCount
+								data-testid="active-instances-badge"
+								role="img"
+								aria-label={t('operate.shared.instancesBar.active', {count: activeInstancesCount})}
+								$hasActiveInstances={hasActiveInstances}
+							>
+								{activeInstancesCount}
+							</ActiveCount>
+						)}
+					</RightControls>
+				)}
+			</Wrapper>
+			{showIncidentsBar && (
+				<BarContainer>
+					<ActiveInstancesBar $isPassive={!hasActiveInstances} $size={size} />
+					<IncidentsBar $size={size} style={{width: `${incidentsBarRatio}%`}} />
+				</BarContainer>
+			)}
+		</div>
+	);
+};
+
+export {InstancesBar};

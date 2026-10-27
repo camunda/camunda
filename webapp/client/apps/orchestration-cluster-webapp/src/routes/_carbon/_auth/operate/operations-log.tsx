@@ -1,0 +1,23 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {DataTableSkeleton} from '@carbon/react';
+import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
+import {OperationsLog} from '#/operate/pages/OperationsLog/OperationsLog';
+import {operationsLogSearchSchema, stripLegacyFilters} from '#/operate/pages/OperationsLog/operationsLog.schema';
+
+export const Route = createFileRoute('/_carbon/_auth/operate/operations-log')({
+	validateSearch: operationsLogSearchSchema,
+	search: {middlewares: [stripLegacyFilters]},
+	head: () => ({meta: [{title: t('operate.operationsLog.pageTitle')}]}),
+	pendingComponent: () => <DataTableSkeleton columnCount={7} rowCount={5} showHeader={false} showToolbar={false} />,
+	component: function OperationsLogRoute() {
+		return <OperationsLog {...Route.useSearch()} />;
+	},
+});
