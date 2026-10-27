@@ -779,17 +779,66 @@ jobs:
           # predate either.
           pairs="/tmp/release-pairs.tsv"
           if ! "${GITHUB_WORKSPACE}/.github/scripts/mergeback/resolve-active-release-pairs.sh" origin > "$pairs"; then
-            echo "::warning::Could not resolve active release branches -- no backport proposed."
+            # Unknown, which is not the same as "none". Reconciling on a failed
+            # lookup would strip every label this gate has ever applied.
+            echo "::warning::Could not resolve active release branches -- nothing proposed, nothing reconciled."
             exit 0
           fi
-          if [ ! -s "$pairs" ]; then
-            echo "No active release branch -- nothing to propose."
-            exit 0
-          fi
+          echo "Active release branches:"
           cat "$pairs"
+
+          # Remove $2 from PR $1, but only when this gate applied it. The label's
+          # latest `labeled` event separates automation from a person: a Bot actor
+          # is us, a User is a deliberate request that must survive. An origin that
+          # cannot be read counts as a person -- removing someone's request on
+          # uncertainty is the worse mistake. Echoes removed | kept | failed.
+          revoke_if_bot() {
+            local pr="$1" label="$2" actor_type
+            actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
+              | jq -rs --arg l "$label" \
+                  '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""')
+            if [ "$actor_type" != "Bot" ]; then
+              echo kept
+              return
+            fi
+            if gh pr edit "$pr" --repo "$REPO" --remove-label "$label" >/dev/null; then
+              echo removed
+            else
+              echo failed
+            fi
+          }
 
           ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
           jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr; do
+            # 1. Reconcile labels whose release branch is no longer frozen.
+            #
+            # The gate labels when the PR opens, but backport-action fires when it
+            # merges. A PR that outlives the release -- one held by do-not-close, or
+            # resurrected by the reopen path -- would otherwise open a backport into
+            # a branch that already shipped. This runs even when no release branch is
+            # frozen at all, which is exactly when the stale labels are.
+            while IFS= read -r label; do
+              [ -z "$label" ] && continue
+              ref="${label#backport }"
+              # Still frozen: the propose pass below owns this label, not this one.
+              if cut -f1 "$pairs" | grep -qxF "$ref"; then
+                continue
+              fi
+              case "$(revoke_if_bot "$pr" "$label")" in
+                removed) reason="removed -- ${ref} has shipped, so the backport would land after the release" ;;
+                kept)    reason="left in place -- ${ref} has shipped, but a person asked for this backport" ;;
+                *)       reason="STALE LABEL STILL SET for ${ref} -- remove it before merging" ;;
+              esac
+              echo "PR #${pr}: reconcile ${label} -> ${reason}"
+              jq -cn --argjson pr "$pr" --arg ref "$ref" --arg reason "$reason" \
+                '{pr: $pr, release_ref: $ref, decision: "reconciled", reason: $reason}' \
+                >> /tmp/backport-meta.json
+            done < <(gh pr view "$pr" --repo "$REPO" --json labels \
+                       --jq '.labels[].name | select(startswith("backport release-"))' 2>/dev/null)
+
+            # 2. Propose for the branch that IS frozen for this line, if any.
+            [ -s "$pairs" ] || continue
+
             patch="/tmp/pr-${pr}.patch"
             if ! gh pr diff "$pr" --repo "$REPO" --patch > "$patch" 2>/dev/null; then
               echo "::warning::Could not read the diff of PR #${pr} -- skipping its backport check."
@@ -818,31 +867,18 @@ jobs:
                   >> /tmp/backport-meta.json
               fi
             elif [ "$decision" = "skipped" ]; then
-              # This workflow reuses and updates an open fix PR across nights, so a
-              # label an earlier run applied can outlive the check that justified it:
-              # a later push may add a change the release branch cannot take. Left in
-              # place it would make backport-action open the backport on merge despite
-              # the refusal reported below, so revoke it -- but only a label this gate
-              # applied. A person's deliberate request must survive, and the label's
-              # latest "labeled" event tells the two apart: automation labels as a
-              # Bot, a person as a User.
+              # A label an earlier night applied for this still-frozen branch no
+              # longer holds -- the PR has changed since. Same ownership rules.
               label="backport ${release_ref}"
               if [ -n "$release_ref" ] \
                  && gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null \
                     | grep -qxF "$label"; then
-                actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
-                  | jq -rs --arg l "$label" \
-                      '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""')
-                if [ "$actor_type" = "Bot" ]; then
-                  if gh pr edit "$pr" --repo "$REPO" --remove-label "$label"; then
-                    v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v")
-                  else
-                    echo "::warning::Could not remove the stale label '${label}' from PR #${pr}."
-                    v=$(jq -c '.reason += "; STALE LABEL STILL SET, remove it before merging"' <<< "$v")
-                  fi
-                else
-                  v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v")
-                fi
+                case "$(revoke_if_bot "$pr" "$label")" in
+                  removed) v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v") ;;
+                  kept)    v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v") ;;
+                  *)       echo "::warning::Could not remove the stale label '${label}' from PR #${pr}."
+                           v=$(jq -c '.reason += "; STALE LABEL STILL SET, remove it before merging"' <<< "$v") ;;
+                esac
               fi
               echo "$v" >> /tmp/backport-meta.json
             fi
@@ -1134,11 +1170,20 @@ jobs:
               bp_pr=$(echo "$bp" | jq -r '.pr')
               bp_ref=$(echo "$bp" | jq -r '.release_ref')
               bp_reason=$(echo "$bp" | jq -r '.reason // ""')
-              if [ "$(echo "$bp" | jq -r '.decision')" = "eligible" ]; then
-                lines+=("   ↳ backport to \`${bp_ref}\`: label added to PR #${bp_pr} — backport PR opens on merge")
-              else
-                lines+=("   ↳ backport to \`${bp_ref}\`: skipped — ${bp_reason}")
-              fi
+              case "$(echo "$bp" | jq -r '.decision')" in
+                eligible)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: label added to PR #${bp_pr} — backport PR opens on merge")
+                  ;;
+                reconciled)
+                  # A label left over from a freeze that has since ended. Worth a
+                  # line even though nothing is pending: it is the only place a
+                  # label disappearing from a PR is explained.
+                  lines+=("   ↳ backport label for \`${bp_ref}\` on PR #${bp_pr}: ${bp_reason}")
+                  ;;
+                *)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: skipped — ${bp_reason}")
+                  ;;
+              esac
             done < /tmp/backport-meta.json
           fi
 

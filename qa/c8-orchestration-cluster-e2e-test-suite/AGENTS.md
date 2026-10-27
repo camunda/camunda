@@ -1145,9 +1145,11 @@ All yes → the PR gets a `backport release-X.Y.Z` label, and backport-action op
 when your PR merges. Any no → no label, and the nightly Slack thread carries the reason so a human
 can decide. Either way your PR is unaffected: the step never fails the job.
 
-The check re-runs every night on a PR you reuse. If an earlier night labelled it and a later push
-makes the answer no, the step removes that label, so a refusal is never followed by a backport; a
-label a person added is left alone.
+The check re-runs every night on a PR you reuse, and it reconciles as well as proposes. A label an
+earlier night applied is removed when a later push makes the answer no, and also once the release
+has shipped — the label is added when your PR opens but the backport only happens when it merges,
+so a PR that outlives the release would otherwise land a backport on a branch that is already out.
+A label a person added by hand is always left alone, and so is one whose origin cannot be read.
 
 What this asks of you:
 
