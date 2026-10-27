@@ -82,7 +82,7 @@ public class ListViewFlowNodeFromJobHandler
         .setPositionJob(record.getPosition())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue))
         .getJoinRelation()
         .setParent(recordValue.getProcessInstanceKey());
 

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.exporter.common.utils;
 
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
-import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class StorageOrdinalUtil {
   private StorageOrdinalUtil() {}
@@ -22,11 +22,10 @@ public final class StorageOrdinalUtil {
         && ordinal != StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED;
   }
 
-  public static Optional<Integer> ordinalIfOrdinalControlled(
+  public static @Nullable Integer ordinalIfOrdinalControlled(
       final StorageOrdinalRelated storageOrdinalRelated) {
-    if (isOrdinalControlled(storageOrdinalRelated)) {
-      return Optional.of(storageOrdinalRelated.getStorageOrdinal());
-    }
-    return Optional.empty();
+    return isOrdinalControlled(storageOrdinalRelated)
+        ? storageOrdinalRelated.getStorageOrdinal()
+        : null;
   }
 }

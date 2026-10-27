@@ -87,7 +87,7 @@ public class ListViewFlowNodeFromIncidentHandler
         .setActivityId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));

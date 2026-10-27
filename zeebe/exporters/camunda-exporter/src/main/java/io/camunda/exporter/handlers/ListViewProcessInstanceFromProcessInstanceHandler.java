@@ -115,7 +115,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
         .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
         .setBusinessId(emptyToNull(recordValue.getBusinessId()))
-        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
       piEntity.setTags(recordValue.getTags());

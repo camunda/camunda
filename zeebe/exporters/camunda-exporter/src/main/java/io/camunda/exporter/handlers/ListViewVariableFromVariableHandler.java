@@ -89,7 +89,7 @@ public class ListViewVariableFromVariableHandler
         .setVarName(recordValue.getName())
         .setVarValue(truncatedValue)
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     // set parent
     final long processInstanceKey = recordValue.getProcessInstanceKey();

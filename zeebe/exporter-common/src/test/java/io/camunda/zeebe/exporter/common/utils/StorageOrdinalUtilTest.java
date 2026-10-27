@@ -25,7 +25,7 @@ public class StorageOrdinalUtilTest {
 
     // when / then
     assertThat(StorageOrdinalUtil.isOrdinalControlled(record)).isTrue();
-    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).contains(ordinal);
+    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).isEqualTo(ordinal);
   }
 
   @Test
@@ -35,7 +35,7 @@ public class StorageOrdinalUtilTest {
 
     // when / then
     assertThat(StorageOrdinalUtil.isOrdinalControlled(record)).isFalse();
-    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).isEmpty();
+    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).isNull();
   }
 
   @Test
@@ -45,7 +45,7 @@ public class StorageOrdinalUtilTest {
 
     // when / then
     assertThat(StorageOrdinalUtil.isOrdinalControlled(record)).isFalse();
-    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).isEmpty();
+    assertThat(StorageOrdinalUtil.ordinalIfOrdinalControlled(record)).isNull();
   }
 
   @ParameterizedTest
