@@ -78,7 +78,7 @@ final class CpuBudgetTest {
         heavyUsed / 1_000_000, lightUsed / 1_000_000, ratio);
 
     // then
-    assertThat(ratio).isBetween(1.7, 2.3);
+    assertThat(ratio).isBetween(1.9, 2.1);
   }
 
   /**

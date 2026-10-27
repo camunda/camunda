@@ -87,7 +87,12 @@ public final class CpuBudget implements AutoCloseable {
       if (next <= 0) {
         throttledPeriods++;
       }
+      final boolean wasExhausted = balanceNanos <= 0;
       balanceNanos = next;
+      if (wasExhausted && next > 0) {
+        // threads that stopped on an empty budget may be parked for longer than the period
+        threads.forEach(LockSupport::unpark);
+      }
     }
   }
 
