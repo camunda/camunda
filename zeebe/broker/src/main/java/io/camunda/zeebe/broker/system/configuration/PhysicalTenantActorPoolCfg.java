@@ -18,7 +18,7 @@ public final class PhysicalTenantActorPoolCfg {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 1;
   private double cpuLimitCores = 0;
-  private double cpuHeadroomCores = 0;
+  private double cpuHeadroomPercent = 0;
   private Map<String, Double> weights = new HashMap<>();
   private Duration cpuBudgetPeriod = Duration.ofMillis(20);
 
@@ -55,13 +55,17 @@ public final class PhysicalTenantActorPoolCfg {
     this.cpuLimitCores = cpuLimitCores;
   }
 
-  /** CPU that no tenant budget includes, for example garbage collection and Raft. */
-  public double getCpuHeadroomCores() {
-    return cpuHeadroomCores;
+  /**
+   * Percent of the CPU limit that no tenant budget includes, for example garbage collection, Raft
+   * and messaging. This work grows with the load of the tenants, so a share of the limit fits it
+   * better than a fixed number of cores.
+   */
+  public double getCpuHeadroomPercent() {
+    return cpuHeadroomPercent;
   }
 
-  public void setCpuHeadroomCores(final double cpuHeadroomCores) {
-    this.cpuHeadroomCores = cpuHeadroomCores;
+  public void setCpuHeadroomPercent(final double cpuHeadroomPercent) {
+    this.cpuHeadroomPercent = cpuHeadroomPercent;
   }
 
   /** Weight of each tenant by tenant id. A tenant that is not listed has the weight 1. */
@@ -82,7 +86,8 @@ public final class PhysicalTenantActorPoolCfg {
       return 0;
     }
     final double totalWeight = allTenantIds.stream().mapToDouble(this::weightOf).sum();
-    return Math.max(0, cpuLimitCores - cpuHeadroomCores) * weightOf(tenantId) / totalWeight;
+    final double sharedCores = cpuLimitCores * (1 - cpuHeadroomPercent / 100);
+    return Math.max(0, sharedCores) * weightOf(tenantId) / totalWeight;
   }
 
   private double weightOf(final String tenantId) {
@@ -108,8 +113,8 @@ public final class PhysicalTenantActorPoolCfg {
         + ioThreadCount
         + ", cpuLimitCores="
         + cpuLimitCores
-        + ", cpuHeadroomCores="
-        + cpuHeadroomCores
+        + ", cpuHeadroomPercent="
+        + cpuHeadroomPercent
         + ", weights="
         + weights
         + ", cpuBudgetPeriod="

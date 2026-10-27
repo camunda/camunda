@@ -22,7 +22,7 @@ final class PhysicalTenantActorPoolCfgTest {
   @Test
   void shouldNotLimitWithoutCpuLimit() {
     // given
-    cfg.setCpuHeadroomCores(0.5);
+    cfg.setCpuHeadroomPercent(20);
 
     // when
     final double budget = cfg.cpuBudgetCores("pt1", TENANTS);
@@ -35,7 +35,7 @@ final class PhysicalTenantActorPoolCfgTest {
   void shouldShareCpuLimitWithoutHeadroomByWeight() {
     // given - weights 1, 1, 0.5, 0.5 and an unlisted tenant with the weight 1
     cfg.setCpuLimitCores(3);
-    cfg.setCpuHeadroomCores(0.5);
+    cfg.setCpuHeadroomPercent(20);
     cfg.setWeights(Map.of("pt1", 1.0, "pt2", 0.5, "pt3", 0.5));
 
     // when
@@ -43,9 +43,9 @@ final class PhysicalTenantActorPoolCfgTest {
     final double light = cfg.cpuBudgetCores("pt2", TENANTS);
     final double unlisted = cfg.cpuBudgetCores("default", TENANTS);
 
-    // then - 2.5 cores shared by the weights 1, 1, 0.5, 0.5 (sum 3)
-    assertThat(heavy).isCloseTo(2.5 / 3, org.assertj.core.data.Offset.offset(1e-9));
-    assertThat(light).isCloseTo(2.5 / 6, org.assertj.core.data.Offset.offset(1e-9));
+    // then - 2.4 cores (3 cores minus 20 percent) shared by the weights 1, 1, 0.5, 0.5 (sum 3)
+    assertThat(heavy).isCloseTo(2.4 / 3, org.assertj.core.data.Offset.offset(1e-9));
+    assertThat(light).isCloseTo(2.4 / 6, org.assertj.core.data.Offset.offset(1e-9));
     assertThat(unlisted).isEqualTo(heavy);
   }
 }

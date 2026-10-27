@@ -34,8 +34,11 @@ public class PhysicalTenantActorPool {
    */
   private double cpuLimitCores = 0;
 
-  /** CPU in cores that no tenant budget includes, for example garbage collection and Raft. */
-  private double cpuHeadroomCores = 0;
+  /**
+   * Percent of the CPU limit that no tenant budget includes, for example garbage collection, Raft
+   * and messaging.
+   */
+  private double cpuHeadroomPercent = 0;
 
   /** Weight of each physical tenant by tenant id. A tenant that is not listed has the weight 1. */
   private Map<String, Double> weights = new HashMap<>();
@@ -75,12 +78,12 @@ public class PhysicalTenantActorPool {
     this.cpuLimitCores = cpuLimitCores;
   }
 
-  public double getCpuHeadroomCores() {
-    return cpuHeadroomCores;
+  public double getCpuHeadroomPercent() {
+    return cpuHeadroomPercent;
   }
 
-  public void setCpuHeadroomCores(final double cpuHeadroomCores) {
-    this.cpuHeadroomCores = cpuHeadroomCores;
+  public void setCpuHeadroomPercent(final double cpuHeadroomPercent) {
+    this.cpuHeadroomPercent = cpuHeadroomPercent;
   }
 
   public Map<String, Double> getWeights() {
