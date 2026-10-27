@@ -16,7 +16,6 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -105,8 +104,6 @@ public class DocumentDataConsumerTest {
     consumer.updateCapacity(reportedCapacity::set);
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
-    // error is thrown when data exceeds buffer capacity
-    assertThatCode(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));
@@ -130,6 +127,62 @@ public class DocumentDataConsumerTest {
     assertThat(remainingContent).isEqualTo(remainingData);
 
     verifyNoMoreInteractions(callback);
+  }
+
+  @Test
+  void shouldNotGrantFreedSpaceAgainWhenCapacityIsRequestedAgain() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(8, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final AtomicInteger grantedCapacity = new AtomicInteger();
+    consumer.updateCapacity(grantedCapacity::addAndGet);
+    consumer.consume(ByteBuffer.wrap(new byte[8]));
+    callback.inputStream.read(new byte[8]);
+
+    // when
+    consumer.updateCapacity(grantedCapacity::addAndGet);
+
+    // then
+    // the 8 bytes freed by the reader were already granted when they were read
+    assertThat(grantedCapacity.get()).isEqualTo(16);
+  }
+
+  @Test
+  void shouldAcceptDataBeyondGrantedCapacityAndWithholdCapacityUntilBelowIt() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(4, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final AtomicInteger grantedCapacity = new AtomicInteger();
+    consumer.updateCapacity(grantedCapacity::addAndGet);
+    consumer.consume(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+    final byte[] content = new byte[8];
+    callback.inputStream.read(content, 0, 2);
+    // fills the buffer up to its capacity, wrapping around its end
+    consumer.consume(ByteBuffer.wrap(new byte[] {4, 5, 6}));
+
+    // when
+    consumer.consume(ByteBuffer.wrap(new byte[] {7, 8}));
+    callback.inputStream.read(content, 2, 2);
+
+    // then
+    // the buffer still holds its capacity, so more space would only let it overflow further
+    assertThat(grantedCapacity.get()).isEqualTo(6);
+
+    // when
+    callback.inputStream.read(content, 4, 4);
+
+    // then
+    assertThat(content).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    // all 8 bytes read are granted again once the buffer is below its capacity
+    assertThat(grantedCapacity.get()).isEqualTo(12);
   }
 
   @Test
