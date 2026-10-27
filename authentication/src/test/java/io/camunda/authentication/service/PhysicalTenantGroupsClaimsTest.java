@@ -103,6 +103,32 @@ class PhysicalTenantGroupsClaimsTest {
   }
 
   @Test
+  void shouldUseFirstProviderForIssuersThatDifferByTrailingSlash() {
+    // given
+    final var config = config(defaultSlot(null, null, "groups"));
+    providers(config).put("okta", provider(ISSUER + "/", "roles"));
+    providers(config).put("other", provider(ISSUER, "teams"));
+
+    // when
+    final var groups = inDefaultTenant(config, token(ISSUER));
+
+    // then
+    assertThat(groups).containsExactly("role");
+  }
+
+  @Test
+  void shouldUseDefaultTenantSettingsForUnconfiguredPhysicalTenant() {
+    // given
+    final var config = config(defaultSlot(null, null, "groups"));
+
+    // when
+    final var groups = inPhysicalTenant("unconfigured", config, token(ISSUER));
+
+    // then
+    assertThat(groups).containsExactly("group");
+  }
+
+  @Test
   void shouldFailWithoutPhysicalTenant() {
     // given
     final var groupsClaims =
@@ -117,10 +143,17 @@ class PhysicalTenantGroupsClaimsTest {
 
   private static List<String> inDefaultTenant(
       final AuthenticationConfiguration config, final Map<String, Object> token) {
+    return inPhysicalTenant("default", config, token);
+  }
+
+  private static List<String> inPhysicalTenant(
+      final String physicalTenantId,
+      final AuthenticationConfiguration config,
+      final Map<String, Object> token) {
     final var groupsClaims =
         new PhysicalTenantGroupsClaims(properties(config), new MockEnvironment());
     final var request = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(request, "default");
+    PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
     return groupsClaims.current().extract(token);
   }

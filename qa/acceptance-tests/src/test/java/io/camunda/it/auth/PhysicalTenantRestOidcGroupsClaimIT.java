@@ -90,7 +90,15 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
     createRealm(
         REALM_ROOT, ROOT_CLIENT, Map.of("groups", "[\"root-group\"]", "teams", "[\"root-team\"]"));
     createRealm(
-        REALM_OKTA, OKTA_CLIENT, Map.of("groups", "[\"okta-group\"]", "roles", "[\"okta-role\"]"));
+        REALM_OKTA,
+        OKTA_CLIENT,
+        Map.of(
+            "groups",
+            "[\"okta-group\"]",
+            "roles",
+            "[\"okta-role\"]",
+            "departments",
+            "[\"okta-department\"]"));
     createRealm(
         REALM_PLAIN,
         PLAIN_CLIENT,
@@ -101,8 +109,9 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
           final var oidc = c.getAuthentication().getOidc();
           oidc.setIssuerUri(issuerUri(REALM_ROOT));
           oidc.setClientId(ROOT_CLIENT);
-          // resolves the tokens to clients, so the clients can be members of Camunda groups
-          oidc.setClientIdClaim("azp");
+          // names each token's user after its client, so the user can be a member of a Camunda
+          // group
+          oidc.setUsernameClaim("azp");
           oidc.setRedirectUri("{baseUrl}/login/oauth2/code/oidc");
           oidc.setGroupsClaim("groups");
         });
@@ -125,13 +134,15 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
                             TENANT_A_GROUP,
                             TENANT_A_GROUP,
                             "",
+                            List.of(ROOT_CLIENT),
                             List.of(),
                             List.of(),
-                            List.of(),
-                            List.of(ROOT_CLIENT)))));
+                            List.of()))));
     BROKER.withProperty(tenantAuthProperty(TENANT_B, "oidc.groups-claim"), "teams");
     BROKER.withProperty(tenantAuthProperty(TENANT_B, "providers.assigned[0]"), "plain");
     BROKER.withProperty(tenantAuthProperty(TENANT_B, "providers.assigned[1]"), "okta");
+    BROKER.withProperty(
+        tenantAuthProperty(TENANT_B, "providers.oidc.okta.groups-claim"), "departments");
 
     BROKER.start();
 
@@ -178,12 +189,13 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
   }
 
   @Test
-  void shouldReadGroupsFromClaimOfIssuingProviderOnTenantWithOwnClaim() throws Exception {
+  void shouldReadGroupsFromTenantsOwnClaimOfIssuingProvider() throws Exception {
     // when
     final var groups = currentUserGroups(tenantPath(TENANT_B), REALM_OKTA, OKTA_CLIENT);
 
     // then
-    assertThat(groups).containsExactly("okta-role");
+    // the cluster surface reads "roles" for the same provider
+    assertThat(groups).containsExactly("okta-department");
   }
 
   @Test
