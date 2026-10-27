@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -33,7 +32,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -57,6 +58,10 @@ class DocumentContentConnectionClosedTest {
           + "Content-Type: application/octet-stream\r\n"
           + "Transfer-Encoding: chunked\r\n"
           + "\r\n";
+
+  private static final String ABORTED_MESSAGE =
+      "Document stream was aborted before the response was fully received (connection"
+          + " closed, timed out or cancelled)";
 
   private ServerSocket serverSocket;
   private CamundaClient client;
@@ -134,26 +139,33 @@ class DocumentContentConnectionClosedTest {
     final InputStream document =
         client.newDocumentContentGetRequest("document-id").send().get(20, TimeUnit.SECONDS);
 
-    // when
-    final CompletableFuture<byte[]> read =
-        CompletableFuture.supplyAsync(
-            () -> {
-              try {
+    final ExecutorService reader = Executors.newSingleThreadExecutor();
+    try {
+      // when
+      final Future<?> read =
+          reader.submit(
+              () -> {
                 final byte[] buffer = new byte[1024];
                 while (document.read(buffer) >= 0) {
                   // drain the document until the end of the stream or an error
                 }
-                return buffer;
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            });
+                return null;
+              });
 
-    // then
-    assertThatThrownBy(() -> read.get(30, TimeUnit.SECONDS))
-        .hasRootCauseInstanceOf(IOException.class);
-    // the failure is sticky, so reading again fails again instead of blocking
-    assertThatThrownBy(document::read).isInstanceOf(IOException.class);
+      // then
+      assertThatThrownBy(() -> read.get(30, TimeUnit.SECONDS))
+          .hasRootCauseInstanceOf(IOException.class)
+          .hasRootCauseMessage(ABORTED_MESSAGE);
+      // the failure is sticky, so reading again fails again instead of blocking
+      assertThatThrownBy(document::read)
+          .isInstanceOf(IOException.class)
+          .hasMessage(ABORTED_MESSAGE);
+    } finally {
+      // if the reader is still blocked (the regression this test catches), the interrupt ends it
+      // with an IOException instead of leaking a blocked thread into later tests
+      reader.shutdownNow();
+      reader.awaitTermination(5, TimeUnit.SECONDS);
+    }
   }
 
   /** Sends the given part of the response, then closes the connection. */
