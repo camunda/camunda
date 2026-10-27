@@ -194,6 +194,22 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadShardCountsForExistingIndices() {
+    // given
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(3);
+    opensearchEngineClient.createIndex(index, settings);
+
+    // when
+    final var shardCounts =
+        opensearchEngineClient.getNumberOfShards(List.of(index.getFullQualifiedName() + "*"));
+
+    // then
+    assertThat(shardCounts).containsEntry(index.getFullQualifiedName(), 3);
+  }
+
+  @Test
   void shouldReadReplicaCountsForExistingIndices() throws IOException {
     final var index =
         createTestIndexDescriptor(
