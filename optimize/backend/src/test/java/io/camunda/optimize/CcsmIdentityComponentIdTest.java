@@ -80,7 +80,7 @@ class CcsmIdentityComponentIdTest {
   }
 
   @Test
-  void survivesTheConfigFileTheChartMountsOverTheProfile() throws IOException {
+  void shouldSurviveTheConfigFileTheChartMountsOverTheProfile() throws IOException {
     assertThat(identityPropertiesWith(Map.of()).componentId()).isEqualTo(PRESET_KEY);
   }
 
@@ -91,7 +91,7 @@ class CcsmIdentityComponentIdTest {
    */
   @ParameterizedTest
   @ValueSource(strings = {"CAMUNDA_OPTIMIZE_IDENTITY_COMPONENT_ID", "CAMUNDA_IDENTITY_COMPONENTID"})
-  void letsADeploymentOverrideIt(final String variable) throws IOException {
+  void shouldLetADeploymentOverrideIt(final String variable) throws IOException {
     final IdentityProperties identity = identityPropertiesWith(Map.of(variable, "elsewhere"));
 
     assertThat(identity.componentId()).isEqualTo("elsewhere");

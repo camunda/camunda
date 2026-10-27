@@ -39,7 +39,7 @@ class CCSMIdentityComponentIdReporterTest {
   @InjectMocks private CCSMIdentityComponentIdReporter reporter;
 
   @Test
-  void saysWhichComponentItNamesItselfAs() {
+  void shouldSayWhichComponentItNamesItselfAs() {
     when(identityConfiguration.getType()).thenReturn(Type.GENERIC);
     when(identityConfiguration.getComponentId()).thenReturn("optimize");
 
@@ -52,7 +52,7 @@ class CCSMIdentityComponentIdReporterTest {
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"   "})
-  void warnsWhenItHasNoneToName(final String componentId) {
+  void shouldWarnWhenItHasNoneToName(final String componentId) {
     // The failure this exists for: Identity falls back to returning everything, and nothing errors.
     when(identityConfiguration.getType()).thenReturn(Type.GENERIC);
     when(identityConfiguration.getComponentId()).thenReturn(componentId);
@@ -68,7 +68,7 @@ class CCSMIdentityComponentIdReporterTest {
   @EnumSource(
       value = Type.class,
       names = {"KEYCLOAK", "AUTH0"})
-  void saysComponentScopingDoesNotApplyWherePermissionsComeFromTheToken(final Type type) {
+  void shouldSayComponentScopingDoesNotApplyWherePermissionsComeFromTheToken(final Type type) {
     when(identityConfiguration.getType()).thenReturn(type);
 
     reporter.report();
