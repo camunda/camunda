@@ -31,6 +31,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   private final String worker;
   private final long deadline;
   private final String tenantId;
+  private final String physicalTenantId;
   private final String input;
 
   public ActivatedProbeImpl(
@@ -42,6 +43,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
     worker = probe.getWorker();
     deadline = probe.getDeadline();
     tenantId = probe.getTenantId();
+    physicalTenantId = probe.getPhysicalTenantId();
     input = probe.getInput().isEmpty() ? "{}" : probe.getInput();
   }
 
@@ -76,6 +78,11 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   }
 
   @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  @Override
   public String getInput() {
     return input;
   }
@@ -99,6 +106,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
     json.put("worker", worker);
     json.put("deadline", deadline);
     json.put("tenantId", tenantId);
+    json.put("physicalTenantId", physicalTenantId);
     json.put("input", getInputAsMap());
     return jsonMapper.toJson(json);
   }
@@ -107,7 +115,8 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   @Override
   public String toString() {
     return String.format(
-        "ActivatedProbe{key=%d, operation=%s, template='%s', worker='%s', tenantId='%s'}",
-        key, operation, template, worker, tenantId);
+        "ActivatedProbe{key=%d, operation=%s, template='%s', worker='%s', tenantId='%s',"
+            + " physicalTenantId='%s'}",
+        key, operation, template, worker, tenantId, physicalTenantId);
   }
 }

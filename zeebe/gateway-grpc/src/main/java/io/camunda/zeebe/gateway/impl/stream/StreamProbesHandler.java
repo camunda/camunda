@@ -67,7 +67,7 @@ public final class StreamProbesHandler extends Actor {
     }
 
     final var streamType = wrapString(operation + ":" + template);
-    final var consumer = new ProbeStreamConsumer(responseObserver, actor);
+    final var consumer = new ProbeStreamConsumer(responseObserver, actor, physicalTenantId);
     final var remover = new AsyncProbeStreamRemover(probeStreamer, actor);
     responseObserver.setOnCloseHandler(remover);
     responseObserver.setOnCancelHandler(remover);
@@ -93,12 +93,15 @@ public final class StreamProbesHandler extends Actor {
 
     private final ServerCallStreamObserver<ActivatedProbe> responseObserver;
     private final ConcurrencyControl executor;
+    private final String physicalTenantId;
 
     private ProbeStreamConsumer(
         final ServerCallStreamObserver<ActivatedProbe> responseObserver,
-        final ConcurrencyControl executor) {
+        final ConcurrencyControl executor,
+        final String physicalTenantId) {
       this.responseObserver = responseObserver;
       this.executor = executor;
+      this.physicalTenantId = physicalTenantId;
     }
 
     @Override
@@ -138,6 +141,7 @@ public final class StreamProbesHandler extends Actor {
                 .setInput(MsgPackConverter.convertToJson(record.getInputBuffer()))
                 .setDeadline(record.getDeadline())
                 .setWorker(record.getWorker())
+                .setPhysicalTenantId(physicalTenantId)
                 .build();
       } catch (final Exception e) {
         result.completeExceptionally(e);

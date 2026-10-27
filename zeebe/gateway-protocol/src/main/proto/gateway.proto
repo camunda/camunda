@@ -106,6 +106,8 @@ message ActivatedProbe {
   int64 deadline = 6;
   // the name of the worker the probe was pushed to
   string worker = 7;
+  // the id of the physical tenant whose stream the probe was pushed on
+  string physicalTenantId = 8;
 }
 
 message ActivatedJob {

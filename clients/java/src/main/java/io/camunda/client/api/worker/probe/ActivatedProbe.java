@@ -37,6 +37,12 @@ public interface ActivatedProbe {
 
   String getTenantId();
 
+  /**
+   * @return the identifier of the physical tenant whose stream the probe was pushed on; the default
+   *     physical tenant when the worker's client did not specify one
+   */
+  String getPhysicalTenantId();
+
   /** The evaluated input as a JSON document, with the secret values injected. */
   String getInput();
 
