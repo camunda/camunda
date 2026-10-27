@@ -17,7 +17,9 @@ import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +51,26 @@ public class GetDocumentContentIT {
 
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void shouldReturnJsonDocumentContentAsStored() throws IOException {
+    // given - JSON content must be streamed as stored, not treated as a JSON response body
+    final var jsonContent = "{\"key\":\"value\"}";
+    final var jsonDocumentReference =
+        camundaClient
+            .newCreateDocumentCommand()
+            .content(jsonContent)
+            .contentType("application/json")
+            .send()
+            .join();
+
+    // when
+    try (final InputStream is =
+        camundaClient.newDocumentContentGetRequest(jsonDocumentReference).send().join()) {
+      // then
+      assertThat(new String(is.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(jsonContent);
     }
   }
 
