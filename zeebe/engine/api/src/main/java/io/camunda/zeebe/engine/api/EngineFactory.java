@@ -23,8 +23,8 @@ import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.time.InstantSource;
 
 /**
@@ -67,7 +67,7 @@ public final class EngineFactory {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final EngineConfiguration config,
       final boolean versionCheckRestrictionEnabled,
-      final int partitionCount,
+      final ClusterContext clusterContext,
       final String brokerVersion)
       throws Exception {
     final var zeebeDbContext = zeebeDb.createContext();
@@ -86,7 +86,7 @@ public final class EngineFactory {
     final var migrator =
         new DbMigratorImpl(
             versionCheckRestrictionEnabled,
-            new ClusterContextImpl(partitionCount),
+            clusterContext,
             processingState,
             brokerVersion);
 
@@ -100,12 +100,14 @@ public final class EngineFactory {
     return new StateQueryService(zeebeDb, clock);
   }
 
-  public static MigrationStatusReader createMigrationStatusReader(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public static MigrationStatusReader createMigrationStatusReader(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb) {
     return new MigrationStatusReader(zeebeDb);
   }
 
   /** Bans the process instance in the state of the given, already open, database. */
-  public static void banProcessInstance(final ZeebeDb<ZbColumnFamilies> zeebeDb, final long processInstanceKey) {
+  public static void banProcessInstance(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final long processInstanceKey) {
     new DbBannedInstanceState(zeebeDb, zeebeDb.createContext())
         .banProcessInstance(processInstanceKey);
   }

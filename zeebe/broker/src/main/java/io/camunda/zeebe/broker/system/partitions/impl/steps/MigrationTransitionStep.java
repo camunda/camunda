@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 
 public class MigrationTransitionStep implements PartitionTransitionStep {
 
@@ -37,7 +38,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
               context.getZeebeDb(),
               config.getEngine().createEngineConfiguration(),
               config.isVersionCheckRestrictionEnabled(),
-              context.getPartitionCount(),
+              new ClusterContextImpl(context.getPartitionCount()),
               context.getBrokerVersion());
       if (versionChanged) {
         context.markMigrationsDone();
