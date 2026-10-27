@@ -143,6 +143,20 @@ public class BroadcastSignalRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldBroadcastSignalWithRunScope() {
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newBroadcastSignalCommand().signalName("name").runScope("runA").send().join();
+
+    // then
+    final SignalBroadcastRequest request =
+        gatewayService.getLastRequest(SignalBroadcastRequest.class);
+    assertThat(request.getRunScope()).isEqualTo("runA");
+  }
+
+  @Test
   public void shouldAllowSpecifyingTenantIdBy() {
     // given
     gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);

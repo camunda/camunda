@@ -33,6 +33,13 @@ public final class TestRunContext {
   /** Variable name under which the run ID is stored on every started instance. */
   public static final String RUN_ID_VARIABLE_NAME = "__camundaProcessTestRunId";
 
+  /**
+   * Reserved tag prefix that marks the run-scope tag. Must match the engine's {@code
+   * TagUtil.RUN_SCOPE_TAG_PREFIX}. The engine treats only a tag with this prefix as the run scope
+   * for signal broadcast (and, later, message correlation).
+   */
+  public static final String RUN_SCOPE_TAG_PREFIX = "camunda:runScope:";
+
   /** System property that enables run-ID based test isolation. */
   public static final String ENABLED_PROPERTY = "camunda.process-test.run-isolation.enabled";
 
@@ -65,6 +72,11 @@ public final class TestRunContext {
 
   public String getRunId() {
     return runId;
+  }
+
+  /** Returns the reserved run-scope tag ({@code camunda:runScope:<runId>}) for this run. */
+  public String getRunScopeTag() {
+    return RUN_SCOPE_TAG_PREFIX + runId;
   }
 
   /**

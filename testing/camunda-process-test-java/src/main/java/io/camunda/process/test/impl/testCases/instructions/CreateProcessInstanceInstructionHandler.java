@@ -64,6 +64,11 @@ public class CreateProcessInstanceInstructionHandler
             .latestVersion()
             .variables(runContext.applyRunId(instruction.getVariables()));
 
+    if (runContext.isEnabled()) {
+      // stamp the reserved run-scope tag so the engine can isolate signal broadcast to this run
+      command.tags(runContext.getRunScopeTag());
+    }
+
     instruction
         .getStartInstructions()
         .forEach(startInstruction -> command.startBeforeElement(startInstruction.getElementId()));

@@ -54,6 +54,16 @@ public final class BroadcastSignalTest extends ClientTest {
   }
 
   @Test
+  public void shouldBroadcastSignalWithRunScope() {
+    // when
+    client.newBroadcastSignalCommand().signalName("name").runScope("runA").send().join();
+
+    // then
+    final BroadcastSignalRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRunScope()).isEqualTo("runA");
+  }
+
+  @Test
   public void shouldBroadcastSignalWithStringVariables() {
     // when
     client

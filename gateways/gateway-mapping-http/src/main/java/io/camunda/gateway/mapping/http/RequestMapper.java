@@ -606,7 +606,11 @@ public class RequestMapper {
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
-            new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
+            new BroadcastSignalRequest(
+                request.getSignalName(),
+                request.getVariables(),
+                tenantId,
+                request.getRunScope() == null ? "" : request.getRunScope()));
   }
 
   public static <T> Either<ProblemDetail, T> getResult(
@@ -1021,7 +1025,7 @@ public class RequestMapper {
       @Nullable String jobReservationToken) {}
 
   public record BroadcastSignalRequest(
-      String signalName, Map<String, Object> variables, String tenantId) {}
+      String signalName, Map<String, Object> variables, String tenantId, String runScope) {}
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}

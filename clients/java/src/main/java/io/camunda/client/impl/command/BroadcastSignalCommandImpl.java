@@ -93,6 +93,13 @@ public final class BroadcastSignalCommandImpl
   }
 
   @Override
+  public BroadcastSignalCommandStep2 runScope(final String runScope) {
+    grpcRequestObjectBuilder.setRunScope(runScope);
+    httpRequestObject.setRunScope(runScope);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<BroadcastSignalResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);

@@ -508,7 +508,8 @@ public final class RequestMapper extends RequestUtil {
       final BroadcastSignalRequest grpcRequest) {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()))
+        .setRunScope(grpcRequest.getRunScope());
   }
 
   public static BrokerEvaluateConditionalRequest toEvaluateConditionalRequest(

@@ -78,5 +78,16 @@ public interface BroadcastSignalCommandStep1
      *     it to the broker.
      */
     BroadcastSignalCommandStep2 variable(String key, Object value);
+
+    /**
+     * Restrict the broadcast to a single run. When set, the signal only reaches catch events and
+     * start events of instances belonging to this run (identified by a reserved run-scope tag).
+     * When not set, the signal is broadcast globally. Used for run isolation.
+     *
+     * @param runScope the run-scope selector (the run id)
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    BroadcastSignalCommandStep2 runScope(String runScope);
   }
 }

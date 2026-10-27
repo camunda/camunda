@@ -1052,6 +1052,9 @@ message BroadcastSignalRequest {
   string variables = 2;
   // the id of the tenant that owns the signal.
   string tenantId = 3;
+  // optional run-scope selector; when set, the broadcast only reaches catch and start events of
+  // instances belonging to this run (run isolation). When empty, the signal is broadcast globally.
+  string runScope = 4;
 }
 
 message BroadcastSignalResponse {
