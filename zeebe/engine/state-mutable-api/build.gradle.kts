@@ -5,4 +5,4 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
 }
 
-description = "Zeebe Workflow Engine Mutable State: the write interfaces that only appliers and migrations use"
+description = "Zeebe Workflow Engine Mutable State API: the write interfaces that only appliers and migrations use"

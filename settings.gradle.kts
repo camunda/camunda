@@ -261,7 +261,7 @@ registerProject(":zeebe-backup-testkit", "zeebe/backup-stores/testkit")
 
 registerProject(":zeebe-workflow-engine-model", "zeebe/engine/model")
 registerProject(":zeebe-workflow-engine-state-api", "zeebe/engine/state-api")
-registerProject(":zeebe-workflow-engine-state-mutable", "zeebe/engine/state-mutable")
+registerProject(":zeebe-workflow-engine-state-mutable-api", "zeebe/engine/state-mutable-api")
 registerProject(":zeebe-workflow-engine-state", "zeebe/engine/state")
 registerProject(":zeebe-workflow-engine-appliers", "zeebe/engine/appliers")
 registerProject(":zeebe-workflow-engine-processors", "zeebe/engine/processors")

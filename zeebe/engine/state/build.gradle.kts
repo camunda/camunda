@@ -1,7 +1,7 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
-  api(project(":zeebe-workflow-engine-state-mutable"))
+  api(project(":zeebe-workflow-engine-state-mutable-api"))
   api(libs.io.micrometer.micrometer.core)
   api(libs.io.micrometer.micrometer.commons)
   api(libs.com.google.guava.guava)
