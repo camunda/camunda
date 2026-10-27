@@ -261,6 +261,8 @@ registerProject(":zeebe-backup-testkit", "zeebe/backup-stores/testkit")
 
 registerProject(":zeebe-workflow-engine", "zeebe/engine")
 
+registerProject(":zeebe-workflow-engine-api", "zeebe/engine-api")
+
 registerProject(":document-api", "document/api")
 
 registerProject(":zeebe-journal", "zeebe/journal")
