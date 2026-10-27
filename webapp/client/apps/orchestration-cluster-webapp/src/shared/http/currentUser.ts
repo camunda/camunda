@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import {isAnonymousCurrentUser, type CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 
 /**
  * The current user of a caller with a session. The current user query handles an anonymous
@@ -19,13 +19,12 @@ type AuthenticatedCurrentUser = CurrentUser & {anonymous: false; username: strin
  * such a caller with an anonymous user instead of a 401, because no credentials can authenticate it
  * there.
  */
-async function isAnonymousCurrentUser(response: Response): Promise<boolean> {
+async function isAnonymousCurrentUserResponse(response: Response): Promise<boolean> {
 	try {
-		const body: unknown = await response.json();
-		return typeof body === 'object' && body !== null && 'anonymous' in body && body.anonymous === true;
+		return isAnonymousCurrentUser(await response.json());
 	} catch {
 		return false;
 	}
 }
 
-export {isAnonymousCurrentUser, type AuthenticatedCurrentUser};
+export {isAnonymousCurrentUserResponse, type AuthenticatedCurrentUser};
