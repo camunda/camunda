@@ -264,7 +264,14 @@ EOF
   echo '[{"file": "tests/smoke.spec.ts"}]' > "$SPECS"
   run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
   [ "$(jq -r .decision <<<"$output")" = "skipped" ]
-  [[ "$(jq -r .reason <<<"$output")" == *"missing file/test_name"* ]]
+  [[ "$(jq -r .reason <<<"$output")" == *"without a usable file/test_name"* ]]
+
+  # An array of non-objects: the previous `any(.[]; .file ...)` form errored here
+  # and the non-zero exit read as "no problem found".
+  echo '[7]' > "$SPECS"
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"without a usable file/test_name"* ]]
 
   # No specs file at all.
   run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "${BATS_TEST_TMPDIR}/nope.json"
@@ -278,6 +285,50 @@ EOF
   echo '[]' > "$SPECS"
 
   run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$(jq -r .decision <<<"$output")" = "eligible" ]
+}
+
+@test "refuses a title that appears only in a step or a plain string" {
+  # The release branch mentions the title, but never declares a test with it.
+  # Quoted-literal matching alone would read either line as evidence.
+  git checkout --quiet release-8.11.0-alpha1
+  cat > "$SUITE/tests/smoke.spec.ts" <<'EOF'
+test('logs in', async () => {
+  await test.step('mcp server responds', async () => {});
+  const msg = 'mcp server responds';
+});
+EOF
+  git add -A && git commit --quiet -m "release-only step"
+  git checkout --quiet main
+
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+  cat > "$SPECS" <<'EOF'
+[{"file": "tests/smoke.spec.ts", "test_name": "mcp server responds"}]
+EOF
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"test not on the release branch"* ]]
+}
+
+@test "accepts the declaration forms the suite actually uses" {
+  # test.skip is still a declaration, and a title may carry regex metacharacters.
+  cat >> "$SUITE/tests/smoke.spec.ts" <<'EOF'
+test.skip('renders the (v2) [beta] banner', async () => {});
+EOF
+  git add -A && git commit --quiet -m "variants"
+  git branch -f release-8.11.0-alpha1 HEAD
+
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+  cat > "$SPECS" <<'EOF'
+[{"file": "tests/smoke.spec.ts", "test_name": "renders the (v2) [beta] banner"}]
+EOF
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
   [ "$(jq -r .decision <<<"$output")" = "eligible" ]
 }
 

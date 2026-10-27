@@ -83,9 +83,24 @@ missing_paths() {
 # fixes this gate exists to refuse.
 SUITE_ROOT="${SUITE_ROOT:-qa/c8-orchestration-cluster-e2e-test-suite}"
 
+# Escape ERE metacharacters so a test title is matched as a literal inside the
+# declaration pattern below.
+ere_escape() {
+  printf '%s' "$1" | sed 's/[][\.^$*+?(){}|]/\\&/g'
+}
+
 missing_tests() {
-  local release_ref="$1" specs_file="$2" path
+  local release_ref="$1" specs_file="$2" path esc decl
   [ -s "$specs_file" ] || return 0
+  # A declaration, not merely the quoted title: the same string inside
+  # test.step('...') or any other literal is not evidence that a test by that
+  # name exists. Modifiers are listed rather than matched as `.<word>`, which
+  # would let `test.step(` back in. The three quote styles cover how a title is
+  # written; a form this cannot find -- a template literal with a placeholder, a
+  # title on the line after `test(` -- is reported absent, so the gate refuses
+  # instead of guessing. Resolving real titles would mean running Playwright,
+  # which this step must not do.
+  decl='(^|[^A-Za-z0-9_])(test|it)(\.(only|skip|fixme|fail|slow|concurrent|serial))*\([[:space:]]*'
   while IFS=$'\t' read -r file test_name; do
     [ -z "$file" ] && continue
     path="$file"
@@ -94,19 +109,13 @@ missing_tests() {
       printf '%s › %s (spec absent)\n' "$file" "$test_name"
       continue
     fi
-    # Match the title as a quoted literal, not a bare substring: "logs in" is a
-    # substring of test('logs in with SSO'), and accepting that would wave through
-    # a fix for a test the release branch does not have. The three quote styles
-    # cover how a title is written; a title this cannot find is reported absent,
-    # so a form we do not recognise (a template literal with a placeholder, say)
-    # refuses rather than guesses. Resolving real titles would mean running
-    # Playwright, which this step must not do.
+    esc="$(ere_escape "$test_name")"
     # No `grep -q`: under `pipefail` it exits on the first match, git show takes
     # SIGPIPE on the rest of a spec larger than the pipe buffer, and the pipeline
     # reports failure -- making a title that IS there read as absent. Letting grep
     # drain the stream keeps the status meaningful.
     git show "${release_ref}:${path}" 2>/dev/null \
-      | grep -F -e "'${test_name}'" -e "\"${test_name}\"" -e "\`${test_name}\`" >/dev/null \
+      | grep -E -e "${decl}'${esc}'" -e "${decl}\"${esc}\"" -e "${decl}\`${esc}\`" >/dev/null \
       || printf '%s › %s\n' "$file" "$test_name"
   done < <(jq -r '.[]? | select(.file and .test_name) | "\(.file)\t\(.test_name)"' "$specs_file")
 }
@@ -197,8 +206,17 @@ if [ -z "$specs_file" ] || [ ! -f "$specs_file" ]; then
   specs_problem="missing"
 elif ! jq -e 'type == "array"' "$specs_file" >/dev/null 2>&1; then
   specs_problem="not a JSON array"
-elif jq -e 'any(.[]; (.file // "") == "" or (.test_name // "") == "")' "$specs_file" >/dev/null 2>&1; then
-  specs_problem="missing file/test_name on an entry"
+elif ! jq -e 'all(.[];
+        type == "object"
+        and (.file | type == "string") and (.file | length > 0)
+        and (.test_name | type == "string") and (.test_name | length > 0))' \
+       "$specs_file" >/dev/null 2>&1; then
+  # `all` over an empty array is true, so `[]` stays valid. Every other shape --
+  # an entry that is not an object, or one whose fields are absent, empty or not
+  # strings -- is rejected without jq erring, which an `any(.[]; .file ...)` test
+  # could not do: on `[7]` it exits non-zero with "Cannot index number", and a
+  # non-zero exit there read as "no problem found".
+  specs_problem="an entry without a usable file/test_name"
 fi
 if [ -n "$specs_problem" ]; then
   verdict "$pr_number" "$release_ref" skipped \
