@@ -273,6 +273,10 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   `UserTask.SUSPENDED` events and duplicate buffered `RESUME` commands, which drain into duplicate
   `UserTask.RESUMED` events. Only one `ProcessInstance.SUSPENDED` is written. Consumers must
   tolerate these duplicates until a follow-up deduplicates user task suspension.
+- A drained command can end the instance before `RESUME_JOBS`/`COMPLETE_RESUMING` finish, so those
+  are rejected. The process completion or termination then writes `ProcessInstance.RESUMED` itself,
+  just before its end event, so every resume ends with exactly one `RESUMED`
+  ([#66736](https://github.com/camunda/camunda/issues/66736)).
 - Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
   job suspension.
 

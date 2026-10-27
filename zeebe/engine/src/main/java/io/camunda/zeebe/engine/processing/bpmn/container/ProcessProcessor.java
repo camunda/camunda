@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
@@ -48,13 +49,15 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
+  private final StateWriter stateWriter;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final AsyncRequestState asyncRequestState,
       final SuspensionState suspensionState,
-      final SuspensionMetrics suspensionMetrics) {
+      final SuspensionMetrics suspensionMetrics,
+      final StateWriter stateWriter) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
@@ -68,6 +71,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     this.asyncRequestState = asyncRequestState;
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
+    this.stateWriter = stateWriter;
   }
 
   @Override
@@ -102,17 +106,15 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
+    finishResumingIfPending(context);
     final var result =
         transitionTo(
             element,
             context,
             completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
 
-    // a completing instance may have been RESUMING (a buffered command drained straight to
-    // completion, superseding the RESUME_JOBS/COMPLETE_RESUMING chain — see those processors'
-    // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
-    // sample so it doesn't stay in the map forever. The same goes for a SUSPENDING instance whose
-    // walk never reached SUSPENDED.
+    // a SUSPENDING instance whose walk never reached SUSPENDED leaves a sample behind; discard it
+    // so it doesn't stay in the map forever
     suspensionMetrics.discardDurations(context.getElementInstanceKey());
     return result;
   }
@@ -142,6 +144,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
 
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
+    finishResumingIfPending(terminationContext);
     transitionTo(
         element,
         terminationContext,
@@ -155,6 +158,22 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
       suspensionMetrics.commandsDropped(droppedCommands);
     }
     suspensionMetrics.discardDurations(piKey);
+  }
+
+  /**
+   * Writes {@code RESUMED} if the instance ends while {@code RESUMING}. The resume chain is then
+   * rejected, so without this no record would mark the resume as finished (e.g. for batch resume
+   * items). Must be written before the end event so the instance's final state is the end state.
+   */
+  private void finishResumingIfPending(final BpmnElementContext context) {
+    final long piKey = context.getElementInstanceKey();
+    if (suspensionState.getSuspensionState(piKey) != SuspensionState.State.RESUMING) {
+      return;
+    }
+
+    stateWriter.appendFollowUpEvent(piKey, ProcessInstanceIntent.RESUMED, context.getRecordValue());
+    suspensionMetrics.stopResumeDuration(piKey);
+    suspensionMetrics.instanceResumed();
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {

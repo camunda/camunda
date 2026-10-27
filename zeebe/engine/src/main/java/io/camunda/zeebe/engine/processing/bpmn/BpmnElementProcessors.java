@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.bpmn.task.SendTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UndefinedTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -53,7 +54,8 @@ public final class BpmnElementProcessors {
       final AsyncRequestState asyncRequestState,
       final EngineConfiguration config,
       final SuspensionState suspensionState,
-      final SuspensionMetrics suspensionMetrics) {
+      final SuspensionMetrics suspensionMetrics,
+      final StateWriter stateWriter) {
     // tasks
     processors.put(
         BpmnElementType.SERVICE_TASK,
@@ -99,7 +101,8 @@ public final class BpmnElementProcessors {
             stateTransitionBehavior,
             asyncRequestState,
             suspensionState,
-            suspensionMetrics));
+            suspensionMetrics,
+            stateWriter));
     processors.put(
         BpmnElementType.SUB_PROCESS,
         new SubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));

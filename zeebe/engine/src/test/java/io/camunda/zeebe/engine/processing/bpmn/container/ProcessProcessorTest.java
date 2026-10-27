@@ -8,21 +8,29 @@
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentInstanceBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +40,8 @@ public final class ProcessProcessorTest {
 
   private BpmnStateTransitionBehavior stateTransitionBehavior;
   private SuspensionMetrics suspensionMetrics;
+  private SuspensionState suspensionState;
+  private StateWriter stateWriter;
   private BpmnElementContext context;
   private ExecutableProcess element;
   private ProcessProcessor processor;
@@ -45,11 +55,14 @@ public final class ProcessProcessorTest {
         .thenReturn(mock(BpmnBufferedMessageStartEventBehavior.class));
     when(bpmnBehaviors.processDeletionBehavior())
         .thenReturn(mock(BpmnProcessDeletionBehavior.class));
+    when(bpmnBehaviors.agentInstanceBehavior()).thenReturn(mock(AgentInstanceBehavior.class));
 
     stateTransitionBehavior = mock(BpmnStateTransitionBehavior.class);
     suspensionMetrics = mock(SuspensionMetrics.class);
     final var asyncRequestState = mock(AsyncRequestState.class);
-    final var suspensionState = mock(SuspensionState.class);
+    when(asyncRequestState.findRequest(anyLong(), any(), any())).thenReturn(Optional.empty());
+    suspensionState = mock(SuspensionState.class);
+    stateWriter = mock(StateWriter.class);
 
     processor =
         new ProcessProcessor(
@@ -57,14 +70,17 @@ public final class ProcessProcessorTest {
             stateTransitionBehavior,
             asyncRequestState,
             suspensionState,
-            suspensionMetrics);
+            suspensionMetrics,
+            stateWriter);
 
     element = mock(ExecutableProcess.class);
     context = mock(BpmnElementContext.class);
     when(context.getElementInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
     when(context.getParentProcessInstanceKey()).thenReturn(0L);
+    when(context.getRecordValue()).thenReturn(new ProcessInstanceRecord());
     when(stateTransitionBehavior.transitionToCompleted(any(), any()))
         .thenReturn(Either.right(context));
+    when(stateTransitionBehavior.transitionToTerminated(any(), any(), any())).thenReturn(context);
   }
 
   @Test
@@ -78,5 +94,49 @@ public final class ProcessProcessorTest {
 
     // then — in-flight suspend/resume measurements, if any, are discarded rather than left dangling
     verify(suspensionMetrics).discardDurations(PROCESS_INSTANCE_KEY);
+  }
+
+  @Test
+  void shouldWriteResumedWhenCompletingWhileResuming() {
+    // given
+    when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
+        .thenReturn(SuspensionState.State.RESUMING);
+
+    // when
+    processor.finalizeCompletion(element, context);
+
+    // then
+    verify(stateWriter)
+        .appendFollowUpEvent(eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUMED), any());
+    verify(suspensionMetrics).instanceResumed();
+  }
+
+  @Test
+  void shouldWriteResumedWhenTerminatingWhileResuming() {
+    // given
+    when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
+        .thenReturn(SuspensionState.State.RESUMING);
+
+    // when
+    processor.finalizeTermination(element, context);
+
+    // then
+    verify(stateWriter)
+        .appendFollowUpEvent(eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUMED), any());
+    verify(suspensionMetrics).instanceResumed();
+  }
+
+  @Test
+  void shouldNotWriteResumedWhenTerminatingWhileSuspended() {
+    // given - no resume was requested, so there is nothing to finish
+    when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
+        .thenReturn(SuspensionState.State.SUSPENDED);
+
+    // when
+    processor.finalizeTermination(element, context);
+
+    // then
+    verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
+    verify(suspensionMetrics, never()).instanceResumed();
   }
 }
