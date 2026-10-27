@@ -266,6 +266,12 @@ Each supported version lives on its own branch in `camunda/camunda`:
   reproduces on `main`, land there first and backport instead.
 - Each PR should reference the originating nightly run URL in the description so the next on-call
   can audit the trail.
+- **During a code freeze** — the RC is built from `release-X.Y.Z`, not from `main` or
+  `stable/8.x`, so a fix merged in that window does not reach it. The nightly fix agent adds
+  the `backport release-X.Y.Z` label to its own PR when that branch still holds the same test
+  area (spec present, failing test present, patch applies), and says in the nightly Slack
+  thread when it does not — then the call is yours. Trigger it with the label, never by
+  cherry-picking onto the release branch yourself.
 
 ## Contributing
 
