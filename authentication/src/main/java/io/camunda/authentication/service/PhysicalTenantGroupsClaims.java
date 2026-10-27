@@ -71,7 +71,8 @@ final class PhysicalTenantGroupsClaims {
 
   /**
    * An {@code issuer-uri} and the {@code iss} of its tokens can differ by a trailing slash
-   * (#61896), so issuers are compared without it, like the security library and the gRPC handler.
+   * (#61896), so issuers are compared without it. The security library does the same from 1.2.0
+   * (bumped in #67385), and so does the gRPC handler with #66719.
    */
   private static String withoutTrailingSlash(final String issuer) {
     return issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
