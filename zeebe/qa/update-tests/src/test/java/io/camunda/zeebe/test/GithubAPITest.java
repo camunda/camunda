@@ -21,7 +21,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +36,7 @@ final class GithubAPITest {
   private static final SemanticVersion VERSION = SemanticVersion.parse("8.1.20").orElseThrow();
 
   private final Queue<Integer> statusCodes = new ArrayDeque<>();
+  private final Map<String, String> errorHeaders = new HashMap<>();
   private final AtomicInteger requestCount = new AtomicInteger();
   private HttpServer server;
   private GithubAPI api;
@@ -49,6 +52,9 @@ final class GithubAPITest {
           final var body =
               (status == 200 ? "{\"tag_name\":\"8.1.20\"}" : "{\"message\":\"Server Error\"}")
                   .getBytes(StandardCharsets.UTF_8);
+          if (status != 200) {
+            errorHeaders.forEach((name, value) -> exchange.getResponseHeaders().add(name, value));
+          }
           exchange.sendResponseHeaders(status, body.length);
           try (final var out = exchange.getResponseBody()) {
             out.write(body);
@@ -127,7 +133,53 @@ final class GithubAPITest {
   }
 
   @Test
-  void shouldNotRetryReleaseLookupOnOtherClientErrors() {
+  void shouldRetryReleaseLookupWhenForbiddenByExhaustedRateLimit() {
+    // given
+    errorHeaders.put("X-RateLimit-Remaining", "0");
+    statusCodes.addAll(List.of(403, 200));
+
+    // when
+    final var release = api.fetchRelease(VERSION);
+
+    // then
+    assertThat(release).isPresent();
+    assertThat(requestCount).hasValue(2);
+  }
+
+  @Test
+  void shouldRetryReleaseLookupWhenForbiddenWithRetryAfter() {
+    // given
+    errorHeaders.put("Retry-After", "1");
+    statusCodes.addAll(List.of(403, 200));
+
+    // when
+    final var release = api.fetchRelease(VERSION);
+
+    // then
+    assertThat(release).isPresent();
+    assertThat(requestCount).hasValue(2);
+  }
+
+  @Test
+  void shouldNotRetryReleaseLookupWhenForbiddenWithRateLimitRemaining() {
+    // given
+    errorHeaders.put("X-RateLimit-Remaining", "42");
+    statusCodes.addAll(List.of(403, 200));
+
+    // when / then
+    assertThatThrownBy(() -> api.fetchRelease(VERSION))
+        .isInstanceOf(RuntimeException.class)
+        .hasRootCauseMessage(
+            "Failed to fetch release from GitHub API. Status: 403, Endpoint: "
+                + "http://localhost:"
+                + server.getAddress().getPort()
+                + "/repos/camunda/camunda/releases/tags/8.1.20, Response: "
+                + "{\"message\":\"Server Error\"}");
+    assertThat(requestCount).hasValue(1);
+  }
+
+  @Test
+  void shouldNotRetryReleaseLookupOnPlainForbidden() {
     // given
     statusCodes.addAll(List.of(403, 200));
 

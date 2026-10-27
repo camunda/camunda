@@ -695,9 +695,9 @@ final class VersionCompatibilityMatrix {
     }
 
     /**
-     * Sends the request, retrying on I/O errors and on transient responses (5xx and 429). {@link
-     * HttpClient#send} does not throw on an error status, so the retry would otherwise never fire
-     * for them.
+     * Sends the request, retrying on I/O errors and on transient responses (5xx, 429, and 403 rate
+     * limits). {@link HttpClient#send} does not throw on an error status, so the retry would
+     * otherwise never fire for them.
      */
     private HttpResponse<byte[]> send(final HttpClient httpClient, final URI endpoint)
         throws Exception {
@@ -707,7 +707,7 @@ final class VersionCompatibilityMatrix {
                 httpClient.send(
                     createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray());
             final var statusCode = response.statusCode();
-            if (statusCode >= 500 || statusCode == 429) {
+            if (isTransient(response)) {
               final var body = new String(Objects.requireNonNullElse(response.body(), new byte[0]));
               throw new IOException(
                   String.format(
@@ -716,6 +716,22 @@ final class VersionCompatibilityMatrix {
             }
             return response;
           });
+    }
+
+    /**
+     * GitHub reports a primary or secondary rate limit as either 429 or 403; only a 403 carrying
+     * {@code retry-after} or {@code x-ratelimit-remaining: 0} is a rate limit, any other 403 is a
+     * permanent failure.
+     */
+    private static boolean isTransient(final HttpResponse<?> response) {
+      final var statusCode = response.statusCode();
+      if (statusCode >= 500 || statusCode == 429) {
+        return true;
+      }
+      final var headers = response.headers();
+      return statusCode == 403
+          && (headers.firstValue("retry-after").isPresent()
+              || headers.firstValue("x-ratelimit-remaining").filter("0"::equals).isPresent());
     }
 
     private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
