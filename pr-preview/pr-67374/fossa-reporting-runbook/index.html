@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">FOSSA Reporting Runbook | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-67374/fossa-reporting-runbook/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="FOSSA Reporting Runbook | Camunda Platform"><meta data-rh="true" name="description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><meta data-rh="true" property="og:description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-67374/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-67374/fossa-reporting-runbook/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-67374/fossa-reporting-runbook/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-67374/fossa-reporting-runbook/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-67374/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-67374/assets/js/runtime~main.ebc26dea.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-67374/assets/js/main.da61f07a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-67374/assets/js/runtime~main.86c4ac49.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-67374/assets/js/main.dddf1d4f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -21,7 +21,7 @@ This runbook covers the plumbing only.</p>
 <li class=""><a href="/camunda/pr-preview/pr-67374/assets/files/check-licenses-ad9c000a8116c2aca7bd91b9123b581e.yml/" target="_blank" class=""><code>check-licenses.yml</code></a> scans each FOSSA project
 (<code>single-app</code>, <code>optimize</code>, <code>c8run</code>) on every tag and push.</li>
 <li class="">The <code>fossa-release*</code> jobs in
-<a href="/camunda/pr-preview/pr-67374/assets/files/camunda-platform-release-4234463879a5703e795796ad7ab2b055.yml/" target="_blank" class=""><code>camunda-platform-release.yml</code></a> wait for
+<a href="/camunda/pr-preview/pr-67374/assets/files/camunda-platform-release-5df0bfc5df280bc71647fd31ff209bb0.yml/" target="_blank" class=""><code>camunda-platform-release.yml</code></a> wait for
 the scan at the release tag revision, then create a FOSSA release in two release groups
 (attribution as TXT, SBOM as CycloneDX JSON).</li>
 <li class="">The reports are served from the public FOSSA portal, not attached to GitHub releases.</li>
