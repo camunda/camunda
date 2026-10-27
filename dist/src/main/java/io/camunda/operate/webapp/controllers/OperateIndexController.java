@@ -9,8 +9,11 @@ package io.camunda.operate.webapp.controllers;
 
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.security.configuration.SaasConfigurationHelper;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +30,23 @@ public class OperateIndexController {
 
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
+  @Autowired(required = false)
+  private WebappConfiguration webappConfiguration;
+
+  @Autowired(required = false)
+  private CamundaSecurityLibraryProperties securityProperties;
+
   @GetMapping(value = {"/operate", "/operate/", "/operate/index.html"})
   public String tasklist(final Model model) {
-    model.addAttribute("contextPath", context.getContextPath() + "/operate/");
-    return "operate/index";
+    final var configuration =
+        webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
+    final var saas = securityProperties != null ? securityProperties.getSaas() : null;
+    model.addAttribute("baseName", context.getContextPath() + "/");
+    model.addAttribute("contextPath", context.getContextPath());
+    model.addAttribute("isEnterprise", configuration.isEnterprise());
+    model.addAttribute("organizationId", nullToEmpty(SaasConfigurationHelper.organizationId(saas)));
+    model.addAttribute("clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(saas)));
+    return "webapp/index";
   }
 
   /**
@@ -74,5 +90,9 @@ public class OperateIndexController {
   })
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/operate" + getRequestedUrl(request);
+  }
+
+  private static String nullToEmpty(final String value) {
+    return value != null ? value : "";
   }
 }
