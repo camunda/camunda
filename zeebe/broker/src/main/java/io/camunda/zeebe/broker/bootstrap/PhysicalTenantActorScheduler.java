@@ -15,13 +15,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
-import java.time.Duration;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -30,8 +24,8 @@ import org.jspecify.annotations.Nullable;
  * stops the executor and the scheduler and discards the registry.
  *
  * @param meterRegistry the tagging registry, or {@code null} if actor metrics are disabled
- * @param expressionEvaluationExecutor runs the tenant's FEEL evaluations on as many threads as the
- *     tenant has CPU-bound actor threads, so evaluations cannot take CPU from other tenants
+ * @param expressionEvaluationExecutor runs the tenant's FEEL evaluations in actors on the IO
+ *     threads of the tenant scheduler, so that they count for its CPU budget
  */
 record PhysicalTenantActorScheduler(
     ActorScheduler scheduler,
@@ -39,8 +33,6 @@ record PhysicalTenantActorScheduler(
     ExecutorService expressionEvaluationExecutor,
     @Nullable CpuBudget cpuBudget)
     implements AutoCloseable {
-
-  private static final Duration EXPRESSION_EVALUATION_THREAD_KEEP_ALIVE = Duration.ofSeconds(60);
 
   /**
    * Starts a scheduler for the tenant from a builder that already carries the settings shared with
@@ -72,28 +64,9 @@ record PhysicalTenantActorScheduler(
     if (cpuBudget != null) {
       cpuBudget.start(scheduler.getThreads());
     }
-    final var expressionEvaluationExecutor =
-        new ThreadPoolExecutor(
-            pool.getCpuThreadCount(),
-            pool.getCpuThreadCount(),
-            EXPRESSION_EVALUATION_THREAD_KEEP_ALIVE.toSeconds(),
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(),
-            expressionEvaluationThreadFactory(physicalTenantId));
-    // threads are started on demand and exit when idle
-    expressionEvaluationExecutor.allowCoreThreadTimeOut(true);
+    final var expressionEvaluationExecutor = new ActorExpressionEvaluationExecutor(scheduler);
     return new PhysicalTenantActorScheduler(
         scheduler, meterRegistry, expressionEvaluationExecutor, cpuBudget);
-  }
-
-  private static ThreadFactory expressionEvaluationThreadFactory(final String physicalTenantId) {
-    final var threadNumber = new AtomicInteger();
-    return runnable -> {
-      final var thread =
-          new Thread(runnable, physicalTenantId + "-feel-" + threadNumber.getAndIncrement());
-      thread.setDaemon(true);
-      return thread;
-    };
   }
 
   /** Blocks until the scheduler threads have stopped. */

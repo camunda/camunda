@@ -19,9 +19,11 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +97,7 @@ final class PhysicalTenantActorSchedulerStepTest {
   }
 
   @Test
-  void shouldRunExpressionEvaluationsOnDedicatedPlatformThreads() throws Exception {
+  void shouldRunExpressionEvaluationsOnTenantIoThreads() throws Exception {
     // given
     startup();
 
@@ -104,8 +106,34 @@ final class PhysicalTenantActorSchedulerStepTest {
     final var thread = executor.submit(Thread::currentThread).get(10, TimeUnit.SECONDS);
 
     // then
-    assertThat(thread.isVirtual()).isFalse();
-    assertThat(thread.getName()).startsWith(TENANT_ID + "-feel-");
+    assertThat(thread.getName()).startsWith(TENANT_ID + "-zb-fs-workers-");
+  }
+
+  @Test
+  void shouldEvaluateWhileCallerBlocksTheOnlyCpuThread() throws Exception {
+    // given - one CPU thread, which the calling actor holds while it waits for the evaluation
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuThreadCount(1);
+    startup();
+    final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
+    final var result = new CompletableFuture<Integer>();
+
+    // when
+    context
+        .getPartitionActorSchedulingService(TENANT_ID)
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarted() {
+                try {
+                  result.complete(executor.submit(() -> 42).get(10, TimeUnit.SECONDS));
+                } catch (final Exception e) {
+                  result.completeExceptionally(e);
+                }
+              }
+            });
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(15)).isEqualTo(42);
   }
 
   @Test
@@ -157,6 +185,43 @@ final class PhysicalTenantActorSchedulerStepTest {
     // then
     assertThat(threadName).startsWith("tenant-a-zb-actors-");
     assertThat(shutdownFuture).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldLimitCpuTimeOfExpressionEvaluationsToBudget() throws Exception {
+    // given - a budget of 0.3 core, and many short evaluations that would use 2 IO threads fully
+    final var pool = brokerCfg.getThreads().getPhysicalTenantActorPool();
+    pool.setIoThreadCount(2);
+    pool.setCpuBudgetCores(0.3);
+    startup();
+    final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
+    final var scheduler = (ActorScheduler) context.getPartitionActorSchedulingService(TENANT_ID);
+    final var stop = new AtomicBoolean();
+    for (int i = 0; i < 20_000; i++) {
+      executor.submit(
+          () -> {
+            final long end = System.nanoTime() + 1_000_000;
+            while (!stop.get() && System.nanoTime() < end) {
+              Thread.onSpinWait();
+            }
+            return null;
+          });
+    }
+
+    // when
+    final var bean = ManagementFactory.getThreadMXBean();
+    final long before =
+        scheduler.getThreads().stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum();
+    Thread.sleep(3_000);
+    final long used =
+        scheduler.getThreads().stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum()
+            - before;
+    stop.set(true);
+
+    // then
+    final double cores = used / 3_000_000_000.0;
+    System.out.printf("RESULT feel cores=%.3f%n", cores);
+    assertThat(cores).isBetween(0.2, 0.4);
   }
 
   private void startup() {
