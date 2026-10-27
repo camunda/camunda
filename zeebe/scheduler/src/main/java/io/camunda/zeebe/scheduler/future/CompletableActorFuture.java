@@ -66,6 +66,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   private CompletableActorFuture(final V value) {
     this.value = value;
+    completedAt = System.nanoTime();
     state = COMPLETED;
   }
 
@@ -73,6 +74,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     ensureValidThrowable(throwable);
     failure = throwable.getMessage();
     failureCause = throwable;
+    completedAt = System.nanoTime();
     state = COMPLETED_EXCEPTIONALLY;
   }
 
@@ -225,6 +227,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
+      completedAt = System.nanoTime();
       state = COMPLETED_EXCEPTIONALLY;
       notifyAllBlocked();
     } else {
