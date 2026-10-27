@@ -32,9 +32,10 @@ import org.apache.hc.core5.http.nio.CapacityChannel;
 /**
  * An asynchronous consumer for binary data that represents a document.
  *
- * <p>This implementation guarantees that the data is consumed in a non-blocking manner, and that
- * the data is stored in a buffer with a fixed capacity. The consumer works with a {@link
- * CapacityChannel} to notify the I/O layer when more data can be read from the network.
+ * <p>This implementation guarantees that the data is consumed in a non-blocking manner, and that it
+ * asks the I/O layer for no more data than fits into a buffer with a fixed capacity. The consumer
+ * works with a {@link CapacityChannel} to notify the I/O layer when more data can be read from the
+ * network. The I/O layer may still hand over more than that; the buffer then grows to hold it.
  *
  * <p>If the server returns:
  *
@@ -85,7 +86,6 @@ public class DocumentDataConsumer<T>
       problemDetail = true;
     } else {
       problemDetail = false;
-      inputStream.setCapacityCallback(this);
       resultCallback.completed((ApiEntity<T>) ApiEntity.of(inputStream));
     }
   }
@@ -121,10 +121,13 @@ public class DocumentDataConsumer<T>
       return;
     }
 
-    this.capacityChannel = capacityChannel;
-    final int availableSpace = inputStream.getAvailableSpace();
-    if (availableSpace > 0) {
-      capacityChannel.update(availableSpace);
+    // The I/O layer calls this again each time its window runs low, which for HTTP/2 is while the
+    // window is still half open. Granting the free space on every call would add it on top of what
+    // is left of the window and of what onCapacityAvailable already granted, so only the first call
+    // registers with the stream, which then reports each byte of free space exactly once.
+    if (this.capacityChannel == null) {
+      this.capacityChannel = capacityChannel;
+      inputStream.setCapacityCallback(this);
     }
   }
 
