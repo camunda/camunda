@@ -5,7 +5,6 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
-  implementation(project(":zeebe-db"))
   api(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(libs.io.camunda.security.library.api)
