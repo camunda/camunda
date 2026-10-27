@@ -813,10 +813,10 @@ jobs:
             # 1. Reconcile labels whose release branch is no longer frozen.
             #
             # The gate labels when the PR opens, but backport-action fires when it
-            # merges. A PR that outlives the release -- one held by do-not-close, or
-            # resurrected by the reopen path -- would otherwise open a backport into
-            # a branch that already shipped. This runs even when no release branch is
-            # frozen at all, which is exactly when the stale labels are.
+            # merges. Any PR that outlives the release -- one the reopen path
+            # resurrected, say -- would otherwise open a backport into a branch that
+            # already shipped. This runs even when no release branch is frozen at
+            # all, which is exactly when the stale labels are.
             while IFS= read -r label; do
               [ -z "$label" ] && continue
               ref="${label#backport }"
