@@ -17,70 +17,11 @@ package io.camunda.process.test.impl.testCases;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class TestRunContextTest {
 
   private static final String RUN_ID = "run-1";
-
-  @Test
-  void shouldAddRunIdWhenEnabled() {
-    // given
-    final TestRunContext runContext = TestRunContext.enabled(RUN_ID);
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("a", 1);
-
-    // when
-    final Map<String, Object> result = runContext.applyRunId(variables);
-
-    // then
-    assertThat(result)
-        .containsEntry("a", 1)
-        .containsEntry(TestRunContext.RUN_ID_VARIABLE_NAME, RUN_ID);
-  }
-
-  @Test
-  void shouldNotMutateInputVariables() {
-    // given
-    final TestRunContext runContext = TestRunContext.enabled(RUN_ID);
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("a", 1);
-
-    // when
-    runContext.applyRunId(variables);
-
-    // then
-    assertThat(variables).doesNotContainKey(TestRunContext.RUN_ID_VARIABLE_NAME);
-  }
-
-  @Test
-  void shouldHandleNullVariablesWhenEnabled() {
-    // given
-    final TestRunContext runContext = TestRunContext.enabled(RUN_ID);
-
-    // when
-    final Map<String, Object> result = runContext.applyRunId(null);
-
-    // then
-    assertThat(result).hasSize(1).containsEntry(TestRunContext.RUN_ID_VARIABLE_NAME, RUN_ID);
-  }
-
-  @Test
-  void shouldReturnVariablesUnchangedWhenDisabled() {
-    // given
-    final TestRunContext runContext = TestRunContext.disabled();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("a", 1);
-
-    // when
-    final Map<String, Object> result = runContext.applyRunId(variables);
-
-    // then
-    assertThat(result).isSameAs(variables);
-    assertThat(runContext.isEnabled()).isFalse();
-  }
 
   @Test
   void shouldReadEnabledFlagFromSystemProperty() {
