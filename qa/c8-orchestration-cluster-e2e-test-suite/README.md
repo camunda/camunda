@@ -226,10 +226,12 @@ blocks the merge only when a spec your PR **added or modified** fails. Failures 
 untouched tests are reported in the uploaded report but do not block — keeping the
 historically flaky parts of the suite from blocking unrelated changes.
 
-Run the on-demand workflow below when you need the full suite to gate (for example a
-change to a shared page object, fixture or config that can break untouched tests without
-changing any spec file), or for a pull request from a fork, which the automatic check
-skips.
+Because the full suite runs, a change to a shared page object, fixture or config that
+breaks untouched tests still shows up in the uploaded report even though it does not block
+— review those failures and confirm they are pre-existing before merging. You do not need
+a separate on-demand run just to surface them. Run the on-demand workflow below only for a
+pull request from a fork (which the automatic check skips), or when you want the whole
+suite to gate red/green instead of reading the report yourself.
 
 > **Product code + test in the same PR:** the ES API and E2E (browser) jobs run against the
 > published `camunda/camunda:SNAPSHOT` image, so they exercise your test changes against the
