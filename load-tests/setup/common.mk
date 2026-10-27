@@ -167,6 +167,9 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # generate-physical-tenant-values target below and generate-physical-tenant-values.sh.
 ifneq ($(physical_tenant_count),0)
 platform_values += -f camunda-platform-physical-tenants.yaml
+# The broker fetches the OIDC discovery document from the issuer URL, so with tenants the pinned
+# Keycloak hostname must be reachable from inside the cluster (see generate-physical-tenant-values.sh).
+_load_test_setup_flags += --set keycloak.hostname=keycloak
 endif
 
 # Disable Optimize if not enabled
