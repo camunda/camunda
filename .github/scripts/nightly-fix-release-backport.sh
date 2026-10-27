@@ -94,7 +94,15 @@ missing_tests() {
       printf '%s › %s (spec absent)\n' "$file" "$test_name"
       continue
     fi
-    git show "${release_ref}:${path}" 2>/dev/null | grep -qF "$test_name" \
+    # Match the title as a quoted literal, not a bare substring: "logs in" is a
+    # substring of test('logs in with SSO'), and accepting that would wave through
+    # a fix for a test the release branch does not have. The three quote styles
+    # cover how a title is written; a title this cannot find is reported absent,
+    # so a form we do not recognise (a template literal with a placeholder, say)
+    # refuses rather than guesses. Resolving real titles would mean running
+    # Playwright, which this step must not do.
+    git show "${release_ref}:${path}" 2>/dev/null \
+      | grep -qF -e "'${test_name}'" -e "\"${test_name}\"" -e "\`${test_name}\`" \
       || printf '%s › %s\n' "$file" "$test_name"
   done < <(jq -r '.[]? | select(.file and .test_name) | "\(.file)\t\(.test_name)"' "$specs_file")
 }

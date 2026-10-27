@@ -50,6 +50,12 @@ commit_fix_on_main() {
   git diff HEAD~1 HEAD > "${BATS_TEST_TMPDIR}/pr.patch"
 }
 
+# The aggregate base..HEAD diff, which is what the workflow feeds the gate. Used
+# where a PR spans several commits and the per-commit series would read differently.
+write_aggregate_patch() {
+  git diff "$1" HEAD > "${BATS_TEST_TMPDIR}/pr.patch"
+}
+
 @test "labels a fix whose spec and test both exist on the release branch" {
   sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
   commit_fix_on_main
@@ -178,6 +184,47 @@ EOF
   cat > "$SPECS" <<EOF
 [{"file": "$SUITE/tests/smoke.spec.ts", "test_name": "logs in"}]
 EOF
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "eligible" ]
+}
+
+@test "refuses a dispatched title that only appears as a prefix of another test" {
+  # The release branch has a longer test whose title starts with the dispatched
+  # one. A raw substring search would call the dispatched test present.
+  git checkout --quiet release-8.11.0-alpha1
+  cat > "$SUITE/tests/smoke.spec.ts" <<'EOF'
+test('logs in with SSO', async () => {
+  await page.click('#login');
+});
+EOF
+  git add -A && git commit --quiet -m "release-only test"
+  git checkout --quiet main
+
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"test not on the release branch"* ]]
+}
+
+@test "allows a helper added in one commit and edited in a later one" {
+  # Across the whole PR the helper is simply added, and added files are exempt.
+  # Only a per-commit patch series would show the second commit as a change to a
+  # file the release branch lacks.
+  base=$(git rev-parse HEAD)
+  cat > "$SUITE/tests/helper.ts" <<'EOF'
+export const waitForReady = async () => {};
+EOF
+  git add -A && git commit --quiet -m "add helper"
+  cat > "$SUITE/tests/helper.ts" <<'EOF'
+export const waitForReady = async () => { await Promise.resolve(); };
+EOF
+  git add -A && git commit --quiet -m "edit helper"
+  write_aggregate_patch "$base"
 
   run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
   [ "$status" -eq 0 ]

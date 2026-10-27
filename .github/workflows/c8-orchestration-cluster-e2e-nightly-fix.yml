@@ -793,10 +793,20 @@ jobs:
           # cannot be read counts as a person -- removing someone's request on
           # uncertainty is the worse mistake. Echoes removed | kept | failed.
           revoke_if_bot() {
-            local pr="$1" label="$2" actor_type
+            local pr="$1" label="$2" actor_type rc=0
+            # `set -o pipefail` is in force, so rc catches a failed page fetch as well
+            # as a jq error. Without this check, pagination that dies after the bot's
+            # own labelling event but before a later human one would read as "Bot" on
+            # a partial history and remove a human's label.
             actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
               | jq -rs --arg l "$label" \
-                  '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""')
+                  '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""') \
+              || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "::warning::Could not read the label history of PR #${pr} -- leaving '${label}' in place."
+              echo kept
+              return
+            fi
             if [ "$actor_type" != "Bot" ]; then
               echo kept
               return
@@ -839,8 +849,13 @@ jobs:
             # 2. Propose for the branch that IS frozen for this line, if any.
             [ -s "$pairs" ] || continue
 
+            # The aggregate PR diff, NOT `--patch`: that returns a per-commit patch
+            # series, in which a helper added in one commit and edited in a later one
+            # appears as a modification of a file the release branch does not have,
+            # refusing a PR whose net change only adds it. The plain diff keeps the
+            # `index` lines the three-way apply needs.
             patch="/tmp/pr-${pr}.patch"
-            if ! gh pr diff "$pr" --repo "$REPO" --patch > "$patch" 2>/dev/null; then
+            if ! gh pr diff "$pr" --repo "$REPO" > "$patch" 2>/dev/null; then
               echo "::warning::Could not read the diff of PR #${pr} -- skipping its backport check."
               continue
             fi
