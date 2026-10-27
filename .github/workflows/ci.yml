@@ -2658,13 +2658,18 @@ jobs:
   utils-c8-e2e-suite-full-result:
     name: "C8 E2E Test Suite / Full Result (non-blocking)"
     needs: [ detect-changes, c8-e2e-test-suite-tests ]
-    # !cancelled() (not always()): run whether the suite passed or failed, but
-    # not on a cancelled/superseded run, where missing artifacts are expected and
-    # a red here would be noise.
+    # Run only when the suite gate actually concluded success or failure.
+    # !cancelled() alone is not enough: on a superseded/cancelled run the gate
+    # job is cancelled individually while this job's own cancelled() is still
+    # false, so Full Result would run and read the gate's 'cancelled' result as
+    # red — pure noise on a run that is being discarded anyway. Gating on the
+    # gate's result confines Full Result to real pass/fail outcomes.
     if: >-
       !cancelled()
       && needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
       && github.event.pull_request.head.repo.fork != true
+      && (needs.c8-e2e-test-suite-tests.result == 'success'
+          || needs.c8-e2e-test-suite-tests.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
