@@ -34,6 +34,10 @@ import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -283,6 +287,41 @@ public class ElasticsearchEngineClientIT {
         elsEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
 
     assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
+  void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue()
+      throws IOException, InterruptedException {
+    // given - the engine accepts and stores a string for a setting the typed client model expects
+    // to be an object, which makes parsing the full settings of this index fail
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    elsEngineClient.createIndex(index, settings);
+    final var indexName = index.getFullQualifiedName();
+    executeRaw("POST", indexName + "/_close", null);
+    executeRaw("PUT", indexName + "/_settings", "{\"index.analysis.filter\": \"_none\"}");
+    executeRaw("POST", indexName + "/_open", null);
+
+    // when
+    final var replicaCounts = elsEngineClient.getNumberOfReplicas(List.of(indexName + "*"));
+
+    // then
+    assertThat(replicaCounts).containsEntry(indexName, 2);
+  }
+
+  private static void executeRaw(final String method, final String path, final String body)
+      throws IOException, InterruptedException {
+    // the typed client cannot be used to write a value it would itself refuse to parse
+    final var request =
+        HttpRequest.newBuilder(URI.create("http://" + CONTAINER.getHttpHostAddress() + "/" + path))
+            .header("Content-Type", "application/json")
+            .method(method, HttpRequest.BodyPublishers.ofString(body == null ? "" : body))
+            .build();
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      assertThat(response.statusCode()).isEqualTo(200);
+    }
   }
 
   @Test
