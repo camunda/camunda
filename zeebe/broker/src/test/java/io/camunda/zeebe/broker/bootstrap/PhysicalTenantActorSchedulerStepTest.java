@@ -146,7 +146,7 @@ final class PhysicalTenantActorSchedulerStepTest {
   @Test
   void shouldRunAndStopDedicatedSchedulerWithCpuBudget() throws Exception {
     // given
-    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuBudgetCores(0.5);
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuLimitCores(0.5);
     startup();
 
     // when
@@ -166,7 +166,7 @@ final class PhysicalTenantActorSchedulerStepTest {
     // given - a budget of 0.3 core, and many short evaluations on 2 threads
     final var pool = brokerCfg.getThreads().getPhysicalTenantActorPool();
     pool.setCpuThreadCount(2);
-    pool.setCpuBudgetCores(0.3);
+    pool.setCpuLimitCores(0.3);
     startup();
     final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
     final var stop = new AtomicBoolean();
@@ -203,7 +203,7 @@ final class PhysicalTenantActorSchedulerStepTest {
   @Test
   void shouldInterruptExpressionEvaluationThatExceedsTimeout() throws Exception {
     // given - an evaluation that never ends on its own, on a tenant with a budget
-    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuBudgetCores(0.3);
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuLimitCores(0.3);
     startup();
     final var executor = context.getExpressionEvaluationExecutor(TENANT_ID);
     final var interrupted = new CompletableFuture<Boolean>();

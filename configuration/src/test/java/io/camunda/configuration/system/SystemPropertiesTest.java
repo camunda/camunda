@@ -8,6 +8,7 @@
 package io.camunda.configuration.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -49,7 +50,11 @@ public class SystemPropertiesTest {
         "camunda.system.legacy-query-api.enabled=true",
         "camunda.system.physical-tenant-actor-pool.enabled=true",
         "camunda.system.physical-tenant-actor-pool.cpu-thread-count=3",
-        "camunda.system.physical-tenant-actor-pool.io-thread-count=2"
+        "camunda.system.physical-tenant-actor-pool.io-thread-count=2",
+        "camunda.system.physical-tenant-actor-pool.cpu-limit-cores=3",
+        "camunda.system.physical-tenant-actor-pool.cpu-headroom-cores=0.5",
+        "camunda.system.physical-tenant-actor-pool.weights.pt1=1",
+        "camunda.system.physical-tenant-actor-pool.weights.pt2=0.5"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -111,6 +116,9 @@ public class SystemPropertiesTest {
       assertThat(actorPool.isEnabled()).isTrue();
       assertThat(actorPool.getCpuThreadCount()).isEqualTo(3);
       assertThat(actorPool.getIoThreadCount()).isEqualTo(2);
+      assertThat(actorPool.getCpuLimitCores()).isEqualTo(3);
+      assertThat(actorPool.getCpuHeadroomCores()).isEqualTo(0.5);
+      assertThat(actorPool.getWeights()).containsOnly(entry("pt1", 1.0), entry("pt2", 0.5));
     }
 
     @Test

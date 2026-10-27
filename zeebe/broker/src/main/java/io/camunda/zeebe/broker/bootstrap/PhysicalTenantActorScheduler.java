@@ -46,11 +46,14 @@ record PhysicalTenantActorScheduler(
   /**
    * Starts a scheduler for the tenant from a builder that already carries the settings shared with
    * the broker-wide scheduler.
+   *
+   * @param cpuBudgetCores the CPU budget of the tenant, 0 if not limited
    */
   static PhysicalTenantActorScheduler start(
       final ActorSchedulerBuilder builder,
       final String physicalTenantId,
-      final PhysicalTenantActorPoolCfg pool) {
+      final PhysicalTenantActorPoolCfg pool,
+      final double cpuBudgetCores) {
     final var meterRegistry =
         builder.getMeterRegistry() == null
             ? null
@@ -58,9 +61,7 @@ record PhysicalTenantActorScheduler(
                 builder.getMeterRegistry(),
                 Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
     final var cpuBudget =
-        pool.getCpuBudgetCores() > 0
-            ? new CpuBudget(pool.getCpuBudgetCores(), pool.getCpuBudgetPeriod())
-            : null;
+        cpuBudgetCores > 0 ? new CpuBudget(cpuBudgetCores, pool.getCpuBudgetPeriod()) : null;
     final var scheduler =
         builder
             .setCpuBudget(cpuBudget)

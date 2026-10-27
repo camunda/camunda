@@ -8,13 +8,18 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Sizing of the dedicated actor thread pool of each physical tenant, if enabled. */
 public final class PhysicalTenantActorPoolCfg {
   private boolean enabled = false;
   private int cpuThreadCount = 2;
   private int ioThreadCount = 1;
-  private double cpuBudgetCores = 0;
+  private double cpuLimitCores = 0;
+  private double cpuHeadroomCores = 0;
+  private Map<String, Double> weights = new HashMap<>();
   private Duration cpuBudgetPeriod = Duration.ofMillis(20);
 
   public boolean isEnabled() {
@@ -41,13 +46,47 @@ public final class PhysicalTenantActorPoolCfg {
     this.ioThreadCount = ioThreadCount;
   }
 
-  /** CPU time of the pool in cores, 0 if not limited. */
-  public double getCpuBudgetCores() {
-    return cpuBudgetCores;
+  /** CPU limit of the broker in cores, which the budgets of the tenants share. 0 if not limited. */
+  public double getCpuLimitCores() {
+    return cpuLimitCores;
   }
 
-  public void setCpuBudgetCores(final double cpuBudgetCores) {
-    this.cpuBudgetCores = cpuBudgetCores;
+  public void setCpuLimitCores(final double cpuLimitCores) {
+    this.cpuLimitCores = cpuLimitCores;
+  }
+
+  /** CPU that no tenant budget includes, for example garbage collection and Raft. */
+  public double getCpuHeadroomCores() {
+    return cpuHeadroomCores;
+  }
+
+  public void setCpuHeadroomCores(final double cpuHeadroomCores) {
+    this.cpuHeadroomCores = cpuHeadroomCores;
+  }
+
+  /** Weight of each tenant by tenant id. A tenant that is not listed has the weight 1. */
+  public Map<String, Double> getWeights() {
+    return weights;
+  }
+
+  public void setWeights(final Map<String, Double> weights) {
+    this.weights = weights;
+  }
+
+  /**
+   * The CPU budget of a tenant in cores: its share, by weight, of the CPU limit without the
+   * headroom. Returns 0 if the CPU limit is not set.
+   */
+  public double cpuBudgetCores(final String tenantId, final Collection<String> allTenantIds) {
+    if (cpuLimitCores <= 0) {
+      return 0;
+    }
+    final double totalWeight = allTenantIds.stream().mapToDouble(this::weightOf).sum();
+    return Math.max(0, cpuLimitCores - cpuHeadroomCores) * weightOf(tenantId) / totalWeight;
+  }
+
+  private double weightOf(final String tenantId) {
+    return weights.getOrDefault(tenantId, 1.0);
   }
 
   public Duration getCpuBudgetPeriod() {
@@ -67,8 +106,12 @@ public final class PhysicalTenantActorPoolCfg {
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
-        + ", cpuBudgetCores="
-        + cpuBudgetCores
+        + ", cpuLimitCores="
+        + cpuLimitCores
+        + ", cpuHeadroomCores="
+        + cpuHeadroomCores
+        + ", weights="
+        + weights
         + ", cpuBudgetPeriod="
         + cpuBudgetPeriod
         + '}';

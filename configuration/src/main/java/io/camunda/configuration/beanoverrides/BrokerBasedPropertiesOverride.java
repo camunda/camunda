@@ -812,7 +812,9 @@ public class BrokerBasedPropertiesOverride {
     actorPoolCfg.setEnabled(actorPool.isEnabled());
     actorPoolCfg.setCpuThreadCount(actorPool.getCpuThreadCount());
     actorPoolCfg.setIoThreadCount(actorPool.getIoThreadCount());
-    actorPoolCfg.setCpuBudgetCores(actorPool.getCpuBudgetCores());
+    actorPoolCfg.setCpuLimitCores(actorPool.getCpuLimitCores());
+    actorPoolCfg.setCpuHeadroomCores(actorPool.getCpuHeadroomCores());
+    actorPoolCfg.setWeights(actorPool.getWeights());
     actorPoolCfg.setCpuBudgetPeriod(actorPool.getCpuBudgetPeriod());
     override.setThreads(threadsCfg);
 

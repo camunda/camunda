@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Experimental. Runs the partition actors of each physical tenant on a dedicated actor thread pool
@@ -26,10 +28,17 @@ public class PhysicalTenantActorPool {
   private int ioThreadCount = 1;
 
   /**
-   * CPU time that the pool of a physical tenant can use, in cores. May be fractional. The threads
-   * of the pool stop taking tasks once they used it up. 0 means no limit.
+   * CPU limit of the broker in cores. The CPU budgets of the pools of the physical tenants share
+   * it, by weight. The threads of a pool stop taking tasks once they used up their budget. 0 means
+   * no limit.
    */
-  private double cpuBudgetCores = 0;
+  private double cpuLimitCores = 0;
+
+  /** CPU in cores that no tenant budget includes, for example garbage collection and Raft. */
+  private double cpuHeadroomCores = 0;
+
+  /** Weight of each physical tenant by tenant id. A tenant that is not listed has the weight 1. */
+  private Map<String, Double> weights = new HashMap<>();
 
   /** How often the CPU time of the pool is charged to its budget. */
   private Duration cpuBudgetPeriod = Duration.ofMillis(20);
@@ -58,12 +67,28 @@ public class PhysicalTenantActorPool {
     this.ioThreadCount = ioThreadCount;
   }
 
-  public double getCpuBudgetCores() {
-    return cpuBudgetCores;
+  public double getCpuLimitCores() {
+    return cpuLimitCores;
   }
 
-  public void setCpuBudgetCores(final double cpuBudgetCores) {
-    this.cpuBudgetCores = cpuBudgetCores;
+  public void setCpuLimitCores(final double cpuLimitCores) {
+    this.cpuLimitCores = cpuLimitCores;
+  }
+
+  public double getCpuHeadroomCores() {
+    return cpuHeadroomCores;
+  }
+
+  public void setCpuHeadroomCores(final double cpuHeadroomCores) {
+    this.cpuHeadroomCores = cpuHeadroomCores;
+  }
+
+  public Map<String, Double> getWeights() {
+    return weights;
+  }
+
+  public void setWeights(final Map<String, Double> weights) {
+    this.weights = weights;
   }
 
   public Duration getCpuBudgetPeriod() {
