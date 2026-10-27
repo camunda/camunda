@@ -72,18 +72,73 @@ This access is split into two parts.
 - a processing state which is modifable, which is used during processing and replay.
 - a scheduled task state which is immutable, which is used by the scheduled tasks.
 
+## Modules
+
+`zeebe/engine` is a folder of several modules. They are split along the same line as the
+architecture above: *processors* read state and produce events, *appliers* turn events into state
+changes, and the *state* implementation stores the result.
+Java packages are the same in all modules (`io.camunda.zeebe.engine...`), so a package such as
+`io.camunda.zeebe.engine.processing` or `io.camunda.zeebe.engine.state` is spread over several modules.
+
+```
+                         api                      what the broker depends on
+                          |
+                        engine                    wires everything together
+              ______/     |      \______
+             |            |             |
+        processors     appliers        state      (Db* implementations)
+             |            \             /
+             |         state-mutable-api
+             |                 |
+             +--------+--------+
+                      |
+                  state-api                       read-only state interfaces
+                      |
+                    model                         engine data model (BPMN, DMN, ...)
+                      |
+                    common                        shared basics
+```
+
+An arrow always points down; a module may only depend on modules below it.
+
+| Module            | Artifact | Contains                                                                                                                                                                  |
+|-------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `common`          | `zeebe-workflow-engine-common`    | Small types shared by all other modules.                                                                                                                                  |
+| `model`           | `zeebe-workflow-engine-model`     | The engine's data model: transformed BPMN/DMN/form model, expression handling, and the value types persisted in state.                                                    |
+| `state-api`       | `zeebe-workflow-engine-state-api` | Read-only `*State` interfaces (`ProcessingState`, `JobState`, ...) and the value types and helpers shared by processors and appliers. No mutable or implementation classes. |
+| `state-mutable-api` | `zeebe-workflow-engine-state-mutable-api` | The `Mutable*State` interfaces that extend the read-only ones with write methods.                                                                                 |
+| `state`           | `zeebe-workflow-engine-state`     | The `Db*State` implementations on top of RocksDB (`ProcessingDbState`, ...).                                                                                              |
+| `appliers`        | `zeebe-workflow-engine-appliers`  | The event appliers and `EventAppliers`. The only code that is allowed to change state, through the `Mutable*State` interfaces.                                            |
+| `processors`      | `zeebe-workflow-engine-processors`| Command processors, BPMN behaviors and scheduled tasks. They only see `state-api`, so using a mutable state from a processor does not compile.                          |
+| `engine`          | `zeebe-workflow-engine`           | The `Engine` class and the typed record processor context. It assembles processors, appliers and state, and holds the tests that need the whole engine (`EngineRule`).   |
+| `api`             | `zeebe-workflow-engine-api`       | `EngineFactory`, `EngineDependencies` and `MigrationStatusReader`. The only engine module the broker compiles against (the rest is runtime-only).                                                |
+
+Rules of thumb when adding code:
+
+- A new processor goes to `processors`, a new applier to `appliers`, a new `Db*State` to `state`.
+- A new state needs its read-only interface in `state-api` and its `Mutable*` interface in
+  `state-mutable-api`. Anything that both a processor and an applier need (for example constants or
+  value types) goes to `state-api` or lower, never to `processors` or `appliers`.
+- If a processor really needs to trigger a state change, write an event and add an applier for it.
+- Tests live in the module of the code under test when that module is enough to run them. Tests that
+  need the full engine (`EngineRule`) live in `engine`. Test helpers are shared with the modules above
+  through test jars.
+- The broker must not depend on anything but `api`. Do not put factories or entry points anywhere else.
+
 ## Basic module structure
 
-At the root of the `zeebe/engine` module, you will find the `Engine` class where you can map the
-high-level engine architecture concepts you were introduced to in the section above.
+In the `engine` module, you will find the `Engine` class where you can map the high-level engine
+architecture concepts you were introduced to in the section above.
 
-There is also the `EngineConfiguration` class which is used to configure the engine. It allows you
+There is also the `EngineConfiguration` class (in `common`) which is used to configure the engine. It allows you
 to adjust the behavior of the engine through various parameters such as cache sizes, timeouts, and
 other settings.
 
 The following are the main packages that make up the engine's core functionality.
 
 ### `processing` package
+
+Lives in the `processors` module (`Engine` itself is in `engine`).
 
 The `processing` package is where the core processing logic of the engine resides. This is where
 the journey of a command record begins, once it enters the engine domain.
@@ -103,6 +158,9 @@ the journey of a command record begins, once it enters the engine domain.
   using a `commandWriter`.
 
 ### `state` package
+
+Spread over `state-api` (read-only interfaces), `state-mutable-api`, `state` (implementations) and
+`appliers`; see [Modules](#modules).
 
 The `state` package contains the state model of the engine. This is the next stop after a command
 record is processed by a processor class. Processor classes use the `stateWriter` to output event
@@ -150,27 +208,27 @@ To illustrate how to implement a new feature in the engine, let's consider the f
    Follow [this guide](../../docs/zeebe/developer_handbook.md#how-to-create-a-new-record) on creating a new record.
 
 2. **Introduce new state if needed**. Consider whether you need to add a new state type or if you can add new data to an existing state type.
-   In this case, we need a new state type [`UserState`](src/main/java/io/camunda/zeebe/engine/state/immutable/UserState.java) to persist users.
-   Start by defining immutable & mutable versions of the interface, then implement them in a single class, e.g. [`DbUserState`](src/main/java/io/camunda/zeebe/engine/state/user/DbUserState.java).
+   In this case, we need a new state type [`UserState`](state-api/src/main/java/io/camunda/zeebe/engine/state/immutable/UserState.java) to persist users.
+   Start by defining the read-only interface in `state-api` and the mutable version in [`state-mutable-api`](state-mutable-api/src/main/java/io/camunda/zeebe/engine/state/mutable/MutableUserState.java), then implement both in a single class in `state`, e.g. [`DbUserState`](state/src/main/java/io/camunda/zeebe/engine/state/user/DbUserState.java).
    You might need to break down your state class into multiple objects depending on the complexity.
-   Add your new state to [`ProcessingState`](src/main/java/io/camunda/zeebe/engine/state/immutable/ProcessingState.java).
+   Add your new state to [`ProcessingState`](state-api/src/main/java/io/camunda/zeebe/engine/state/immutable/ProcessingState.java).
 
 3. **Add a new Intent**. You normally need to introduce a new intent when you introduce a new value type.
    In this case, we need a new intent [`UserIntent`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/UserIntent.java).
 
 4. **Add a new Processor**. You need to add a new processor to handle the new command.
-   In this case, we need a new processor [`UserCreateProcessor`](src/main/java/io/camunda/zeebe/engine/processing/user/UserCreateProcessor.java) to handle the `CREATE` command.
-   Register your new processor in [`EngineProcessors`](src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java).
+   In this case, we need a new processor [`UserCreateProcessor`](processors/src/main/java/io/camunda/zeebe/engine/processing/user/UserCreateProcessor.java) to handle the `CREATE` command.
+   Register your new processor in [`EngineProcessors`](processors/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java).
 
 5. **Add a new EventApplier**.
    You need to add a new event applier to apply the new event to the state.
-   In this case, we need a new event applier [`UserCreatedApplier`](src/main/java/io/camunda/zeebe/engine/state/appliers/UserCreatedApplier.java) to apply the `CREATED` event.
-   Register your new event applier in [`EventAppliers`](src/main/java/io/camunda/zeebe/engine/state/appliers/EventAppliers.java).
+   In this case, we need a new event applier [`UserCreatedApplier`](appliers/src/main/java/io/camunda/zeebe/engine/state/appliers/UserCreatedApplier.java) to apply the `CREATED` event.
+   Register your new event applier in [`EventAppliers`](appliers/src/main/java/io/camunda/zeebe/engine/state/appliers/EventAppliers.java).
 
 ### Testing guidelines
 
-The `zeebe-worklow-engine` module contains various types of tests to ensure the quality of the
-engine code is maintained. The module itself contains unit tests, while integration tests are
+The engine modules contain various types of tests to ensure the quality of the
+engine code is maintained. The modules themselves contain unit tests, while integration tests are
 located in the [`zeebe/qa` module](../qa). Have a look at the [unit testing guidelines](../../docs/testing/unit.md)
 for more information on how to structure your unit tests.
 
@@ -189,7 +247,7 @@ as an example.
 You may notice that the `EngineRule` instance provides `job()`, `user()`, and `authorization()`
 methods. These provide instances of internal test clients that can be used to interact with the
 engine and submit command records to it. When adding a new feature, consider adding (or expand) a
-test client in the `util` test package. Have a look at the [`JobClient` class](https://github.com/camunda/camunda/blob/e472173bdb593798875f4e47eaf090b33742d491/zeebe/engine/src/test/java/io/camunda/zeebe/engine/util/client/JobClient.java#L29)
+test client in the `util` test package of the `engine` module. Have a look at the [`JobClient` class](https://github.com/camunda/camunda/blob/e472173bdb593798875f4e47eaf090b33742d491/zeebe/engine/src/test/java/io/camunda/zeebe/engine/util/client/JobClient.java#L29)
 for inspiration.
 
 You will also notice that the `EngineRule` is used in combination with the [`RecordingExporter` class](https://github.com/camunda/camunda/blob/63734638878c03e34889adc64c95fb17258a506d/zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/RecordingExporter.java#L117)
