@@ -80,7 +80,12 @@ const outcomeOf = (spec) => {
   // A coverage plan case asserts behaviour works. Nothing in the schema can
   // express "and it is expected to be broken", so an inverted expectation on
   // a generated case is never what the plan meant.
-  if (tests.some((t) => t?.expectedStatus && t.expectedStatus !== 'passed')) {
+  //
+  // Narrow to 'failed', not "anything but passed": a real test.skip() or
+  // test.fixme() carries expectedStatus 'skipped', and matching it here
+  // would label a genuine skip "expected to fail". The verdict would still
+  // be a failure, but the reason given to a reader would be wrong.
+  if (tests.some((t) => t?.expectedStatus === 'failed')) {
     return 'expected to fail';
   }
   if (tests.some((t) => t?.status === 'skipped')) return 'skipped';
