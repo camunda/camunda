@@ -280,6 +280,7 @@ public class UserTaskController {
                 request.assignee(),
                 request.action(),
                 request.allowOverride(),
+                request.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -292,6 +293,7 @@ public class UserTaskController {
                 request.userTaskKey(),
                 request.variables(),
                 request.action(),
+                request.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -321,6 +323,7 @@ public class UserTaskController {
             userTaskServices.unassignUserTask(
                 request.userTaskKey(),
                 request.action(),
+                request.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -333,6 +336,7 @@ public class UserTaskController {
                 request.userTaskKey(),
                 request.changeset(),
                 request.action(),
+                request.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 }

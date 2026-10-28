@@ -139,7 +139,8 @@ public class RequestMapper {
     return new CompleteUserTaskRequest(
         userTaskKey,
         getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
+        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction),
+        completionRequest == null ? null : completionRequest.getOperationReference());
   }
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
@@ -153,6 +154,7 @@ public class RequestMapper {
             : UserTaskCompletionRequest.Builder.create()
                 .variables(completionRequest.getVariables())
                 .action(completionRequest.getAction())
+                .operationReference(completionRequest.getOperationReference())
                 .build(),
         userTaskKey);
   }
@@ -172,6 +174,7 @@ public class RequestMapper {
             .assignee(assignmentRequest.getAssignee())
             .allowOverride(assignmentRequest.getAllowOverride())
             .action(assignmentRequest.getAction())
+            .operationReference(assignmentRequest.getOperationReference())
             .build(),
         userTaskKey);
   }
@@ -192,11 +195,12 @@ public class RequestMapper {
                 userTaskKey,
                 assignmentRequest.getAssignee(),
                 actionValue.isBlank() ? "assign" : actionValue,
-                allowOverride));
+                allowOverride,
+                assignmentRequest.getOperationReference()));
   }
 
   public static AssignUserTaskRequest toUserTaskUnassignmentRequest(final long userTaskKey) {
-    return new AssignUserTaskRequest(userTaskKey, "", "unassign", true);
+    return new AssignUserTaskRequest(userTaskKey, "", "unassign", true, null);
   }
 
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
@@ -208,7 +212,8 @@ public class RequestMapper {
             new UpdateUserTaskRequest(
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
-                getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
+                getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction),
+                updateRequest == null ? null : updateRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -252,7 +257,8 @@ public class RequestMapper {
         getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
         getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
         getMapOrEmpty(failRequest, JobFailRequest::getVariables),
-        failRequest == null ? null : failRequest.getJobLeaseToken());
+        failRequest == null ? null : failRequest.getJobLeaseToken(),
+        failRequest == null ? null : failRequest.getOperationReference());
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -267,7 +273,8 @@ public class RequestMapper {
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
-                errorRequest.getJobLeaseToken()));
+                errorRequest.getJobLeaseToken(),
+                errorRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -289,7 +296,8 @@ public class RequestMapper {
                 correlationRequest.getCorrelationKey(),
                 correlationRequest.getVariables(),
                 tenantId,
-                correlationRequest.getBusinessId()));
+                correlationRequest.getBusinessId(),
+                correlationRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, CompleteJobRequest> toJobCompletionRequest(
@@ -302,7 +310,8 @@ public class RequestMapper {
                 getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
                 getJobResultOrDefault(completionRequest),
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
-                completionRequest == null ? null : completionRequest.getBusinessId()));
+                completionRequest == null ? null : completionRequest.getBusinessId(),
+                completionRequest == null ? null : completionRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -528,6 +537,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
       final List<MultipartFile> resources,
       final String tenantId,
+      final Long operationReference,
       final boolean multiTenancyEnabled) {
     try {
       final Either<ProblemDetail, String> validationResponse =
@@ -535,7 +545,8 @@ public class RequestMapper {
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
       }
-      return Either.right(createDeployResourceRequest(resources, validationResponse.get()));
+      return Either.right(
+          createDeployResourceRequest(resources, validationResponse.get(), operationReference));
     } catch (final IOException e) {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
     }
@@ -601,7 +612,8 @@ public class RequestMapper {
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
                 tenantId,
-                messagePublicationRequest.getBusinessId()));
+                messagePublicationRequest.getBusinessId(),
+                messagePublicationRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
@@ -626,7 +638,11 @@ public class RequestMapper {
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
-            new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
+            new BroadcastSignalRequest(
+                request.getSignalName(),
+                request.getVariables(),
+                tenantId,
+                request.getOperationReference()));
   }
 
   public static <T> Either<ProblemDetail, T> getResult(
@@ -696,12 +712,13 @@ public class RequestMapper {
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
-      final List<MultipartFile> resources, final String tenantId) throws IOException {
+      final List<MultipartFile> resources, final String tenantId, final Long operationReference)
+      throws IOException {
     final Map<String, byte[]> resourceMap = new HashMap<>();
     for (final MultipartFile resource : resources) {
       resourceMap.put(resource.getOriginalFilename(), resource.getBytes());
     }
-    return new DeployResourcesRequest(resourceMap, tenantId);
+    return new DeployResourcesRequest(resourceMap, tenantId, operationReference);
   }
 
   private static ProblemDetail createInternalErrorProblemDetail(
@@ -736,7 +753,8 @@ public class RequestMapper {
                 getStringOrEmpty(request, DecisionEvaluationById::getDecisionDefinitionId),
                 -1L,
                 getMapOrEmpty(request, DecisionEvaluationById::getVariables),
-                tenantId));
+                tenantId,
+                request.getOperationReference()));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
@@ -750,7 +768,8 @@ public class RequestMapper {
                 "",
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
-                tenantId));
+                tenantId,
+                request.getOperationReference()));
   }
 
   public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
@@ -781,7 +800,8 @@ public class RequestMapper {
                                 getMapOrEmpty(element, e -> e.getVariables())))
                     .toList(),
                 request.getCancelRemainingInstances() != null
-                    && request.getCancelRemainingInstances()));
+                    && request.getCancelRemainingInstances(),
+                request.getOperationReference()));
   }
 
   public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
@@ -799,7 +819,8 @@ public class RequestMapper {
                 tenantId,
                 getKeyOrDefault(
                     request, ConditionalEvaluationInstruction::getProcessDefinitionKey, -1L),
-                request.getVariables()));
+                request.getVariables(),
+                request.getOperationReference()));
   }
 
   private static TenantFilter convertTenantFilter(final TenantFilterEnum gatewayFilter) {
@@ -989,14 +1010,25 @@ public class RequestMapper {
   }
 
   public record CompleteUserTaskRequest(
-      long userTaskKey, Map<String, Object> variables, String action) {}
+      long userTaskKey,
+      Map<String, Object> variables,
+      String action,
+      @Nullable Long operationReference) {}
 
-  public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
+  public record UpdateUserTaskRequest(
+      long userTaskKey,
+      UserTaskRecord changeset,
+      String action,
+      @Nullable Long operationReference) {}
 
   public record LookupUserTaskRequest(long userTaskKey, List<String> fetchVariables) {}
 
   public record AssignUserTaskRequest(
-      long userTaskKey, @Nullable String assignee, String action, boolean allowOverride) {}
+      long userTaskKey,
+      @Nullable String assignee,
+      String action,
+      boolean allowOverride,
+      @Nullable Long operationReference) {}
 
   public record FailJobRequest(
       long jobKey,
@@ -1004,21 +1036,24 @@ public class RequestMapper {
       String errorMessage,
       Long retryBackoff,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable Long operationReference) {}
 
   public record ErrorJobRequest(
       long jobKey,
       String errorCode,
       String errorMessage,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable Long operationReference) {}
 
   public record CompleteJobRequest(
       long jobKey,
       Map<String, Object> variables,
       JobResult result,
       @Nullable String jobLeaseToken,
-      @Nullable String businessId) {}
+      @Nullable String businessId,
+      @Nullable Long operationReference) {}
 
   public record UpdateJobRequest(
       long jobKey,
@@ -1027,10 +1062,17 @@ public class RequestMapper {
       @Nullable String jobLeaseToken) {}
 
   public record BroadcastSignalRequest(
-      String signalName, Map<String, Object> variables, String tenantId) {}
+      String signalName,
+      Map<String, Object> variables,
+      String tenantId,
+      @Nullable Long operationReference) {}
 
   public record DecisionEvaluationRequest(
-      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+      String decisionId,
+      Long decisionKey,
+      Map<String, Object> variables,
+      String tenantId,
+      @Nullable Long operationReference) {}
 
   /**
    * Functional interface variant that permits a {@code @Nullable} return value. Used for method
