@@ -38,8 +38,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates, updates and removes physical tenants on a cluster of three brokers through the {@code
@@ -48,6 +52,8 @@ import org.junit.jupiter.api.Test;
  */
 @ZeebeIntegration
 final class PhysicalTenantConfigRolloutIT {
+
+  private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantConfigRolloutIT.class);
 
   private static final String BOOT_TENANT = "boottenant";
   private static final Duration TIMEOUT = Duration.ofMinutes(2);
@@ -120,6 +126,43 @@ final class PhysicalTenantConfigRolloutIT {
               assertThat(moduleContext(broker, BOOT_TENANT)).isSameAs(bootTenantContexts.get(id));
               assertThat(appliedVersionMetric(broker, tenantId)).isEqualTo(2);
             });
+  }
+
+  @Test
+  void shouldServeTheUpdatedTenantAgainOnceItsRolloutCompleted() throws Exception {
+    // given
+    final var tenantId = createRolledOut(uniqueTenantId());
+    final var updated = tenantConfiguration("Measured");
+    updated.put("data.snapshot-period", "8m");
+    try (final var client =
+        TENANTS.newClientBuilder(broker(0), tenantId).preferRestOverGrpc(false).build()) {
+      final var load = new PublishLoad(client);
+      final var thread = Thread.ofVirtual().start(load);
+      Awaitility.await("the tenant serves before the update").until(() -> load.succeeded() > 10);
+      final var started = System.nanoTime();
+
+      // when
+      send("PUT", broker(0), tenantId, updated);
+      awaitRolledOut(tenantId, 2);
+      final var rolledOut = Duration.ofNanos(System.nanoTime() - started);
+      final var afterRollout = load.succeeded();
+      Awaitility.await("the tenant serves after the update")
+          .atMost(TIMEOUT)
+          .until(() -> load.succeeded() > afterRollout + 10);
+      load.stop();
+      thread.join();
+
+      // then
+      LOG.info(
+          "Rolled out an update of '{}' to 3 brokers in {} ms; longest gap between accepted"
+              + " commands {} ms, {} failed and {} accepted commands",
+          tenantId,
+          rolledOut.toMillis(),
+          load.longestGap().toMillis(),
+          load.failed(),
+          load.succeeded());
+      assertThat(load.succeeded()).isGreaterThan(afterRollout);
+    }
   }
 
   @Test
@@ -379,6 +422,56 @@ final class PhysicalTenantConfigRolloutIT {
       return http.send(request, BodyHandlers.ofString());
     } catch (final Exception e) {
       throw new IllegalStateException(e);
+    }
+  }
+
+  private static final class PublishLoad implements Runnable {
+    private final CamundaClient client;
+    private final AtomicBoolean running = new AtomicBoolean(true);
+    private final AtomicInteger succeeded = new AtomicInteger();
+    private final AtomicInteger failed = new AtomicInteger();
+    private volatile long longestGapNanos;
+
+    private PublishLoad(final CamundaClient client) {
+      this.client = client;
+    }
+
+    @Override
+    public void run() {
+      var lastSuccess = System.nanoTime();
+      while (running.get()) {
+        try {
+          client
+              .newPublishMessageCommand()
+              .messageName("measure")
+              .correlationKey("key")
+              .send()
+              .join(5, TimeUnit.SECONDS);
+          final var now = System.nanoTime();
+          if (succeeded.getAndIncrement() > 0) {
+            longestGapNanos = Math.max(longestGapNanos, now - lastSuccess);
+          }
+          lastSuccess = now;
+        } catch (final RuntimeException e) {
+          failed.incrementAndGet();
+        }
+      }
+    }
+
+    private void stop() {
+      running.set(false);
+    }
+
+    private int succeeded() {
+      return succeeded.get();
+    }
+
+    private int failed() {
+      return failed.get();
+    }
+
+    private Duration longestGap() {
+      return Duration.ofNanos(longestGapNanos);
     }
   }
 
