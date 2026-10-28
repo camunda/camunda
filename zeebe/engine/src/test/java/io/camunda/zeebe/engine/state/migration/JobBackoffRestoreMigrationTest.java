@@ -22,7 +22,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,43 +68,21 @@ public class JobBackoffRestoreMigrationTest {
     jobKey.wrapLong(1);
   }
 
-  // regression test of https://github.com/camunda/camunda/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/27183
   @Test
-  public void shouldRestoreIfBackoffColumnIsEmpty() {
-    // given
+  public void shouldNotAddBackoffOfFailedJobWithoutEntry() {
+    // given a job that ran out of retries, keeping the recurring time of an earlier backoff, and
+    // whose retries were updated without resolving its incident
+    createJobInIncidentWithUpdatedRetries();
+
+    // and a failed job that lost its backoff, which only the bug fixed by #15419 could cause
     final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
-    jobState.create(jobKey.getValue(), record);
-    jobState.fail(jobKey.getValue(), record);
-    backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
-
-    // when
-    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
-    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
-    jobBackoffRestoreMigration.runMigration(context);
-
-    // then
-    assertThat(backoffColumnFamily.isEmpty()).isFalse();
-  }
-
-  // regression test of https://github.com/camunda/camunda/issues/14329
-  @Test
-  public void shouldRestoreIfFailedJobsAreMoreThanBackoffJob() {
-    // given
-    final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
-    jobState.create(jobKey.getValue(), record);
-    jobState.fail(jobKey.getValue(), record);
-    backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
-
     jobKey.wrapLong(2);
     final JobRecord backoffRecord = createJobRecord(2000);
     jobState.create(jobKey.getValue(), backoffRecord);
     jobState.fail(jobKey.getValue(), backoffRecord);
     backoffKey.wrapLong(backoffRecord.getRecurringTime());
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
+    backoffColumnFamily.deleteExisting(backoffJobKey);
 
     // when
     final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
@@ -110,8 +90,7 @@ public class JobBackoffRestoreMigrationTest {
     jobBackoffRestoreMigration.runMigration(context);
 
     // then
-    assertThat(backoffColumnFamily.isEmpty()).isFalse();
-    assertThat(backoffColumnFamily.count()).isEqualTo(2);
+    assertThat(backoffColumnFamily.isEmpty()).isTrue();
   }
 
   // regression test of https://github.com/camunda/camunda/issues/14329
@@ -191,6 +170,22 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
     backoffKey.wrapLong(record.getRecurringTime());
     assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
+  }
+
+  private JobRecord createJobInIncidentWithUpdatedRetries() {
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord job = createJobRecord(1000);
+    jobState.create(jobKey.getValue(), job);
+    jobState.fail(jobKey.getValue(), job.setRetries(0));
+    processingState
+        .getIncidentState()
+        .createIncident(
+            100,
+            new IncidentRecord()
+                .setErrorType(ErrorType.JOB_NO_RETRIES)
+                .setJobKey(jobKey.getValue()));
+    jobState.updateJobRetries(jobKey.getValue(), 1);
+    return job;
   }
 
   private static JobRecord createJobRecord(final long retryBackoff) {
