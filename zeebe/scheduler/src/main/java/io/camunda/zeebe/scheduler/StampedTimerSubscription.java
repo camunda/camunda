@@ -86,7 +86,8 @@ public final class StampedTimerSubscription implements TimerSubscription {
   public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
-      timerExpiredAt = timeUnit.toNanos(now);
+      // ActorJob compares this against System.nanoTime(); `now` is a wall-clock timestamp
+      timerExpiredAt = System.nanoTime();
       task.tryWakeup();
     }
   }
