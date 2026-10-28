@@ -209,6 +209,39 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue() throws IOException {
+    // given - the engine accepts and stores a string for a setting the typed client model expects
+    // to be an object, which makes parsing the full settings of this index fail
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_unexpected_setting-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    opensearchEngineClient.createIndex(index, settings);
+    final var indexName = index.getFullQualifiedName();
+    executeRaw("POST", indexName + "/_close", null);
+    executeRaw("PUT", indexName + "/_settings", "{\"index.analysis.filter\": \"_none\"}");
+    executeRaw("POST", indexName + "/_open", null);
+
+    // when
+    final var replicaCounts = opensearchEngineClient.getNumberOfReplicas(List.of(indexName + "*"));
+
+    // then
+    assertThat(replicaCounts).containsEntry(indexName, 2);
+  }
+
+  private void executeRaw(final String method, final String endpoint, final String body)
+      throws IOException {
+    final var builder = Requests.builder().method(method).endpoint(endpoint);
+    if (body != null) {
+      builder.body(Body.from(body.getBytes(StandardCharsets.UTF_8), "application/json"));
+    }
+    try (final var response = openSearchClient.generic().execute(builder.build())) {
+      assertThat(response.getStatus()).isEqualTo(200);
+    }
+  }
+
+  @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
     final var index1 =
