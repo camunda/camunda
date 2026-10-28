@@ -20,7 +20,6 @@ import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.
 import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.RESOURCE_TYPE;
 import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.VERSION;
 import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.VERSION_TAG;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -41,13 +40,13 @@ public class DeployedResourceFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final DeployedResourceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    of(longOperations(RESOURCE_KEY, filter.resourceKeyOperations())).ifPresent(queries::addAll);
-    of(getResourceNamesQuery(filter.resourceNameOperations())).ifPresent(queries::addAll);
-    of(getResourceIdsQuery(filter.resourceIdOperations())).ifPresent(queries::addAll);
-    of(getResourceTypesQuery(filter.resourceTypeOperations())).ifPresent(queries::addAll);
-    of(getVersionsQuery(filter.versionOperations())).ifPresent(queries::addAll);
-    of(getVersionTagsQuery(filter.versionTagOperations())).ifPresent(queries::addAll);
-    of(longOperations(DEPLOYMENT_KEY, filter.deploymentKeyOperations())).ifPresent(queries::addAll);
+    queries.addAll(longOperations(RESOURCE_KEY, filter.resourceKeyOperations()));
+    queries.addAll(getResourceNamesQuery(filter.resourceNameOperations()));
+    queries.addAll(getResourceIdsQuery(filter.resourceIdOperations()));
+    queries.addAll(getResourceTypesQuery(filter.resourceTypeOperations()));
+    queries.addAll(getVersionsQuery(filter.versionOperations()));
+    queries.addAll(getVersionTagsQuery(filter.versionTagOperations()));
+    queries.addAll(longOperations(DEPLOYMENT_KEY, filter.deploymentKeyOperations()));
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
     return and(queries);
   }

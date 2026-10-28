@@ -39,7 +39,6 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -58,30 +57,22 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
   @Override
   public SearchQuery toSearchQuery(final JobFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    of(dateTimeOperations(JOB_DEADLINE, filter.deadlineOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_DENIED_REASON, filter.deniedReasonOperations()))
-        .ifPresent(queries::addAll);
-    of(stringOperations(FLOW_NODE_ID, filter.elementIdOperations())).ifPresent(queries::addAll);
-    of(longOperations(FLOW_NODE_INSTANCE_ID, filter.elementInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(TIME, filter.endTimeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(ERROR_CODE, filter.errorCodeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(ERROR_MESSAGE, filter.errorMessageOperations())).ifPresent(queries::addAll);
-    of(longOperations(JOB_KEY, filter.jobKeyOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_KIND, filter.kindOperations())).ifPresent(queries::addAll);
-    of(stringOperations(LISTENER_EVENT_TYPE, filter.listenerEventTypeOperations()))
-        .ifPresent(queries::addAll);
-    of(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(LAST_UPDATE_TIME, filter.lastUpdateTimeOperations()))
-        .ifPresent(queries::addAll);
-    of(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(intOperations(RETRIES, filter.retriesOperations())).ifPresent(queries::addAll);
+    queries.addAll(dateTimeOperations(JOB_DEADLINE, filter.deadlineOperations()));
+    queries.addAll(stringOperations(JOB_DENIED_REASON, filter.deniedReasonOperations()));
+    queries.addAll(stringOperations(FLOW_NODE_ID, filter.elementIdOperations()));
+    queries.addAll(longOperations(FLOW_NODE_INSTANCE_ID, filter.elementInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(TIME, filter.endTimeOperations()));
+    queries.addAll(stringOperations(ERROR_CODE, filter.errorCodeOperations()));
+    queries.addAll(stringOperations(ERROR_MESSAGE, filter.errorMessageOperations()));
+    queries.addAll(longOperations(JOB_KEY, filter.jobKeyOperations()));
+    queries.addAll(stringOperations(JOB_KIND, filter.kindOperations()));
+    queries.addAll(stringOperations(LISTENER_EVENT_TYPE, filter.listenerEventTypeOperations()));
+    queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
+    queries.addAll(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()));
+    queries.addAll(dateTimeOperations(LAST_UPDATE_TIME, filter.lastUpdateTimeOperations()));
+    queries.addAll(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()));
+    queries.addAll(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(intOperations(RETRIES, filter.retriesOperations()));
     final var priorityOps = filter.priorityOperations();
     if (!priorityOps.isEmpty()) {
       queries.addAll(intOperations(PRIORITY, priorityOps));
@@ -94,10 +85,10 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
         queries.add(exists(PRIORITY));
       }
     }
-    of(stringOperations(JOB_STATE, filter.stateOperations())).ifPresent(queries::addAll);
-    of(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_TYPE, filter.typeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_WORKER, filter.workerOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(JOB_STATE, filter.stateOperations()));
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    queries.addAll(stringOperations(JOB_TYPE, filter.typeOperations()));
+    queries.addAll(stringOperations(JOB_WORKER, filter.workerOperations()));
     ofNullable(filter.hasFailedWithRetriesLeft())
         .ifPresent(f -> queries.add(term(JOB_FAILED_WITH_RETRIES_LEFT, f)));
     ofNullable(filter.isDenied()).ifPresent(f -> queries.add(term(JOB_DENIED, f)));
