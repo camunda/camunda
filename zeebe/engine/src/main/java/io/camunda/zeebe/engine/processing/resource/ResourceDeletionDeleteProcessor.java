@@ -581,7 +581,7 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private TenantAccess getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
-    final var userTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var userTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
       return userTenants;

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -33,7 +34,8 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
   @Override
   public void execute(final long processInstanceKey, final PersistedBatchOperation batchOperation) {
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new ProcessInstanceModificationRecord();
     command.setProcessInstanceKey(processInstanceKey);
     batchOperation.getModificationPlan().getMoveInstructions().forEach(command::addMoveInstruction);
@@ -44,6 +46,6 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         ProcessInstanceModificationIntent.MODIFY,
         command,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

@@ -100,8 +100,7 @@ public final class IncidentResolveProcessor
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-    final var authorizedTenantIds =
-        tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenantIds = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
     final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);

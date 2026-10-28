@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.stream.job;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 /**
@@ -68,19 +68,11 @@ public interface JobActivationProperties extends BufferWriter {
   TenantFilter tenantFilter();
 
   /**
-   * Returns the claim data of the user that triggered the creation of this stream. The following
-   * entries may be available:
-   *
-   * <ul>
-   *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings defining the user's
-   *       authorized tenants.
-   *   <li>Key: <code>authorized_username</code>; Value: the Long representation of the
-   *       authenticated user's username
-   * </ul>
-   *
-   * @return a Map of authorization data for this record or an empty Map if not set.
+   * Returns the authorization of the user that triggered the creation of this stream. It's checked
+   * for every job pushed to the stream, so implementations that are kept for the lifetime of a
+   * stream should create it only once.
    */
-  Map<String, Object> claims();
+  AuthInfo authInfo();
 
   /**
    * Returns whether jobs pushed on this stream are leased. When {@code true}, each job pushed on

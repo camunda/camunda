@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -35,7 +36,8 @@ public class SuspendProcessInstanceBatchOperationExecutor implements BatchOperat
     LOGGER.trace("Suspending process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
     commandWriter.appendFollowUpCommand(
@@ -43,6 +45,6 @@ public class SuspendProcessInstanceBatchOperationExecutor implements BatchOperat
         ProcessInstanceIntent.SUSPEND,
         command,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

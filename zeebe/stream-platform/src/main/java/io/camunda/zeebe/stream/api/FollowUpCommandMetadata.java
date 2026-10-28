@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public record FollowUpCommandMetadata(
@@ -42,11 +41,6 @@ public record FollowUpCommandMetadata(
 
     public Builder authInfo(final AuthInfo authInfo) {
       this.authInfo = authInfo;
-      return this;
-    }
-
-    public Builder claims(final Map<String, Object> claims) {
-      authInfo = AuthInfo.ofClaims(claims);
       return this;
     }
 

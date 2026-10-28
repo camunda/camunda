@@ -127,8 +127,7 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Check tenant authorization if not an internal command
     if (!command.isInternalCommand()) {
-      final var authorizedTenants =
-          tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+      final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
       final var tenantCheckResult =
           tenantCheck.checkTenantsRequiringPrincipal(
               List.of(messageCorrelationRecord.getTenantId()),

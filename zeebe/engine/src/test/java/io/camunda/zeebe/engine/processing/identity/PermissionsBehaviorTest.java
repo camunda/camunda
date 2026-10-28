@@ -20,6 +20,7 @@ import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -51,7 +52,7 @@ final class PermissionsBehaviorTest {
     // given — authorizations enabled and a command carrying neither a username nor a clientId claim
     final var behavior = permissionsBehavior(/* authorizationsEnabled= */ true, false);
     when(command.isInternalCommand()).thenReturn(false);
-    when(command.getAuthorizations()).thenReturn(Map.of());
+    when(command.getAuthInfo()).thenReturn(AuthInfo.ofClaims(Map.of()));
 
     // when
     final var result = behavior.isAuthorized(command, PermissionType.CREATE);
@@ -72,7 +73,7 @@ final class PermissionsBehaviorTest {
     final var behavior = permissionsBehavior(/* authorizationsEnabled= */ false, true);
     final var record = new AuthorizationRecord();
     when(command.isInternalCommand()).thenReturn(false);
-    when(command.getAuthorizations()).thenReturn(Map.of());
+    when(command.getAuthInfo()).thenReturn(AuthInfo.ofClaims(Map.of()));
     when(command.getValue()).thenReturn(record);
 
     // when
