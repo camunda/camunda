@@ -45,6 +45,7 @@ import {useDiagramXml} from './useDiagramXml';
 import {latestDefinitionsQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
+import {useHideOptionalFiltersRequest} from '#/operate/shared/hooks/useHideOptionalFiltersRequest';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -161,6 +162,7 @@ const Processes: React.FC<Props> = ({
 	});
 	const variable = useVariableConditions();
 	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
+	useHideOptionalFiltersRequest(() => setVisibleFilters(variable.length > 0 ? ['variable'] : []));
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({
