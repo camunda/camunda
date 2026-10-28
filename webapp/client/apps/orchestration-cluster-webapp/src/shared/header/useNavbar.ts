@@ -129,6 +129,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/processes'),
 							routeProps: {
 								to: tabRoutes['operateProcesses'],
+								search: {active: true, suspended: true, incidents: true},
 							},
 						},
 						{

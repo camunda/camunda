@@ -49,11 +49,11 @@ type ProcessesSearch = {
 };
 
 const processesSearchDefaults = {
-	active: true,
-	incidents: true,
+	active: false,
+	incidents: false,
 	completed: false,
 	canceled: false,
-	suspended: true,
+	suspended: false,
 };
 
 const processesSearchSchema = z

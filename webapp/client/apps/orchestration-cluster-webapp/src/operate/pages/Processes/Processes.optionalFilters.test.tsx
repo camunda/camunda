@@ -273,7 +273,7 @@ describe('Optional Filters', () => {
 
 		await screen.getByRole('button', {name: 'Reset filters'}).click();
 
-		await expect.poll(() => getSearch()).toEqual({});
+		await expect.poll(() => getSearch()).toEqual({active: true, suspended: true, incidents: true});
 
 		await expect.element(screen.getByLabelText('Process Instance Key(s)', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByLabelText('Parent Process Instance Key', {exact: true})).not.toBeInTheDocument();

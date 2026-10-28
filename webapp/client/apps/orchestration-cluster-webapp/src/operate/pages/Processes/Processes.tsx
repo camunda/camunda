@@ -431,7 +431,7 @@ const Processes: React.FC<Props> = ({
 									setVariableConditions([]);
 									form.reset();
 									setVisibleFilters([]);
-									void navigate({to: '.', search: {}});
+									void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
 								}}
 							>
 								<Stack gap={5}>
