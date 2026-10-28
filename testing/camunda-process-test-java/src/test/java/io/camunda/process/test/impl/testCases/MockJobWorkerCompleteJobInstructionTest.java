@@ -41,6 +41,8 @@ import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
@@ -374,6 +376,27 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // then
     assertThatThrownBy(() -> functionCaptor.getValue().apply(jobVariables))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "   ", "=", "= "})
+  void shouldRejectBlankVariablesExpression(final String expression) {
+    // given
+    final MockJobWorkerCompleteJobInstruction instruction =
+        ImmutableMockJobWorkerCompleteJobInstruction.builder()
+            .jobType(JOB_TYPE)
+            .variablesExpression(expression)
+            .build();
+
+    // when/then: it fails right away instead of on the first activated job
+    assertThatThrownBy(
+            () ->
+                instructionHandler.execute(
+                    instruction, processTestContext, camundaClient, assertionFacade))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("variablesExpression")
+        .hasMessageContaining(JOB_TYPE);
+    verify(processTestContext, never()).mockJobWorker(any());
   }
 
   @Test

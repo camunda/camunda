@@ -41,6 +41,14 @@ public class MockJobWorkerCompleteJobInstructionHandler
 
     if (instruction.getVariablesExpression().isPresent()) {
       final String expression = normalize(instruction.getVariablesExpression().get());
+      if (expression.substring(1).trim().isEmpty()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected 'variablesExpression' to be a non-blank FEEL expression for job type "
+                    + "'%s', but it was blank.",
+                instruction.getJobType()));
+      }
+
       // the runner's client closes when the test case run returns, but the mock worker keeps
       // running, so the callback needs a client that is managed by the runtime
       final CamundaClient evaluationClient = context.createClient();
