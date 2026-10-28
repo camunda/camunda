@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsTableNames;
@@ -140,6 +141,42 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
     // then
     assertThat(gaugeA.value()).isEqualTo(42.0);
     assertThat(gaugeB.value()).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldNotReachTheDatabaseOfATenantThatIsNotCounted() throws Exception {
+    // given
+    when(mapperA.countSingleTableRows("PROCESS_INSTANCE")).thenReturn(42L);
+    metrics =
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(
+                TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION),
+                TENANT_B, provider(mapperB, DEFAULT_CACHE_DURATION)),
+            List.of(),
+            TENANT_A::equals);
+    metrics.bindTo(meterRegistry);
+    final Gauge gaugeA =
+        meterRegistry
+            .find("zeebe.rdbms.table.row.count")
+            .tag("physicalTenant", TENANT_A)
+            .tag("table", "PROCESS_INSTANCE")
+            .gauge();
+    final Gauge gaugeB =
+        meterRegistry
+            .find("zeebe.rdbms.table.row.count")
+            .tag("physicalTenant", TENANT_B)
+            .tag("table", "PROCESS_INSTANCE")
+            .gauge();
+
+    // when
+    gaugeA.value();
+    gaugeB.value();
+    awaitPendingLoads();
+
+    // then
+    assertThat(gaugeA.value()).isEqualTo(42.0);
+    assertThat(gaugeB.value()).isEqualTo(-1.0);
+    verifyNoInteractions(mapperB);
   }
 
   @Test
