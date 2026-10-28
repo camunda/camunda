@@ -207,6 +207,13 @@ public class Secrets {
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
     }
+
+    /** Whether a store entry has an internal-config block. */
+    public boolean hasInternalConfig() {
+      return file.values().stream().anyMatch(store -> store.getInternalConfig() != null)
+          || aws.values().stream().anyMatch(store -> store.getInternalConfig() != null)
+          || gcp.values().stream().anyMatch(store -> store.getInternalConfig() != null);
+    }
   }
 
   /**

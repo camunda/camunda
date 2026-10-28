@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.primarystorage.backup;
 
+import io.camunda.configuration.Credential;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.data.primarystorage.backup.azure.SasToken;
@@ -66,7 +67,7 @@ public class Azure {
    * use credentials from the runtime environment: <a
    * href="https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable">...</a>
    */
-  private String accountKey;
+  @Credential private String accountKey;
 
   /**
    * The connection string configures endpoint, account name and account key all at once. If
@@ -74,7 +75,7 @@ public class Azure {
    * from the runtime environment: <a
    * href="https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable">...</a>
    */
-  private String connectionString;
+  @Credential private String connectionString;
 
   /** Defines the container name where backup contents are saved. */
   private String basePath;

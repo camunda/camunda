@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.secondarystorage.documentbased;
 
+import io.camunda.configuration.Credential;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
@@ -24,7 +25,7 @@ public class IncidentNotifier {
 
   private String m2mClientId;
 
-  private String m2mClientSecret;
+  @Credential private String m2mClientSecret;
 
   private String m2mAudience;
 
