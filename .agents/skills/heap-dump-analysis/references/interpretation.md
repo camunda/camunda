@@ -5,7 +5,8 @@ Another cause of OOM needs ad-hoc queries, built the same way ([queries.md](quer
 
 ## Five questions
 
-Answer them in order, each with a number from the CSVs.
+Answer them in order, each with a number from the CSVs, and write the report from the
+template in `SKILL.md`.
 
 1. **Was the heap full?** Compare the reachable heap (sum of shallow sizes in `histogram`)
    with the max heap: `-Xmx`, otherwise the pod memory limit x `-XX:MaxRAMPercentage`
@@ -49,9 +50,3 @@ heap below the cache limit. Replay refills the cache: for each DRG version,
 `DbDecisionState.updateLatestDecisionRequirementsVersion` loads and parses the previous
 version through the cache. Levers: a lower `drgCacheCapacity`,
 a larger heap, fewer redeploys of unchanged DMN models.
-
-## Reporting
-
-Dumps analyzed, version, max heap, truncated dumps; one table across dumps; the answer per
-question with numbers; what the dumps could not tell. No values from the heap and no
-customer-defined ids: use hash prefixes or "DRG A" ([privacy.md](privacy.md)).
