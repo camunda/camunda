@@ -38,6 +38,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -54,9 +55,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public MessageStartEventSubscriptionRecord() {
-    super(11);
+    super(12);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
@@ -67,7 +69,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(businessIdProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(storageOrdinalProp);
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -82,6 +85,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
     storageOrdinalProp.setValue(record.getStorageOrdinal());
+    runScopeProp.setValue(record.getRunScopeBuffer());
   }
 
   @JsonIgnore
@@ -222,5 +226,23 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   public MessageStartEventSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
+  }
+
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public MessageStartEventSubscriptionRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

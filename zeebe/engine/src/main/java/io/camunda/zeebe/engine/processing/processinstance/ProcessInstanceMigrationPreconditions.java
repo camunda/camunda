@@ -324,6 +324,21 @@ public final class ProcessInstanceMigrationPreconditions {
       return;
     }
 
+    final DirectBuffer runScope = messageState.getProcessInstanceRunScope(processInstance.getKey());
+    if (runScope != null && runScope.capacity() > 0) {
+      // ADR 0014, D7 parallel-CF prototype: a run-scoped message-start lock lives in a separate CF
+      // keyed by run scope, but the released migration appliers only move the unscoped lock. Rather
+      // than risk leaving a stale scoped entry (which would permanently block the key for its run),
+      // migrating such an instance across bpmn process ids is rejected while the prototype stands.
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          String.format(
+              "Expected to migrate process instance '%s' but it was started by a run-scoped message"
+                  + " start event with correlation key '%s'; migrating run-scoped message-start"
+                  + " instances across process definitions is not supported.",
+              processInstance.getKey(), BufferUtil.bufferAsString(correlationKey)),
+          RejectionType.INVALID_STATE);
+    }
+
     final boolean activeProcessInstanceExistsForTarget =
         messageState.existActiveProcessInstance(
             processInstance.getValue().getTenantId(),

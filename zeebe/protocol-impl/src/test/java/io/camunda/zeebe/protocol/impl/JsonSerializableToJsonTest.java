@@ -1444,7 +1444,8 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "tenantId": "<default>",
-                  "storageOrdinal": 6
+                  "storageOrdinal": 6,
+                  "runScope": ""
                 }
                 """
       },
@@ -1475,7 +1476,8 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "variables": {},
                   "tenantId": "<default>",
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "runScope": ""
                 }
                 """
       },

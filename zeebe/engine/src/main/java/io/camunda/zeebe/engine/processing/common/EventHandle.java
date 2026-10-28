@@ -250,7 +250,8 @@ public final class EventHandle {
         .setBusinessId(businessId)
         .setVariables(variables)
         .setTenantId(subscription.getTenantId())
-        .setStorageOrdinal(storageOrdinal);
+        .setStorageOrdinal(storageOrdinal)
+        .setRunScope(runScope);
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey,

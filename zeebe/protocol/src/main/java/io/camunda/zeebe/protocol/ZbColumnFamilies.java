@@ -405,7 +405,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // timerKey) — all immutable for the life of a timer, unlike the element id, which migration
   // changes. Only held timers are indexed; the entry is written in DbTimerInstanceState#store and
   // removed in #remove.
-  HELD_TIMER_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
+  HELD_TIMER_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  // Run-scoped variant of MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY (ADR 0014, D7 parallel-CF
+  // prototype). Keyed (bpmnProcessId, correlationKey, runScope); written only when a message-start
+  // carries a run scope, so two runs sharing a correlation key get independent start-uniqueness
+  // locks. The two-part CF above is left byte-for-byte unchanged for unscoped (legacy) starts.
+  MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY_AND_RUN_SCOPE(167, PARTITION_LOCAL),
+
+  // Reverse lookup processInstanceKey -> runScope, written alongside the scoped lock above so the
+  // lock can be removed on completion/termination without carrying the run scope on the completing
+  // ProcessInstanceRecord. Present only for run-scoped message-start instances.
+  MESSAGE_PROCESS_INSTANCE_RUN_SCOPE(168, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

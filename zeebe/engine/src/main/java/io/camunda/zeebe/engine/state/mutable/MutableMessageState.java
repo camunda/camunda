@@ -25,6 +25,19 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
   void removeActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
   /**
+   * Run-scoped variant of {@link #putActiveProcessInstance(DirectBuffer, DirectBuffer)} (ADR 0014,
+   * D7 parallel-CF prototype). Writes to the scoped lock CF keyed {@code (bpmnProcessId,
+   * correlationKey, runScope)} when {@code runScope} is non-empty; an empty run scope falls back to
+   * the unscoped CF so behaviour is byte-for-byte identical to today.
+   */
+  void putActiveProcessInstance(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, DirectBuffer runScope);
+
+  /** Run-scoped variant of {@link #removeActiveProcessInstance(DirectBuffer, DirectBuffer)}. */
+  void removeActiveProcessInstance(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, DirectBuffer runScope);
+
+  /**
    * Marks a process-correlation-key lock entry as cross-partition by recording the holder instance
    * in a parallel CF. Written on {@code P_K} when the STARTED reply from {@code P_B} is applied,
    * alongside the regular {@link #putActiveProcessInstance(DirectBuffer, DirectBuffer)} call. The
@@ -82,6 +95,16 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
   void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 
   void removeProcessInstanceCorrelationKey(long processInstanceKey);
+
+  /**
+   * Records the run scope of a message-start process instance (ADR 0014, D7 parallel-CF prototype),
+   * so the run-scoped start lock can be removed on completion without the run scope being present
+   * on the completing {@code ProcessInstanceRecord}. Written only for run-scoped starts.
+   */
+  void putProcessInstanceRunScope(long processInstanceKey, DirectBuffer runScope);
+
+  /** Removes the run-scope reverse-lookup entry for a message-start process instance. */
+  void removeProcessInstanceRunScope(long processInstanceKey);
 
   /**
    * Writes the cross-partition message-start holder-origin entry for a holder instance on {@code

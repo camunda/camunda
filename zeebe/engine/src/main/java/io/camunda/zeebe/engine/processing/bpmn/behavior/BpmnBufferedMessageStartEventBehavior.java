@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(BpmnBufferedMessageStartEventBehavior.class);
+  private static final DirectBuffer EMPTY_RUN_SCOPE = new UnsafeBuffer(new byte[0]);
 
   private final MessageState messageState;
   private final ProcessState processState;
@@ -115,6 +117,16 @@ public final class BpmnBufferedMessageStartEventBehavior {
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
     final var processInstanceKey = context.getProcessInstanceKey();
     return Optional.ofNullable(messageState.getProcessInstanceCorrelationKey(processInstanceKey));
+  }
+
+  /**
+   * Returns the run scope of a completing message-start holder, so the buffered pick-up can be
+   * limited to messages of the same run (ADR 0014, D7 parallel-CF prototype). Must be read before
+   * the completion transition removes it, exactly like {@link #findCorrelationKey}.
+   */
+  public Optional<DirectBuffer> findRunScope(final BpmnElementContext context) {
+    final var processInstanceKey = context.getProcessInstanceKey();
+    return Optional.ofNullable(messageState.getProcessInstanceRunScope(processInstanceKey));
   }
 
   /**
@@ -203,7 +215,10 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
 
-    findNextMessageToCorrelate(process, correlationKey).ifPresent(this::triggerCorrelation);
+    // Cross-partition release path: run-scoped cross-partition starts are deferred (ADR 0014, D7),
+    // so this path only frees unscoped locks and picks up unscoped buffered messages.
+    findNextMessageToCorrelate(process, correlationKey, EMPTY_RUN_SCOPE)
+        .ifPresent(this::triggerCorrelation);
   }
 
   /**
@@ -224,6 +239,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   public void correlateNextBufferedMessagesOnCompletion(
       final BpmnElementContext context,
       final DirectBuffer correlationKey,
+      final DirectBuffer runScope,
       final String businessId) {
     final var bpmnProcessId = context.getBpmnProcessId();
     final var tenantId = context.getTenantId();
@@ -243,7 +259,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     final var correlationKeyCandidate =
         correlationKey != null
-            ? findNextMessageToCorrelate(process, correlationKey)
+            ? findNextMessageToCorrelate(
+                process, correlationKey, runScope == null ? EMPTY_RUN_SCOPE : runScope)
             : Optional.<Correlation>empty();
     final var businessIdCandidate =
         businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty()
@@ -384,7 +401,9 @@ public final class BpmnBufferedMessageStartEventBehavior {
   }
 
   private Optional<Correlation> findNextMessageToCorrelate(
-      final DeployedProcess process, final DirectBuffer correlationKey) {
+      final DeployedProcess process,
+      final DirectBuffer correlationKey,
+      final DirectBuffer runScope) {
 
     final var messageCorrelation = new Correlation();
     final var bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
@@ -417,6 +436,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
                 // (harmless under P_B's dedup, but wasteful); the registry's scheduler drives the
                 // retry under back-off until the message starts or its TTL expires.
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
+                    && BufferUtil.equals(storedMessage.getMessage().getRunScopeBuffer(), runScope)
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
                     && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)

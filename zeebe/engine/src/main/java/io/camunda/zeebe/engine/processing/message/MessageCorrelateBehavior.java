@@ -378,7 +378,8 @@ public final class MessageCorrelateBehavior {
         && messageState.existActiveProcessInstance(
             messageData.tenantId(),
             subscriptionRecord.getBpmnProcessIdBuffer(),
-            messageData.correlationKey());
+            messageData.correlationKey(),
+            messageData.runScope());
   }
 
   /**
