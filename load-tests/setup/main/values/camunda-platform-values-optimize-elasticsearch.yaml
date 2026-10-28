@@ -43,7 +43,8 @@ orchestration:
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
-      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+      # The physical-tenants.yml is configured by the load-test-setup Helm Chart and may be empty, if no physical tenants are configured.
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml,optional:/usr/local/camunda/config/physical-tenants.yml"
 
 ##########################################################################
 ################################################### Optimize configuration
