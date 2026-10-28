@@ -14,7 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 /**
  * Caps the CPU time that the threads of one scheduler can use. A sampler thread reads the CPU time
@@ -39,8 +42,9 @@ public final class CpuBudget implements AutoCloseable {
   private Thread sampler;
   // thread -> CPU time at the last sample; a terminated thread is dropped at the next sample
   private final Map<Thread, Long> lastCpuNanos = new ConcurrentHashMap<>();
-  // the threads that stop on an empty budget, and so must be woken up when it is refilled
-  private volatile List<? extends Thread> actorThreads = List.of();
+  private final ReentrantLock lock = new ReentrantLock();
+  // signalled when the budget is refilled, and when the waiting threads must stop
+  private final Condition refilled = lock.newCondition();
 
   /**
    * @param cores CPU time that the threads can use in each period, in cores. May be fractional.
@@ -58,6 +62,31 @@ public final class CpuBudget implements AutoCloseable {
   }
 
   /**
+   * Blocks the calling thread until the budget is not exhausted, the budget is closed, or {@code
+   * stop} is true after {@link #wakeWaiters()}. Returns at once if the budget is not exhausted.
+   */
+  public void awaitRefill(final BooleanSupplier stop) throws InterruptedException {
+    lock.lock();
+    try {
+      while (balanceNanos <= 0 && running && !stop.getAsBoolean()) {
+        refilled.await();
+      }
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** Makes the threads in {@link #awaitRefill} check their stop condition. */
+  public void wakeWaiters() {
+    lock.lock();
+    try {
+      refilled.signalAll();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
    * Charges CPU time that was used outside of the sampled threads, for example by a task on a
    * thread that is not an actor thread. Can be called from any thread.
    */
@@ -70,7 +99,6 @@ public final class CpuBudget implements AutoCloseable {
    * budget is exhausted.
    */
   public void start(final List<? extends Thread> threads) {
-    actorThreads = threads;
     threads.forEach(this::register);
     sampler = new Thread(this::sample, "cpu-budget-sampler");
     sampler.setDaemon(true);
@@ -111,8 +139,12 @@ public final class CpuBudget implements AutoCloseable {
       final boolean wasExhausted = balanceNanos <= 0;
       balanceNanos = next;
       if (wasExhausted && next > 0) {
-        // threads that stopped on an empty budget may be parked for longer than the period
-        actorThreads.forEach(LockSupport::unpark);
+        lock.lock();
+        try {
+          refilled.signalAll();
+        } finally {
+          lock.unlock();
+        }
       }
     }
   }
@@ -132,6 +164,12 @@ public final class CpuBudget implements AutoCloseable {
     running = false;
     if (sampler != null) {
       LockSupport.unpark(sampler);
+    }
+    lock.lock();
+    try {
+      refilled.signalAll();
+    } finally {
+      lock.unlock();
     }
   }
 }

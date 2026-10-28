@@ -99,7 +99,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     clock.update();
     timerJobQueue.processExpiredTimers(clock);
 
-    currentTask = cpuBudget != null && cpuBudget.isExhausted() ? null : taskScheduler.getNextTask();
+    final boolean budgetExhausted = cpuBudget != null && cpuBudget.isExhausted();
+    currentTask = budgetExhausted ? null : taskScheduler.getNextTask();
 
     if (currentTask != null) {
       final var metrics = currentTask.getActorMetrics();
@@ -111,6 +112,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
           metrics.countExecution();
         }
       }
+    } else if (budgetExhausted) {
+      idleStrategy.onBudgetExhausted();
     } else {
       idleStrategy.onIdle();
     }
@@ -237,6 +240,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   public CompletableFuture<Void> close() {
     if (STATE_HANDLE.compareAndSet(this, ActorThreadState.RUNNING, ActorThreadState.TERMINATING)) {
+      if (cpuBudget != null) {
+        cpuBudget.wakeWaiters();
+      }
       return terminationFuture;
     } else {
       throw new IllegalStateException("Cannot stop runner, not in state 'RUNNING'.");
@@ -304,6 +310,24 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       }
 
       idleStrategy.idle();
+    }
+
+    /**
+     * Blocks until the budget is refilled. Unlike {@link #onIdle()}, it does not spin or yield, and
+     * a hint that work is available does not end the wait, because the thread cannot take the work
+     * anyway.
+     */
+    protected void onBudgetExhausted() {
+      if (!isIdle) {
+        clock.update();
+        isIdle = true;
+      }
+
+      try {
+        cpuBudget.awaitRefill(() -> state != ActorThreadState.RUNNING);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
 
     protected void onTaskExecuted() {
