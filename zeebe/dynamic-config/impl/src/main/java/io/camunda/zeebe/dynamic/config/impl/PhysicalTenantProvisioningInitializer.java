@@ -134,6 +134,29 @@ public class PhysicalTenantProvisioningInitializer
    */
   private CurrentClusterConfiguration provisionTenants(
       final CurrentClusterConfiguration configuration, final List<String> newTenantIds) {
+    final var operationsByGroup = placementOperations(configuration, newTenantIds);
+
+    var result = configuration;
+    for (final var newTenantId : newTenantIds) {
+      final List<PartitionGroupOperation> tenantOperations = operationsByGroup.get(newTenantId);
+      if (tenantOperations == null || tenantOperations.isEmpty()) {
+        LOG.warn(
+            "No operations were generated to provision new physical tenant '{}'; skipping it for "
+                + "now",
+            newTenantId);
+        continue;
+      }
+      result = addGroupAndStartChange(result, newTenantId, tenantOperations);
+    }
+    return result;
+  }
+
+  /**
+   * The operations that place the partitions of the given new tenants, keyed by tenant, without
+   * adding their groups to the configuration.
+   */
+  public Map<String, List<PartitionGroupOperation>> placementOperations(
+      final CurrentClusterConfiguration configuration, final List<String> newTenantIds) {
     final Set<MemberId> targetMembers = configuration.liveMembers();
     final var existingPartitionIds =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration).values().stream()
@@ -149,25 +172,8 @@ public class PhysicalTenantProvisioningInitializer
     final var targetDistribution =
         getTargetDistribution(configuration, targetMembers, targetPartitionIds);
 
-    final var operationsByGroup =
-        PartitionReassignmentOperationsGenerator.generateOperations(
-            configuration,
-            targetDistribution,
-            staticConfiguration.partitionConfigPerPhysicalTenant());
-
-    var result = configuration;
-    for (final var newTenantId : newTenantIds) {
-      final List<PartitionGroupOperation> tenantOperations = operationsByGroup.get(newTenantId);
-      if (tenantOperations == null || tenantOperations.isEmpty()) {
-        LOG.warn(
-            "No operations were generated to provision new physical tenant '{}'; skipping it for "
-                + "now",
-            newTenantId);
-        continue;
-      }
-      result = addGroupAndStartChange(result, newTenantId, tenantOperations);
-    }
-    return result;
+    return PartitionReassignmentOperationsGenerator.generateOperations(
+        configuration, targetDistribution, staticConfiguration.partitionConfigPerPhysicalTenant());
   }
 
   private Set<PartitionMetadata> getTargetDistribution(
