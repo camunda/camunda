@@ -59,6 +59,13 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 
+  /**
+   * Adds the partition group of a physical tenant that started at runtime to the cluster
+   * configuration, if it has none yet and this broker is the coordinator.
+   */
+  ActorFuture<Void> provisionPhysicalTenant(
+      BrokerStartupContext brokerStartupContext, String physicalTenantId);
+
   void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
   void removeInconsistentConfigurationListener();

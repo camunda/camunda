@@ -99,7 +99,7 @@ public class PhysicalTenantProvisioningInitializer
     }
 
     try {
-      return CompletableActorFuture.completed(provisionTenants(configuration, newTenantIds));
+      return CompletableActorFuture.completed(provision(configuration));
     } catch (final RuntimeException e) {
       LOG.warn(
           "Failed to provision new physical tenants {}; skipping them for now, they will be "
@@ -108,6 +108,23 @@ public class PhysicalTenantProvisioningInitializer
           e);
       return CompletableActorFuture.completed(configuration);
     }
+  }
+
+  /**
+   * Adds a partition group, and the change that places its partitions, for every tenant of the
+   * static configuration that the given configuration does not have yet. Unlike {@link #modify}, a
+   * failure to place the partitions is thrown, so a runtime add can report it.
+   */
+  public CurrentClusterConfiguration provision(final CurrentClusterConfiguration configuration) {
+    final var newTenantIds =
+        staticPartitionIdsByTenant.keySet().stream()
+            .filter(tenantId -> !configuration.partitionGroups().containsKey(tenantId))
+            .sorted()
+            .toList();
+    if (newTenantIds.isEmpty()) {
+      return configuration;
+    }
+    return provisionTenants(configuration, newTenantIds);
   }
 
   /**

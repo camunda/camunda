@@ -148,6 +148,30 @@ public class DynamicClusterConfigurationService
   }
 
   @Override
+  public ActorFuture<Void> provisionPhysicalTenant(
+      final BrokerStartupContext brokerStartupContext, final String physicalTenantId) {
+    if (clusterConfigurationManagerService == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException("ClusterConfigurationService is not started"));
+    }
+    final var staticConfiguration =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            brokerStartupContext.getBrokerConfiguration(),
+            Map.of(
+                physicalTenantId,
+                brokerStartupContext.getPhysicalTenantContext(physicalTenantId).config()),
+            brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id());
+    return clusterConfigurationManagerService
+        .provisionPhysicalTenants(staticConfiguration)
+        .thenApply(
+            configuration -> {
+              populatePartitionDistribution(configuration);
+              return null;
+            },
+            Runnable::run);
+  }
+
+  @Override
   public void registerInconsistentConfigurationListener(
       final InconsistentConfigurationListener listener) {
     if (clusterConfigurationManagerService != null) {

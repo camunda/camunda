@@ -295,6 +295,17 @@ public final class ClusterConfigurationManagerServiceImpl
   }
 
   @Override
+  public ActorFuture<CurrentClusterConfiguration> provisionPhysicalTenants(
+      final StaticConfiguration staticConfiguration) {
+    final var provisioning = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+    return clusterConfigurationManager.updateMultiConfiguration(
+        configuration ->
+            provisioning.filter().canRunInitializer(configuration)
+                ? provisioning.provision(configuration)
+                : configuration);
+  }
+
+  @Override
   public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {
     return clusterConfigurationManager.getMultiConfiguration();
   }

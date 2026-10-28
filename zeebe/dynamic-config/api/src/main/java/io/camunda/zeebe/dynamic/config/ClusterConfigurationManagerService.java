@@ -38,6 +38,14 @@ public interface ClusterConfigurationManagerService
 
   ActorFuture<CurrentClusterConfiguration> getClusterConfiguration();
 
+  /**
+   * Provisions, on the coordinator, a partition group for every physical tenant of the given static
+   * configuration that the cluster configuration does not have yet, as the coordinator does at
+   * startup. Does nothing on any other member.
+   */
+  ActorFuture<CurrentClusterConfiguration> provisionPhysicalTenants(
+      StaticConfiguration staticConfiguration);
+
   void registerPartitionChangeExecutors(
       String groupId,
       PartitionChangeExecutor partitionChangeExecutor,
