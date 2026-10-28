@@ -165,6 +165,14 @@ public final class CreateProcessInstanceWithResultCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceWithResultCommandStep1 operationReference(
+      final long operationReference) {
+    createProcessInstanceRequestBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceWithResultCommandStep1 useRest() {
     return null;
   }

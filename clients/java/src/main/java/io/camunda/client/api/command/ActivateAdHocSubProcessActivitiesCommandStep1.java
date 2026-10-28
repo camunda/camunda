@@ -91,7 +91,8 @@ public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
   interface ActivateAdHocSubProcessActivitiesCommandStep2
       extends ActivateAdHocSubProcessActivitiesCommandStep1,
           CommandWithVariables<ActivateAdHocSubProcessActivitiesCommandStep2>,
-          FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {
+          FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse>,
+          CommandWithOperationReferenceStep<ActivateAdHocSubProcessActivitiesCommandStep2> {
 
     /**
      * Adds a single variable to the most recently activated element instance.

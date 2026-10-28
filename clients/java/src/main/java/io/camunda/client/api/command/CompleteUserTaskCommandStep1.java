@@ -21,7 +21,8 @@ import java.util.Map;
 
 public interface CompleteUserTaskCommandStep1
     extends FinalCommandStep<CompleteUserTaskResponse>,
-        CommandWithVariables<CompleteUserTaskCommandStep1> {
+        CommandWithVariables<CompleteUserTaskCommandStep1>,
+        CommandWithOperationReferenceStep<CompleteUserTaskCommandStep1> {
 
   /**
    * Set the custom action to complete the user task with.

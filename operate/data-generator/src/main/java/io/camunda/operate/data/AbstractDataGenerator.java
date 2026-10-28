@@ -274,7 +274,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
                     serviceRegistry
                         .resourceServices(physicalTenantId)
                         .deployResources(
-                            new DeployResourcesRequest(resources, tenantId), authentication));
+                            new DeployResourcesRequest(resources, tenantId, null), authentication));
       }
       return deploymentRecord;
     } catch (final IOException e) {

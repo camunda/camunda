@@ -102,6 +102,20 @@ public final class FailJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long jobKey = 12;
+    final long operationReference = 456;
+
+    // when
+    client.newFailCommand(jobKey).retries(3).operationReference(operationReference).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldFailJobWithBackoffAndMessage() {
     // given
     final long jobKey = 12;

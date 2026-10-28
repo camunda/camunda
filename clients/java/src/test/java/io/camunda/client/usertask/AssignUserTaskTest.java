@@ -41,6 +41,17 @@ public final class AssignUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    // when
+    client.newAssignUserTaskCommand(123L).assignee("foo").operationReference(456L).send().join();
+
+    // then
+    final UserTaskAssignmentRequest request =
+        gatewayService.getLastRequest(UserTaskAssignmentRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(456L);
+  }
+
+  @Test
   void shouldAssignUserTaskWithAction() {
     // when
     client.newAssignUserTaskCommand(123L).action("foo").send().join();

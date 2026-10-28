@@ -76,6 +76,12 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   }
 
   @Override
+  public UpdateUserTaskCommandStep1 operationReference(final long operationReference) {
+    request.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public UpdateUserTaskCommandStep1 dueDate(final String dueDate) {
     ArgumentUtil.ensureNotNull("dueDate", dueDate);
     getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_DUE_DATE, dueDate);
