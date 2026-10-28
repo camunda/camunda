@@ -231,9 +231,9 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   hands off to `RESUME_JOBS`. If no task is tracked, the drain goes straight to `RESUME_JOBS`.
 - **Order.** User tasks resume before jobs. User task commands are rejected until
   `ProcessInstance.RESUMED`, so whatever resumes last waits least. A person is slower and can
-  retry. Job complete, fail and throw-error are processed while `RESUMING`, so a fast worker is not
-  rejected ([#62715](https://github.com/camunda/camunda/issues/62715)). Task listener job
-  completion is still rejected, since its follow-up is a user task command.
+  retry. Job commands are processed while `RESUMING`, so a fast worker is not rejected
+  ([#62715](https://github.com/camunda/camunda/issues/62715)). Task listener job completion is
+  still rejected, since its follow-up is a user task command.
 
 ## Alternatives considered
 
