@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
@@ -278,7 +277,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void restoreBackoff() {
-    final var jobsWithBackoff = new LongHashSet();
     backoffColumnFamily.forEachKey(
         (key) -> {
           final var jobRecord = jobsColumnFamily.get(jobKey);
@@ -286,25 +284,6 @@ public final class DbJobState implements JobState, MutableJobState {
               || jobRecord.getRecord().getRetries() <= 0
               || jobRecord.getRecord().getRetryBackoff() <= 0) {
             backoffColumnFamily.deleteExisting(key);
-          } else {
-            jobsWithBackoff.add(jobKey.getValue());
-          }
-        });
-
-    statesJobColumnFamily.forEach(
-        value -> {
-          if (!State.FAILED.equals(value.getState())) {
-            return;
-          }
-          if (jobsWithBackoff.contains(jobKey.getValue())) {
-            return;
-          }
-          final var jobRecord = jobsColumnFamily.get(jobKey);
-          final var backoff = jobRecord.getRecord().getRecurringTime();
-          final var retries = jobRecord.getRecord().getRetries();
-          if (backoff > 0 && retries > 0) {
-            backoffKey.wrapLong(backoff);
-            backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
           }
         });
   }
