@@ -53,9 +53,9 @@ public class HttpMessageConverterConfiguration {
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE + 2)
   public ResourceHttpMessageConverter resourceHttpMessageConverter() {
-    // Resources (e.g. document content) must be streamed as-is. Otherwise the catch-all Jackson
-    // converter below claims a Resource body whose content type is JSON and tries to serialize
-    // it as a bean, which fails the request.
+    // Must stay ahead of the Jackson converters (@Order 1-3): otherwise the catch-all one claims
+    // document content stored as JSON, tries to serialize the Resource as a bean, and the download
+    // fails with 400. Resources must be streamed as stored.
     return new ResourceHttpMessageConverter();
   }
 
