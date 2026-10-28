@@ -114,6 +114,10 @@ Notes:
   never finishes (#64505). A job of an element that is already terminating at suspend time, e.g.
   the canceling listener of an interrupted user task, stays available too; the flow after the
   interruption still waits for the resume.
+- Job complete, fail and throw-error are processed while `RESUMING`, so a fast worker is not
+  rejected ([#62715](https://github.com/camunda/camunda/issues/62715)). Task listener job
+  completion is still rejected, since its follow-up is a user task command, which stays rejected
+  until `ProcessInstance.RESUMED`.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
