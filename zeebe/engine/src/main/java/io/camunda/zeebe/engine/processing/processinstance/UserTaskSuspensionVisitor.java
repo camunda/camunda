@@ -11,35 +11,29 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 /**
  * Writes {@link UserTaskIntent#SUSPENDED} for the element instance's user task, whatever the task's
- * lifecycle state, and buffers a {@link UserTaskIntent#RESUME} command for it. On resume, all
- * {@code RESUME} commands drain in walk order, before {@link ProcessInstanceIntent#RESUMED}.
+ * lifecycle state. Its applier tracks the task as suspended, and {@link
+ * ProcessInstanceResumeUserTasksProcessor} resumes the tracked tasks before {@link
+ * ProcessInstanceIntent#RESUMED}.
  *
- * <p>Terminating element instances are skipped: their user task is about to be canceled, so a
- * buffered {@code RESUME} would target a task that no longer exists. Already suspended user tasks
- * are skipped too, so overlapping walks suspend each task once.
+ * <p>Terminating element instances are skipped: their user task is about to be canceled. Already
+ * suspended user tasks are skipped too, so overlapping walks suspend each task once.
  */
 final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
 
   private final StateWriter stateWriter;
-  private final CommandBufferingBehavior bufferingBehavior;
   private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
-  private final UserTaskRecord resumeCommand = new UserTaskRecord();
 
   UserTaskSuspensionVisitor(
       final StateWriter stateWriter,
-      final CommandBufferingBehavior bufferingBehavior,
       final UserTaskState userTaskState,
       final SuspensionMetrics suspensionMetrics) {
     this.stateWriter = stateWriter;
-    this.bufferingBehavior = bufferingBehavior;
     this.userTaskState = userTaskState;
     this.suspensionMetrics = suspensionMetrics;
   }
@@ -60,19 +54,7 @@ final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
     if (userTask == null) {
       return;
     }
-    resumeCommand
-        .setUserTaskKey(userTaskKey)
-        .setElementInstanceKey(elementInstance.getKey())
-        .setProcessInstanceKey(userTask.getProcessInstanceKey())
-        .setProcessDefinitionKey(userTask.getProcessDefinitionKey())
-        .setTenantId(userTask.getTenantId());
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.SUSPENDED, userTask);
-    bufferingBehavior.bufferCommand(
-        userTaskKey,
-        ValueType.USER_TASK,
-        UserTaskIntent.RESUME,
-        resumeCommand,
-        userTask.getProcessInstanceKey());
     suspensionMetrics.userTaskSuspended();
   }
 }

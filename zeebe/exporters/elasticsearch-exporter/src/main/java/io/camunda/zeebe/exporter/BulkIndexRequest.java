@@ -79,6 +79,7 @@ final class BulkIndexRequest {
   private static final String KIND_PROPERTY = "kind";
   private static final String STORAGE_ORDINAL_PROPERTY = "storageOrdinal";
   private static final String RESUME_FROM_JOB_KEY_PROPERTY = "resumeFromJobKey";
+  private static final String RESUME_FROM_USER_TASK_KEY_PROPERTY = "resumeFromUserTaskKey";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -238,11 +239,15 @@ final class BulkIndexRequest {
   private static final class VariableMixin {}
 
   /**
-   * The resume-from cursor is a transient value carried on RESUME_JOBS commands to drive the resume
-   * walk; it must not be stored in the exported document. This mix-in is the most specific one for
-   * a process-instance value, so it shadows {@link StorageOrdinalMixin} and must also repeat the
-   * {@code storageOrdinal} ignoral it would otherwise inherit.
+   * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS
+   * commands to drive the resume; they must not be stored in the exported document. This mix-in is
+   * the most specific one for a process-instance value, so it shadows {@link StorageOrdinalMixin}
+   * and must also repeat the {@code storageOrdinal} ignoral it would otherwise inherit.
    */
-  @JsonIgnoreProperties({STORAGE_ORDINAL_PROPERTY, RESUME_FROM_JOB_KEY_PROPERTY})
+  @JsonIgnoreProperties({
+    STORAGE_ORDINAL_PROPERTY,
+    RESUME_FROM_JOB_KEY_PROPERTY,
+    RESUME_FROM_USER_TASK_KEY_PROPERTY
+  })
   private static final class ProcessInstanceMixin {}
 }

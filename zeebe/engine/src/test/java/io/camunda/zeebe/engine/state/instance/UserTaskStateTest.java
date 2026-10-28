@@ -167,6 +167,29 @@ public class UserTaskStateTest {
   }
 
   @Test
+  public void shouldReportWhetherProcessInstanceHasSuspendedUserTasks() {
+    // when
+    userTaskState.markSuspended(4321, 5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.hasSuspendedUserTasks(4321)).isTrue();
+    Assertions.assertThat(userTaskState.hasSuspendedUserTasks(4320)).isFalse();
+    Assertions.assertThat(userTaskState.hasSuspendedUserTasks(4322)).isFalse();
+  }
+
+  @Test
+  public void shouldNotReportSuspendedUserTasksOnceAllAreUnmarked() {
+    // given
+    userTaskState.markSuspended(4321, 5_000);
+
+    // when
+    userTaskState.unmarkSuspended(4321, 5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.hasSuspendedUserTasks(4321)).isFalse();
+  }
+
+  @Test
   public void shouldIterateSuspendedUserTasksFromCursor() {
     // given
     userTaskState.markSuspended(4321, 5_002);

@@ -37,6 +37,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrati
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeUserTasksProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -216,6 +217,10 @@ public final class BpmnProcessors {
             processingState, writers, jobActivationBehavior, suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.RESUME_USER_TASKS,
+        new ProcessInstanceResumeUserTasksProcessor(processingState, writers, suspensionMetrics));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.COMPLETE_RESUMING,
         new ProcessInstanceCompleteResumingProcessor(
             processingState.getElementInstanceState(),
@@ -238,7 +243,6 @@ public final class BpmnProcessors {
         ElementInstanceWalkIntent.SUSPEND,
         new ElementInstanceWalkSuspendProcessor(
             writers,
-            keyGenerator,
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
             processingState.getUserTaskState(),

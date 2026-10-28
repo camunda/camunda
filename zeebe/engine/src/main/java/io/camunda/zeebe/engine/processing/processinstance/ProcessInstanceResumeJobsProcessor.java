@@ -36,8 +36,9 @@ import org.jspecify.annotations.NullMarked;
  * {@link JobIntent#SUSPENDED}, writes {@link JobIntent#RESUMED} for it, publishes it via {@link
  * BpmnJobActivationBehavior#publishWork} — a job stream is push-only, so a stream worker learns
  * about the job only from that call — then appends the next {@code RESUME_JOBS}. Once none are
- * left, it appends {@code COMPLETE_RESUMING} to hand the resume finalization off to {@link
- * ProcessInstanceCompleteResumingProcessor}.
+ * left, it appends {@code COMPLETE_RESUMING}. Jobs resume last, after the user tasks: the instance
+ * rejects job commands until {@code RESUMED}, and a stream worker can answer a job within
+ * milliseconds of being handed it.
  *
  * <p>One job per cycle instead of all of them in this command's own batch: resuming a job that a
  * stream is waiting for also appends a {@code JobBatch.ACTIVATED} with its fetched variables.
