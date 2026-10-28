@@ -54,6 +54,7 @@ class GrpcMtlsTest {
   private static final File CLIENT_EC_CERT = new File(RESOURCES + "client-ec.crt");
   private static final File CLIENT_EC_KEY = new File(RESOURCES + "client-ec.key");
   private static final File CLIENT_P12 = new File(RESOURCES + "client.p12");
+  private static final File CLIENT_MULTI_P12 = new File(RESOURCES + "client-multi.p12");
   private static final File TRUSTSTORE_P12 = new File(RESOURCES + "truststore.p12");
   private static final File TRUSTSTORE_JKS = new File(RESOURCES + "truststore.jks");
   private static final File UNTRUSTED_CLIENT_CERT = new File(RESOURCES + "untrusted-client.crt");
@@ -181,6 +182,25 @@ class GrpcMtlsTest {
     final CamundaClientBuilder builder =
         clientBuilder()
             .clientKeystore(CLIENT_P12.getAbsolutePath(), "storepass", null)
+            .mtlsTruststore(TRUSTSTORE_P12.getAbsolutePath(), "trustpass");
+
+    // when
+    try (final CamundaClient client = builder.build()) {
+      final Topology topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology).isNotNull();
+    }
+  }
+
+  @Test
+  void shouldSelectTrustedIdentityFromMultiEntryKeystore() {
+    // given - the keystore's first key entry is signed by a CA the server does not trust; the
+    // trusted identity sits under a later alias, so the key manager must choose by the server's
+    // accepted issuers rather than taking the first entry
+    final CamundaClientBuilder builder =
+        clientBuilder()
+            .clientKeystore(CLIENT_MULTI_P12.getAbsolutePath(), "storepass", null)
             .mtlsTruststore(TRUSTSTORE_P12.getAbsolutePath(), "trustpass");
 
     // when
