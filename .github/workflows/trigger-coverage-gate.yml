@@ -33,24 +33,26 @@ jobs:
       run:
         shell: bash
     steps:
-      # Only the action this job calls, and only from the BASE commit. A bare
-      # checkout on a pull_request event takes the merge commit -- the PR's own
-      # code -- and the last step below runs a local action from it, beside a
-      # Vault approle and an App token scoped to another repository. Not
-      # github.sha either: on this event that is also the merge commit.
+      # The BASE commit, not the default. A bare checkout on a pull_request
+      # event takes the merge commit -- the PR's own code -- and the last step
+      # below runs a local action from it, beside a Vault approle and an App
+      # token scoped to another repository. Not github.sha either: on this
+      # event that is also the merge commit.
+      #
+      # A full checkout, not a sparse one: observe-build-status reaches out to
+      # ./.github/actions/codeowners-setup-cli and to .ci/scripts/ci/, and that
+      # script in turn sources .ci/scripts/ci/setup-medic-lookup.sh. Narrowing
+      # the checkout means tracking that graph for ever.
       #
       # Defence in depth rather than a boundary: the workflow file itself still
       # comes from the merge commit, so a branch can edit this file. What bounds
       # that is the `if` above -- the branch has to be in-repo, so it needs
       # write access.
-      - name: Check out the trusted action
+      - name: Check out the base commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
-          path: .trusted
           persist-credentials: false
-          sparse-checkout: .github/actions/observe-build-status
-          sparse-checkout-cone-mode: false
 
       # Most PRs here reference no epic, and the gate would stay silent on them.
       # Deciding that locally keeps this from starting a job in another repo for
@@ -122,7 +124,7 @@ jobs:
       - name: Observe build status
         if: always()
         continue-on-error: true
-        uses: ./.trusted/.github/actions/observe-build-status
+        uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
