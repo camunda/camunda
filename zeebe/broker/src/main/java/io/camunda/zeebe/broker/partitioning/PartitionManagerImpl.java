@@ -35,6 +35,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.PhysicalTenantDiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -65,6 +67,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +86,8 @@ public final class PartitionManagerImpl
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private volatile boolean stopped = false;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private final @Nullable PhysicalTenantDiskSpaceUsageMonitor tenantDiskSpaceUsageMonitor;
+  private volatile boolean tenantDiskSpaceUsageMonitorSubmitted = false;
   private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
@@ -125,7 +130,15 @@ public final class PartitionManagerImpl
     this.topologyManager = topologyManager;
     this.brokerCfg = brokerCfg;
     this.healthCheckService = healthCheckService;
-    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    if (brokerCfg.getData().getDisk().getUsedSpace().isLimited()) {
+      tenantDiskSpaceUsageMonitor =
+          PhysicalTenantDiskSpaceUsageMonitor.create(
+              partitionGroup, diskSpaceUsageMonitor, brokerCfg.getData(), meterRegistry);
+      this.diskSpaceUsageMonitor = tenantDiskSpaceUsageMonitor;
+    } else {
+      tenantDiskSpaceUsageMonitor = null;
+      this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    }
     this.brokerClient = brokerClient;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     scalingExecutor =
@@ -145,7 +158,7 @@ public final class PartitionManagerImpl
             brokerClient,
             clusterServices,
             exporterRepository,
-            diskSpaceUsageMonitor,
+            this.diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             jobStreamer,
             listeners,
@@ -163,7 +176,11 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory =
+        tenantDiskSpaceUsageMonitor == null
+            ? new RaftPartitionFactory(brokerCfg)
+            : new RaftPartitionFactory(
+                brokerCfg, tenantDiskSpaceUsageMonitor::limitSegmentAllocation);
     RocksDbSharedCacheMetrics.registerAllocationStrategy(
         brokerMeterRegistry,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
@@ -315,9 +332,18 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> start() {
-    return clusterConfigurationService
-        .getLatestClusterConfiguration()
+    return startTenantDiskSpaceUsageMonitor()
+        .andThen(clusterConfigurationService::getLatestClusterConfiguration, concurrencyControl)
         .andThen(this::startPartitions, concurrencyControl);
+  }
+
+  private ActorFuture<Void> startTenantDiskSpaceUsageMonitor() {
+    if (tenantDiskSpaceUsageMonitor == null) {
+      return CompletableActorFuture.completed();
+    }
+    tenantDiskSpaceUsageMonitorSubmitted = true;
+    return actorSchedulingService.submitActor(
+        tenantDiskSpaceUsageMonitor, SchedulingHints.ioBound());
   }
 
   @Override
@@ -338,10 +364,26 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            result.complete(null);
+            closeTenantDiskSpaceUsageMonitor(result);
           }
         });
     return result;
+  }
+
+  private void closeTenantDiskSpaceUsageMonitor(final ActorFuture<Void> result) {
+    if (tenantDiskSpaceUsageMonitor == null || !tenantDiskSpaceUsageMonitorSubmitted) {
+      result.complete(null);
+      return;
+    }
+    concurrencyControl.runOnCompletion(
+        tenantDiskSpaceUsageMonitor.closeAsync(),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
   }
 
   private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
