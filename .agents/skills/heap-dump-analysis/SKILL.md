@@ -1,6 +1,6 @@
 ---
 name: heap-dump-analysis
-description: Analyze Camunda 8 / Zeebe broker heap dumps (.hprof). Use for a broker OOM, OutOfMemoryError, heap growth, or finding what fills the heap.
+description: Analyze Camunda 8 / Zeebe broker heap dumps (.hprof) with Eclipse MAT. Use for a broker OutOfMemoryError, an OOMKilled pod, heap growth, or finding what fills the heap. Not for memory outside the heap.
 ---
 
 # Heap dump analysis
