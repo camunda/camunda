@@ -44,6 +44,16 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     this(context, new TestCaseAssertionFacade());
   }
 
+  /**
+   * Creates a runner whose test isolation is set explicitly by the caller, instead of reading the
+   * system property. Lets a host decide isolation from its own configuration per run.
+   */
+  public CamundaTestCaseRunner(
+      final CamundaProcessTestContext context, final TestRunContext runContext) {
+    this(
+        context, new TestCaseAssertionFacade(), new TestCaseInstructionHandlerRegistry(runContext));
+  }
+
   public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
     this(context, assertionFacade, new TestCaseInstructionHandlerRegistry());

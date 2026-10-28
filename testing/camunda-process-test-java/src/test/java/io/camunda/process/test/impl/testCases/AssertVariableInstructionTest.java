@@ -62,7 +62,7 @@ public class AssertVariableInstructionTest {
   private AssertionFacade assertionFacade;
 
   private final AssertVariableInstructionHandler instructionHandler =
-      new AssertVariableInstructionHandler();
+      new AssertVariableInstructionHandler(TestRunContext.disabled());
 
   @Nested
   class SatisfiesExpression {

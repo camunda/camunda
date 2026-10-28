@@ -23,10 +23,17 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 import java.util.Optional;
 
 public class AssertVariablesInstructionHandler
     implements TestCaseInstructionHandler<AssertVariablesInstruction> {
+
+  private final TestRunContext runContext;
+
+  public AssertVariablesInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -37,7 +44,7 @@ public class AssertVariablesInstructionHandler
 
     final ProcessInstanceSelector processInstanceSelector =
         InstructionSelectorFactory.buildProcessInstanceSelector(
-            instruction.getProcessInstanceSelector());
+            instruction.getProcessInstanceSelector(), runContext);
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);

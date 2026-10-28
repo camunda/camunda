@@ -20,9 +20,16 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.EvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class EvaluateConditionalStartEventInstructionHandler
     implements TestCaseInstructionHandler<EvaluateConditionalStartEventInstruction> {
+
+  private final TestRunContext runContext;
+
+  public EvaluateConditionalStartEventInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -33,7 +40,7 @@ public class EvaluateConditionalStartEventInstructionHandler
 
     camundaClient
         .newEvaluateConditionalCommand()
-        .variables(instruction.getVariables())
+        .variables(runContext.applyRunId(instruction.getVariables()))
         .send()
         .join();
   }
