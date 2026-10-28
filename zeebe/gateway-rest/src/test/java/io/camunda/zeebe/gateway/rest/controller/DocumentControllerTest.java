@@ -392,6 +392,10 @@ public class DocumentControllerTest extends RestControllerTest {
     assertThat(result.getRequest().isAsyncStarted()).isFalse();
     assertThat(result.getResponse().getStatus()).isEqualTo(200);
     assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(content);
+    // and the content is streamed rather than read up front: other Resource types would add a
+    // Content-Length and advertise Range support
+    assertThat(result.getResponse().getHeader(HttpHeaders.CONTENT_LENGTH)).isNull();
+    assertThat(result.getResponse().getHeader(HttpHeaders.ACCEPT_RANGES)).isNull();
   }
 
   @Test
