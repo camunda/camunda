@@ -41,7 +41,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private long operationReference;
   private ValueType valueType;
   private Intent intent;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.EMPTY;
   private ChannelType channelType;
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
 
@@ -56,7 +56,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
-    authorization.reset();
+    authorization = AuthInfo.EMPTY;
     channelType = ChannelType.NULL_VAL;
     toolName.wrap(0, 0);
 
@@ -141,7 +141,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   public ExecuteCommandRequest setClaims(final Map<String, Object> claims) {
-    authorization.setClaims(claims);
+    authorization = AuthInfo.ofClaims(claims);
     return this;
   }
 
@@ -202,7 +202,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     final int authorizationLength = bodyDecoder.authorizationLength();
     offset += ExecuteCommandRequestDecoder.authorizationHeaderLength();
 
-    authorization.wrap(buffer, offset, authorizationLength);
+    authorization = AuthInfo.decode(buffer, offset, authorizationLength);
     offset += authorizationLength;
 
     final int toolNameLength = bodyDecoder.toolNameLength();
@@ -243,9 +243,13 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .valueType(valueType)
         .intent(intent.value())
         .channelType(channelType)
-        .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength())
-        .putToolName(toolName, 0, toolName.capacity());
+        .putValue(value, 0, value.capacity());
+    BufferUtil.writeLengthPrefixed(
+        authorization,
+        bodyEncoder,
+        ExecuteCommandRequestEncoder.authorizationHeaderLength(),
+        ExecuteCommandRequestEncoder.BYTE_ORDER);
+    bodyEncoder.putToolName(toolName, 0, toolName.capacity());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

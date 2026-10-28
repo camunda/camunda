@@ -83,10 +83,9 @@ class BufferedProcessingResultBuilderTest {
     // given
     final Consumer<RecordMetadata> authorizationDecorator =
         metadata -> {
-          final var authInfo = new AuthInfo();
-          authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
-          authInfo.setClaims(Map.of("authorized_username", "user"));
-          metadata.authorization(authInfo);
+          metadata.authorization(
+              AuthInfo.ofClaims(Map.of("authorized_username", "user"))
+                  .withFormat(AuthDataFormat.PRE_AUTHORIZED));
         };
     final var builder =
         new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE, authorizationDecorator);
@@ -110,6 +109,6 @@ class BufferedProcessingResultBuilderTest {
     final var responseEntry = response.responseValue();
     final var authorization = responseEntry.recordMetadata().getAuthorization();
     assertThat(authorization.getFormat()).isEqualTo(AuthDataFormat.UNKNOWN);
-    assertThat(authorization.getClaims()).isEmpty();
+    assertThat(authorization.hasAnyClaims()).isFalse();
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
-import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
@@ -88,9 +88,8 @@ class CommandDistributionBehaviorTest {
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.PRE_AUTHORIZED)
-            .setClaims(Map.of(AUTHORIZED_USERNAME, "user"));
+        AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
+            .withFormat(AuthDataFormat.PRE_AUTHORIZED);
 
     command =
         new MockTypedRecord<>(
@@ -216,9 +215,8 @@ class CommandDistributionBehaviorTest {
 
     // given command with auth info
     final var authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.PRE_AUTHORIZED)
-            .setClaims(Map.of(AUTHORIZED_USERNAME, "user"));
+        AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
+            .withFormat(AuthDataFormat.PRE_AUTHORIZED);
 
     final var key = keyGenerator.nextKey();
     final var command =

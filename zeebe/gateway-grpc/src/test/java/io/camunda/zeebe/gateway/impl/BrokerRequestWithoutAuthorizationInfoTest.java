@@ -136,7 +136,7 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
 
   private void assertNoAuthorizationClaims() {
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    final var claims = brokerRequest.getAuthorization().getClaims();
+    final var claims = brokerRequest.getAuthorization().toClaimsMap();
     assertThat(claims).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
     assertThat(claims).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
   }

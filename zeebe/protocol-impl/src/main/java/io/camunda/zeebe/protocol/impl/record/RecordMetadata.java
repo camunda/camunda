@@ -49,7 +49,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.EMPTY;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -123,7 +123,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (authorizationLength > 0) {
       final DirectBuffer authBuffer = new UnsafeBuffer();
       decoder.wrapAuthorization(authBuffer);
-      authorization.wrap(authBuffer);
+      authorization = AuthInfo.decode(authBuffer, 0, authBuffer.capacity());
     } else {
       decoder.skipAuthorization();
     }
@@ -286,12 +286,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
-    return this;
-  }
-
-  public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    this.authorization = Objects.requireNonNull(authorization, "authorization");
     return this;
   }
 
@@ -383,7 +378,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization.reset();
+    authorization = AuthInfo.EMPTY;
     agent = null;
     requestChannelType = ChannelType.NULL_VAL;
     requestToolName.wrap(0, 0);
@@ -464,7 +459,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
     }
 
-    if (!authorization.isEmpty()) {
+    if (!authorization.equals(AuthInfo.EMPTY)) {
       builder.append(", authorization=").append(authorization);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {

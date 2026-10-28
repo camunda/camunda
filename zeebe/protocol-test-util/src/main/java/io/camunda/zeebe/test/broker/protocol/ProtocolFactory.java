@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.value.BooleanValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
@@ -35,6 +36,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -384,6 +386,13 @@ public final class ProtocolFactory {
 
     // Register randomizers for all implementation classes
     registerImplClassRandomizers();
+
+    // AuthInfo is immutable, so it can't be populated field by field
+    randomizerRegistry.registerRandomizer(
+        AuthInfo.class,
+        () ->
+            AuthInfo.ofClaims(Map.of("authorized_username", random.nextObject(String.class)))
+                .withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED));
 
     // Register randomizers for msgpack value classes
     registerMsgPackValueRandomizers();

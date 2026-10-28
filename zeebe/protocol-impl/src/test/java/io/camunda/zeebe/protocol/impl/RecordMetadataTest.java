@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
@@ -39,28 +40,28 @@ final class RecordMetadataTest {
     assertThat(metadata.getIntent()).isEqualTo(Intent.UNKNOWN);
     assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.NULL_VAL);
     assertThat(metadata.getRejectionReason()).isEmpty();
-    assertThat(metadata.getAuthorization()).isEqualTo(new AuthInfo());
+    assertThat(metadata.getAuthorization()).isEqualTo(AuthInfo.EMPTY);
     assertThat(metadata.getAgent()).isNull();
     assertThat(metadata.getBrokerVersion()).isEqualTo(RecordMetadata.CURRENT_BROKER_VERSION);
     assertThat(metadata.getRecordVersion()).isEqualTo(RecordMetadata.DEFAULT_RECORD_VERSION);
   }
 
   @Test
-  void shouldCopyAuthInfoWhenSettingAuthorization() {
+  void shouldEncodeDecodeAuthorization() {
     // given
-    final var metadata = new RecordMetadata();
-    final var authInfo = new AuthInfo();
-    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
-    authInfo.setClaims(Map.of("key", "value"));
+    final var authInfo =
+        AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user"))
+            .withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    final var metadata = new RecordMetadata().authorization(authInfo);
 
     // when
-    metadata.authorization(authInfo);
-    authInfo.reset();
+    encodeDecode(metadata);
 
-    // then -- metadata should still have the original values
-    final var storedAuth = metadata.getAuthorization();
-    assertThat(storedAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
-    assertThat(storedAuth.getClaims()).isEqualTo(Map.of("key", "value"));
+    // then
+    assertThat(metadata.getAuthorization().getFormat())
+        .isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(metadata.getAuthorization().toClaimsMap())
+        .isEqualTo(Map.of(AUTHORIZED_USERNAME, "user"));
   }
 
   private void encodeDecode(final RecordMetadata metadata) {

@@ -246,11 +246,11 @@ final class InterPartitionCommandReceiverTest {
     final var receiverBrokerId = 1;
     final var receiverPartitionId = 7;
 
-    final var authInfo = new AuthInfo();
     final var claims =
         Map.<String, Object>of(
             "authorized_username", "user-123", "user_token_claims", Map.of("scope", "test"));
-    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED).setClaims(claims);
+    final var authInfo =
+        AuthInfo.ofClaims(claims).withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
 
     final var sentMessage =
         sendCommand(
@@ -279,7 +279,8 @@ final class InterPartitionCommandReceiverTest {
                   final var writtenAuth = logEntry.recordMetadata().getAuthorization();
                   assertThat(writtenAuth.getFormat())
                       .isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
-                  assertThat(writtenAuth.getClaims()).isEqualTo(claims);
+                  assertThat(writtenAuth.getUsername()).isEqualTo("user-123");
+                  assertThat(writtenAuth.getTokenClaims()).isEqualTo(Map.of("scope", "test"));
                 }));
   }
 
@@ -314,7 +315,7 @@ final class InterPartitionCommandReceiverTest {
             assertArg(
                 (final LogAppendEntry logEntry) ->
                     assertThat(logEntry.recordMetadata().getAuthorization())
-                        .isEqualTo(new AuthInfo())));
+                        .isEqualTo(AuthInfo.EMPTY)));
   }
 
   private byte[] sendCommand(
