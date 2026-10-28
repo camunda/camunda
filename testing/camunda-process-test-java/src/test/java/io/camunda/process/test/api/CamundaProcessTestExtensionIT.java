@@ -55,9 +55,15 @@ import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.api.mock.VariablesTable;
+import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
+import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -1521,6 +1527,55 @@ public class CamundaProcessTestExtensionIT {
       assertThat(mockedJobWorker.getInvocations()).isEqualTo(3);
     }
 
+    @Test
+    void shouldMockJobWorkerWithVariablesExpressionViaJsonTestCase() {
+      // given: the JSON test-case 'variablesExpression' path evaluates the FEEL expression through
+      // the real CamundaClient (newEvaluateExpressionCommand against the broker), unlike the unit
+      // tests for this path, which stub the CamundaClient
+      final String jobType = "variables-expression-job";
+      final String processId = "process-" + jobType;
+      deployProcessModel(
+          Bpmn.createExecutableProcess(processId)
+              .startEvent()
+              .serviceTask("service-task-1")
+              .zeebeJobType(jobType)
+              .endEvent()
+              .done());
+
+      final TestCase testCase =
+          ImmutableTestCase.builder()
+              .name("variablesExpression via real FEEL engine")
+              .addInstructions(
+                  ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                      .jobType(jobType)
+                      .variablesExpression("={ total: amount * 2 }")
+                      .build())
+              .addInstructions(
+                  ImmutableCreateProcessInstanceInstruction.builder()
+                      .processDefinitionSelector(
+                          ImmutableProcessDefinitionSelector.builder()
+                              .processDefinitionId(processId)
+                              .build())
+                      .putVariables("amount", 21)
+                      .build())
+              .addInstructions(
+                  ImmutableAssertVariableInstruction.builder()
+                      .processInstanceSelector(
+                          ImmutableProcessInstanceSelector.builder()
+                              .processDefinitionId(processId)
+                              .build())
+                      .variableName("total")
+                      .satisfiesExpression("total = 42")
+                      .build())
+              .build();
+
+      // when
+      testCaseRunner.run(testCase);
+
+      // then: the assertion instruction only passes if the broker actually evaluated the FEEL
+      // expression against the job's variables, rather than a mock echoing it back
+      assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(processId)).isCompleted();
+    }
 
     private BpmnModelInstance processModelWithMultiInstanceServiceTask(final String jobType) {
       return Bpmn.createExecutableProcess("process-" + jobType)
