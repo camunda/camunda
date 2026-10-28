@@ -31,6 +31,7 @@ val googleJavaFormatVersion =
 val isCi =
   providers.environmentVariable("CI").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
+val skipErrorProne = providers.gradleProperty("errorprone.skip").isPresent
 
 dependencies {
   // A consumer that requests an artifact kind must get that variant, not the default jar variant.
@@ -94,7 +95,7 @@ tasks.withType<Jar>().configureEach {
 tasks.withType<JavaCompile>().configureEach {
   options.encoding = "utf-8"
   options.compilerArgs.add("-parameters")
-  options.errorprone.isEnabled.set(name == "compileJava")
+  options.errorprone.isEnabled.set(false)
 }
 
 tasks.named<JavaCompile>("compileJava") {
@@ -105,7 +106,13 @@ tasks.named<JavaCompile>("compileJava") {
       "-XDaddTypeAnnotationsToSymbol=true",
     )
   )
-  options.errorprone.disableAllChecks.set(true)
+  options.errorprone.isEnabled.set(true)
+  // -Perrorprone.skip drops every check except NullAway.
+  if (skipErrorProne) {
+    options.errorprone.disableAllChecks.set(true)
+  } else {
+    options.errorprone.disableAllWarnings.set(true)
+  }
   options.errorprone.error("NullAway")
   options.errorprone.excludedPaths.set(
     ".*/build/(generated|generated-sources|generated-test-sources|tmp|classes)/.*"
