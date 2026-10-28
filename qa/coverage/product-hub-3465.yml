@@ -13,8 +13,6 @@
 # One structural note. This feature lives in the LEGACY Operate client
 # (operate/client/), not the target orchestration-cluster webapp. A reader who
 # greps webapp/client for it finds nothing and concludes it is untested.
-#
-# For camunda/team-test-automation#83.
 
 epic: camunda/product-hub#3465
 qa_issue: camunda/product-hub#3647

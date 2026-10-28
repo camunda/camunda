@@ -3,7 +3,7 @@
 // VENDORED FILE — do not edit here.
 //
 // Source of truth: camunda/c8-cross-component-e2e-tests, scripts/coverage-plan.mjs
-// Vendored at:     b61c91c6c3e4de67fa2d91833b35191c60ed0f72
+// Vendored at:     c7dfd6cb38bf23e44b755c4e59b9e2f36dcaf21b
 //
 // The schema this enforces is owned by that repository, which also holds the
 // validator's tests. Editing the copy here makes this repository enforce a
@@ -19,8 +19,6 @@
 //
 // Two readers: the coverage gate reports plan status on an implementation PR,
 // and the generation entry point reads one case at a time.
-//
-// See camunda/team-test-automation#83.
 
 import fs from 'node:fs';
 import path from 'node:path';

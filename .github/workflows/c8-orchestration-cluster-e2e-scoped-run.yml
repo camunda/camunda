@@ -1,6 +1,6 @@
 # description: Runs ONE case of the orchestration-cluster E2E suite against a
 #              local stack, on demand. The verify step of coverage-plan test
-#              generation — see camunda/team-test-automation#83.
+#              generation.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/test-automation-team
@@ -102,7 +102,7 @@ jobs:
       # runs are not the same question, and conflating them locked out the
       # caller this workflow was built for. A generation branch carries the
       # test to run but has no published image, so it was refused below before
-      # a test could start -- see camunda/team-test-automation#83.
+      # a test could start.
       #
       # `branch` stays the code. `image_branch` is the image, and defaults to
       # `branch` so every existing dispatch behaves exactly as before: main

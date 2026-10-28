@@ -18,8 +18,6 @@
 #   by an invocation-context extension, so each counted case is several runs.
 #   And `grep -c '@Test'` over-counts anywhere `@TestPropertySource` appears,
 #   which is how AL-CFG-01 was first written as nine instead of seven.
-#
-# For camunda/team-test-automation#83.
 
 epic: camunda/product-hub#1732
 qa_issue: camunda/product-hub#3317
@@ -335,7 +333,7 @@ out_of_scope:
   - what: The TestRail suite linked from the QA issue
     why: >
       Functional QA's own flow, deliberately not a dependency in either
-      direction — see camunda/team-test-automation#83.
+      direction.
 
 prerequisites:
   - what: Confirm which milestone each integration suite belongs to

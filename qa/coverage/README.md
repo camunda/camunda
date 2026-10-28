@@ -6,8 +6,7 @@ the duplication and routing judgements (what is already covered a layer down,
 what belongs at which level, what is out of scope) are the point of it, and they
 are not judgements a generator should make.
 
-See camunda/team-test-automation#83 for the programme, and
-[`product-hub-3526.yml`](product-hub-3526.yml) for a worked example spanning
+See [`product-hub-3526.yml`](product-hub-3526.yml) for a worked example spanning
 service unit tests, acceptance ITs, Operate component tests, and the REST and UI
 coverage still to be written.
 
