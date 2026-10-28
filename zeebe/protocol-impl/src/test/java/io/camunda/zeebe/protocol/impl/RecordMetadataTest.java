@@ -64,10 +64,33 @@ final class RecordMetadataTest {
         .isEqualTo(Map.of(AUTHORIZED_USERNAME, "user"));
   }
 
-  private void encodeDecode(final RecordMetadata metadata) {
-    // encode
+  @Test
+  void shouldKeepAuthorizationWhenRewritingDecodedMetadata() {
+    // given
+    final var authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user"));
+    final var original = new RecordMetadata().authorization(authInfo);
+    final var decoded = new RecordMetadata();
+    decoded.wrap(write(original), 0, original.getLength());
+
+    // when
+    final var rewritten = write(decoded);
+    final var reread = new RecordMetadata();
+    reread.wrap(rewritten, 0, rewritten.capacity());
+
+    // then
+    assertThat(reread.getAuthorization().toClaimsMap())
+        .isEqualTo(Map.of(AUTHORIZED_USERNAME, "user"));
+  }
+
+  private static UnsafeBuffer write(final RecordMetadata metadata) {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[metadata.getLength()]);
     metadata.write(buffer, 0);
+    return buffer;
+  }
+
+  private void encodeDecode(final RecordMetadata metadata) {
+    // encode
+    final UnsafeBuffer buffer = write(metadata);
 
     // decode
     metadata.reset();

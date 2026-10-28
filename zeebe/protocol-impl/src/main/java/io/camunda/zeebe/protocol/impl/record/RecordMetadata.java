@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
@@ -49,7 +50,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private AuthInfo authorization = AuthInfo.EMPTY;
+  // decoded lazily from the wrapped buffer: most readers (e.g. replay) never access it
+  private final DirectBuffer encodedAuthorization = new UnsafeBuffer(0, 0);
+  private @Nullable AuthInfo authorization = AuthInfo.EMPTY;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -121,9 +124,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     final int authorizationLength = decoder.authorizationLength();
     if (authorizationLength > 0) {
-      final DirectBuffer authBuffer = new UnsafeBuffer();
-      decoder.wrapAuthorization(authBuffer);
-      authorization = AuthInfo.decode(authBuffer, 0, authBuffer.capacity());
+      decoder.wrapAuthorization(encodedAuthorization);
+      authorization = null;
     } else {
       decoder.skipAuthorization();
     }
@@ -152,7 +154,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength()
+        + (authorization != null ? authorization.getLength() : encodedAuthorization.capacity())
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0)
         + RecordMetadataEncoder.requestToolNameHeaderLength()
@@ -185,11 +187,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    BufferUtil.writeLengthPrefixed(
-        authorization,
-        encoder,
-        RecordMetadataEncoder.authorizationHeaderLength(),
-        RecordMetadataEncoder.BYTE_ORDER);
+    if (authorization != null) {
+      BufferUtil.writeLengthPrefixed(
+          authorization,
+          encoder,
+          RecordMetadataEncoder.authorizationHeaderLength(),
+          RecordMetadataEncoder.BYTE_ORDER);
+    } else {
+      encoder.putAuthorization(encodedAuthorization, 0, encodedAuthorization.capacity());
+    }
 
     if (agent != null) {
       BufferUtil.writeLengthPrefixed(
@@ -291,6 +297,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public AuthInfo getAuthorization() {
+    if (authorization == null) {
+      authorization = AuthInfo.decode(encodedAuthorization, 0, encodedAuthorization.capacity());
+    }
     return authorization;
   }
 
@@ -379,6 +388,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization = AuthInfo.EMPTY;
+    encodedAuthorization.wrap(0, 0);
     agent = null;
     requestChannelType = ChannelType.NULL_VAL;
     requestToolName.wrap(0, 0);
@@ -399,7 +409,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         requestStreamId,
         rejectionType,
         rejectionReason,
-        authorization,
+        getAuthorization(),
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -427,7 +437,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
-        && authorization.equals(that.authorization)
+        && getAuthorization().equals(that.getAuthorization())
         && Objects.equals(agent, that.agent)
         && requestChannelType == that.requestChannelType
         && requestToolName.equals(that.requestToolName)
@@ -459,8 +469,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
     }
 
-    if (!authorization.equals(AuthInfo.EMPTY)) {
-      builder.append(", authorization=").append(authorization);
+    if (!getAuthorization().equals(AuthInfo.EMPTY)) {
+      builder.append(", authorization=").append(getAuthorization());
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
       builder.append(", operationReference=").append(operationReference);
