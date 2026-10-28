@@ -26,10 +26,12 @@ import java.io.FileInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.List;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -254,6 +256,32 @@ class TlsContextsTest {
   }
 
   @Test
+  void shouldBuildGrpcContextWithEmptyKeystoreKeyPassword() {
+    // given - the key entry of client-emptypass.p12 has an explicitly empty password, distinct
+    // from the store password; only a null key password falls back to the store password
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore(resourcePath("client-emptypass.p12"), "storepass", "");
+
+    // when
+    final SslContext context = TlsContexts.createGrpcSslContext(config);
+
+    // then
+    assertThat(context).isNotNull();
+  }
+
+  @Test
+  void shouldFailWhenEmptyKeystoreKeyPasswordIsReplacedByStorePassword() {
+    // given - substituting the store password for the empty key password must not open the entry
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore(resourcePath("client-emptypass.p12"), "storepass", null);
+
+    // when / then
+    assertThatThrownBy(() -> TlsContexts.createGrpcSslContext(config))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Failed to configure TLS for the gRPC connection");
+  }
+
+  @Test
   void shouldBuildGrpcContextWithLegacyCaCertificateOnly() {
     // given
     final CamundaClientBuilderImpl config = tlsConfig();
@@ -344,6 +372,33 @@ class TlsContextsTest {
     // when / then
     assertThatThrownBy(() -> TlsContexts.createGrpcSslContext(config))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotUseJvmDefaultSslContextAsRestFallback() throws Exception {
+    // given - a process-wide default SSL context holding an unrelated client identity; the no-mTLS
+    // REST fallback must be a fresh context so that identity is never sent to the cluster
+    final KeyStore unrelatedKeys = KeyStore.getInstance("PKCS12");
+    try (final FileInputStream in = new FileInputStream(resource("client.p12"))) {
+      unrelatedKeys.load(in, "storepass".toCharArray());
+    }
+    final KeyManagerFactory kmf =
+        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+    kmf.init(unrelatedKeys, "storepass".toCharArray());
+    final SSLContext jvmDefault = SSLContext.getInstance("TLS");
+    jvmDefault.init(kmf.getKeyManagers(), null, null);
+
+    final SSLContext previousDefault = SSLContext.getDefault();
+    SSLContext.setDefault(jvmDefault);
+    try {
+      // when
+      final SSLContext context = TlsContexts.createRestSslContext(tlsConfig());
+
+      // then
+      assertThat(context).isNotSameAs(jvmDefault);
+    } finally {
+      SSLContext.setDefault(previousDefault);
+    }
   }
 
   @Test
