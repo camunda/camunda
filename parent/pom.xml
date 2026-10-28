@@ -65,6 +65,8 @@
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.51.0</version.error-prone>
     <version.nullaway>0.14.3</version.nullaway>
+    <!-- override with -Derrorprone.skip, see the errorprone-skip profile -->
+    <error-prone.checks>-XepDisableAllWarnings</error-prone.checks>
     <version.grpc>1.85.1</version.grpc>
     <version.gson>2.15.0</version.gson>
     <version.guava>33.7.2-jre</version.guava>
@@ -2439,10 +2441,10 @@
                   <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                   <!--
                     - exclude generated-sources (e.g. openapi) from nullaway checks
-                    - exclude all other checks from error prone except for nullaway
+                    - disable the warning-level error prone checks, keep the default error-level ones
                     - enable nullaway only on classes/packages marked as @NullMarked
                   -->
-                  <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
+                  <arg>-Xplugin:ErrorProne ${error-prone.checks} -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
                 </compilerArgs>
               </configuration>
             </execution>
@@ -3106,6 +3108,18 @@
   </build>
 
   <profiles>
+    <!-- -Derrorprone.skip: drop all Error Prone checks but keep NullAway -->
+    <profile>
+      <id>errorprone-skip</id>
+      <activation>
+        <property>
+          <name>errorprone.skip</name>
+        </property>
+      </activation>
+      <properties>
+        <error-prone.checks>-XepDisableAllChecks</error-prone.checks>
+      </properties>
+    </profile>
     <!--
       This plugin's configuration is used to store Eclipse m2e settings only. It has no
       influence on the Maven build itself, and org.eclipse.m2e:lifecycle-mapping is not
