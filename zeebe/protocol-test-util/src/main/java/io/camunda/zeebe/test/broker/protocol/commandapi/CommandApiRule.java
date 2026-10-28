@@ -124,11 +124,12 @@ public final class CommandApiRule extends ExternalResource {
       final long lockDuration,
       final int maxJobsToActivate) {
     // to make sure that job already exist
-    partitionClient(partitionId)
-        .receiveJobs()
-        .withIntent(JobIntent.CREATED)
-        .withType(type)
-        .getFirst();
+    final var unused =
+        partitionClient(partitionId)
+            .receiveJobs()
+            .withIntent(JobIntent.CREATED)
+            .withType(type)
+            .getFirst();
 
     return createCmdRequest(partitionId)
         .type(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE)

@@ -101,10 +101,12 @@ public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       final BoolQuery.Builder viewFilterInstanceQuery = new BoolQuery.Builder();
       viewLevelFiltersForInstanceMatch.forEach(
-          filter ->
-              INCIDENT_VIEW_FILTER_INSTANCE_QUERIES
-                  .get(filter.getClass())
-                  .apply(viewFilterInstanceQuery));
+          filter -> {
+            final var unused =
+                INCIDENT_VIEW_FILTER_INSTANCE_QUERIES
+                    .get(filter.getClass())
+                    .apply(viewFilterInstanceQuery);
+          });
       final NestedQuery.Builder builder = new NestedQuery.Builder();
       builder
           .path(INCIDENTS)
