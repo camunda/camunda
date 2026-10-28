@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.net.URL;
@@ -53,7 +52,7 @@ class VirtualThreadsAutoConfigurationTest {
             context -> {
               assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
               assertThat(context.getBean(CamundaClientExecutorService.class))
-                  .isInstanceOf(MeteredCamundaClientExecutorService.class);
+                  .isInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
             });
   }
 
@@ -67,7 +66,7 @@ class VirtualThreadsAutoConfigurationTest {
             context -> {
               assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
               assertThat(context.getBean(CamundaClientExecutorService.class))
-                  .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+                  .isNotInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
             });
   }
 
@@ -80,7 +79,8 @@ class VirtualThreadsAutoConfigurationTest {
                 "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration"))
         .run(
             context -> {
-              assertThat(context).doesNotHaveBean(MeteredCamundaClientExecutorService.class);
+              assertThat(context)
+                  .doesNotHaveBean(MeteredVirtualThreadCamundaClientExecutorService.class);
             });
   }
 
@@ -92,7 +92,7 @@ class VirtualThreadsAutoConfigurationTest {
             context -> {
               assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
               assertThat(context.getBean(CamundaClientExecutorService.class))
-                  .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+                  .isNotInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
             });
   }
 
@@ -107,7 +107,7 @@ class VirtualThreadsAutoConfigurationTest {
             context -> {
               assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
               assertThat(context.getBean(CamundaClientExecutorService.class))
-                  .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+                  .isNotInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
             });
   }
 
