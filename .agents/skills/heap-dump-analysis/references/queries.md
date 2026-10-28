@@ -52,18 +52,19 @@ shallow, retained.
 
 ```bash
 R=$OUT_DIR/<name>/raw/reports/starter
+D=$OUT_DIR/<name>/raw/reports/drg_cache
 F='([^,]*)|("[^"]*")'
 # Reachable heap in bytes: sum of shallow sizes in the live histogram
 gawk -v FPAT="$F" 'NR>1 { gsub(/[^0-9]/, "", $3); s += $3 } END { printf "%d\n", s }' "$R"/histogram[0-9]*.csv
 # Rows of a query, for example DeployedDrg objects
-gawk 'NR>1 && NF { n++ } END { print n+0 }' "$R"/deployed_drgs[0-9]*.csv
+gawk 'NR>1 && NF { n++ } END { print n+0 }' "$D"/deployed_drgs[0-9]*.csv
 # Loaded entries of the DRG caches: Segment.count of the caches DbDecisionState points to
 gawk -v FPAT="$F" 'function id(x) { gsub(/[^0-9]/, "", x); return x }
   FNR==1 { f++; next }
   f==1 && id($3) != "" { map[id($3)] = 1; n++; next }
   f==2 && id($2) in map { s += id($3) }
   END { if (!n) { print "no mapId in decision_states: check the field names" > "/dev/stderr"; exit 1 }
-        print s+0 }' "$R"/decision_states[0-9]*.csv "$R"/cache_segments[0-9]*.csv
+        print s+0 }' "$D"/decision_states[0-9]*.csv "$D"/cache_segments[0-9]*.csv
 ```
 
 `Segment.count` counts loaded entries only. Rows of `drg_entries` also include entries that

@@ -1,6 +1,6 @@
 # Reading the results
 
-The starter pack comes from a DRG cache incident.
+The DRG cache pack comes from a DRG cache incident.
 Another cause of OOM needs ad-hoc queries, built the same way ([queries.md](queries.md)).
 
 ## Five questions

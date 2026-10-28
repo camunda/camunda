@@ -25,7 +25,8 @@ aggregates. Details: [privacy.md](references/privacy.md).
 |------|---------------|
 | `scripts/run_mat.sh` | Runs MAT on one dump with query packs. Prints rc, seconds, problems, CSV names. |
 | `scripts/hash_ids.sh` | Hashes the ids in a `raw_*` CSV with a salt. Prints hashes only. |
-| `queries/starter_pack.xml` | Heap totals, dominators, engine state per partition, DRG cache, process cache. |
+| `queries/starter_pack.xml` | Any OOM: heap totals, dominators, engine state per partition. |
+| `queries/drg_cache_pack.xml` | DRG cache and process cache. Add it when `DeployedDrg` or `DbDecisionState` dominates. |
 | [references/privacy.md](references/privacy.md) | Safe extraction, hashing ids. |
 | [references/queries.md](references/queries.md) | MAT/OQL pitfalls, reading the heap, one-liners, truncated dumps. |
 | [references/mat-headless.md](references/mat-headless.md) | Install, launch flags, index files, sizing, parallel runs. |
