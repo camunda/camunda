@@ -170,6 +170,27 @@ final class PhysicalTenantEnvironmentsTest {
     assertThat(resolver.nameOf("default")).isEmpty();
   }
 
+  @Test
+  void shouldReadTheSubtreeATenantDeclares() {
+    // given
+    declare(tenant("tenante", "prefixe"));
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "override",
+                Map.of("camunda.physical-tenants.tenante." + INDEX_PREFIX, "overridden")));
+
+    // when
+    final var subtree = PhysicalTenantEnvironments.subtreeOf(environment, "tenante");
+
+    // then
+    assertThat(subtree)
+        .containsEntry(INDEX_PREFIX, "overridden")
+        .containsEntry(ADMIN_USER, "tenante-admin")
+        .doesNotContainKey("camunda.physical-tenants.tenanta." + INDEX_PREFIX);
+  }
+
   private void declare(final Map<String, Object> properties) {
     environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
   }

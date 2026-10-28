@@ -13,13 +13,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
@@ -93,6 +97,35 @@ public final class PhysicalTenantEnvironments {
     derived.setActiveProfiles(base.getActiveProfiles());
     ConfigurationPropertySources.attach(derived);
     return derived;
+  }
+
+  /**
+   * The subtree a tenant declares in the environment, with names relative to {@code
+   * camunda.physical-tenants.<id>} in their canonical form and values as text. Where several
+   * property sources declare a name, the one that takes precedence wins.
+   */
+  public static Map<String, String> subtreeOf(
+      final Environment environment, final String tenantId) {
+    final var prefix =
+        ConfigurationPropertyName.of(
+            PhysicalTenantResolver.PHYSICAL_TENANTS_PREFIX + "." + tenantId);
+    final Map<String, String> subtree = new TreeMap<>();
+    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+      if (!(source instanceof final IterableConfigurationPropertySource iterable)) {
+        continue;
+      }
+      iterable.stream()
+          .filter(prefix::isAncestorOf)
+          .forEach(
+              name -> {
+                final var relative = name.subName(prefix.getNumberOfElements()).toString();
+                final var property = source.getConfigurationProperty(name);
+                if (property != null && !subtree.containsKey(relative)) {
+                  subtree.put(relative, String.valueOf(property.getValue()));
+                }
+              });
+    }
+    return subtree;
   }
 
   private static PropertySource<?> withoutTenantKeys(
