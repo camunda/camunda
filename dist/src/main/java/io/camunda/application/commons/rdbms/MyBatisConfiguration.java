@@ -146,7 +146,7 @@ public class MyBatisConfiguration {
       physicalTenantConfigs.put(
           physicalTenantId,
           new PerTenantSchemaConfig(
-              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              rdbmsDataSources.unpooledDataSourceFor(physicalTenantId),
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
               trimmedPrefix,
               rdbms.getAutoDdl(),
