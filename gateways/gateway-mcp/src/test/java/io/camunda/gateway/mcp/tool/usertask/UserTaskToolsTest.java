@@ -674,7 +674,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
                           "assignee",
                           "jane.doe",
                           "assignmentOptions",
-                          Map.of("allowOverride", false, "action", "claim")))
+                          Map.of(
+                              "allowOverride", false, "action", "claim", "operationReference", 42)))
                   .build());
 
       // then
@@ -689,7 +690,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices)
-          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), any(), any());
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), eq(42L), any());
     }
 
     @Test

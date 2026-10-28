@@ -114,8 +114,12 @@ public class UserTaskTools {
               required = false)
           final UserTaskCompletionRequest completionOptions) {
     try {
-      final var completionRequest =
+      final var mappedRequest =
           RequestMapper.toUserTaskCompletionRequest(completionOptions, userTaskKey);
+      if (mappedRequest.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
+      }
+      final var completionRequest = mappedRequest.get();
 
       return CallToolResultMapper.fromPrimitive(
           serviceRegistry
@@ -157,7 +161,8 @@ public class UserTaskTools {
           request =
               request
                   .allowOverride(assignmentOptions.getAllowOverride())
-                  .action(assignmentOptions.getAction());
+                  .action(assignmentOptions.getAction())
+                  .operationReference(assignmentOptions.getOperationReference());
         }
 
         return performAssignment(userTaskKey, request);
