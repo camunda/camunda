@@ -138,6 +138,27 @@ final class ExporterRepositoryTest {
   }
 
   @Test
+  void shouldReleaseExternalExporterJarsOnClose(final @TempDir File tempDir) throws Exception {
+    // given
+    final var jarFile =
+        ExternalExporter.createUnloadedExporterClass().toJar(new File(tempDir, "exporter.jar"));
+    final var config = new ExporterCfg();
+    config.setClassName(ExternalExporter.EXPORTER_CLASS_NAME);
+    config.setJarPath(jarFile.getAbsolutePath());
+    final var closeable = new ExporterRepository();
+    final var classLoader =
+        closeable.load("external", config).newInstance().getClass().getClassLoader();
+    final var classFile = ExternalExporter.EXPORTER_CLASS_NAME.replace('.', '/') + ".class";
+    assertThat(classLoader.getResource(classFile)).isNotNull();
+
+    // when
+    closeable.close();
+
+    // then
+    assertThat(classLoader.getResource(classFile)).isNull();
+  }
+
+  @Test
   void shouldFailToLoadNonExporterClasses(final @TempDir File tempDir) throws IOException {
     // given
     final var externalClass =

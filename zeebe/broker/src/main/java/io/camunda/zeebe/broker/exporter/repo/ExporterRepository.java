@@ -29,7 +29,7 @@ import org.agrona.CloseHelper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-public final class ExporterRepository {
+public final class ExporterRepository implements AutoCloseable {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private static final PartitionId NULL_PARTITION_ID =
       new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 0);
@@ -51,6 +51,15 @@ public final class ExporterRepository {
         exporters.stream()
             .collect(Collectors.toMap(ExporterDescriptor::getId, Function.identity()));
     this.jarRepository = jarRepository;
+  }
+
+  /**
+   * Closes the class loaders of the external exporter JARs this repository loaded. Exporters
+   * created from it afterwards can no longer load classes from those JARs.
+   */
+  @Override
+  public void close() throws Exception {
+    jarRepository.close();
   }
 
   public @Nullable String getLicenseKey() {
