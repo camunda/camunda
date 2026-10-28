@@ -8,6 +8,7 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.ConfigurationSecretReference;
 import io.camunda.configuration.data.SecondaryStorage;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.data.secondarystorage.Rdbms;
@@ -73,12 +74,17 @@ record StorageIdentity(
 
   /**
    * Extracts the storage identity of a resolved tenant, or {@code null} when the tenant has no
-   * secondary storage ({@code type=none}) and therefore can never collide.
+   * secondary storage ({@code type=none}) and therefore can never collide, or when its connection
+   * is a {@code camunda.secrets.<name>} reference, whose value only the tenant's own secret store
+   * knows.
    */
   static @Nullable StorageIdentity of(final Camunda camunda) {
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
     // route through the getter: it applies the legacy-property fallback
     final SecondaryStorageType type = secondaryStorage.getType();
+    if (type != SecondaryStorageType.none && isReference(databaseOf(secondaryStorage, type))) {
+      return null;
+    }
     return switch (type) {
       case none -> null;
       case elasticsearch ->
@@ -98,6 +104,20 @@ record StorageIdentity(
         yield identityOf(type, rdbms, rdbms.getPrefix(), oracleSchemaOf(rdbms));
       }
     };
+  }
+
+  private static SecondaryStorageDatabase<?> databaseOf(
+      final SecondaryStorage secondaryStorage, final SecondaryStorageType type) {
+    return switch (type) {
+      case elasticsearch -> secondaryStorage.getElasticsearch();
+      case opensearch -> secondaryStorage.getOpensearch();
+      default -> secondaryStorage.getRdbms();
+    };
+  }
+
+  private static boolean isReference(final SecondaryStorageDatabase<?> database) {
+    return ConfigurationSecretReference.isReference(database.getUrl())
+        || database.getUrls().stream().anyMatch(ConfigurationSecretReference::isReference);
   }
 
   private static StorageIdentity identityOf(

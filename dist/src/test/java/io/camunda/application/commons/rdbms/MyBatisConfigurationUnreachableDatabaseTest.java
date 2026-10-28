@@ -10,6 +10,8 @@ package io.camunda.application.commons.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.application.commons.secrets.InternalConfigRefreshers;
+import io.camunda.application.commons.secrets.InternalConfigSecrets;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -52,6 +55,8 @@ class MyBatisConfigurationUnreachableDatabaseTest {
 
   private final MyBatisConfiguration configuration = new MyBatisConfiguration();
 
+  private static final DefaultListableBeanFactory NO_BEANS = new DefaultListableBeanFactory();
+
   @BeforeAll
   @AfterAll
   static void clearStaticEnvironment() {
@@ -65,7 +70,11 @@ class MyBatisConfigurationUnreachableDatabaseTest {
 
     // when
     try (final var dataSources =
-        configuration.rdbmsDataSources(resolver, new SimpleMeterRegistry())) {
+        configuration.rdbmsDataSources(
+            resolver,
+            new SimpleMeterRegistry(),
+            NO_BEANS.getBeanProvider(InternalConfigSecrets.class),
+            NO_BEANS.getBeanProvider(InternalConfigRefreshers.class))) {
       final var sqlSessionFactories = configuration.sqlSessionFactories(dataSources, resolver);
       final var mapperBundles = configuration.rdbmsMapperBundles(sqlSessionFactories, dataSources);
       final var schemaManagerRegistry = configuration.rdbmsSchemaManagerRegistry();

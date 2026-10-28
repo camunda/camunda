@@ -57,7 +57,7 @@ class RdbmsVendorIdProviderTest {
     rdbms.setDatabaseVendorId(configured);
 
     // when / then
-    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms)).contains(configured);
+    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms, rdbms.getUrl())).contains(configured);
   }
 
   @Test
@@ -68,7 +68,7 @@ class RdbmsVendorIdProviderTest {
 
     // when / then - naming the tenant and the legal values, since nothing else in the log says
     // which of several tenants carries the bad value
-    assertThatThrownBy(() -> RdbmsVendorIdProvider.resolve(TENANT_A, rdbms))
+    assertThatThrownBy(() -> RdbmsVendorIdProvider.resolve(TENANT_A, rdbms, rdbms.getUrl()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("'db2'")
         .hasMessageContaining(TENANT_A)
@@ -95,14 +95,15 @@ class RdbmsVendorIdProviderTest {
   void shouldResolveTheVendorIdFromTheJdbcUrl(final String url, final String expectedVendorId) {
     // given / when / then - no data source is passed, so a tenant whose database is unreachable
     // resolves exactly as one that is up
-    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms(url))).contains(expectedVendorId);
+    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms(url), url)).contains(expectedVendorId);
   }
 
   @Test
   void shouldNotResolveAUrlPrefixSpringDoesNotMap() {
     // given / when / then - the empty answer is what sends the caller to the database, and the
     // only case in which building a tenant needs its database at all
-    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms(UNRECOGNIZED_URL))).isEmpty();
+    assertThat(RdbmsVendorIdProvider.resolve(TENANT_A, rdbms(UNRECOGNIZED_URL), UNRECOGNIZED_URL))
+        .isEmpty();
   }
 
   // ---- step 3: the connection fallback ----

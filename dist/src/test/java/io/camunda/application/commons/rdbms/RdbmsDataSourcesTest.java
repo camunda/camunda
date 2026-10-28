@@ -68,7 +68,9 @@ class RdbmsDataSourcesTest {
 
       // then
       final var ds =
-          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+          registry
+              .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .unwrap(HikariDataSource.class);
       assertThat(ds.getJdbcUrl()).isEqualTo(rdbms.getUrl());
       assertThat(ds.getUsername()).isEqualTo("sa");
       assertThat(ds.getDriverClassName()).isEqualTo("org.h2.Driver");
@@ -97,7 +99,9 @@ class RdbmsDataSourcesTest {
             new SimpleMeterRegistry())) {
 
       final var ds =
-          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+          registry
+              .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .unwrap(HikariDataSource.class);
       assertThat(ds.getMaximumPoolSize()).isEqualTo(42);
       assertThat(ds.getMinimumIdle()).isEqualTo(7);
       assertThat(ds.getConnectionTimeout()).isEqualTo(1234);
@@ -122,7 +126,9 @@ class RdbmsDataSourcesTest {
 
       // then: keepalive stays disabled and validation timeout keeps the HikariCP default
       final var ds =
-          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+          registry
+              .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .unwrap(HikariDataSource.class);
       assertThat(ds.getKeepaliveTime()).isZero();
       assertThat(ds.getValidationTimeout()).isEqualTo(5_000);
     }
@@ -267,8 +273,8 @@ class RdbmsDataSourcesTest {
     final HikariDataSource dsA;
     final HikariDataSource dsB;
     try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
-      dsA = (HikariDataSource) registry.dataSourceFor("tenant-a");
-      dsB = (HikariDataSource) registry.dataSourceFor("tenant-b");
+      dsA = registry.dataSourceFor("tenant-a").unwrap(HikariDataSource.class);
+      dsB = registry.dataSourceFor("tenant-b").unwrap(HikariDataSource.class);
       assertThat(dsA.isClosed()).isFalse();
       assertThat(dsB.isClosed()).isFalse();
     }
@@ -353,7 +359,9 @@ class RdbmsDataSourcesTest {
 
       // then
       final var ds =
-          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+          registry
+              .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .unwrap(HikariDataSource.class);
       assertThat(ds.getDataSourceProperties().getProperty(testCase.expectedPropertyName()))
           .isEqualTo(testCase.expectedPropertyValue());
     }
@@ -385,7 +393,9 @@ class RdbmsDataSourcesTest {
 
       // then
       final var ds =
-          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+          registry
+              .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .unwrap(HikariDataSource.class);
       assertThat(ds.getDataSourceProperties().getProperty("rewriteBatchedStatements")).isNull();
       assertThat(ds.getDataSourceProperties().getProperty("useBulkStmts")).isNull();
     }
