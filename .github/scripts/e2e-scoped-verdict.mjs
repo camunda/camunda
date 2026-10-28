@@ -69,6 +69,20 @@ const PASSING = new Set(['expected', 'flaky']);
 const outcomeOf = (spec) => {
   const tests = spec?.tests ?? [];
   if (tests.length === 0) return 'did not run';
+  // `expected` is relative to expectedStatus, not an assertion that the test
+  // passed. A case annotated test.fail() reports expectedStatus 'failed' and
+  // status 'expected' when it DOES fail -- so reading status alone calls a
+  // deliberately-failing test green. That is the skip hole below arriving
+  // through a third door: the test is in the report and it did run, so
+  // neither the "selected nothing" check nor the skip check catches it, and
+  // it still does not show the behaviour works.
+  //
+  // A coverage plan case asserts behaviour works. Nothing in the schema can
+  // express "and it is expected to be broken", so an inverted expectation on
+  // a generated case is never what the plan meant.
+  if (tests.some((t) => t?.expectedStatus && t.expectedStatus !== 'passed')) {
+    return 'expected to fail';
+  }
   if (tests.some((t) => t?.status === 'skipped')) return 'skipped';
   if (tests.every((t) => PASSING.has(t?.status))) {
     return tests.some((t) => t?.status === 'flaky') ? 'flaky' : 'passed';
