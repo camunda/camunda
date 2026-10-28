@@ -53,6 +53,12 @@ val skipFrontendBuild =
     .asEnabledFlag()
     .orElse(!releaseImageRequested)
 
+// The plugin's setup tasks are dependencies of the guarded tasks below and would still download
+// Node and npm when those are skipped.
+tasks.named("nodeSetup") { skipWhen(skipFrontendBuild) }
+
+tasks.named("npmSetup") { skipWhen(skipFrontendBuild) }
+
 val npmVersionPackage =
   tasks.register<NpmTask>("npmVersionPackage") {
     skipWhen(skipFrontendBuild)
