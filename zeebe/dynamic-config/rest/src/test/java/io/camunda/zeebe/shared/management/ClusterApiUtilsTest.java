@@ -46,6 +46,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -67,6 +68,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
@@ -1270,6 +1272,8 @@ final class ClusterApiUtilsTest {
         new PartitionPreRestoreOperation(memberId1, 1),
         new PartitionRestoreOperation(memberId1, 1, PartitionRestore.ofBackups(1L, 2L)),
         new SchemaInitializationOperation(memberId1),
+        new ApplyPhysicalTenantConfigOperation(memberId1, 2),
+        new StopPhysicalTenantOperation(memberId1),
 
         // PartitionDistributorConfig
         new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),

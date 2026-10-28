@@ -35,7 +35,10 @@ import io.camunda.zeebe.dynamic.config.impl.changes.appliers.SchemaInitializatio
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.UpdateRoutingStateApplier;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -58,8 +61,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.Either;
+import java.util.function.UnaryOperator;
 
 public final class PartitionGroupConfigurationChangeAppliersImpl
     implements PartitionGroupConfigurationChangeAppliers {
@@ -139,6 +147,11 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
           new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation ignored -> new UpdateIncarnationNumberApplier();
       case final RemovePhysicalTenantOperation ignored -> new RemovePhysicalTenantApplier();
+      case final ApplyPhysicalTenantConfigOperation ignored ->
+          new UnsupportedApplier(
+              "The configuration of a physical tenant is applied by the member, not its group");
+      case final StopPhysicalTenantOperation ignored ->
+          new UnsupportedApplier("A physical tenant is stopped by the member, not its group");
       case final DeleteHistoryOperation ignored ->
           new DeleteHistoryApplier(partitionChangeExecutor);
       case final ModeChangeOperation op ->
@@ -158,5 +171,22 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final SchemaInitializationOperation op ->
           new SchemaInitializationApplier(op.memberId(), restoreChangeExecutor);
     };
+  }
+
+  private record UnsupportedApplier(String reason)
+      implements PartitionGroupConfigurationChangeApplier {
+
+    @Override
+    public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+        final GlobalConfiguration currentGlobalConfiguration,
+        final PartitionGroupConfiguration currentPartitionGroupConfiguration) {
+      return Either.left(new UnsupportedOperationException(reason));
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+      return CompletableActorFuture.completedExceptionally(
+          new UnsupportedOperationException(reason));
+    }
   }
 }

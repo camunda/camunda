@@ -50,6 +50,26 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    */
   record RemovePhysicalTenantOperation(MemberId memberId) implements PartitionGroupOperation {}
 
+  /**
+   * Operation to run a physical tenant with the given version of its configuration on the given
+   * member. The member fetches the configuration from a peer if it does not hold it, verifies it
+   * against the hash in the tenant's {@link PhysicalTenantConfigReference}, and starts or restarts
+   * the tenant's module with it.
+   *
+   * @param memberId the member that applies the configuration
+   * @param version the version of the tenant's configuration to apply
+   */
+  record ApplyPhysicalTenantConfigOperation(MemberId memberId, long version)
+      implements PartitionGroupOperation {}
+
+  /**
+   * Operation to stop the module of a physical tenant on the given member, as the tenant is being
+   * removed. The tenant's data stays on the member's disk.
+   *
+   * @param memberId the member that stops the tenant
+   */
+  record StopPhysicalTenantOperation(MemberId memberId) implements PartitionGroupOperation {}
+
   record ModeChangeOperation(MemberId memberId, Mode mode) implements PartitionGroupOperation {}
 
   /**

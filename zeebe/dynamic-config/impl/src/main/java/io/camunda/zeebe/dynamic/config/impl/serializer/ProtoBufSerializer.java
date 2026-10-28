@@ -81,6 +81,7 @@ import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -101,6 +102,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
@@ -635,6 +637,11 @@ public class ProtoBufSerializer
                   .build());
       case final RemovePhysicalTenantOperation ignored ->
           builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
+      case final ApplyPhysicalTenantConfigOperation apply ->
+          builder.setApplyPhysicalTenantConfig(
+              Topology.ApplyPhysicalTenantConfigOperation.newBuilder().setVersion(apply.version()));
+      case final StopPhysicalTenantOperation ignored ->
+          builder.setStopPhysicalTenant(Topology.StopPhysicalTenantOperation.newBuilder());
       case final ModeChangeOperation modeChangeOperation ->
           builder.setModeChange(
               Topology.ModeChangeOperation.newBuilder()
@@ -990,6 +997,11 @@ public class ProtoBufSerializer
                       "UpdatePartitionDistributorConfig operation has empty config"));
     } else if (topologyChangeOperation.hasRemovePhysicalTenant()) {
       return new RemovePhysicalTenantOperation(memberId);
+    } else if (topologyChangeOperation.hasApplyPhysicalTenantConfig()) {
+      return new ApplyPhysicalTenantConfigOperation(
+          memberId, topologyChangeOperation.getApplyPhysicalTenantConfig().getVersion());
+    } else if (topologyChangeOperation.hasStopPhysicalTenant()) {
+      return new StopPhysicalTenantOperation(memberId);
     } else if (topologyChangeOperation.hasModeChange()) {
       final var modeChangeProto = topologyChangeOperation.getModeChange();
       return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
@@ -2597,6 +2609,11 @@ public class ProtoBufSerializer
           builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
       case final RemovePhysicalTenantOperation ignored ->
           builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
+      case final ApplyPhysicalTenantConfigOperation apply ->
+          builder.setApplyPhysicalTenantConfig(
+              Topology.ApplyPhysicalTenantConfigOperation.newBuilder().setVersion(apply.version()));
+      case final StopPhysicalTenantOperation ignored ->
+          builder.setStopPhysicalTenant(Topology.StopPhysicalTenantOperation.newBuilder());
     }
     return builder.build();
   }
@@ -2704,6 +2721,11 @@ public class ProtoBufSerializer
       return new SchemaInitializationOperation(memberId);
     } else if (proto.hasRemovePhysicalTenant()) {
       return new RemovePhysicalTenantOperation(memberId);
+    } else if (proto.hasApplyPhysicalTenantConfig()) {
+      return new ApplyPhysicalTenantConfigOperation(
+          memberId, proto.getApplyPhysicalTenantConfig().getVersion());
+    } else if (proto.hasStopPhysicalTenant()) {
+      return new StopPhysicalTenantOperation(memberId);
     } else {
       throw new IllegalStateException("Unknown partition group change operation: " + proto);
     }

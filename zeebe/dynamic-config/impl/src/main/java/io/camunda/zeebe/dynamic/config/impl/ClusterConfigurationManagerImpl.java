@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.impl.changes.GlobalConfigurationChangeApp
 import io.camunda.zeebe.dynamic.config.impl.changes.GlobalConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.impl.changes.PhysicalTenantConfigChangeAppliers;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -27,7 +28,9 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -110,6 +113,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private @Nullable GlobalConfigurationChangeAppliers globalChangeAppliers;
   private final Map<String, PartitionGroupConfigurationChangeAppliers>
       partitionGroupChangeAppliers = new HashMap<>();
+  private @Nullable PhysicalTenantConfigChangeAppliers physicalTenantConfigChangeAppliers;
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
   private @Nullable GraphScopeReconciler globalScopeReconciler;
@@ -397,6 +401,15 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         });
   }
 
+  void registerPhysicalTenantConfigChangeAppliers(
+      final PhysicalTenantConfigChangeAppliers appliers) {
+    executor.run(
+        () -> {
+          physicalTenantConfigChangeAppliers = appliers;
+          reconcile(persistedCurrentConfiguration.getConfiguration());
+        });
+  }
+
   void registerPartitionGroupChangeAppliers(
       final String groupId, final PartitionGroupConfigurationChangeAppliers appliers) {
     executor.run(
@@ -643,16 +656,25 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   /**
    * A {@code RemovePhysicalTenantOperation} is dispatchable even with no {@code appliers}
    * registered for the group, since it is a pure configuration edit with no broker-side executor.
-   * Every other operation still requires a registered appliers set, returning {@code
-   * Optional.empty()} — leaving it pending — otherwise.
+   * The operations that change a physical tenant's configuration are dispatched by the member's
+   * {@link PhysicalTenantConfigChangeAppliers}, since the tenant's module, which registers the
+   * group's appliers, may not run on this member yet. Every other operation still requires a
+   * registered appliers set, returning {@code Optional.empty()} — leaving it pending — otherwise.
    */
-  private static Optional<PartitionGroupConfigurationChangeApplier> applierFor(
+  private Optional<PartitionGroupConfigurationChangeApplier> applierFor(
+      final String groupId,
       final PartitionGroupOperation operation,
       final @Nullable PartitionGroupConfigurationChangeAppliers appliers) {
-    if (operation instanceof RemovePhysicalTenantOperation) {
-      return Optional.of(new RemovePhysicalTenantApplier());
-    }
-    return Optional.ofNullable(appliers).map(a -> a.getApplier(operation));
+    final var tenantConfigAppliers = Optional.ofNullable(physicalTenantConfigChangeAppliers);
+    return switch (operation) {
+      case final RemovePhysicalTenantOperation ignored ->
+          Optional.of(new RemovePhysicalTenantApplier());
+      case final ApplyPhysicalTenantConfigOperation apply ->
+          tenantConfigAppliers.map(factory -> factory.applierFor(groupId, apply));
+      case final StopPhysicalTenantOperation stop ->
+          tenantConfigAppliers.map(factory -> factory.applierFor(groupId, stop));
+      default -> Optional.ofNullable(appliers).map(a -> a.getApplier(operation));
+    };
   }
 
   private record GlobalOperation(GlobalConfigurationChangeApplier applier) implements Operation {
@@ -772,7 +794,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     @Override
     public Optional<Operation> operationFor(final ClusterConfigurationChangeOperation operation) {
       return applierFor(
-              (PartitionGroupOperation) operation, partitionGroupChangeAppliers.get(groupId))
+              groupId,
+              (PartitionGroupOperation) operation,
+              partitionGroupChangeAppliers.get(groupId))
           .map(applier -> new PartitionGroupOperationApplication(groupId, applier));
     }
   }

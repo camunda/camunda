@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -58,6 +59,12 @@ public interface ClusterConfigurationManagerService
       RestoreChangeExecutor restoreChangeExecutor);
 
   void removePartitionChangeExecutor(String groupId);
+
+  /**
+   * Registers the executor that applies changes of physical tenants' configurations on this member.
+   * Until one is registered, such changes stay pending on this member.
+   */
+  void registerPhysicalTenantConfigChangeExecutor(PhysicalTenantConfigChangeExecutor executor);
 
   void registerModeChangeExecutor(String groupId, ModeChangeExecutor modeChangeExecutor);
 

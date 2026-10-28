@@ -224,8 +224,19 @@ message PartitionGroupChangeOperation {
     PartitionPromoteOperation partitionPromote = 22;
     PartitionDemoteOperation partitionDemote = 23;
     SchemaInitializationOperation schemaInitialization = 24;
+    ApplyPhysicalTenantConfigOperation applyPhysicalTenantConfig = 25;
+    StopPhysicalTenantOperation stopPhysicalTenant = 26;
   }
 }
+
+// Runs a physical tenant with the given version of its configuration on the member. The target
+// group's id comes from the PartitionGroupParallelPhase map key that carries this operation.
+message ApplyPhysicalTenantConfigOperation {
+  int64 version = 1;
+}
+
+// Stops the module of a physical tenant on the member while the tenant is being removed.
+message StopPhysicalTenantOperation {}
 
 message SchemaInitializationOperation {}
 
@@ -344,6 +355,8 @@ message TopologyChangeOperation {
     PartitionPromoteOperation partitionPromote = 30;
     PartitionDemoteOperation partitionDemote = 31;
     SchemaInitializationOperation schemaInitialization = 32;
+    ApplyPhysicalTenantConfigOperation applyPhysicalTenantConfig = 33;
+    StopPhysicalTenantOperation stopPhysicalTenant = 34;
   }
 }
 

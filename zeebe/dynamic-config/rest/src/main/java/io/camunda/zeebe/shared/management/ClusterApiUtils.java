@@ -39,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -578,6 +580,14 @@ final class ClusterApiUtils {
               new Operation().operation(OperationEnum.AWAIT_MODE_CHANGE);
           case final SchemaInitializationOperation ignored ->
               new Operation().operation(OperationEnum.INITIALIZE_SCHEMA);
+          case final ApplyPhysicalTenantConfigOperation ignored ->
+              new Operation()
+                  .operation(OperationEnum.APPLY_PHYSICAL_TENANT_CONFIG)
+                  .physicalTenant(physicalTenantId);
+          case final StopPhysicalTenantOperation ignored ->
+              new Operation()
+                  .operation(OperationEnum.STOP_PHYSICAL_TENANT)
+                  .physicalTenant(physicalTenantId);
           case final ExportingStateChangeOperation exportingStateChangeOperation ->
               new Operation()
                   .operation(OperationEnum.EXPORTING_STATE_CHANGE)

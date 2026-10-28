@@ -191,6 +191,13 @@ message ClusterRestoreRequest {
   bool dryRun = 2;
 }
 
+// Asks a peer for a version of a physical tenant's configuration. The peer answers with the stored
+// bytes, or with no bytes if it does not hold that version.
+message FetchPhysicalTenantConfigRequest {
+  string physicalTenantId = 1;
+  int64 version = 2;
+}
+
 message TopologyChangeResponse {
   int64 changeId = 1;
   map<string, topology_protocol.MemberState> currentTopology = 2;

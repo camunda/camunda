@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationInitializer.FileInitializer;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinat
 import io.camunda.zeebe.dynamic.config.impl.changes.GlobalConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.impl.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliersImpl;
+import io.camunda.zeebe.dynamic.config.impl.changes.PhysicalTenantConfigChangeAppliers;
 import io.camunda.zeebe.dynamic.config.impl.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyMetrics;
@@ -81,6 +83,8 @@ public final class ClusterConfigurationManagerServiceImpl
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validators = new RequestValidatorRegistry();
   private final Map<String, ModeChangeExecutor> modeChangeExecutorPerTenant = new HashMap<>();
+  private final PhysicalTenantConfigStore physicalTenantConfigStore;
+  private final PhysicalTenantConfigFetcher physicalTenantConfigFetcher;
 
   public ClusterConfigurationManagerServiceImpl(
       final Path dataRootDirectory,
@@ -103,6 +107,9 @@ public final class ClusterConfigurationManagerServiceImpl
     localMemberId = memberShipService.getLocalMember().id();
     configurationFile =
         dataRootDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
+    physicalTenantConfigStore = new PhysicalTenantConfigStore(dataRootDirectory);
+    physicalTenantConfigFetcher =
+        new PhysicalTenantConfigFetcher(communicationService, physicalTenantConfigStore);
     gossipActor = Actor.newActor().name("ClusterConfigGossip").build();
     managerActor = Actor.newActor().name("ClusterConfigManager").build();
 
@@ -259,6 +266,7 @@ public final class ClusterConfigurationManagerServiceImpl
     final var result = new CompletableActorFuture<Void>();
 
     configurationRequestServer.start();
+    physicalTenantConfigFetcher.start();
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
     // it can immediately gossip it.
@@ -319,6 +327,7 @@ public final class ClusterConfigurationManagerServiceImpl
     if (configurationRequestServer != null) {
       configurationRequestServer.close();
     }
+    physicalTenantConfigFetcher.close();
     clusterConfigurationGossiper.close();
     clusterConfigurationManager.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
@@ -358,6 +367,13 @@ public final class ClusterConfigurationManagerServiceImpl
                   modeChangeExecutor,
                   restoreChangeExecutor));
         });
+  }
+
+  @Override
+  public void registerPhysicalTenantConfigChangeExecutor(
+      final PhysicalTenantConfigChangeExecutor executor) {
+    clusterConfigurationManager.registerPhysicalTenantConfigChangeAppliers(
+        new PhysicalTenantConfigChangeAppliers(physicalTenantConfigFetcher, executor));
   }
 
   @Override

@@ -603,6 +603,8 @@ schemas:
           - PARTITION_PROMOTE
           - PARTITION_DEMOTE
           - INITIALIZE_SCHEMA
+          - APPLY_PHYSICAL_TENANT_CONFIG
+          - STOP_PHYSICAL_TENANT
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
