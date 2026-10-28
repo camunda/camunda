@@ -143,6 +143,66 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public String getClientCertificatePath() {
+    return camundaClientProperties.getMtls().getCertPath();
+  }
+
+  @Override
+  public String getClientCertificate() {
+    return camundaClientProperties.getMtls().getCert();
+  }
+
+  @Override
+  public String getClientCertificateKeyPath() {
+    return camundaClientProperties.getMtls().getKeyPath();
+  }
+
+  @Override
+  public String getClientCertificateKey() {
+    return camundaClientProperties.getMtls().getKey();
+  }
+
+  @Override
+  public String getClientCertificateKeyPassphrase() {
+    return camundaClientProperties.getMtls().getKeyPassphrase();
+  }
+
+  @Override
+  public String getClientCertificateCaPath() {
+    return camundaClientProperties.getMtls().getCaPath();
+  }
+
+  @Override
+  public String getClientCertificateCa() {
+    return camundaClientProperties.getMtls().getCa();
+  }
+
+  @Override
+  public String getClientCertificateKeystorePath() {
+    return camundaClientProperties.getMtls().getKeystorePath();
+  }
+
+  @Override
+  public String getClientCertificateKeystorePassword() {
+    return camundaClientProperties.getMtls().getKeystorePassword();
+  }
+
+  @Override
+  public String getClientCertificateKeystoreKeyPassword() {
+    return camundaClientProperties.getMtls().getKeystoreKeyPassword();
+  }
+
+  @Override
+  public String getClientCertificateTruststorePath() {
+    return camundaClientProperties.getMtls().getTruststorePath();
+  }
+
+  @Override
+  public String getClientCertificateTruststorePassword() {
+    return camundaClientProperties.getMtls().getTruststorePassword();
+  }
+
+  @Override
   public CredentialsProvider getCredentialsProvider() {
     return credentialsProvider;
   }

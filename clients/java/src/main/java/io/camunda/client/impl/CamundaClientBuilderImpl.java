@@ -26,6 +26,18 @@ import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
+import static io.camunda.client.ClientProperties.MTLS_CA;
+import static io.camunda.client.ClientProperties.MTLS_CA_PATH;
+import static io.camunda.client.ClientProperties.MTLS_CERT;
+import static io.camunda.client.ClientProperties.MTLS_CERT_PATH;
+import static io.camunda.client.ClientProperties.MTLS_KEY;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_KEY_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_PATH;
+import static io.camunda.client.ClientProperties.MTLS_KEY_PASSPHRASE;
+import static io.camunda.client.ClientProperties.MTLS_KEY_PATH;
+import static io.camunda.client.ClientProperties.MTLS_TRUSTSTORE_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_TRUSTSTORE_PATH;
 import static io.camunda.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.client.ClientProperties.PHYSICAL_TENANT_ID;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
@@ -45,6 +57,18 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_T
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CA_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CA_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CERT_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_KEY_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_PASSPHRASE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_TRUSTSTORE_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_TRUSTSTORE_PATH_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
@@ -134,6 +158,18 @@ public final class CamundaClientBuilderImpl
   private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
   private String certificatePath;
+  private String clientCertificatePath;
+  private String clientCertificate;
+  private String clientCertificateKeyPath;
+  private String clientCertificateKey;
+  private String clientCertificateKeyPassphrase;
+  private String clientCertificateCaPath;
+  private String clientCertificateCa;
+  private String clientCertificateKeystorePath;
+  private String clientCertificateKeystorePassword;
+  private String clientCertificateKeystoreKeyPassword;
+  private String clientCertificateTruststorePath;
+  private String clientCertificateTruststorePassword;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
   private JsonMapper jsonMapper = new CamundaObjectMapper();
@@ -228,6 +264,66 @@ public final class CamundaClientBuilderImpl
   @Override
   public String getCaCertificatePath() {
     return certificatePath;
+  }
+
+  @Override
+  public String getClientCertificatePath() {
+    return clientCertificatePath;
+  }
+
+  @Override
+  public String getClientCertificate() {
+    return clientCertificate;
+  }
+
+  @Override
+  public String getClientCertificateKeyPath() {
+    return clientCertificateKeyPath;
+  }
+
+  @Override
+  public String getClientCertificateKey() {
+    return clientCertificateKey;
+  }
+
+  @Override
+  public String getClientCertificateKeyPassphrase() {
+    return clientCertificateKeyPassphrase;
+  }
+
+  @Override
+  public String getClientCertificateCaPath() {
+    return clientCertificateCaPath;
+  }
+
+  @Override
+  public String getClientCertificateCa() {
+    return clientCertificateCa;
+  }
+
+  @Override
+  public String getClientCertificateKeystorePath() {
+    return clientCertificateKeystorePath;
+  }
+
+  @Override
+  public String getClientCertificateKeystorePassword() {
+    return clientCertificateKeystorePassword;
+  }
+
+  @Override
+  public String getClientCertificateKeystoreKeyPassword() {
+    return clientCertificateKeystoreKeyPassword;
+  }
+
+  @Override
+  public String getClientCertificateTruststorePath() {
+    return clientCertificateTruststorePath;
+  }
+
+  @Override
+  public String getClientCertificateTruststorePassword() {
+    return clientCertificateTruststorePassword;
   }
 
   @Override
@@ -416,6 +512,28 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties, this::caCertificatePath, CA_CERTIFICATE_PATH);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificatePath, MTLS_CERT_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::clientCertificate, MTLS_CERT);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateKeyPath, MTLS_KEY_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::clientCertificateKey, MTLS_KEY);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateKeyPassphrase, MTLS_KEY_PASSPHRASE);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateCaPath, MTLS_CA_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::clientCertificateCa, MTLS_CA);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateKeystorePath, MTLS_KEYSTORE_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateKeystorePassword, MTLS_KEYSTORE_PASSWORD);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateKeystoreKeyPassword, MTLS_KEYSTORE_KEY_PASSWORD);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateTruststorePath, MTLS_TRUSTSTORE_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::clientCertificateTruststorePassword, MTLS_TRUSTSTORE_PASSWORD);
 
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
 
@@ -610,6 +728,78 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder clientCertificatePath(final String certificatePath) {
+    clientCertificatePath = certificatePath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificate(final String certificate) {
+    clientCertificate = certificate;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeyPath(final String keyPath) {
+    clientCertificateKeyPath = keyPath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKey(final String key) {
+    clientCertificateKey = key;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeyPassphrase(final String keyPassphrase) {
+    clientCertificateKeyPassphrase = keyPassphrase;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateCaPath(final String caPath) {
+    clientCertificateCaPath = caPath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateCa(final String ca) {
+    clientCertificateCa = ca;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystorePath(final String keystorePath) {
+    clientCertificateKeystorePath = keystorePath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystorePassword(final String keystorePassword) {
+    clientCertificateKeystorePassword = keystorePassword;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystoreKeyPassword(final String keyPassword) {
+    clientCertificateKeystoreKeyPassword = keyPassword;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateTruststorePath(final String truststorePath) {
+    clientCertificateTruststorePath = truststorePath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateTruststorePassword(final String truststorePassword) {
+    clientCertificateTruststorePassword = truststorePassword;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
     return this;
@@ -712,6 +902,22 @@ public final class CamundaClientBuilderImpl
 
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(this::caCertificatePath, CA_CERTIFICATE_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificatePath, MTLS_CERT_PATH_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificate, MTLS_CERT_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateKeyPath, MTLS_KEY_PATH_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateKey, MTLS_KEY_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateKeyPassphrase, MTLS_KEY_PASSPHRASE_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateCaPath, MTLS_CA_PATH_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateCa, MTLS_CA_VAR);
+    applyEnvironmentValueIfNotNull(this::clientCertificateKeystorePath, MTLS_KEYSTORE_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::clientCertificateKeystorePassword, MTLS_KEYSTORE_PASSWORD_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::clientCertificateKeystoreKeyPassword, MTLS_KEYSTORE_KEY_PASSWORD_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::clientCertificateTruststorePath, MTLS_TRUSTSTORE_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        this::clientCertificateTruststorePassword, MTLS_TRUSTSTORE_PASSWORD_VAR);
     applyEnvironmentValueIfNotNull(this::keepAlive, KEEP_ALIVE_VAR);
     applyEnvironmentValueIfNotNull(this::overrideAuthority, OVERRIDE_AUTHORITY_VAR);
     if (shouldUseOAuthCredentialsProvider()) {
@@ -846,6 +1052,27 @@ public final class CamundaClientBuilderImpl
         ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET,
         configuration.getDefaultRequestTimeoutOffset());
     setIfNotNull(properties, CA_CERTIFICATE_PATH, configuration.getCaCertificatePath());
+    setIfNotNull(properties, MTLS_CERT_PATH, configuration.getClientCertificatePath());
+    setIfNotNull(properties, MTLS_CERT, configuration.getClientCertificate());
+    setIfNotNull(properties, MTLS_KEY_PATH, configuration.getClientCertificateKeyPath());
+    setIfNotNull(properties, MTLS_KEY, configuration.getClientCertificateKey());
+    setIfNotNull(
+        properties, MTLS_KEY_PASSPHRASE, configuration.getClientCertificateKeyPassphrase());
+    setIfNotNull(properties, MTLS_CA_PATH, configuration.getClientCertificateCaPath());
+    setIfNotNull(properties, MTLS_CA, configuration.getClientCertificateCa());
+    setIfNotNull(properties, MTLS_KEYSTORE_PATH, configuration.getClientCertificateKeystorePath());
+    setIfNotNull(
+        properties, MTLS_KEYSTORE_PASSWORD, configuration.getClientCertificateKeystorePassword());
+    setIfNotNull(
+        properties,
+        MTLS_KEYSTORE_KEY_PASSWORD,
+        configuration.getClientCertificateKeystoreKeyPassword());
+    setIfNotNull(
+        properties, MTLS_TRUSTSTORE_PATH, configuration.getClientCertificateTruststorePath());
+    setIfNotNull(
+        properties,
+        MTLS_TRUSTSTORE_PASSWORD,
+        configuration.getClientCertificateTruststorePassword());
     setDurationMillis(properties, KEEP_ALIVE, configuration.getKeepAlive());
     setIfNotNull(properties, OVERRIDE_AUTHORITY, configuration.getOverrideAuthority());
     setIfNotNull(properties, MAX_MESSAGE_SIZE, configuration.getMaxMessageSize());

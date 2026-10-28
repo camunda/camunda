@@ -249,6 +249,106 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder caCertificatePath(String certificatePath);
 
   /**
+   * Path to the PEM-encoded client certificate chain used for mutual TLS (mTLS) against the
+   * cluster, on both the gRPC and the REST transport. Must be configured together with {@link
+   * #clientCertificateKeyPath(String)} or {@link #clientCertificateKey(String)}, and must not be
+   * combined with {@link #clientCertificate(String)} or {@link
+   * #clientCertificateKeystorePath(String)}.
+   *
+   * @param certificatePath path to the PEM client certificate chain
+   */
+  CamundaClientBuilder clientCertificatePath(String certificatePath);
+
+  /**
+   * Inline PEM-encoded client certificate chain used for mutual TLS (mTLS) against the cluster.
+   * Alternative to {@link #clientCertificatePath(String)}.
+   *
+   * @param certificate the PEM client certificate chain
+   */
+  CamundaClientBuilder clientCertificate(String certificate);
+
+  /**
+   * Path to the PEM-encoded private key of the mTLS client certificate. Supported formats are
+   * PKCS#8 (plain or encrypted), PKCS#1 ({@code BEGIN RSA PRIVATE KEY}), and SEC1 ({@code BEGIN EC
+   * PRIVATE KEY}).
+   *
+   * @param keyPath path to the PEM private key
+   */
+  CamundaClientBuilder clientCertificateKeyPath(String keyPath);
+
+  /**
+   * Inline PEM-encoded private key of the mTLS client certificate. Alternative to {@link
+   * #clientCertificateKeyPath(String)}.
+   *
+   * @param key the PEM private key
+   */
+  CamundaClientBuilder clientCertificateKey(String key);
+
+  /**
+   * Optional passphrase used to decrypt an encrypted mTLS client private key.
+   *
+   * @param keyPassphrase the private key passphrase
+   */
+  CamundaClientBuilder clientCertificateKeyPassphrase(String keyPassphrase);
+
+  /**
+   * Path to a PEM CA bundle used to verify the cluster certificate, in addition to — or instead of
+   * — {@link #caCertificatePath(String)}. Must not be combined with {@link
+   * #clientCertificateCa(String)}, {@link #clientCertificateTruststorePath(String)}, or {@link
+   * #caCertificatePath(String)}.
+   *
+   * @param caPath path to the PEM CA bundle
+   */
+  CamundaClientBuilder clientCertificateCaPath(String caPath);
+
+  /**
+   * Inline PEM CA bundle used to verify the cluster certificate. Alternative to {@link
+   * #clientCertificateCaPath(String)}.
+   *
+   * @param ca the PEM CA bundle
+   */
+  CamundaClientBuilder clientCertificateCa(String ca);
+
+  /**
+   * Path to a keystore (PKCS#12 or JKS) holding the mTLS client identity (certificate chain and
+   * private key). Must not be combined with the PEM client certificate settings.
+   *
+   * @param keystorePath path to the keystore
+   */
+  CamundaClientBuilder clientCertificateKeystorePath(String keystorePath);
+
+  /**
+   * Password of the mTLS client identity keystore.
+   *
+   * @param keystorePassword the keystore password
+   */
+  CamundaClientBuilder clientCertificateKeystorePassword(String keystorePassword);
+
+  /**
+   * Password of the private key inside the mTLS client identity keystore. Defaults to the keystore
+   * password when not set.
+   *
+   * @param keyPassword the key password
+   */
+  CamundaClientBuilder clientCertificateKeystoreKeyPassword(String keyPassword);
+
+  /**
+   * Path to a truststore (PKCS#12 or JKS) used to verify the cluster certificate. Must not be
+   * combined with {@link #clientCertificateCaPath(String)}, {@link #clientCertificateCa(String)},
+   * or {@link #caCertificatePath(String)}.
+   *
+   * @param truststorePath path to the truststore
+   */
+  CamundaClientBuilder clientCertificateTruststorePath(String truststorePath);
+
+  /**
+   * Password of the mTLS truststore.
+   *
+   * @param truststorePassword the truststore password
+   */
+  CamundaClientBuilder clientCertificateTruststorePassword(String truststorePassword);
+
+  /**
    * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
    * requests.
    */

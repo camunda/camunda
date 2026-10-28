@@ -38,6 +38,22 @@ public final class CamundaClientEnvironmentVariables {
   public static final String USE_CLIENT_SIDE_LOAD_BALANCING_VAR =
       "CAMUNDA_CLIENT_USE_CLIENT_SIDE_LOAD_BALANCING";
 
+  /** Mutual TLS (cluster transport) Environment Variables */
+  public static final String MTLS_CERT_PATH_VAR = "CAMUNDA_MTLS_CERT_PATH";
+
+  public static final String MTLS_CERT_VAR = "CAMUNDA_MTLS_CERT";
+  public static final String MTLS_KEY_PATH_VAR = "CAMUNDA_MTLS_KEY_PATH";
+  public static final String MTLS_KEY_VAR = "CAMUNDA_MTLS_KEY";
+  public static final String MTLS_KEY_PASSPHRASE_VAR = "CAMUNDA_MTLS_KEY_PASSPHRASE";
+  public static final String MTLS_CA_PATH_VAR = "CAMUNDA_MTLS_CA_PATH";
+  public static final String MTLS_CA_VAR = "CAMUNDA_MTLS_CA";
+  public static final String MTLS_KEYSTORE_PATH_VAR = "CAMUNDA_MTLS_KEYSTORE_PATH";
+  public static final String MTLS_KEYSTORE_PASSWORD_VAR = "CAMUNDA_MTLS_KEYSTORE_PASSWORD";
+  public static final String MTLS_KEYSTORE_KEY_PASSWORD_VAR =
+      "CAMUNDA_MTLS_KEYSTORE_KEY_PASSWORD";
+  public static final String MTLS_TRUSTSTORE_PATH_VAR = "CAMUNDA_MTLS_TRUSTSTORE_PATH";
+  public static final String MTLS_TRUSTSTORE_PASSWORD_VAR = "CAMUNDA_MTLS_TRUSTSTORE_PASSWORD";
+
   /** OAuth Environment Variables */
   public static final String OAUTH_ENV_CLIENT_ID = "CAMUNDA_CLIENT_ID";
 

@@ -180,6 +180,31 @@ public class AlignmentTest {
           entry(
               "camunda.client.ca-certificate-path",
               new Getter(CamundaClientProperties::getCaCertificatePath)),
+          entry(
+              "camunda.client.mtls.cert-path", new Getter(p -> p.getMtls().getCertPath())),
+          entry("camunda.client.mtls.cert", new Getter(p -> p.getMtls().getCert())),
+          entry("camunda.client.mtls.key-path", new Getter(p -> p.getMtls().getKeyPath())),
+          entry("camunda.client.mtls.key", new Getter(p -> p.getMtls().getKey())),
+          entry(
+              "camunda.client.mtls.key-passphrase",
+              new Getter(p -> p.getMtls().getKeyPassphrase())),
+          entry("camunda.client.mtls.ca-path", new Getter(p -> p.getMtls().getCaPath())),
+          entry("camunda.client.mtls.ca", new Getter(p -> p.getMtls().getCa())),
+          entry(
+              "camunda.client.mtls.keystore-path",
+              new Getter(p -> p.getMtls().getKeystorePath())),
+          entry(
+              "camunda.client.mtls.keystore-password",
+              new Getter(p -> p.getMtls().getKeystorePassword())),
+          entry(
+              "camunda.client.mtls.keystore-key-password",
+              new Getter(p -> p.getMtls().getKeystoreKeyPassword())),
+          entry(
+              "camunda.client.mtls.truststore-path",
+              new Getter(p -> p.getMtls().getTruststorePath())),
+          entry(
+              "camunda.client.mtls.truststore-password",
+              new Getter(p -> p.getMtls().getTruststorePassword())),
           entry("camunda.client.cloud.cluster-id", new Getter(p -> p.getCloud().getClusterId())),
           entry("camunda.client.cloud.domain", new Getter(p -> p.getCloud().getDomain())),
           entry("camunda.client.cloud.port", new Getter(p -> p.getCloud().getPort())),

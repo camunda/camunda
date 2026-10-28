@@ -109,6 +109,90 @@ public interface CamundaClientConfiguration {
   String getCaCertificatePath();
 
   /**
+   * @see CamundaClientBuilder#clientCertificatePath(String)
+   */
+  default String getClientCertificatePath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificate(String)
+   */
+  default String getClientCertificate() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKeyPath(String)
+   */
+  default String getClientCertificateKeyPath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKey(String)
+   */
+  default String getClientCertificateKey() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKeyPassphrase(String)
+   */
+  default String getClientCertificateKeyPassphrase() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateCaPath(String)
+   */
+  default String getClientCertificateCaPath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateCa(String)
+   */
+  default String getClientCertificateCa() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKeystorePath(String)
+   */
+  default String getClientCertificateKeystorePath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKeystorePassword(String)
+   */
+  default String getClientCertificateKeystorePassword() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateKeystoreKeyPassword(String)
+   */
+  default String getClientCertificateKeystoreKeyPassword() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateTruststorePath(String)
+   */
+  default String getClientCertificateTruststorePath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateTruststorePassword(String)
+   */
+  default String getClientCertificateTruststorePassword() {
+    return null;
+  }
+
+  /**
    * @see CamundaClientBuilder#credentialsProvider(CredentialsProvider)
    */
   CredentialsProvider getCredentialsProvider();

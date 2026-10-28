@@ -263,6 +263,79 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder clientCertificatePath(final String certificatePath) {
+    innerBuilder.clientCertificatePath(certificatePath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificate(final String certificate) {
+    innerBuilder.clientCertificate(certificate);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeyPath(final String keyPath) {
+    innerBuilder.clientCertificateKeyPath(keyPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKey(final String key) {
+    innerBuilder.clientCertificateKey(key);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeyPassphrase(final String keyPassphrase) {
+    innerBuilder.clientCertificateKeyPassphrase(keyPassphrase);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateCaPath(final String caPath) {
+    innerBuilder.clientCertificateCaPath(caPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateCa(final String ca) {
+    innerBuilder.clientCertificateCa(ca);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystorePath(final String keystorePath) {
+    innerBuilder.clientCertificateKeystorePath(keystorePath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystorePassword(final String keystorePassword) {
+    innerBuilder.clientCertificateKeystorePassword(keystorePassword);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateKeystoreKeyPassword(final String keyPassword) {
+    innerBuilder.clientCertificateKeystoreKeyPassword(keyPassword);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateTruststorePath(final String truststorePath) {
+    innerBuilder.clientCertificateTruststorePath(truststorePath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateTruststorePassword(
+      final String truststorePassword) {
+    innerBuilder.clientCertificateTruststorePassword(truststorePassword);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     innerBuilder.credentialsProvider(credentialsProvider);
     return this;

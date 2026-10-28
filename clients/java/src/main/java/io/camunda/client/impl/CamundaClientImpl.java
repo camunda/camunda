@@ -421,6 +421,7 @@ import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatistic
 import io.camunda.client.impl.statistics.request.ProcessInstanceWaitStateStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
 import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.client.impl.util.ClientCertificateLoader;
 import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -430,11 +431,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -569,26 +568,23 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI grpcAddress = config.getGrpcAddress();
     if (!AddressUtil.isPlaintextConnection(grpcAddress)) {
       final String certificatePath = config.getCaCertificatePath();
-      SslContext sslContext = null;
-
-      if (certificatePath != null) {
-        if (certificatePath.isEmpty()) {
-          throw new IllegalArgumentException(
-              "Expected valid certificate path but found empty path instead.");
-        }
-
-        try (final FileInputStream certInputStream = new FileInputStream(certificatePath)) {
-          sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
+      if (certificatePath != null && certificatePath.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Expected valid certificate path but found empty path instead.");
       }
 
-      channelBuilder.useTransportSecurity().sslContext(sslContext);
+      final SslContext sslContext = ClientCertificateLoader.createNettySslContext(config);
+      if (sslContext != null) {
+        channelBuilder.sslContext(sslContext);
+      } else {
+        channelBuilder.useTransportSecurity();
+      }
       if (config.getOverrideAuthority() != null) {
         channelBuilder.overrideAuthority(config.getOverrideAuthority());
       }
     } else {
+      // fail fast when mTLS is configured on a plaintext address
+      ClientCertificateLoader.validate(config, true);
       channelBuilder.usePlaintext();
     }
   }

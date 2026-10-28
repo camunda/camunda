@@ -13,6 +13,10 @@
       "description": "Properties for authenticating the Camunda client."
     },
     {
+      "name": "camunda.client.mtls",
+      "description": "Properties for mutual TLS (mTLS) between the Camunda client and the cluster, applied to both the gRPC and the REST transport. Independent of the OAuth token endpoint TLS settings under camunda.client.auth.*."
+    },
+    {
       "name": "camunda.client.cloud",
       "description": "Properties for connecting the Camunda client to SaaS. These are used to compose default connection details when the client is configured to <code>camunda.client.mode: saas</code>."
     },

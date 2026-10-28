@@ -106,6 +106,15 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Parses PEM private keys (PKCS#8 encrypted/plain, PKCS#1, SEC1 EC) for mTLS.
+         The jdk15to18 artifacts are the Java 8 compatible line; the client is built with
+         version.java=8. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15to18</artifactId>
+      <version>${version.bouncycastle}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
