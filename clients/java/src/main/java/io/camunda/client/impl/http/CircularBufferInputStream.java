@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.function.IntFunction;
 import javax.annotation.Nonnull;
 
 /**
@@ -27,7 +28,8 @@ import javax.annotation.Nonnull;
  * <p>The writing thread learns how much data it may write through a {@link CapacityCallback}: the
  * space that is free whenever it calls {@link #reportAvailableSpace}, then the space the reading
  * thread frees up after that. The buffer grows if the writing thread writes more than that, because
- * the HTTP I/O layer does not always stay within the space it has been given.
+ * the HTTP I/O layer does not always stay within the space it has been given. If there is not
+ * enough memory to grow it, the stream fails with an {@link IOException}.
  *
  * <p>The buffer space is freed up as the reading thread reads the data from the buffer. The reading
  * thread consumes data using the standard {@link InputStream} API, blocking if no data is
@@ -35,7 +37,11 @@ import javax.annotation.Nonnull;
  */
 public class CircularBufferInputStream extends InputStream {
 
+  /** The largest array the JVM can reliably allocate; {@code ArrayList} uses the same limit. */
+  private static final int MAX_BUFFER_LENGTH = Integer.MAX_VALUE - 8;
+
   private final int capacity;
+  private final IntFunction<byte[]> arrayAllocator;
   private byte[] buffer;
   private int readPos = 0;
   private int writePos = 0;
@@ -46,8 +52,13 @@ public class CircularBufferInputStream extends InputStream {
   private CapacityCallback capacityCallback;
 
   public CircularBufferInputStream(final int capacity) {
+    this(capacity, byte[]::new);
+  }
+
+  CircularBufferInputStream(final int capacity, final IntFunction<byte[]> arrayAllocator) {
     this.capacity = capacity;
-    buffer = new byte[capacity];
+    this.arrayAllocator = arrayAllocator;
+    buffer = arrayAllocator.apply(capacity);
   }
 
   /**
@@ -72,7 +83,15 @@ public class CircularBufferInputStream extends InputStream {
     }
     final int dataSize = data.remaining();
     if (dataSize > buffer.length - availableData) {
-      grow(availableData + dataSize);
+      try {
+        grow((long) availableData + dataSize);
+      } catch (final IOException e) {
+        // The I/O layer fails the exchange with this exception but doesn't hand it to this stream,
+        // which only learns of the generic abort from DocumentDataConsumer#releaseResources.
+        // Signalled first, it is the error the reader gets.
+        signalError(e);
+        throw e;
+      }
     }
 
     final int firstCopyLength = Math.min(dataSize, buffer.length - writePos);
@@ -202,18 +221,42 @@ public class CircularBufferInputStream extends InputStream {
     }
   }
 
-  /**
-   * Moves the unread data to the start of a larger array. It grows by at least half, as the I/O
-   * layer can keep handing over data in many small pieces while the reader is behind.
-   */
-  private void grow(final int minLength) {
-    final byte[] grown = new byte[Math.max(minLength, buffer.length + buffer.length / 2)];
+  /** Moves the unread data to the start of a larger array. */
+  private void grow(final long minLength) throws IOException {
+    final int length = grownLength(buffer.length, minLength);
+    final byte[] grown;
+    try {
+      grown = arrayAllocator.apply(length);
+    } catch (final OutOfMemoryError e) {
+      // This runs on the I/O thread. Thrown from there, the error would stop the thread and close
+      // the connections of every other request it serves, so only this download fails instead.
+      throw new IOException(
+          String.format(
+              "Not enough memory to buffer %d bytes of the document that have not been read yet",
+              minLength),
+          e);
+    }
     final int firstCopyLength = Math.min(availableData, buffer.length - readPos);
     System.arraycopy(buffer, readPos, grown, 0, firstCopyLength);
     System.arraycopy(buffer, 0, grown, firstCopyLength, availableData - firstCopyLength);
     buffer = grown;
     readPos = 0;
     writePos = availableData;
+  }
+
+  /**
+   * Grows by at least half, as the I/O layer can keep handing over data in many small pieces while
+   * the reader is behind, up to the largest array the JVM can allocate.
+   */
+  static int grownLength(final int currentLength, final long minLength) throws IOException {
+    if (minLength > MAX_BUFFER_LENGTH) {
+      throw new IOException(
+          String.format(
+              "Cannot buffer %d bytes of the document that have not been read yet, the limit is %d",
+              minLength, MAX_BUFFER_LENGTH));
+    }
+    final long preferredLength = currentLength + currentLength / 2L;
+    return (int) Math.min(Math.max(minLength, preferredLength), MAX_BUFFER_LENGTH);
   }
 
   public interface CapacityCallback {
