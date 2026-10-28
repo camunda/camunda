@@ -644,6 +644,10 @@ public final class JobCompleteProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    // a task listener's follow-up user task command is still rejected while resuming
+    final var job = processState.getJobState().getJob(record.getKey());
+    return job != null && job.getJobKind() == JobKind.TASK_LISTENER
+        ? SuspensionAction.REJECT
+        : SuspensionAction.PROCESS;
   }
 }
