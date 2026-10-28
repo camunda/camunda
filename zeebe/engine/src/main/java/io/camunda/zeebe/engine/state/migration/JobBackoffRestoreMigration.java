@@ -12,7 +12,8 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 /**
  * Removes job backoff entries that the engine could not have created at runtime. It used to also
  * re-add the entries lost to #14329, but guessing which jobs belong in backoff re-added jobs that
- * were waiting on an incident (#15954, #27183). The name is kept from that time.
+ * were waiting on an incident (#15954, #27183). The name is from that time, and #67522 tracks
+ * removing this migration.
  */
 public class JobBackoffRestoreMigration implements MigrationTask {
 
