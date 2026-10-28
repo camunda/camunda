@@ -84,6 +84,20 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .operationReference(456L)
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getOperationReference()).isEqualTo(456L);
+  }
+
+  @Test
   void shouldActivateAdHocSubProcessActivitiesWithVariables() {
     client
         .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)

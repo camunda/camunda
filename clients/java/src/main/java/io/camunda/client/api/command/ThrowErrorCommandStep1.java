@@ -35,7 +35,8 @@ public interface ThrowErrorCommandStep1
 
   interface ThrowErrorCommandStep2
       extends JobCallbackFinalCommandStep<ThrowErrorResponse>,
-          CommandWithVariables<ThrowErrorCommandStep2> {
+          CommandWithVariables<ThrowErrorCommandStep2>,
+          CommandWithOperationReferenceStep<ThrowErrorCommandStep2> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is
      * not caught by an error catch event, this message will be a part of the raised incident.

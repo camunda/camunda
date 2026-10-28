@@ -84,6 +84,13 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   }
 
   @Override
+  public ActivateAdHocSubProcessActivitiesCommandStep2 operationReference(
+      final long operationReference) {
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
