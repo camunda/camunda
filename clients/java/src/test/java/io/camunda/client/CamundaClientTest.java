@@ -267,6 +267,90 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldConfigureMtlsPemWithProperties() {
+    // given
+    final Properties properties = new Properties();
+    properties.put(ClientProperties.MTLS_CERT_PATH, "/certs/client.crt");
+    properties.put(ClientProperties.MTLS_KEY_PATH, "/certs/client.key");
+    properties.put(ClientProperties.MTLS_KEY_PASSPHRASE, "secret");
+    properties.put(ClientProperties.MTLS_CA_PATH, "/certs/ca.crt");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMtlsCertPath()).isEqualTo("/certs/client.crt");
+    assertThat(builder.getMtlsKeyPath()).isEqualTo("/certs/client.key");
+    assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
+    assertThat(builder.getMtlsCaPath()).isEqualTo("/certs/ca.crt");
+  }
+
+  @Test
+  public void shouldConfigureMtlsKeystoreWithProperties() {
+    // given
+    final Properties properties = new Properties();
+    properties.put(ClientProperties.MTLS_KEYSTORE_PATH, "/certs/client.p12");
+    properties.put(ClientProperties.MTLS_KEYSTORE_PASSWORD, "storepass");
+    properties.put(ClientProperties.MTLS_KEYSTORE_KEY_PASSWORD, "keypass");
+    properties.put(ClientProperties.MTLS_TRUSTSTORE_PATH, "/certs/truststore.p12");
+    properties.put(ClientProperties.MTLS_TRUSTSTORE_PASSWORD, "trustpass");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMtlsKeystorePath()).isEqualTo("/certs/client.p12");
+    assertThat(builder.getMtlsKeystorePassword()).isEqualTo("storepass");
+    assertThat(builder.getMtlsKeystoreKeyPassword()).isEqualTo("keypass");
+    assertThat(builder.getMtlsTruststorePath()).isEqualTo("/certs/truststore.p12");
+    assertThat(builder.getMtlsTruststorePassword()).isEqualTo("trustpass");
+  }
+
+  @Test
+  public void shouldConfigureMtlsWithEnvironmentVariables() {
+    // given
+    Environment.system()
+        .put(CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR, "/certs/client.crt");
+    Environment.system()
+        .put(CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR, "/certs/client.key");
+    Environment.system().put(CamundaClientEnvironmentVariables.MTLS_KEY_PASSPHRASE_VAR, "secret");
+    Environment.system().put(CamundaClientEnvironmentVariables.MTLS_CA_VAR, "INLINE CA");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMtlsCertPath()).isEqualTo("/certs/client.crt");
+    assertThat(builder.getMtlsKeyPath()).isEqualTo("/certs/client.key");
+    assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
+    assertThat(builder.getMtlsCa()).isEqualTo("INLINE CA");
+  }
+
+  @Test
+  public void shouldRoundTripMtlsThroughConfiguration() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.clientCertificate("/certs/client.crt", "/certs/client.key");
+    builder.clientKeyPassphrase("secret");
+    builder.mtlsCaCertificatePath("/certs/ca.crt");
+
+    // when - copy via withConfiguration, as the Spring and cloud builders do
+    final CamundaClientBuilderImpl copy = new CamundaClientBuilderImpl();
+    copy.withConfiguration(builder);
+
+    // then
+    assertThat(copy.getMtlsCertPath()).isEqualTo("/certs/client.crt");
+    assertThat(copy.getMtlsKeyPath()).isEqualTo("/certs/client.key");
+    assertThat(copy.getMtlsKeyPassphrase()).isEqualTo("secret");
+    assertThat(copy.getMtlsCaPath()).isEqualTo("/certs/ca.crt");
+  }
+
+  @Test
   public void shouldSetKeepAlive() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();

@@ -249,6 +249,84 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder caCertificatePath(String certificatePath);
 
   /**
+   * Configures the client certificate used for mutual TLS (mTLS) against the cluster, for both the
+   * gRPC and the REST connection. Both the certificate chain and the private key must be PEM
+   * encoded; the key may be PKCS#8 (encrypted or unencrypted), PKCS#1 ({@code BEGIN RSA PRIVATE
+   * KEY}), or an EC key.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_CERT_PATH} and {@code CAMUNDA_MTLS_KEY_PATH}.
+   *
+   * <p>This configures the cluster transport only; it is independent of the OAuth token endpoint
+   * keystore ({@code CAMUNDA_SSL_CLIENT_KEYSTORE_*}). Mutually exclusive with {@link
+   * #clientKeystore(String, String, String)}.
+   *
+   * @param certificateChainPath path to the PEM file with the client certificate chain
+   * @param privateKeyPath path to the PEM file with the client private key
+   */
+  CamundaClientBuilder clientCertificate(String certificateChainPath, String privateKeyPath);
+
+  /**
+   * Like {@link #clientCertificate(String, String)}, but takes the PEM contents inline instead of
+   * file paths.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_CERT} and {@code CAMUNDA_MTLS_KEY}.
+   *
+   * @param certificateChainPem the PEM encoded client certificate chain
+   * @param privateKeyPem the PEM encoded client private key
+   */
+  CamundaClientBuilder clientCertificateContent(String certificateChainPem, String privateKeyPem);
+
+  /**
+   * The optional passphrase of an encrypted mTLS client private key.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_KEY_PASSPHRASE}.
+   */
+  CamundaClientBuilder clientKeyPassphrase(String keyPassphrase);
+
+  /**
+   * Path to a PEM CA bundle used to verify the cluster's server certificate, alongside or instead
+   * of the JVM default trust store. Mutually exclusive with {@link #caCertificatePath(String)} and
+   * {@link #mtlsTruststore(String, String)}.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_CA_PATH}.
+   */
+  CamundaClientBuilder mtlsCaCertificatePath(String caPath);
+
+  /**
+   * Like {@link #mtlsCaCertificatePath(String)}, but takes the PEM content inline.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_CA}.
+   */
+  CamundaClientBuilder mtlsCaCertificateContent(String caPem);
+
+  /**
+   * Configures a Java keystore (PKCS#12 or JKS, selected by file extension) holding the client
+   * identity used for mutual TLS against the cluster. Mutually exclusive with {@link
+   * #clientCertificate(String, String)}.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_KEYSTORE_PATH}, {@code
+   * CAMUNDA_MTLS_KEYSTORE_PASSWORD}, and {@code CAMUNDA_MTLS_KEYSTORE_KEY_PASSWORD}.
+   *
+   * @param keystorePath path to the keystore file
+   * @param keystorePassword the keystore password (may be {@code null})
+   * @param keyPassword the password of the private key entry; defaults to the keystore password
+   *     when {@code null}
+   */
+  CamundaClientBuilder clientKeystore(
+      String keystorePath, String keystorePassword, String keyPassword);
+
+  /**
+   * Configures a Java truststore (PKCS#12 or JKS, selected by file extension) with the CA
+   * certificates used to verify the cluster's server certificate. Mutually exclusive with {@link
+   * #caCertificatePath(String)}, {@link #mtlsCaCertificatePath(String)}, and {@link
+   * #mtlsCaCertificateContent(String)}.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_TRUSTSTORE_PATH} and {@code
+   * CAMUNDA_MTLS_TRUSTSTORE_PASSWORD}.
+   */
+  CamundaClientBuilder mtlsTruststore(String truststorePath, String truststorePassword);
+
+  /**
    * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
    * requests.
    */
