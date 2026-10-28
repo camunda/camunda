@@ -284,8 +284,9 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder clientKeyPassphrase(String keyPassphrase);
 
   /**
-   * Path to a PEM CA bundle used to verify the cluster's server certificate, alongside or instead
-   * of the JVM default trust store. Mutually exclusive with {@link #caCertificatePath(String)} and
+   * Path to a PEM CA bundle used to verify the cluster's server certificate. The bundle replaces
+   * the JVM default trust store for the cluster connection, so it must contain every CA required to
+   * verify the cluster endpoints. Mutually exclusive with {@link #caCertificatePath(String)} and
    * {@link #mtlsTruststore(String, String)}.
    *
    * <p>Environment variable: {@code CAMUNDA_MTLS_CA_PATH}.

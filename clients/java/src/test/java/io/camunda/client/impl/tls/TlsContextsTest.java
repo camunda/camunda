@@ -164,6 +164,19 @@ class TlsContextsTest {
   }
 
   @Test
+  void shouldParseSec1EcKeyPrecededByEcParametersBlock() throws Exception {
+    // given - `openssl ecparam -genkey` writes an EC PARAMETERS block before the EC PRIVATE KEY
+    // block; the parameters are not the key and must be skipped
+    try (final FileInputStream key = new FileInputStream(resource("client-ec-sec1-params.key"))) {
+      // when
+      final PrivateKey privateKey = TlsContexts.parsePemPrivateKey(key, null);
+
+      // then
+      assertThat(privateKey).isInstanceOf(ECPrivateKey.class);
+    }
+  }
+
+  @Test
   void shouldParsePkcs8EcKey() throws Exception {
     // given
     try (final FileInputStream key = new FileInputStream(resource("client-ec.key"))) {
@@ -429,6 +442,21 @@ class TlsContextsTest {
     // given - the truststore holds only certificates, no private key entry
     final CamundaClientBuilderImpl config = tlsConfig();
     config.clientKeystore(resourcePath("truststore.p12"), "trustpass", null);
+
+    // when / then
+    assertThatThrownBy(() -> TlsContexts.createGrpcSslContext(config))
+        .isInstanceOf(IllegalStateException.class)
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .rootCause()
+        .hasMessageContaining("private key");
+  }
+
+  @Test
+  void shouldFailFastOnSecretKeyOnlyKeystore() {
+    // given - a SecretKeyEntry also satisfies KeyStore.isKeyEntry, but an AES key cannot serve as
+    // a TLS client identity; accepting it would only fail later with an opaque handshake error
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore(resourcePath("secret-only.p12"), "storepass", null);
 
     // when / then
     assertThatThrownBy(() -> TlsContexts.createGrpcSslContext(config))
