@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {TooltipProvider, Toaster, toast} from '@camunda/design-system';
+import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateGroupEndpoint,
 	mockDeleteGroupEndpoint,
@@ -25,35 +25,20 @@ import {AdminGroupsPage, type AdminGroupsPageProps} from './AdminGroupsPage';
 const DEBOUNCED = {timeout: 3000};
 const RETRY_BUDGET = {timeout: 10_000};
 
-function getWrapper() {
-	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-
-	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>{children}</TooltipProvider>
-			<Toaster />
-		</QueryClientProvider>
-	);
-
-	return Wrapper;
-}
-
 async function renderPage(overrides: Partial<AdminGroupsPageProps> = {}) {
 	const onSearchChange = vi.fn();
-	const onOpenGroup = vi.fn();
 	const screen = await render(
 		<AdminGroupsPage
 			groups={[createGroup()]}
 			totalItems={1}
 			search={{}}
 			onSearchChange={onSearchChange}
-			onOpenGroup={onOpenGroup}
 			{...overrides}
 		/>,
-		{wrapper: getWrapper()},
+		{wrapper: createAdminPageWrapper()},
 	);
 
-	return {screen, onSearchChange, onOpenGroup};
+	return {screen, onSearchChange};
 }
 
 describe('<AdminGroupsPage />', () => {
@@ -75,13 +60,11 @@ describe('<AdminGroupsPage />', () => {
 		await expect.element(screen.getByText('No groups found.')).toBeVisible();
 	});
 
-	it('should open a group when a row is clicked', async () => {
-		const group = createGroup({groupId: 'ops'});
-		const {screen, onOpenGroup} = await renderPage({groups: [group]});
+	it('should link each row to its group', async () => {
+		const group = createGroup({groupId: 'ops/1'});
+		const {screen} = await renderPage({groups: [group]});
 
-		await userEvent.click(screen.getByRole('cell', {name: 'ops'}));
-
-		expect(onOpenGroup).toHaveBeenCalledWith(group);
+		await expect.element(screen.getByRole('link', {name: 'ops/1'})).toHaveAttribute('href', '/admin/groups/ops%2F1');
 	});
 
 	it('should search by group ID once the reader stops typing', async () => {
@@ -98,9 +81,8 @@ describe('<AdminGroupsPage />', () => {
 			groups: [createGroup()],
 			totalItems: 1,
 			onSearchChange: vi.fn(),
-			onOpenGroup: vi.fn(),
 		};
-		const screen = await render(<AdminGroupsPage {...props} search={{}} />, {wrapper: getWrapper()});
+		const screen = await render(<AdminGroupsPage {...props} search={{}} />, {wrapper: createAdminPageWrapper()});
 		await userEvent.fill(screen.getByRole('searchbox'), 'ab');
 		await vi.waitFor(
 			() => expect(props.onSearchChange).toHaveBeenCalledWith({search: 'ab', page: undefined}),

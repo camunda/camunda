@@ -10,7 +10,6 @@ import {useCallback} from 'react';
 import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import type {Group} from '@camunda/camunda-api-zod-schemas/8.11';
 import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminGroupsPage} from '#/admin/pages/AdminGroupsPage';
 import {getGroupsRequestBody, groupsSearchSchema, type GroupsSearch} from '#/admin/modules/groups/searchSchema';
@@ -56,20 +55,12 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 			[navigate, search],
 		);
 
-		const handleOpenGroup = useCallback(
-			(group: Group) => {
-				navigate({to: '/admin/groups/$groupId', params: {groupId: group.groupId}});
-			},
-			[navigate],
-		);
-
 		return (
 			<AdminGroupsPage
 				groups={data.items}
 				totalItems={data.page.totalItems}
 				search={search}
 				onSearchChange={handleSearchChange}
-				onOpenGroup={handleOpenGroup}
 			/>
 		);
 	},

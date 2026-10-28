@@ -21,6 +21,8 @@ import {
 	type SortingConfig,
 } from '@camunda/design-system';
 import type {Role} from '@camunda/camunda-api-zod-schemas/8.11';
+import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {AddRoleModal} from '#/admin/modules/roles/AddRoleModal';
 import {EditRoleModal} from '#/admin/modules/roles/EditRoleModal';
 import {DeleteRoleModal} from '#/admin/modules/roles/DeleteRoleModal';
@@ -39,17 +41,10 @@ type AdminRolesPageProps = {
 	defaultRoleIds: string[];
 	search: RolesSearch;
 	onSearchChange: (next: Partial<RolesSearch>) => void;
-	onOpenRole: (role: Role) => void;
 };
 
-const AdminRolesPage: React.FC<AdminRolesPageProps> = ({
-	roles,
-	totalItems,
-	defaultRoleIds,
-	search,
-	onSearchChange,
-	onOpenRole,
-}) => {
+const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defaultRoleIds, search, onSearchChange}) => {
+	const detailPath = useAdminDetailPath();
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
 	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
@@ -179,7 +174,8 @@ const AdminRolesPage: React.FC<AdminRolesPageProps> = ({
 						columns={columns}
 						data={roles}
 						getRowId={(role) => role.roleId}
-						onRowClick={onOpenRole}
+						rowHref={(role) => detailPath.role(role.roleId)}
+						linkComponent={RouterRowLink}
 						rowActions={rowActions}
 						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
 						pagination={{
