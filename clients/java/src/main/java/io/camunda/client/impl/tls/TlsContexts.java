@@ -104,8 +104,10 @@ public final class TlsContexts {
       }
       final KeyMaterial identity = loadKeyMaterial(material);
       if (identity != null) {
-        final KeyMaterial unpacked = identity.unpacked();
-        builder.keyManager(unpacked.privateKey, unpacked.certificateChain);
+        // Pass the KeyManagerFactory (not an unpacked first key entry) so Netty's key manager can
+        // select the certificate the server actually accepts, by its accepted issuers and key
+        // types, when the keystore holds more than one identity.
+        builder.keyManager(identity.toKeyManagerFactory());
       }
       return builder.build();
     } catch (final Exception e) {
@@ -211,8 +213,11 @@ public final class TlsContexts {
     final List<X509Certificate> certificates = new ArrayList<>();
     final CertificateFactory factory = CertificateFactory.getInstance("X.509");
     try (final InputStream in = stream) {
-      while (in.available() > 0) {
-        certificates.add((X509Certificate) factory.generateCertificate(in));
+      // generateCertificates reads the whole collection: unlike looping generateCertificate over
+      // available() bytes, trailing blank lines or padding after the last PEM block are ignored
+      // instead of being parsed as another certificate.
+      for (final Certificate certificate : factory.generateCertificates(in)) {
+        certificates.add((X509Certificate) certificate);
       }
     }
     return certificates;
@@ -352,36 +357,6 @@ public final class TlsContexts {
         if (keystore.isKeyEntry(alias)) {
           keystore.getKey(alias, passwordChars);
           return new KeyMaterial(keystore, keyPassword);
-        }
-      }
-      throw new IllegalArgumentException(
-          "The mTLS keystore does not contain a private key entry for the client identity");
-    }
-
-    /**
-     * Unpacks the identity into a private key and certificate chain, the form Netty's {@code
-     * keyManager} needs regardless of the TLS provider in use (the JDK engine also accepts a
-     * KeyManagerFactory, but unpacking keeps the gRPC setup identical for PEM and keystore inputs).
-     */
-    private KeyMaterial unpacked()
-        throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
-      if (keystore == null) {
-        return this;
-      }
-      final char[] passwordChars = keyPassword == null ? new char[0] : keyPassword.toCharArray();
-      final Enumeration<String> aliases = keystore.aliases();
-      while (aliases.hasMoreElements()) {
-        final String alias = aliases.nextElement();
-        if (keystore.isKeyEntry(alias)) {
-          final PrivateKey key = (PrivateKey) keystore.getKey(alias, passwordChars);
-          final Certificate[] chain = keystore.getCertificateChain(alias);
-          final List<X509Certificate> x509Chain = new ArrayList<>();
-          if (chain != null) {
-            for (final Certificate certificate : chain) {
-              x509Chain.add((X509Certificate) certificate);
-            }
-          }
-          return new KeyMaterial(key, x509Chain.toArray(new X509Certificate[0]));
         }
       }
       throw new IllegalArgumentException(

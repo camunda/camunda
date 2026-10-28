@@ -188,6 +188,47 @@ class MtlsMaterialTest {
   }
 
   @Test
+  void shouldPreserveExplicitlyEmptyKeystorePassword() {
+    // given - an empty store password is valid: a PKCS#12 store loaded with null instead of an
+    // empty password can silently lose its encrypted entries
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore("/path/to/keystore.p12", "", null);
+
+    // when
+    final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
+
+    // then
+    assertThat(material.getKeystorePassword()).isEmpty();
+  }
+
+  @Test
+  void shouldPreserveExplicitlyEmptyTruststorePassword() {
+    // given
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.mtlsTruststore("/path/to/truststore.p12", "");
+
+    // when
+    final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
+
+    // then
+    assertThat(material.getTruststorePassword()).isEmpty();
+  }
+
+  @Test
+  void shouldPreserveExplicitlyEmptyKeyPassphrase() {
+    // given - an empty passphrase is a valid, distinct passphrase for an encrypted PEM key
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientCertificate("/path/to/cert.pem", "/path/to/key.pem");
+    config.clientKeyPassphrase("");
+
+    // when
+    final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
+
+    // then
+    assertThat(material.getKeyPassphrase()).isEmpty();
+  }
+
+  @Test
   void shouldFailWhenMtlsIsConfiguredOnPlaintextAddresses() {
     // given
     final CamundaClientBuilderImpl config =

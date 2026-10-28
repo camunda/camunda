@@ -112,6 +112,34 @@ class TlsContextsTest {
   }
 
   @Test
+  void shouldParseEncryptedPkcs8KeyWithEmptyPassphrase() throws Exception {
+    // given - a key encrypted with an explicitly empty passphrase: it must not be rejected as
+    // "no passphrase configured" (only a null passphrase is absent)
+    try (final FileInputStream key =
+        new FileInputStream(resource("client-encrypted-emptypass.key"))) {
+      // when
+      final PrivateKey privateKey = TlsContexts.parsePemPrivateKey(key, "");
+
+      // then
+      assertThat(privateKey).isInstanceOf(RSAPrivateKey.class);
+    }
+  }
+
+  @Test
+  void shouldFailParsingEmptyPassphraseEncryptedKeyWithoutPassphrase() {
+    // given / when / then - a null passphrase is still rejected for an encrypted key
+    assertThatThrownBy(
+            () -> {
+              try (final FileInputStream key =
+                  new FileInputStream(resource("client-encrypted-emptypass.key"))) {
+                TlsContexts.parsePemPrivateKey(key, null);
+              }
+            })
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("CAMUNDA_MTLS_KEY_PASSPHRASE");
+  }
+
+  @Test
   void shouldParseEncryptedPkcs1RsaKey() throws Exception {
     // given
     try (final FileInputStream key = new FileInputStream(resource("client-pkcs1-encrypted.key"))) {
@@ -158,6 +186,36 @@ class TlsContextsTest {
       assertThat(chain).hasSize(1);
       assertThat(chain.get(0).getSubjectX500Principal().getName()).contains("camunda-client");
     }
+  }
+
+  @Test
+  void shouldParseCertificateChainWithTrailingBlankLines() throws Exception {
+    // given - PEM files are commonly padded with trailing blank lines; the padding must not be
+    // parsed as another certificate
+    final String padded = readResource("client-chain.crt") + "\n\n";
+
+    // when
+    final List<java.security.cert.X509Certificate> chain =
+        TlsContexts.parsePemCertificates(
+            new ByteArrayInputStream(padded.getBytes(StandardCharsets.UTF_8)));
+
+    // then
+    assertThat(chain).hasSize(2);
+  }
+
+  @Test
+  void shouldParseCertificateChainWithLeadingAndSeparatingBlankLines() throws Exception {
+    // given
+    final String single = readResource("client.crt");
+    final String padded = "\n" + single + "\n\n" + single + "\n";
+
+    // when
+    final List<java.security.cert.X509Certificate> chain =
+        TlsContexts.parsePemCertificates(
+            new ByteArrayInputStream(padded.getBytes(StandardCharsets.UTF_8)));
+
+    // then
+    assertThat(chain).hasSize(2);
   }
 
   @Test
@@ -267,6 +325,23 @@ class TlsContextsTest {
 
     // then
     assertThat(context).isNotNull();
+  }
+
+  @Test
+  void shouldBuildContextsWithEmptyKeystoreAndTruststorePasswords() {
+    // given - the store of client-emptystorepass.p12 has an explicitly empty password; loading it
+    // with null instead of the empty password can silently drop encrypted entries
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore(resourcePath("client-emptystorepass.p12"), "", null);
+    config.mtlsTruststore(resourcePath("client-emptystorepass.p12"), "");
+
+    // when
+    final SslContext grpcContext = TlsContexts.createGrpcSslContext(config);
+    final SSLContext restContext = TlsContexts.createRestSslContext(config);
+
+    // then
+    assertThat(grpcContext).isNotNull();
+    assertThat(restContext).isNotNull();
   }
 
   @Test
