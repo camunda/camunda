@@ -26,11 +26,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
  * response body (e.g. an HTML error page from a misconfigured gateway in front of the IdP). All of
  * them are reported with the {@code invalid_user_info_response} error code {@link
  * org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService} uses, including the
- * failures it lets escape as other runtime exceptions, and none of them yields any claims to
- * validate — so none of them can be the OIDC Core &sect;5.3.2 subject-mismatch violation that
- * follows below. A subject mismatch between the ID token and a userinfo response that <em>did</em>
- * come back still fails the login: {@link OidcUserService#loadUser} enforces that check itself, and
- * this class only intercepts the call, never the result.
+ * failures it lets escape as other runtime exceptions. None of them yields a userinfo response this
+ * class uses: that includes a response whose claims lack the name attribute, even when that
+ * attribute is {@code sub}, so such a response falls back too instead of failing the login. A
+ * subject mismatch (OIDC Core &sect;5.3.2) between the ID token and a userinfo response that
+ * <em>was</em> used still fails the login: {@link OidcUserService#loadUser} enforces that check
+ * itself, and this class only intercepts the call, never the result.
  */
 public class FailSoftOidcUserService extends OidcUserService {
 
@@ -56,10 +57,9 @@ public class FailSoftOidcUserService extends OidcUserService {
             // DefaultOAuth2UserService doesn't map every failure to OAuth2AuthenticationException.
             // A 400 whose body isn't OAuth2 error JSON (an HTML page from a gateway in front of
             // the IdP, say) escapes as HttpMessageNotReadableException, and an empty body or one
-            // missing the name attribute as IllegalArgumentException. Neither yields claims, so
-            // treat them like any other failed userinfo call.
-            throw new UserInfoFetchFailedException(
-                new OAuth2Error(INVALID_USER_INFO_RESPONSE, null, null), ex);
+            // missing the name attribute as IllegalArgumentException. Neither leaves a response
+            // to use, so treat them like any other failed userinfo call.
+            throw new UserInfoFetchFailedException(new OAuth2Error(INVALID_USER_INFO_RESPONSE), ex);
           }
         });
   }

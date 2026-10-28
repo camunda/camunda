@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.RestTemplate;
 
 final class FailSoftOidcUserServiceTest {
@@ -97,24 +99,42 @@ final class FailSoftOidcUserServiceTest {
    */
   @Test
   void shouldFallBackToIdTokenClaimsWhenUserInfoReturnsAnHtmlBadRequest() {
-    // given - the same user service setup as WebSecurityConfig#oidcUserService
+    // given
+    final var userInfo =
+        withBadRequest()
+            .contentType(MediaType.TEXT_HTML)
+            .body("<html><body><h1>400 Bad Request</h1></body></html>");
+
+    // when/then - the userinfo call was made, failed, and the login continued on ID token claims
+    assertFallsBackOn(userInfo);
+  }
+
+  /**
+   * A userinfo response without the name attribute ({@code sub}) makes DefaultOAuth2UserService
+   * throw IllegalArgumentException, which it doesn't map to an OAuth2AuthenticationException.
+   */
+  @Test
+  void shouldFallBackToIdTokenClaimsWhenUserInfoLacksTheNameAttribute() {
+    // given
+    final var userInfo =
+        withSuccess("{\"email\":\"user@example.com\"}", MediaType.APPLICATION_JSON);
+
+    // when/then
+    assertFallsBackOn(userInfo);
+  }
+
+  /** Runs the same user service setup as WebSecurityConfig#oidcUserService against userInfo. */
+  private static void assertFallsBackOn(final ResponseCreator userInfo) {
     final var restTemplate = new RestTemplate();
     restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
     final var server = MockRestServiceServer.bindTo(restTemplate).build();
-    server
-        .expect(requestTo(USER_INFO_URI))
-        .andRespond(
-            withBadRequest()
-                .contentType(MediaType.TEXT_HTML)
-                .body("<html><body><h1>400 Bad Request</h1></body></html>"));
+    server.expect(requestTo(USER_INFO_URI)).andRespond(userInfo);
     final var defaultUserService = new DefaultOAuth2UserService();
     defaultUserService.setRestOperations(restTemplate);
     final var failSoft = new FailSoftOidcUserService(defaultUserService);
 
-    // when
     final var user = failSoft.loadUser(realOidcUserRequest("subject-1"));
 
-    // then - the userinfo call was made, failed, and the login continued on ID token claims
     server.verify();
     assertThat(user.getUserInfo()).isNull();
     assertThat(user.getIdToken().getSubject()).isEqualTo("subject-1");
