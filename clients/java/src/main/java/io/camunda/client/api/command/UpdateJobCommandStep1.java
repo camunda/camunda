@@ -97,7 +97,9 @@ public interface UpdateJobCommandStep1 {
    */
   UpdateJobCommandStep2 updatePriority(int priority);
 
-  interface UpdateJobCommandStep2 extends FinalCommandStep<UpdateJobResponse> {
+  interface UpdateJobCommandStep2
+      extends FinalCommandStep<UpdateJobResponse>,
+          CommandWithOperationReferenceStep<UpdateJobCommandStep2> {
     // the place for new optional parameters
 
     /**

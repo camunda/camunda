@@ -19,7 +19,9 @@ import io.camunda.client.api.response.UpdateUserTaskResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserTaskResponse> {
+public interface UpdateUserTaskCommandStep1
+    extends FinalCommandStep<UpdateUserTaskResponse>,
+        CommandWithOperationReferenceStep<UpdateUserTaskCommandStep1> {
 
   /**
    * Set the custom action to update the user task with.

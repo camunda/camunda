@@ -29,5 +29,6 @@ public interface AssignProcessInstanceBusinessIdCommandStep1
   AssignProcessInstanceBusinessIdCommandStep2 businessId(final String businessId);
 
   interface AssignProcessInstanceBusinessIdCommandStep2
-      extends FinalCommandStep<AssignProcessInstanceBusinessIdResponse> {}
+      extends FinalCommandStep<AssignProcessInstanceBusinessIdResponse>,
+          CommandWithOperationReferenceStep<AssignProcessInstanceBusinessIdCommandStep2> {}
 }

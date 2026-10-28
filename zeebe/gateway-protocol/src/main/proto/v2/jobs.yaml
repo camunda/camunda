@@ -1071,9 +1071,13 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobErrorRequest:
       type: object
@@ -1109,11 +1113,15 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - errorCode
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobCompletionRequest:
       type: object
@@ -1156,6 +1164,8 @@ components:
             leaving the job open; re-sending the identical business id is an idempotent no-op.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       x-properties-added-in-version:
         - propertyName: result
           addedInVersion: "8.8"
@@ -1163,6 +1173,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobResult:
       description: >

@@ -521,6 +521,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
       final List<MultipartFile> resources,
       final String tenantId,
+      final @Nullable Long operationReference,
       final boolean multiTenancyEnabled) {
     try {
       final Either<ProblemDetail, String> validationResponse =
@@ -528,7 +529,8 @@ public class RequestMapper {
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
       }
-      return Either.right(createDeployResourceRequest(resources, validationResponse.get()));
+      return Either.right(
+          createDeployResourceRequest(resources, validationResponse.get(), operationReference));
     } catch (final IOException e) {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
     }

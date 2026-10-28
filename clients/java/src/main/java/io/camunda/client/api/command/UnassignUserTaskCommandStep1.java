@@ -17,6 +17,8 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignUserTaskResponse;
 
-public interface UnassignUserTaskCommandStep1 extends FinalCommandStep<UnassignUserTaskResponse> {
+public interface UnassignUserTaskCommandStep1
+    extends FinalCommandStep<UnassignUserTaskResponse>,
+        CommandWithOperationReferenceStep<UnassignUserTaskCommandStep1> {
   // the place for new optional parameters
 }

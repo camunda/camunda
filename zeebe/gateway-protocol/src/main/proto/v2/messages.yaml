@@ -205,6 +205,8 @@ components:
           description: the tenant for which the message is published
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         businessId:
           description: |
             An optional business id used to enforce uniqueness of the process instance that a
@@ -217,6 +219,8 @@ components:
       x-properties-added-in-version:
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     MessageCorrelationResult:
       description: |
@@ -273,6 +277,8 @@ components:
           description: The tenant of the message sender.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         businessId:
           description: |
             An optional business id used to enforce uniqueness of the process instance that a
@@ -287,6 +293,8 @@ components:
       x-properties-added-in-version:
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     MessagePublicationResult:
       description: The message key of the published message.

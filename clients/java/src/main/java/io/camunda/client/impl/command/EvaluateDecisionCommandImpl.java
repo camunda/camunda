@@ -147,6 +147,13 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return this;
   }
 
+  @Override
+  public EvaluateDecisionCommandStep2 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
   private void sendGrpcRequest(
       final EvaluateDecisionRequest request,
       final StreamObserver<GatewayOuterClass.EvaluateDecisionResponse> streamObserver) {

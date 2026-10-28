@@ -137,6 +137,13 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
+  public CompleteJobCommandStep1 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public CompleteUserTaskJobResultImpl forUserTask() {
     return new CompleteUserTaskJobResultImpl();
   }

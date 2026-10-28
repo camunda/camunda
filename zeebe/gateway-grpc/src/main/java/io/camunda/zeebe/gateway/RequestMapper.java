@@ -131,6 +131,10 @@ public final class RequestMapper extends RequestUtil {
       brokerRequest.addResource(resource.getName(), resource.getContent().toByteArray());
     }
 
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+
     return brokerRequest;
   }
 
@@ -149,6 +153,10 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()))
         .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
 
     return brokerRequest;
   }
@@ -205,6 +213,9 @@ public final class RequestMapper extends RequestUtil {
     if (grpcRequest.hasJobLeaseToken()) {
       brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
     }
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
     return brokerRequest;
   }
 
@@ -215,6 +226,9 @@ public final class RequestMapper extends RequestUtil {
             .setVariables(ensureJsonSet(grpcRequest.getVariables()));
     if (grpcRequest.hasJobLeaseToken()) {
       brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
     return brokerRequest;
   }
@@ -233,6 +247,9 @@ public final class RequestMapper extends RequestUtil {
     }
     if (grpcRequest.hasBusinessId()) {
       brokerRequest.setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+    }
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
     return brokerRequest;
   }
@@ -386,6 +403,10 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("EvaluateDecision", grpcRequest.getTenantId()));
 
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+
     return brokerRequest;
   }
 
@@ -518,9 +539,15 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerAssignProcessInstanceBusinessIdRequest
       toAssignProcessInstanceBusinessIdRequest(
           final AssignProcessInstanceBusinessIdRequest grpcRequest) {
-    return new BrokerAssignProcessInstanceBusinessIdRequest()
-        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
-        .setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+    final var brokerRequest =
+        new BrokerAssignProcessInstanceBusinessIdRequest()
+            .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+            .setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
@@ -538,9 +565,15 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerBroadcastSignalRequest toBroadcastSignalRequest(
       final BroadcastSignalRequest grpcRequest) {
-    return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+    final var brokerRequest =
+        new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+            .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerEvaluateConditionalRequest toEvaluateConditionalRequest(
@@ -549,6 +582,10 @@ public final class RequestMapper extends RequestUtil {
 
     if (grpcRequest.hasProcessDefinitionKey()) {
       brokerRequest.setProcessDefinitionKey(grpcRequest.getProcessDefinitionKey());
+    }
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
 
     return brokerRequest
