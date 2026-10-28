@@ -1056,6 +1056,8 @@ components:
             associated task.
           type: object
           additionalProperties: true
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
@@ -1074,6 +1076,8 @@ components:
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobErrorRequest:
       type: object
@@ -1094,6 +1098,8 @@ components:
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
@@ -1114,6 +1120,8 @@ components:
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobCompletionRequest:
       type: object
@@ -1126,6 +1134,8 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
         jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
@@ -1163,6 +1173,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     JobResult:
       description: >
