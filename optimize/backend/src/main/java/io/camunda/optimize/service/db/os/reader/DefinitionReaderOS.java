@@ -703,7 +703,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             nameAggregation,
             Collections.singletonMap(
                 VERSION_FOR_SORTING_AGGREGATION,
-                AggregationBuilders.min()
+                AggregationBuilders.max()
                     .script(createDefaultScript("Integer.parseInt(doc['version'].value)"))
                     .build()
                     .toAggregation()));
