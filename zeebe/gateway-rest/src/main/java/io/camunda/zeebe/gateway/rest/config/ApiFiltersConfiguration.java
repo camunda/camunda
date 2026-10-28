@@ -12,16 +12,20 @@ import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.cluster.PhysicalTenantRegistry;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantServedFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
+import jakarta.servlet.Filter;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -74,6 +78,26 @@ public class ApiFiltersConfiguration {
   public FilterRegistrationBean<PhysicalTenantFilter> physicalTenantFilter() {
     final FilterRegistrationBean<PhysicalTenantFilter> registration =
         new FilterRegistrationBean<>(new PhysicalTenantFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Rejects requests for a physical tenant that has no HTTP security chain on this node, i.e. one
+   * added or removed at runtime, before Spring Security selects a chain. Disabled where no live
+   * tenant set exists.
+   */
+  @Bean
+  public FilterRegistrationBean<Filter> physicalTenantServedFilter(
+      final ObjectProvider<PhysicalTenantRegistry> physicalTenantRegistry) {
+    final var registry = physicalTenantRegistry.getIfAvailable();
+    final Filter filter =
+        registry != null
+            ? new PhysicalTenantServedFilter(registry)
+            : (request, response, chain) -> chain.doFilter(request, response);
+    final FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(filter);
+    registration.setEnabled(registry != null);
     registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
     registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
     return registration;
