@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
+
 /**
  * Removes job backoff entries that the engine could not have created at runtime. It used to also
  * re-add the entries lost to #14329, but guessing which jobs belong in backoff re-added jobs that
@@ -27,6 +29,18 @@ public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
   public void runMigration(final MutableMigrationTaskContext context) {
-    context.processingState().getJobState().removeInvalidBackoffs(jobKey -> true);
+    final var processingState = context.processingState();
+    final var incidentState = processingState.getIncidentState();
+    processingState
+        .getJobState()
+        .removeInvalidBackoffs(jobKey -> canBackOff(incidentState, jobKey));
+  }
+
+  /**
+   * A job with an open incident may not keep its backoff entry: it would recur while the incident
+   * is open and raise a second incident for the same job.
+   */
+  private static boolean canBackOff(final IncidentState incidentState, final long jobKey) {
+    return incidentState.getJobIncidentKey(jobKey) == IncidentState.MISSING_INCIDENT;
   }
 }
