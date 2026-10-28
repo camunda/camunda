@@ -18,7 +18,7 @@ fun Project.dockerImageName(): Provider<String> =
  * [distball]. The image is tagged with [dockerImageName].
  */
 fun Project.registerBuildDockerImage(
-  distball: Provider<RegularFile>
+  distball: Provider<RegularFile>,
 ): TaskProvider<BuildDockerImage> {
   val buildDockerImage =
     tasks.register("buildDockerImage", BuildDockerImage::class.java) {
