@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -133,14 +134,17 @@ public class WebAppAuthorizationCheckPortConfiguration {
               physicalTenantSecurityProperties, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       return request -> enabled;
     }
+    final Map<String, Boolean> authorizationsEnabled =
+        physicalTenantSecurityProperties.propertiesByPhysicalTenant().entrySet().stream()
+            .collect(
+                Collectors.toUnmodifiableMap(
+                    Map.Entry::getKey, entry -> entry.getValue().getAuthorizations().isEnabled()));
     return request -> {
       final var physicalTenantId =
           Objects.requireNonNullElse(
               PhysicalTenantContext.getPhysicalTenantId(request),
               PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-      final var tenantProperties =
-          physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(physicalTenantId);
-      return tenantProperties == null || tenantProperties.getAuthorizations().isEnabled();
+      return authorizationsEnabled.getOrDefault(physicalTenantId, true);
     };
   }
 
