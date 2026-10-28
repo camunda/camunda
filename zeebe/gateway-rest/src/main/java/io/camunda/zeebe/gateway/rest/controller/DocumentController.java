@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
 @RequestMapping("/v2/documents")
@@ -95,13 +95,16 @@ public class DocumentController {
   @CamundaGetMapping(
       path = "/{documentId}",
       produces = {}) // produces arbitrary content type
-  public ResponseEntity<StreamingResponseBody> getDocumentContent(
+  public ResponseEntity<InputStreamResource> getDocumentContent(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash) {
 
-    // handle the future explicitly here because a StreamingResponseBody is needed as result instead
-    // of a future wrapping the stream response
+    // Stream the content on the request thread. Do not switch to StreamingResponseBody: it writes
+    // the body on an executor thread while Spring Security's HeaderWriterFilter still writes
+    // headers after the filter chain returns, a race on the non-thread-safe servlet response that
+    // can drop the connection mid-response
+    // (https://github.com/spring-projects/spring-security/issues/15510).
     return documentServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .getDocumentContent(documentId, storeId, contentHash)

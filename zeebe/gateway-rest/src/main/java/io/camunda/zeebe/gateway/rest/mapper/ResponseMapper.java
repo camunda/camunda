@@ -103,6 +103,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -111,7 +112,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 public final class ResponseMapper {
 
@@ -278,7 +278,7 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  public static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
+  public static ResponseEntity<InputStreamResource> toDocumentContentResponse(
       final DocumentContentResponse response) {
     final MediaType mediaType = resolveMediaType(response);
     return ResponseEntity.ok()
@@ -288,12 +288,9 @@ public final class ResponseMapper {
         .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
         // Renderable-but-unsafe types (HTML, SVG, ...) are served as a download
         .header(HttpHeaders.CONTENT_DISPOSITION, resolveContentDisposition(mediaType))
-        .body(
-            bodyStream -> {
-              try (final var contentInputStream = response.content()) {
-                contentInputStream.transferTo(bodyStream);
-              }
-            });
+        // copied in chunks and closed by ResourceHttpMessageConverter; unlike other Resource
+        // types, an InputStreamResource is not read up front for Range or Content-Length handling
+        .body(new InputStreamResource(response.content()));
   }
 
   private static String resolveContentDisposition(final MediaType mediaType) {

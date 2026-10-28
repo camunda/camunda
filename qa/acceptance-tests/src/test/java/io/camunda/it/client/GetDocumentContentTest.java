@@ -17,6 +17,7 @@ import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,27 @@ public class GetDocumentContentTest {
 
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void shouldReturnBinaryDocumentContentAsStored() throws IOException {
+    // given - bytes that are not valid UTF-8 must reach the client unchanged, whichever converter
+    // writes the response
+    final var binaryContent = new byte[] {(byte) 0xFF, 0, 1};
+    final var binaryDocumentReference =
+        camundaClient
+            .newCreateDocumentCommand()
+            .content(binaryContent)
+            .contentType("application/pdf")
+            .send()
+            .join();
+
+    // when
+    try (final InputStream is =
+        camundaClient.newDocumentContentGetRequest(binaryDocumentReference).send().join()) {
+      // then
+      assertThat(is.readAllBytes()).isEqualTo(binaryContent);
     }
   }
 
