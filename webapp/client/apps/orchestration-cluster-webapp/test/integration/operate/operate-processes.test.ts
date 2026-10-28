@@ -192,7 +192,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto('?process=my_simple_process&version=1');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&process=my_simple_process&version=1');
 		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
 		isTargetDeployed = true;
 		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
@@ -253,7 +253,9 @@ test.describe('Operate processes page', () => {
 		const frameTitle = page.getByTestId('frame-container').getByText('Batch Modification Mode', {exact: true});
 
 		await test.step('enter batch modification mode', async () => {
-			await operateProcessesPage.goto('?process=my_simple_process&version=1&elementId=task-1');
+			await operateProcessesPage.goto(
+				'?active=true&suspended=true&incidents=true&process=my_simple_process&version=1&elementId=task-1',
+			);
 			await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
 			await operateProcessesPage.moveButton.click();
 			await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
@@ -387,7 +389,7 @@ test.describe('Operate processes page', () => {
 			}),
 			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation())}),
 		);
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await page.getByRole('checkbox', {name: 'Select all items'}).check({force: true});
 		await page.getByRole('button', {name: 'Cancel', exact: true}).click();
 		await expect(page.getByRole('dialog')).toContainText(
@@ -803,7 +805,7 @@ test.describe('Operate processes page', () => {
 	});
 
 	test('should render the reset filters button disabled by default', async ({operateProcessesPage}) => {
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.resetFiltersButton).toBeDisabled();
 	});
@@ -812,7 +814,7 @@ test.describe('Operate processes page', () => {
 		page,
 		operateProcessesPage,
 	}) => {
-		await operateProcessesPage.goto('?businessId=eq_order-123');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&businessId=eq_order-123');
 		await operateProcessesPage.addOptionalFilter('Variables');
 		await page.getByRole('textbox', {name: 'Name'}).fill('status');
 		await page.getByRole('textbox', {name: 'Value'}).fill('"open"');
@@ -859,7 +861,7 @@ test.describe('Operate processes page', () => {
 		operateProcessesPage,
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.instancesTable).toBeVisible();
 		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
@@ -963,7 +965,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page).toHaveURL('/operate/processes/1001/incidents');
@@ -1000,7 +1002,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page.getByRole('button', {name: 'More'})).toBeVisible();
@@ -1104,7 +1106,7 @@ test.describe('Operate processes page', () => {
 					candidate.postDataJSON().filter?.processDefinitionId?.$eq === '1e3',
 			);
 			await page.goto(
-				`${path}?process=1e3&processDefinitionId=old&version=all&processDefinitionVersion=2&tenant=old&tenantId=1.00&retriesLeft=true&hasRetriesLeft=false#diagram`,
+				`${path}?active=true&suspended=true&incidents=true&process=1e3&processDefinitionId=old&version=all&processDefinitionVersion=2&tenant=old&tenantId=1.00&retriesLeft=true&hasRetriesLeft=false#diagram`,
 			);
 
 			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');

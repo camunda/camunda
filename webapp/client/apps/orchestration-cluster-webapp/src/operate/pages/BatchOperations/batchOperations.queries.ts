@@ -28,7 +28,8 @@ const DEFAULT_SORT = {field: 'endDate', order: 'DESC'} as const;
 const sortSearchParamSchema = createSortSearchParamSchema(batchOperationSortFieldEnum);
 
 function parseBatchOperationsSort(value: string | undefined) {
-	return sortSearchParamSchema.safeParse(value).data ?? DEFAULT_SORT;
+	const normalized = value?.replace(/\+(asc|desc)$/i, (order) => order.toUpperCase());
+	return sortSearchParamSchema.safeParse(normalized).data ?? DEFAULT_SORT;
 }
 
 const batchOperationsSearchSchema = z.object({

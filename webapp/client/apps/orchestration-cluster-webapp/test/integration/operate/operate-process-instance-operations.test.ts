@@ -111,7 +111,7 @@ test('should delete a finished instance within a deployment prefix and replace i
 	await operateProcessInstancePage.action('Delete', instance.processInstanceKey).click();
 	await operateProcessInstancePage.delete.click();
 	await expect(page.getByText('Instance is scheduled for deletion')).toBeVisible();
-	await expect(page).toHaveURL(/\/deployment\/operate\/processes$/);
+	await expect(page).toHaveURL(/\/deployment\/operate\/processes\?active=true&incidents=true&suspended=true$/);
 });
 
 test('should recover an initial read failure and preserve usable controls on cached read errors', async ({
@@ -216,7 +216,9 @@ test('should hand an active instance to the migration wizard without keeping it 
 		await operateProcessInstancePage.action('Migrate', key).click();
 		await operateProcessInstancePage.confirmation.getByRole('button', {name: 'Continue'}).click();
 		await expect(migrationStep('1 - mapping elements')).toBeVisible();
-		await expect(page).toHaveURL(/\/operate\/processes\?process=my_simple_process&version=1&tenantId=tenant-a$/);
+		await expect(page).toHaveURL(
+			/\/operate\/processes\?active=true&incidents=true&suspended=true&process=my_simple_process&version=1&tenantId=tenant-a$/,
+		);
 		await page.goBack();
 		await page.getByRole('dialog', {name: 'Leave Migration Mode'}).getByRole('button', {name: 'Stay'}).click();
 		await expect(migrationStep('1 - mapping elements')).toBeVisible();

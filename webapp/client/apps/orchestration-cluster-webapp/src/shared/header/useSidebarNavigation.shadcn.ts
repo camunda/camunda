@@ -232,6 +232,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							isActive: isOperateProcessesRoute,
 							linkProps: {
 								to: tabRoutes['operateProcesses'],
+								search: {active: true, suspended: true, incidents: true},
 							},
 						},
 						{

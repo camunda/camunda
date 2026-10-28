@@ -83,7 +83,7 @@ test.beforeEach(({network}) => {
 });
 
 test('should match the processes page filters panel snapshot', async ({operateProcessesPage, page}) => {
-	await operateProcessesPage.goto();
+	await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 	await expect(operateProcessesPage.filtersPanel).toBeVisible();
 	await expect(operateProcessesPage.instancesTable).toBeVisible();
 
