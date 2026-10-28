@@ -29,40 +29,21 @@ distinct id with one salt per incident, never printed. Print only counts or hash
 then delete that pack's `raw/reports/<suffix>/`, `raw/<suffix>.zip` and
 `raw/mat_<suffix>.log`.
 
-Run this in `bash`. It stops when the salt is missing and never prints a plain id.
+Hash with `scripts/hash_ids.sh`. It stops when the salt or the CSV is missing, or when a
+hash fails, and never prints a plain id.
 
 ```bash
 # Once per incident. Never print the salt.
 SALT_FILE=~/incidents/<id>/.id_salt
 [ -s "$SALT_FILE" ] || (umask 077 && od -An -tx1 -N16 /dev/urandom | tr -d ' \n' >"$SALT_FILE")
 
-# hash_ids <salt file> <csv with one id column>: a 12-char hash per distinct id, sorted.
-# A subshell, so pipefail stays inside.
-hash_ids() (
-  set -o pipefail
-  local salt sha h
-  salt=$(cat "$1" 2>/dev/null) || salt=""
-  [ -n "$salt" ] || { echo "No salt in $1, stopping" >&2; return 1; }
-  [ -f "$2" ] || { echo "No CSV at $2, stopping" >&2; return 1; }
-  if command -v sha256sum >/dev/null; then sha=(sha256sum)
-  elif command -v shasum >/dev/null; then sha=(shasum -a 256)
-  else echo "No sha256sum or shasum, stopping" >&2; return 1; fi
-  # Skip the header, MAT's trailing comma, quotes, and ids a truncated dump lost.
-  awk 'NR>1 { sub(/,$/, ""); gsub(/^"|"$/, ""); if ($0 != "") print }' "$2" |
-    sort -u | while IFS= read -r id; do
-      h=$(printf '%s%s' "$salt" "$id" | "${sha[@]}") || { echo "Hashing failed, stopping" >&2; exit 1; }
-      printf '%s\n' "${h:0:12}"
-    done | sort
-)
-```
-
-```bash
 # The raw_* pack's own folder, e.g. filename_suffix raw_ids, per broker
+H=.agents/skills/heap-dump-analysis/scripts/hash_ids.sh
 A=$OUT_DIR/<broker-a>/raw/reports/raw_ids
 B=$OUT_DIR/<broker-b>/raw/reports/raw_ids
-# && stops at the first failing hash_ids, so an error never reads as a count
-hash_ids "$SALT_FILE" "$A"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/a.hashes" &&
-  hash_ids "$SALT_FILE" "$B"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/b.hashes" &&
+# && stops at the first failing hash, so an error never reads as a count
+"$H" "$SALT_FILE" "$A"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/a.hashes" &&
+  "$H" "$SALT_FILE" "$B"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/b.hashes" &&
   wc -l <"$OUT_DIR/a.hashes" &&                                 # distinct ids on A
   comm -3 "$OUT_DIR/a.hashes" "$OUT_DIR/b.hashes" | wc -l       # ids on one broker only
 ```

@@ -16,7 +16,7 @@ aggregates. Details: [privacy.md](references/privacy.md).
 
 - Everything MAT writes goes under `raw/`. Never read or print it.
 - Take only numbers and class names out of the CSVs, with one-liners that print aggregates.
-- A query that must read a String is named `raw_*`; hash its values before you count them.
+- A query that must read a String is named `raw_*`; hash its values with `scripts/hash_ids.sh`.
 - Subagents return aggregates only. Never upload or commit dumps or outputs.
 
 ## Files
@@ -24,6 +24,7 @@ aggregates. Details: [privacy.md](references/privacy.md).
 | File | What it holds |
 |------|---------------|
 | `scripts/run_mat.sh` | Runs MAT on one dump with query packs. Prints rc, seconds, problems, CSV names. |
+| `scripts/hash_ids.sh` | Hashes the ids in a `raw_*` CSV with a salt. Prints hashes only. |
 | `queries/starter_pack.xml` | Heap totals, dominators, engine state per partition, DRG cache, process cache. |
 | [references/privacy.md](references/privacy.md) | Safe extraction, hashing ids. |
 | [references/queries.md](references/queries.md) | MAT/OQL pitfalls, reading the heap, one-liners, truncated dumps. |
