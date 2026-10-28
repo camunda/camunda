@@ -200,7 +200,7 @@ public class MyBatisConfiguration {
           physicalTenantId,
           RdbmsMapperBundle.from(
               factory,
-              new SqlSessionTemplate(factory),
+              new SqlSessionTemplate(factory)::getMapper,
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
     }
     return Map.copyOf(bundles);

@@ -46,7 +46,6 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
-import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public record RdbmsMapperBundle(
@@ -93,48 +92,54 @@ public record RdbmsMapperBundle(
 
   public static RdbmsMapperBundle from(
       final SqlSessionFactory sqlSessionFactory,
-      final SqlSession sqlSession,
+      final MapperSource mappers,
       final VendorDatabaseProperties vendorDatabaseProperties) {
     return new RdbmsMapperBundle(
         sqlSessionFactory,
         vendorDatabaseProperties,
-        sqlSession.getMapper(AgentDefinitionMapper.class),
-        sqlSession.getMapper(AgentHistoryMapper.class),
-        sqlSession.getMapper(AgentInstanceMapper.class),
-        sqlSession.getMapper(AuditLogMapper.class),
-        sqlSession.getMapper(AuthorizationMapper.class),
-        sqlSession.getMapper(BatchOperationMapper.class),
-        sqlSession.getMapper(ClusterVariableMapper.class),
-        sqlSession.getMapper(CorrelatedMessageSubscriptionMapper.class),
-        sqlSession.getMapper(DecisionDefinitionMapper.class),
-        sqlSession.getMapper(DecisionInstanceMapper.class),
-        sqlSession.getMapper(DecisionRequirementsMapper.class),
-        sqlSession.getMapper(DeployedResourceMapper.class),
-        sqlSession.getMapper(ExporterPositionMapper.class),
-        sqlSession.getMapper(FlowNodeInstanceMapper.class),
-        sqlSession.getMapper(FormMapper.class),
-        sqlSession.getMapper(GlobalListenerMapper.class),
-        sqlSession.getMapper(GroupMapper.class),
-        sqlSession.getMapper(HistoryDeletionMapper.class),
-        sqlSession.getMapper(IncidentMapper.class),
-        sqlSession.getMapper(JobMapper.class),
-        sqlSession.getMapper(JobMetricsBatchMapper.class),
-        sqlSession.getMapper(MappingRuleMapper.class),
-        sqlSession.getMapper(MessageSubscriptionMapper.class),
-        sqlSession.getMapper(PersistentWebSessionMapper.class),
-        sqlSession.getMapper(ProcessDefinitionMapper.class),
-        sqlSession.getMapper(ProcessInstanceMapper.class),
-        sqlSession.getMapper(PurgeMapper.class),
-        sqlSession.getMapper(ReplicationStatusMapper.class),
-        sqlSession.getMapper(RoleMapper.class),
-        sqlSession.getMapper(SequenceFlowMapper.class),
-        sqlSession.getMapper(TableMetricsMapper.class),
-        sqlSession.getMapper(TenantMapper.class),
-        sqlSession.getMapper(UsageMetricMapper.class),
-        sqlSession.getMapper(UsageMetricTUMapper.class),
-        sqlSession.getMapper(UserMapper.class),
-        sqlSession.getMapper(UserTaskMapper.class),
-        sqlSession.getMapper(VariableMapper.class),
-        sqlSession.getMapper(WaitStateMapper.class));
+        mappers.getMapper(AgentDefinitionMapper.class),
+        mappers.getMapper(AgentHistoryMapper.class),
+        mappers.getMapper(AgentInstanceMapper.class),
+        mappers.getMapper(AuditLogMapper.class),
+        mappers.getMapper(AuthorizationMapper.class),
+        mappers.getMapper(BatchOperationMapper.class),
+        mappers.getMapper(ClusterVariableMapper.class),
+        mappers.getMapper(CorrelatedMessageSubscriptionMapper.class),
+        mappers.getMapper(DecisionDefinitionMapper.class),
+        mappers.getMapper(DecisionInstanceMapper.class),
+        mappers.getMapper(DecisionRequirementsMapper.class),
+        mappers.getMapper(DeployedResourceMapper.class),
+        mappers.getMapper(ExporterPositionMapper.class),
+        mappers.getMapper(FlowNodeInstanceMapper.class),
+        mappers.getMapper(FormMapper.class),
+        mappers.getMapper(GlobalListenerMapper.class),
+        mappers.getMapper(GroupMapper.class),
+        mappers.getMapper(HistoryDeletionMapper.class),
+        mappers.getMapper(IncidentMapper.class),
+        mappers.getMapper(JobMapper.class),
+        mappers.getMapper(JobMetricsBatchMapper.class),
+        mappers.getMapper(MappingRuleMapper.class),
+        mappers.getMapper(MessageSubscriptionMapper.class),
+        mappers.getMapper(PersistentWebSessionMapper.class),
+        mappers.getMapper(ProcessDefinitionMapper.class),
+        mappers.getMapper(ProcessInstanceMapper.class),
+        mappers.getMapper(PurgeMapper.class),
+        mappers.getMapper(ReplicationStatusMapper.class),
+        mappers.getMapper(RoleMapper.class),
+        mappers.getMapper(SequenceFlowMapper.class),
+        mappers.getMapper(TableMetricsMapper.class),
+        mappers.getMapper(TenantMapper.class),
+        mappers.getMapper(UsageMetricMapper.class),
+        mappers.getMapper(UsageMetricTUMapper.class),
+        mappers.getMapper(UserMapper.class),
+        mappers.getMapper(UserTaskMapper.class),
+        mappers.getMapper(VariableMapper.class),
+        mappers.getMapper(WaitStateMapper.class));
+  }
+
+  /** Where the bundle gets each mapper from. */
+  @FunctionalInterface
+  public interface MapperSource {
+    <T> T getMapper(Class<T> type);
   }
 }
