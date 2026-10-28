@@ -24,6 +24,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -59,7 +60,9 @@ public class CombinedReportInstanceCounterES
       final String message =
           String.format(
               "Could not count instances in combined report with single report IDs: [%s]",
-              singleReportDefinitions.stream().map(ReportDefinitionDto::getId));
+              singleReportDefinitions.stream()
+                  .map(ReportDefinitionDto::getId)
+                  .collect(Collectors.joining(", ")));
       LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     } catch (final RuntimeException e) {
