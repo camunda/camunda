@@ -851,8 +851,9 @@ public class CamundaMultiDBExtension
         && !databaseType.storageType().isElasticSearch()
         && !databaseType.storageType().isOpenSearch()) {
       throw new IllegalStateException(
-          "Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
-              + " storage; got %s.".formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+          ("Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
+                  + " storage; got %s.")
+              .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
     }
 
     // Multi-PT mode: @MultiDbPhysicalTenants overrides the single-PT path
