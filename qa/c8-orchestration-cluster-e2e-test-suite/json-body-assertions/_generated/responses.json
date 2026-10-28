@@ -1,10 +1,18 @@
 {
   "metadata": {
+<<<<<<< HEAD
     "sourceRepo": "camunda/camunda",
     "commit": "local",
     "generatedAt": "2026-10-26T03:59:59.559Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
     "specSha256": "cce92a4b7e0bb25d99e0ade651c43c4241d63f10c939ef5c3b0d1214dea7e89d"
+=======
+    "sourceRepo": "https://github.com/camunda/camunda",
+    "commit": "local",
+    "generatedAt": "2026-10-28T03:49:47.482Z",
+    "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
+    "specSha256": "9319f06233999c797df97e33eab25c6fee7d568b5e9141954d3d0505a234ec04"
+>>>>>>> 9bb2ca7c (test: regenerate API response shapes for storageOrdinal field (nightly main))
   },
   "responses": [
     {
@@ -3476,6 +3484,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -3677,6 +3690,11 @@
               "UNSPECIFIED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "tenantId",
@@ -7855,6 +7873,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "suspendedDate",
                   "type": "string",
                   "nullable": true
@@ -8013,6 +8036,11 @@
               "SUSPENDED",
               "TERMINATED"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "suspendedDate",
