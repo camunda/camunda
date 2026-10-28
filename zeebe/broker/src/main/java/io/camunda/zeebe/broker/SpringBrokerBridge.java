@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +39,7 @@ public class SpringBrokerBridge {
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
   private Function<String, Runnable> tenantSchemaInitializer;
+  private Function<String, CpuBudget> cpuBudgetByTenantLookup;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -116,6 +118,18 @@ public class SpringBrokerBridge {
   /** Returns the {@link JobStreamService} for the given physical tenant, if any. */
   public Optional<JobStreamService> getJobStreamService(final String physicalTenantId) {
     return Optional.ofNullable(jobStreamServiceByTenantLookup)
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /** Registers a lookup function resolving the {@link CpuBudget} of a given physical tenant. */
+  public void registerCpuBudgetByTenantLookup(
+      final Function<String, CpuBudget> cpuBudgetByTenantLookup) {
+    this.cpuBudgetByTenantLookup = cpuBudgetByTenantLookup;
+  }
+
+  /** Returns the {@link CpuBudget} of the given physical tenant, if it has one. */
+  public Optional<CpuBudget> getCpuBudget(final String physicalTenantId) {
+    return Optional.ofNullable(cpuBudgetByTenantLookup)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
   }
 

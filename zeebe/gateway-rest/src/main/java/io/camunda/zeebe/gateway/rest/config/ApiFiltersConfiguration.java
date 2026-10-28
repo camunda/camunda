@@ -14,14 +14,18 @@ import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PAT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.spring.utils.PhysicalTenantCpuCharger;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantCpuChargingFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
+import jakarta.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -60,6 +64,9 @@ public class ApiFiltersConfiguration {
   // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
   private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
 
+  // runs before the physical-tenant filter, so that the CPU time of the security chain is charged
+  private static final int PHYSICAL_TENANT_CPU_CHARGING_FILTER_ORDER = -102;
+
   private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
 
   private static List<PathPattern> patterns(final String... patterns) {
@@ -76,6 +83,23 @@ public class ApiFiltersConfiguration {
         new FilterRegistrationBean<>(new PhysicalTenantFilter());
     registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
     registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Charges the CPU time of the request threads to the CPU budget of the physical tenant of the
+   * request. Without a charger bean, nothing is charged.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantCpuChargingFilter> physicalTenantCpuChargingFilter(
+      final ObjectProvider<PhysicalTenantCpuCharger> cpuCharger) {
+    final FilterRegistrationBean<PhysicalTenantCpuChargingFilter> registration =
+        new FilterRegistrationBean<>(
+            new PhysicalTenantCpuChargingFilter(
+                cpuCharger.getIfAvailable(PhysicalTenantCpuCharger::none)));
+    registration.addUrlPatterns("/*");
+    registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
+    registration.setOrder(PHYSICAL_TENANT_CPU_CHARGING_FILTER_ORDER);
     return registration;
   }
 

@@ -37,9 +37,17 @@ import java.util.stream.Collectors;
 public class PhysicalTenantPropagatingExecutorService implements ExecutorService {
 
   private final ExecutorService delegate;
+  private final PhysicalTenantCpuCharger cpuCharger;
 
   public PhysicalTenantPropagatingExecutorService(final ExecutorService delegate) {
+    this(delegate, PhysicalTenantCpuCharger.none());
+  }
+
+  /** The CPU time of each task is charged to the physical tenant of the task. */
+  public PhysicalTenantPropagatingExecutorService(
+      final ExecutorService delegate, final PhysicalTenantCpuCharger cpuCharger) {
     this.delegate = Objects.requireNonNull(delegate, "delegate executor must not be null");
+    this.cpuCharger = Objects.requireNonNull(cpuCharger, "cpu charger must not be null");
   }
 
   private Runnable wrap(final Runnable task) {
@@ -52,9 +60,11 @@ public class PhysicalTenantPropagatingExecutorService implements ExecutorService
     return () -> {
       final String previous = PhysicalTenantContext.getPropagatedPhysicalTenant();
       PhysicalTenantContext.setPropagatedPhysicalTenant(physicalTenantId);
+      final var cpuScope = cpuCharger.open();
       try {
         task.run();
       } finally {
+        cpuScope.chargeTo(physicalTenantId);
         if (previous != null) {
           PhysicalTenantContext.setPropagatedPhysicalTenant(previous);
         } else {
@@ -74,9 +84,11 @@ public class PhysicalTenantPropagatingExecutorService implements ExecutorService
     return () -> {
       final String previous = PhysicalTenantContext.getPropagatedPhysicalTenant();
       PhysicalTenantContext.setPropagatedPhysicalTenant(physicalTenantId);
+      final var cpuScope = cpuCharger.open();
       try {
         return task.call();
       } finally {
+        cpuScope.chargeTo(physicalTenantId);
         if (previous != null) {
           PhysicalTenantContext.setPropagatedPhysicalTenant(previous);
         } else {

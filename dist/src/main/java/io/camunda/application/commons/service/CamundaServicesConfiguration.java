@@ -81,6 +81,7 @@ import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
+import io.camunda.spring.utils.PhysicalTenantCpuCharger;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.Schedule;
@@ -116,13 +117,14 @@ public class CamundaServicesConfiguration {
   // Cluster-wide executor, uses the node's availableProcessors
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
-      final UnifiedConfiguration unifiedConfiguration) {
+      final UnifiedConfiguration unifiedConfiguration, final PhysicalTenantCpuCharger cpuCharger) {
     final var executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
     return new ApiServicesExecutorProvider(
         executor.getCorePoolSizeMultiplier(),
         executor.getMaxPoolSizeMultiplier(),
         executor.getKeepAlive().getSeconds(),
-        executor.getQueueCapacity());
+        executor.getQueueCapacity(),
+        cpuCharger);
   }
 
   /**

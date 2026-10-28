@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.spring.utils.PhysicalTenantCpuCharger;
 import io.camunda.spring.utils.PhysicalTenantPropagatingExecutorService;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -22,12 +23,28 @@ public final class ApiServicesExecutorProvider {
       final int maxPoolSizeMultiplier,
       final long keepAliveSeconds,
       final int queueCapacity) {
+    this(
+        corePoolSizeMultiplier,
+        maxPoolSizeMultiplier,
+        keepAliveSeconds,
+        queueCapacity,
+        PhysicalTenantCpuCharger.none());
+  }
+
+  /** The CPU time of the tasks is charged to their physical tenant by the given charger. */
+  public ApiServicesExecutorProvider(
+      final int corePoolSizeMultiplier,
+      final int maxPoolSizeMultiplier,
+      final long keepAliveSeconds,
+      final int queueCapacity,
+      final PhysicalTenantCpuCharger cpuCharger) {
     executor =
         new PhysicalTenantPropagatingExecutorService(
             Objects.requireNonNull(
                 create(
                     corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, queueCapacity),
-                "REST API Executor Service must not be null"));
+                "REST API Executor Service must not be null"),
+            cpuCharger);
   }
 
   /**

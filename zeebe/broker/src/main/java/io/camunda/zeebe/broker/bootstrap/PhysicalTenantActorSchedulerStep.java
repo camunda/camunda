@@ -51,6 +51,9 @@ final class PhysicalTenantActorSchedulerStep extends AbstractBrokerStartupStep {
                     pool,
                     pool.cpuBudgetCores(
                         physicalTenantId, brokerStartupContext.getPhysicalTenantIds().known())));
+            brokerStartupContext
+                .getSpringBrokerBridge()
+                .registerCpuBudgetByTenantLookup(brokerStartupContext::getCpuBudget);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);
