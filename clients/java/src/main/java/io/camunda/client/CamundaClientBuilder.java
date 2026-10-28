@@ -264,6 +264,13 @@ public interface CamundaClientBuilder {
    * A custom maxMessageSize allows the client to receive larger or smaller responses from Camunda.
    * Technically, it specifies the maxInboundMessageSize of the gRPC channel. The default is 5242880
    * = 5MB.
+   *
+   * <p>For document downloads ({@link CamundaClient#newDocumentContentGetRequest(String)}), it is
+   * the size of the buffer that holds the content until the application reads it. It does not limit
+   * the size of the document. If the application reads more slowly than the network delivers the
+   * content, the buffer can grow larger than this, up to the size of the part of the document that
+   * has not been read yet. If there is not enough memory for that, reading the document fails with
+   * a {@link java.io.IOException}.
    */
   CamundaClientBuilder maxMessageSize(int maxSize);
 
