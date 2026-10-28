@@ -91,7 +91,17 @@ public class CircularBufferInputStream extends InputStream {
     notifyAll();
   }
 
+  /**
+   * Fails the stream: a blocked reader is woken up and every read and write throws the error.
+   *
+   * <p>Only the first error is kept, and errors signalled after {@link #endOfStream()} are ignored:
+   * a fully received document must stay readable, and a later, more generic error must not replace
+   * the original cause.
+   */
   public synchronized void signalError(final IOException e) {
+    if (exception != null || endOfStream) {
+      return;
+    }
     exception = e;
     notifyAll();
   }
@@ -169,9 +179,9 @@ public class CircularBufferInputStream extends InputStream {
       }
     }
     if (exception != null) {
-      final IOException ex = exception;
-      exception = null;
-      throw ex;
+      // the error is sticky: callers that read again after a failure must fail again instead of
+      // blocking forever on data that will never arrive
+      throw exception;
     }
     return availableData == 0;
   }
