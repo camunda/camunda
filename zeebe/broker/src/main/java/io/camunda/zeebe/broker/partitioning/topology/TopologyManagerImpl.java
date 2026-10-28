@@ -79,6 +79,11 @@ public final class TopologyManagerImpl extends Actor
         .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
   }
 
+  @Override
+  protected void onActorClosing() {
+    membershipService.removeListener(this);
+  }
+
   public ActorFuture<Void> setLeader(final long term, final int partitionId) {
     return actor.call(
         () -> {

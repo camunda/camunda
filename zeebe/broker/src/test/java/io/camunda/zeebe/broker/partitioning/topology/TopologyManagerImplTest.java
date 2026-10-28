@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -33,13 +34,14 @@ final class TopologyManagerImplTest {
   @AutoClose private ActorScheduler scheduler;
   private BrokerInfo brokerInfo;
   private TopologyManagerImpl topologyManager;
+  private ClusterMembershipService membershipService;
 
   @BeforeEach
   void setUp() {
     final var localMember = mock(Member.class);
     when(localMember.properties()).thenReturn(new Properties());
 
-    final var membershipService = mock(ClusterMembershipService.class);
+    membershipService = mock(ClusterMembershipService.class);
     when(membershipService.getLocalMember()).thenReturn(localMember);
     when(membershipService.getMembers()).thenReturn(Set.of());
 
@@ -51,6 +53,15 @@ final class TopologyManagerImplTest {
 
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     scheduler.submitActor(topologyManager).join();
+  }
+
+  @Test
+  void shouldStopListeningToMembershipOnceClosed() {
+    // when
+    topologyManager.closeAsync().join();
+
+    // then
+    verify(membershipService).removeListener(topologyManager);
   }
 
   @Test
