@@ -71,7 +71,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
 
   @BeforeEach
   void setUp() {
-    // lenient: the D4 exclusivity-rejection tests throw before mockJobWorker is ever called
+    // lenient: the exclusivity-rejection tests throw before mockJobWorker is ever called
     lenient().when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
     lenient().when(processTestContext.createClient()).thenReturn(evaluationClient);
   }

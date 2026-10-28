@@ -273,7 +273,7 @@ public class MockJobWorkerTest {
 
   @Test
   void shouldMatchIntAndLongWhenButNotDecimalForVariablesTable() throws Exception {
-    // given: D3 - 1 and 1L both match job variable 1, 1.0 does not
+    // given: 1 and 1L both match job variable 1, 1.0 does not
     when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(new CamundaObjectMapper());
     when(activatedJob.getVariablesAsMap()).thenReturn(Collections.singletonMap("count", 1));
 
