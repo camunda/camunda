@@ -37,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -56,6 +57,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -271,6 +273,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         dependencyChangePlans().optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     final var availability = tenantAvailabilities();
+    final var tenantConfig = physicalTenantConfigReferences().optional();
     return Combinators.combine(
             version,
             incarnationNumber,
@@ -278,11 +281,27 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             routingState,
             pendingChanges,
             lastChange,
-            availability)
+            availability,
+            tenantConfig)
         .as(
-            (v, inc, m, routing, pending, last, tenantAvailability) ->
+            (v, inc, m, routing, pending, last, tenantAvailability, config) ->
                 new PartitionGroupConfiguration(
-                    v, inc, m, routing, pending, last, tenantAvailability));
+                    v, inc, m, routing, pending, last, tenantAvailability, config));
+  }
+
+  @Provide
+  Arbitrary<PhysicalTenantConfigReference> physicalTenantConfigReferences() {
+    final var version = Arbitraries.longs().greaterOrEqual(1);
+    final var sha256 = Arbitraries.strings().withCharRange('a', 'f').ofLength(64);
+    final var owner = Arbitraries.of(PhysicalTenantConfigReference.Owner.values());
+    final var incarnationId = Arbitraries.create(() -> UUID.randomUUID().toString());
+    final var applied =
+        Arbitraries.maps(memberIds(), Arbitraries.longs().greaterOrEqual(1)).ofMaxSize(6);
+    return Combinators.combine(version, sha256, owner, incarnationId, applied)
+        .as(
+            (v, hash, configOwner, incarnation, appliedVersions) ->
+                new PhysicalTenantConfigReference(
+                    v, hash, configOwner, incarnation, new TreeMap<>(appliedVersions)));
   }
 
   @Provide

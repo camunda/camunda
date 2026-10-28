@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -295,6 +296,28 @@ class PartitionGroupConfigurationTest {
           .isEqualTo(higher);
       assertThat(lower.merge(higher).isDisabled()).isTrue();
       assertThat(higher.merge(lower).isDisabled()).isTrue();
+    }
+
+    @Test
+    void shouldPreserveTheNewerTenantConfigAcrossAWholeRecordVersionMismatch() {
+      // given
+      final var initial = PhysicalTenantConfigReference.initial("a", Owner.API, "incarnation");
+      final var lower = group(1, Map.of()).setTenantConfig(initial.next("b"));
+      final var higher =
+          group(2, Map.of()).setTenantConfig(initial.withApplied(MemberId.from("1"), 1));
+
+      // when
+      final var merged = lower.merge(higher);
+
+      // then
+      assertThat(merged).isEqualTo(higher.merge(lower));
+      assertThat(merged.version()).isEqualTo(2);
+      assertThat(merged.tenantConfig())
+          .hasValueSatisfying(
+              reference -> {
+                assertThat(reference.version()).isEqualTo(2);
+                assertThat(reference.appliedVersion(MemberId.from("1"))).isEqualTo(1);
+              });
     }
   }
 

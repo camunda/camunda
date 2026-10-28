@@ -31,6 +31,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -87,6 +89,42 @@ final class CurrentClusterConfigurationSerializerTest {
     // when / then
     assertThatThrownBy(() -> serializer.decodeGlobalConfiguration(proto))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldDecodeAGroupWrittenBeforeTenantsCarriedAConfigReference() {
+    // given
+    final var proto =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(3)
+            .setAvailability(Topology.TenantAvailability.newBuilder().setVersion(0).build())
+            .build();
+
+    // when
+    final var group = serializer.decodePartitionGroupConfiguration(proto);
+
+    // then
+    assertThat(group.version()).isEqualTo(3);
+    assertThat(group.tenantConfig()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripATenantConfigReference() {
+    // given
+    final var reference =
+        PhysicalTenantConfigReference.initial("abc", Owner.FILE, "incarnation")
+            .next("def")
+            .withApplied(MEMBER, 2)
+            .withApplied(OTHER_MEMBER, 1);
+    final var group = PartitionGroupConfiguration.empty(1).setTenantConfig(reference);
+
+    // when
+    final var decoded =
+        serializer.decodePartitionGroupConfiguration(
+            serializer.encodePartitionGroupConfiguration(group));
+
+    // then
+    assertThat(decoded).isEqualTo(group);
   }
 
   @Test

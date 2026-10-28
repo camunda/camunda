@@ -26,6 +26,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
@@ -38,6 +40,7 @@ import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Round-tripping proves the document loses nothing, but not that it is worth reading. These pin the
@@ -149,6 +152,43 @@ final class ClusterConfigurationJsonSerializerTest {
         .isEqualTo("1");
     assertThat(json.at("/partitionGroups/default/members/0/partitions/1/priority").asInt())
         .isEqualTo(1);
+  }
+
+  @Test
+  void shouldReadADocumentWrittenBeforeTenantsCarriedAConfigReference() {
+    // given
+    final var configuration = configuration(new RoundRobinConfig());
+    final var json = (ObjectNode) parse(configuration);
+    ((ObjectNode) json.at("/partitionGroups/default")).remove("tenantConfig");
+
+    // when
+    final var read = ClusterConfigurationJsonSerializer.fromJson(json.toString());
+
+    // then
+    assertThat(read).isEqualTo(configuration);
+    assertThat(read.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).tenantConfig())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripATenantConfigReference() {
+    // given
+    final var reference =
+        PhysicalTenantConfigReference.initial("abc", Owner.API, "incarnation")
+            .withApplied(MEMBER_0, 1);
+    final var configuration =
+        configuration(new RoundRobinConfig())
+            .updatePartitionGroupConfig(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                group -> group.setTenantConfig(reference));
+
+    // when
+    final var read =
+        ClusterConfigurationJsonSerializer.fromJson(
+            ClusterConfigurationJsonSerializer.toJson(configuration));
+
+    // then
+    assertThat(read).isEqualTo(configuration);
   }
 
   private JsonNode parse(final CurrentClusterConfiguration configuration) {

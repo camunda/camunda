@@ -42,6 +42,24 @@ message PartitionGroupConfiguration {
   DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
   TenantAvailability availability = 7;
+  PhysicalTenantConfigReference tenantConfig = 8;
+}
+
+// The configuration of a physical tenant by reference: every member keeps the configuration on its
+// own disk. Carries its own version, independent of the enclosing PartitionGroupConfiguration.version.
+message PhysicalTenantConfigReference {
+  int64 version = 1;
+  string sha256 = 2;
+  PhysicalTenantConfigOwner owner = 3;
+  string incarnationId = 4;
+  // The version each member applied, keyed by member id.
+  map<string, int64> appliedVersions = 5;
+}
+
+enum PhysicalTenantConfigOwner {
+  PHYSICAL_TENANT_CONFIG_OWNER_UNKNOWN = 0;
+  PHYSICAL_TENANT_CONFIG_OWNER_FILE = 1;
+  PHYSICAL_TENANT_CONFIG_OWNER_API = 2;
 }
 
 // A change whose operations carry their own dependencies. An operation runs once

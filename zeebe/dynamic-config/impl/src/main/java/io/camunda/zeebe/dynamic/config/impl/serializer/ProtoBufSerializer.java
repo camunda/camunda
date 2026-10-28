@@ -111,6 +111,8 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -2017,6 +2019,9 @@ public class ProtoBufSerializer
             .putAllMembers(members)
             .setAvailability(encodeTenantAvailability(configuration.availability()));
     configuration
+        .tenantConfig()
+        .ifPresent(reference -> builder.setTenantConfig(encodeTenantConfig(reference)));
+    configuration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
     configuration
@@ -2172,6 +2177,10 @@ public class ProtoBufSerializer
         proto.hasAvailability()
             ? decodeTenantAvailability(proto.getAvailability())
             : TenantAvailability.enabled();
+    final Optional<PhysicalTenantConfigReference> tenantConfig =
+        proto.hasTenantConfig()
+            ? Optional.of(decodeTenantConfig(proto.getTenantConfig()))
+            : Optional.empty();
     return new PartitionGroupConfiguration(
         proto.getVersion(),
         proto.getIncarnationNumber(),
@@ -2179,7 +2188,43 @@ public class ProtoBufSerializer
         routingState,
         pendingChanges,
         lastChange,
-        availability);
+        availability,
+        tenantConfig);
+  }
+
+  private Topology.PhysicalTenantConfigReference encodeTenantConfig(
+      final PhysicalTenantConfigReference reference) {
+    return Topology.PhysicalTenantConfigReference.newBuilder()
+        .setVersion(reference.version())
+        .setSha256(reference.sha256())
+        .setOwner(
+            switch (reference.owner()) {
+              case FILE -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_FILE;
+              case API -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_API;
+            })
+        .setIncarnationId(reference.incarnationId())
+        .putAllAppliedVersions(
+            reference.appliedVersions().entrySet().stream()
+                .collect(Collectors.toMap(e -> e.getKey().id(), Entry::getValue)))
+        .build();
+  }
+
+  private PhysicalTenantConfigReference decodeTenantConfig(
+      final Topology.PhysicalTenantConfigReference proto) {
+    final var owner =
+        switch (proto.getOwner()) {
+          case PHYSICAL_TENANT_CONFIG_OWNER_API -> Owner.API;
+          default -> Owner.FILE;
+        };
+    final var applied =
+        proto.getAppliedVersionsMap().entrySet().stream()
+            .collect(Collectors.toMap(e -> MemberId.from(e.getKey()), Entry::getValue));
+    return new PhysicalTenantConfigReference(
+        proto.getVersion(),
+        proto.getSha256(),
+        owner,
+        proto.getIncarnationId(),
+        new TreeMap<>(applied));
   }
 
   private Topology.TenantAvailability encodeTenantAvailability(
