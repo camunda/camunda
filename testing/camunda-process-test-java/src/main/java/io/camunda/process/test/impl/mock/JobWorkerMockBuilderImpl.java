@@ -20,10 +20,18 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.api.mock.VariablesTable;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +74,64 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
               "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
 
           jobClient.newCompleteCommand(job).variables(variables).send().join();
+        });
+  }
+
+  @Override
+  public JobWorkerMock thenComplete(
+      final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
+    Objects.requireNonNull(variablesSupplier, "'variablesSupplier' must not be null");
+
+    return withHandler(
+        (jobClient, job) -> {
+          final Map<String, Object> jobVariables = job.getVariablesAsMap();
+          final Map<String, Object> variables = variablesSupplier.apply(jobVariables);
+
+          if (variables == null) {
+            throw new IllegalStateException(
+                String.format(
+                    "%s: expected the variables supplier to return a map of variables, but it "
+                        + "returned null.",
+                    logMessagePrefix.apply(ACTION_COMPLETE_JOB, job)));
+          }
+
+          LOGGER.debug(
+              "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
+
+          jobClient.newCompleteCommand(job).variables(variables).send().join();
+        });
+  }
+
+  @Override
+  public JobWorkerMock thenComplete(final VariablesTable variablesTable) {
+    Objects.requireNonNull(variablesTable, "'variablesTable' must not be null");
+
+    final CamundaAssertJsonMapper assertJsonMapper =
+        new CamundaAssertJsonMapper(client.getConfiguration().getJsonMapper());
+
+    final List<NormalizedRow> normalizedRows =
+        variablesTable.getRows().stream()
+            .map(
+                row ->
+                    new NormalizedRow(
+                        normalize(row.getWhen(), assertJsonMapper), row.getVariables()))
+            .collect(Collectors.toList());
+
+    return thenComplete(
+        jobVariables -> {
+          final Map<String, Object> normalizedJobVariables =
+              normalize(jobVariables, assertJsonMapper);
+
+          for (int i = 0; i < normalizedRows.size(); i++) {
+            final NormalizedRow row = normalizedRows.get(i);
+            if (matches(row.when, normalizedJobVariables)) {
+              LOGGER.debug("Mock: Variables table matched row {} for job type '{}'", i, jobType);
+              return row.variables;
+            }
+          }
+
+          LOGGER.debug("Mock: Variables table has no matching row for job type '{}'", jobType);
+          return new HashMap<>();
         });
   }
 
@@ -128,5 +194,32 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   @Override
   public JobWorkerMock withHandler(final JobHandler jobHandler) {
     return new JobWorkerMockImpl(jobType, client, jobHandler);
+  }
+
+  private static Map<String, Object> normalize(
+      final Map<String, Object> when, final CamundaAssertJsonMapper assertJsonMapper) {
+    final Map<String, Object> normalized = new LinkedHashMap<>();
+    when.forEach((key, value) -> normalized.put(key, assertJsonMapper.toJsonValue(value)));
+    return Collections.unmodifiableMap(normalized);
+  }
+
+  private static boolean matches(
+      final Map<String, Object> normalizedWhen, final Map<String, Object> jobVariables) {
+    return normalizedWhen.entrySet().stream()
+        .allMatch(
+            entry ->
+                jobVariables.containsKey(entry.getKey())
+                    && Objects.equals(jobVariables.get(entry.getKey()), entry.getValue()));
+  }
+
+  private static final class NormalizedRow {
+
+    private final Map<String, Object> when;
+    private final Map<String, Object> variables;
+
+    private NormalizedRow(final Map<String, Object> when, final Map<String, Object> variables) {
+      this.when = when;
+      this.variables = variables;
+    }
   }
 }

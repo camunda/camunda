@@ -38,6 +38,7 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
+import io.camunda.process.test.api.testCases.ImmutableVariablesTableRow;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
@@ -518,6 +519,28 @@ public class PojoCompatibilityTest {
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables expression",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .variablesExpression("={status: \"sent\"}")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables table",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("pick-sample")
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putWhen("loopCounter", 1)
+                            .putVariables("sampleType", "regolith")
+                            .build())
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putVariables("sampleType", "basalt")
+                            .build())
                     .build())),
         // ===== MOCK_DMN_DECISION =====
         Arguments.of(

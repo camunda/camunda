@@ -54,9 +54,16 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
+import io.camunda.process.test.api.mock.VariablesTable;
+import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
+import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -1445,6 +1452,142 @@ public class CamundaProcessTestExtensionIT {
 
       assertThatProcessInstance(processInstanceEvent).isCompleted();
       assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+    }
+
+    @Test
+    void shouldMockJobWorkerWithVariablesTablePerIteration() {
+      // given: a parallel multi-instance service task with no input/output mappings, so each
+      // iteration's "loopCounter" and input element are visible as job variables
+      final String jobType = "pick-sample-table";
+      final long processDefinitionKey =
+          deployProcessModel(processModelWithMultiInstanceServiceTask(jobType));
+
+      final JobWorkerMock mockedJobWorker =
+          processTestContext
+              .mockJobWorker(jobType)
+              .thenComplete(
+                  VariablesTable.when(Collections.singletonMap("loopCounter", 1))
+                      .thenReturn(Collections.singletonMap("sample1", "regolith"))
+                      .when(Collections.singletonMap("loopCounter", 2))
+                      .thenReturn(Collections.singletonMap("sample2", "basalt"))
+                      .when(Collections.singletonMap("loopCounter", 3))
+                      .thenReturn(Collections.singletonMap("sample3", "anorthosite")));
+
+      // when
+      final ProcessInstanceEvent processInstanceEvent =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .send()
+              .join();
+
+      // then: each iteration got its own, distinct output variable
+      final Map<String, Object> expectedVariables = new HashMap<>();
+      expectedVariables.put("sample1", "regolith");
+      expectedVariables.put("sample2", "basalt");
+      expectedVariables.put("sample3", "anorthosite");
+
+      assertThatProcessInstance(processInstanceEvent).isCompleted();
+      assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+      assertThat(mockedJobWorker.getInvocations()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldMockJobWorkerWithVariablesSupplierFunctionPerIteration() {
+      // given: the Function overload derives the output from the job's own variables, proving
+      // the multi-instance input element is visible alongside the loop counter
+      final String jobType = "pick-sample-function";
+      final long processDefinitionKey =
+          deployProcessModel(processModelWithMultiInstanceServiceTask(jobType));
+
+      final JobWorkerMock mockedJobWorker =
+          processTestContext
+              .mockJobWorker(jobType)
+              .thenComplete(
+                  vars ->
+                      Collections.singletonMap(
+                          "sample" + vars.get("loopCounter"), vars.get("item")));
+
+      // when
+      final ProcessInstanceEvent processInstanceEvent =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .send()
+              .join();
+
+      // then
+      final Map<String, Object> expectedVariables = new HashMap<>();
+      expectedVariables.put("sample1", 1);
+      expectedVariables.put("sample2", 2);
+      expectedVariables.put("sample3", 3);
+
+      assertThatProcessInstance(processInstanceEvent).isCompleted();
+      assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+      assertThat(mockedJobWorker.getInvocations()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldMockJobWorkerWithVariablesExpressionViaJsonTestCase() {
+      // given: the JSON test-case 'variablesExpression' path evaluates the FEEL expression through
+      // the real CamundaClient (newEvaluateExpressionCommand against the broker), unlike the unit
+      // tests for this path, which stub the CamundaClient
+      final String jobType = "variables-expression-job";
+      final String processId = "process-" + jobType;
+      deployProcessModel(
+          Bpmn.createExecutableProcess(processId)
+              .startEvent()
+              .serviceTask("service-task-1")
+              .zeebeJobType(jobType)
+              .endEvent()
+              .done());
+
+      final TestCase testCase =
+          ImmutableTestCase.builder()
+              .name("variablesExpression via real FEEL engine")
+              .addInstructions(
+                  ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                      .jobType(jobType)
+                      .variablesExpression("={ total: amount * 2 }")
+                      .build())
+              .addInstructions(
+                  ImmutableCreateProcessInstanceInstruction.builder()
+                      .processDefinitionSelector(
+                          ImmutableProcessDefinitionSelector.builder()
+                              .processDefinitionId(processId)
+                              .build())
+                      .putVariables("amount", 21)
+                      .build())
+              .addInstructions(
+                  ImmutableAssertVariableInstruction.builder()
+                      .processInstanceSelector(
+                          ImmutableProcessInstanceSelector.builder()
+                              .processDefinitionId(processId)
+                              .build())
+                      .variableName("total")
+                      .satisfiesExpression("total = 42")
+                      .build())
+              .build();
+
+      // when
+      testCaseRunner.run(testCase);
+
+      // then: the assertion instruction only passes if the broker actually evaluated the FEEL
+      // expression against the job's variables, rather than a mock echoing it back
+      assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(processId)).isCompleted();
+    }
+
+    private BpmnModelInstance processModelWithMultiInstanceServiceTask(final String jobType) {
+      return Bpmn.createExecutableProcess("process-" + jobType)
+          .startEvent()
+          .serviceTask("service-task-1")
+          .zeebeJobType(jobType)
+          .multiInstance()
+          .zeebeInputCollectionExpression("[1,2,3]")
+          .zeebeInputElement("item")
+          .multiInstanceDone()
+          .endEvent()
+          .done();
     }
 
     private BpmnModelInstance processModelWithServiceTask() {
