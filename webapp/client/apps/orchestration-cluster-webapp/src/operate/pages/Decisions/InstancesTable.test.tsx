@@ -202,7 +202,7 @@ describe('<InstancesTable />', () => {
 				.toMatchTextContent('1+ instances selected for delete operation.');
 		});
 
-		it('should delete the selected instance and show a success notification', async ({worker}) => {
+		it('should start a deletion batch for the selected instance and clear the selection', async ({worker}) => {
 			worker.use(
 				mockQueryDecisionInstancesEndpoint({
 					successResponse: HttpResponse.json(
@@ -222,13 +222,22 @@ describe('<InstancesTable />', () => {
 			const screen = await renderInstancesTable();
 
 			// force: Carbon's checkbox label visually covers the native input, failing real-browser actionability
-			await screen.getByRole('checkbox', {name: 'Select row 1'}).click({force: true});
-			await screen.getByRole('button', {name: 'Delete'}).click();
-			await screen.getByRole('button', {name: 'Delete'}).last().click();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}), {force: true});
+			await expect.element(screen.getByText('1 item selected')).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+			const dialog = screen.getByRole('dialog');
+			await expect.element(dialog).toBeVisible();
+			await userEvent.click(dialog.getByRole('button', {name: 'Delete'}));
 
 			await expect
-				.poll(() => notificationsStore.notifications.at(0)?.title)
-				.toBe('The batch operation "Delete Decision Instance" has been started');
+				.element(
+					screen
+						.getByRole('alertdialog')
+						.filter({hasText: 'The batch operation "Delete Decision Instance" has been started'}),
+				)
+				.toBeVisible();
+			await expect.element(dialog).not.toBeInTheDocument();
+			await expect.element(screen.getByText('1 item selected')).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});
 
@@ -249,9 +258,9 @@ describe('<InstancesTable />', () => {
 			const screen = await renderInstancesTable();
 
 			// force: Carbon's checkbox label visually covers the native input, failing real-browser actionability
-			await screen.getByRole('checkbox', {name: 'Select row 1'}).click({force: true});
-			await screen.getByRole('button', {name: 'Delete'}).click();
-			await screen.getByRole('button', {name: 'Delete'}).last().click();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}), {force: true});
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Delete'}));
 
 			await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		});
