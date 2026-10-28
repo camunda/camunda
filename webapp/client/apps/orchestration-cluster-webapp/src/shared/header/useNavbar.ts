@@ -130,6 +130,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							routeProps: {
 								to: tabRoutes['operateProcesses'],
 								search: {active: true, suspended: true, incidents: true},
+								state: {operateHideOptionalFilters: true},
 							},
 						},
 						{
@@ -139,6 +140,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							routeProps: {
 								to: tabRoutes['operateDecisions'],
 								search: {evaluated: true, failed: true},
+								state: {operateHideOptionalFilters: true},
 							},
 						},
 						{

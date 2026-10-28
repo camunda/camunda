@@ -29,6 +29,7 @@ import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues
 import {DecisionPanel, type DecisionDefinitionSelection} from './DecisionPanel';
 import {useDecisionDefinitionVersions} from './useDecisionDefinitionVersions';
 import type {DecisionsSearch} from './decisionsFilter';
+import {useHideOptionalFiltersRequest} from '#/operate/shared/hooks/useHideOptionalFiltersRequest';
 
 type FiltersFormValues = OptionalFilterValues & {
 	tenantId?: string;
@@ -83,6 +84,7 @@ const Decisions: React.FC<Props> = ({
 		enabled: isMultiTenancyEnabled,
 	});
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	useHideOptionalFiltersRequest(() => setVisibleFilters([]));
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo}),

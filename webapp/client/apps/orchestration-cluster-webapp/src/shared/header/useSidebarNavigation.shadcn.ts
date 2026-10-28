@@ -233,6 +233,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							linkProps: {
 								to: tabRoutes['operateProcesses'],
 								search: {active: true, suspended: true, incidents: true},
+								state: {operateHideOptionalFilters: true},
 							},
 						},
 						{
@@ -244,6 +245,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							linkProps: {
 								to: tabRoutes['operateDecisions'],
 								search: {evaluated: true, failed: true},
+								state: {operateHideOptionalFilters: true},
 							},
 						},
 						{

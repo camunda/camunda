@@ -9,10 +9,12 @@
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetProcessDefinitionStatisticsEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -23,7 +25,14 @@ import {
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
-import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {Header} from '#/shared/header/components/Header';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -36,6 +45,23 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 function renderProcessesPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
 	return renderWithRouter(ProcessesHarness, {
+		path: '/operate/processes',
+		initialEntry: `/operate/processes${query}`,
+	});
+}
+
+function ProcessesWithHeader() {
+	return (
+		<>
+			<Header currentUser={createCurrentUser()} license={createLicense()} />
+			<ProcessesHarness />
+		</>
+	);
+}
+
+function renderProcessesPageWithHeader(searchParams?: Record<string, string>) {
+	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
+	return renderWithRouter(ProcessesWithHeader, {
 		path: '/operate/processes',
 		initialEntry: `/operate/processes${query}`,
 	});
@@ -282,5 +308,70 @@ describe('Optional Filters', () => {
 		await expect.element(screen.getByLabelText('End Date Range', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByLabelText('Batch Operation Key', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+	});
+
+	describe('when Processes is clicked in the header', () => {
+		it('should hide the optional filters on every click', async ({worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			);
+			const screen = await renderProcessesPageWithHeader({processInstanceKey: '2251799813685467'});
+			const processesHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Processes'});
+
+			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+			await expect.element(screen.getByLabelText('Process Instance Key(s)', {exact: true})).toBeVisible();
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
+
+			await userEvent.click(processesHeaderLink);
+
+			await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+			await expect.element(screen.getByLabelText('Process Instance Key(s)', {exact: true})).not.toBeInTheDocument();
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+
+			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
+
+			await userEvent.click(processesHeaderLink);
+
+			await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+		});
+
+		it('should keep an applied variable filter', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+				mockQueryProcessInstancesEndpoint({
+					schema: z.object({
+						filter: z.object({variables: z.tuple([z.object({name: z.literal('status'), value: z.unknown()})])}),
+					}),
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+					),
+					failureResponse: EMPTY_PROCESS_INSTANCES,
+				}),
+			);
+			const screen = await renderProcessesPageWithHeader();
+
+			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
+			await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
+			await userEvent.fill(screen.getByRole('textbox', {name: 'Value'}), '"open"');
+			await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
+
+			await userEvent.click(screen.getByRole('banner').getByRole('link', {name: 'Processes'}));
+
+			await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+			await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('status');
+			await expect.element(screen.getByRole('textbox', {name: 'Value'})).toHaveValue('"open"');
+			await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
+		});
 	});
 });

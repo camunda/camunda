@@ -33,6 +33,9 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionsHarness} from './DecisionsHarness';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {Header} from '#/shared/header/components/Header';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -46,6 +49,15 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 );
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+function DecisionsWithHeader() {
+	return (
+		<>
+			<Header currentUser={createCurrentUser()} license={createLicense()} />
+			<DecisionsHarness />
+		</>
+	);
+}
 
 function renderDecisionsPage(searchParams: Record<string, string> = {}, legacy = false) {
 	const query = new URLSearchParams({
@@ -569,5 +581,35 @@ describe('<Decisions />', () => {
 
 			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
 		});
+	});
+
+	it('should hide the optional filters on every click on Decisions in the header', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+		const screen = await renderWithRouter(DecisionsWithHeader, {
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?evaluated=true&failed=true',
+		});
+		const decisionsHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Decisions'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));
+		await expect.element(screen.getByLabelText('Decision Instance Key(s)', {exact: true})).toBeVisible();
+
+		await userEvent.click(decisionsHeaderLink);
+
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByLabelText('Decision Instance Key(s)', {exact: true})).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
+
+		await userEvent.click(decisionsHeaderLink);
+
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 	});
 });
