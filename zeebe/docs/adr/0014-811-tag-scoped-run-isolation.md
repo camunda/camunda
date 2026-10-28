@@ -117,6 +117,20 @@ migration — an accepted gap unless a migrated run-scoped instance must keep it
 - **Reusing `businessId` as the run carrier, or combined-hash routing.** `businessId` enforces
   one-active-instance uniqueness and is user-facing domain semantics; reusing it would forbid multiple
   instances per run and change routing contracts. The run scope must be orthogonal to it.
+- **A parallel run-scoped lock column family, instead of composing the run scope into the
+  correlation-key value (D7).** Keep the shipped `MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY` and
+  `CROSS_PARTITION_MESSAGE_START_LOCK` families byte-for-byte unchanged (used only when the selector is
+  unset), and add new families keyed on a three-part `(bpmnProcessId, correlationKey, runScope)` tuple,
+  written only when the selector is set. *Advantage:* the released families never change — their
+  on-disk bytes and replay stay untouched — and no encoding scheme is needed, because a three-part key
+  cannot collide with a raw two-part key. *Cost:* two or more new column families that are permanent,
+  backed-up, migrated state, plus a `scoped ? newCF : oldCF` branch in every lock write, release, and
+  the cross-partition path (the reverse `processInstanceKey → correlationKey` lookup must also carry the
+  run scope so release targets the right family). Both options require new applier **versions** and
+  propagation to newer minors; they differ only in whether released lock bytes are disturbed
+  (value-composition) or a parallel structure is added (new CF). D7 chose value-composition to avoid
+  column-family proliferation; the parallel-CF form is the safer-for-replay alternative when review
+  prefers leaving shipped state untouched, and is being prototyped on this branch to compare the two.
 
 ## Consequences
 
