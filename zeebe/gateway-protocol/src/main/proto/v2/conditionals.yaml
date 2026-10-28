@@ -98,6 +98,11 @@ components:
           additionalProperties: true
           example:
             x: 2
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     EvaluateConditionalResult:
       type: object
