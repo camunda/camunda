@@ -274,6 +274,15 @@ jobs:
           path: ${{ env.SUITE_DIR }}/html-report
           retention-days: 10
 
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - API (Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/json-report
+          retention-days: 10
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -465,6 +474,15 @@ jobs:
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
           path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - API (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/json-report
           retention-days: 10
 
       - name: Stop Camunda
@@ -764,6 +782,15 @@ jobs:
         with:
           name: C8 Orchestration Cluster E2E Test Result (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
           path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - E2E (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
+          path: ${{ env.SUITE_DIR }}/json-report
           retention-days: 10
 
       - name: Observe build status
