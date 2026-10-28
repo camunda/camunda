@@ -218,7 +218,7 @@ test.describe('Element Instance Incident Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug: 48703 https://github.com/camunda/camunda/issues/48703
+  // Skipped due to bug 48703: https://github.com/camunda/camunda/issues/48703
   test.skip('Search for incidents of a specific element instance - ascending order by errorMessage - Success', async ({
     request,
   }) => {
