@@ -27,6 +27,7 @@ import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,7 +37,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
 @RequestMapping("/v2/documents")
@@ -117,15 +117,18 @@ public class DocumentController {
   @CamundaGetMapping(
       path = "/{documentId}",
       produces = {}) // produces arbitrary content type
-  public ResponseEntity<StreamingResponseBody> getDocumentContent(
+  public ResponseEntity<InputStreamResource> getDocumentContent(
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    // handle the future explicitly here because a StreamingResponseBody is needed as result instead
-    // of a future wrapping the stream response
+    // Stream the content on the request thread. Do not switch to StreamingResponseBody: it writes
+    // the body on an executor thread while Spring Security's HeaderWriterFilter still writes
+    // headers after the filter chain returns, a race on the non-thread-safe servlet response that
+    // can drop the connection mid-response
+    // (https://github.com/spring-projects/spring-security/issues/15510).
     return serviceRegistry
         .documentServices(physicalTenantId)
         .getDocumentContent(documentId, storeId, contentHash, authentication)
@@ -134,7 +137,7 @@ public class DocumentController {
         .join();
   }
 
-  private static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
+  private static ResponseEntity<InputStreamResource> toDocumentContentResponse(
       final DocumentContentResponse response) {
     final MediaType mediaType = ResponseMapper.resolveMediaType(response);
     return ResponseEntity.ok()
@@ -144,12 +147,9 @@ public class DocumentController {
         .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
         // Renderable-but-unsafe types (HTML, SVG, ...) are served as a download
         .header(HttpHeaders.CONTENT_DISPOSITION, resolveContentDisposition(mediaType))
-        .body(
-            bodyStream -> {
-              try (final var contentInputStream = response.content()) {
-                contentInputStream.transferTo(bodyStream);
-              }
-            });
+        // copied in chunks and closed by ResourceHttpMessageConverter; unlike other Resource
+        // types, an InputStreamResource is not read up front for Range or Content-Length handling
+        .body(new InputStreamResource(response.content()));
   }
 
   private static String resolveContentDisposition(final MediaType mediaType) {
