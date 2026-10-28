@@ -944,7 +944,98 @@ func BuildJRE(camundaVersion string) error {
 		return fmt.Errorf("failed to materialize bundled JRE symlinks: %w", err)
 	}
 
+	if err := removeDistrustedCACerts(filepath.Join(jre.DirectoryName, "lib", "security", "cacerts")); err != nil {
+		return fmt.Errorf("failed to remove distrusted CAs from bundled JRE: %w", err)
+	}
+
 	return nil
+}
+
+// distrustedCACommonNames lists root CAs that chain to the compromised eMudhra intermediates.
+// The JDK alias differs between vendors, so entries are matched by subject common name.
+var distrustedCACommonNames = []string{
+	"emSign ECC Root CA - G3",
+	"emSign Root TLS CA - G3",
+	"emSign Root CS CA - G3",
+}
+
+const cacertsStorePass = "changeit"
+
+func removeDistrustedCACerts(cacertsPath string) error {
+	listing, err := listKeystore(cacertsPath)
+	if err != nil {
+		return err
+	}
+
+	for _, alias := range findDistrustedAliases(listing) {
+		cmd := exec.Command("keytool", "-J-Duser.language=en", "-delete", "-noprompt",
+			"-keystore", cacertsPath, "-storepass", cacertsStorePass, "-alias", alias)
+		var stderr strings.Builder
+		cmd.Stdout = &stderr
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to delete alias %q: %w\n%s", alias, err, stderr.String())
+		}
+		log.Info().Str("alias", alias).Msg("Removed distrusted CA from bundled JRE")
+	}
+
+	listing, err = listKeystore(cacertsPath)
+	if err != nil {
+		return err
+	}
+	if remaining := findDistrustedAliases(listing); len(remaining) > 0 {
+		return fmt.Errorf("distrusted CAs still present after removal: %v", remaining)
+	}
+	return nil
+}
+
+func listKeystore(path string) (string, error) {
+	cmd := exec.Command("keytool", "-J-Duser.language=en", "-list", "-v",
+		"-keystore", path, "-storepass", cacertsStorePass)
+	var out strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to list keystore %s: %w\n%s", path, err, stderr.String())
+	}
+	return out.String(), nil
+}
+
+func findDistrustedAliases(keytoolListing string) []string {
+	var aliases []string
+	var currentAlias string
+	for _, line := range strings.Split(keytoolListing, "\n") {
+		line = strings.TrimSpace(line)
+		if alias, ok := strings.CutPrefix(line, "Alias name: "); ok {
+			currentAlias = alias
+			continue
+		}
+		owner, ok := strings.CutPrefix(line, "Owner: ")
+		if !ok || currentAlias == "" {
+			continue
+		}
+		if isDistrustedOwner(owner) {
+			aliases = append(aliases, currentAlias)
+		}
+		currentAlias = ""
+	}
+	return aliases
+}
+
+func isDistrustedOwner(owner string) bool {
+	for _, rdn := range strings.Split(owner, ", ") {
+		cn, ok := strings.CutPrefix(rdn, "CN=")
+		if !ok {
+			continue
+		}
+		for _, distrusted := range distrustedCACommonNames {
+			if cn == distrusted {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func ensureJLinkVersion() error {

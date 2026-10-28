@@ -3,6 +3,7 @@ package packages
 import (
 	"archive/zip"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -1811,5 +1812,73 @@ func TestMaterializeSymlinksReplacesSymlinkWithDirectory(t *testing.T) {
 	}
 	if string(content) != "jre legal text" {
 		t.Fatalf("expected materialized content %q, got %q", "jre legal text", string(content))
+	}
+}
+
+func TestFindDistrustedAliasesMatchesBySubjectCommonName(t *testing.T) {
+	listing := `Keystore type: PKCS12
+
+Alias name: comodoaaaca [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=AAA Certificate Services, O=Comodo CA Limited, L=Salford, ST=Greater Manchester, C=GB
+Issuer: CN=AAA Certificate Services, O=Comodo CA Limited, L=Salford, ST=Greater Manchester, C=GB
+
+Alias name: cn_emsign_ecc_root_ca__g3
+Entry type: trustedCertEntry
+
+Owner: CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+Issuer: CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+
+Alias name: emsignrootcag1 [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=emSign Root CA - G1, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+
+Alias name: digicertglobalrootg2 [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=DigiCert Global Root G2, OU=www.digicert.com, O=DigiCert Inc, C=US
+`
+
+	got := findDistrustedAliases(listing)
+
+	want := []string{"cn_emsign_ecc_root_ca__g3"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func TestRemoveDistrustedCACertsDropsEMudhraRootsFromJDKStore(t *testing.T) {
+	javaHome := os.Getenv("JAVA_HOME")
+	source := filepath.Join(javaHome, "lib", "security", "cacerts")
+	if _, err := exec.LookPath("keytool"); err != nil || javaHome == "" {
+		t.Skip("keytool or JAVA_HOME not available")
+	}
+	if _, err := os.Stat(source); err != nil {
+		t.Skipf("JDK cacerts not found: %v", err)
+	}
+	data, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacerts := filepath.Join(t.TempDir(), "cacerts")
+	if err := os.WriteFile(cacerts, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := removeDistrustedCACerts(cacerts); err != nil {
+		t.Fatal(err)
+	}
+
+	listing, err := listKeystore(cacerts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if remaining := findDistrustedAliases(listing); len(remaining) > 0 {
+		t.Fatalf("expected no distrusted CAs, found %v", remaining)
+	}
+	if !strings.Contains(listing, "Alias name: ") {
+		t.Fatal("expected other CAs to remain in the store")
 	}
 }
