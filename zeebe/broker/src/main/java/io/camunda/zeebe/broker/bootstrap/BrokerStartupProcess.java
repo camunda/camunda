@@ -119,6 +119,7 @@ public final class BrokerStartupProcess {
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getApiMessagingService(),
-        bsc.getPhysicalTenantModules());
+        bsc.getPhysicalTenantModules(),
+        bsc.getClusterConfigurationService());
   }
 }

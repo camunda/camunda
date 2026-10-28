@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
@@ -28,6 +29,7 @@ final class BrokerContextImpl implements BrokerContext {
   private final BrokerAdminService brokerAdminService;
   private final ManagedMessagingService apiMessagingService;
   private final PhysicalTenantModules physicalTenantModules;
+  private final ClusterConfigurationService clusterConfigurationService;
 
   BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -37,7 +39,8 @@ final class BrokerContextImpl implements BrokerContext {
       final Map<String, PartitionManager> partitionManagers,
       final BrokerAdminService brokerAdminService,
       final ManagedMessagingService apiMessagingService,
-      final PhysicalTenantModules physicalTenantModules) {
+      final PhysicalTenantModules physicalTenantModules,
+      final ClusterConfigurationService clusterConfigurationService) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
     this.embeddedGatewayService = embeddedGatewayService;
@@ -46,6 +49,7 @@ final class BrokerContextImpl implements BrokerContext {
     this.brokerAdminService = requireNonNull(brokerAdminService);
     this.apiMessagingService = requireNonNull(apiMessagingService);
     this.physicalTenantModules = requireNonNull(physicalTenantModules);
+    this.clusterConfigurationService = requireNonNull(clusterConfigurationService);
   }
 
   @Override
@@ -86,5 +90,10 @@ final class BrokerContextImpl implements BrokerContext {
   @Override
   public PhysicalTenantModules getPhysicalTenantModules() {
     return physicalTenantModules;
+  }
+
+  @Override
+  public ClusterConfigurationService getClusterConfigurationService() {
+    return clusterConfigurationService;
   }
 }

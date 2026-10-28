@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
@@ -46,4 +47,6 @@ public interface BrokerContext {
 
   /** Starts and stops the module of one physical tenant while the broker runs. */
   PhysicalTenantModules getPhysicalTenantModules();
+
+  ClusterConfigurationService getClusterConfigurationService();
 }
