@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -56,6 +57,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private CamundaClient evaluationClient;
+
   @Mock private AssertionFacade assertionFacade;
 
   @Mock private JobWorkerMockBuilder jobWorkerMockBuilder;
@@ -69,6 +73,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
   void setUp() {
     // lenient: the D4 exclusivity-rejection tests throw before mockJobWorker is ever called
     lenient().when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
+    lenient().when(processTestContext.createClient()).thenReturn(evaluationClient);
   }
 
   @Test
@@ -216,7 +221,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     final Map<String, Object> jobVariables = Collections.singletonMap("x", 1);
     final Map<String, Object> feelResult = Collections.singletonMap("result", 1);
 
-    when(camundaClient
+    when(evaluationClient
             .newEvaluateExpressionCommand()
             .expression("={ result: 1 }")
             .variables(jobVariables)
@@ -243,6 +248,41 @@ public class MockJobWorkerCompleteJobInstructionTest {
   }
 
   @Test
+  void shouldEvaluateExpressionWithContextManagedClientInsteadOfRunnerClient() {
+    // given
+    final MockJobWorkerCompleteJobInstruction instruction =
+        ImmutableMockJobWorkerCompleteJobInstruction.builder()
+            .jobType(JOB_TYPE)
+            .variablesExpression("{ result: 1 }")
+            .build();
+
+    final ArgumentCaptor<Function<Map<String, Object>, Map<String, Object>>> functionCaptor =
+        ArgumentCaptor.forClass(Function.class);
+    when(jobWorkerMockBuilder.thenComplete(functionCaptor.capture())).thenReturn(jobWorkerMock);
+
+    final Map<String, Object> jobVariables = Collections.singletonMap("x", 1);
+    final Map<String, Object> feelResult = Collections.singletonMap("result", 1);
+    when(evaluationClient
+            .newEvaluateExpressionCommand()
+            .expression("={ result: 1 }")
+            .variables(jobVariables)
+            .send()
+            .join()
+            .getResult())
+        .thenReturn(feelResult);
+
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // when the runner has finished and closed its client before the job is activated
+    camundaClient.close();
+    final Map<String, Object> result = functionCaptor.getValue().apply(jobVariables);
+
+    // then
+    assertThat(result).isEqualTo(feelResult);
+    verify(camundaClient, never()).newEvaluateExpressionCommand();
+  }
+
+  @Test
   void shouldNotDoublePrefixExpressionThatAlreadyStartsWithEquals() {
     // given
     final MockJobWorkerCompleteJobInstruction instruction =
@@ -256,7 +296,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     when(jobWorkerMockBuilder.thenComplete(functionCaptor.capture())).thenReturn(jobWorkerMock);
 
     final Map<String, Object> jobVariables = Collections.singletonMap("x", 1);
-    when(camundaClient
+    when(evaluationClient
             .newEvaluateExpressionCommand()
             .expression("={ result: 1 }")
             .variables(jobVariables)
@@ -288,7 +328,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     when(jobWorkerMockBuilder.thenComplete(functionCaptor.capture())).thenReturn(jobWorkerMock);
 
     final Map<String, Object> jobVariables = Collections.emptyMap();
-    when(camundaClient
+    when(evaluationClient
             .newEvaluateExpressionCommand()
             .expression("=1 + 1")
             .variables(jobVariables)
@@ -319,7 +359,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     when(jobWorkerMockBuilder.thenComplete(functionCaptor.capture())).thenReturn(jobWorkerMock);
 
     final Map<String, Object> jobVariables = Collections.emptyMap();
-    when(camundaClient
+    when(evaluationClient
             .newEvaluateExpressionCommand()
             .expression("=missingVariable")
             .variables(jobVariables)

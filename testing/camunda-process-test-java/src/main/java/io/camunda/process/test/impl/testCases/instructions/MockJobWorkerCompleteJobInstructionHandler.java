@@ -41,9 +41,12 @@ public class MockJobWorkerCompleteJobInstructionHandler
 
     if (instruction.getVariablesExpression().isPresent()) {
       final String expression = normalize(instruction.getVariablesExpression().get());
+      // the runner's client closes when the test case run returns, but the mock worker keeps
+      // running, so the callback needs a client that is managed by the runtime
+      final CamundaClient evaluationClient = context.createClient();
       context
           .mockJobWorker(instruction.getJobType())
-          .thenComplete(jobVariables -> evaluate(camundaClient, expression, jobVariables));
+          .thenComplete(jobVariables -> evaluate(evaluationClient, expression, jobVariables));
     } else if (!instruction.getVariablesTable().isEmpty()) {
       context
           .mockJobWorker(instruction.getJobType())
