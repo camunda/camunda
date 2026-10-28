@@ -171,10 +171,10 @@ test('a case skipped in one project of two fails', () => {
 // check does not fire either. A coverage plan has no way to say "this is
 // expected to be broken", so an inverted expectation on a generated case is
 // never the plan's intent.
-// A real test.skip() carries expectedStatus 'skipped', so the guard above
-// must answer "skipped" for it rather than claiming an inverted expectation.
-// The older skip fixtures omit expectedStatus, which is why they do not pin
-// this.
+// A real test.skip() also carries expectedStatus 'skipped', so the
+// expectedStatus guard in e2e-scoped-verdict.mjs must leave this one to the
+// skip check below it. The older skip fixtures omit expectedStatus, which is
+// why they do not pin this.
 test('a skipped case is reported as skipped, not as expected to fail', () => {
   const r = runVerdict(
     {
