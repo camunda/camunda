@@ -109,6 +109,90 @@ public interface CamundaClientConfiguration {
   String getCaCertificatePath();
 
   /**
+   * @see CamundaClientBuilder#clientCertificate(String, String)
+   */
+  default String getMtlsCertPath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateContent(String, String)
+   */
+  default String getMtlsCert() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificate(String, String)
+   */
+  default String getMtlsKeyPath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateContent(String, String)
+   */
+  default String getMtlsKey() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientKeyPassphrase(String)
+   */
+  default String getMtlsKeyPassphrase() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#mtlsCaCertificatePath(String)
+   */
+  default String getMtlsCaPath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#mtlsCaCertificateContent(String)
+   */
+  default String getMtlsCa() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  default String getMtlsKeystorePath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  default String getMtlsKeystorePassword() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  default String getMtlsKeystoreKeyPassword() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#mtlsTruststore(String, String)
+   */
+  default String getMtlsTruststorePath() {
+    return null;
+  }
+
+  /**
+   * @see CamundaClientBuilder#mtlsTruststore(String, String)
+   */
+  default String getMtlsTruststorePassword() {
+    return null;
+  }
+
+  /**
    * @see CamundaClientBuilder#credentialsProvider(CredentialsProvider)
    */
   CredentialsProvider getCredentialsProvider();
