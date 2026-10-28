@@ -13,6 +13,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import java.util.Map;
@@ -26,6 +27,7 @@ final class BrokerContextImpl implements BrokerContext {
   private final Map<String, PartitionManager> partitionManagers;
   private final BrokerAdminService brokerAdminService;
   private final ManagedMessagingService apiMessagingService;
+  private final PhysicalTenantModules physicalTenantModules;
 
   BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -34,7 +36,8 @@ final class BrokerContextImpl implements BrokerContext {
       final PartitionManager partitionManager,
       final Map<String, PartitionManager> partitionManagers,
       final BrokerAdminService brokerAdminService,
-      final ManagedMessagingService apiMessagingService) {
+      final ManagedMessagingService apiMessagingService,
+      final PhysicalTenantModules physicalTenantModules) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
     this.embeddedGatewayService = embeddedGatewayService;
@@ -42,6 +45,7 @@ final class BrokerContextImpl implements BrokerContext {
     this.partitionManagers = requireNonNull(partitionManagers);
     this.brokerAdminService = requireNonNull(brokerAdminService);
     this.apiMessagingService = requireNonNull(apiMessagingService);
+    this.physicalTenantModules = requireNonNull(physicalTenantModules);
   }
 
   @Override
@@ -77,5 +81,10 @@ final class BrokerContextImpl implements BrokerContext {
   @Override
   public ManagedMessagingService getApiMessagingService() {
     return apiMessagingService;
+  }
+
+  @Override
+  public PhysicalTenantModules getPhysicalTenantModules() {
+    return physicalTenantModules;
   }
 }

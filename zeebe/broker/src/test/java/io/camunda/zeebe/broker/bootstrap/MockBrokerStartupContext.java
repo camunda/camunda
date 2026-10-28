@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -96,6 +97,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
+  private PhysicalTenantModules physicalTenantModules;
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -438,6 +440,37 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   public void setPhysicalTenantContext(
       final String physicalTenantId, final PhysicalTenantContext context) {
     physicalTenantContexts.put(physicalTenantId, context);
+  }
+
+  @Override
+  public void putPhysicalTenantContext(
+      final String physicalTenantId, final PhysicalTenantContext context) {
+    physicalTenantContexts.put(physicalTenantId, context);
+  }
+
+  @Override
+  public void removePhysicalTenantContext(final String physicalTenantId) {
+    physicalTenantContexts.remove(physicalTenantId);
+  }
+
+  @Override
+  public PhysicalTenantModules getPhysicalTenantModules() {
+    return physicalTenantModules;
+  }
+
+  @Override
+  public void setPhysicalTenantModules(final PhysicalTenantModules physicalTenantModules) {
+    this.physicalTenantModules = physicalTenantModules;
+  }
+
+  @Override
+  public Map<String, JobStreamService> getJobStreamServices() {
+    return jobStreamServices;
+  }
+
+  @Override
+  public Map<String, BrokerAdminServiceImpl> getBrokerAdminServices() {
+    return brokerAdminServices;
   }
 
   public void setUserServices(final UserServices userServices) {

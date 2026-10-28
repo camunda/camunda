@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Set;
 
 /**
  * Sets up one {@link BrokerAdminServiceImpl} per physical tenant and registers each in the broker
@@ -68,7 +69,8 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
                         brokerStartupContext::getBrokerAdminService);
                 brokerStartupContext
                     .getSpringBrokerBridge()
-                    .registerBrokerAdminServiceTenantIdsSupplier(() -> tenantIds);
+                    .registerBrokerAdminServiceTenantIdsSupplier(
+                        () -> Set.copyOf(brokerStartupContext.getBrokerAdminServices().keySet()));
 
                 startupFuture.complete(brokerStartupContext);
               },
@@ -82,7 +84,7 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
 
-    final var tenantIds = brokerShutdownContext.getPhysicalTenantIds().known();
+    final var tenantIds = Set.copyOf(brokerShutdownContext.getBrokerAdminServices().keySet());
 
     final var futures =
         tenantIds.stream()
@@ -102,7 +104,7 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
         });
   }
 
-  private ActorFuture<BrokerAdminServiceImpl> startTenantService(
+  static ActorFuture<BrokerAdminServiceImpl> startTenantService(
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
       final ConcurrencyControl concurrencyControl) {
@@ -130,7 +132,7 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
     return result;
   }
 
-  private ActorFuture<Void> shutdownTenantService(
+  static ActorFuture<Void> shutdownTenantService(
       final BrokerStartupContext ctx,
       final String physicalTenantId,
       final ConcurrencyControl concurrencyControl) {

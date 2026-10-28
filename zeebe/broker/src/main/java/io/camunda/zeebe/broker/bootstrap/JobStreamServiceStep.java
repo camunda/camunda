@@ -25,8 +25,9 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -71,11 +72,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
           brokerStartupContext
               .getSpringBrokerBridge()
               .registerJobStreamServicesSupplier(
-                  () ->
-                      tenantIds.stream()
-                          .map(brokerStartupContext::getJobStreamService)
-                          .filter(Objects::nonNull)
-                          .toList());
+                  () -> List.copyOf(brokerStartupContext.getJobStreamServices().values()));
           brokerStartupContext
               .getSpringBrokerBridge()
               .registerJobStreamServiceByTenantLookup(brokerStartupContext::getJobStreamService);
@@ -89,7 +86,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
 
-    final var tenantIds = brokerShutdownContext.getPhysicalTenantIds().known();
+    final var tenantIds = Set.copyOf(brokerShutdownContext.getJobStreamServices().keySet());
 
     final var futures =
         tenantIds.stream()
@@ -110,7 +107,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         });
   }
 
-  private ActorFuture<JobStreamService> startTenantService(
+  static ActorFuture<JobStreamService> startTenantService(
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
       final ActorSchedulingService scheduler,
@@ -165,7 +162,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     return result;
   }
 
-  private ActorFuture<Void> shutdownTenantService(
+  static ActorFuture<Void> shutdownTenantService(
       final BrokerStartupContext ctx,
       final String physicalTenantId,
       final ConcurrencyControl concurrencyControl) {

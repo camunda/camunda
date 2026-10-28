@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -42,7 +43,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
   private final Map<String, PhysicalTenantContext> physicalTenantContexts;
+  private PhysicalTenantModules physicalTenantModules;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -84,9 +85,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
-  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
+  private final Map<String, JobStreamService> jobStreamServices = new ConcurrentHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
-  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
+  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new ConcurrentHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private ClusterConfigurationService clusterConfigurationService;
   private CheckpointSchedulingService checkpointSchedulingService;
@@ -121,7 +122,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
+    this.physicalTenantContexts = new ConcurrentHashMap<>(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -273,6 +274,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
+  public Map<String, JobStreamService> getJobStreamServices() {
+    return Collections.unmodifiableMap(jobStreamServices);
+  }
+
+  @Override
   public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
     jobStreamServices.put(physicalTenantId, service);
   }
@@ -311,6 +317,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerAdminServiceImpl getBrokerAdminService(final String physicalTenantId) {
     return brokerAdminServices.get(physicalTenantId);
+  }
+
+  @Override
+  public Map<String, BrokerAdminServiceImpl> getBrokerAdminServices() {
+    return Collections.unmodifiableMap(brokerAdminServices);
   }
 
   @Override
@@ -366,6 +377,27 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
     return physicalTenantContexts.get(physicalTenantId);
+  }
+
+  @Override
+  public void putPhysicalTenantContext(
+      final String physicalTenantId, final PhysicalTenantContext context) {
+    physicalTenantContexts.put(physicalTenantId, requireNonNull(context));
+  }
+
+  @Override
+  public void removePhysicalTenantContext(final String physicalTenantId) {
+    physicalTenantContexts.remove(physicalTenantId);
+  }
+
+  @Override
+  public PhysicalTenantModules getPhysicalTenantModules() {
+    return physicalTenantModules;
+  }
+
+  @Override
+  public void setPhysicalTenantModules(final PhysicalTenantModules physicalTenantModules) {
+    this.physicalTenantModules = physicalTenantModules;
   }
 
   @Override

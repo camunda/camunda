@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -116,6 +117,9 @@ public interface BrokerStartupContext {
 
   JobStreamService getJobStreamService(String physicalTenantId);
 
+  /** The job stream service of every physical tenant module running on this broker. */
+  Map<String, JobStreamService> getJobStreamServices();
+
   void addJobStreamService(String physicalTenantId, JobStreamService service);
 
   void removeJobStreamService(String physicalTenantId);
@@ -138,6 +142,9 @@ public interface BrokerStartupContext {
   void setRocksDbResources(RocksDbResources sharedRocksDbResources);
 
   BrokerAdminServiceImpl getBrokerAdminService(String physicalTenantId);
+
+  /** The admin service of every physical tenant module running on this broker. */
+  Map<String, BrokerAdminServiceImpl> getBrokerAdminServices();
 
   void addBrokerAdminService(String physicalTenantId, BrokerAdminServiceImpl brokerAdminService);
 
@@ -163,6 +170,15 @@ public interface BrokerStartupContext {
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
   PhysicalTenantContext getPhysicalTenantContext(String physicalTenantId);
+
+  /** Makes a physical tenant known to this broker before its module starts at runtime. */
+  void putPhysicalTenantContext(String physicalTenantId, PhysicalTenantContext context);
+
+  void removePhysicalTenantContext(String physicalTenantId);
+
+  PhysicalTenantModules getPhysicalTenantModules();
+
+  void setPhysicalTenantModules(PhysicalTenantModules physicalTenantModules);
 
   Function<String, UserServices> getUserServicesForTenant();
 

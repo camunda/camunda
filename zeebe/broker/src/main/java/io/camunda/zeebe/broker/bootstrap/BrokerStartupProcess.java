@@ -68,9 +68,7 @@ public final class BrokerStartupProcess {
     result.add(new JobStreamServiceStep());
     result.add(new PartitionGroupMigrationStep());
     result.add(new RocksDbResourcesStep());
-    for (final String physicalTenantId : startupContext.getPhysicalTenantIds().known()) {
-      result.add(new PartitionManagerStep(physicalTenantId));
-    }
+    result.add(new PhysicalTenantModulesStep());
     result.add(new BrokerAdminServiceStep());
     result.add(new CheckpointSchedulerServiceStep());
 
@@ -120,6 +118,7 @@ public final class BrokerStartupProcess {
         bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
-        bsc.getApiMessagingService());
+        bsc.getApiMessagingService(),
+        bsc.getPhysicalTenantModules());
   }
 }
