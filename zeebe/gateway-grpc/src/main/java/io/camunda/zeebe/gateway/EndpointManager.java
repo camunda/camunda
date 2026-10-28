@@ -88,6 +88,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public final class EndpointManager {
 
@@ -96,8 +97,8 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final Map<String, BrokerRequestAuthorizationConverter>
-      authorizationConvertersByPhysicalTenant;
+  private final Function<String, @Nullable BrokerRequestAuthorizationConverter>
+      authorizationConverters;
 
   /**
    * @param securityConfigurationsByPhysicalTenant security config of every physical tenant,
@@ -109,8 +110,43 @@ public final class EndpointManager {
       final StreamJobsHandler streamJobsHandler,
       final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final int maxVariableNameLength) {
-    final EngineSecurityConfig securityConfiguration =
-        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    this(
+        brokerClient,
+        activateJobsHandler,
+        streamJobsHandler,
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
+        convertersOf(securityConfigurationsByPhysicalTenant)::get,
+        maxVariableNameLength);
+  }
+
+  /**
+   * @param physicalTenants looked up per request, so a request is converted with the current config
+   *     of the tenant it targets
+   */
+  public EndpointManager(
+      final BrokerClient brokerClient,
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
+      final StreamJobsHandler streamJobsHandler,
+      final GatewayPhysicalTenants physicalTenants,
+      final int maxVariableNameLength) {
+    this(
+        brokerClient,
+        activateJobsHandler,
+        streamJobsHandler,
+        Objects.requireNonNull(
+            physicalTenants.securityConfig(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
+            "No security configuration registered for the default physical tenant"),
+        physicalTenants::authorizationConverter,
+        maxVariableNameLength);
+  }
+
+  private EndpointManager(
+      final BrokerClient brokerClient,
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
+      final StreamJobsHandler streamJobsHandler,
+      final EngineSecurityConfig securityConfiguration,
+      final Function<String, @Nullable BrokerRequestAuthorizationConverter> authorizationConverters,
+      final int maxVariableNameLength) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
@@ -118,11 +154,16 @@ public final class EndpointManager {
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(securityConfiguration.isMultiTenancyChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationConvertersByPhysicalTenant = new HashMap<>();
+    this.authorizationConverters = authorizationConverters;
+  }
+
+  private static Map<String, BrokerRequestAuthorizationConverter> convertersOf(
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant) {
+    final Map<String, BrokerRequestAuthorizationConverter> converters = new HashMap<>();
     securityConfigurationsByPhysicalTenant.forEach(
         (physicalTenantId, config) ->
-            authorizationConvertersByPhysicalTenant.put(
-                physicalTenantId, new BrokerRequestAuthorizationConverter(config)));
+            converters.put(physicalTenantId, new BrokerRequestAuthorizationConverter(config)));
+    return Map.copyOf(converters);
   }
 
   private void addBrokerInfo(
@@ -594,7 +635,7 @@ public final class EndpointManager {
         Objects.requireNonNullElse(
             getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerRequestAuthorizationConverter authorizationConverter =
-        authorizationConvertersByPhysicalTenant.get(physicalTenantId);
+        authorizationConverters.apply(physicalTenantId);
     if (authorizationConverter == null) {
       // fail instead of falling back to the default tenant, whose settings must not apply to
       // another; not an NPE, so it is not mistaken for a missing claim

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -59,7 +58,6 @@ public final class GatewayTestFactory {
         tenantId -> userServices,
         passwordEncoder,
         meterRegistry,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
-        PhysicalTenantIds.DEFAULT);
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 }

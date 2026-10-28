@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import com.google.rpc.Code;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
@@ -27,13 +26,10 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
-import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerFactory;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -66,7 +62,6 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -95,7 +90,7 @@ public final class Gateway implements CloseableSilently {
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
-  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
+  private final GatewayPhysicalTenants physicalTenants;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -110,7 +105,6 @@ public final class Gateway implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
-  private final PhysicalTenantIds physicalTenantIds;
 
   public Gateway(
       final Duration shutdownDuration,
@@ -124,15 +118,13 @@ public final class Gateway implements CloseableSilently {
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final MeterRegistry meterRegistry,
-      final int maxVariableNameLength,
-      final PhysicalTenantIds physicalTenantIds) {
+      final int maxVariableNameLength) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
-    this.securityConfigurationsByPhysicalTenant =
-        Map.copyOf(securityConfigurationsByPhysicalTenant);
-    Objects.requireNonNull(
-        this.securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID),
-        "No security configuration registered for the default physical tenant");
+    final var defaultSecurityConfig =
+        Objects.requireNonNull(
+            securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID),
+            "No security configuration registered for the default physical tenant");
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
@@ -142,9 +134,22 @@ public final class Gateway implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
-    this.physicalTenantIds = physicalTenantIds;
+    physicalTenants =
+        new GatewayPhysicalTenants(
+            securityConfigurationsByPhysicalTenant,
+            !defaultSecurityConfig.getAuthentication().isUnprotectedApi(),
+            this.jwtDecoderFactory,
+            this.oidcClaimsProviderFactory,
+            this.userServicesForTenant,
+            passwordEncoder,
+            meterRegistry);
 
     healthManager = new GatewayHealthManagerImpl();
+  }
+
+  /** The physical tenants this gateway serves; changes take effect for the next call. */
+  public GatewayPhysicalTenants physicalTenants() {
+    return physicalTenants;
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -217,7 +222,7 @@ public final class Gateway implements CloseableSilently {
             brokerClient,
             activateJobsHandler,
             streamJobsHandler,
-            securityConfigurationsByPhysicalTenant,
+            physicalTenants,
             maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
@@ -439,40 +444,9 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
-    final var defaultSecurityConfig =
-        securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
-    final var authEnabled = !defaultSecurityConfig.getAuthentication().isUnprotectedApi();
-
-    // Build one AuthenticationHandler per physical tenant (incl. default); the merged interceptor
-    // stamps the resolved tenant id into the gRPC Context (for partition-group routing) and
-    // authenticates against the per-tenant handler when the API is protected.
-    final Map<String, AuthenticationHandler> handlersByTenant =
-        PhysicalTenantHandlerFactory.build(
-            securityConfigurationsByPhysicalTenant,
-            authEnabled,
-            jwtDecoderFactory,
-            oidcClaimsProviderFactory,
-            userServicesForTenant,
-            passwordEncoder);
-
-    // One metrics instance per tenant so the auth-method dimension reflects each tenant's method.
-    final Map<String, AuthenticationMetrics> metricsByTenant = new LinkedHashMap<>();
-    if (authEnabled) {
-      securityConfigurationsByPhysicalTenant.forEach(
-          (tenantId, config) ->
-              metricsByTenant.put(
-                  tenantId,
-                  new AuthenticationMetrics(
-                      meterRegistry, config.getAuthentication().getMethod())));
-    }
-
     interceptors.add(
         new AuthenticationInterceptor(
-            physicalTenantIds.known(),
-            handlersByTenant,
-            authEnabled,
-            metricsByTenant,
-            meterRegistry));
+            physicalTenants::authentication, physicalTenants.isAuthEnabled(), meterRegistry));
     return ServerInterceptors.intercept(service, interceptors);
   }
 
