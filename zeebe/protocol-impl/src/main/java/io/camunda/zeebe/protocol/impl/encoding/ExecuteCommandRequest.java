@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -139,13 +140,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return authorization;
   }
 
-  public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
-    return this;
-  }
-
-  public ExecuteCommandRequest setAuthorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+  public ExecuteCommandRequest setClaims(final Map<String, Object> claims) {
+    authorization.setClaims(claims);
     return this;
   }
 
