@@ -296,7 +296,11 @@
               },
               "state": {
                 "type": "string",
-                "enum": ["ACTIVE", "DRAINING", "DELETED"],
+                "enum": [
+                  "ACTIVE",
+                  "DRAINING",
+                  "DELETED"
+                ],
                 "description": "Filter by the process definition's state. When not set, process definitions in any state are returned. Set to `ACTIVE` to exclude draining and deleted definitions (recommended for most use cases). Set to `DRAINING` to return only definitions that are being deleted but still have active process instances draining. Set to `DELETED` to return only definitions that have been deleted but are still retained in secondary storage. "
               },
               "version": {
@@ -420,7 +424,7 @@
             "description": "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. "
           },
           "tags": {
-            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
             "type": "array",
             "items": {
               "type": "string"
@@ -558,7 +562,7 @@
                 "description": "The time this process instance most recently entered the SUSPENDED state. This is cleared (null) again once the process instance is resumed. "
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -686,6 +690,11 @@
               "allowOverride": {
                 "type": "boolean",
                 "description": "By default, the task is reassigned if it was already assigned. Set this to `false` to return an error in such cases. The task must then first be unassigned to be assigned again. Use this when you have users picking from group task queues to prevent race conditions. "
+              },
+              "operationReference": {
+                "type": "integer",
+                "format": "int64",
+                "description": "A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided. "
               }
             },
             "description": "Assignment options."
@@ -716,6 +725,11 @@
               "action": {
                 "type": "string",
                 "description": "A custom action value that will be accessible from user task events resulting from this endpoint invocation. If not provided, it will default to \"complete\". "
+              },
+              "operationReference": {
+                "type": "integer",
+                "format": "int64",
+                "description": "A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided. "
               },
               "variables": {
                 "type": "object",
@@ -1002,7 +1016,7 @@
                 "description": "The user task state."
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
+                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
                 "type": "array",
                 "items": {
                   "type": "string"

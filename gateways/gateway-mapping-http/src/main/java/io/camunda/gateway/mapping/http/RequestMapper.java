@@ -27,6 +27,7 @@ import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.va
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.gateway.mapping.http.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -132,17 +133,21 @@ public class RequestMapper {
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
 
-  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final @Nullable UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
-    return new CompleteUserTaskRequest(
-        userTaskKey,
-        getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction),
-        completionRequest == null ? null : completionRequest.getOperationReference());
+    return getResult(
+        validateOperationReference(
+            completionRequest == null ? null : completionRequest.getOperationReference()),
+        () ->
+            new CompleteUserTaskRequest(
+                userTaskKey,
+                getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
+                getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction),
+                completionRequest == null ? null : completionRequest.getOperationReference()));
   }
 
-  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskCompletionRequest
           completionRequest,
       final long userTaskKey) {
@@ -241,17 +246,21 @@ public class RequestMapper {
         buildActivateJobsRequest(activationRequest, tenantIdsResult.get(), tenantFilter));
   }
 
-  public static FailJobRequest toJobFailRequest(
+  public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
       final JobFailRequest failRequest, final long jobKey) {
 
-    return new FailJobRequest(
-        jobKey,
-        getIntOrZero(failRequest, JobFailRequest::getRetries),
-        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
-        getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
-        getMapOrEmpty(failRequest, JobFailRequest::getVariables),
-        failRequest == null ? null : failRequest.getJobLeaseToken(),
-        failRequest == null ? null : failRequest.getOperationReference());
+    return getResult(
+        validateOperationReference(
+            failRequest == null ? null : failRequest.getOperationReference()),
+        () ->
+            new FailJobRequest(
+                jobKey,
+                getIntOrZero(failRequest, JobFailRequest::getRetries),
+                getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+                getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+                getMapOrEmpty(failRequest, JobFailRequest::getVariables),
+                failRequest == null ? null : failRequest.getJobLeaseToken(),
+                failRequest == null ? null : failRequest.getOperationReference()));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -537,6 +546,10 @@ public class RequestMapper {
           validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources");
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
+      }
+      final var operationReferenceViolation = validateOperationReference(operationReference);
+      if (operationReferenceViolation.isPresent()) {
+        return Either.left(operationReferenceViolation.get());
       }
       return Either.right(
           createDeployResourceRequest(resources, validationResponse.get(), operationReference));

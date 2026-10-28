@@ -195,6 +195,12 @@ public final class UserTaskServices
     return search(userTaskSearchQuery(fn), authentication);
   }
 
+  /**
+   * The operation reference is stored on the broker command's record metadata. When a task listener
+   * intercepts the operation, the engine persists the reference via {@code AsyncRequestBehavior}
+   * and restores it from the stored async request when the listener completes or denies the
+   * operation, so the final outcome events keep the original operation's reference.
+   */
   public CompletableFuture<UserTaskRecord> assignUserTask(
       final long userTaskKey,
       final String assignee,

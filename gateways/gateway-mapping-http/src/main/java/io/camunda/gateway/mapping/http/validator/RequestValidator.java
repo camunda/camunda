@@ -119,6 +119,16 @@ public final class RequestValidator {
   }
 
   /**
+   * Validates an optional operation reference, returning a problem detail when it is invalid.
+   * Convenience wrapper around {@link #validateOperationReference(Long, List)} for mapping paths
+   * that do not otherwise collect violations.
+   */
+  public static Optional<ProblemDetail> validateOperationReference(
+      final @Nullable Long operationReference) {
+    return validate(violations -> validateOperationReference(operationReference, violations));
+  }
+
+  /**
    * Validates that a string-encoded key can be parsed as a valid Long.
    *
    * @param keyValue the string value to validate

@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
@@ -58,6 +59,7 @@ public final class JobRequestValidator {
           if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
           }
+          validateOperationReference(errorRequest.getOperationReference(), violations);
         });
   }
 
@@ -68,6 +70,7 @@ public final class JobRequestValidator {
           if (completionRequest == null) {
             return;
           }
+          validateOperationReference(completionRequest.getOperationReference(), violations);
           final String businessId = completionRequest.getBusinessId();
           if (businessId == null) {
             return;
@@ -84,6 +87,7 @@ public final class JobRequestValidator {
       final JobUpdateRequest updateRequest) {
     return validate(
         violations -> {
+          validateOperationReference(updateRequest.getOperationReference(), violations);
           final JobChangeset changeset = updateRequest.getChangeset();
           if (changeset == null
               || (changeset.getRetries() == null
