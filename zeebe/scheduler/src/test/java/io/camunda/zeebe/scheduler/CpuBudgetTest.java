@@ -12,6 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -136,6 +140,101 @@ final class CpuBudgetTest {
 
     // then
     assertThat(Duration.ofNanos(maxLatencyNanos)).isGreaterThan(period);
+  }
+
+  @Test
+  void shouldBlockWaitingThreadUntilBudgetIsRefilled() throws Exception {
+    // given - a budget with a debt of about 100 ms, which the grant of 2 ms each period repays in
+    // about 1 s
+    final var budget = startExhaustedBudget(Duration.ofMillis(100));
+    final var refilled = new CountDownLatch(1);
+    final var waiter = startWaiter(budget, () -> false, refilled);
+
+    // when
+    Awaitility.await("until the thread waits for the refill")
+        .untilAsserted(() -> assertThat(waiter.getState()).isEqualTo(Thread.State.WAITING));
+
+    // then - the thread stays blocked while the budget is exhausted, and ends when it is refilled
+    assertThat(budget.isExhausted()).isTrue();
+    assertThat(refilled.getCount()).isEqualTo(1);
+    assertThat(refilled.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(budget.isExhausted()).isFalse();
+  }
+
+  @Test
+  void shouldReleaseWaitingThreadWhenItMustStop() throws Exception {
+    // given - a budget with a debt of about 2 s, so it stays exhausted for the whole test
+    final var budget = startExhaustedBudget(Duration.ofSeconds(2));
+    final var stopped = new CountDownLatch(1);
+    final var stop = new java.util.concurrent.atomic.AtomicBoolean();
+    final var waiter = startWaiter(budget, stop::get, stopped);
+    Awaitility.await("until the thread waits for the refill")
+        .untilAsserted(() -> assertThat(waiter.getState()).isEqualTo(Thread.State.WAITING));
+
+    // when
+    stop.set(true);
+    budget.wakeWaiters();
+
+    // then
+    assertThat(stopped.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(budget.isExhausted()).isTrue();
+  }
+
+  @Test
+  void shouldCloseSchedulerWhileBudgetIsExhausted() throws Exception {
+    // given - a saturated pool whose budget has a debt of about 2 s
+    final var budget = new CpuBudget(0.1, PERIOD);
+    budgets.add(budget);
+    final var scheduler = newScheduler(budget, 2);
+    budget.start(scheduler.getThreads());
+    saturate(scheduler, 2);
+    budget.charge(Duration.ofSeconds(2).toNanos());
+    Awaitility.await("until the budget is exhausted").until(budget::isExhausted);
+    schedulers.remove(scheduler);
+
+    // when
+    final var closed =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                scheduler.close();
+              } catch (final Exception e) {
+                throw new IllegalStateException(e);
+              }
+            });
+
+    // then
+    closed.get(5, TimeUnit.SECONDS);
+    assertThat(budget.isExhausted()).isTrue();
+  }
+
+  private CpuBudget startExhaustedBudget(final Duration debt) {
+    final var budget = new CpuBudget(0.1, PERIOD);
+    budgets.add(budget);
+    budget.start(List.of());
+    budget.charge(debt.toNanos());
+    Awaitility.await("until the budget is exhausted").until(budget::isExhausted);
+    return budget;
+  }
+
+  private Thread startWaiter(
+      final CpuBudget budget,
+      final java.util.function.BooleanSupplier stop,
+      final CountDownLatch done) {
+    final var thread =
+        new Thread(
+            () -> {
+              try {
+                budget.awaitRefill(stop);
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              done.countDown();
+            });
+    thread.setDaemon(true);
+    thread.start();
+    outsideThreads.add(thread);
+    return thread;
   }
 
   private ActorScheduler startSaturatedPool(final double cores, final int threads) {
