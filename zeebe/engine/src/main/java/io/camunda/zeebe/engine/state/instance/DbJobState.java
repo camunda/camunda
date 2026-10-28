@@ -420,8 +420,10 @@ public final class DbJobState implements JobState, MutableJobState {
           final long backedOffJobKey = jobKey.getValue();
           final var jobRecord = jobsColumnFamily.get(jobKey);
           if (jobRecord == null
+              || jobRecord.getRecord().getRecurringTime() != backoff
               || jobRecord.getRecord().getRetries() <= 0
               || jobRecord.getRecord().getRetryBackoff() <= 0
+              || getState(backedOffJobKey) != State.FAILED
               || !canBackOff.test(backedOffJobKey)) {
             // canBackOff may read the job state, which reuses the key of this entry
             backoffKey.wrapLong(backoff);

@@ -98,8 +98,10 @@ public interface MutableJobState extends JobState {
   void migrate(long key, JobRecord record);
 
   /**
-   * Removes the {@code JOB_BACKOFF} entries of missing jobs and of jobs without retries or retry
-   * backoff. Also removes the entries of jobs for which {@code canBackOff} returns false.
+   * Removes the {@code JOB_BACKOFF} entries that runtime could not have created: entries of missing
+   * jobs, of jobs that are not {@code FAILED} or have no retries or retry backoff, and entries
+   * whose time differs from the job's recurring time. Also removes the entries of jobs for which
+   * {@code canBackOff} returns false.
    */
   void removeInvalidBackoffs(LongPredicate canBackOff);
 
