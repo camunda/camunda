@@ -116,13 +116,15 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     final var clusterServices = brokerStartupContext.getClusterServices();
     final var errorHandlerService =
         new RemoteJobStreamErrorHandlerService(new YieldingJobStreamErrorHandler());
+    final var metrics =
+        new JobStreamMetrics(brokerStartupContext.getMeterRegistry(), physicalTenantId);
     final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
         new TransportFactory(scheduler)
             .createRemoteStreamServer(
                 clusterServices.getCommunicationService(),
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
-                new JobStreamMetrics(brokerStartupContext.getMeterRegistry(), physicalTenantId),
+                metrics,
                 physicalTenantId);
 
     final var result = concurrencyControl.<JobStreamService>createFuture();
@@ -152,7 +154,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                             remoteStreamService,
                             new RemoteJobStreamer(
                                 streamer, clusterServices.getEventService(), physicalTenantId),
-                            errorHandlerService);
+                            errorHandlerService,
+                            metrics);
                     clusterServices.getMembershipService().addListener(remoteStreamService);
                     brokerStartupContext.addJobStreamService(physicalTenantId, jobStreamService);
                     result.complete(jobStreamService);

@@ -28,6 +28,7 @@ public class JobStreamMetrics implements RemoteStreamMetrics {
   private final String physicalTenantId;
   private final Counter pushSuccessCount;
   private final Counter pushFailedCount;
+  private final Gauge streamCountGauge;
 
   public JobStreamMetrics(final MeterRegistry registry, final String physicalTenantId) {
     this.registry = registry;
@@ -37,10 +38,22 @@ public class JobStreamMetrics implements RemoteStreamMetrics {
     pushFailedCount = registerCounter(JobStreamMetricsDoc.PUSH_FAILED_COUNT);
 
     final var streamCountDoc = JobStreamMetricsDoc.STREAM_COUNT;
-    Gauge.builder(streamCountDoc.getName(), streamCount, Number::intValue)
-        .description(streamCountDoc.getDescription())
-        .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
-        .register(registry);
+    streamCountGauge =
+        Gauge.builder(streamCountDoc.getName(), streamCount, Number::intValue)
+            .description(streamCountDoc.getDescription())
+            .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
+            .register(registry);
+  }
+
+  /**
+   * Removes the meters of this physical tenant, so that the next job stream service of the tenant
+   * registers its own gauge instead of reusing one bound to this instance.
+   */
+  public void close() {
+    registry.remove(pushSuccessCount);
+    registry.remove(pushFailedCount);
+    registry.remove(streamCountGauge);
+    pushTryFailedCount.values().forEach(registry::remove);
   }
 
   private Counter registerCounter(final JobStreamMetricsDoc doc, final Tag... tags) {

@@ -20,21 +20,30 @@ import java.util.stream.Stream;
 public record JobStreamService(
     RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
     JobStreamer jobStreamer,
-    RemoteJobStreamErrorHandlerService errorHandlerService) {
+    RemoteJobStreamErrorHandlerService errorHandlerService,
+    JobStreamMetrics metrics) {
 
   public JobStreamService(
       final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
       final JobStreamer jobStreamer,
-      final RemoteJobStreamErrorHandlerService errorHandlerService) {
+      final RemoteJobStreamErrorHandlerService errorHandlerService,
+      final JobStreamMetrics metrics) {
     this.remoteStreamService =
         Objects.requireNonNull(remoteStreamService, "must provide a stream remoteStreamService");
     this.jobStreamer = Objects.requireNonNull(jobStreamer, "must provide a job streamer");
     this.errorHandlerService =
         Objects.requireNonNull(errorHandlerService, "must provide an error handler service");
+    this.metrics = Objects.requireNonNull(metrics, "must provide job stream metrics");
   }
 
   public ActorFuture<?> closeAsync(final ConcurrencyControl executor) {
     return Stream.of(remoteStreamService.closeAsync(executor), errorHandlerService.closeAsync())
-        .collect(new ActorFutureCollector<>(executor));
+        .collect(new ActorFutureCollector<>(executor))
+        .thenApply(
+            closed -> {
+              metrics.close();
+              return closed;
+            },
+            executor);
   }
 }
