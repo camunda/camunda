@@ -17,7 +17,13 @@ import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
@@ -628,7 +634,8 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.jobLeaseToken()).isEqualTo("lease-1");
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
@@ -640,7 +647,8 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.jobLeaseToken()).isNull();
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().jobLeaseToken()).isNull();
     }
 
     @Test
@@ -697,6 +705,191 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().jobLeaseToken()).isNull();
+    }
+  }
+
+  @Nested
+  class OperationReferenceValidationTest {
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnUserTaskCompletion() {
+      // given
+      final var request = UserTaskCompletionRequest.Builder.create().operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toUserTaskCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldMapUserTaskCompletionWithoutBody() {
+      // given/when
+      final var result =
+          RequestMapper.toUserTaskCompletionRequest((UserTaskCompletionRequest) null, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().operationReference()).isNull();
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnUserTaskAssignment() {
+      // given
+      final var request =
+          UserTaskAssignmentRequest.Builder.create()
+              .assignee("jane.doe")
+              .operationReference(-1L)
+              .build();
+
+      // when
+      final var result = RequestMapper.toUserTaskAssignmentRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnUserTaskUpdate() {
+      // given
+      final var request =
+          UserTaskUpdateRequest.Builder.create().action("update").operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toUserTaskUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnJobFailure() {
+      // given
+      final var request = JobFailRequest.Builder.create().operationReference(-2L).build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldMapJobFailureWithoutBody() {
+      // given/when
+      final var result = RequestMapper.toJobFailRequest(null, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().operationReference()).isNull();
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnJobError() {
+      // given
+      final var request =
+          JobErrorRequest.Builder.create().errorCode("error-1").operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request =
+          JobUpdateRequest.Builder.create().changeset(changeset).operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnMessageCorrelation() {
+      // given
+      final var request =
+          MessageCorrelationRequest.Builder.create()
+              .name("msg")
+              .correlationKey("key")
+              .operationReference(0L)
+              .build();
+
+      // when
+      final var result = RequestMapper.toMessageCorrelationRequest(request, false, 255);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnMessagePublication() {
+      // given
+      final var request =
+          MessagePublicationRequest.Builder.create()
+              .name("msg")
+              .correlationKey("key")
+              .timeToLive(1000L)
+              .operationReference(0L)
+              .build();
+
+      // when
+      final var result = RequestMapper.toMessagePublicationRequest(request, false, 255);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
+    }
+
+    @Test
+    void shouldRejectInvalidOperationReferenceOnSignalBroadcast() {
+      // given
+      final var request =
+          SignalBroadcastRequest.Builder.create().signalName("sig").operationReference(0L).build();
+
+      // when
+      final var result = RequestMapper.toBroadcastSignalRequest(request, false);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("operationReference");
     }
   }
 }

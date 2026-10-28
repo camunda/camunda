@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import java.util.Optional;
@@ -20,6 +21,7 @@ public class AdHocSubProcessActivityRequestValidator {
       final AdHocSubProcessActivateActivitiesInstruction request) {
     return validate(
         violations -> {
+          validateOperationReference(request.getOperationReference(), violations);
           if (request.getElements() == null || request.getElements().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
           } else {

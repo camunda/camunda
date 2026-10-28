@@ -34,6 +34,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,7 +60,7 @@ public class ResourceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId,
-      @RequestPart(value = "operationReference", required = false) final Long operationReference) {
+      @RequestParam(value = "operationReference", required = false) final Long operationReference) {
 
     return RequestMapper.toDeployResourceRequest(
             resources, tenantId, operationReference, multiTenancyCfg.isChecksEnabled())
