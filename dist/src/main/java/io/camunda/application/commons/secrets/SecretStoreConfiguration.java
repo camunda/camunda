@@ -39,8 +39,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -60,11 +62,24 @@ public class SecretStoreConfiguration {
    */
   private static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
-          new StoreBinding<>("file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
+              "file",
+              "file",
+              Stores::getFile,
+              (entry, storeId) -> entry.internalConfigStore(),
+              SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "aws",
+              "AWS Secrets Manager",
+              Stores::getAws,
+              AwsSecretsManagerStore::internalConfigStore,
+              SecretStoreConfiguration::awsStore),
+          new StoreBinding<>(
+              "gcp",
+              "GCP Secret Manager",
+              Stores::getGcp,
+              GcpSecretManagerStore::internalConfigStore,
+              SecretStoreConfiguration::gcpStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -100,6 +115,36 @@ public class SecretStoreConfiguration {
     return new SecretStoreRegistries(registries, resources);
   }
 
+  /**
+   * Builds the internal-config store of each physical tenant that configures one, apart from the
+   * job stores above: nothing on the job path is handed these stores, so a job cannot resolve a
+   * secret that configuration references.
+   */
+  @Bean
+  public InternalConfigSecrets internalConfigSecrets(final PhysicalTenantResolver resolver) {
+    final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
+    final var resources = new SecretStoreResources();
+    try {
+      resolver
+          .mapValues(Camunda::getSecrets)
+          .forEach(
+              (tenantId, secrets) -> {
+                final Stores config = secrets.getStores();
+                requireValidStores(tenantId, config);
+                final Map<String, SecretStore> stores = new LinkedHashMap<>();
+                STORE_BINDINGS.forEach(
+                    binding -> binding.registerInternalConfig(config, stores, resources, tenantId));
+                if (!stores.isEmpty()) {
+                  registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
+                }
+              });
+    } catch (final Throwable e) {
+      resources.close();
+      throw e;
+    }
+    return new InternalConfigSecrets(registries, resources);
+  }
+
   private static SecretStoreRegistry buildRegistry(
       final String tenantId,
       final Secrets secrets,
@@ -107,22 +152,7 @@ public class SecretStoreConfiguration {
       final InstantSource timeSource,
       final MeterRegistry meterRegistry) {
     final Stores config = secrets.getStores();
-    // cap is one store total per tenant, counted across all store types combined
-    final long totalStores =
-        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
-    if (totalStores > 1) {
-      throw new IllegalStateException(
-          "Physical tenant '"
-              + tenantId
-              + "' has "
-              + totalStores
-              + " secret stores configured, but only one is supported at this time");
-    }
-    // both rules are checked before any store is built, so the operator gets the configuration
-    // error rather than whatever the store's own construction fails with — an AWS or GCP store
-    // eagerly builds a client and probes credentials, which would otherwise surface first for a
-    // configuration that is rejected anyway
-    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    requireValidStores(tenantId, config);
     // read before any store is built, for the same reason: an out-of-bounds ttl/max-size fails
     // startup without first constructing an AWS/GCP client only to roll it back again
     final Secrets.Cache cacheConfig;
@@ -195,6 +225,28 @@ public class SecretStoreConfiguration {
     resources.addMeterRegistry(tenantMeterRegistry);
     return new SecretStoreRegistry(
         Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
+  }
+
+  /**
+   * Checks the rules every store of a tenant must meet before any store is built, so the operator
+   * gets the configuration error rather than whatever the store's own construction fails with — an
+   * AWS or GCP store eagerly builds a client and probes credentials, which would otherwise surface
+   * first for a configuration that is rejected anyway.
+   */
+  private static void requireValidStores(final String tenantId, final Stores config) {
+    // cap is one store total per tenant, counted across all store types combined
+    final long totalStores =
+        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
+    if (totalStores > 1) {
+      throw new IllegalStateException(
+          "Physical tenant '"
+              + tenantId
+              + "' has "
+              + totalStores
+              + " secret stores configured, but only one is supported at this time");
+    }
+    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    InternalConfigScopes.requireSeparateScopes(tenantId, config);
   }
 
   /**
@@ -347,12 +399,15 @@ public class SecretStoreConfiguration {
    *     configuration error can name the exact property the operator has to change
    * @param displayName human-readable store type name used in log messages
    * @param selector reads this type's {@code storeId -> config} entries from the tenant's stores
+   * @param internalConfig derives the internal-config scope of one entry, or {@code null} if the
+   *     entry has no internal-config block
    * @param factory builds a store from one entry, applying any per-type validation
    */
   private record StoreBinding<C>(
       String propertyKey,
       String displayName,
       Function<Stores, Map<String, C>> selector,
+      BiFunction<C, String, @Nullable C> internalConfig,
       StoreFactory<C> factory) {
 
     private Set<String> ids(final Stores config) {
@@ -381,6 +436,28 @@ public class SecretStoreConfiguration {
                       // the raw id is what the operator wrote, so it is what a factory names in its
                       // own validation errors
                       factory.create(storeId, tenantId, entry)));
+    }
+
+    private void registerInternalConfig(
+        final Stores config,
+        final Map<String, SecretStore> stores,
+        final SecretStoreResources resources,
+        final String tenantId) {
+      selector
+          .apply(config)
+          .forEach(
+              (storeId, entry) -> {
+                final var scoped = internalConfig.apply(entry, storeId);
+                if (scoped != null) {
+                  registerStore(
+                      stores,
+                      resources,
+                      normalizeStoreId(storeId),
+                      tenantId,
+                      displayName + " internal-config",
+                      factory.create(storeId, tenantId, scoped));
+                }
+              });
     }
   }
 
