@@ -11,6 +11,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Set;
@@ -38,6 +39,9 @@ import org.slf4j.LoggerFactory;
  * ids missing from {@code partitionGroups()}; this only ever touches ids present in it) and have
  * different failure shapes (provisioning can fail an entire batch on a reassignment computation;
  * toggling a flag cannot fail that way).
+ *
+ * <p>A tenant owned by the management API is not in any static configuration, so the static
+ * configuration says nothing about it and it is left as it is.
  */
 public class PhysicalTenantAvailabilityInitializer
     extends ClusterConfigurationModifier.CoordinatorOnly<CurrentClusterConfiguration> {
@@ -60,6 +64,9 @@ public class PhysicalTenantAvailabilityInitializer
       final CurrentClusterConfiguration configuration) {
     var result = configuration;
     for (final var groupId : configuration.partitionGroups().keySet()) {
+      if (isOwnedByTheApi(configuration.partitionGroup(groupId))) {
+        continue;
+      }
       final boolean isKnownLocally = staticTenantIds.contains(groupId);
       if (isKnownLocally && configuration.partitionGroup(groupId).isRemoved()) {
         LOG.warn(
@@ -77,5 +84,9 @@ public class PhysicalTenantAvailabilityInitializer
                   : PartitionGroupConfiguration::disable);
     }
     return CompletableActorFuture.completed(result);
+  }
+
+  private static boolean isOwnedByTheApi(final PartitionGroupConfiguration group) {
+    return group.tenantConfig().filter(reference -> reference.owner() == Owner.API).isPresent();
   }
 }
