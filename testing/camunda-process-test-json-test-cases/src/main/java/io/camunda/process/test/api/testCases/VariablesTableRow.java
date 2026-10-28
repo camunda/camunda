@@ -30,10 +30,12 @@ public interface VariablesTableRow {
 
   /**
    * The variables to match against the job's variables. Every entry must be present in the job's
-   * variables with an equal value for this row to match. An empty map matches every job.
+   * variables with an equal value (a null value matches a present null) for this row to match. An
+   * empty map matches every job.
    *
    * @return the variables to match
    */
+  @AllowNulls
   Map<String, Object> getWhen();
 
   /**
@@ -41,5 +43,6 @@ public interface VariablesTableRow {
    *
    * @return the output variables
    */
+  @AllowNulls
   Map<String, Object> getVariables();
 }
