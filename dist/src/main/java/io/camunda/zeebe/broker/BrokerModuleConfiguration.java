@@ -14,6 +14,8 @@ import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.physicaltenants.PhysicalTenantConfigValidator;
+import io.camunda.configuration.physicaltenants.PhysicalTenantKeyClassification;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -26,6 +28,7 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -197,6 +200,36 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         physicalTenantResolver,
         physicalTenantRegistry,
         PHYSICAL_TENANT_CHANGE_TIMEOUT);
+  }
+
+  @Bean
+  public PhysicalTenantKeyClassification physicalTenantKeyClassification() {
+    return PhysicalTenantKeyClassification.load();
+  }
+
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantConfigExecutor physicalTenantConfigExecutor(
+      final PhysicalTenantLifecycleService lifecycle) {
+    return new PhysicalTenantConfigExecutor(lifecycle, physicalTenantRegistry, meterRegistry);
+  }
+
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantConfigService physicalTenantConfigService(
+      final Broker broker,
+      final PhysicalTenantLifecycleService lifecycle,
+      final PhysicalTenantConfigExecutor executor,
+      final ClusterConfigurationManagementRequestSender clusterManagementRequestSender,
+      final ObjectProvider<PhysicalTenantConfigValidator> validators,
+      final ConfigurableEnvironment environment) {
+    return new PhysicalTenantConfigService(
+        broker,
+        lifecycle,
+        executor,
+        clusterManagementRequestSender,
+        validators.orderedStream().toList(),
+        environment,
+        physicalTenantResolver.known(),
+        cluster.getMembershipService().getLocalMember().id());
   }
 
   protected void startBroker() {
