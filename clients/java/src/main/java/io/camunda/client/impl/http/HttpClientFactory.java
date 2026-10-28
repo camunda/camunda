@@ -21,21 +21,12 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
+import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Collections;
@@ -45,7 +36,6 @@ import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManagerFactory;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -277,59 +267,12 @@ public class HttpClientFactory {
   }
 
   private SSLContext createSslContext() {
-    if (AddressUtil.isPlaintextConnection(config.getRestAddress())
-        || config.getCaCertificatePath() == null) {
+    if (AddressUtil.isPlaintextConnection(config.getRestAddress())) {
       return SSLContexts.createDefault();
     }
-
-    final KeyStore keyStore = createKeyStore();
-    try {
-      final TrustManagerFactory factory =
-          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      factory.init(keyStore);
-
-      final SSLContext context = SSLContexts.custom().build();
-      context.init(null, factory.getTrustManagers(), null);
-      return context;
-    } catch (final NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
-   * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
-   * how TLS configuration is done in the Camunda Java client.
-   *
-   * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
-   * the index of the certificate in the chain. This technique is also used by Netty for the gRPC
-   * communication API.
-   *
-   * @return the key store containing the CA certificate chain
-   */
-  private KeyStore createKeyStore() {
-    final File pemChain = new File(config.getCaCertificatePath());
-
-    try (final FileInputStream certificateStream = new FileInputStream(pemChain)) {
-      final KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
-      store.load(null);
-
-      final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-      int i = 1;
-      while (certificateStream.available() > 0) {
-        final Certificate certificate = certificateFactory.generateCertificate(certificateStream);
-        final String alias = Integer.toString(i);
-        store.setCertificateEntry(alias, certificate);
-        i++;
-      }
-
-      return store;
-    } catch (final CertificateException
-        | IOException
-        | KeyStoreException
-        | NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
+    // Handles the mTLS material (CAMUNDA_MTLS_*) as well as the legacy caCertificatePath, and
+    // falls back to the default context when neither is configured.
+    return TlsContexts.createRestSslContext(config);
   }
 
   /**
