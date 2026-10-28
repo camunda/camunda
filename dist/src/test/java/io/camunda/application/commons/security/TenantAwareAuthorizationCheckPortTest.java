@@ -267,10 +267,10 @@ class TenantAwareAuthorizationCheckPortTest {
             Map.of("tenant-a", checkPort("tenant-a", scopeRepository)), true, claimsResolver);
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, "tenant-unknown");
-    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
     // when / then
     try {
+      RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
       assertThatIllegalStateException()
           .isThrownBy(() -> perTenantPort.check(authentication, componentAccess(COMPONENT_ADMIN)))
           .withMessageStartingWith(
