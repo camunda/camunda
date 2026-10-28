@@ -39,6 +39,8 @@ public class PrimaryStoragePropertiesTest {
         "camunda.data.primary-storage.disk.monitoring-interval=30s",
         "camunda.data.primary-storage.disk.free-space.processing=5GB",
         "camunda.data.primary-storage.disk.free-space.replication=3GB",
+        "camunda.data.primary-storage.disk.used-space.processing=40GB",
+        "camunda.data.primary-storage.disk.used-space.replication=45GB",
         "camunda.data.primary-storage.log-stream.log-index-density=200",
         "camunda.data.primary-storage.log-stream.log-segment-size=256MB"
       })
@@ -80,6 +82,18 @@ public class PrimaryStoragePropertiesTest {
     void shouldSetDiskFreeSpaceReplication() {
       assertThat(brokerCfg.getData().getDisk().getFreeSpace().getReplication())
           .isEqualTo(DataSize.ofGigabytes(3));
+    }
+
+    @Test
+    void shouldSetDiskUsedSpaceProcessing() {
+      assertThat(brokerCfg.getData().getDisk().getUsedSpace().getProcessing())
+          .isEqualTo(DataSize.ofGigabytes(40));
+    }
+
+    @Test
+    void shouldSetDiskUsedSpaceReplication() {
+      assertThat(brokerCfg.getData().getDisk().getUsedSpace().getReplication())
+          .isEqualTo(DataSize.ofGigabytes(45));
     }
 
     @Test

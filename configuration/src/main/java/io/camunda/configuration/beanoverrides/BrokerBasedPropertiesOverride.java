@@ -878,6 +878,10 @@ public class BrokerBasedPropertiesOverride {
         .setReplication(unifiedDiskConfig.getFreeSpace().getReplication());
     brokerDiskConfig.setEnableMonitoring(unifiedDiskConfig.isMonitoringEnabled());
     brokerDiskConfig.setMonitoringInterval(unifiedDiskConfig.getMonitoringInterval());
+    brokerDiskConfig.getUsedSpace().setProcessing(unifiedDiskConfig.getUsedSpace().getProcessing());
+    brokerDiskConfig
+        .getUsedSpace()
+        .setReplication(unifiedDiskConfig.getUsedSpace().getReplication());
 
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);

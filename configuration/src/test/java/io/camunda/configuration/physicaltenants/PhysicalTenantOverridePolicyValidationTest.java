@@ -119,6 +119,41 @@ class PhysicalTenantOverridePolicyValidationTest {
   }
 
   @Test
+  void shouldAllowTenantOverridingDiskUsedSpace() {
+    // given
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.physical-tenants.tenanta.data.primary-storage.disk.used-space.processing",
+                "10GB",
+                "camunda.physical-tenants.tenanta.data.primary-storage.disk.used-space.replication",
+                "12GB"));
+
+    // when - then
+    assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "data.primary-storage.disk.free-space.processing",
+        "data.primary-storage.disk.monitoring-enabled",
+        "data.primary-storage.disk.monitoring-interval"
+      })
+  void shouldRejectTenantOverridingVolumeDiskProperties(final String relativeKey) {
+    // given
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta." + relativeKey, "1GB"));
+
+    // when - then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining(relativeKey);
+  }
+
+  @Test
   void shouldAllowTenantOverridingOverridableProperty() {
     // given a tenant overriding a freely-overridable property (secondary storage)
     final MockEnvironment environment =

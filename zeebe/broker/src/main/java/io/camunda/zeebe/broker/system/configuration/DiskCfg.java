@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.util.unit.DataSize;
 
@@ -22,17 +23,21 @@ public class DiskCfg implements ConfigurationEntry {
   private boolean enableMonitoring = DEFAULT_DISK_MONITORING_ENABLED;
   private Duration monitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
   private FreeSpaceCfg freeSpace = new FreeSpaceCfg();
+  private UsedSpaceCfg usedSpace = new UsedSpaceCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     freeSpace.init(globalConfig, brokerBase);
+    usedSpace.init(globalConfig, brokerBase);
 
     if (!enableMonitoring) {
       LOG.info(
-          "Disk usage monitoring is disabled, setting required freespace to {}",
+          "Disk usage monitoring is disabled, setting required freespace to {} and removing used space limits",
           DISABLED_DISK_FREESPACE);
       freeSpace.setReplication(DISABLED_DISK_FREESPACE);
       freeSpace.setProcessing(DISABLED_DISK_FREESPACE);
+      usedSpace.setProcessing(null);
+      usedSpace.setReplication(null);
     }
   }
 
@@ -60,9 +65,24 @@ public class DiskCfg implements ConfigurationEntry {
     this.freeSpace = freeSpace;
   }
 
+  public UsedSpaceCfg getUsedSpace() {
+    return usedSpace;
+  }
+
+  public void setUsedSpace(final UsedSpaceCfg usedSpace) {
+    this.usedSpace = usedSpace;
+  }
+
   @Override
   public String toString() {
-    return "DiskCfg{" + "enableMonitoring=" + enableMonitoring + ", freeSpace=" + freeSpace + '}';
+    return "DiskCfg{"
+        + "enableMonitoring="
+        + enableMonitoring
+        + ", freeSpace="
+        + freeSpace
+        + ", usedSpace="
+        + usedSpace
+        + '}';
   }
 
   public static class FreeSpaceCfg implements ConfigurationEntry {
@@ -98,6 +118,57 @@ public class DiskCfg implements ConfigurationEntry {
           + replication
           + '\''
           + '}';
+    }
+  }
+
+  public static class UsedSpaceCfg implements ConfigurationEntry {
+
+    private @Nullable DataSize processing;
+    private @Nullable DataSize replication;
+
+    @Override
+    public void init(final BrokerCfg globalConfig, final String brokerBase) {
+      final var segmentSize = globalConfig.getData().getLogSegmentSize();
+      if (processing != null && processing.compareTo(segmentSize) <= 0) {
+        throw new IllegalArgumentException(
+            "Expected disk.usedSpace.processing (%s) to be greater than the log segment size (%s)"
+                .formatted(processing, segmentSize));
+      }
+      if (replication != null && replication.compareTo(segmentSize) <= 0) {
+        throw new IllegalArgumentException(
+            "Expected disk.usedSpace.replication (%s) to be greater than the log segment size (%s)"
+                .formatted(replication, segmentSize));
+      }
+      if (processing != null && replication != null && replication.compareTo(processing) <= 0) {
+        throw new IllegalArgumentException(
+            "Expected disk.usedSpace.replication (%s) to be greater than disk.usedSpace.processing (%s)"
+                .formatted(replication, processing));
+      }
+    }
+
+    public boolean isLimited() {
+      return processing != null || replication != null;
+    }
+
+    public @Nullable DataSize getProcessing() {
+      return processing;
+    }
+
+    public void setProcessing(final @Nullable DataSize processing) {
+      this.processing = processing;
+    }
+
+    public @Nullable DataSize getReplication() {
+      return replication;
+    }
+
+    public void setReplication(final @Nullable DataSize replication) {
+      this.replication = replication;
+    }
+
+    @Override
+    public String toString() {
+      return "UsedSpaceCfg{processing=" + processing + ", replication=" + replication + '}';
     }
   }
 }

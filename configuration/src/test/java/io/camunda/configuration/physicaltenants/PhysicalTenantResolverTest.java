@@ -15,6 +15,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.util.unit.DataSize;
 
 class PhysicalTenantResolverTest {
 
@@ -68,8 +70,43 @@ class PhysicalTenantResolverTest {
     environment.getPropertySources().addFirst(new MapPropertySource("test", all));
   }
 
+  private static DataSize usedSpaceProcessingOf(final Camunda camunda) {
+    return camunda.getData().getPrimaryStorage().getDisk().getUsedSpace().getProcessing();
+  }
+
   private static String indexPrefixOf(final Camunda camunda) {
     return camunda.getData().getSecondaryStorage().getElasticsearch().getIndexPrefix();
+  }
+
+  @Test
+  void shouldResolveDiskUsedSpaceLimitPerTenant() {
+    // given
+    setProperties(
+        Map.of(
+            "camunda.data.primary-storage.disk.used-space.processing",
+            "20GB",
+            "camunda.physical-tenants.tenanta.data.primary-storage.disk.used-space.processing",
+            "5GB",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+            "tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when
+    final Map<String, Camunda> resolved = newResolver().getAll();
+
+    // then
+    assertThat(usedSpaceProcessingOf(resolved.get("tenanta"))).isEqualTo(DataSize.ofGigabytes(5));
+    assertThat(usedSpaceProcessingOf(resolved.get("tenantb"))).isEqualTo(DataSize.ofGigabytes(20));
+    assertThat(
+            BrokerBasedPropertiesOverride.convert(resolved.get("tenanta"))
+                .getData()
+                .getDisk()
+                .getUsedSpace()
+                .getProcessing())
+        .isEqualTo(DataSize.ofGigabytes(5));
   }
 
   @Test
