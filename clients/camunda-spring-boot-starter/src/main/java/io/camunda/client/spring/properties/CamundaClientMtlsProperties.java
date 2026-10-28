@@ -16,14 +16,14 @@
 package io.camunda.client.spring.properties;
 
 /**
- * Mutual TLS (mTLS) material for the cluster connection (gRPC and REST), using the same {@code
- * CAMUNDA_MTLS_*} configuration names as the other Camunda SDKs.
+ * Mutual TLS (mTLS) material for the cluster connection (gRPC and REST).
  *
- * <p>This configures the cluster transport only. It is independent of the OAuth token endpoint
- * keystore ({@code camunda.client.auth.keystore-*}), which is never reused for the cluster
- * connection, and vice versa.
+ * <p>Uses the same {@code CAMUNDA_MTLS_*} configuration names as the other Camunda SDKs. This
+ * configures the cluster transport only. It is independent of the OAuth token endpoint keystore
+ * ({@code camunda.client.auth.keystore-*}), which is never reused for the cluster connection, and
+ * vice versa.
  *
- * <p>Secrets (key, passphrase, passwords) are never included in {@link #toString()}.
+ * <p>Secrets (key, passphrase, passwords) are never included in the string representation.
  */
 public class CamundaClientMtlsProperties {
 
