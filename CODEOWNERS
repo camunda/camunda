@@ -242,6 +242,12 @@
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
 /docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team
+# C8 REST API surface snapshot: every change here is a change to the API
+# contract or to generated SDK code, so the SDK team signs off on it (spec
+# files themselves still need @camunda/c8-api-team via the rule above).
+# See .github/scripts/api-surface/README.md.
+/zeebe/gateway-protocol/rest-api-surface.txt @camunda/clients-sdks-ai-first-tooling
+/.github/scripts/api-surface/ @camunda/clients-sdks-ai-first-tooling @camunda/c8-api-team
 
 ############################
 ## Test Automation Team   ##

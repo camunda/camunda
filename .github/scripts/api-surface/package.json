@@ -1,0 +1,13 @@
+{
+  "name": "api-surface",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node api-surface.mjs --write",
+    "check": "node api-surface.mjs --check"
+  },
+  "dependencies": {
+    "camunda-schema-bundler": "2.4.5"
+  }
+}

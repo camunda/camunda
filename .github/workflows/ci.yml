@@ -2839,6 +2839,54 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  openapi-api-surface-check:
+    # Regenerates the C8 REST API surface snapshot
+    # (zeebe/gateway-protocol/rest-api-surface.txt) from the spec in this
+    # checkout and fails if it differs from the committed file. Every spec
+    # change that alters the API contract or the code SDK generators produce
+    # (types, required/nullable, enums, oneOf variants, schema names, allOf
+    # structure, semantic types) must therefore commit the regenerated
+    # snapshot, which makes the change reviewable in the PR that causes it.
+    # See .github/scripts/api-surface/README.md.
+    name: "Lint / C8 REST OpenAPI API surface"
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      API_SURFACE_DIR: .github/scripts/api-surface
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.API_SURFACE_DIR }}
+      - name: Check API surface snapshot is up to date
+        # Prints the diff and exits non-zero if the snapshot is stale, which
+        # fails the job and therefore the `check-results` aggregate gate.
+        working-directory: ${{ github.workspace }}/${{ env.API_SURFACE_DIR }}
+        run: npm run --silent check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   openapi-webapp-client-typecheck:
     # Checks that a change to the C8 REST OpenAPI spec does not break the Webapp Client types.
     # `npm ci` runs the `prepare` script of @camunda/camunda-api-zod-schemas, which regenerates the
@@ -3088,6 +3136,7 @@ jobs:
       - load-test-k6-prettier
       - maven-spotless-linter
       - openapi-lint
+      - openapi-api-surface-check
       - openapi-webapp-client-typecheck
       - openapi-x-added-in-version-check
       - operate-ci

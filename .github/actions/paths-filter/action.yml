@@ -416,6 +416,8 @@ runs:
           - 'zeebe/gateway-protocol/spectral-tests/**'
           - '.github/scripts/x-added-in-version-check/**'
           - '.github/workflows/verify-x-added-in-version-annotations.yml'
+          - 'zeebe/gateway-protocol/rest-api-surface.txt'
+          - '.github/scripts/api-surface/**'
 
         rdbms-change:
         - 'db/rdbms/**'
