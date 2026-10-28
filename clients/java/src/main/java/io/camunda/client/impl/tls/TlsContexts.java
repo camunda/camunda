@@ -29,7 +29,6 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -75,13 +74,15 @@ import org.bouncycastle.pkcs.PKCSException;
  */
 public final class TlsContexts {
 
-  static {
-    // Required to decrypt encrypted PEM private keys (PBKDF/OpenSSL PBDKF and AES are not
-    // guaranteed to be provided by the JVM). Registered once, defensively.
-    if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-      Security.addProvider(new BouncyCastleProvider());
-    }
-  }
+  /**
+   * A local BouncyCastle provider instance, passed explicitly to the PEM converter and decryptor
+   * builders. Required to decrypt encrypted PEM private keys (PBKDF/OpenSSL PBKDF and AES are not
+   * guaranteed to be provided by the JVM). Deliberately NOT registered globally via {@code
+   * Security.addProvider}: global registration can be denied by a JVM security policy (failing
+   * client construction with {@code ExceptionInInitializerError} even for ordinary HTTPS clients
+   * without mTLS) and mutates process-wide JVM security state from a library.
+   */
+  private static final BouncyCastleProvider BC_PROVIDER = new BouncyCastleProvider();
 
   private TlsContexts() {}
 
@@ -249,8 +250,7 @@ public final class TlsContexts {
       }
     }
 
-    final JcaPEMKeyConverter converter =
-        new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
+    final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BC_PROVIDER);
     if (parsed instanceof PKCS8EncryptedPrivateKeyInfo) {
       if (passphrase == null) {
         throw new IllegalArgumentException(
@@ -259,7 +259,7 @@ public final class TlsContexts {
       }
       final InputDecryptorProvider decryptor =
           new JceOpenSSLPKCS8DecryptorProviderBuilder()
-              .setProvider(BouncyCastleProvider.PROVIDER_NAME)
+              .setProvider(BC_PROVIDER)
               .build(passphrase.toCharArray());
       return converter.getPrivateKey(
           ((PKCS8EncryptedPrivateKeyInfo) parsed).decryptPrivateKeyInfo(decryptor));
@@ -278,7 +278,7 @@ public final class TlsContexts {
               ((PEMEncryptedKeyPair) parsed)
                   .decryptKeyPair(
                       new JcePEMDecryptorProviderBuilder()
-                          .setProvider(BouncyCastleProvider.PROVIDER_NAME)
+                          .setProvider(BC_PROVIDER)
                           .build(passphrase.toCharArray())))
           .getPrivate();
     }
