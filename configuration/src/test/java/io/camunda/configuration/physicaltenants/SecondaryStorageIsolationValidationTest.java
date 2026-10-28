@@ -316,6 +316,18 @@ class SecondaryStorageIsolationValidationTest {
 
   // --- helpers ---------------------------------------------------------------------------------
 
+  @Test
+  void shouldNotCompareConnectionsThatAreSecretReferences() {
+    // given
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", rdbms("camunda.secrets.db-url", "shared"),
+            "tenantb", rdbms("camunda.secrets.db-url", "shared"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
   private static Camunda es(final String url, final String indexPrefix) {
     final Camunda camunda = new Camunda();
     final var ss = camunda.getData().getSecondaryStorage();

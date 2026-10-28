@@ -74,7 +74,8 @@ final class RdbmsVendorIdProvider {
    * @throws IllegalArgumentException if the configured vendor id is not one of {@link
    *     #LEGAL_VENDOR_IDS}
    */
-  static Optional<String> resolve(final String physicalTenantId, final Rdbms rdbms) {
+  static Optional<String> resolve(
+      final String physicalTenantId, final Rdbms rdbms, final String url) {
     final var configured = StringUtils.trimToNull(rdbms.getDatabaseVendorId());
     if (configured != null) {
       final var validated = validate(configured, physicalTenantId);
@@ -85,9 +86,7 @@ final class RdbmsVendorIdProvider {
       return Optional.of(validated);
     }
 
-    final var url = rdbms.getUrl();
-    final var fromUrl =
-        VENDOR_ID_BY_DRIVER.get(unwrapVendorDriver(DatabaseDriver.fromJdbcUrl(url), url));
+    final var fromUrl = fromUrl(url).orElse(null);
     if (fromUrl != null) {
       LOGGER.info(
           "Resolved database vendor id '{}' for physical tenant '{}' from its JDBC URL. Set {} if"
@@ -97,6 +96,12 @@ final class RdbmsVendorIdProvider {
           VENDOR_ID_PROPERTY);
     }
     return Optional.ofNullable(fromUrl);
+  }
+
+  /** The vendor id that a JDBC URL names, if it names one. */
+  static Optional<String> fromUrl(final String url) {
+    return Optional.ofNullable(
+        VENDOR_ID_BY_DRIVER.get(unwrapVendorDriver(DatabaseDriver.fromJdbcUrl(url), url)));
   }
 
   /**
