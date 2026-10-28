@@ -66,6 +66,8 @@ class PhysicalTenantBearerTokenClaimsIT {
   private static JwksTestServer idp;
 
   private final MembershipPort membershipPort = mock(MembershipPort.class);
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeAll
   static void startIdp() throws Exception {
@@ -78,8 +80,10 @@ class PhysicalTenantBearerTokenClaimsIT {
   }
 
   @AfterEach
-  void clearTenantContext() {
+  void tearDown() {
     RequestContextHolder.resetRequestAttributes();
+    httpClient.close();
+    meterRegistry.close();
   }
 
   /**
@@ -170,9 +174,9 @@ class PhysicalTenantBearerTokenClaimsIT {
             MembershipResolutionContextPropagator.identity(),
             new ScopedOidcClaimsProviderFactory(
                 new ScopedClientRegistrationFactory(),
-                HttpClient.newHttpClient(),
+                httpClient,
                 new ObjectMapper(),
-                new SimpleMeterRegistry()),
+                meterRegistry),
             environment);
   }
 }

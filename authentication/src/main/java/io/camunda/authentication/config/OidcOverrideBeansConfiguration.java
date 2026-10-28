@@ -268,10 +268,9 @@ public class OidcOverrideBeansConfiguration {
             authentication, "physical tenant '" + physicalTenantId + "'");
     // The tenant's scoped decoder tags each token it verifies with the principal claims of the
     // provider that verified it (a VerifiedJwt, camunda-security-library ADR-0038). Mapping by
-    // those
-    // claims, rather than by issuer, keeps a provider's settings also when its issuer-uri differs
-    // from the token's iss only by a trailing slash (#61896). The issuer map stays for tokens that
-    // carry no such tag.
+    // those claims, rather than by issuer, keeps a provider's settings also when its issuer-uri
+    // differs from the token's iss only by a trailing slash (#61896). The issuer map stays for
+    // tokens that carry no such tag.
     final Map<OidcPrincipalClaims, LazyTokenClaimsConverter> byPrincipalClaims =
         new ConcurrentHashMap<>();
     return new OidcTokenAuthenticationConverter(

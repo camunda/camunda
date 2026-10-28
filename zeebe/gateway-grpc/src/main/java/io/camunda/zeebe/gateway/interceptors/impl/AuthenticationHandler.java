@@ -94,6 +94,8 @@ public sealed interface AuthenticationHandler {
           new ClaimSettings(
               oidcAuthenticationConfiguration, oidcAuthenticationConfiguration, tenantGroupsClaim);
       claimSettingsByIssuer = new LinkedHashMap<>();
+      // Quiet on a dropped trailing-slash twin: the tenant's CSL decoder, which verifies these
+      // tokens, already warns about it and keeps the same first provider.
       claimConfigsByIssuer.forEach(
           (issuer, config) ->
               claimSettingsByIssuer.putIfAbsent(
