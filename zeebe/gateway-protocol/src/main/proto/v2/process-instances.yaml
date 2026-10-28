@@ -2115,8 +2115,13 @@ components:
       properties:
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - businessId
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     ProcessInstanceModificationInstruction:
       type: object
