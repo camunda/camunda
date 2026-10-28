@@ -28,6 +28,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -41,9 +42,17 @@ import org.springframework.context.annotation.Lazy;
  *
  * <p>Virtual threads are lightweight threads that allow for highly concurrent job processing
  * without the overhead of traditional platform threads.
+ *
+ * <p>The configuration is active by default when this module is on the classpath. Set {@code
+ * camunda.client.threads.virtual.enabled=false} to disable it and fall back to the default
+ * platform-thread executor (sized by {@code camunda.client.execution-threads}).
  */
 @AutoConfiguration
 @AutoConfigureBefore(CamundaAutoConfiguration.class)
+@ConditionalOnProperty(
+    name = "camunda.client.threads.virtual.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class VirtualThreadsAutoConfiguration {
 
   /**
