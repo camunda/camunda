@@ -310,6 +310,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final CurrentClusterConfiguration oldConfiguration) {
     final var mergedGroup = mergedConfiguration.partitionGroup(groupId);
     final var oldGroup = oldConfiguration.partitionGroup(groupId);
+    if (mergedGroup != null && mergedGroup.isRemoved()) {
+      // Removing a tenant clears its partition assignment on purpose, once every member stopped it.
+      return false;
+    }
     final var mergedMemberState =
         mergedGroup == null ? null : mergedGroup.members().get(localMemberId);
     final var oldMemberState = oldGroup == null ? null : oldGroup.members().get(localMemberId);

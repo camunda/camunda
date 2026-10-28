@@ -57,6 +57,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -938,6 +939,63 @@ final class ClusterConfigurationManagerImplTest {
         .untilAsserted(() -> assertThat(newConfigSeen.get()).isNotNull());
     assertThat(oldConfigSeen.get().partitionGroup("tenanta").members()).containsKey(MEMBER_0);
     assertThat(newConfigSeen.get().partitionGroup("tenanta").members()).isEmpty();
+  }
+
+  @Test
+  void shouldNotDetectInconsistencyWhenATenantItHostsIsRemoved() {
+    // given
+    final var manager = newManager(MEMBER_0);
+    final var tenantGroup =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var global =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of("tenanta", tenantGroup),
+            PhasedChangeState.empty());
+    manager.start(() -> CompletableActorFuture.completed(seeded)).join();
+    final var inconsistencies = new AtomicReference<CurrentClusterConfiguration>();
+    manager.registerTopologyChangedListener(
+        (newConfiguration, oldConfiguration) -> inconsistencies.set(newConfiguration));
+
+    // when
+    final var removed =
+        seeded.updatePartitionGroupConfig(
+            "tenanta",
+            group ->
+                new PartitionGroupConfiguration(
+                    2,
+                    0,
+                    Map.of(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    TenantAvailability.enabled().disable().remove()));
+    manager.onGossipReceivedCurrent(removed);
+
+    // then
+    Awaitility.await("the removal is merged")
+        .untilAsserted(
+            () ->
+                assertThat(configuration(manager).partitionGroup("tenanta").isRemoved()).isTrue());
+    assertThat(inconsistencies.get()).isNull();
   }
 
   @Test
