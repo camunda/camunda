@@ -54,7 +54,7 @@ public final class JobTimeOutProcessor
     suspensionState = state.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            state.getElementInstanceState(), state.getJobState(), writers.state());
+            state.getElementInstanceState(), state.getJobState());
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;

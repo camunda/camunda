@@ -359,15 +359,6 @@ final class SuspensionMetricsTest {
   }
 
   @Test
-  void shouldIncrementJobSuspendedCounterByBatch() {
-    // when
-    metrics.jobsSuspended(7);
-
-    // then
-    assertThat(jobSuspensionEventCount("suspended")).isEqualTo(7.0);
-  }
-
-  @Test
   void shouldIncrementUserTaskSuspensionCounters() {
     // when
     metrics.userTaskSuspended();
