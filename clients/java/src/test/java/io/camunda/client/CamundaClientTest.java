@@ -158,6 +158,34 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldFailWhenMtlsIsConfiguredOnPlaintextAddresses() {
+    // The default addresses are plaintext (http); configuring mTLS material against them must
+    // fail fast at build() instead of silently connecting over plaintext.
+    assertThatThrownBy(
+            () ->
+                CamundaClient.newClientBuilder()
+                    .applyEnvironmentVariableOverrides(false)
+                    .clientCertificate("/path/to/cert.pem", "/path/to/key.pem")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("plaintext");
+  }
+
+  @Test
+  public void shouldFailWhenCaBundleAndTruststoreAreBothConfigured() {
+    assertThatThrownBy(
+            () ->
+                CamundaClient.newClientBuilder()
+                    .applyEnvironmentVariableOverrides(false)
+                    .grpcAddress(URI.create("https://localhost:10000"))
+                    .mtlsCaCertificatePath("/path/to/ca.pem")
+                    .mtlsTruststore("/path/to/truststore.p12", "secret")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("CAMUNDA_MTLS_TRUSTSTORE_PATH");
+  }
+
+  @Test
   public void shouldHaveTlsDisabledByDefault() {
     assertThat(AddressUtil.isPlaintextConnection(new CamundaClientBuilderImpl().getGrpcAddress()))
         .isTrue();
@@ -270,10 +298,12 @@ public final class CamundaClientTest {
   public void shouldConfigureMtlsPemWithProperties() {
     // given
     final Properties properties = new Properties();
-    properties.put(ClientProperties.MTLS_CERT_PATH, "/certs/client.crt");
-    properties.put(ClientProperties.MTLS_KEY_PATH, "/certs/client.key");
+    properties.put(ClientProperties.GRPC_ADDRESS, "https://localhost:26500");
+    properties.put(ClientProperties.REST_ADDRESS, "https://localhost:8080");
+    properties.put(ClientProperties.MTLS_CERT_PATH, "src/test/resources/mtls/client.crt");
+    properties.put(ClientProperties.MTLS_KEY_PATH, "src/test/resources/mtls/client.key");
     properties.put(ClientProperties.MTLS_KEY_PASSPHRASE, "secret");
-    properties.put(ClientProperties.MTLS_CA_PATH, "/certs/ca.crt");
+    properties.put(ClientProperties.MTLS_CA_PATH, "src/test/resources/mtls/ca.crt");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -281,20 +311,22 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getMtlsCertPath()).isEqualTo("/certs/client.crt");
-    assertThat(builder.getMtlsKeyPath()).isEqualTo("/certs/client.key");
+    assertThat(builder.getMtlsCertPath()).isEqualTo("src/test/resources/mtls/client.crt");
+    assertThat(builder.getMtlsKeyPath()).isEqualTo("src/test/resources/mtls/client.key");
     assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
-    assertThat(builder.getMtlsCaPath()).isEqualTo("/certs/ca.crt");
+    assertThat(builder.getMtlsCaPath()).isEqualTo("src/test/resources/mtls/ca.crt");
   }
 
   @Test
   public void shouldConfigureMtlsKeystoreWithProperties() {
     // given
     final Properties properties = new Properties();
-    properties.put(ClientProperties.MTLS_KEYSTORE_PATH, "/certs/client.p12");
+    properties.put(ClientProperties.GRPC_ADDRESS, "https://localhost:26500");
+    properties.put(ClientProperties.REST_ADDRESS, "https://localhost:8080");
+    properties.put(ClientProperties.MTLS_KEYSTORE_PATH, "src/test/resources/mtls/client.p12");
     properties.put(ClientProperties.MTLS_KEYSTORE_PASSWORD, "storepass");
-    properties.put(ClientProperties.MTLS_KEYSTORE_KEY_PASSWORD, "keypass");
-    properties.put(ClientProperties.MTLS_TRUSTSTORE_PATH, "/certs/truststore.p12");
+    properties.put(ClientProperties.MTLS_KEYSTORE_KEY_PASSWORD, "storepass");
+    properties.put(ClientProperties.MTLS_TRUSTSTORE_PATH, "src/test/resources/mtls/truststore.p12");
     properties.put(ClientProperties.MTLS_TRUSTSTORE_PASSWORD, "trustpass");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.withProperties(properties);
@@ -303,10 +335,10 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getMtlsKeystorePath()).isEqualTo("/certs/client.p12");
+    assertThat(builder.getMtlsKeystorePath()).isEqualTo("src/test/resources/mtls/client.p12");
     assertThat(builder.getMtlsKeystorePassword()).isEqualTo("storepass");
-    assertThat(builder.getMtlsKeystoreKeyPassword()).isEqualTo("keypass");
-    assertThat(builder.getMtlsTruststorePath()).isEqualTo("/certs/truststore.p12");
+    assertThat(builder.getMtlsKeystoreKeyPassword()).isEqualTo("storepass");
+    assertThat(builder.getMtlsTruststorePath()).isEqualTo("src/test/resources/mtls/truststore.p12");
     assertThat(builder.getMtlsTruststorePassword()).isEqualTo("trustpass");
   }
 
@@ -314,21 +346,30 @@ public final class CamundaClientTest {
   public void shouldConfigureMtlsWithEnvironmentVariables() {
     // given
     Environment.system()
-        .put(CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR, "/certs/client.crt");
+        .put(
+            CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR,
+            "src/test/resources/mtls/client.crt");
     Environment.system()
-        .put(CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR, "/certs/client.key");
+        .put(
+            CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR,
+            "src/test/resources/mtls/client.key");
     Environment.system().put(CamundaClientEnvironmentVariables.MTLS_KEY_PASSPHRASE_VAR, "secret");
-    Environment.system().put(CamundaClientEnvironmentVariables.MTLS_CA_VAR, "INLINE CA");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system()
+        .put(CamundaClientEnvironmentVariables.MTLS_CA_PATH_VAR, "src/test/resources/mtls/ca.crt");
+    final CamundaClientBuilderImpl builder =
+        (CamundaClientBuilderImpl)
+            new CamundaClientBuilderImpl()
+                .grpcAddress(URI.create("https://localhost:26500"))
+                .restAddress(URI.create("https://localhost:8080"));
 
     // when
     builder.build();
 
     // then
-    assertThat(builder.getMtlsCertPath()).isEqualTo("/certs/client.crt");
-    assertThat(builder.getMtlsKeyPath()).isEqualTo("/certs/client.key");
+    assertThat(builder.getMtlsCertPath()).isEqualTo("src/test/resources/mtls/client.crt");
+    assertThat(builder.getMtlsKeyPath()).isEqualTo("src/test/resources/mtls/client.key");
     assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
-    assertThat(builder.getMtlsCa()).isEqualTo("INLINE CA");
+    assertThat(builder.getMtlsCaPath()).isEqualTo("src/test/resources/mtls/ca.crt");
   }
 
   @Test

@@ -41,6 +41,7 @@ import java.util.List;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.apache.hc.core5.ssl.SSLContexts;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
@@ -137,11 +138,10 @@ public final class TlsContexts {
   }
 
   private static SSLContext defaultContext() {
-    try {
-      return SSLContext.getDefault();
-    } catch (final NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Failed to create the default SSL context", e);
-    }
+    // A fresh context (not SSLContext.getDefault()): the JVM default honors the process-wide
+    // javax.net.ssl.keyStore identity and SSLContext.setDefault(), which would silently send an
+    // unrelated client certificate to the cluster even with no CAMUNDA_MTLS_* settings.
+    return SSLContexts.createDefault();
   }
 
   /**
