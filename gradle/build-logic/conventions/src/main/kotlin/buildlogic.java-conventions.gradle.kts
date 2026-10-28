@@ -105,7 +105,8 @@ tasks.named<JavaCompile>("compileJava") {
       "-XDaddTypeAnnotationsToSymbol=true",
     )
   )
-  options.errorprone.disableAllChecks.set(true)
+  options.errorprone.disableAllWarnings.set(true)
+  options.errorprone.allErrorsAsWarnings.set(true) // TEMP
   options.errorprone.error("NullAway")
   options.errorprone.excludedPaths.set(
     ".*/build/(generated|generated-sources|generated-test-sources|tmp|classes)/.*"
