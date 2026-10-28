@@ -13,7 +13,7 @@ import {LegacyLoginPage} from '#/shared/pages/shadcn.components/LegacyLoginPage'
 import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
 import tailwindCss from '#/shared/theme/tailwind.css?url';
 
-// TODO(#64077): temporary DS reskin of the Carbon-hosted /login route, following the
+// TODO(#64077): temporary DS reskin of the Carbon-hosted /operate/login route, following the
 // same "swap the visual now, cut the route over later" approach already used for the
 // header's C3Navigation. Operate is this route's only remaining consumer (Admin and
 // Tasklist already moved their logins under /_shadcn, and render the packaged
@@ -22,17 +22,17 @@ import tailwindCss from '#/shared/theme/tailwind.css?url';
 // so it can't adopt packaged DS components. Once Operate's own route-level shadcn
 // migration lands, delete this bridge and move the route under
 // /_shadcn/_auth/operate/login, rendering LoginPage.tsx like Admin and Tasklist.
-export const Route = createFileRoute('/_carbon/login')({
+export const Route = createFileRoute('/_carbon/operate/login')({
 	validateSearch: z.object({
 		redirect: z
 			.string()
 			.refine((val) => val.startsWith('/') && !val.startsWith('//'), 'Redirect must be an in-app relative path')
 			.optional(),
 	}),
-	beforeLoad: async ({search, context: {queryClient}}) => {
+	beforeLoad: async ({search, location, context: {queryClient}}) => {
 		try {
 			await queryClient.ensureQueryData(queries.getCurrentUser());
-			throw redirect({href: search.redirect ?? '/operate', replace: true});
+			throw redirect({href: search.redirect ?? location.state.operateLoginReferrer ?? '/operate', replace: true});
 		} catch (e) {
 			if (isRedirect(e)) {
 				throw e;
