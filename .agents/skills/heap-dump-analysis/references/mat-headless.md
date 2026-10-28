@@ -47,8 +47,9 @@ above 0 (`SELECT` skips query echoes).
 
 ## Parallel runs
 
-- One MAT JVM per dump, `(RAM GiB - 8) / (MAT_XMX GiB + 1)` at a time: 3 on a 48 GB Mac
-  with `12g`. Never two runs on the same dump: they share the index and zip files.
+- One MAT JVM per dump. Each used about 10 GB of RAM with `-Xmx12g` (see Sizing), so we
+  ran 3 at a time on a 48 GB Mac, which left room for everything else. Never two runs on
+  the same dump: they share the index and zip files.
 - Run them as background jobs. With many dumps, start one subagent per few dumps. Give it
   the rules from [privacy.md](privacy.md), the `run_mat.sh` command and the one-liners from
   [queries.md](queries.md), and ask for numbers per dump only.
