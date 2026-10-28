@@ -70,8 +70,20 @@
         {
           "ignore": true,
           "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.configuration.CamundaClientFactory io.camunda.client.spring.configuration.CamundaAutoConfiguration::camundaClientFactory(io.camunda.client.spring.configuration.CredentialsProviderConfiguration, org.springframework.beans.factory.ObjectProvider<io.camunda.client.api.JsonMapper>, java.util.List<io.grpc.ClientInterceptor>, java.util.List<org.apache.hc.client5.http.async.AsyncExecChainHandler>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.CamundaClientExecutorService>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.JobExceptionHandlerSupplier>, org.springframework.beans.factory.ObjectProvider<io.micrometer.core.instrument.MeterRegistry>)",
+          "justification": "Virtual-thread support for named clients (#67434): review feedback — the MeterRegistry provider is dropped again because Micrometer is optional and the factory is mandatory wiring; per-client executors are no longer metered. Internal auto-configuration wiring; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
           "old": "method void io.camunda.client.spring.configuration.CamundaClientFactory::<init>(io.camunda.client.spring.configuration.CredentialsProviderConfiguration, org.springframework.beans.factory.ObjectProvider<io.camunda.client.api.JsonMapper>, java.util.List<io.grpc.ClientInterceptor>, java.util.List<org.apache.hc.client5.http.async.AsyncExecChainHandler>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.CamundaClientExecutorService>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.JobExceptionHandlerSupplier>)",
           "justification": "Virtual-thread support for named clients (#67434): the factory now also receives the MeterRegistry provider so per-client virtual-thread executors can be metered. Internal wiring class; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.spring.configuration.CamundaClientFactory::<init>(io.camunda.client.spring.configuration.CredentialsProviderConfiguration, org.springframework.beans.factory.ObjectProvider<io.camunda.client.api.JsonMapper>, java.util.List<io.grpc.ClientInterceptor>, java.util.List<org.apache.hc.client5.http.async.AsyncExecChainHandler>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.CamundaClientExecutorService>, org.springframework.beans.factory.ObjectProvider<io.camunda.client.jobhandling.JobExceptionHandlerSupplier>, org.springframework.beans.factory.ObjectProvider<io.micrometer.core.instrument.MeterRegistry>)",
+          "justification": "Virtual-thread support for named clients (#67434): review feedback — the MeterRegistry provider is dropped again because Micrometer is optional and the factory is mandatory wiring; per-client executors are no longer metered. Internal wiring class; compatibility impact accepted for this release."
         },
         {
           "ignore": true,

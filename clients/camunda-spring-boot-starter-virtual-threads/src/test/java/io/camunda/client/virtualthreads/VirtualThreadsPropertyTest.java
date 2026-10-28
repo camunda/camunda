@@ -268,7 +268,7 @@ class VirtualThreadsPropertyTest {
     }
 
     @Test
-    void shouldApplyMeteredVirtualThreadsToNamedClients() {
+    void shouldApplyVirtualThreadsToNamedClientsWhenMetered() {
       contextRunner()
           .withBean(SimpleMeterRegistry.class)
           .withPropertyValues(
@@ -277,6 +277,20 @@ class VirtualThreadsPropertyTest {
           .run(
               context -> {
                 assertThat(context.getBeansOfType(CamundaClient.class)).hasSize(2);
+                // the shared bean is metered, but per-client executors deliberately are not:
+                // metering is Micrometer's concern, Micrometer is optional, and the multi-client
+                // factory path must not depend on it — see CamundaClientFactory
+                assertThat(context.getBean(CamundaClientExecutorService.class))
+                    .isInstanceOf(MeteredCamundaClientExecutorService.class);
+                assertThat(
+                        context
+                            .getBean("financeCamundaClient", CamundaClient.class)
+                            .getConfiguration()
+                            .jobHandlingExecutor()
+                            .getClass()
+                            .getName())
+                    .as("per-client executors are not wrapped in Micrometer's timed decorator")
+                    .doesNotContain("micrometer");
                 assertJobHandlingRunsOnVirtualThread(
                     context.getBean("financeCamundaClient", CamundaClient.class));
                 assertJobHandlingRunsOnVirtualThread(

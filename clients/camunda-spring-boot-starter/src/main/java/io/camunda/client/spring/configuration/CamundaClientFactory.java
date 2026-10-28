@@ -22,12 +22,10 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
-import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
-import io.micrometer.core.instrument.MeterRegistry;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -72,7 +70,6 @@ public class CamundaClientFactory {
   private final List<AsyncExecChainHandler> chainHandlers;
   private final ObjectProvider<CamundaClientExecutorService> executorService;
   private final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier;
-  private final ObjectProvider<MeterRegistry> meterRegistry;
 
   public CamundaClientFactory(
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
@@ -80,15 +77,13 @@ public class CamundaClientFactory {
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final ObjectProvider<CamundaClientExecutorService> executorService,
-      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier,
-      final ObjectProvider<MeterRegistry> meterRegistry) {
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
     this.credentialsProviderConfiguration = credentialsProviderConfiguration;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
     this.executorService = executorService;
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
-    this.meterRegistry = meterRegistry;
   }
 
   public CamundaClient createClient(
@@ -137,20 +132,23 @@ public class CamundaClientFactory {
    * per client — one virtual-thread executor cannot be shared, because it is owned by its client
    * and closed with it, which would silently stop job handling for every other client. Otherwise
    * the default platform-thread pool applies, sized by the client's {@code execution-threads}.
+   *
+   * <p>The per-client executor is deliberately not metered, even when the shared bean is: metering
+   * is a Micrometer concern, and Micrometer is an optional dependency, so this mandatory factory
+   * path must not reference its types (resolving them without {@code micrometer-core} on the
+   * classpath would fail client creation). Only the shared executor bean — created by {@code
+   * ExecutorServiceConfiguration} or {@code VirtualThreadsAutoConfiguration}, both
+   * classpath-guarded — carries metrics.
    */
   private CamundaClientExecutorService createOwnedExecutor(
       final CamundaClientProperties properties) {
     final CamundaClientExecutorService shared = executorService.getIfAvailable();
-    if (shared == null || !runsOnVirtualThreads(shared)) {
+    if (shared == null || !runsOnVirtualThreads(shared.getJobHandlingExecutor())) {
       return CamundaClientExecutorService.createDefault(executionThreads(properties));
     }
     final ExecutorService jobHandlingExecutor = newVirtualThreadExecutor();
     final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
-    final MeterRegistry registry = meterRegistry.getIfAvailable();
-    return registry == null
-        ? new CamundaClientExecutorService(scheduledExecutor, true, jobHandlingExecutor, true)
-        : new MeteredCamundaClientExecutorService(
-            scheduledExecutor, true, jobHandlingExecutor, true, registry);
+    return new CamundaClientExecutorService(scheduledExecutor, true, jobHandlingExecutor, true);
   }
 
   private static int executionThreads(final CamundaClientProperties properties) {
@@ -189,33 +187,69 @@ public class CamundaClientFactory {
   }
 
   /**
-   * Detects a virtual-thread executor by running a probe task on it: a thread-per-task virtual
-   * executor (the {@code VirtualThreadsAutoConfiguration} override) runs it on a virtual thread. A
-   * probe is used instead of {@code ExecutorService#isVirtualThreadPerTaskExecutor()} because that
-   * method only reports true when the executor was created by the JDK's virtual-thread factory
-   * methods directly — a decorating executor (e.g. Micrometer's timed wrapper) answers false even
-   * though every task still runs on a virtual thread.
+   * Detects a virtual-thread executor without submitting any work to it. Submitting a probe task
+   * would be wrong twice over: the reflective {@code Thread.isVirtual()} lookup inside the probe
+   * does not exist on Java 17 (which the starter still targets), so the probe would fail client
+   * creation there even for ordinary platform pools; and a probe on a platform pool parks a
+   * non-daemon worker in the shared executor that no close hook reclaims, which can keep the JVM
+   * alive after the context closes.
+   *
+   * <p>Instead this inspects the executor structurally: a decorating executor (Micrometer's timed
+   * wrapper) is unwrapped first, because {@code isVirtualThreadPerTaskExecutor()} on the wrapper
+   * answers false even though every task still runs on a virtual thread. When neither the wrapper
+   * nor the JDK method can answer (an unknown custom decorator), the executor's class name is the
+   * last resort — the JDK's virtual-thread executor is {@code ThreadPerTaskExecutor} created with a
+   * virtual-thread factory.
    */
-  private static boolean runsOnVirtualThreads(final CamundaClientExecutorService executorService) {
-    final ExecutorService jobHandlingExecutor = executorService.getJobHandlingExecutor();
+  private static boolean runsOnVirtualThreads(final ExecutorService jobHandlingExecutor) {
     if (jobHandlingExecutor == null) {
       return false;
     }
+    final ExecutorService unwrapped = unwrap(jobHandlingExecutor);
+    final Boolean virtual = isVirtualThreadPerTaskExecutor(unwrapped);
+    if (virtual != null) {
+      return virtual;
+    }
+    return unwrapped.getClass().getSimpleName().contains("ThreadPerTaskExecutor");
+  }
+
+  /**
+   * Unwraps Micrometer's timed decorator reflectively, returning the delegate when the executor is
+   * one. Reflection keeps Micrometer an optional dependency: when {@code micrometer-core} is absent
+   * the class lookup simply fails and the executor is used as-is. The wrapper is {@code
+   * TimedExecutorService} (Micrometer's internal decorator), whose {@code delegate} field holds the
+   * monitored executor.
+   */
+  private static ExecutorService unwrap(final ExecutorService executor) {
     try {
-      return (boolean)
-          jobHandlingExecutor
-              .submit(
-                  () ->
-                      // Thread.isVirtual() is invoked reflectively: the starter compiles at Java
-                      // 17, where the method does not exist — but a virtual-thread executor can
-                      // only exist on Java 21+, where it does
-                      Thread.class.getMethod("isVirtual").invoke(Thread.currentThread()))
-              .get();
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while inspecting the job-handling executor", e);
-    } catch (final ExecutionException e) {
-      throw new IllegalStateException("Failed to inspect the job-handling executor", e);
+      final Class<?> wrapperClass =
+          Class.forName("io.micrometer.core.instrument.internal.TimedExecutorService");
+      if (!wrapperClass.isInstance(executor)) {
+        return executor;
+      }
+      final var delegate = wrapperClass.getDeclaredField("delegate");
+      delegate.setAccessible(true);
+      return (ExecutorService) delegate.get(executor);
+    } catch (final ClassNotFoundException e) {
+      return executor;
+    } catch (final ReflectiveOperationException | RuntimeException e) {
+      // a wrapper we cannot introspect — fall back to inspecting the wrapper itself
+      return executor;
+    }
+  }
+
+  /**
+   * Invokes {@code ExecutorService#isVirtualThreadPerTaskExecutor()} reflectively, or {@code null}
+   * when the runtime predates Java 24 (where the method was added) or the call fails.
+   */
+  private static Boolean isVirtualThreadPerTaskExecutor(final ExecutorService executor) {
+    try {
+      final Method method = ExecutorService.class.getMethod("isVirtualThreadPerTaskExecutor");
+      return (Boolean) method.invoke(executor);
+    } catch (final NoSuchMethodException e) {
+      return null;
+    } catch (final ReflectiveOperationException | RuntimeException e) {
+      return null;
     }
   }
 }
