@@ -110,7 +110,8 @@ test.describe('Dashboard', () => {
           const total =
             await operateDashboardPage.totalInstancesLink.innerText();
           return (
-            total === `${incident + active} Running Process Instances in total`
+            total.toLowerCase() ===
+            `${incident + active} running process instances in total`
           );
         }, defaultAssertionOptions)
         .toBe(true);

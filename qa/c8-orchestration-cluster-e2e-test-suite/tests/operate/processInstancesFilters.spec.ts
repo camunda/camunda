@@ -216,14 +216,10 @@ test.describe('Process Instances Filters', () => {
     await test.step('Escalating to modal pre-fills the inline values', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-name-0',
-        ),
+        operateFiltersPanelPage.getConditionRowNameInput(0),
       ).toHaveValue('filtersTest');
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-value-0',
-        ),
+        operateFiltersPanelPage.getConditionRowValueInput(0),
       ).toHaveValue(orderProcessFiltersValue);
       await operateFiltersPanelPage.variableFilterDialog
         .getByRole('button', {name: 'Cancel'})
@@ -390,7 +386,9 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let totalBefore = await readTotalResultsCount(page);
-      const endDate = await operateProcessesPage.endDateCell.innerText();
+      const endDate = await (
+        await operateProcessesPage.getEndDateCell()
+      ).innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
 
@@ -522,7 +520,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           const variableProcessInstanceKeys = new Set<string>();
           for (const element of await operateProcessesPage.processInstancesTable
-            .getByTestId('cell-processInstanceKey')
+            .getByRole('link', {name: /^View instance \d+$/})
             .elementHandles()) {
             variableProcessInstanceKeys.add(await element.innerText());
           }

@@ -15,6 +15,18 @@ import {waitForAssertion} from '../utils/waitForAssertion';
 const ROW_ACTION_TIMEOUT = 15_000;
 const TABLE_SETTLE_TIMEOUT = 15_000;
 
+const getProcessInstancesTable = (page: Page): Locator =>
+  page.getByRole('table').filter({
+    has: page.getByRole('columnheader', {
+      name: /^(Sort by )?Process Instance Key$/,
+    }),
+  });
+
+const getDataList = (page: Page): Locator =>
+  getProcessInstancesTable(page)
+    .getByRole('rowgroup')
+    .filter({hasNot: page.getByRole('columnheader')});
+
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
@@ -111,28 +123,22 @@ class OperateProcessesPage {
     this.processNameSortButton = page.getByRole('button', {
       name: 'sort by name',
     });
-    this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
-    this.processInstanceKeyCell = page
-      .getByTestId('data-list')
-      .getByTestId('cell-processInstanceKey')
+    this.processInstancesTable = getDataList(page).getByRole('row');
+    this.processInstanceKeyCell = getDataList(page)
+      .getByRole('link', {name: /^View instance \d+$/})
       .first();
-    this.parentProcessInstanceKeyCell = page
-      .getByTestId('data-list')
+    this.parentProcessInstanceKeyCell = getDataList(page)
       .getByRole('row')
       .first()
-      .getByTestId('cell-parentInstanceId')
-      .getByRole('link');
-    this.endDateCell = page
-      .getByTestId('data-list')
-      .getByTestId('cell-endDate')
-      .first();
+      .getByRole('link', {name: /^View parent instance \d+$/});
+    this.endDateCell = getDataList(page).getByTestId('cell-endDate').first();
     this.versionCell = page.getByTestId('cell-processVersion');
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',
     });
-    this.cancelBatchOperationButton = page.getByTestId(
-      'cancel-batch-operation',
-    );
+    this.cancelBatchOperationButton = page
+      .getByRole('group', {name: 'data table toolbar'})
+      .getByRole('button', {name: 'Cancel', exact: true});
     this.applyCancelBatchOperationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
@@ -163,7 +169,7 @@ class OperateProcessesPage {
     this.processFinishedInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Finished Instances'});
-    this.dataList = page.getByTestId('data-list');
+    this.dataList = getDataList(page);
     this.continueButton = page.getByRole('button', {name: 'continue'});
     this.processInstancesPanel = page.getByRole('region', {
       name: 'process instances panel',
@@ -171,9 +177,9 @@ class OperateProcessesPage {
     this.migrateButton = this.processInstancesPanel.getByRole('button', {
       name: /^migrate$/i,
     });
-    this.selectAllRowsCheckbox = page.getByRole('columnheader', {
-      name: 'Select all rows',
-    });
+    this.selectAllRowsCheckbox = getProcessInstancesTable(page)
+      .getByRole('columnheader')
+      .filter({has: page.getByRole('checkbox')});
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
     // Exact: row actions are named "Suspend Instance <key>", which a substring
     // match would hit instead of the toolbar.
@@ -205,7 +211,9 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
-    this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.deleteButton = page
+      .getByRole('group', {name: 'data table toolbar'})
+      .getByRole('button', {name: 'Delete', exact: true});
     this.drainingTag = page.getByTestId('draining-tag');
     this.deleteBatchOperationConfirmButton = page
       .getByRole('dialog')
@@ -311,12 +319,39 @@ class OperateProcessesPage {
     return row.getByTestId('cell-processVersion');
   }
 
+  static async getCellInColumn(
+    page: Page,
+    row: Locator,
+    columnHeader: string,
+  ): Promise<Locator> {
+    await expect(row).toBeVisible();
+    const headers = await getProcessInstancesTable(page)
+      .getByRole('columnheader')
+      .allInnerTexts();
+    const columnIndex = headers
+      .map((header) => header.trim())
+      .indexOf(columnHeader);
+    expect(columnIndex).toBeGreaterThanOrEqual(0);
+    return row.getByRole('cell').nth(columnIndex);
+  }
+
+  async getEndDateCell(): Promise<Locator> {
+    return OperateProcessesPage.getCellInColumn(
+      this.page,
+      this.dataList.getByRole('row').first(),
+      'End Date',
+    );
+  }
+
   getInstanceRow(index: number): Locator {
     return this.dataList.getByRole('row').nth(index);
   }
 
   getCanceledIcon(processInstanceKey: string): Locator {
-    return this.page.getByTestId(`TERMINATED-icon-${processInstanceKey}`);
+    return OperateProcessesPage.getRowByProcessInstanceKey(
+      this.page,
+      processInstanceKey,
+    ).getByRole('img', {name: 'terminated state', exact: true});
   }
 
   getRetryInstanceButton(processInstanceKey: string): Locator {
@@ -363,13 +398,13 @@ class OperateProcessesPage {
   }
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
-    return page
-      .getByTestId('data-list')
+    return getDataList(page)
       .getByRole('row')
       .filter({
-        has: page
-          .getByTestId('cell-processInstanceKey')
-          .filter({hasText: keyStr}),
+        has: page.getByRole('link', {
+          name: `View instance ${keyStr}`,
+          exact: true,
+        }),
       });
   }
   async clickVersionSortButton(): Promise<void> {
@@ -470,8 +505,7 @@ class OperateProcessesPage {
   }
 
   processInstanceRow(processInstanceKey: string): Locator {
-    return this.page
-      .getByTestId('data-list')
+    return getDataList(this.page)
       .getByRole('row')
       .filter({hasText: processInstanceKey});
   }
@@ -488,9 +522,10 @@ class OperateProcessesPage {
       new RegExp(`\\b${processInstanceKeys.length} results$`),
       {timeout: TABLE_SETTLE_TIMEOUT},
     );
-    await expect(
-      this.page.getByTestId('data-list').getByRole('row'),
-    ).toHaveCount(processInstanceKeys.length, {timeout: TABLE_SETTLE_TIMEOUT});
+    await expect(getDataList(this.page).getByRole('row')).toHaveCount(
+      processInstanceKeys.length,
+      {timeout: TABLE_SETTLE_TIMEOUT},
+    );
     for (const processInstanceKey of processInstanceKeys) {
       await expect(this.processInstanceRow(processInstanceKey)).toBeVisible({
         timeout: TABLE_SETTLE_TIMEOUT,
@@ -598,9 +633,10 @@ class OperateProcessesPage {
   }
 
   async tableHasInstanceKey(keyStr: string): Promise<boolean> {
-    const meow = this.processInstancesTable
-      .getByTestId('cell-processInstanceKey')
-      .getByText(keyStr);
+    const meow = this.processInstancesTable.getByRole('link', {
+      name: `View instance ${keyStr}`,
+      exact: true,
+    });
     if (await meow.count()) {
       return true;
     }
@@ -614,16 +650,16 @@ class OperateProcessesPage {
 
       while (retryCount < maxRetries) {
         try {
-          const checkbox = this.processInstancesPanel
-            .getByRole('row', {name: 'select row'})
+          const checkbox = this.dataList
+            .getByRole('row')
             .nth(i)
-            .locator('label');
+            .getByRole('checkbox');
 
           // Wait for the element to be attached and stable
           await checkbox.waitFor({state: 'attached'});
           await sleep(200);
           if (!(await checkbox.isChecked())) {
-            await checkbox.click();
+            await checkbox.press('Space');
           }
           await sleep(100);
           break;
@@ -665,8 +701,7 @@ class OperateProcessesPage {
   }
 
   getNthProcessInstanceCheckbox(index: number): Locator {
-    return this.page
-      .getByTestId('data-list')
+    return getDataList(this.page)
       .getByRole('row')
       .nth(index + 1) // +1 to skip header row
       .getByRole('checkbox');

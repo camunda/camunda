@@ -133,14 +133,16 @@ test.describe('Process Instance Batch Modification', () => {
     await test.step('Wait for modification to complete and verify flow nodes', async () => {
       await operateDiagramPage.clickFlowNode('shipArticles');
       await expect(
-        operateDiagramPage.diagram.getByTestId(
-          'state-overlay-checkPayment-canceled',
+        await operateDiagramPage.getStateOverlayLocatorByElementNameAndState(
+          'checkPayment',
+          'canceled',
         ),
       ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
 
       await expect(
-        operateDiagramPage.diagram.getByTestId(
-          'state-overlay-shipArticles-active',
+        await operateDiagramPage.getStateOverlayLocatorByElementNameAndState(
+          'shipArticles',
+          'active',
         ),
       ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
     });
