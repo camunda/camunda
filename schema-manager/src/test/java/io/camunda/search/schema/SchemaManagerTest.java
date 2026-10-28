@@ -471,7 +471,7 @@ class SchemaManagerTest {
     final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
     when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenThrow(new IllegalStateException("unexpected JSON event"));
-    final var manager =
+    try (final var manager =
         new SchemaManager(
             client,
             List.of(indexA, indexB),
@@ -479,15 +479,14 @@ class SchemaManagerTest {
             config,
             mock(IndexSchemaValidator.class),
             "8.8.0",
-            null);
-
-    // when
-    manager.startupOnce();
-    manager.close();
+            null)) {
+      // when
+      manager.startup();
+    }
 
     // then - schema init went on and wrote the configured replica count everywhere
-    verify(client).putSettings(eq(indexA), eq(Map.of("index.number_of_replicas", "1")));
-    verify(client).putSettings(eq(indexB), eq(Map.of("index.number_of_replicas", "1")));
+    verify(client).putSettings(eq(List.of(indexA)), eq(Map.of("index.number_of_replicas", "1")));
+    verify(client).putSettings(eq(List.of(indexB)), eq(Map.of("index.number_of_replicas", "1")));
   }
 
   /**
