@@ -398,6 +398,26 @@ class TlsContextsTest {
   }
 
   @Test
+  void shouldFailOnEmptyLegacyCaCertificatePathWithPlaintextGrpcAndHttpsRest() {
+    // given - plaintext gRPC and an HTTPS REST address: the gRPC-side empty-path guard never
+    // runs, so the empty legacy CA path must still fail here instead of being normalized away and
+    // silently selecting the JVM default trust store
+    final CamundaClientBuilderImpl config =
+        (CamundaClientBuilderImpl)
+            new CamundaClientBuilderImpl()
+                .applyEnvironmentVariableOverrides(false)
+                .grpcAddress(URI.create("http://localhost:26500"))
+                .restAddress(TLS_REST);
+    config.caCertificatePath("");
+
+    // when / then
+    assertThatThrownBy(() -> TlsContexts.createRestSslContext(config))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("REST")
+        .hasCauseInstanceOf(java.io.FileNotFoundException.class);
+  }
+
+  @Test
   void shouldBuildRestContextWithKeystore() {
     // given
     final CamundaClientBuilderImpl config = tlsConfig();
