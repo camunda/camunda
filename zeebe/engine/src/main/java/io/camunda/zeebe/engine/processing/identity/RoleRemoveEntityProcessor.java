@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -100,7 +99,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!isEntityPresent(entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -160,10 +159,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
         record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 
-  private boolean isEntityPresent(
-      final Map<String, Object> authorizations,
-      final EntityType entityType,
-      final String entityId) {
+  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
     return switch (entityType) {
       case USER, CLIENT, GROUP ->
           true; // With simple mapping rules, any username, client id or group can be assigned
