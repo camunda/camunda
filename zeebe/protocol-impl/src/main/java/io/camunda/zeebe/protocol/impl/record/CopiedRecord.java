@@ -64,7 +64,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     rejectionReason = metadata.getRejectionReason();
     valueType = metadata.getValueType();
     brokerVersion = metadata.getBrokerVersion().toString();
-    authorization = metadata.getAuthorization();
+    // the metadata is reused for the next record, so the authorization must be copied
+    authorization = AuthInfo.of(metadata.getAuthorization());
     recordVersion = metadata.getRecordVersion();
     operationReference = metadata.getOperationReference();
     batchOperationReference = metadata.getBatchOperationReference();
