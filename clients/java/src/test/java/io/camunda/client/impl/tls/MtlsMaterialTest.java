@@ -147,6 +147,47 @@ class MtlsMaterialTest {
   }
 
   @Test
+  void shouldFailWhenCaBundlePathAndTruststoreAreBothConfigured() {
+    // given
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.mtlsCaCertificatePath("/path/to/ca.pem");
+    config.mtlsTruststore("/path/to/truststore.p12", "secret");
+
+    // when / then
+    assertThatThrownBy(() -> MtlsMaterial.fromConfiguration(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("CAMUNDA_MTLS_TRUSTSTORE_PATH");
+  }
+
+  @Test
+  void shouldFailWhenInlineCaBundleAndTruststoreAreBothConfigured() {
+    // given
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.mtlsCaCertificateContent("INLINE CA");
+    config.mtlsTruststore("/path/to/truststore.p12", "secret");
+
+    // when / then
+    assertThatThrownBy(() -> MtlsMaterial.fromConfiguration(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("CAMUNDA_MTLS_TRUSTSTORE_PATH");
+  }
+
+  @Test
+  void shouldPreserveExplicitlyEmptyKeystoreKeyPassword() {
+    // given - an empty key password is a valid, distinct password; only null falls back to the
+    // keystore password
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.clientKeystore("/path/to/keystore.p12", "storepass", "");
+
+    // when
+    final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
+
+    // then
+    assertThat(material.getKeystoreKeyPassword()).isEmpty();
+    assertThat(material.getKeystorePassword()).isEqualTo("storepass");
+  }
+
+  @Test
   void shouldFailWhenMtlsIsConfiguredOnPlaintextAddresses() {
     // given
     final CamundaClientBuilderImpl config =
@@ -195,13 +236,12 @@ class MtlsMaterialTest {
 
   @Test
   void shouldNotLeakSecretsInToString() {
-    // given
+    // given - non-conflicting trust settings: a CA bundle and a truststore are mutually exclusive
     final CamundaClientBuilderImpl config = tlsConfig();
     config.clientCertificateContent("INLINE CERT", "INLINE KEY");
     config.clientKeyPassphrase("key-secret");
-    config.clientKeystore(null, null, null);
+    config.clientKeystore(null, "store-secret", null);
     config.mtlsCaCertificateContent("INLINE CA");
-    config.mtlsTruststore("/path/to/truststore.p12", "trust-secret");
 
     // when
     final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
@@ -213,6 +253,6 @@ class MtlsMaterialTest {
         .doesNotContain("INLINE CERT")
         .doesNotContain("INLINE CA")
         .doesNotContain("key-secret")
-        .doesNotContain("trust-secret");
+        .doesNotContain("store-secret");
   }
 }

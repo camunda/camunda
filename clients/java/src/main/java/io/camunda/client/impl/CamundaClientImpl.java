@@ -380,6 +380,7 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersio
 import io.camunda.client.impl.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
+import io.camunda.client.impl.tls.MtlsMaterial;
 import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.JobWorkerExecutors;
@@ -481,6 +482,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
+    // Resolve and validate the mTLS material up front, before any transport's plaintext branch
+    // can silently skip it: configuring CAMUNDA_MTLS_* against plaintext-only addresses must fail
+    // here instead of building a plaintext client that ignores the material.
+    MtlsMaterial.fromConfiguration(config);
+
     final URI address;
     address = config.getGrpcAddress();
 

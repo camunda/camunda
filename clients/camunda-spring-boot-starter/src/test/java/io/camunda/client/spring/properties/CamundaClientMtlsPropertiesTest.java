@@ -48,13 +48,17 @@ public class CamundaClientMtlsPropertiesTest {
 
     @Test
     void shouldNotLeakSecretsInToString() {
-      properties.getMtls().setCert("INLINE CERT");
-      properties.getMtls().setKey("INLINE KEY");
-      properties.getMtls().setKeyPassphrase("key-secret");
-      properties.getMtls().setKeystorePassword("store-secret");
-      properties.getMtls().setTruststorePassword("trust-secret");
+      // A local instance: the toString() check needs no binding, and mutating the autowired
+      // Spring-context singleton would leak state into shouldDefaultToNoMtls depending on method
+      // order.
+      final CamundaClientMtlsProperties mtls = new CamundaClientMtlsProperties();
+      mtls.setCert("INLINE CERT");
+      mtls.setKey("INLINE KEY");
+      mtls.setKeyPassphrase("key-secret");
+      mtls.setKeystorePassword("store-secret");
+      mtls.setTruststorePassword("trust-secret");
 
-      assertThat(properties.getMtls().toString())
+      assertThat(mtls.toString())
           .doesNotContain("INLINE CERT")
           .doesNotContain("INLINE KEY")
           .doesNotContain("key-secret")

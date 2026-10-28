@@ -123,7 +123,9 @@ class RestMtlsTest {
     return (CamundaClientBuilderImpl)
         CamundaClient.newClientBuilder()
             .applyEnvironmentVariableOverrides(false)
-            .grpcAddress(URI.create("https://localhost:126500"))
+            // A valid but unused gRPC port: client construction always builds the gRPC channel,
+            // so the port must be within the TCP range even though only REST is exercised.
+            .grpcAddress(URI.create("https://localhost:26500"))
             .restAddress(restAddress)
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(10));
