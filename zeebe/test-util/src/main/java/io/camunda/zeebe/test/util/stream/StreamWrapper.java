@@ -67,11 +67,12 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
 
     final var records = new ArrayList<T>();
     final var index = new AtomicInteger();
-    wrappedStream
-        .peek(records::add)
-        .filter(record -> predicate.test(record) && index.getAndIncrement() < count)
-        .limit(count)
-        .count();
+    final var unused =
+        wrappedStream
+            .peek(records::add)
+            .filter(record -> predicate.test(record) && index.getAndIncrement() < count)
+            .limit(count)
+            .count();
     return supply(records.stream());
   }
 

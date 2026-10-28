@@ -276,7 +276,7 @@ public class DefaultClusterEventService
     @Override
     public CompletableFuture<byte[]> apply(final Address address, final byte[] payload) {
       for (final InternalSubscription s : subscriptions) {
-        s.callback.apply(payload);
+        final var unused = s.callback.apply(payload);
       }
       return CompletableFuture.completedFuture(null);
     }

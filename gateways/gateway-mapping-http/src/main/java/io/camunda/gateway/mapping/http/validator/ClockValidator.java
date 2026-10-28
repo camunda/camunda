@@ -58,7 +58,7 @@ public class ClockValidator {
 
   private static boolean fitsIntoMillis(final Duration duration) {
     try {
-      duration.toMillis();
+      final var unused = duration.toMillis();
       return true;
     } catch (final ArithmeticException e) {
       return false;
