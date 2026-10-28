@@ -22,6 +22,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
@@ -293,6 +295,32 @@ public class MockJobWorkerTest {
             camundaClient
                 .newCompleteCommand(activatedJob)
                 .variables(Collections.singletonMap("matched", "long")))
+        .send();
+  }
+
+  @Test
+  void shouldMatchJobVariablesNormalizedWithConfiguredMapperForVariablesTable() throws Exception {
+    // given: the configured mapper reads integers as Long, the job variables carry an Integer
+    when(camundaClient.getConfiguration().getJsonMapper())
+        .thenReturn(
+            new CamundaObjectMapper(
+                new ObjectMapper().enable(DeserializationFeature.USE_LONG_FOR_INTS)));
+    when(activatedJob.getVariablesAsMap()).thenReturn(Collections.singletonMap("count", 1));
+
+    final VariablesTable variablesTable =
+        VariablesTable.when(Collections.singletonMap("count", 1))
+            .thenReturn(Collections.singletonMap("matched", true));
+
+    // when
+    processTestContext.mockJobWorker(JOB_TYPE).thenComplete(variablesTable);
+
+    // then
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(
+            camundaClient
+                .newCompleteCommand(activatedJob)
+                .variables(Collections.singletonMap("matched", true)))
         .send();
   }
 

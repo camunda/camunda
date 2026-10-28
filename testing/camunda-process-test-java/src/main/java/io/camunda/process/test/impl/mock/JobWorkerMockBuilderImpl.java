@@ -115,9 +115,12 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
     return thenComplete(
         jobVariables -> {
+          final Map<String, Object> normalizedJobVariables =
+              normalize(jobVariables, assertJsonMapper);
+
           for (int i = 0; i < normalizedRows.size(); i++) {
             final NormalizedRow row = normalizedRows.get(i);
-            if (matches(row.when, jobVariables)) {
+            if (matches(row.when, normalizedJobVariables)) {
               LOGGER.debug("Mock: Variables table matched row {} for job type '{}'", i, jobType);
               return row.variables;
             }
