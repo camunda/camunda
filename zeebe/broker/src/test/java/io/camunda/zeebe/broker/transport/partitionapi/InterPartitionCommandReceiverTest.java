@@ -247,9 +247,8 @@ final class InterPartitionCommandReceiverTest {
     final var receiverPartitionId = 7;
 
     final var authInfo = new AuthInfo();
-    final var token = "some-jwt-token";
     final var claims = Map.<String, Object>of("sub", "user-123", "scope", "test");
-    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT).setAuthData(token).setClaims(claims);
+    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED).setClaims(claims);
 
     final var sentMessage =
         sendCommand(
@@ -276,8 +275,8 @@ final class InterPartitionCommandReceiverTest {
             assertArg(
                 (final LogAppendEntry logEntry) -> {
                   final var writtenAuth = logEntry.recordMetadata().getAuthorization();
-                  assertThat(writtenAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
-                  assertThat(writtenAuth.getAuthData()).isEqualTo(token);
+                  assertThat(writtenAuth.getFormat())
+                      .isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
                   assertThat(writtenAuth.getClaims()).isEqualTo(claims);
                 }));
   }

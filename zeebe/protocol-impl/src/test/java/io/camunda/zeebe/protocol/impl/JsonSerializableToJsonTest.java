@@ -2958,7 +2958,7 @@ final class JsonSerializableToJsonTest {
                     "tenantId": "<default>",
                     "deploymentKey": -1
                   },
-                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"}}
                 }
                 """
       },
@@ -2979,7 +2979,7 @@ final class JsonSerializableToJsonTest {
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
                   "commandValue": null,
-                  "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{}}
                 }
                 """
       },

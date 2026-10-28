@@ -8,13 +8,10 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,12 +22,11 @@ public class AuthInfo extends UnpackedObject {
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
 
-  private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
 
   public AuthInfo() {
-    super(3);
-    declareProperty(formatProp).declareProperty(authDataProp).declareProperty(claimsProp);
+    super(2);
+    declareProperty(formatProp).declareProperty(claimsProp);
   }
 
   public AuthDataFormat getFormat() {
@@ -39,15 +35,6 @@ public class AuthInfo extends UnpackedObject {
 
   public AuthInfo setFormat(final AuthDataFormat format) {
     formatProp.setValue(format);
-    return this;
-  }
-
-  public String getAuthData() {
-    return BufferUtil.bufferAsString(authDataProp.getValue());
-  }
-
-  public AuthInfo setAuthData(final String authData) {
-    authDataProp.setValue(authData);
     return this;
   }
 
@@ -63,13 +50,6 @@ public class AuthInfo extends UnpackedObject {
   public AuthInfo setClaims(final Map<String, Object> authInfo) {
     claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authInfo)));
     return this;
-  }
-
-  @Override
-  public void reset() {
-    formatProp.setValue(AuthDataFormat.UNKNOWN);
-    authDataProp.setValue("");
-    claimsProp.reset();
   }
 
   @Override
@@ -98,14 +78,6 @@ public class AuthInfo extends UnpackedObject {
     return buffer;
   }
 
-  public Map<String, Object> toDecodedMap() {
-    if (getFormat() == AuthDataFormat.JWT) {
-      final String token = getAuthData();
-      return new JwtDecoder(token).decode().getClaims();
-    }
-    return getClaims();
-  }
-
   public static AuthInfo of(final AuthInfo info) {
     if (info == null) {
       return null;
@@ -117,18 +89,12 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public boolean hasAnyClaims() {
-    switch (getFormat()) {
-      case JWT:
-        return authDataProp.getValue() != null && authDataProp.getValue().capacity() > 0;
-      default:
-        return claimsProp.getValue() != null
-            && !DocumentValue.EMPTY_DOCUMENT.equals(claimsProp.getValue());
-    }
+    return claimsProp.getValue() != null
+        && !DocumentValue.EMPTY_DOCUMENT.equals(claimsProp.getValue());
   }
 
   public enum AuthDataFormat {
     UNKNOWN((short) 0),
-    JWT((short) 1),
     PRE_AUTHORIZED((short) 2);
 
     public final short id;

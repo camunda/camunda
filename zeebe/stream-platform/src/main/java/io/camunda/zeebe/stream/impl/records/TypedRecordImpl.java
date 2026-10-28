@@ -98,7 +98,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return requireNonNull(metadata).getAuthorization().toDecodedMap();
+    return requireNonNull(metadata).getAuthorization().getClaims();
   }
 
   @Override

@@ -9,7 +9,6 @@ package io.camunda.zeebe.test.broker.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -262,10 +261,7 @@ final class ProtocolFactoryTest {
     // Verify AuthInfo is populated
     final var authInfo = implValue.getAuthInfo();
     assertThat(authInfo).isNotNull();
-    assertThat(authInfo.getFormat())
-        .isNotNull()
-        .isNotEqualTo(AuthInfo.AuthDataFormat.UNKNOWN); // Should be randomized
-    assertThat(authInfo.getAuthData()).isNotEmpty();
+    assertThat(authInfo.getFormat()).isNotNull();
     assertThat(authInfo.getClaims()).isNotEmpty();
   }
 

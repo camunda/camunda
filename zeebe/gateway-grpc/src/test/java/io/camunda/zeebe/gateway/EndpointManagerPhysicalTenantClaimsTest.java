@@ -154,7 +154,7 @@ final class EndpointManagerPhysicalTenantClaimsTest {
 
   private Map<String, Object> sentClaims() {
     final BrokerExecuteCommand<?> request = brokerClient.getSingleBrokerRequest();
-    return request.getAuthorization().toDecodedMap();
+    return request.getAuthorization().getClaims();
   }
 
   @SuppressWarnings("unchecked")
