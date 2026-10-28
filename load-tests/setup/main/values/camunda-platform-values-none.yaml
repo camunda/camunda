@@ -58,9 +58,9 @@ orchestration:
         camunda.system.physical-tenant-actor-pool.enabled: "true"
         camunda.system.physical-tenant-actor-pool.cpu-thread-count: 1
         camunda.system.physical-tenant-actor-pool.io-thread-count: 1
-        # Spike: CPU budget by weight. 3 CPUs of the broker pod minus 40% headroom for Raft, messaging, gRPC and the JVM, shared by the tenants.
+        # Spike: CPU budget by weight. 3 CPUs of the broker pod minus 15% headroom for Netty messaging, GC and the JVM, shared by the tenants. Raft, REST and gRPC are charged to the tenants.
         camunda.system.physical-tenant-actor-pool.cpu-limit-cores: 3
-        camunda.system.physical-tenant-actor-pool.cpu-headroom-percent: 40
+        camunda.system.physical-tenant-actor-pool.cpu-headroom-percent: 15
         camunda.system.physical-tenant-actor-pool.weights.default: 1
         camunda.system.physical-tenant-actor-pool.weights.pt1: 1
         camunda.system.physical-tenant-actor-pool.weights.pt2: 0.5
