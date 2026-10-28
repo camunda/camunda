@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -124,6 +125,19 @@ final class PhysicalTenantModulesStep extends AbstractBrokerStartupStep
   @Override
   public Set<String> running() {
     return running;
+  }
+
+  @Override
+  public Optional<PhysicalTenantContext> context(final String physicalTenantId) {
+    final var ctx = context;
+    if (ctx == null || !running.contains(physicalTenantId)) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(ctx.getPhysicalTenantContext(physicalTenantId));
+    } catch (final IllegalArgumentException e) {
+      return Optional.empty();
+    }
   }
 
   private ActorFuture<@Nullable Void> startModule(

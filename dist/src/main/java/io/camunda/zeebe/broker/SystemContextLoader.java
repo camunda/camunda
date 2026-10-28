@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -67,6 +68,7 @@ public final class SystemContextLoader {
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
   private PhysicalTenantResolver physicalTenantResolver;
+  private PhysicalTenantIds physicalTenantIds;
   private Function<String, UserServices> userServicesForTenant;
   private PasswordEncoder passwordEncoder;
   private Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -132,6 +134,15 @@ public final class SystemContextLoader {
   public SystemContextLoader withPhysicalTenantResolver(
       final PhysicalTenantResolver physicalTenantResolver) {
     this.physicalTenantResolver = physicalTenantResolver;
+    return this;
+  }
+
+  /**
+   * The live set of physical tenants passed to the {@link SystemContext}; defaults to the boot
+   * tenants of the {@link #withPhysicalTenantResolver resolver}.
+   */
+  public SystemContextLoader withPhysicalTenantIds(final PhysicalTenantIds physicalTenantIds) {
+    this.physicalTenantIds = physicalTenantIds;
     return this;
   }
 
@@ -232,10 +243,15 @@ public final class SystemContextLoader {
         searchClientsProxy,
         exportedPositionSuppliers,
         nodeIdProvider,
-        physicalTenantResolver);
+        physicalTenantIds != null ? physicalTenantIds : physicalTenantResolver);
   }
 
-  private PhysicalTenantContext buildPhysicalTenantContext(
+  /**
+   * Translates the resolved configuration of one physical tenant into the context its broker module
+   * starts from, loading the exporters it configures. Used at boot for every tenant and at runtime
+   * for a tenant that is added or replaced.
+   */
+  public PhysicalTenantContext buildPhysicalTenantContext(
       final String physicalTenantId, final Camunda camunda) {
     final var s = camunda.getSecurity();
     final var securityConfig =

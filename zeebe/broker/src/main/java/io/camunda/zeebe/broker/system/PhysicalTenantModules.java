@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
@@ -14,7 +15,8 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Starts and stops the broker module of one physical tenant while the broker runs: its job stream
  * service, its partition manager and its admin service. The modules of the other tenants keep
- * running, and the readiness of the node never depends on a module started or stopped here.
+ * running, and the readiness of the node does not depend on a module started here until its
+ * partitions are installed.
  *
  * <p>Calls are applied one at a time on the broker startup actor.
  */
@@ -45,4 +47,7 @@ public interface PhysicalTenantModules {
 
   /** The tenants whose module currently runs on this broker. */
   Set<String> running();
+
+  /** The context the running module of a tenant was started with. */
+  Optional<PhysicalTenantContext> context(String physicalTenantId);
 }

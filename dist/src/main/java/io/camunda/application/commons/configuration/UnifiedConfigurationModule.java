@@ -7,11 +7,15 @@
  */
 package io.camunda.application.commons.configuration;
 
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
+import io.camunda.cluster.PhysicalTenant;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 
 /**
@@ -29,5 +33,23 @@ public class UnifiedConfigurationModule {
   public PhysicalTenantResolver physicalTenantResolver(
       final Environment environment, final Camunda camunda) {
     return PhysicalTenantResolver.of(environment, camunda);
+  }
+
+  /**
+   * The live set of physical tenants on this node, seeded with the boot tenants. Primary, so every
+   * component that asks for {@link PhysicalTenantIds} sees tenants added or removed at runtime.
+   */
+  @Bean
+  @Primary
+  public DefaultPhysicalTenantRegistry physicalTenantRegistry(
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return new DefaultPhysicalTenantRegistry(
+        physicalTenantResolver.known().stream()
+            .map(
+                physicalTenantId ->
+                    PhysicalTenant.newIncarnation(
+                        physicalTenantId,
+                        physicalTenantResolver.nameOf(physicalTenantId).orElse(null)))
+            .toList());
   }
 }

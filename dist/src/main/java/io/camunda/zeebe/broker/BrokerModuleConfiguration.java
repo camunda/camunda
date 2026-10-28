@@ -12,6 +12,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +48,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -62,6 +65,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
+  private static final Duration PHYSICAL_TENANT_CHANGE_TIMEOUT = Duration.ofMinutes(2);
 
   private final BrokerBasedConfiguration configuration;
   private final SpringBrokerBridge springBrokerBridge;
@@ -83,8 +87,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final SecretStoreRegistries secretStoreRegistries;
   private final ResolvedDataDirectory resolvedDataDirectory;
   private final ObjectProvider<SchemaInitializer> schemaInitializer;
+  private final DefaultPhysicalTenantRegistry physicalTenantRegistry;
 
   private Broker broker;
+  private SystemContextLoader systemContextLoader;
 
   @Autowired
   public BrokerModuleConfiguration(
@@ -109,7 +115,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
       final ResolvedDataDirectory resolvedDataDirectory,
-      final ObjectProvider<SchemaInitializer> schemaInitializer) {
+      final ObjectProvider<SchemaInitializer> schemaInitializer,
+      final DefaultPhysicalTenantRegistry physicalTenantRegistry) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -130,6 +137,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.secretStoreRegistries = secretStoreRegistries;
     this.resolvedDataDirectory = resolvedDataDirectory;
     this.schemaInitializer = schemaInitializer;
+    this.physicalTenantRegistry = physicalTenantRegistry;
   }
 
   @Bean(destroyMethod = "close")
@@ -142,7 +150,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authentication -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authentication);
 
-    final SystemContext systemContext =
+    systemContextLoader =
         new SystemContextLoader()
             .withShutdownTimeout(configuration.shutdownTimeout())
             .withRootBrokerCfg(configuration.config())
@@ -152,6 +160,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withBrokerClient(brokerClient)
             .withMeterRegistry(meterRegistry)
             .withPhysicalTenantResolver(physicalTenantResolver)
+            .withPhysicalTenantIds(physicalTenantRegistry)
             .withUserServicesForTenant(userServicesForTenant)
             .withPasswordEncoder(passwordEncoder)
             .withJwtDecoderFactory(jwtDecoderFactory)
@@ -162,8 +171,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withExporterDescriptors(exporterDescriptors)
             .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
             .withSecretStoreRegistries(secretStoreRegistries)
-            .withResolvedDataDirectory(resolvedDataDirectory)
-            .createSystemContext();
+            .withResolvedDataDirectory(resolvedDataDirectory);
+    final SystemContext systemContext = systemContextLoader.createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
@@ -175,6 +184,19 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     startBroker();
 
     return broker;
+  }
+
+  @Bean
+  public PhysicalTenantLifecycleService physicalTenantLifecycleService(
+      final Broker broker, final ConfigurableEnvironment environment) {
+    return new PhysicalTenantLifecycleService(
+        broker,
+        systemContextLoader,
+        environment,
+        unifiedConfiguration.getCamunda(),
+        physicalTenantResolver,
+        physicalTenantRegistry,
+        PHYSICAL_TENANT_CHANGE_TIMEOUT);
   }
 
   protected void startBroker() {
