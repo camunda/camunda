@@ -14,8 +14,6 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -25,23 +23,15 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
-import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.type.JdbcType;
-import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.mybatis.spring.SqlSessionFactoryBean;
-import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @NullMarked
 public class MyBatisConfiguration {
@@ -165,78 +155,29 @@ public class MyBatisConfiguration {
         meterRegistry);
   }
 
-  @Bean
-  public Map<String, SqlSessionFactory> sqlSessionFactories(
-      final RdbmsDataSources rdbmsDataSources, final PhysicalTenantResolver physicalTenantResolver)
-      throws Exception {
-    final var factories = new LinkedHashMap<String, SqlSessionFactory>();
-    for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
-      final var prefix =
-          physicalTenantResolver
-              .forPhysicalTenant(tenantId)
-              .getData()
-              .getSecondaryStorage()
-              .getRdbms()
-              .getPrefix();
-      factories.put(
-          tenantId,
-          buildSqlSessionFactory(
-              rdbmsDataSources.dataSourceFor(tenantId),
-              rdbmsDataSources.vendorPropertiesFor(tenantId),
-              prefix));
-    }
-    return Map.copyOf(factories);
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantMyBatisResources physicalTenantMyBatisResources(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return PhysicalTenantMyBatisResources.create(
+        rdbmsDataSources,
+        tenantId ->
+            physicalTenantResolver
+                .forPhysicalTenant(tenantId)
+                .getData()
+                .getSecondaryStorage()
+                .getRdbms());
   }
 
   @Bean
   public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
-      final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final PhysicalTenantMyBatisResources physicalTenantMyBatisResources,
       final RdbmsDataSources rdbmsDataSources) {
     final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
-    for (final var entry : sqlSessionFactories.entrySet()) {
-      final var physicalTenantId = entry.getKey();
-      final var factory = entry.getValue();
+    for (final var physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
       bundles.put(
-          physicalTenantId,
-          RdbmsMapperBundle.from(
-              factory,
-              new SqlSessionTemplate(factory)::getMapper,
-              rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+          physicalTenantId, physicalTenantMyBatisResources.mapperBundleFor(physicalTenantId));
     }
     return Map.copyOf(bundles);
-  }
-
-  private SqlSessionFactory buildSqlSessionFactory(
-      final DataSource dataSource,
-      final VendorDatabaseProperties databaseProperties,
-      final String prefix)
-      throws Exception {
-    final var configuration = new org.apache.ibatis.session.Configuration();
-    configuration.setJdbcTypeForNull(JdbcType.NULL);
-    configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
-    configuration.getTypeHandlerRegistry().register(EntityProtectionModeTypeHandler.class);
-    // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
-    // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
-    // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.
-    configuration.setDatabaseId(databaseProperties.databaseId());
-
-    final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
-    factoryBean.setConfiguration(configuration);
-    factoryBean.setDataSource(dataSource);
-    factoryBean.addMapperLocations(
-        new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
-
-    final Properties p = new Properties();
-    p.put("prefix", StringUtils.trimToEmpty(prefix));
-    p.putAll(databaseProperties.properties());
-    factoryBean.setConfigurationProperties(p);
-    final var factory = factoryBean.getObject();
-    // The bulk of the memory usage (~50-60%) for MyBatis with high tenant count is coming from the
-    // sql fragments.
-    // The <sql> fragments are only needed to resolve <include>s while the mappers are parsed, which
-    // is done by now. Each one holds on to the whole parsed mapper DOM, which is otherwise retained
-    // for the lifetime of the tenant's factory, once per physical tenant on every node.
-    configuration.getSqlFragments().clear();
-    return factory;
   }
 }

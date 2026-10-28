@@ -66,8 +66,9 @@ class MyBatisConfigurationUnreachableDatabaseTest {
     // when
     try (final var dataSources =
         configuration.rdbmsDataSources(resolver, new SimpleMeterRegistry())) {
-      final var sqlSessionFactories = configuration.sqlSessionFactories(dataSources, resolver);
-      final var mapperBundles = configuration.rdbmsMapperBundles(sqlSessionFactories, dataSources);
+      final var myBatisResources =
+          configuration.physicalTenantMyBatisResources(dataSources, resolver);
+      final var mapperBundles = configuration.rdbmsMapperBundles(myBatisResources, dataSources);
       final var schemaManagerRegistry = configuration.rdbmsSchemaManagerRegistry();
       final var schemaInitializer =
           configuration.rdbmsSchemaInitializer(
@@ -81,7 +82,6 @@ class MyBatisConfigurationUnreachableDatabaseTest {
 
       // then - every tenant has a complete graph, and the vendor came from the URL
       assertThat(dataSources.physicalTenantIds()).containsExactly(TENANT_A, TENANT_B);
-      assertThat(sqlSessionFactories).containsOnlyKeys(TENANT_A, TENANT_B);
       assertThat(mapperBundles).containsOnlyKeys(TENANT_A, TENANT_B);
       assertThat(dataSources.vendorPropertiesFor(TENANT_A).databaseId()).isEqualTo("postgresql");
       assertThat(dataSources.vendorPropertiesFor(TENANT_B).databaseId()).isEqualTo("mariadb");

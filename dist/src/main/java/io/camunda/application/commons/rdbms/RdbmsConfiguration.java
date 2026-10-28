@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.CompositeHealthContributor;
 import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,6 +68,7 @@ public class RdbmsConfiguration {
   @Bean(destroyMethod = "close")
   public PhysicalTenantsRdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final PhysicalTenantMyBatisResources physicalTenantMyBatisResources,
       final PhysicalTenantResolver physicalTenantResolver) {
     final var executors = new ArrayList<ExecutorService>();
     final var rowCountProviders =
@@ -91,7 +93,8 @@ public class RdbmsConfiguration {
                           cacheDuration,
                           executor);
                     }));
-    return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders, executors);
+    return new PhysicalTenantsRdbmsTableRowCountMetrics(
+        rowCountProviders, executors, physicalTenantMyBatisResources::isCreated);
   }
 
   @Bean
@@ -172,6 +175,9 @@ public class RdbmsConfiguration {
             .dataSources()
             .forEach(
                 (physicalTenantId, datasource) -> {
+                  if (!rdbmsDataSources.isPoolStarted(physicalTenantId)) {
+                    return;
+                  }
                   try (final Connection conn = datasource.getConnection()) {
                     final DatabaseMetaData meta = conn.getMetaData();
                     LOG.debug(
@@ -199,15 +205,25 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  HealthContributor rdbmsStatusHealthIndicator(final RdbmsDataSources rdbmsDataSources) {
+  HealthContributor rdbmsStatusHealthIndicator(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantMyBatisResources physicalTenantMyBatisResources) {
     // Equivalent to what Boot would normally wire for "db". A single physical tenant keeps the
     // original flat shape for backward compatibility; more than one is reported as a composite,
-    // keyed by physical tenant id, with one DataSourceHealthIndicator per pool.
+    // keyed by physical tenant id.
     final var dataSources = rdbmsDataSources.dataSources();
-    if (dataSources.size() == 1) {
-      return new DataSourceHealthIndicator(dataSources.values().iterator().next());
+    final Map<String, HealthIndicator> byTenant = new LinkedHashMap<>();
+    dataSources.forEach(
+        (tenantId, dataSource) ->
+            byTenant.put(
+                tenantId,
+                new PhysicalTenantRdbmsHealthIndicator(
+                    physicalTenantMyBatisResources.myBatisOf(tenantId),
+                    new DataSourceHealthIndicator(dataSource))));
+    if (byTenant.size() == 1) {
+      return byTenant.values().iterator().next();
     }
-    return CompositeHealthContributor.fromMap(dataSources, DataSourceHealthIndicator::new);
+    return CompositeHealthContributor.fromMap(byTenant);
   }
 
   private static RdbmsTenantReaders defaultReaders(

@@ -1265,6 +1265,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           max-job-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXJOBINSERTBATCHSIZE
           max-variable-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXVARIABLEINSERTBATCHSIZE
         
+        # If true, a node creates the MyBatis mappers and the connection pool of this database on their first
+        # use, for example when it exports a partition of the physical tenant or serves one of its queries,
+        # rather than at startup. A node that never uses the database then holds nothing for it.
+        lazy-initialization: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_LAZYINITIALIZATION
         # The maximum length of varchar fields in the database. This is relevant for user defined string
         # fields like ids and names.
         max-varchar-field-length: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_MAXVARCHARFIELDLENGTH
