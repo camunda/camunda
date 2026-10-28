@@ -13,7 +13,8 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 /**
  * Removes job backoff entries that the engine could not have created at runtime. It used to also
  * re-add the entries lost to #14329, but guessing which jobs belong in backoff re-added jobs that
- * were waiting on an incident (#15954, #27183). The name is kept from that time.
+ * were waiting on an incident (#15954, #27183). The name is from that time, and #67522 tracks
+ * removing this migration.
  */
 public class JobBackoffRestoreMigration implements MigrationTask {
 
@@ -40,8 +41,8 @@ public class JobBackoffRestoreMigration implements MigrationTask {
   /**
    * A job with an open incident may not keep its backoff entry: it would recur while the incident
    * is open and raise a second incident for the same job. A secret resolution incident is the
-   * exception, since resolving it does not reactivate a failed job, so that job only leaves the
-   * failed state by recurring.
+   * exception (see #67521): resolving it does not reactivate a failed job, so that job only leaves
+   * the failed state by recurring.
    */
   private static boolean canBackOff(final IncidentState incidentState, final long jobKey) {
     final long incidentKey = incidentState.getJobIncidentKey(jobKey);
