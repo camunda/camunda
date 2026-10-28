@@ -60,6 +60,27 @@ final class CorrelateMessageTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    // given
+    gatewayService.onCorrelateMessageRequest(DUMMY_RESPONSE);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newCorrelateMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final MessageCorrelationRequest request =
+        gatewayService.getLastRequest(MessageCorrelationRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   void shouldCorrelateMessageWithoutCorrelationKey() {
     // given
     final String messageName = "name";

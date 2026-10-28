@@ -127,6 +127,13 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<PublishMessageResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);

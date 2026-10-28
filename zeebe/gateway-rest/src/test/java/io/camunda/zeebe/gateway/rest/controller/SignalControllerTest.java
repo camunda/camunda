@@ -62,7 +62,7 @@ public class SignalControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any(), any()))
         .thenReturn(buildSignalResponse("tenantId"));
 
     final var request =
@@ -89,14 +89,15 @@ public class SignalControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(signalServices)
-        .broadcastSignal(eq("signalName"), eq(Map.of("key", "value")), eq("tenantId"), any());
+        .broadcastSignal(
+            eq("signalName"), eq(Map.of("key", "value")), eq("tenantId"), any(), any());
   }
 
   @Test
   void shouldBroadcastSignalWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any(), any()))
         .thenReturn(buildSignalResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     final var request =
@@ -125,6 +126,7 @@ public class SignalControllerTest extends RestControllerTest {
             eq("signalName"),
             eq(Map.of("key", "value")),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any(),
             any());
   }
 
@@ -134,7 +136,7 @@ public class SignalControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any(), any()))
         .thenReturn(buildSignalResponse("tenantId"));
 
     final var request =
@@ -161,7 +163,7 @@ public class SignalControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(signalServices)
-        .broadcastSignal(eq(""), eq(Map.of("key", "value")), eq("tenantId"), any());
+        .broadcastSignal(eq(""), eq(Map.of("key", "value")), eq("tenantId"), any(), any());
   }
 
   @Test

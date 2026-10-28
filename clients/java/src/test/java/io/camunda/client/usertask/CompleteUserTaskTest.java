@@ -41,6 +41,17 @@ public final class CompleteUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    // when
+    client.newCompleteUserTaskCommand(123L).operationReference(456L).send().join();
+
+    // then
+    final UserTaskCompletionRequest request =
+        gatewayService.getLastRequest(UserTaskCompletionRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(456L);
+  }
+
+  @Test
   void shouldCompleteUserTaskWithAction() {
     // when
     client.newCompleteUserTaskCommand(123L).action("foo").send().join();
