@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -31,9 +33,20 @@ import org.slf4j.Logger;
 public final class RaftPartitionFactory {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
+  private final RaftThreadContextFactory threadContextFactory;
 
   public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+    this(brokerCfg, null);
+  }
+
+  /**
+   * @param cpuBudget the budget that counts the CPU time of the Raft threads, or {@code null} if
+   *     the partitions are not limited
+   */
+  public RaftPartitionFactory(final BrokerCfg brokerCfg, final CpuBudget cpuBudget) {
     this.brokerCfg = brokerCfg;
+    threadContextFactory =
+        cpuBudget != null ? new BudgetedRaftThreadContextFactory(cpuBudget) : null;
   }
 
   public RaftPartition createRaftPartition(
@@ -91,6 +104,7 @@ public final class RaftPartitionFactory {
 
     partitionConfig.setStorageConfig(storageConfig);
     partitionConfig.setEntryValidator(new ZeebeEntryValidator());
+    partitionConfig.setThreadContextFactory(threadContextFactory);
     partitionConfig.setMaxAppendBatchSize(
         (int) brokerCfg.getExperimental().getMaxAppendBatchSizeInBytes());
     partitionConfig.setMaxAppendsPerFollower(

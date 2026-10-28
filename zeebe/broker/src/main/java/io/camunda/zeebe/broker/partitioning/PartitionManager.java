@@ -108,6 +108,7 @@ public interface PartitionManager {
         physicalTenantContext.featureFlags(),
         physicalTenantContext.secretStoreRegistry(),
         brokerStartupContext.getExpressionEvaluationExecutor(physicalTenantId),
+        brokerStartupContext.getCpuBudget(physicalTenantId),
         topologyManager);
   }
 

@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -87,6 +88,12 @@ public interface BrokerStartupContext {
    * dedicated scheduler if one was registered, otherwise a broker-wide one.
    */
   ExecutorService getExpressionEvaluationExecutor(String physicalTenantId);
+
+  /**
+   * Returns the CPU budget of the given physical tenant, or {@code null} if it has none: the tenant
+   * has no dedicated scheduler or its CPU time is not limited.
+   */
+  @Nullable CpuBudget getCpuBudget(String physicalTenantId);
 
   void addPhysicalTenantActorScheduler(
       String physicalTenantId, PhysicalTenantActorScheduler scheduler);

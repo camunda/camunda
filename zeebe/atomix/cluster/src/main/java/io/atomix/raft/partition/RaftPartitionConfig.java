@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.partition;
 
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.zeebe.EntryValidator;
 import java.time.Duration;
 
@@ -61,6 +62,7 @@ public class RaftPartitionConfig {
   private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
+  private RaftThreadContextFactory threadContextFactory;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
   private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
   private int snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
@@ -292,6 +294,15 @@ public class RaftPartitionConfig {
 
   public void setEntryValidator(final EntryValidator entryValidator) {
     this.entryValidator = entryValidator;
+  }
+
+  /** The factory for the Raft threads of the partition, or {@code null} to use the default. */
+  public RaftThreadContextFactory getThreadContextFactory() {
+    return threadContextFactory;
+  }
+
+  public void setThreadContextFactory(final RaftThreadContextFactory threadContextFactory) {
+    this.threadContextFactory = threadContextFactory;
   }
 
   public boolean isReceiveOnLegacySubject() {

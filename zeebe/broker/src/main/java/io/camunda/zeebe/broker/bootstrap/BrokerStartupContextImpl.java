@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -186,6 +187,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     return dedicated != null
         ? dedicated.expressionEvaluationExecutor()
         : defaultExpressionEvaluationExecutor;
+  }
+
+  @Override
+  public CpuBudget getCpuBudget(final String physicalTenantId) {
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null ? dedicated.cpuBudget() : null;
   }
 
   @Override

@@ -213,17 +213,21 @@ public class RaftPartitionServer implements HealthMonitorable {
                 partitionMetadata.getTargetPriority(), partitionMetadata.getPriority(localMemberId))
             : RaftElectionConfig.ofDefaultElection();
 
-    return RaftServer.builder(localMemberId)
-        .withName(partition.name())
-        .withPartitionId(partition.id())
-        .withMembershipService(membershipService)
-        .withProtocol(createServerProtocol())
-        .withPartitionConfig(config)
-        .withStorage(createRaftStorage())
-        .withEntryValidator(config.getEntryValidator())
-        .withElectionConfig(electionConfig)
-        .withMeterRegistry(meterRegistry)
-        .build();
+    final var builder =
+        RaftServer.builder(localMemberId)
+            .withName(partition.name())
+            .withPartitionId(partition.id())
+            .withMembershipService(membershipService)
+            .withProtocol(createServerProtocol())
+            .withPartitionConfig(config)
+            .withStorage(createRaftStorage())
+            .withEntryValidator(config.getEntryValidator())
+            .withElectionConfig(electionConfig)
+            .withMeterRegistry(meterRegistry);
+    if (config.getThreadContextFactory() != null) {
+      builder.withThreadContextFactory(config.getThreadContextFactory());
+    }
+    return builder.build();
   }
 
   public CompletableFuture<Void> flushLog() {

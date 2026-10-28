@@ -44,6 +44,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -147,6 +148,12 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public ActorSchedulerBuilder newActorSchedulerBuilder() {
     return actorSchedulerBuilderFactory.get();
+  }
+
+  @Override
+  public CpuBudget getCpuBudget(final String physicalTenantId) {
+    final var dedicated = physicalTenantActorSchedulers.get(physicalTenantId);
+    return dedicated != null ? dedicated.cpuBudget() : null;
   }
 
   @Override
