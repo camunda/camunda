@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -151,6 +152,22 @@ final class PhysicalTenantEnvironmentsTest {
         .isInstanceOf(UnifiedConfigurationException.class)
         .hasMessageContaining("tenanth")
         .hasMessageContaining("tenanti");
+  }
+
+  @Test
+  void shouldResolveTheDisplayNameOfATenant() {
+    // given
+    final var subtree = new HashMap<>(subtree("prefixj"));
+    subtree.put("name", "Tenant J");
+
+    // when
+    final var derived =
+        PhysicalTenantEnvironments.withTenants(environment, Map.of("tenantj", subtree), Set.of());
+
+    // then
+    final var resolver = resolve(derived);
+    assertThat(resolver.nameOf("tenantj")).contains("Tenant J");
+    assertThat(resolver.nameOf("default")).isEmpty();
   }
 
   private void declare(final Map<String, Object> properties) {

@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -50,6 +51,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
   static final int MAX_TENANT_ID_LENGTH = PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
   static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
+  static final String NAME_PROPERTY = "name";
 
   /**
    * Cross-tenant rules run at the end of {@link #of(Environment, Camunda)} so a multi-tenant
@@ -74,9 +76,12 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           new ArchiverlessSecondaryStorageValidation());
 
   private final Map<String, Camunda> resolved;
+  private final Map<String, String> names;
 
-  private PhysicalTenantResolver(final Map<String, Camunda> resolved) {
+  private PhysicalTenantResolver(
+      final Map<String, Camunda> resolved, final Map<String, String> names) {
     this.resolved = Collections.unmodifiableMap(resolved);
+    this.names = Map.copyOf(names);
   }
 
   @Override
@@ -93,8 +98,13 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     PhysicalTenantExporterAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
+    final Map<String, String> names = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
+      binder
+          .bind(
+              PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId + "." + NAME_PROPERTY, String.class)
+          .ifBound(name -> names.put(physicalTenantId, name));
       final Camunda physicalTenant = new Camunda();
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
@@ -128,7 +138,15 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
-    return new PhysicalTenantResolver(resolvedPhysicalTenants);
+    return new PhysicalTenantResolver(resolvedPhysicalTenants, names);
+  }
+
+  /**
+   * The display name declared under {@code camunda.physical-tenants.<id>.name}. Not unique, and
+   * never used to identify a tenant.
+   */
+  public Optional<String> nameOf(final String physicalTenantId) {
+    return Optional.ofNullable(names.get(physicalTenantId));
   }
 
   public Map<String, Camunda> getAll() {
