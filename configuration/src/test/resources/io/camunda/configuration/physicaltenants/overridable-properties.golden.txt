@@ -429,6 +429,8 @@ security.authentication.oidc.prefer-username-claim
 security.authentication.oidc.redirect-uri
 security.authentication.oidc.registration-id
 security.authentication.oidc.resource
+security.authentication.oidc.revocation-enabled
+security.authentication.oidc.revocation-endpoint-uri
 security.authentication.oidc.scope
 security.authentication.oidc.token-uri
 security.authentication.oidc.user-info-augmentation.cache-max-size
