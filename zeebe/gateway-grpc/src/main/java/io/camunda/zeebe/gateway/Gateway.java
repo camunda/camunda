@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantCpuChargingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerFactory;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
@@ -77,9 +78,11 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -111,6 +114,7 @@ public final class Gateway implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
+  private final BiConsumer<String, Long> cpuCharger;
 
   public Gateway(
       final Duration shutdownDuration,
@@ -126,6 +130,44 @@ public final class Gateway implements CloseableSilently {
       final MeterRegistry meterRegistry,
       final int maxVariableNameLength,
       final PhysicalTenantIds physicalTenantIds) {
+    this(
+        shutdownDuration,
+        gatewayCfg,
+        securityConfigurationsByPhysicalTenant,
+        brokerClient,
+        actorSchedulingService,
+        jobStreamer,
+        jwtDecoderFactory,
+        oidcClaimsProviderFactory,
+        userServicesForTenant,
+        passwordEncoder,
+        meterRegistry,
+        maxVariableNameLength,
+        physicalTenantIds,
+        null);
+  }
+
+  /**
+   * @param cpuCharger charges the CPU time that calls use to the physical tenant of the call. It
+   *     receives the physical tenant id and the CPU time in nanoseconds. No CPU time is charged if
+   *     it is {@code null}.
+   */
+  public Gateway(
+      final Duration shutdownDuration,
+      final GatewayCfg gatewayCfg,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
+      final Function<String, UserServices> userServicesForTenant,
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry,
+      final int maxVariableNameLength,
+      final PhysicalTenantIds physicalTenantIds,
+      final @Nullable BiConsumer<String, Long> cpuCharger) {
+    this.cpuCharger = cpuCharger;
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfigurationsByPhysicalTenant =
@@ -464,6 +506,11 @@ public final class Gateway implements CloseableSilently {
                   tenantId,
                   new AuthenticationMetrics(
                       meterRegistry, config.getAuthentication().getMethod())));
+    }
+
+    // added before the authentication interceptor, so that it runs after it has resolved the tenant
+    if (cpuCharger != null) {
+      interceptors.add(new PhysicalTenantCpuChargingInterceptor(cpuCharger));
     }
 
     interceptors.add(

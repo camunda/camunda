@@ -23,6 +23,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,7 +48,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final BiConsumer<String, Long> cpuCharger) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
@@ -65,7 +67,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             passwordEncoder,
             meterRegistry,
             configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
-            physicalTenantIds);
+            physicalTenantIds,
+            cpuCharger);
   }
 
   @Override
