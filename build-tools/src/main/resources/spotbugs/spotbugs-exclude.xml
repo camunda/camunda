@@ -25,6 +25,7 @@
     <Or>
       <Annotation name="javax.annotation.processing.Generated"/>
       <Annotation name="jakarta.annotation.Generated"/>
+      <Annotation name="org.immutables.value.Generated"/>
     </Or>
   </Match>
 
