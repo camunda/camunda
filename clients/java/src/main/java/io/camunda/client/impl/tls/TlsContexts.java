@@ -229,10 +229,20 @@ public final class TlsContexts {
    */
   static PrivateKey parsePemPrivateKey(final InputStream stream, final String passphrase)
       throws IOException, OperatorCreationException, PKCSException {
-    final Object parsed;
+    Object parsed = null;
     try (final Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
         final PEMParser pemParser = new PEMParser(reader)) {
-      parsed = pemParser.readObject();
+      // Read past leading non-key blocks until the key material: a SEC-1 key written by
+      // `openssl ecparam -genkey` is preceded by an `EC PARAMETERS` block, which is not the key.
+      for (Object next = pemParser.readObject(); next != null; next = pemParser.readObject()) {
+        if (next instanceof PrivateKeyInfo
+            || next instanceof PKCS8EncryptedPrivateKeyInfo
+            || next instanceof PEMKeyPair
+            || next instanceof PEMEncryptedKeyPair) {
+          parsed = next;
+          break;
+        }
+      }
       if (parsed == null) {
         throw new IllegalArgumentException(
             "The mTLS private key PEM does not contain a key (expected PKCS#8, PKCS#1, or EC)");
@@ -349,13 +359,14 @@ public final class TlsContexts {
     private static KeyMaterial fromKeystore(final KeyStore keystore, final String keyPassword)
         throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
       // Fail fast when the keystore holds no usable private key entry, instead of failing later
-      // with an opaque TLS handshake error.
+      // with an opaque TLS handshake error. isKeyEntry is also true for a SecretKeyEntry (e.g. an
+      // AES-only store), so check the key itself is a private key.
       final char[] passwordChars = keyPassword == null ? new char[0] : keyPassword.toCharArray();
       final Enumeration<String> aliases = keystore.aliases();
       while (aliases.hasMoreElements()) {
         final String alias = aliases.nextElement();
-        if (keystore.isKeyEntry(alias)) {
-          keystore.getKey(alias, passwordChars);
+        if (keystore.isKeyEntry(alias)
+            && keystore.getKey(alias, passwordChars) instanceof PrivateKey) {
           return new KeyMaterial(keystore, keyPassword);
         }
       }
