@@ -17,31 +17,21 @@ package io.camunda.process.test.impl.client;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
-import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
 import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
 import io.camunda.process.test.impl.client.purge.ManagementConfigurationChangeDto;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
-import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpStatus;
-import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-public final class CamundaManagementClient implements CamundaClockClient {
-
-  private static final String CLOCK_ENDPOINT = "/actuator/clock";
-  private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
+public final class CamundaManagementClient {
 
   private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
@@ -60,62 +50,6 @@ public final class CamundaManagementClient implements CamundaClockClient {
 
   public static CamundaManagementClient createClient(final URI camundaManagementApi) {
     return new CamundaManagementClient(camundaManagementApi);
-  }
-
-  @Override
-  public Instant getCurrentTime() {
-    try {
-      final HttpGet request = new HttpGet(camundaManagementApi + CLOCK_ENDPOINT);
-      final CamundaClockResponseDto clockResponseDto =
-          sendRequest(request, CamundaClockResponseDto.class);
-
-      return Instant.parse(clockResponseDto.getInstant());
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  @Override
-  public void increaseTime(final Duration timeToAdd) {
-    final HttpPost request = new HttpPost(camundaManagementApi + CLOCK_ADD_ENDPOINT);
-
-    final CamundaAddClockRequestDto requestDto = new CamundaAddClockRequestDto();
-    requestDto.setOffsetMilli(timeToAdd.toMillis());
-
-    try {
-      final String requestBody = objectMapper.writeValueAsString(requestDto);
-      request.setEntity(HttpEntities.create(requestBody, ContentType.APPLICATION_JSON));
-
-      sendRequest(request);
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  @Override
-  public void setTime(final Instant timeToSet) {
-    final Instant now = getCurrentTime();
-    final Duration timeOffset = Duration.between(now, timeToSet);
-
-    increaseTime(timeOffset);
-  }
-
-  @Override
-  public void resetTime() {
-    final HttpDelete request = new HttpDelete(camundaManagementApi + CLOCK_ENDPOINT);
-
-    try {
-      sendRequest(request);
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  private String timerBasedErrorMessage(final Exception e) {
-    return e.getMessage().contains("code: " + HttpStatus.SC_FORBIDDEN)
-        ? "Failed to increase the time. Please double-check that the Clock endpoint is enabled by "
-            + "setting 'zeebe-clock-controlled' to true."
-        : "Failed to increase the time.";
   }
 
   /**

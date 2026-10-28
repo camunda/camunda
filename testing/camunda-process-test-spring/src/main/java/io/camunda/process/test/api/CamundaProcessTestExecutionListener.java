@@ -23,6 +23,8 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.client.CamundaClockClient;
+import io.camunda.process.test.impl.client.CamundaClockClientImpl;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -101,6 +103,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
+  private CamundaClockClient camundaClockClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
   private Instant testCaseStartTime;
@@ -137,12 +140,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime.start();
 
     camundaManagementClient = createManagementClient();
+    camundaClockClient = new CamundaClockClientImpl(runtime.getCamundaClientBuilderFactory());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
-            camundaManagementClient,
+            camundaClockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
             conditionalBehaviorEngine,
@@ -167,6 +171,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
+    // forget the previous test case, so that afterTestMethod doesn't use it if this method fails
+    testCaseStartTime = null;
+    dataSource = null;
+    processTestResultCollector = null;
+
     client = createClient(camundaProcessTestContext);
 
     // fill proxies
@@ -185,6 +194,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getApplicationContext()
         .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
 
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout.
+    // Reading the time below needs a ready cluster.
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
@@ -195,9 +208,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
-
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources
     testDeploymentService.deployTestResources(
@@ -222,18 +232,21 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // stop conditional behavior engine before cleanup
     conditionalBehaviorEngine.stop();
 
-    try {
-      final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
-      final java.lang.reflect.Method testMethod = testContext.getTestMethod();
-      final String runName = testMethod.getName();
-      final String displayName = getDisplayName(testMethod);
-      coverageCollector.collectTestRunCoverage(
-          testContext.getTestClass(), runName, displayName, coverageTestData);
-    } catch (final Throwable t) {
-      LOG.warn("Failed to collect test process coverage, skipping.", t);
-    }
-    if (isTestFailed(testContext)) {
-      printTestResults();
+    // no data source means that beforeTestMethod failed before the test case could start
+    if (dataSource != null) {
+      try {
+        final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
+        final java.lang.reflect.Method testMethod = testContext.getTestMethod();
+        final String runName = testMethod.getName();
+        final String displayName = getDisplayName(testMethod);
+        coverageCollector.collectTestRunCoverage(
+            testContext.getTestClass(), runName, displayName, coverageTestData);
+      } catch (final Throwable t) {
+        LOG.warn("Failed to collect test process coverage, skipping.", t);
+      }
+      if (isTestFailed(testContext)) {
+        printTestResults();
+      }
     }
     // reset assertions
     CamundaAssert.reset();
@@ -272,10 +285,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LOG.warn("Failed to report process coverage, skipping.", t);
     }
 
-    runtime.close();
-
     CamundaAssert.setJudgeConfig(null);
     CamundaAssert.setSemanticSimilarityConfig(null);
+
+    closeQuietly(camundaClockClient, "clock client");
+
+    runtime.close();
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
@@ -340,7 +355,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private void resetRuntimeClock() {
     try {
       LOG.debug("Resetting the time");
-      camundaManagementClient.resetTime();
+      camundaClockClient.resetTime();
       LOG.debug("Time reset");
     } catch (final Throwable t) {
       LOG.warn(
@@ -352,7 +367,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private Instant readCurrentRuntimeTime() {
     try {
-      return camundaManagementClient.getCurrentTime();
+      return camundaClockClient.getCurrentTime();
     } catch (final Exception e) {
       LOG.warn(
           "Failed to read the current runtime time. Test case isolation by start time will be "
@@ -364,13 +379,20 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      try {
-        client.close();
-      } catch (final Exception e) {
-        LOG.debug("Failed to close client, continue.", e);
-      }
+      closeQuietly(client, "client");
     }
     createdClients.clear();
+  }
+
+  private static void closeQuietly(final AutoCloseable closeable, final String name) {
+    if (closeable == null) {
+      return;
+    }
+    try {
+      closeable.close();
+    } catch (final Exception e) {
+      LOG.debug("Failed to close {}, continue.", name, e);
+    }
   }
 
   private CamundaProcessTestRuntime buildRuntime(
