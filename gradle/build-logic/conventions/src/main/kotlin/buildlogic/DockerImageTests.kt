@@ -14,7 +14,9 @@ fun Test.useDockerImage(image: Provider<String>, imageIdFile: FileCollection) {
     .files(imageIdFile)
     .withPropertyName("dockerImageId")
     .withPathSensitivity(PathSensitivity.NONE)
-  val name = image.get()
+  val raw = image.get()
+  // Docker defaults an absent tag to latest; a colon before the last slash is a registry port.
+  val name = if (raw.substringAfterLast('/').contains(':')) raw else "$raw:latest"
   environment("CAMUNDA_TEST_DOCKER_IMAGE", name)
   environment("CAMUNDA_CONTAINER_IMAGE", name.substringBeforeLast(':'))
   environment("CAMUNDA_CONTAINER_VERSION", name.substringAfterLast(':'))

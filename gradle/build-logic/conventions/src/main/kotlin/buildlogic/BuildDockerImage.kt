@@ -21,8 +21,9 @@ import org.gradle.process.ExecOperations
 /**
  * Builds the Camunda container image from `camunda.Dockerfile` and a distribution tar.
  *
- * The image lives in the container daemon, so the task is only skipped when up to date and is never
- * restored from the build cache. The image id file is the output that records the last build.
+ * The image lives in the container daemon, which Gradle cannot observe, so the task always runs and
+ * relies on the container layer cache; it is never restored from the build cache. The image id file
+ * is the output that records the last build.
  */
 abstract class BuildDockerImage
 @Inject
@@ -49,6 +50,7 @@ constructor(private val execOperations: ExecOperations, providers: ProviderFacto
   @get:OutputFile abstract val imageIdFile: RegularFileProperty
 
   init {
+    outputs.upToDateWhen { false }
     cli.convention(
       providers
         .gradleProperty("container.cli")
