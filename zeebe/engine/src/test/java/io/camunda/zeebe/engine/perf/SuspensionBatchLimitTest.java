@@ -34,7 +34,8 @@ import org.slf4j.LoggerFactory;
  * ExceededBatchRecordSizeException (4 MB batch limit). Three configurations: jobs only,
  * subscriptions only, and both. Each size asserts the previously-observed outcome (success or
  * EXCEEDED_BATCH_RECORD_SIZE rejection) so a regression in the batch limit is caught rather than
- * only logged.
+ * only logged. Jobs are suspended by the element instance walk, one per batch, so job count alone
+ * no longer causes a rejection.
  */
 @Tag("performance")
 class SuspensionBatchLimitTest {
@@ -50,8 +51,8 @@ class SuspensionBatchLimitTest {
         Arguments.of(1000, false),
         Arguments.of(2000, false),
         Arguments.of(4000, false),
-        Arguments.of(5000, true),
-        Arguments.of(10000, true));
+        Arguments.of(5000, false),
+        Arguments.of(10000, false));
   }
 
   static Stream<Arguments> subscriptionOnlySizes() {
@@ -69,7 +70,7 @@ class SuspensionBatchLimitTest {
         Arguments.of(500, false),
         Arguments.of(1000, false),
         Arguments.of(2000, false),
-        Arguments.of(5000, true));
+        Arguments.of(5000, false));
   }
 
   @ParameterizedTest
