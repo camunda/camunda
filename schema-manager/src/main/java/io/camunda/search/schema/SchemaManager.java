@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -301,7 +302,11 @@ public class SchemaManager implements CloseableSilently {
     joinOnFutures(futures);
   }
 
-  private Map<String, Integer> fetchCurrentReplicaCounts() {
+  /**
+   * Returns empty when the counts could not be read. That is not the same as an empty map, which
+   * means "no matching indices" and would make every replica write look unnecessary.
+   */
+  private Optional<Map<String, Integer>> fetchCurrentReplicaCounts() {
     final var prefix = AbstractIndexDescriptor.formatIndexPrefix(config.connect().getIndexPrefix());
     final var componentPatterns =
         allIndexDescriptors.stream()
@@ -310,7 +315,19 @@ public class SchemaManager implements CloseableSilently {
             .sorted()
             .map(component -> "%s%s-*".formatted(prefix, component))
             .toList();
-    return searchEngineClient.getNumberOfReplicas(componentPatterns);
+    try {
+      return Optional.of(searchEngineClient.getNumberOfReplicas(componentPatterns));
+    } catch (final Exception e) {
+      // The read only saves redundant writes. Failing it must not fail schema init, which retries
+      // without limit and blocks application start.
+      LOG.warn(
+          "Could not read the current replica counts of indices matching '{}'. Applying the "
+              + "configured replica count to every index instead. Cause: {}",
+          componentPatterns,
+          e.toString());
+      LOG.debug("Stack trace of the failed replica count read", e);
+      return Optional.empty();
+    }
   }
 
   /**
@@ -321,7 +338,8 @@ public class SchemaManager implements CloseableSilently {
    * effect.
    */
   private void updateIndexSettings(
-      final IndexDescriptor indexDescriptor, final Map<String, Integer> currentReplicaCounts) {
+      final IndexDescriptor indexDescriptor,
+      final Optional<Map<String, Integer>> currentReplicaCounts) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       // already no-ops internally when unchanged, so it stays unconditional
@@ -330,7 +348,11 @@ public class SchemaManager implements CloseableSilently {
     }
 
     final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
-    if (replicaCountDrifted(indexDescriptor, targetReplicas, currentReplicaCounts)) {
+    final var drifted =
+        currentReplicaCounts
+            .map(counts -> replicaCountDrifted(indexDescriptor, targetReplicas, counts))
+            .orElse(true);
+    if (drifted) {
       searchEngineClient.putSettings(
           indexDescriptor, Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
     }
