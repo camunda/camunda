@@ -378,6 +378,92 @@ public class BrokerHealthCheckServiceTest {
         member, new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(expectedPhysicalTenants));
   }
 
+  @Test
+  public void shouldStayReadyWhileAReleasedPhysicalTenantRestarts() {
+    // given
+    final var healthCheckService = readyHealthCheckService();
+
+    // when
+    healthCheckService.releasePhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.unregisterPhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+    assertThat(healthCheckService.isPhysicalTenantReady(SECOND_PHYSICAL_TENANT)).isFalse();
+  }
+
+  @Test
+  public void shouldCompleteAwaitedReadinessOnceTheTenantPartitionsAreInstalled() {
+    // given
+    final var healthCheckService = readyHealthCheckService();
+    healthCheckService.releasePhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.unregisterPhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+    final var ready = healthCheckService.awaitPhysicalTenantReady(SECOND_PHYSICAL_TENANT);
+    scheduler.workUntilDone();
+    assertThat(ready.isDone()).isFalse();
+
+    // when
+    healthCheckService.onBecameRaftLeader(new PartitionId(SECOND_PHYSICAL_TENANT, 1), 2);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(ready.isDone()).isTrue();
+    assertThat(ready.isCompletedExceptionally()).isFalse();
+  }
+
+  @Test
+  public void shouldGateReadinessOnAnExpectedTenantAgain() {
+    // given
+    final var healthCheckService = readyHealthCheckService();
+    healthCheckService.releasePhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.unregisterPhysicalTenant(SECOND_PHYSICAL_TENANT);
+    scheduler.workUntilDone();
+
+    // when
+    healthCheckService.expectPhysicalTenant(SECOND_PHYSICAL_TENANT);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(healthCheckService.isBrokerReady()).isFalse();
+  }
+
+  @Test
+  public void shouldFailAwaitedReadinessWhenTheTenantIsReleased() {
+    // given
+    final var healthCheckService = readyHealthCheckService();
+    healthCheckService.releasePhysicalTenant(SECOND_PHYSICAL_TENANT);
+    healthCheckService.unregisterPhysicalTenant(SECOND_PHYSICAL_TENANT);
+    final var ready = healthCheckService.awaitPhysicalTenantReady(SECOND_PHYSICAL_TENANT);
+    scheduler.workUntilDone();
+
+    // when
+    healthCheckService.releasePhysicalTenant(SECOND_PHYSICAL_TENANT);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(ready.isCompletedExceptionally()).isTrue();
+  }
+
+  private BrokerHealthCheckService readyHealthCheckService() {
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+    scheduler.workUntilDone();
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
+    healthCheckService.onBecameRaftLeader(new PartitionId(SECOND_PHYSICAL_TENANT, 1), 1);
+    scheduler.workUntilDone();
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+    return healthCheckService;
+  }
+
   private BrokerHealthCheckService newStartedHealthCheckService(
       final String... expectedPhysicalTenants) {
     final var healthCheckService = newHealthCheckService(expectedPhysicalTenants);

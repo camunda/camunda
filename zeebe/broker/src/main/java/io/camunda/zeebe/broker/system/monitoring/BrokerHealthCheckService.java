@@ -20,7 +20,10 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -97,10 +100,13 @@ import org.slf4j.Logger;
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  /* The physical tenants this broker is configured to run. The broker is only ready once every one
-  of them has registered its bootstrap partitions, so that a tenant that never started (and thus
-  never contributed its partitions) cannot be mistaken for "no partitions to wait for". */
-  private final Set<String> expectedPhysicalTenants;
+  /* The physical tenants the readiness of this broker depends on: the boot tenants, minus tenants
+  whose module was stopped at runtime, plus runtime-started tenants once they are ready. The broker
+  is only ready once every one of them has registered its bootstrap partitions, so that a tenant
+  that never started (and thus never contributed its partitions) cannot be mistaken for "no
+  partitions to wait for". */
+  private final Set<String> expectedPhysicalTenants = ConcurrentHashMap.newKeySet();
+  private final Map<String, List<ActorFuture<Void>>> physicalTenantReadyWaiters = new HashMap<>();
   private final Set<String> registeredPhysicalTenants = ConcurrentHashMap.newKeySet();
   /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
   its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
@@ -119,7 +125,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
       final HealthTreeMetrics healthGraphMetrics,
       final Set<String> expectedPhysicalTenants) {
     super("HealthCheckService");
-    this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
+    this.expectedPhysicalTenants.addAll(expectedPhysicalTenants);
     healthMonitor =
         new CriticalComponentsHealthMonitor(
             "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
@@ -139,7 +145,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
         });
     // A late-registering tenant can be the event that completes readiness, so re-check on the actor
     // thread (where readyLogged is owned).
-    actor.run(this::logBrokerReadyOnce);
+    actor.run(this::onReadinessInputChanged);
   }
 
   /**
@@ -159,7 +165,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     // permanently block isBrokerReady() even though recovery does not depend on Raft roles.
     partitionInstallStatus.keySet().removeIf(id -> id.group().equals(physicalTenantId));
     partitions.forEach(partitionId -> partitionInstallStatus.put(partitionId, true));
-    actor.run(this::logBrokerReadyOnce);
+    actor.run(this::onReadinessInputChanged);
   }
 
   /**
@@ -193,7 +199,65 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     // registered by a later tenant still gate readiness even if an earlier tenant already finished.
     return brokerStarted
         && registeredPhysicalTenants.containsAll(expectedPhysicalTenants)
-        && !partitionInstallStatus.containsValue(false);
+        && partitionInstallStatus.entrySet().stream()
+            .noneMatch(
+                entry ->
+                    !entry.getValue() && expectedPhysicalTenants.contains(entry.getKey().group()));
+  }
+
+  /**
+   * @return whether the tenant registered its partitions and every one of them is installed,
+   *     whether or not the readiness of the broker depends on the tenant
+   */
+  public boolean isPhysicalTenantReady(final String physicalTenantId) {
+    return registeredPhysicalTenants.contains(physicalTenantId)
+        && partitionInstallStatus.entrySet().stream()
+            .noneMatch(
+                entry -> !entry.getValue() && entry.getKey().group().equals(physicalTenantId));
+  }
+
+  /**
+   * Completes once {@link #isPhysicalTenantReady(String)} holds, and fails if the tenant is
+   * released before.
+   */
+  public ActorFuture<Void> awaitPhysicalTenantReady(final String physicalTenantId) {
+    final ActorFuture<Void> ready = actor.createFuture();
+    actor.run(
+        () -> {
+          if (isPhysicalTenantReady(physicalTenantId)) {
+            ready.complete(null);
+          } else {
+            physicalTenantReadyWaiters
+                .computeIfAbsent(physicalTenantId, ignored -> new ArrayList<>())
+                .add(ready);
+          }
+        });
+    return ready;
+  }
+
+  /** Makes the readiness of the broker depend on the tenant, e.g. once it started at runtime. */
+  public void expectPhysicalTenant(final String physicalTenantId) {
+    expectedPhysicalTenants.add(physicalTenantId);
+    actor.run(this::onReadinessInputChanged);
+  }
+
+  /**
+   * Stops the readiness of the broker from depending on the tenant, before its module stops at
+   * runtime. A stopped or restarting tenant must not make the node unready, nor fail its liveness.
+   */
+  public void releasePhysicalTenant(final String physicalTenantId) {
+    expectedPhysicalTenants.remove(physicalTenantId);
+    actor.run(
+        () -> {
+          final var waiters = physicalTenantReadyWaiters.remove(physicalTenantId);
+          if (waiters != null) {
+            final var released =
+                new IllegalStateException(
+                    "Physical tenant '%s' was released before it became ready"
+                        .formatted(physicalTenantId));
+            waiters.forEach(waiter -> waiter.completeExceptionally(released));
+          }
+        });
   }
 
   public String componentName() {
@@ -225,8 +289,22 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     return actor.call(
         () -> {
           partitionInstallStatus.put(partitionId, true);
-          logBrokerReadyOnce();
+          onReadinessInputChanged();
         });
+  }
+
+  private void onReadinessInputChanged() {
+    logBrokerReadyOnce();
+    physicalTenantReadyWaiters
+        .entrySet()
+        .removeIf(
+            entry -> {
+              if (!isPhysicalTenantReady(entry.getKey())) {
+                return false;
+              }
+              entry.getValue().forEach(waiter -> waiter.complete(null));
+              return true;
+            });
   }
 
   /**
