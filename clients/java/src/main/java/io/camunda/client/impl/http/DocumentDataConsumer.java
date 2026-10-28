@@ -144,13 +144,23 @@ public class DocumentDataConsumer<T>
       return;
     }
 
-    inputStream.endOfStream();
     completed = true;
+    // errors signalled after the end of the stream are ignored by the stream itself, so a late
+    // releaseResources() cannot flag a fully received document as aborted
+    inputStream.endOfStream();
   }
 
   @Override
   public void releaseResources() {
-    // nothing to release
+    // AbstractAsyncResponseConsumer#failed only releases resources and never reaches our own
+    // #failed, so a cancelled or aborted exchange would otherwise leave a blocked reader waiting
+    // for data that never arrives. This is a no-op once the stream has ended.
+    if (!problemDetail) {
+      inputStream.signalError(
+          new IOException(
+              "Document stream was aborted before the response was fully received (connection"
+                  + " closed, timed out or cancelled)"));
+    }
   }
 
   @Override
