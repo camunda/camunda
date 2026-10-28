@@ -32,13 +32,19 @@ class OperateHomePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.operateBanner = page.getByRole('link', {name: 'Camunda Operate'});
+    this.operateBanner = page.getByRole('link', {
+      name: /^Camunda(?: logo)? Operate$/,
+    });
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
-    this.operationsMenuButton = page.getByRole('button', {
-      name: 'Toggle Operations',
-    });
+    this.operationsMenuButton = page
+      .getByRole('button', {name: 'Toggle Operations'})
+      .or(
+        page
+          .getByRole('banner')
+          .getByRole('link', {name: 'Operations', exact: true}),
+      );
     this.batchOperationsNavItem = page.getByRole('link', {
       name: 'Batch operations',
     });

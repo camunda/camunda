@@ -58,6 +58,8 @@ export class OperateFiltersPanelPage {
   readonly fromDateInput: Locator;
   readonly applyButton: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
+  readonly getConditionRowNameInput: (index: number) => Locator;
+  readonly getConditionRowValueInput: (index: number) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -127,20 +129,44 @@ export class OperateFiltersPanelPage {
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
     });
-    this.openVariableFilterModalButton = page.getByTestId(
-      'open-variable-filter-modal',
-    );
+    const filterRegion = page.getByRole('region', {
+      name: 'Filter',
+      exact: true,
+    });
+    this.openVariableFilterModalButton = filterRegion.getByRole('button', {
+      name: /^(add condition|edit conditions)$/i,
+    });
     this.variableFilterDialog = page.getByRole('dialog', {
       name: 'Filter by variable',
     });
-    this.singleConditionNameInput = page.getByTestId('single-condition-name');
-    this.singleConditionValueInput = page.getByTestId('single-condition-value');
+    this.singleConditionNameInput = filterRegion.getByRole('textbox', {
+      name: 'Name',
+      exact: true,
+    });
+    this.singleConditionValueInput = filterRegion.getByRole('textbox', {
+      name: 'Value',
+      exact: true,
+    });
+    this.getConditionRowNameInput = (index: number) =>
+      this.variableFilterDialog
+        .getByRole('textbox', {name: 'Name', exact: true})
+        .nth(index);
+    this.getConditionRowValueInput = (index: number) =>
+      this.variableFilterDialog
+        .getByRole('textbox', {name: 'Value', exact: true})
+        .nth(index);
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
     this.dateFilterDialog = this.page.getByRole('dialog');
-    this.fromTimeInput = page.getByTestId('fromTime');
-    this.toTimeInput = page.getByTestId('toTime');
+    this.fromTimeInput = this.dateFilterDialog.getByRole('textbox', {
+      name: 'From time',
+      exact: true,
+    });
+    this.toTimeInput = this.dateFilterDialog.getByRole('textbox', {
+      name: 'To time',
+      exact: true,
+    });
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
     this.getOptionByName = (name: string, exact = true) =>
@@ -275,12 +301,8 @@ export class OperateFiltersPanelPage {
   }
 
   async fillConditionRow(index: number, name: string, value: string) {
-    await this.variableFilterDialog
-      .getByTestId(`variable-filter-name-${index}`)
-      .fill(name);
-    await this.variableFilterDialog
-      .getByTestId(`variable-filter-value-${index}`)
-      .fill(value);
+    await this.getConditionRowNameInput(index).fill(name);
+    await this.getConditionRowValueInput(index).fill(value);
   }
 
   async addCondition() {
@@ -297,7 +319,8 @@ export class OperateFiltersPanelPage {
 
   async selectOperator(index: number, operatorLabel: string) {
     await this.variableFilterDialog
-      .getByTestId(`variable-filter-operator-${index}`)
+      .getByRole('combobox', {name: 'Operator', exact: true})
+      .nth(index)
       .click();
     await this.page.getByRole('option', {name: operatorLabel}).click();
   }

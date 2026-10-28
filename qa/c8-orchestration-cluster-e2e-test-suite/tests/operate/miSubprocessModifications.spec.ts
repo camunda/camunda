@@ -787,7 +787,12 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
           await expect(
             operateProcessInstancePage
               .findTreeItemInHistory(/^task a$/i)
-              .filter({has: page.getByTestId('ACTIVE-icon')}),
+              .filter({
+                has: page.getByRole('img', {
+                  name: 'active state',
+                  exact: true,
+                }),
+              }),
           ).toHaveCount(1);
         },
         onFailure: async () => {
@@ -953,7 +958,12 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
           await expect(
             operateProcessInstancePage
               .findTreeItemInHistory(/inner task/i)
-              .filter({has: page.getByTestId('TERMINATED-icon')}),
+              .filter({
+                has: page.getByRole('img', {
+                  name: 'terminated state',
+                  exact: true,
+                }),
+              }),
           ).toBeVisible();
         },
         onFailure: async () => {

@@ -64,6 +64,8 @@ export class OperateProcessInstanceViewModificationModePage {
     valueErrorMessage?: Locator;
   };
   readonly applyModificationDialog: Locator;
+  private variableRow: (name: string) => Locator;
+  private newVariableRow: (index: number | string) => Locator;
   readonly applyModificationDialogFlowNodeModificationRowByIndex: (
     index: number,
   ) => {
@@ -105,7 +107,10 @@ export class OperateProcessInstanceViewModificationModePage {
     this.reviewModificationsButton = page.getByRole('button', {
       name: /Apply Modifications|Review Modifications/,
     });
-    this.discardAllModificationsButton = page.getByTestId('discard-all-button');
+    this.discardAllModificationsButton = page.getByRole('button', {
+      name: 'Discard All',
+      exact: true,
+    });
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Cancel'});
@@ -121,7 +126,18 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByText(
         'To modify a specific instance, select it in the Instance History below.',
       );
-    this.history = page.getByTestId('instance-history');
+    this.history = page.getByRole('tree', {name: /instance history$/i});
+    this.variableRow = (name: string) =>
+      page
+        .getByRole('table', {name: 'Variable List', exact: true})
+        .getByRole('row')
+        .filter({has: page.getByTitle(name, {exact: true})});
+    this.newVariableRow = (index: number | string) =>
+      page
+        .getByRole('table', {name: 'Variable List', exact: true})
+        .getByRole('row')
+        .filter({has: page.getByRole('textbox', {name: 'Name', exact: true})})
+        .nth(Number(index));
 
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
@@ -145,29 +161,21 @@ export class OperateProcessInstanceViewModificationModePage {
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The element has no variables/i);
     this.newVariableByIndex = (index: number) => ({
-      name: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .locator(`[id="newVariables[${index}].name"]`),
-      // Operate's inline variable editor migrated from Monaco to CodeMirror
-      // (#62782): a new variable's value no longer renders a separate
-      // read-only display, and reading the `new-variable-value` group's text
-      // now picks up the visually hidden "Value" label. Target the CodeMirror
-      // content textbox instead -- it holds just the value and is focused by
-      // clicking it, exactly as the old read-only display was.
-      readModeValue: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value')
+      name: this.newVariableRow(index).locator(
+        `[id="newVariables[${index}].name"]`,
+      ),
+      readModeValue: this.newVariableRow(index)
+        .getByRole('group', {name: 'Value', exact: true})
         .getByRole('textbox'),
-      writeModeValue: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value')
+      writeModeValue: this.newVariableRow(index)
+        .getByRole('group', {name: 'Value', exact: true})
         .getByRole('textbox'),
-      jsonEditorButton: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Open'}),
-      deleteButton: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Delete'}),
+      jsonEditorButton: this.newVariableRow(index).getByRole('button', {
+        name: 'Open',
+      }),
+      deleteButton: this.newVariableRow(index).getByRole('button', {
+        name: 'Delete',
+      }),
       jsonEditorModal: {
         header: this.page.getByRole('dialog').getByText('Edit a new Variable'),
         cancelButton: this.page
@@ -179,31 +187,31 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
-      valueErrorMessage: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
+      valueErrorMessage: this.newVariableRow(index)
         .getByRole('cell')
         .nth(1)
         .locator(`.cds--form-requirement`),
-      nameErrorMessage: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
+      nameErrorMessage: this.newVariableRow(index)
         .getByRole('cell')
         .nth(0)
         .locator(`[id="newVariables[${index}].name-error-msg"]`),
     });
 
     this.editableExistingVariableByName = (name: string) => ({
-      name: this.page.getByTestId(`variable-${name}`).getByTitle(name),
-      readModeValue: this.page
-        .getByTestId(`variable-${name}`)
-        .getByTestId('edit-variable-value'),
-      writeModeValue: this.page
-        .getByTestId(`variable-${name}`)
-        .getByTestId('edit-variable-value'),
-      jsonEditorButton: this.page
-        .getByTestId(`variable-${name}`)
-        .getByRole('button', {name: 'Open'}),
+      name: this.variableRow(name).getByTitle(name),
+      readModeValue: this.variableRow(name).getByRole('group', {
+        name,
+        exact: true,
+      }),
+      writeModeValue: this.variableRow(name).getByRole('group', {
+        name,
+        exact: true,
+      }),
+      jsonEditorButton: this.variableRow(name).getByRole('button', {
+        name: 'Open',
+      }),
       jsonEditorModal: {
         header: this.page
           .getByRole('dialog')
@@ -217,11 +225,11 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
-      valueErrorMessage: this.page
-        .getByTestId(`variable-${name}`)
-        .locator(`[id="${name}-error-msg"]`),
+      valueErrorMessage: this.variableRow(name).locator(
+        `[id="${name}-error-msg"]`,
+      ),
     });
     this.applyModificationDialog = this.page.getByRole('dialog', {
       name: 'Apply Modifications',
@@ -484,11 +492,7 @@ export class OperateProcessInstanceViewModificationModePage {
   async cancelOneTokenUsingHistory(flowNodeName: string): Promise<void> {
     await this.clickFlowNode(flowNodeName);
     await expect(this.multipleInstancesAlert).toBeVisible();
-    const meow = this.history
-      .getByTestId(/^tree-node-/)
-      .locator('[aria-current="true"]')
-      .first();
-    await meow.click();
+    await this.history.getByRole('treeitem', {selected: true}).first().click();
     await expect(
       this.page
         .getByTestId('popover')
@@ -500,27 +504,22 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   getNewVariableNameFieldSelector = (variableIndex: string) => {
-    return this.page
-      .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .locator(`[id="newVariables[${variableIndex}].name"]`);
+    return this.newVariableRow(variableIndex).locator(
+      `[id="newVariables[${variableIndex}].name"]`,
+    );
   };
 
   getNewVariableValueFieldSelector = (variableIndex: string) => {
-    return this.page
-      .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .getByTestId('new-variable-value');
+    return this.newVariableRow(variableIndex).getByRole('group', {
+      name: 'Value',
+      exact: true,
+    });
   };
 
   getEditVariableFieldSelector(variableName: string) {
-    // After the inline editor migrated to CodeMirror (#62782), reading the
-    // `edit-variable-value` group's text returns accessibility noise (e.g. the
-    // "Selection deleted" live-region announcement) alongside the value.
-    // Target the CodeMirror content textbox instead; clicking it focuses the
-    // editor just as clicking the group did.
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value')
-      .getByRole('textbox');
+    return this.variableRow(variableName)
+      .getByRole('group', {name: variableName, exact: true})
+      .getByRole('textbox', {name: variableName, exact: true});
   }
 
   async undoModification() {
@@ -602,7 +601,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editVariableValue(variableName: string, value: string) {
-    await this.getEditVariableFieldSelector(variableName).click();
+    await this.getEditVariableFieldSelector(variableName).focus();
 
     await this.expectEditorToBeLoaded();
 
@@ -758,10 +757,11 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectEditorToBeLoaded() {
-    // The inline value editor is CodeMirror (#62782); it exposes the
-    // `code-mirror-editor` testid rather than Monaco's `role="code"`.
     await expect(
-      this.page.getByTestId('code-mirror-editor').first(),
+      this.page
+        .getByRole('group')
+        .filter({has: this.page.getByRole('textbox')})
+        .first(),
     ).toBeVisible();
   }
 }
