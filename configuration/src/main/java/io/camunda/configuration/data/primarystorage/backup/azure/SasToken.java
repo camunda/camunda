@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.primarystorage.backup.azure;
 
+import io.camunda.configuration.Credential;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -30,7 +31,7 @@ public class SasToken {
   private SasTokenType type;
 
   /** Specifies the key value of the SAS token. */
-  private String value;
+  @Credential private String value;
 
   public static SasToken fromSasTokenConfig(final SasTokenConfig sasTokenConfig) {
     final var sasToken = new SasToken();

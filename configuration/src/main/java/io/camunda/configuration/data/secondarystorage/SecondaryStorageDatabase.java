@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.secondarystorage;
 
+import io.camunda.configuration.Credential;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +37,7 @@ public abstract class SecondaryStorageDatabase<T> {
   private String username = "";
 
   /** Password for the database configured as secondary storage. */
-  private String password = "";
+  @Credential private String password = "";
 
   public String getUrl() {
     return url;

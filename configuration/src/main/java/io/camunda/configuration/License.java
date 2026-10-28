@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 public class License {
 
-  private @Nullable String key;
+  @Credential private @Nullable String key;
 
   public @Nullable String getKey() {
     return key;
