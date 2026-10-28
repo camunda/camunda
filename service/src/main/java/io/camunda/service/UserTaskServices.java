@@ -200,41 +200,59 @@ public final class UserTaskServices
       final String assignee,
       final String action,
       final boolean allowOverride,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var brokerRequest =
         new BrokerUserTaskAssignmentRequest(
             userTaskKey,
             assignee,
             action,
-            allowOverride ? UserTaskIntent.ASSIGN : UserTaskIntent.CLAIM),
-        authentication);
+            allowOverride ? UserTaskIntent.ASSIGN : UserTaskIntent.CLAIM);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<UserTaskRecord> completeUserTask(
       final long userTaskKey,
       final Map<String, Object> variables,
       final String action,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var brokerRequest =
         new BrokerUserTaskCompletionRequest(
-            userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength),
-        authentication);
+            userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<UserTaskRecord> unassignUserTask(
-      final long userTaskKey, final String action, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerUserTaskAssignmentRequest(userTaskKey, "", action, UserTaskIntent.ASSIGN),
-        authentication);
+      final long userTaskKey,
+      final String action,
+      final Long operationReference,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerUserTaskAssignmentRequest(userTaskKey, "", action, UserTaskIntent.ASSIGN);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<UserTaskRecord> updateUserTask(
       final long userTaskKey,
       final UserTaskRecord changeset,
       final String action,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action), authentication);
+    final var brokerRequest = new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public UserTaskEntity getByKey(

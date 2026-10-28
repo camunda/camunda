@@ -262,7 +262,7 @@ public class ProcessInstanceMapper {
         validateAssignProcessInstanceBusinessIdRequest(request),
         () ->
             new AssignProcessInstanceBusinessIdRequest(
-                processInstanceKey, request.getBusinessId()));
+                processInstanceKey, request.getBusinessId(), request.getOperationReference()));
   }
 
   public Either<ProblemDetail, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
