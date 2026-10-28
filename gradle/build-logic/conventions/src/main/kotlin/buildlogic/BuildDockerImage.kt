@@ -29,9 +29,7 @@ abstract class BuildDockerImage
 constructor(private val execOperations: ExecOperations, providers: ProviderFactory) :
   DefaultTask() {
 
-  @get:InputFile
-  @get:PathSensitive(PathSensitivity.NONE)
-  abstract val distball: RegularFileProperty
+  @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val distball: RegularFileProperty
 
   @get:InputFiles
   @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -59,8 +57,8 @@ constructor(private val execOperations: ExecOperations, providers: ProviderFacto
             listOf("docker", "podman").firstOrNull { name ->
               path.split(File.pathSeparator).any { File(it, name).canExecute() }
             } ?: "docker"
-          }
-        )
+          },
+        ),
     )
   }
 
