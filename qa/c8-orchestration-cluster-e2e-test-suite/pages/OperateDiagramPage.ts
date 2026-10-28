@@ -8,6 +8,13 @@
 
 import {expect, type Locator, type Page} from '@playwright/test';
 
+const STATE_OVERLAY_LABELS: Record<string, string> = {
+  active: 'Active',
+  incidents: 'Incidents',
+  canceled: 'Canceled',
+  completedEndEvents: 'Completed',
+};
+
 export class OperateDiagramPage {
   private page: Page;
   readonly diagram: Locator;
@@ -120,15 +127,15 @@ export class OperateDiagramPage {
   }
 
   getIncidentsOverlay(elementId: string): Locator {
-    return this.diagram.locator(
-      `[data-container-id="${elementId}"] [data-testid="state-overlay-incidents"] span`,
-    );
+    return this.diagram
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByRole('img', {name: /^Incidents(: \d+)?$/});
   }
 
   getExecutionCountOverlay(elementId: string): Locator {
-    return this.diagram.locator(
-      `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"][title="Execution Count"] span`,
-    );
+    return this.diagram
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTitle('Execution Count', {exact: true});
   }
 
   getExecutionCount(elementId: string) {
@@ -154,7 +161,7 @@ export class OperateDiagramPage {
   getWaitingOverlay(elementId: string): Locator {
     return this.page
       .locator(`[data-container-id="${elementId}"]`)
-      .getByTestId('waiting-state-overlay');
+      .getByText(/^(Waiting|\d+ waiting)$/);
   }
 
   async verifyFlowNodeMetadata(
@@ -241,7 +248,9 @@ export class OperateDiagramPage {
   ) {
     return this.page
       .locator(`[data-container-id=${elementName}]`)
-      .getByTestId(`state-overlay-${state}`);
+      .getByRole('img', {
+        name: new RegExp(`^${STATE_OVERLAY_LABELS[state]}(: \\d+)?$`),
+      });
   }
 
   async verifyStateOverlay(
