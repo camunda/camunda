@@ -339,7 +339,10 @@ public final class MtlsMaterial {
     }
 
     public Builder legacyCaCertificatePath(final String legacyCaCertificatePath) {
-      this.legacyCaCertificatePath = emptyToNull(legacyCaCertificatePath);
+      // Assigned directly (no empty-to-null normalization): an explicitly empty legacy path is a
+      // misconfiguration that must fail when the certificate is loaded (the historical behavior),
+      // not be silently dropped, which would fall back to the JVM default trust store.
+      this.legacyCaCertificatePath = legacyCaCertificatePath;
       return this;
     }
 
