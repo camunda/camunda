@@ -66,7 +66,7 @@
     <version.error-prone>2.51.0</version.error-prone>
     <version.nullaway>0.14.3</version.nullaway>
     <version.grpc>1.85.1</version.grpc>
-    <version.gson>2.14.0</version.gson>
+    <version.gson>2.15.0</version.gson>
     <version.guava>33.7.2-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.icu4j>79.1</version.icu4j>
