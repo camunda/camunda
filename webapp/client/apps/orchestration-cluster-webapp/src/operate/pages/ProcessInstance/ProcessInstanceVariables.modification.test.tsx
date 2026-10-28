@@ -6,32 +6,94 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, beforeAll} from 'vitest';
+import {afterEach, beforeAll, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
-import {useRouterState} from '@tanstack/react-router';
+import {useParams, useRouterState} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 import {mockGetProcessDefinitionXmlEndpoint, mockQueryVariablesEndpoint} from '#/shared-test-modules/mock-handlers';
+import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
-import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
+import {ProcessInstance} from './ProcessInstance';
+import {InstanceDiagram} from './InstanceDiagram';
+import {InstanceHistory} from './InstanceHistory';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
-import {LastModification} from './LastModification';
+import {ProcessInstanceOperations} from './ProcessInstanceOperations/ProcessInstanceOperations';
 import {processInstanceSearchSchema} from './processInstanceSearch';
-import {useModificationController, useProcessInstanceModification} from './useProcessInstanceModification';
-import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
-import {addToken} from './modifications/mocks';
-import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
-const NEW_SCOPE_KEY = 'new-scope';
-const PLACEHOLDER_SEARCH = `?elementId=task&elementInstanceKey=${NEW_SCOPE_KEY}&isPlaceholder=true`;
+const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:process id="Process_1" isExecutable="true"><bpmn:userTask id="task_1" name="Task A" /></bpmn:process>
+<bpmndi:BPMNDiagram id="Diagram_1"><bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+<bpmndi:BPMNShape id="task_1_di" bpmnElement="task_1"><dc:Bounds x="200" y="80" width="100" height="80" /></bpmndi:BPMNShape>
+</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`;
 
-afterEach(async () => {
-	await cleanup();
+const processInstance = createProcessInstance({
+	processInstanceKey: PROCESS_INSTANCE_ID,
+	processDefinitionId: 'Process_1',
 });
+
+function pageHandlers(variables: ReturnType<typeof createVariable>[] = []) {
+	return [
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML)}),
+		mockQueryVariablesEndpoint({
+			successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse({items: variables})),
+		}),
+		...processInstanceHeaderHandlers(processInstance),
+	] as const;
+}
+
+function Page() {
+	const {processInstanceId = PROCESS_INSTANCE_ID} = useParams({strict: false});
+	const search = useRouterState({select: (state) => state.location.search});
+
+	return (
+		<div style={{height: '900px', width: '1200px'}}>
+			<ProcessInstance
+				processInstanceId={processInstanceId}
+				search={processInstanceSearchSchema.parse(search)}
+				topPanel={<InstanceDiagram />}
+				bottomPanel={
+					<>
+						<InstanceHistory />
+						<ProcessInstanceVariables />
+					</>
+				}
+				headerOperations={<ProcessInstanceOperations />}
+			/>
+		</div>
+	);
+}
+
+async function renderPage(search = '') {
+	localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
+	const screen = await renderWithRouter(Page, {
+		path: '/operate/processes/$processInstanceId/$',
+		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables${search}`,
+	});
+	await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+	return screen;
+}
+
+async function enterModificationMode(screen: Awaited<ReturnType<typeof renderPage>>) {
+	await userEvent.click(screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}));
+	await expect.element(screen.getByRole('button', {name: 'Review Modifications'})).toBeDisabled();
+}
+
+async function renderPlannedScope() {
+	const screen = await renderPage();
+	await enterModificationMode(screen);
+	await userEvent.click(screen.getByText('Task A', {exact: true}).first());
+	await userEvent.click(screen.getByRole('button', {name: 'Add single element instance'}));
+	await userEvent.click(screen.getByRole('treeitem', {name: /planned to be added/}));
+	await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+	return screen;
+}
 
 async function appendToEditor(target: Locator, text: string) {
 	await userEvent.click(target);
@@ -39,102 +101,48 @@ async function appendToEditor(target: Locator, text: string) {
 	await userEvent.keyboard(`{End}${text}`);
 }
 
-async function appendToNewValue(group: Locator, text: string) {
-	await expect.element(group.getByRole('textbox')).toBeInTheDocument();
-	await appendToEditor(group, text);
-}
-
-function ModificationControls() {
-	const {dispatch} = useProcessInstanceModification();
-	const {clearSelection, selectPlaceholder} = useProcessInstanceElementSelection();
-
-	return (
-		<>
-			<button type="button" onClick={() => dispatch({type: 'enableModificationMode'})}>
-				Enter modification mode
-			</button>
-			<button
-				type="button"
-				onClick={() =>
-					dispatch({type: 'addModification', modification: addToken({elementId: 'task', scopeId: NEW_SCOPE_KEY})})
-				}
-			>
-				Plan token
-			</button>
-			<button type="button" onClick={clearSelection}>
-				Select process instance
-			</button>
-			<button type="button" onClick={() => selectPlaceholder('task', NEW_SCOPE_KEY, false)}>
-				Select planned instance
-			</button>
-			<LastModification />
-		</>
-	);
-}
-
-function renderVariables(search = '') {
-	function Variables() {
-		const routeSearch = useRouterState({select: (state) => state.location.search});
-		const modification = useModificationController(PROCESS_INSTANCE_ID);
-
-		return (
-			<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
-				<ProcessInstancePageProvider
-					processInstanceId={PROCESS_INSTANCE_ID}
-					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
-					search={processInstanceSearchSchema.parse(routeSearch)}
-					modification={modification}
-				>
-					<ModificationControls />
-					<ProcessInstanceVariables />
-				</ProcessInstancePageProvider>
-			</div>
-		);
-	}
-
-	return renderWithRouter(Variables, {
-		path: '/operate/processes/$processInstanceId/variables',
-		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables${search}`,
-	});
-}
-
-async function renderPlannedScope() {
-	const screen = await renderVariables(PLACEHOLDER_SEARCH);
-	await userEvent.click(screen.getByRole('button', {name: 'Enter modification mode'}));
-	await userEvent.click(screen.getByRole('button', {name: 'Plan token'}));
-	await expect.element(screen.getByText('The element has no variables')).toBeVisible();
-	return {screen};
-}
-
-async function addNewVariable(screen: Awaited<ReturnType<typeof renderVariables>>, name: string, value: string) {
+async function addNewVariable(screen: Awaited<ReturnType<typeof renderPage>>, name: string, value: string) {
 	await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-	const nameInput = screen.getByTestId('new-variable-name').last();
+	const nameInput = screen.getByRole('textbox', {name: 'Name'}).last();
 	await expect.element(nameInput).toHaveFocus();
 	await userEvent.keyboard(name);
-	await appendToNewValue(screen.getByRole('group', {name: 'Value'}).last(), value);
+	const valueGroup = screen.getByRole('group', {name: 'Value'}).last();
+	await expect.element(valueGroup.getByRole('textbox')).toBeInTheDocument();
+	await appendToEditor(valueGroup, value);
 	await userEvent.tab();
 }
+
+beforeEach(() => {
+	vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+		matches: false,
+		media: query,
+		onchange: null,
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		dispatchEvent: vi.fn(),
+	}));
+	sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true');
+});
+
+afterEach(async () => {
+	await cleanup();
+	vi.restoreAllMocks();
+});
 
 describe('<ProcessInstanceVariables /> modification mode', () => {
 	beforeAll(preloadMonaco, 120_000);
 
-	it('should stage an edit of a root variable when a token is planned', async ({worker}) => {
-		worker.use(
-			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-			mockQueryVariablesEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryVariablesByUserTaskResponse({items: [createVariable({name: 'amount', value: '100'})]}),
-				),
-			}),
-		);
-		const screen = await renderVariables();
-		const row = screen.getByTestId('variable-amount');
-		await userEvent.click(screen.getByRole('button', {name: 'Enter modification mode'}));
-		await expect.element(row.getByRole('button', {name: 'Copy amount'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).not.toBeInTheDocument();
+	it('should stage an edit of a root variable and undo it', async ({worker}) => {
+		worker.use(...pageHandlers([createVariable({name: 'amount', value: '100'})]));
+		const screen = await renderPage();
+		await enterModificationMode(screen);
+		await userEvent.click(screen.getByText('Task A', {exact: true}).first());
+		await userEvent.click(screen.getByRole('button', {name: 'Add single element instance'}));
 
-		await userEvent.click(screen.getByRole('button', {name: 'Plan token'}));
-		await appendToEditor(row.getByText('100', {exact: true}), '1');
+		await appendToEditor(screen.getByText('100', {exact: true}), '1');
 		await userEvent.tab();
 
 		await expect.element(screen.getByText('Edit variable "amount"')).toBeVisible();
@@ -142,12 +150,12 @@ describe('<ProcessInstanceVariables /> modification mode', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
 
 		await expect.element(screen.getByText('Edit variable "amount"')).not.toBeInTheDocument();
-		await expect.element(row.getByText('100', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('100', {exact: true})).toBeVisible();
 	});
 
 	it('should stage a new variable in a planned scope', async ({worker}) => {
-		worker.use(mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}));
-		const {screen} = await renderPlannedScope();
+		worker.use(...pageHandlers());
+		const screen = await renderPlannedScope();
 
 		await addNewVariable(screen, 'foo', '1');
 
@@ -156,8 +164,8 @@ describe('<ProcessInstanceVariables /> modification mode', () => {
 	});
 
 	it('should validate new variables before staging them', async ({worker}) => {
-		worker.use(mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}));
-		const {screen} = await renderPlannedScope();
+		worker.use(...pageHandlers());
+		const screen = await renderPlannedScope();
 
 		await addNewVariable(screen, 'foo', '1');
 		await addNewVariable(screen, 'foo', 'abc');
@@ -169,45 +177,40 @@ describe('<ProcessInstanceVariables /> modification mode', () => {
 	});
 
 	it('should remove a new variable together with its modification', async ({worker}) => {
-		worker.use(mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}));
-		const {screen} = await renderPlannedScope();
+		worker.use(...pageHandlers());
+		const screen = await renderPlannedScope();
 		await addNewVariable(screen, 'foo', '1');
 		await expect.element(screen.getByText('Add new variable "foo"')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
-		await expect.element(screen.getByTestId('new-variable-name')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-		await expect.element(screen.getByText('Add "task"')).toBeVisible();
+		await expect.element(screen.getByText('Add "Task A"')).toBeVisible();
 	});
 
 	it('should remove a new variable when its modification is undone', async ({worker}) => {
-		worker.use(mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}));
-		const {screen} = await renderPlannedScope();
+		worker.use(...pageHandlers());
+		const screen = await renderPlannedScope();
 		await addNewVariable(screen, 'foo', '1');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
 
-		await expect.element(screen.getByTestId('new-variable-name')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
 	});
 
 	it('should restore staged variables when returning to a scope', async ({worker}) => {
-		worker.use(
-			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-			mockQueryVariablesEndpoint({
-				successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse({items: [createVariable()]})),
-			}),
-		);
-		const {screen} = await renderPlannedScope();
+		worker.use(...pageHandlers([createVariable()]));
+		const screen = await renderPlannedScope();
 		await addNewVariable(screen, 'foo', '1');
 		await expect.element(screen.getByText('Add new variable "foo"')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Select process instance'}));
-		await expect.element(screen.getByTestId('new-variable-name')).not.toBeInTheDocument();
-		await userEvent.click(screen.getByRole('button', {name: 'Select planned instance'}));
+		await userEvent.click(screen.getByRole('tree').getByText('My Process'));
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('treeitem', {name: /planned to be added/}));
 
-		await expect.element(screen.getByTestId('new-variable-name')).toHaveValue('foo');
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('foo');
 		await expect.element(screen.getByRole('group', {name: 'Value'})).toHaveTextContent('1');
 	});
 });
