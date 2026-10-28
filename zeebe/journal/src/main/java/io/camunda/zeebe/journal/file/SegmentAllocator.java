@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalException;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -28,6 +29,15 @@ public interface SegmentAllocator {
    */
   void allocate(FileChannel channel, FileDescriptor fileDescriptor, final long segmentSize)
       throws IOException;
+
+  /**
+   * Called before the file of a new segment is created, so that an allocator can refuse a segment
+   * without leaving an empty file behind.
+   *
+   * @param segmentSize the desired size of the segment on disk, in bytes
+   * @throws JournalException.OutOfDiskSpace if the segment must not be allocated
+   */
+  default void checkCanAllocate(final long segmentSize) {}
 
   /** Returns the default allocator */
   static SegmentAllocator defaultAllocator() {

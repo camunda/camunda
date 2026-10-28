@@ -236,6 +236,7 @@ final class SegmentLoader {
           "Not enough space to allocate a new journal segment. Required: %s, Available: %s"
               .formatted(required, available));
     }
+    allocator.checkCanAllocate(maxSegmentSize);
   }
 
   private void allocateSegment(
