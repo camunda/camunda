@@ -13,7 +13,6 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  isForwardCompat,
 } from 'utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
@@ -119,8 +118,6 @@ test.describe.parallel('Search User Task Variables Tests', () => {
   test('Search user task variables - bad request - invalid payload', async ({
     request,
   }) => {
-    // eslint-disable-next-line playwright/no-skipped-test
-    test.skip(isForwardCompat, 'Error message format changed in newer server');
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
