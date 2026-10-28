@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
  *   <li>{@code camunda.secrets.max-concurrency}
+ *   <li>{@code camunda.secrets.refresh-interval}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.file.<id>.internal-config.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
@@ -69,6 +70,8 @@ public class Secrets {
   private static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
 
   private static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
+
+  private static final Duration DEFAULT_REFRESH_INTERVAL = Duration.ofMinutes(5);
 
   /**
    * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
@@ -124,6 +127,15 @@ public class Secrets {
    */
   private Integer maxConcurrency = DEFAULT_MAX_CONCURRENCY;
 
+  /**
+   * How often each physical tenant reads the secrets that its configuration references from its
+   * internal-config store again. A changed value, for example a rotated secondary-storage password
+   * or a moved endpoint, is then applied without a restart.
+   *
+   * <p>Defaults to {@code 5m}.
+   */
+  private Duration refreshInterval = DEFAULT_REFRESH_INTERVAL;
+
   public Stores getStores() {
     return stores;
   }
@@ -163,6 +175,21 @@ public class Secrets {
    */
   public void setMaxConcurrency(final @Nullable Integer maxConcurrency) {
     this.maxConcurrency = maxConcurrency == null ? DEFAULT_MAX_CONCURRENCY : maxConcurrency;
+  }
+
+  /**
+   * @throws IllegalArgumentException if the refresh interval is not positive
+   */
+  public Duration getRefreshInterval() {
+    if (!refreshInterval.isPositive()) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.refresh-interval must be positive, but was " + refreshInterval);
+    }
+    return refreshInterval;
+  }
+
+  public void setRefreshInterval(final @Nullable Duration refreshInterval) {
+    this.refreshInterval = refreshInterval == null ? DEFAULT_REFRESH_INTERVAL : refreshInterval;
   }
 
   public static class Stores {

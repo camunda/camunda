@@ -472,6 +472,7 @@ processing.skip-positions
 secrets.cache.max-size
 secrets.cache.ttl
 secrets.max-concurrency
+secrets.refresh-interval
 secrets.stores.aws
 secrets.stores.file
 secrets.stores.gcp
