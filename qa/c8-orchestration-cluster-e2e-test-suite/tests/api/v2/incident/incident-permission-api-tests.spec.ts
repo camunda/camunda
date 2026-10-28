@@ -134,35 +134,32 @@ test.describe.serial('Incident Permission API - Forbidden', () => {
     request,
   }) => {
     // given
-    const filter = {
-      processInstanceKey: {
-        $in: [unauthorizedProcessInstanceKey, readableProcessInstanceKey],
-      },
+    // 8.8 accepts only a single key in filter.processInstanceKey, so each
+    // instance is searched separately.
+    const searchIncidentKeys = async (processInstanceKey: string) => {
+      const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+        headers: jsonHeaders(userWithReadPermissionToken),
+        data: {filter: {processInstanceKey}},
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      return body.items.map((item: {incidentKey: string}) => item.incidentKey);
     };
 
     await expect(async () => {
       // when
-      const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
-        headers: jsonHeaders(userWithReadPermissionToken),
-        data: {filter},
-      });
+      const readableIncidentKeys = await searchIncidentKeys(
+        readableProcessInstanceKey,
+      );
+      const unauthorizedIncidentKeys = await searchIncidentKeys(
+        unauthorizedProcessInstanceKey,
+      );
 
       // then
       // READ_PROCESS_INSTANCE is granted on 'processWithAnError' only, so the
       // incident of 'singleIncidentProcess' is filtered out.
-      await assertStatusCode(res, 200);
-      const body = await res.json();
-      const incidentKeys = body.items.map(
-        (item: {incidentKey: string}) => item.incidentKey,
-      );
-      expect(incidentKeys).toContain(readableIncidentKey);
-      expect(incidentKeys).not.toContain(unauthorizedIncidentKey);
-      expect(
-        body.items.every(
-          (item: {processDefinitionId: string}) =>
-            item.processDefinitionId === 'processWithAnError',
-        ),
-      ).toBe(true);
+      expect(readableIncidentKeys).toContain(readableIncidentKey);
+      expect(unauthorizedIncidentKeys).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
