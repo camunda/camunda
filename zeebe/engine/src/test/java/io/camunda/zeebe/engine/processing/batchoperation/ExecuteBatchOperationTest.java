@@ -92,6 +92,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
             .create(DEFAULT_USER.getUsername())
             .getValue()
             .getBatchOperationKey();
+    engine.increaseTime(SCHEDULER_INTERVAL);
 
     // then we have failed event
     assertThat(
@@ -138,6 +139,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   @Test
   public void shouldRejectExecuteWhenBatchOperationIsSuspended() {
     // given
+    autoStartScheduler = false;
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 

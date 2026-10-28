@@ -19,6 +19,10 @@ import org.junit.Test;
 
 public final class LifecycleBatchOperationTest extends AbstractBatchOperationTest {
 
+  public LifecycleBatchOperationTest() {
+    super(false);
+  }
+
   @Test
   public void shouldCancelBatchOperation() {
     // given
@@ -147,6 +151,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
 
     // when we resume it again
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+    advanceSchedulerUntil(r -> r.getIntent() == BatchOperationIntent.COMPLETED);
 
     // then the batch should be active
     assertThat(
