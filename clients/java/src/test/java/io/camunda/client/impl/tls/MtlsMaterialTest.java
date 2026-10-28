@@ -229,6 +229,21 @@ class MtlsMaterialTest {
   }
 
   @Test
+  void shouldPreserveExplicitlyEmptyLegacyCaCertificatePath() {
+    // given - an explicitly empty legacy CA path is a misconfiguration, not an absent value:
+    // normalizing it to null would silently fall back to the JVM default trust store instead of
+    // failing when the certificate is loaded (the historical behavior)
+    final CamundaClientBuilderImpl config = tlsConfig();
+    config.caCertificatePath("");
+
+    // when
+    final MtlsMaterial material = MtlsMaterial.fromConfiguration(config);
+
+    // then
+    assertThat(material.getLegacyCaCertificatePath()).isEmpty();
+  }
+
+  @Test
   void shouldFailWhenMtlsIsConfiguredOnPlaintextAddresses() {
     // given
     final CamundaClientBuilderImpl config =
