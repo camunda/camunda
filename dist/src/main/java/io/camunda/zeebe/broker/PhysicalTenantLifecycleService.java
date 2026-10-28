@@ -18,6 +18,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
 import java.util.Map;
@@ -97,6 +98,18 @@ public final class PhysicalTenantLifecycleService {
    */
   public PhysicalTenant add(
       final String physicalTenantId, final Map<String, Object> configuration) {
+    return add(physicalTenantId, configuration, UUID.randomUUID());
+  }
+
+  /**
+   * Adds a tenant as the given incarnation, for an incarnation that the cluster agreed on.
+   *
+   * @see #add(String, Map)
+   */
+  public PhysicalTenant add(
+      final String physicalTenantId,
+      final Map<String, Object> configuration,
+      final UUID incarnationId) {
     return underChangeLock(
         () -> {
           if (registry.find(physicalTenantId).isPresent()) {
@@ -110,7 +123,7 @@ public final class PhysicalTenantLifecycleService {
                 null);
           }
           final var candidate = resolve(physicalTenantId, configuration);
-          final var tenant = PhysicalTenant.newIncarnation(physicalTenantId, candidate.name());
+          final var tenant = new PhysicalTenant(physicalTenantId, candidate.name(), incarnationId);
           registry.add(tenant);
           commit(physicalTenantId, candidate);
           startModule(tenant, candidate.context());
@@ -174,6 +187,26 @@ public final class PhysicalTenantLifecycleService {
                   environment, Map.of(), Set.of(physicalTenantId));
           return physicalTenantId;
         });
+  }
+
+  /**
+   * Runs the boot validations on a configuration of a tenant without changing anything.
+   *
+   * @return the broker configuration the tenant would run with
+   * @throws PhysicalTenantChangeException with {@link Reason#INVALID} if the validations fail
+   */
+  public BrokerCfg validate(
+      final String physicalTenantId, final Map<String, Object> configuration) {
+    final var candidate = resolve(physicalTenantId, configuration);
+    close(physicalTenantId, candidate.context());
+    return candidate.context().config();
+  }
+
+  /**
+   * @return completes once every local partition of the tenant is installed after its last start
+   */
+  public CompletableFuture<Void> awaitReady(final String physicalTenantId) {
+    return modules().awaitReady(physicalTenantId);
   }
 
   /** The resolved configuration a tenant currently runs with. */
