@@ -51,13 +51,14 @@ class VirtualThreadsPropertyTest {
                 VirtualThreadsAutoConfiguration.class, CamundaAutoConfiguration.class));
   }
 
-  private static void assertJobHandlingRunsOnVirtualThread(
-      final CamundaClientExecutorService executorService) throws InterruptedException {
+  private static void assertJobHandlingRunsOnVirtualThread(final CamundaClient client)
+      throws InterruptedException {
     final AtomicReference<Thread> capturedThread = new AtomicReference<>();
     final CountDownLatch latch = new CountDownLatch(1);
 
-    executorService
-        .getJobHandlingExecutor()
+    client
+        .getConfiguration()
+        .jobHandlingExecutor()
         .execute(
             () -> {
               capturedThread.set(Thread.currentThread());
@@ -71,13 +72,13 @@ class VirtualThreadsPropertyTest {
   }
 
   private static void assertJobHandlingRunsOnPlatformThreads(
-      final CamundaClientExecutorService executorService, final int expectedPoolSize)
-      throws InterruptedException {
+      final CamundaClient client, final int expectedPoolSize) throws InterruptedException {
     final AtomicReference<Thread> capturedThread = new AtomicReference<>();
     final CountDownLatch latch = new CountDownLatch(1);
 
-    executorService
-        .getJobHandlingExecutor()
+    client
+        .getConfiguration()
+        .jobHandlingExecutor()
         .execute(
             () -> {
               capturedThread.set(Thread.currentThread());
@@ -88,7 +89,7 @@ class VirtualThreadsPropertyTest {
     assertThat(capturedThread.get()).isNotNull();
     assertThat(capturedThread.get().isVirtual()).isFalse();
 
-    final ExecutorService jobHandlingExecutor = executorService.getJobHandlingExecutor();
+    final ExecutorService jobHandlingExecutor = client.getConfiguration().jobHandlingExecutor();
     assertThat(jobHandlingExecutor)
         .as("default executor is a platform-thread pool")
         .isInstanceOf(ThreadPoolExecutor.class);
@@ -110,7 +111,7 @@ class VirtualThreadsPropertyTest {
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService)
                     .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
-                assertJobHandlingRunsOnVirtualThread(executorService);
+                assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
 
@@ -121,8 +122,7 @@ class VirtualThreadsPropertyTest {
           .run(
               context -> {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
-                assertJobHandlingRunsOnVirtualThread(
-                    context.getBean(CamundaClientExecutorService.class));
+                assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
 
@@ -137,7 +137,7 @@ class VirtualThreadsPropertyTest {
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService)
                     .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
-                assertJobHandlingRunsOnPlatformThreads(executorService, 1);
+                assertJobHandlingRunsOnPlatformThreads(context.getBean(CamundaClient.class), 1);
               });
     }
 
@@ -149,8 +149,7 @@ class VirtualThreadsPropertyTest {
           .run(
               context -> {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
-                assertJobHandlingRunsOnPlatformThreads(
-                    context.getBean(CamundaClientExecutorService.class), 5);
+                assertJobHandlingRunsOnPlatformThreads(context.getBean(CamundaClient.class), 5);
               });
     }
   }
@@ -168,7 +167,7 @@ class VirtualThreadsPropertyTest {
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService).isInstanceOf(MeteredCamundaClientExecutorService.class);
-                assertJobHandlingRunsOnVirtualThread(executorService);
+                assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
 
@@ -183,7 +182,7 @@ class VirtualThreadsPropertyTest {
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService).isInstanceOf(MeteredCamundaClientExecutorService.class);
-                assertJobHandlingRunsOnVirtualThread(executorService);
+                assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
 
@@ -195,8 +194,7 @@ class VirtualThreadsPropertyTest {
           .run(
               context -> {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
-                assertJobHandlingRunsOnPlatformThreads(
-                    context.getBean(CamundaClientExecutorService.class), 1);
+                assertJobHandlingRunsOnPlatformThreads(context.getBean(CamundaClient.class), 1);
               });
     }
 
@@ -209,8 +207,7 @@ class VirtualThreadsPropertyTest {
           .run(
               context -> {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
-                assertJobHandlingRunsOnPlatformThreads(
-                    context.getBean(CamundaClientExecutorService.class), 3);
+                assertJobHandlingRunsOnPlatformThreads(context.getBean(CamundaClient.class), 3);
               });
     }
   }
@@ -219,23 +216,24 @@ class VirtualThreadsPropertyTest {
   class WithMultipleNamedClients {
 
     @Test
-    void shouldApplyVirtualThreadsToPrimaryClientWhenPropertyAbsent() {
+    void shouldApplyVirtualThreadsToNamedClientsWhenPropertyAbsent() {
       contextRunner()
           .withPropertyValues(
               "camunda.clients.finance.physical-tenant-id=finance",
               "camunda.clients.risk.physical-tenant-id=risk")
           .run(
               context -> {
-                assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
                 assertThat(context).hasBean("financeCamundaClient");
                 assertThat(context).hasBean("riskCamundaClient");
                 assertJobHandlingRunsOnVirtualThread(
-                    context.getBean(CamundaClientExecutorService.class));
+                    context.getBean("financeCamundaClient", CamundaClient.class));
+                assertJobHandlingRunsOnVirtualThread(
+                    context.getBean("riskCamundaClient", CamundaClient.class));
               });
     }
 
     @Test
-    void shouldApplyVirtualThreadsToPrimaryClientWhenPropertyTrue() {
+    void shouldApplyVirtualThreadsToNamedClientsWhenPropertyTrue() {
       contextRunner()
           .withPropertyValues(
               VIRTUAL_THREADS_PROPERTY + "=true",
@@ -243,15 +241,16 @@ class VirtualThreadsPropertyTest {
               "camunda.clients.risk.physical-tenant-id=risk")
           .run(
               context -> {
-                assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
                 assertThat(context.getBeansOfType(CamundaClient.class)).hasSize(2);
                 assertJobHandlingRunsOnVirtualThread(
-                    context.getBean(CamundaClientExecutorService.class));
+                    context.getBean("financeCamundaClient", CamundaClient.class));
+                assertJobHandlingRunsOnVirtualThread(
+                    context.getBean("riskCamundaClient", CamundaClient.class));
               });
     }
 
     @Test
-    void shouldUsePlatformThreadsForSharedExecutorWhenPropertyFalse() {
+    void shouldUsePlatformThreadsForNamedClientsWhenPropertyFalse() {
       contextRunner()
           .withPropertyValues(
               VIRTUAL_THREADS_PROPERTY + "=false",
@@ -260,10 +259,77 @@ class VirtualThreadsPropertyTest {
               "camunda.clients.risk.physical-tenant-id=risk")
           .run(
               context -> {
-                assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
                 assertThat(context.getBeansOfType(CamundaClient.class)).hasSize(2);
                 assertJobHandlingRunsOnPlatformThreads(
-                    context.getBean(CamundaClientExecutorService.class), 4);
+                    context.getBean("financeCamundaClient", CamundaClient.class), 4);
+                assertJobHandlingRunsOnPlatformThreads(
+                    context.getBean("riskCamundaClient", CamundaClient.class), 4);
+              });
+    }
+
+    @Test
+    void shouldApplyMeteredVirtualThreadsToNamedClients() {
+      contextRunner()
+          .withBean(SimpleMeterRegistry.class)
+          .withPropertyValues(
+              "camunda.clients.finance.physical-tenant-id=finance",
+              "camunda.clients.risk.physical-tenant-id=risk")
+          .run(
+              context -> {
+                assertThat(context.getBeansOfType(CamundaClient.class)).hasSize(2);
+                assertJobHandlingRunsOnVirtualThread(
+                    context.getBean("financeCamundaClient", CamundaClient.class));
+                assertJobHandlingRunsOnVirtualThread(
+                    context.getBean("riskCamundaClient", CamundaClient.class));
+              });
+    }
+
+    @Test
+    void shouldUsePlatformThreadsForNamedClientsWithMeterRegistryWhenPropertyFalse() {
+      contextRunner()
+          .withBean(SimpleMeterRegistry.class)
+          .withPropertyValues(
+              VIRTUAL_THREADS_PROPERTY + "=false",
+              "camunda.client.execution-threads=3",
+              "camunda.clients.finance.physical-tenant-id=finance",
+              "camunda.clients.risk.physical-tenant-id=risk")
+          .run(
+              context -> {
+                assertThat(context.getBeansOfType(CamundaClient.class)).hasSize(2);
+                assertJobHandlingRunsOnPlatformThreads(
+                    context.getBean("financeCamundaClient", CamundaClient.class), 3);
+                assertJobHandlingRunsOnPlatformThreads(
+                    context.getBean("riskCamundaClient", CamundaClient.class), 3);
+              });
+    }
+
+    @Test
+    void shouldGiveEachNamedClientItsOwnedVirtualThreadExecutor() {
+      contextRunner()
+          .withPropertyValues(
+              "camunda.clients.finance.physical-tenant-id=finance",
+              "camunda.clients.risk.physical-tenant-id=risk")
+          .run(
+              context -> {
+                // the shared executor bean is closed by the context, not by any client, so each
+                // named client must own a distinct executor — otherwise one client's close would
+                // silently stop job handling for the others
+                final ExecutorService financeExecutor =
+                    context
+                        .getBean("financeCamundaClient", CamundaClient.class)
+                        .getConfiguration()
+                        .jobHandlingExecutor();
+                final ExecutorService riskExecutor =
+                    context
+                        .getBean("riskCamundaClient", CamundaClient.class)
+                        .getConfiguration()
+                        .jobHandlingExecutor();
+                assertThat(financeExecutor).isNotSameAs(riskExecutor);
+                assertThat(financeExecutor)
+                    .isNotSameAs(
+                        context
+                            .getBean(CamundaClientExecutorService.class)
+                            .getJobHandlingExecutor());
               });
     }
 

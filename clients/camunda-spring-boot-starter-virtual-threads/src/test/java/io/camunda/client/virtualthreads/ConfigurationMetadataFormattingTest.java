@@ -24,13 +24,16 @@ import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.springframework.util.ResourceUtils;
 
 /**
  * Enforces the documentation conventions of the main starter's metadata tests on this module's
- * {@code META-INF/additional-spring-configuration-metadata.json}: every group and property carries
- * a description that ends with a period and uses no markdown formatting.
+ * published configuration metadata — {@code META-INF/spring-configuration-metadata.json}, which the
+ * Spring Boot configuration processor generates by merging {@code
+ * additional-spring-configuration-metadata.json} into the compiled artifact. Every group and
+ * property carries a description that ends with a period and uses no markdown formatting.
  */
 class ConfigurationMetadataFormattingTest {
 
@@ -39,10 +42,22 @@ class ConfigurationMetadataFormattingTest {
     final ObjectMapper objectMapper = new ObjectMapper();
     final JsonNode jsonNode =
         objectMapper.readTree(
-            ResourceUtils.getFile(
-                "classpath:META-INF/additional-spring-configuration-metadata.json"));
+            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
 
     return Stream.of(createGroupsTests(jsonNode), createPropertiesTests(jsonNode));
+  }
+
+  @Test
+  void shouldPublishVirtualThreadsPropertyInMergedMetadata() throws IOException {
+    // guards against the processor not running (the published file would then be missing the
+    // manually maintained additional metadata)
+    final JsonNode jsonNode =
+        new ObjectMapper()
+            .readTree(
+                ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
+
+    assertThat(jsonNode.get("properties").valueStream().map(p -> p.get("name").asText()))
+        .contains("camunda.client.threads.virtual.enabled");
   }
 
   private DynamicContainer createPropertiesTests(final JsonNode metaData) {

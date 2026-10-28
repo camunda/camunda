@@ -30,6 +30,7 @@ import io.camunda.client.spring.properties.MultiCamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientPropertiesResolver;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,14 +146,16 @@ public class CamundaAutoConfiguration {
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final ObjectProvider<CamundaClientExecutorService> executorService,
-      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier,
+      final ObjectProvider<MeterRegistry> meterRegistry) {
     return new CamundaClientFactory(
         credentialsProviderConfiguration,
         jsonMapper,
         interceptors,
         chainHandlers,
         executorService,
-        jobExceptionHandlerSupplier);
+        jobExceptionHandlerSupplier,
+        meterRegistry);
   }
 
   /**
