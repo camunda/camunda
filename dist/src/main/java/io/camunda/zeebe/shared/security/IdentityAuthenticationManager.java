@@ -52,9 +52,7 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
     final DecodedJWT token;
 
     try {
-      // Not verifyToken: for the GENERIC and MICROSOFT types it also fetches the token's
-      // permissions from Identity over REST on every request, and nothing reads them. Same
-      // signature, expiry and audience checks, with the audience verifyToken would use.
+      // verifyToken would also fetch the token's permissions from Identity, which nothing uses.
       token = identity.authentication().verifyAndDecode(tokenValue, audience);
     } catch (final Exception e) {
       throw new BadCredentialsException(e.getMessage(), e);

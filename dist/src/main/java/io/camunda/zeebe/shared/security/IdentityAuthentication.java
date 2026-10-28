@@ -15,12 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- * A REST request authenticated by a token that Identity's JWKS verified.
- *
- * <p>Holds the verified {@link DecodedJWT} rather than the SDK's {@code AccessToken}. Building an
- * {@code AccessToken} means calling {@code verifyToken}, which for the {@code GENERIC} and {@code
- * MICROSOFT} types makes a REST call to Identity for the token's permissions on every request.
- * Nothing reads those permissions here.
+ * A REST request authenticated by a token that Identity's JWKS verified. Holds the verified token
+ * and the tenants it may access.
  */
 public record IdentityAuthentication(DecodedJWT token, List<String> tenantIds)
     implements Authentication {
