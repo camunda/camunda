@@ -3,13 +3,8 @@
 ## Launch
 
 We used Eclipse MAT 1.17 on macOS with Java 21+. `MAT_HOME` is the dir that has `plugins/`
-(default: `/Applications/MemoryAnalyzer.app/Contents/Eclipse`).
-
-```bash
-java -Xmx12g -DhprofStrictnessPermissive=true -Duser.language=en -Duser.country=US \
-  -jar $MAT_HOME/plugins/org.eclipse.equinox.launcher_*.jar -consolelog -nosplash -data <out>/raw/.ws \
-  -application org.eclipse.mat.api.parse <dump.hprof> <pack.xml> ><out>/raw/mat_<suffix>.log 2>&1
-```
+(default: `/Applications/MemoryAnalyzer.app/Contents/Eclipse`). `run_mat.sh` launches MAT
+with what we learned:
 
 - **The launcher jar, not the `MemoryAnalyzer` binary.** On macOS the native launcher opens
   a GUI error dialog when MAT fails, and the run hangs on it.
@@ -18,7 +13,7 @@ java -Xmx12g -DhprofStrictnessPermissive=true -Duser.language=en -Duser.country=
 - **English locale**, so numbers look the same on every machine.
 - **Output to `raw/`.** The log echoes queries and can show heap values.
 
-`run_mat.sh` does this once per pack. It refuses to run without `OUT_DIR`, or when
+It runs MAT once per pack. It refuses to run without `OUT_DIR`, or when
 `OUT_DIR`, the output dir or the dump is inside a git repo. Our dumps were named
 `<pod>_<date>_java_pid1.hprof`; the output name drops `_java_pid<N>`. `raw/.dump` records
 the dump, and another dump with the same name is refused: set `NAME`.
@@ -41,9 +36,9 @@ the dump, and another dump with the same name is refused: set `NAME`.
 |------|-----------|---------|-------------|-------|---------------------|---------|
 | 3.1 GB | 2 GiB | 47 M | ~2 min | ~20 s | ~9.5-10.5 GB | ~3.3 GB |
 
-`MAT_XMX` of about 5-6x the used heap was enough. When MAT itself runs out of memory,
-`grep -E 'java\.lang\.OutOfMemoryError(:|$)' raw/mat_<suffix>.log | grep -vc SELECT` is
-above 0 (`SELECT` skips query echoes).
+`MAT_XMX` of about 5-6x the used heap was enough. When MAT itself runs out of memory, its
+log has `java.lang.OutOfMemoryError` lines outside the query echoes (lines with `SELECT`).
+Count them; don't print them.
 
 ## Parallel runs
 
@@ -51,5 +46,5 @@ above 0 (`SELECT` skips query echoes).
   ran 3 at a time on a 48 GB Mac, which left room for everything else. Never two runs on
   the same dump: they share the index and zip files.
 - Run them as background jobs. With many dumps, start one subagent per few dumps. Give it
-  the rules from [privacy.md](privacy.md), the `run_mat.sh` command and the one-liners from
+  the rules from [privacy.md](privacy.md), the `run_mat.sh` command and the CSV format from
   [queries.md](queries.md), and ask for numbers per dump only.

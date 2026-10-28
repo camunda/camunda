@@ -21,31 +21,22 @@ aggregates, never values. DRG ids, for example, are often customer or product na
 
 ## Comparing ids without seeing them
 
-To count distinct DRG ids, or compare them across brokers, select only the id in a
-`raw_*` query in its own pack (`raw_drg_ids` in [queries.md](queries.md)), with a
-`filename_suffix` that starts with `raw_`. Run the starter pack first: `run_mat.sh` refuses
-a `raw_` pack as a dump's first parse, so its log never becomes `raw/first_parse.log`. Hash each
-distinct id with one salt per incident, never printed. Print only counts or hash prefixes,
-then delete that pack's `raw/reports/<suffix>/`, `raw/<suffix>.zip` and
-`raw/mat_<suffix>.log`.
+To count distinct DRG ids, or compare them across brokers, run
+`queries/raw_drg_ids_pack.xml` after the starter pack. `run_mat.sh` refuses a `raw_` pack as
+a dump's first parse, so its log never becomes `raw/first_parse.log`. For other ids, write
+a pack like it: select only the id, and give the pack a `filename_suffix` that starts with
+`raw_`.
 
-Hash with `scripts/hash_ids.sh`. It stops when the salt or the CSV is missing, or when a
-hash fails, and never prints a plain id.
+Then:
 
-```bash
-# Once per incident. Never print the salt.
-SALT_FILE=~/incidents/<id>/.id_salt
-[ -s "$SALT_FILE" ] || (umask 077 && od -An -tx1 -N16 /dev/urandom | tr -d ' \n' >"$SALT_FILE")
-
-# The raw_* pack's own folder, e.g. filename_suffix raw_ids, per broker
-H=.agents/skills/heap-dump-analysis/scripts/hash_ids.sh
-A=$OUT_DIR/<broker-a>/raw/reports/raw_ids
-B=$OUT_DIR/<broker-b>/raw/reports/raw_ids
-# && stops at the first failing hash, so an error never reads as a count
-"$H" "$SALT_FILE" "$A"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/a.hashes" &&
-  "$H" "$SALT_FILE" "$B"/raw_drg_ids[0-9]*.csv >"$OUT_DIR/b.hashes" &&
-  wc -l <"$OUT_DIR/a.hashes" &&                                 # distinct ids on A
-  comm -3 "$OUT_DIR/a.hashes" "$OUT_DIR/b.hashes" | wc -l       # ids on one broker only
-```
-
-The hashes let you compare sets across brokers, and name an id in the report by its prefix.
+1. **Create one salt per incident**: random bytes in a file only you can read, for example
+   `~/incidents/<id>/.id_salt`. Never print it. Use the same salt for every broker, or the
+   hashes don't match.
+2. **Hash each broker's CSV** with
+   `scripts/hash_ids.sh <salt file> raw/reports/raw_ids/raw_drg_ids<N>.csv`, into a file
+   per broker outside `raw/`. It prints a 12-char hash per distinct id and never a plain id.
+   If it fails, stop: its output is incomplete, and a count of it would be wrong.
+3. **Compare the hash files**: count lines for distinct ids, and use `comm` for ids that are
+   on one broker only. Name an id in the report by its hash prefix.
+4. **Delete** that pack's `raw/reports/<suffix>/`, `raw/<suffix>.zip` and
+   `raw/mat_<suffix>.log`.

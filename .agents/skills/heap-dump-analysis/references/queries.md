@@ -34,62 +34,41 @@ What bit us in headless MAT on 8.9 broker dumps, and how to get numbers out of t
   `drg_entries` rows had no `Segment` as dominator, and 2 were still loading (empty
   `retained`). To count entries per segment, use only rows whose `segId` matches a
   `cache_segments` row.
-- **Threads:** MAT writes the stacks to `<stem>.threads` next to the dump. Count threads per
-  pattern, and never print the lines:
-  ```bash
-  awk -v p='ReplayStateMachine' '/^Thread 0x/ { t++ } $0 ~ p && !seen[t]++ { n++ } END { print n+0 }' <stem>.threads
-  ```
+- **Threads:** MAT writes the stacks to `<stem>.threads` next to the dump. Never print its
+  lines; count threads per pattern with `scripts/count_threads.sh <stem>.threads <pattern>...`.
   We used `ReplayStateMachine`, `DecisionRequirementsCreatedApplier`,
   `DmnScalaDecisionEngine.parse` and `OutOfMemoryError.<init>`.
-- **Names change between versions.** Check the names the pack uses on the customer's tag:
-  `git show 8.9.23:zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/deployment/DbDecisionState.java | grep -n drgCache`
+- **Names change between versions.** Before you run a pack, check that each class and field
+  it queries exists in the source at the customer's release tag. For example,
+  `DbDecisionState` must still have a `drgCache` field.
 
 ## Getting numbers out
 
-CSVs are in `raw/reports/<suffix>/<query><N>.csv`. The first line is the header; each row
-ends with a comma. Columns follow the SELECT order; `histogram` has class, objects,
-shallow, retained.
+Write your own one-liners that print only aggregates. What you need to know about the CSVs:
 
-```bash
-R=$OUT_DIR/<name>/raw/reports/starter
-D=$OUT_DIR/<name>/raw/reports/drg_cache
-F='([^,]*)|("[^"]*")'
-# Reachable heap in bytes: sum of shallow sizes in the live histogram
-gawk -v FPAT="$F" 'NR>1 { gsub(/[^0-9]/, "", $3); s += $3 } END { printf "%d\n", s }' "$R"/histogram[0-9]*.csv
-# Rows of a query, for example DeployedDrg objects
-gawk 'NR>1 && NF { n++ } END { print n+0 }' "$D"/deployed_drgs[0-9]*.csv
-# Loaded entries of the DRG caches: Segment.count of the caches DbDecisionState points to
-gawk -v FPAT="$F" 'function id(x) { gsub(/[^0-9]/, "", x); return x }
-  FNR==1 { f++; next }
-  f==1 && id($3) != "" { map[id($3)] = 1; n++; next }
-  f==2 && id($2) in map { s += id($3) }
-  END { if (!n) { print "no mapId in decision_states: check the field names" > "/dev/stderr"; exit 1 }
-        print s+0 }' "$D"/decision_states[0-9]*.csv "$D"/cache_segments[0-9]*.csv
-```
-
-`Segment.count` counts loaded entries only. Rows of `drg_entries` also include entries that
-are still loading; their `retained` is empty.
+- **Location:** `raw/reports/<suffix>/<query><N>.csv`, where MAT adds the number `<N>`.
+  Match it with `<query>[0-9]*.csv`.
+- **Format:** the first line is the header, and each row ends with a comma. Numbers are
+  quoted with commas (see the quirks above).
+- **Columns** follow the SELECT order. `histogram` has class, objects, shallow, retained.
+- **Reachable heap:** the sum of the shallow column in `histogram`.
+- **Loaded DRG cache entries:** sum `cnt` in `cache_segments` over the rows whose `mapId`
+  is a `mapId` in `decision_states`. Other Guava caches in the broker have segments too. If
+  `decision_states` has no `mapId`, the field names changed in this version.
+- `Segment.count` counts loaded entries only. Rows of `drg_entries` also include entries
+  that are still loading; their `retained` is empty.
 
 ## Truncated dumps
 
 4 of our 10 dumps were truncated. MAT logs it only on the first parse, as
 `Expected to read another N bytes, but only M`. `run_mat.sh` prints that count as
-`truncated=N`. To see how much is missing:
-
-```bash
-grep -oE 'Expected to read another [0-9,]+ bytes, but only [0-9,]+' raw/first_parse.log |
-  tr -d , | awk '{ s += $5 - $9 } END { print s+0 }'     # bytes missing
-```
+`truncated=N`.
 
 A query that reads a field pointing into the missing part throws
 `illegal object reference` and kills the report. To read the last hop safely, take the
 field's raw address and look it up among the parent's outbound references. A missing object
-then gives an empty value. Our `raw_drg_ids` query read the DRG id this way, to hash it
-([privacy.md](privacy.md)):
-
-```
-SELECT eval((SELECT toString(s) AS v FROM OBJECTS (SELECT OBJECTS o FROM OBJECTS (SELECT OBJECTS outbounds(r) FROM OBJECTS (d.parsedDecisionRequirements) r) o) s WHERE s.@objectAddress = d.parsedDecisionRequirements.getField(\"decisionRequirementsId\").getValue().getObjectAddress()))[0].v AS drgId FROM io.camunda.zeebe.engine.state.deployment.DeployedDrg d
-```
+then gives an empty value. `queries/raw_drg_ids_pack.xml` reads the DRG id this way, to
+hash it ([privacy.md](privacy.md)).
 
 **Ad-hoc packs:** copy the header of `queries/starter_pack.xml` with your own
 `filename_suffix`, and pass the file to `run_mat.sh` after the dump.
