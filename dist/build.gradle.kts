@@ -2,6 +2,7 @@ import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
 import buildlogic.dockerImageName
 import buildlogic.registerBuildDockerImage
+import buildlogic.registerBuildDockerImageRelease
 import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.useDockerImage
@@ -283,6 +284,8 @@ tasks.named<Tar>("distTar") {
 tasks.named<Zip>("distZip") { reproducibleArchive() }
 
 val buildDockerImage = registerBuildDockerImage(tasks.distTar.flatMap { it.archiveFile })
+
+registerBuildDockerImageRelease(distTar.flatMap { it.archiveFile })
 
 tasks.register<Test>("dockerIt") {
   group = "verification"

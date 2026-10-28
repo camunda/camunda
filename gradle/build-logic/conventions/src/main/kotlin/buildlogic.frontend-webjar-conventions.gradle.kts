@@ -38,12 +38,20 @@ extensions.configure<NodeExtension> {
   nodeProjectDir.set(layout.projectDirectory)
 }
 
+// Tests only exercise the backend, so the frontend is built only for a release image or when
+// -Pskip.fe.build=false asks for it. The requested tasks are the only input known when the build is
+// configured, and they are part of the configuration cache key.
+val releaseImageRequested =
+  gradle.startParameter.taskRequests.any { request ->
+    request.args.any { it.substringAfterLast(':') == "buildDockerImageRelease" }
+  }
+
 val skipFrontendBuild =
   providers
     .gradleProperty("skip.fe.build")
     .orElse(providers.gradleProperty("quickly"))
     .asEnabledFlag()
-    .orElse(false)
+    .orElse(!releaseImageRequested)
 
 val npmVersionPackage =
   tasks.register<NpmTask>("npmVersionPackage") {
