@@ -75,6 +75,27 @@ public class GetDocumentContentIT {
   }
 
   @Test
+  public void shouldReturnBinaryDocumentContentAsStored() throws IOException {
+    // given - bytes that are not valid UTF-8 must reach the client unchanged, whichever converter
+    // writes the response
+    final var binaryContent = new byte[] {(byte) 0xFF, 0, 1};
+    final var binaryDocumentReference =
+        camundaClient
+            .newCreateDocumentCommand()
+            .content(binaryContent)
+            .contentType("application/pdf")
+            .send()
+            .join();
+
+    // when
+    try (final InputStream is =
+        camundaClient.newDocumentContentGetRequest(binaryDocumentReference).send().join()) {
+      // then
+      assertThat(is.readAllBytes()).isEqualTo(binaryContent);
+    }
+  }
+
+  @Test
   public void shouldReturnNotFoundIfDocumentDoesNotExist() {
     // given
     final var documentId = "non-existing-document";
