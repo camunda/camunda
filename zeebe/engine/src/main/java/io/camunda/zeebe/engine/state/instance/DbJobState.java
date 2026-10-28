@@ -413,13 +413,19 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void restoreBackoff() {
+  public void removeInvalidBackoffs(final LongPredicate canBackOff) {
     backoffColumnFamily.forEachKey(
         (key) -> {
+          final long backoff = backoffKey.getValue();
+          final long backedOffJobKey = jobKey.getValue();
           final var jobRecord = jobsColumnFamily.get(jobKey);
           if (jobRecord == null
               || jobRecord.getRecord().getRetries() <= 0
-              || jobRecord.getRecord().getRetryBackoff() <= 0) {
+              || jobRecord.getRecord().getRetryBackoff() <= 0
+              || !canBackOff.test(backedOffJobKey)) {
+            // canBackOff may read the job state, which reuses the key of this entry
+            backoffKey.wrapLong(backoff);
+            jobKey.wrapLong(backedOffJobKey);
             backoffColumnFamily.deleteExisting(key);
           }
         });
