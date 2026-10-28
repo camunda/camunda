@@ -16,6 +16,7 @@ import static io.camunda.gateway.mapping.http.validator.DocumentValidator.valida
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.gateway.mapping.http.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobBatchUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
@@ -752,7 +753,12 @@ public class RequestMapper {
       final DecisionEvaluationById request, final boolean multiTenancyEnabled) {
 
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
+            .flatMap(
+                tenantId ->
+                    validateEvaluateDecisionRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
@@ -767,7 +773,12 @@ public class RequestMapper {
       final DecisionEvaluationByKey request, final boolean multiTenancyEnabled) {
 
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
+            .flatMap(
+                tenantId ->
+                    validateEvaluateDecisionRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(

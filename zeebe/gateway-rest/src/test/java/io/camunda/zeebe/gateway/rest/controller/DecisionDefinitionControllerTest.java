@@ -279,6 +279,74 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @Test
+  void shouldRejectEvaluateDecisionByIdWithInvalidOperationReference() {
+    // given
+    final var request =
+        """
+            {
+              "decisionDefinitionId": "decisionId",
+              "operationReference": 0
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '0' but must be > 0.",
+                "instance":"/v2/decision-definitions/evaluation"
+             }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(EVALUATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectEvaluateDecisionByKeyWithInvalidOperationReference() {
+    // given
+    final var request =
+        """
+            {
+              "decisionDefinitionKey": "123456",
+              "operationReference": -123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/decision-definitions/evaluation"
+             }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(EVALUATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
   private CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> buildResponse(
       final String tenantId) {
     final var record =
