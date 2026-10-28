@@ -16,13 +16,8 @@
 package io.camunda.client.virtualthreads;
 
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
 import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -60,21 +55,17 @@ public class VirtualThreadsAutoConfiguration {
    * available — either because Micrometer is absent from the classpath, or because it is present
    * but no registry bean has been configured.
    *
+   * <p>The bean is a {@link VirtualThreadCamundaClientExecutorService}: that type carries the
+   * {@link io.camunda.client.jobhandling.VirtualThreadExecutorService} capability, which is how the
+   * multi-client factory recognises that job handling runs on virtual threads and replicates a
+   * virtual-thread executor per named client.
+   *
    * @return the configured executor service without metrics
    */
   @Bean
   @ConditionalOnMissingBean(type = "io.micrometer.core.instrument.MeterRegistry")
   public CamundaClientExecutorService camundaClientExecutorServiceWithoutMetrics() {
-    final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
-    final ExecutorService jobHandlingExecutor =
-        Executors.newThreadPerTaskExecutor(virtualThreadFactory);
-    final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
-
-    return new CamundaClientExecutorService(scheduledExecutor, true, jobHandlingExecutor, true);
-  }
-
-  private static ThreadFactory createVirtualThreadFactory() {
-    return Thread.ofVirtual().name("job-worker-virtual-", 0).factory();
+    return VirtualThreadCamundaClientExecutorService.create();
   }
 
   /**
@@ -98,6 +89,10 @@ public class VirtualThreadsAutoConfiguration {
      * Creates a {@link CamundaClientExecutorService} that uses virtual threads for job execution
      * with metrics support when Micrometer is available.
      *
+     * <p>The bean is a {@link MeteredVirtualThreadCamundaClientExecutorService}, which carries the
+     * {@link io.camunda.client.jobhandling.VirtualThreadExecutorService} capability so the
+     * multi-client factory recognises it as virtual-threaded.
+     *
      * @param meterRegistry the meter registry for metrics
      * @return the configured executor service with virtual threads for job handling and a single
      *     platform thread for scheduling
@@ -105,13 +100,10 @@ public class VirtualThreadsAutoConfiguration {
     @Bean
     CamundaClientExecutorService camundaClientExecutorService(
         @Lazy final MeterRegistry meterRegistry) {
-      final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
-      final ExecutorService jobHandlingExecutor =
-          Executors.newThreadPerTaskExecutor(virtualThreadFactory);
-      final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
-
-      return new MeteredCamundaClientExecutorService(
-          scheduledExecutor, true, jobHandlingExecutor, true, meterRegistry);
+      final VirtualThreadCamundaClientExecutorService delegate =
+          VirtualThreadCamundaClientExecutorService.create();
+      return new MeteredVirtualThreadCamundaClientExecutorService(
+          delegate.getScheduledExecutor(), delegate.getJobHandlingExecutor(), meterRegistry);
     }
   }
 }
