@@ -63,7 +63,7 @@ test('should match the component access-denied page snapshot', async ({network, 
 test('should match the generic error page snapshot', async ({network, page}) => {
 	network.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 
-	await page.goto('/login?redirect=http://evil.com');
+	await page.goto('/operate/login?redirect=http://evil.com');
 	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 
 	await movePointerAwayFromNavigation(page);

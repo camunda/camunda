@@ -47,13 +47,17 @@ const SessionWatcher: React.FC = observer(() => {
 	}, [status]);
 
 	if (isSessionExpired) {
-		return (
-			<Navigate
-				to={isTasklistPath(location.pathname) ? '/tasklist/login' : '/login'}
-				search={location.href === '/' || isTasklistIndex ? {} : {redirect: location.href}}
-				replace
-			/>
-		);
+		if (isTasklistPath(location.pathname)) {
+			return (
+				<Navigate
+					to="/tasklist/login"
+					search={isTasklistIndex ? {} : {redirect: location.href}}
+					replace
+				/>
+			);
+		}
+
+		return <Navigate to="/operate/login" state={{operateLoginReferrer: location.href}} replace />;
 	}
 
 	return null;

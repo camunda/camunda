@@ -10,7 +10,7 @@ import {BasePage} from './BasePage';
 
 class LoginPage extends BasePage {
 	async goto() {
-		return this.page.goto('/login');
+		return this.page.goto('/operate/login');
 	}
 
 	get submitButton() {
