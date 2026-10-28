@@ -45,7 +45,7 @@ camunda.client.threads.virtual.enabled=false
 
 The property is client-wide rather than per worker, because the executor is shared by all workers.
 
-When several named clients are configured (`camunda.clients.<name>.*`), each client gets its own virtual-thread job executor instead of sharing one: the executor is owned by its client and closed with it, so one client's shutdown cannot stop job handling for the others.
+When several named clients are configured (`camunda.clients.<name>.*`), each client gets its own virtual-thread job executor instead of sharing one: the executor is owned by its client and closed with it, so one client's shutdown cannot stop job handling for the others. Per-client executors are not individually metered — executor metrics stay on the shared `CamundaClientExecutorService` bean, because Micrometer is an optional dependency and the multi-client factory path must work without it.
 
 When virtual threads are disabled, the regular platform-thread executor applies again and `camunda.client.execution-threads` controls its size. When virtual threads are enabled, `camunda.client.execution-threads` has no effect; the per-worker `maxJobsActive` setting becomes the effective limit on job concurrency, because the virtual-thread executor is unbounded.
 
