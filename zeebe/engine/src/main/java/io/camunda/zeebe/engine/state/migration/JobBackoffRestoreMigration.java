@@ -27,6 +27,6 @@ public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
   public void runMigration(final MutableMigrationTaskContext context) {
-    context.processingState().getJobState().restoreBackoff();
+    context.processingState().getJobState().removeInvalidBackoffs(jobKey -> true);
   }
 }
