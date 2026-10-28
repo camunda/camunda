@@ -11,6 +11,8 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
@@ -35,6 +37,10 @@ public final class CpuBudget implements AutoCloseable {
   private volatile long throttledPeriods;
   private volatile boolean running = true;
   private Thread sampler;
+  // thread -> CPU time at the last sample; a terminated thread is dropped at the next sample
+  private final Map<Thread, Long> lastCpuNanos = new ConcurrentHashMap<>();
+  // the threads that stop on an empty budget, and so must be woken up when it is refilled
+  private volatile List<? extends Thread> actorThreads = List.of();
 
   /**
    * @param cores CPU time that the threads can use in each period, in cores. May be fractional.
@@ -59,25 +65,40 @@ public final class CpuBudget implements AutoCloseable {
     chargedNanos.addAndGet(cpuNanos);
   }
 
-  /** Starts sampling the CPU time of the given threads. */
+  /**
+   * Starts sampling the CPU time of the given threads. These are the threads that stop when the
+   * budget is exhausted.
+   */
   public void start(final List<? extends Thread> threads) {
-    sampler = new Thread(() -> sample(threads), "cpu-budget-sampler");
+    actorThreads = threads;
+    threads.forEach(this::register);
+    sampler = new Thread(this::sample, "cpu-budget-sampler");
     sampler.setDaemon(true);
     sampler.start();
   }
 
-  private void sample(final List<? extends Thread> threads) {
-    final var lastCpuNanos = new long[threads.size()];
+  /**
+   * Charges the CPU time of the thread to the budget until the thread ends. The thread is never
+   * stopped, so the charge only reduces what the actor threads get. Can be called from any thread,
+   * also before the thread starts and after {@link #start(List)}.
+   */
+  public void register(final Thread thread) {
+    // -1 if the thread is not alive yet
+    lastCpuNanos.put(thread, Math.max(0, THREADS.getThreadCpuTime(thread.threadId())));
+  }
+
+  private void sample() {
     while (running) {
       LockSupport.parkNanos(periodNanos);
 
       long periodUsedNanos = 0;
-      for (int i = 0; i < lastCpuNanos.length; i++) {
+      for (final var thread : lastCpuNanos.keySet()) {
         // -1 if the thread is not alive (yet or anymore)
-        final long cpuNanos = THREADS.getThreadCpuTime(threads.get(i).threadId());
+        final long cpuNanos = THREADS.getThreadCpuTime(thread.threadId());
         if (cpuNanos >= 0) {
-          periodUsedNanos += cpuNanos - lastCpuNanos[i];
-          lastCpuNanos[i] = cpuNanos;
+          periodUsedNanos += cpuNanos - lastCpuNanos.put(thread, cpuNanos);
+        } else if (thread.getState() == Thread.State.TERMINATED) {
+          lastCpuNanos.remove(thread);
         }
       }
 
@@ -91,7 +112,7 @@ public final class CpuBudget implements AutoCloseable {
       balanceNanos = next;
       if (wasExhausted && next > 0) {
         // threads that stopped on an empty budget may be parked for longer than the period
-        threads.forEach(LockSupport::unpark);
+        actorThreads.forEach(LockSupport::unpark);
       }
     }
   }

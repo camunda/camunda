@@ -22,10 +22,12 @@ final class CpuBudgetTest {
 
   private final List<ActorScheduler> schedulers = new ArrayList<>();
   private final List<CpuBudget> budgets = new ArrayList<>();
+  private final List<Thread> outsideThreads = new ArrayList<>();
 
   @AfterEach
   void tearDown() throws Exception {
     budgets.forEach(CpuBudget::close);
+    outsideThreads.forEach(Thread::interrupt);
     for (final var scheduler : schedulers) {
       scheduler.close();
     }
@@ -81,6 +83,32 @@ final class CpuBudgetTest {
     assertThat(ratio).isBetween(1.9, 2.1);
   }
 
+  @Test
+  void shouldChargeRegisteredThreadWithoutStoppingIt() throws Exception {
+    // given - a saturated pool with a budget of half a core, and a thread that is not part of the
+    // pool and uses about a quarter of a core
+    final var budget = new CpuBudget(0.5, PERIOD);
+    budgets.add(budget);
+    final var scheduler = newScheduler(budget, 2);
+    budget.start(scheduler.getThreads());
+    saturate(scheduler, 2);
+    final var outside = startQuarterCoreThread();
+    budget.register(outside);
+
+    // when
+    final long poolBefore = cpuNanos(scheduler.getThreads());
+    final long outsideBefore = threadCpuNanos(outside);
+    Thread.sleep(MEASURE_MILLIS);
+    final long window = Duration.ofMillis(MEASURE_MILLIS).toNanos();
+    final double poolCores = (double) (cpuNanos(scheduler.getThreads()) - poolBefore) / window;
+    final double outsideCores = (double) (threadCpuNanos(outside) - outsideBefore) / window;
+    System.out.printf("RESULT pool=%.3f outside=%.3f%n", poolCores, outsideCores);
+
+    // then - the thread keeps its CPU time and the pool gets what is left of the budget
+    assertThat(outsideCores).isBetween(0.15, 0.35);
+    assertThat(poolCores + outsideCores).isBetween(0.4, 0.6);
+  }
+
   /**
    * Documents a known limitation: an exhausted budget also stops actors that are not part of the
    * data path, such as the ones that handle role changes or health checks.
@@ -122,6 +150,30 @@ final class CpuBudgetTest {
   private static long cpuNanos(final List<ActorThread> threads) {
     final var bean = java.lang.management.ManagementFactory.getThreadMXBean();
     return threads.stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum();
+  }
+
+  private static long threadCpuNanos(final Thread thread) {
+    return java.lang.management.ManagementFactory.getThreadMXBean()
+        .getThreadCpuTime(thread.threadId());
+  }
+
+  /** Spins for 5 ms of each 20 ms period. */
+  private Thread startQuarterCoreThread() {
+    final var thread =
+        new Thread(
+            () -> {
+              while (!Thread.currentThread().isInterrupted()) {
+                final long end = System.nanoTime() + 5_000_000;
+                while (System.nanoTime() < end) {
+                  Thread.onSpinWait();
+                }
+                java.util.concurrent.locks.LockSupport.parkNanos(15_000_000);
+              }
+            });
+    thread.setDaemon(true);
+    thread.start();
+    outsideThreads.add(thread);
+    return thread;
   }
 
   private static long measureThreadCpuNanos(final List<ActorThread> threads)
