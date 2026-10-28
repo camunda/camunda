@@ -18,10 +18,12 @@ import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecuto
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -65,6 +67,20 @@ public interface ClusterConfigurationManagerService
    * Until one is registered, such changes stay pending on this member.
    */
   void registerPhysicalTenantConfigChangeExecutor(PhysicalTenantConfigChangeExecutor executor);
+
+  /**
+   * Gets the configuration a physical tenant's reference names, from this member's disk or from a
+   * peer, verified against the reference's hash.
+   */
+  CompletableFuture<byte[]> fetchPhysicalTenantConfig(
+      String physicalTenantId, PhysicalTenantConfigReference reference);
+
+  /**
+   * Records that this member runs the given version of a physical tenant's configuration, for a
+   * version it applied outside a configuration change, e.g. when it started.
+   */
+  ActorFuture<CurrentClusterConfiguration> recordPhysicalTenantConfigApplied(
+      String physicalTenantId, long version);
 
   void registerModeChangeExecutor(String groupId, ModeChangeExecutor modeChangeExecutor);
 

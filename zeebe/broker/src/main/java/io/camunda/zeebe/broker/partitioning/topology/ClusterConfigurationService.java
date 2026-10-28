@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
@@ -18,15 +19,18 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
@@ -65,6 +69,17 @@ public interface ClusterConfigurationService extends AsyncClosable {
    */
   ActorFuture<Void> provisionPhysicalTenant(
       BrokerStartupContext brokerStartupContext, String physicalTenantId);
+
+  /** See {@link ClusterConfigurationManagerService#registerPhysicalTenantConfigChangeExecutor}. */
+  void registerPhysicalTenantConfigChangeExecutor(PhysicalTenantConfigChangeExecutor executor);
+
+  /** See {@link ClusterConfigurationManagerService#fetchPhysicalTenantConfig}. */
+  CompletableFuture<byte[]> fetchPhysicalTenantConfig(
+      String physicalTenantId, PhysicalTenantConfigReference reference);
+
+  /** See {@link ClusterConfigurationManagerService#recordPhysicalTenantConfigApplied}. */
+  ActorFuture<CurrentClusterConfiguration> recordPhysicalTenantConfigApplied(
+      String physicalTenantId, long version);
 
   void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 

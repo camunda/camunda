@@ -20,9 +20,11 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationManagerServiceImpl;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -30,6 +32,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -169,6 +172,31 @@ public class DynamicClusterConfigurationService
               return null;
             },
             Runnable::run);
+  }
+
+  @Override
+  public void registerPhysicalTenantConfigChangeExecutor(
+      final PhysicalTenantConfigChangeExecutor executor) {
+    requireStarted().registerPhysicalTenantConfigChangeExecutor(executor);
+  }
+
+  @Override
+  public CompletableFuture<byte[]> fetchPhysicalTenantConfig(
+      final String physicalTenantId, final PhysicalTenantConfigReference reference) {
+    return requireStarted().fetchPhysicalTenantConfig(physicalTenantId, reference);
+  }
+
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> recordPhysicalTenantConfigApplied(
+      final String physicalTenantId, final long version) {
+    return requireStarted().recordPhysicalTenantConfigApplied(physicalTenantId, version);
+  }
+
+  private ClusterConfigurationManagerService requireStarted() {
+    if (clusterConfigurationManagerService == null) {
+      throw new IllegalStateException("ClusterConfigurationService is not started");
+    }
+    return clusterConfigurationManagerService;
   }
 
   @Override

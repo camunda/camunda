@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.impl.changes.appliers;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigFetcher;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeApplier;
@@ -19,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.NullMarked;
@@ -27,11 +25,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Applier for {@link ApplyPhysicalTenantConfigOperation}: gets the configuration the tenant's
- * reference names, from this member's disk or from a peer, hands it to the {@link
+ * reference names, from this member's disk or from a peer (see {@link
+ * PhysicalTenantConfigFetcher#peersToAsk}), hands it to the {@link
  * PhysicalTenantConfigChangeExecutor}, and records the version as applied by this member.
- *
- * <p>Peers are asked in this order: the coordinator, which stored the configuration when it
- * accepted the change, then the members that already applied it, then the others.
  */
 @NullMarked
 public final class ApplyPhysicalTenantConfigApplier
@@ -76,7 +72,7 @@ public final class ApplyPhysicalTenantConfigApplier
                       .formatted(version, physicalTenantId, current.version())));
     }
     reference = current;
-    peers = peersToAsk(currentGlobalConfiguration, current);
+    peers = PhysicalTenantConfigFetcher.peersToAsk(currentGlobalConfiguration, current, memberId);
     return Either.right(UnaryOperator.identity());
   }
 
@@ -103,19 +99,5 @@ public final class ApplyPhysicalTenantConfigApplier
               }
             });
     return result;
-  }
-
-  private List<MemberId> peersToAsk(
-      final GlobalConfiguration global, final PhysicalTenantConfigReference current) {
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(global.members().keySet())
-            .getDefaultCoordinator();
-    return global.members().keySet().stream()
-        .filter(member -> !member.equals(memberId))
-        .sorted(
-            Comparator.comparing((MemberId member) -> !member.equals(coordinator))
-                .thenComparing(member -> current.appliedVersion(member) < version)
-                .thenComparing(MemberId.ID_COMPARATOR))
-        .toList();
   }
 }

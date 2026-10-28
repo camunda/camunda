@@ -45,6 +45,7 @@ import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.impl.util.RequestValidatorRegistry;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -378,6 +380,38 @@ public final class ClusterConfigurationManagerServiceImpl
       final PhysicalTenantConfigChangeExecutor executor) {
     clusterConfigurationManager.registerPhysicalTenantConfigChangeAppliers(
         new PhysicalTenantConfigChangeAppliers(physicalTenantConfigFetcher, executor));
+  }
+
+  @Override
+  public CompletableFuture<byte[]> fetchPhysicalTenantConfig(
+      final String physicalTenantId, final PhysicalTenantConfigReference reference) {
+    return clusterConfigurationManager
+        .getMultiConfiguration()
+        .toCompletableFuture()
+        .thenCompose(
+            configuration ->
+                physicalTenantConfigFetcher.fetch(
+                    physicalTenantId,
+                    reference,
+                    PhysicalTenantConfigFetcher.peersToAsk(
+                        configuration.globalConfiguration(), reference, localMemberId)));
+  }
+
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> recordPhysicalTenantConfigApplied(
+      final String physicalTenantId, final long version) {
+    return clusterConfigurationManager.updateMultiConfiguration(
+        configuration ->
+            configuration.hasPartitionGroup(physicalTenantId)
+                ? configuration.updatePartitionGroupConfig(
+                    physicalTenantId,
+                    group ->
+                        group.updateTenantConfig(
+                            reference ->
+                                reference.version() == version
+                                    ? reference.withApplied(localMemberId, version)
+                                    : reference))
+                : configuration);
   }
 
   @Override

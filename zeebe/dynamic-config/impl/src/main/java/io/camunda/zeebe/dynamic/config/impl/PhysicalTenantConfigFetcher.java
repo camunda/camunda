@@ -10,9 +10,12 @@ package io.camunda.zeebe.dynamic.config.impl;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Requests.FetchPhysicalTenantConfigRequest;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -110,6 +113,26 @@ public final class PhysicalTenantConfigFetcher implements AutoCloseable {
               return askNext(physicalTenantId, reference, request, peers);
             })
         .thenCompose(Function.identity());
+  }
+
+  /**
+   * The members to ask for a configuration, in order: the coordinator, which stored it when it
+   * accepted the change, then the members that already applied it, then the others.
+   */
+  public static List<MemberId> peersToAsk(
+      final GlobalConfiguration global,
+      final PhysicalTenantConfigReference reference,
+      final MemberId localMemberId) {
+    final var coordinator =
+        ClusterConfigurationCoordinatorSupplier.ofMembers(global.members().keySet())
+            .getDefaultCoordinator();
+    return global.members().keySet().stream()
+        .filter(member -> !member.equals(localMemberId))
+        .sorted(
+            Comparator.comparing((MemberId member) -> !member.equals(coordinator))
+                .thenComparing(member -> reference.appliedVersion(member) < reference.version())
+                .thenComparing(MemberId.ID_COMPARATOR))
+        .toList();
   }
 
   @Override
