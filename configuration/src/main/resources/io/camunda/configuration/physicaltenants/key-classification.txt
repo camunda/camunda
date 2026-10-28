@@ -1,0 +1,552 @@
+# How a change of each overridable physical-tenant property is applied at runtime, one line per
+# property of overridable-properties.golden.txt (configuration test resources):
+#   <property> RESTART                  applied by a restart of the tenant's module
+#   <property> REJECT <reason>          rejected; reasons:
+#     storage-location  changing it splits the tenant's data
+#     exporter-ids      changing the exporters a tenant runs strands their positions
+#     outside-module    read by a component that a tenant module restart does not rebuild
+#     security-chain    the HTTP security chain of a tenant cannot be rebuilt at runtime yet
+# A property that is not listed is rejected. PhysicalTenantKeyClassificationTest fails when an
+# overridable property is missing here.
+api.rest.cluster-variable.max-metadata-size REJECT outside-module
+api.rest.process-cache.expiration-idle REJECT outside-module
+api.rest.process-cache.max-size REJECT outside-module
+cluster.global-listeners.user-task RESTART
+cluster.partition-count RESTART
+data.audit-log.client.categories REJECT outside-module
+data.audit-log.client.excludes REJECT outside-module
+data.audit-log.enabled REJECT outside-module
+data.audit-log.unknown.categories REJECT outside-module
+data.audit-log.unknown.excludes REJECT outside-module
+data.audit-log.user.categories REJECT outside-module
+data.audit-log.user.excludes REJECT outside-module
+data.export.distribution-interval RESTART
+data.export.migration-status-scan-max-records RESTART
+data.export.skip-records RESTART
+data.exporters RESTART
+data.exporters-assigned REJECT exporter-ids
+data.extension-properties.inbound-connector-type-property REJECT outside-module
+data.extension-properties.tool-name-property REJECT outside-module
+data.extension-properties.tool-properties-prefix REJECT outside-module
+data.history-deletion.delay-between-runs REJECT outside-module
+data.history-deletion.dependent-row-limit REJECT outside-module
+data.history-deletion.max-delay-between-runs REJECT outside-module
+data.history-deletion.queue-batch-size REJECT outside-module
+data.primary-storage.backup.azure.account-key REJECT outside-module
+data.primary-storage.backup.azure.account-name REJECT outside-module
+data.primary-storage.backup.azure.base-path REJECT outside-module
+data.primary-storage.backup.azure.connection-string REJECT outside-module
+data.primary-storage.backup.azure.create-container REJECT outside-module
+data.primary-storage.backup.azure.endpoint REJECT outside-module
+data.primary-storage.backup.azure.sas-token.type REJECT outside-module
+data.primary-storage.backup.azure.sas-token.value REJECT outside-module
+data.primary-storage.backup.checkpoint-interval REJECT outside-module
+data.primary-storage.backup.continuous REJECT outside-module
+data.primary-storage.backup.filesystem.base-path REJECT outside-module
+data.primary-storage.backup.gcs.auth REJECT outside-module
+data.primary-storage.backup.gcs.base-path REJECT outside-module
+data.primary-storage.backup.gcs.bucket-name REJECT outside-module
+data.primary-storage.backup.gcs.buffer-size REJECT outside-module
+data.primary-storage.backup.gcs.host REJECT outside-module
+data.primary-storage.backup.gcs.max-concurrent-transfers REJECT outside-module
+data.primary-storage.backup.offset REJECT outside-module
+data.primary-storage.backup.read-timeout REJECT outside-module
+data.primary-storage.backup.required REJECT outside-module
+data.primary-storage.backup.retention.window REJECT outside-module
+data.primary-storage.backup.s3.access-key REJECT outside-module
+data.primary-storage.backup.s3.api-call-timeout REJECT outside-module
+data.primary-storage.backup.s3.base-path REJECT outside-module
+data.primary-storage.backup.s3.bucket-name REJECT outside-module
+data.primary-storage.backup.s3.compression REJECT outside-module
+data.primary-storage.backup.s3.connection-acquisition-timeout REJECT outside-module
+data.primary-storage.backup.s3.endpoint REJECT outside-module
+data.primary-storage.backup.s3.force-path-style-access REJECT outside-module
+data.primary-storage.backup.s3.max-concurrent-connections REJECT outside-module
+data.primary-storage.backup.s3.region REJECT outside-module
+data.primary-storage.backup.s3.secret-key REJECT outside-module
+data.primary-storage.backup.s3.ssec-key REJECT outside-module
+data.primary-storage.backup.s3.support-legacy-md5 REJECT outside-module
+data.primary-storage.backup.schedule REJECT outside-module
+data.primary-storage.backup.store REJECT outside-module
+data.primary-storage.backup.write-timeout REJECT outside-module
+data.primary-storage.log-stream.log-index-density RESTART
+data.primary-storage.log-stream.log-segment-size RESTART
+data.primary-storage.rocks-db.access-metrics RESTART
+data.primary-storage.rocks-db.column-family-options RESTART
+data.primary-storage.rocks-db.io-rate-bytes-per-second RESTART
+data.primary-storage.rocks-db.max-open-files RESTART
+data.primary-storage.rocks-db.max-write-buffer-number RESTART
+data.primary-storage.rocks-db.min-write-buffer-number-to-merge RESTART
+data.primary-storage.rocks-db.sst-partitioning-enabled RESTART
+data.primary-storage.rocks-db.statistics-enabled RESTART
+data.primary-storage.rocks-db.wal-disabled RESTART
+data.primary-storage.runtime-directory RESTART
+data.secondary-storage.autoconfigure-camunda-exporter REJECT outside-module
+data.secondary-storage.elasticsearch.backup.incomplete-check-timeout REJECT outside-module
+data.secondary-storage.elasticsearch.backup.repository-name REJECT outside-module
+data.secondary-storage.elasticsearch.backup.snapshot-timeout REJECT outside-module
+data.secondary-storage.elasticsearch.batch-operation-cache.max-size REJECT outside-module
+data.secondary-storage.elasticsearch.batch-operations.export-items-on-creation REJECT outside-module
+data.secondary-storage.elasticsearch.bulk.delay REJECT outside-module
+data.secondary-storage.elasticsearch.bulk.memory-limit REJECT outside-module
+data.secondary-storage.elasticsearch.bulk.size REJECT outside-module
+data.secondary-storage.elasticsearch.cluster-name REJECT outside-module
+data.secondary-storage.elasticsearch.connection-timeout REJECT outside-module
+data.secondary-storage.elasticsearch.create-schema REJECT outside-module
+data.secondary-storage.elasticsearch.date-format REJECT outside-module
+data.secondary-storage.elasticsearch.decision-requirements-cache.max-size REJECT outside-module
+data.secondary-storage.elasticsearch.form-cache.max-size REJECT outside-module
+data.secondary-storage.elasticsearch.health-check-enabled REJECT outside-module
+data.secondary-storage.elasticsearch.history.archive-by-id-max-retry-attempts REJECT outside-module
+data.secondary-storage.elasticsearch.history.archive-by-id-retry-delay-ms REJECT outside-module
+data.secondary-storage.elasticsearch.history.delay-between-runs REJECT outside-module
+data.secondary-storage.elasticsearch.history.els-rollover-date-format REJECT outside-module
+data.secondary-storage.elasticsearch.history.max-delay-between-runs REJECT outside-module
+data.secondary-storage.elasticsearch.history.policy-name REJECT outside-module
+data.secondary-storage.elasticsearch.history.process-instance-enabled REJECT outside-module
+data.secondary-storage.elasticsearch.history.process-instance-retention-mode REJECT outside-module
+data.secondary-storage.elasticsearch.history.reindex-batch-size REJECT outside-module
+data.secondary-storage.elasticsearch.history.rollover-batch-size REJECT outside-module
+data.secondary-storage.elasticsearch.history.rollover-interval REJECT outside-module
+data.secondary-storage.elasticsearch.history.usage-metrics-policy-name REJECT outside-module
+data.secondary-storage.elasticsearch.history.usage-metrics-rollover-interval REJECT outside-module
+data.secondary-storage.elasticsearch.history.wait-period-before-archiving REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.auth0-domain REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.auth0-protocol REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.m2m-audience REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.m2m-client-id REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.m2m-client-secret REJECT outside-module
+data.secondary-storage.elasticsearch.incident-notifier.webhook REJECT outside-module
+data.secondary-storage.elasticsearch.index-prefix REJECT storage-location
+data.secondary-storage.elasticsearch.interceptor-plugins REJECT outside-module
+data.secondary-storage.elasticsearch.max-connections REJECT outside-module
+data.secondary-storage.elasticsearch.max-connections-per-route REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-replicas REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-replicas-per-index REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.agent-definition REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.agent-history REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.agent-instance REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.audit-log REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.audit-log-cleanup REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.authorization REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.batch-operation REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.cluster-variable REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.correlated-message-subscription REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.decision REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.decision-instance REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.decision-requirements REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.deployed-resource REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.draft-task-variable REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.event REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.flownode-instance REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.form REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.global-listener REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.group REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.history-deletion REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.incident REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.job REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.job-metrics-batch REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.mapping-rule REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.message REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.metadata REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.operation REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.post-importer-queue REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.process REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.role REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.sequence-flow REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.task REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.task-variable REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.tenant REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric-tu REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.user REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.variable REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.wait-state REJECT outside-module
+data.secondary-storage.elasticsearch.number-of-shards-per-index.web-session REJECT outside-module
+data.secondary-storage.elasticsearch.password REJECT outside-module
+data.secondary-storage.elasticsearch.perform-cleanup REJECT outside-module
+data.secondary-storage.elasticsearch.post-export.batch-size REJECT outside-module
+data.secondary-storage.elasticsearch.post-export.delay-between-runs REJECT outside-module
+data.secondary-storage.elasticsearch.post-export.ignore-missing-data REJECT outside-module
+data.secondary-storage.elasticsearch.post-export.max-delay-between-runs REJECT outside-module
+data.secondary-storage.elasticsearch.process-cache.max-size REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.enabled REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.host REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.password REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.port REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.ssl-enabled REJECT outside-module
+data.secondary-storage.elasticsearch.proxy.username REJECT outside-module
+data.secondary-storage.elasticsearch.refresh-interval REJECT outside-module
+data.secondary-storage.elasticsearch.refresh-interval-by-index-name REJECT outside-module
+data.secondary-storage.elasticsearch.retry.max-retries REJECT outside-module
+data.secondary-storage.elasticsearch.retry.max-retry-delay REJECT outside-module
+data.secondary-storage.elasticsearch.retry.min-retry-delay REJECT outside-module
+data.secondary-storage.elasticsearch.security.certificate-path REJECT outside-module
+data.secondary-storage.elasticsearch.security.enabled REJECT outside-module
+data.secondary-storage.elasticsearch.security.self-signed REJECT outside-module
+data.secondary-storage.elasticsearch.security.verify-hostname REJECT outside-module
+data.secondary-storage.elasticsearch.socket-timeout REJECT outside-module
+data.secondary-storage.elasticsearch.template-priority REJECT outside-module
+data.secondary-storage.elasticsearch.url REJECT storage-location
+data.secondary-storage.elasticsearch.urls REJECT storage-location
+data.secondary-storage.elasticsearch.username REJECT outside-module
+data.secondary-storage.elasticsearch.variable-size-threshold REJECT outside-module
+data.secondary-storage.opensearch.aws-enabled REJECT outside-module
+data.secondary-storage.opensearch.backup.incomplete-check-timeout REJECT outside-module
+data.secondary-storage.opensearch.backup.repository-name REJECT outside-module
+data.secondary-storage.opensearch.backup.snapshot-timeout REJECT outside-module
+data.secondary-storage.opensearch.batch-operation-cache.max-size REJECT outside-module
+data.secondary-storage.opensearch.batch-operations.export-items-on-creation REJECT outside-module
+data.secondary-storage.opensearch.bulk.delay REJECT outside-module
+data.secondary-storage.opensearch.bulk.memory-limit REJECT outside-module
+data.secondary-storage.opensearch.bulk.size REJECT outside-module
+data.secondary-storage.opensearch.cluster-name REJECT outside-module
+data.secondary-storage.opensearch.connection-timeout REJECT outside-module
+data.secondary-storage.opensearch.create-schema REJECT outside-module
+data.secondary-storage.opensearch.date-format REJECT outside-module
+data.secondary-storage.opensearch.decision-requirements-cache.max-size REJECT outside-module
+data.secondary-storage.opensearch.form-cache.max-size REJECT outside-module
+data.secondary-storage.opensearch.health-check-enabled REJECT outside-module
+data.secondary-storage.opensearch.history.archive-by-id-max-retry-attempts REJECT outside-module
+data.secondary-storage.opensearch.history.archive-by-id-retry-delay-ms REJECT outside-module
+data.secondary-storage.opensearch.history.delay-between-runs REJECT outside-module
+data.secondary-storage.opensearch.history.els-rollover-date-format REJECT outside-module
+data.secondary-storage.opensearch.history.max-delay-between-runs REJECT outside-module
+data.secondary-storage.opensearch.history.policy-name REJECT outside-module
+data.secondary-storage.opensearch.history.process-instance-enabled REJECT outside-module
+data.secondary-storage.opensearch.history.process-instance-retention-mode REJECT outside-module
+data.secondary-storage.opensearch.history.reindex-batch-size REJECT outside-module
+data.secondary-storage.opensearch.history.rollover-batch-size REJECT outside-module
+data.secondary-storage.opensearch.history.rollover-interval REJECT outside-module
+data.secondary-storage.opensearch.history.usage-metrics-policy-name REJECT outside-module
+data.secondary-storage.opensearch.history.usage-metrics-rollover-interval REJECT outside-module
+data.secondary-storage.opensearch.history.wait-period-before-archiving REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.auth0-domain REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.auth0-protocol REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.m2m-audience REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.m2m-client-id REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.m2m-client-secret REJECT outside-module
+data.secondary-storage.opensearch.incident-notifier.webhook REJECT outside-module
+data.secondary-storage.opensearch.index-prefix REJECT storage-location
+data.secondary-storage.opensearch.interceptor-plugins REJECT outside-module
+data.secondary-storage.opensearch.max-connections REJECT outside-module
+data.secondary-storage.opensearch.max-connections-per-route REJECT outside-module
+data.secondary-storage.opensearch.number-of-replicas REJECT outside-module
+data.secondary-storage.opensearch.number-of-replicas-per-index REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.agent-definition REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.agent-history REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.agent-instance REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.audit-log REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.audit-log-cleanup REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.authorization REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.batch-operation REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.cluster-variable REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.correlated-message-subscription REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.decision REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.decision-instance REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.decision-requirements REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.deployed-resource REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.draft-task-variable REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.event REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.flownode-instance REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.form REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.global-listener REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.group REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.history-deletion REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.incident REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.job REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.job-metrics-batch REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.list-view REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.mapping-rule REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.message REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.metadata REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.operation REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.post-importer-queue REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.process REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.role REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.sequence-flow REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.task REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.task-variable REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.tenant REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric-tu REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.user REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.variable REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.wait-state REJECT outside-module
+data.secondary-storage.opensearch.number-of-shards-per-index.web-session REJECT outside-module
+data.secondary-storage.opensearch.password REJECT outside-module
+data.secondary-storage.opensearch.perform-cleanup REJECT outside-module
+data.secondary-storage.opensearch.post-export.batch-size REJECT outside-module
+data.secondary-storage.opensearch.post-export.delay-between-runs REJECT outside-module
+data.secondary-storage.opensearch.post-export.ignore-missing-data REJECT outside-module
+data.secondary-storage.opensearch.post-export.max-delay-between-runs REJECT outside-module
+data.secondary-storage.opensearch.process-cache.max-size REJECT outside-module
+data.secondary-storage.opensearch.proxy.enabled REJECT outside-module
+data.secondary-storage.opensearch.proxy.host REJECT outside-module
+data.secondary-storage.opensearch.proxy.password REJECT outside-module
+data.secondary-storage.opensearch.proxy.port REJECT outside-module
+data.secondary-storage.opensearch.proxy.ssl-enabled REJECT outside-module
+data.secondary-storage.opensearch.proxy.username REJECT outside-module
+data.secondary-storage.opensearch.refresh-interval REJECT outside-module
+data.secondary-storage.opensearch.refresh-interval-by-index-name REJECT outside-module
+data.secondary-storage.opensearch.retry.max-retries REJECT outside-module
+data.secondary-storage.opensearch.retry.max-retry-delay REJECT outside-module
+data.secondary-storage.opensearch.retry.min-retry-delay REJECT outside-module
+data.secondary-storage.opensearch.security.certificate-path REJECT outside-module
+data.secondary-storage.opensearch.security.enabled REJECT outside-module
+data.secondary-storage.opensearch.security.self-signed REJECT outside-module
+data.secondary-storage.opensearch.security.verify-hostname REJECT outside-module
+data.secondary-storage.opensearch.socket-timeout REJECT outside-module
+data.secondary-storage.opensearch.template-priority REJECT outside-module
+data.secondary-storage.opensearch.url REJECT storage-location
+data.secondary-storage.opensearch.urls REJECT storage-location
+data.secondary-storage.opensearch.username REJECT outside-module
+data.secondary-storage.opensearch.variable-size-threshold REJECT outside-module
+data.secondary-storage.rdbms.async-replication.delay REJECT outside-module
+data.secondary-storage.rdbms.async-replication.enabled REJECT outside-module
+data.secondary-storage.rdbms.async-replication.max-lag REJECT outside-module
+data.secondary-storage.rdbms.async-replication.min-sync-replicas REJECT outside-module
+data.secondary-storage.rdbms.async-replication.pause-on-max-lag-exceeded REJECT outside-module
+data.secondary-storage.rdbms.async-replication.polling-interval REJECT outside-module
+data.secondary-storage.rdbms.async-replication.queue-capacity REJECT outside-module
+data.secondary-storage.rdbms.async-replication.queue-debounce-time REJECT outside-module
+data.secondary-storage.rdbms.async-replication.type REJECT outside-module
+data.secondary-storage.rdbms.auto-ddl REJECT outside-module
+data.secondary-storage.rdbms.batch-operation-cache REJECT outside-module
+data.secondary-storage.rdbms.batch-operation-item-insert-block-size REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.connection-timeout REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.idle-timeout REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.keepalive-time REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.leak-detection-threshold REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.max-lifetime REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.maximum-pool-size REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.minimum-idle REJECT outside-module
+data.secondary-storage.rdbms.connection-pool.validation-timeout REJECT outside-module
+data.secondary-storage.rdbms.database-vendor-id REJECT outside-module
+data.secondary-storage.rdbms.ddl-lock-wait-timeout REJECT outside-module
+data.secondary-storage.rdbms.export-batch-operation-items-on-creation REJECT outside-module
+data.secondary-storage.rdbms.flush-interval REJECT outside-module
+data.secondary-storage.rdbms.history.batch-operation-cancel-process-instance-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.batch-operation-migrate-process-instance-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.batch-operation-modify-process-instance-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.batch-operation-resolve-incident-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.decision-instance-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.default-batch-operation-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.default-history-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.history.history-cleanup-batch-size REJECT outside-module
+data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size REJECT outside-module
+data.secondary-storage.rdbms.history.max-history-cleanup-interval REJECT outside-module
+data.secondary-storage.rdbms.history.max-history-cleanup-usage REJECT outside-module
+data.secondary-storage.rdbms.history.min-history-cleanup-interval REJECT outside-module
+data.secondary-storage.rdbms.history.usage-metrics-cleanup REJECT outside-module
+data.secondary-storage.rdbms.history.usage-metrics-t-t-l REJECT outside-module
+data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size REJECT outside-module
+data.secondary-storage.rdbms.insert-batching.max-flow-node-insert-batch-size REJECT outside-module
+data.secondary-storage.rdbms.insert-batching.max-job-insert-batch-size REJECT outside-module
+data.secondary-storage.rdbms.insert-batching.max-variable-insert-batch-size REJECT outside-module
+data.secondary-storage.rdbms.metrics.table-row-count-cache-duration REJECT outside-module
+data.secondary-storage.rdbms.password REJECT outside-module
+data.secondary-storage.rdbms.prefix REJECT storage-location
+data.secondary-storage.rdbms.process-cache REJECT outside-module
+data.secondary-storage.rdbms.query.max-total-hits REJECT outside-module
+data.secondary-storage.rdbms.queue-memory-limit REJECT outside-module
+data.secondary-storage.rdbms.queue-size REJECT outside-module
+data.secondary-storage.rdbms.retry.max-retries REJECT outside-module
+data.secondary-storage.rdbms.retry.max-retry-delay REJECT outside-module
+data.secondary-storage.rdbms.retry.min-retry-delay REJECT outside-module
+data.secondary-storage.rdbms.rewrite-batched-statements REJECT outside-module
+data.secondary-storage.rdbms.url REJECT storage-location
+data.secondary-storage.rdbms.urls REJECT storage-location
+data.secondary-storage.rdbms.username REJECT outside-module
+data.secondary-storage.retention.enabled REJECT outside-module
+data.secondary-storage.retention.minimum-age REJECT outside-module
+data.secondary-storage.retention.usage-metrics-minimum-age REJECT outside-module
+data.secondary-storage.type REJECT storage-location
+data.snapshot-period RESTART
+data.wait-states.enabled RESTART
+document.assigned REJECT outside-module
+document.default-store-id REJECT outside-module
+document.thread-pool-size REJECT outside-module
+expression.timeout RESTART
+mode REJECT outside-module
+monitoring.jfr RESTART
+monitoring.metrics.actor RESTART
+monitoring.metrics.enable-exporter-execution-metrics RESTART
+monitoring.metrics.job-metrics.enabled RESTART
+monitoring.metrics.job-metrics.export-interval RESTART
+monitoring.metrics.job-metrics.max-job-type-length RESTART
+monitoring.metrics.job-metrics.max-tenant-id-length RESTART
+monitoring.metrics.job-metrics.max-unique-keys RESTART
+monitoring.metrics.job-metrics.max-worker-name-length RESTART
+monitoring.metrics.usage-metrics.export-interval RESTART
+process-instance-creation.business-id-uniqueness-enabled RESTART
+process-instance-creation.message-start-ask-retry-interval RESTART
+process-instance-creation.message-start-dedup-expiration-sweep-batch-limit RESTART
+process-instance-creation.message-start-dedup-expiration-sweep-interval RESTART
+process-instance-creation.message-start-lock-release-poll-batch-limit RESTART
+process-instance-creation.message-start-lock-release-poll-interval RESTART
+processing.enable-async-message-ttl-checker RESTART
+processing.enable-async-timer-duedate-checker RESTART
+processing.enable-foreign-key-checks RESTART
+processing.enable-message-body-on-expired RESTART
+processing.enable-preconditions-check RESTART
+processing.enable-straightthrough-processing-loop-detector RESTART
+processing.enable-yielding-due-date-checker RESTART
+processing.engine.batch-operations.chunk-size RESTART
+processing.engine.batch-operations.query-in-clause-size RESTART
+processing.engine.batch-operations.query-page-size RESTART
+processing.engine.batch-operations.query-retry-backoff-factor RESTART
+processing.engine.batch-operations.query-retry-initial-delay RESTART
+processing.engine.batch-operations.query-retry-max RESTART
+processing.engine.batch-operations.query-retry-max-delay RESTART
+processing.engine.batch-operations.scheduler-interval RESTART
+processing.engine.caches.authorizations-cache-capacity RESTART
+processing.engine.caches.authorizations-cache-ttl RESTART
+processing.engine.caches.candidate-group-name-resolution RESTART
+processing.engine.caches.drg-cache-capacity RESTART
+processing.engine.caches.form-cache-capacity RESTART
+processing.engine.caches.group-name-cache-capacity RESTART
+processing.engine.caches.process-cache-capacity RESTART
+processing.engine.caches.resource-cache-capacity RESTART
+processing.engine.distribution.max-backoff-duration RESTART
+processing.engine.distribution.pause-command-distribution RESTART
+processing.engine.distribution.redistribution-interval RESTART
+processing.engine.job.include-variables-in-job-completed-event RESTART
+processing.engine.job.timeout-checker-batch-limit RESTART
+processing.engine.job.timeout-checker-polling-interval RESTART
+processing.engine.mappings.input-comparison-mode RESTART
+processing.engine.mappings.input-mode RESTART
+processing.engine.mappings.output-comparison-mode RESTART
+processing.engine.mappings.output-mode RESTART
+processing.engine.max-process-depth RESTART
+processing.engine.messages.ttl-checker-batch-limit RESTART
+processing.engine.messages.ttl-checker-interval RESTART
+processing.engine.secrets.batch-resolution-limit RESTART
+processing.engine.secrets.interval RESTART
+processing.engine.secrets.retry-backoff-factor RESTART
+processing.engine.secrets.retry-initial-delay RESTART
+processing.engine.secrets.retry-max-attempts RESTART
+processing.engine.secrets.retry-max-delay RESTART
+processing.engine.secrets.wake-delay RESTART
+processing.engine.startup.process-definition-restore-enabled RESTART
+processing.engine.startup.rpa-reexport-migration-enabled RESTART
+processing.engine.storage-ordinals.enable-archiverless RESTART
+processing.engine.storage-ordinals.fixed-storage-ordinal RESTART
+processing.engine.validators.results-output-max-size RESTART
+processing.evaluate-boundary-event-correlation-key-in-activity-scope RESTART
+processing.flow-control.request.aimd.backoff-ratio RESTART
+processing.flow-control.request.aimd.initial-limit RESTART
+processing.flow-control.request.aimd.max-limit RESTART
+processing.flow-control.request.aimd.min-limit RESTART
+processing.flow-control.request.aimd.request-timeout RESTART
+processing.flow-control.request.algorithm RESTART
+processing.flow-control.request.enabled RESTART
+processing.flow-control.request.fixed.limit RESTART
+processing.flow-control.request.gradient.initial-limit RESTART
+processing.flow-control.request.gradient.min-limit RESTART
+processing.flow-control.request.gradient.rtt-tolerance RESTART
+processing.flow-control.request.gradient2.initial-limit RESTART
+processing.flow-control.request.gradient2.long-window RESTART
+processing.flow-control.request.gradient2.min-limit RESTART
+processing.flow-control.request.gradient2.rtt-tolerance RESTART
+processing.flow-control.request.legacy-vegas.alpha-limit RESTART
+processing.flow-control.request.legacy-vegas.beta-limit RESTART
+processing.flow-control.request.legacy-vegas.initial-limit RESTART
+processing.flow-control.request.legacy-vegas.max-concurrency RESTART
+processing.flow-control.request.vegas.alpha RESTART
+processing.flow-control.request.vegas.beta RESTART
+processing.flow-control.request.vegas.initial-limit RESTART
+processing.flow-control.request.windowed RESTART
+processing.flow-control.write.enabled RESTART
+processing.flow-control.write.limit RESTART
+processing.flow-control.write.ramp-up RESTART
+processing.flow-control.write.throttle.acceptable-backlog RESTART
+processing.flow-control.write.throttle.enabled RESTART
+processing.flow-control.write.throttle.minimum-limit RESTART
+processing.flow-control.write.throttle.resolution RESTART
+processing.max-commands-in-batch RESTART
+processing.max-pending-side-effects RESTART
+processing.max-recoverable-retries RESTART
+processing.scheduled-tasks-check-interval RESTART
+processing.skip-positions RESTART
+secrets.cache.max-size REJECT outside-module
+secrets.cache.ttl REJECT outside-module
+secrets.max-concurrency REJECT outside-module
+secrets.stores.aws REJECT outside-module
+secrets.stores.file REJECT outside-module
+secrets.stores.gcp REJECT outside-module
+security.authentication REJECT security-chain
+security.authentication.authentication-refresh-interval REJECT security-chain
+security.authentication.oidc.additional-jwk-set-uris REJECT security-chain
+security.authentication.oidc.assertion.keystore.key-alias REJECT security-chain
+security.authentication.oidc.assertion.keystore.key-password REJECT security-chain
+security.authentication.oidc.assertion.keystore.password REJECT security-chain
+security.authentication.oidc.assertion.keystore.path REJECT security-chain
+security.authentication.oidc.assertion.kid-case REJECT security-chain
+security.authentication.oidc.assertion.kid-digest-algorithm REJECT security-chain
+security.authentication.oidc.assertion.kid-encoding REJECT security-chain
+security.authentication.oidc.assertion.kid-source REJECT security-chain
+security.authentication.oidc.audiences REJECT security-chain
+security.authentication.oidc.authorization-uri REJECT security-chain
+security.authentication.oidc.authorize-request.additional-parameters REJECT security-chain
+security.authentication.oidc.client-authentication-method REJECT security-chain
+security.authentication.oidc.client-id REJECT security-chain
+security.authentication.oidc.client-id-claim REJECT security-chain
+security.authentication.oidc.client-name REJECT security-chain
+security.authentication.oidc.client-secret REJECT security-chain
+security.authentication.oidc.clock-skew REJECT security-chain
+security.authentication.oidc.diagnostics.enabled REJECT security-chain
+security.authentication.oidc.end-session-endpoint-uri REJECT security-chain
+security.authentication.oidc.grant-type REJECT security-chain
+security.authentication.oidc.groups-claim REJECT security-chain
+security.authentication.oidc.id-token-algorithm REJECT security-chain
+security.authentication.oidc.idp-logout-enabled REJECT security-chain
+security.authentication.oidc.issuer-uri REJECT security-chain
+security.authentication.oidc.jwk-set-uri REJECT security-chain
+security.authentication.oidc.organization-id REJECT security-chain
+security.authentication.oidc.post-logout-redirect-enabled REJECT security-chain
+security.authentication.oidc.post-logout-redirect-uri REJECT security-chain
+security.authentication.oidc.prefer-id-token-claims REJECT security-chain
+security.authentication.oidc.prefer-username-claim REJECT security-chain
+security.authentication.oidc.redirect-uri REJECT security-chain
+security.authentication.oidc.registration-id REJECT security-chain
+security.authentication.oidc.resource REJECT security-chain
+security.authentication.oidc.revocation-enabled REJECT security-chain
+security.authentication.oidc.revocation-endpoint-uri REJECT security-chain
+security.authentication.oidc.scope REJECT security-chain
+security.authentication.oidc.token-uri REJECT security-chain
+security.authentication.oidc.user-info-augmentation.cache-max-size REJECT security-chain
+security.authentication.oidc.user-info-augmentation.cache-ttl REJECT security-chain
+security.authentication.oidc.user-info-augmentation.enabled REJECT security-chain
+security.authentication.oidc.user-info-augmentation.negative-cache-ttl REJECT security-chain
+security.authentication.oidc.user-info-enabled REJECT security-chain
+security.authentication.oidc.user-info-required REJECT security-chain
+security.authentication.oidc.user-info-uri REJECT security-chain
+security.authentication.oidc.username-claim REJECT security-chain
+security.authentication.providers.assigned REJECT security-chain
+security.authentication.providers.oidc REJECT security-chain
+security.authorizations REJECT security-chain
+security.authorizations.enabled REJECT security-chain
+security.id-validation-pattern REJECT security-chain
+security.initialization REJECT security-chain
+security.initialization.authorizations REJECT security-chain
+security.initialization.default-roles REJECT security-chain
+security.initialization.groups REJECT security-chain
+security.initialization.mapping-rules REJECT security-chain
+security.initialization.roles REJECT security-chain
+security.initialization.tenants REJECT security-chain
+security.initialization.users REJECT security-chain
+security.saas REJECT security-chain
+security.saas.cluster-id REJECT security-chain
+security.saas.organization-id REJECT security-chain
+system.clock-controlled RESTART
+system.legacy-query-api.enabled REJECT outside-module
+webapps.identity.enabled REJECT outside-module
+webapps.identity.ui-enabled REJECT outside-module
+webapps.operate.enabled REJECT outside-module
+webapps.operate.ui-enabled REJECT outside-module
+webapps.tasklist.enabled REJECT outside-module
+webapps.tasklist.ui-enabled REJECT outside-module
