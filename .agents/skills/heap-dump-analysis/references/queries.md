@@ -73,10 +73,10 @@ are still loading; their `retained` is empty.
 ## Truncated dumps
 
 4 of our 10 dumps were truncated. MAT logs it only on the first parse, as
-`Expected to read another N bytes, but only M`:
+`Expected to read another N bytes, but only M`. `run_mat.sh` prints that count as
+`truncated=N`. To see how much is missing:
 
 ```bash
-grep -c 'Expected to read' raw/first_parse.log
 grep -oE 'Expected to read another [0-9,]+ bytes, but only [0-9,]+' raw/first_parse.log |
   tr -d , | awk '{ s += $5 - $9 } END { print s+0 }'     # bytes missing
 ```

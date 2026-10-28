@@ -29,7 +29,8 @@ the dump, and another dump with the same name is refused: set `NAME`.
   `<stem>.*.index` and `<stem>.threads` next to it, where `<stem>` is the dump's file name
   without its last extension. Reruns reuse them.
 - **First parse vs rerun.** Only the first parse logs truncation. `run_mat.sh` keeps that
-  log as `raw/first_parse.log`. If the first parse ran elsewhere, delete
+  log as `raw/first_parse.log` and prints `truncated=N` from it. It prints
+  `truncated=unknown` if the first parse ran elsewhere: delete
   `<stem>.index <stem>.*.index <stem>.threads` to parse again.
 - **Report zips.** MAT writes `<stem>_<suffix>.zip` next to the dump. `run_mat.sh` moves it
   to `raw/` and unzips the CSVs into `raw/reports/<suffix>/`.

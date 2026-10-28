@@ -31,7 +31,9 @@ refuse_repo "$dir"
 MAT_HOME=${MAT_HOME:-/Applications/MemoryAnalyzer.app/Contents/Eclipse}
 jars=("$MAT_HOME"/plugins/org.eclipse.equinox.launcher_*.jar)
 launcher=${jars[${#jars[@]} - 1]}
-[ -f "$launcher" ] || { echo "No launcher jar in $MAT_HOME/plugins. Set MAT_HOME." >&2; exit 2; }
+[ -f "$launcher" ] || {
+  echo "No launcher jar in $MAT_HOME/plugins. Set MAT_HOME to the MAT dir that has plugins/." >&2; exit 2
+}
 
 # Broker dumps are often all named java_pid1.hprof.
 name=$(printf '%s' "${file%.hprof}" | sed -E 's/_?java_pid[0-9]+$//')
@@ -69,6 +71,8 @@ for pack in "$@"; do
     -application org.eclipse.mat.api.parse "$dir/$file" "$pack" >"$log" 2>&1 || rc=$?
   # Only the first parse logs truncation. Reruns reuse the indexes.
   if [ -n "$first" ]; then cp "$log" "$raw/first_parse.log"; fi
+  truncated=unknown
+  if [ -f "$raw/first_parse.log" ]; then truncated=$(grep -c 'Expected to read' "$raw/first_parse.log" || true); fi
   bad=$rc note=""
   if [ -f "$zip" ]; then
     mv -f "$zip" "$raw/$sfx.zip"
@@ -81,7 +85,7 @@ for pack in "$@"; do
     note="$note, problems=${problems:-0}"
     if [ "${problems:-0}" != 0 ]; then bad=1; fi
   else note=", no report zip"; bad=1; fi
-  echo "$sfx: rc=$rc $((SECONDS - t0))s$note, CSVs in $raw/reports/$sfx:"
+  echo "$sfx: rc=$rc $((SECONDS - t0))s$note, truncated=$truncated, CSVs in $raw/reports/$sfx:"
   ls "$raw/reports/$sfx"
   if [ "$bad" != 0 ]; then failed=1; fi
 done
