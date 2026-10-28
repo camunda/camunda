@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -386,32 +387,40 @@ class VirtualThreadsPropertyTest {
     void shouldNotTreatPlatformThreadPerTaskSharedExecutorAsVirtual() {
       // given a shared executor bean whose job-handling executor is a platform thread-per-task
       // executor (the shape the old class-name check misread as virtual)
-      final CamundaClientExecutorService platformPerTaskShared =
-          new CamundaClientExecutorService(
-              Executors.newScheduledThreadPool(1),
-              true,
-              Executors.newThreadPerTaskExecutor(Thread.ofPlatform().factory()),
-              true);
-      final CamundaClientFactory factory =
-          new CamundaClientFactory(
-              new CredentialsProviderConfiguration(),
-              emptyProvider(),
-              List.of(),
-              List.of(),
-              providerOf(platformPerTaskShared),
-              emptyProvider());
-      final CamundaClientProperties properties = new CamundaClientProperties();
-      properties.setExecutionThreads(2);
+      final ScheduledExecutorService sharedScheduled = Executors.newScheduledThreadPool(1);
+      final ExecutorService sharedJobHandling =
+          Executors.newThreadPerTaskExecutor(Thread.ofPlatform().factory());
+      try {
+        final CamundaClientExecutorService platformPerTaskShared =
+            new CamundaClientExecutorService(sharedScheduled, true, sharedJobHandling, true);
+        final CamundaClientFactory factory =
+            new CamundaClientFactory(
+                new CredentialsProviderConfiguration(),
+                emptyProvider(),
+                List.of(),
+                List.of(),
+                providerOf(platformPerTaskShared),
+                emptyProvider());
+        final CamundaClientProperties properties = new CamundaClientProperties();
+        properties.setExecutionThreads(2);
 
-      // when the factory builds an owned executor for a named client
-      final CamundaClient client = factory.createClient("finance", properties, false);
-
-      // then the owned executor is a platform-thread pool sized by execution-threads, not virtual
-      final ExecutorService owned = client.getConfiguration().jobHandlingExecutor();
-      assertThat(owned)
-          .as("a platform thread-per-task shared bean must not yield a virtual executor")
-          .isInstanceOf(ThreadPoolExecutor.class);
-      assertThat(((ThreadPoolExecutor) owned).getCorePoolSize()).isEqualTo(2);
+        // when the factory builds an owned executor for a named client (the client is built
+        // outside an ApplicationContextRunner, so close it to stop its async HTTP client and the
+        // owned executor it manages)
+        try (final CamundaClient client = factory.createClient("finance", properties, false)) {
+          // then the owned executor is a platform-thread pool sized by execution-threads
+          final ExecutorService owned = client.getConfiguration().jobHandlingExecutor();
+          assertThat(owned)
+              .as("a platform thread-per-task shared bean must not yield a virtual executor")
+              .isInstanceOf(ThreadPoolExecutor.class);
+          assertThat(((ThreadPoolExecutor) owned).getCorePoolSize()).isEqualTo(2);
+        }
+      } finally {
+        // the shared bean's executors are not managed by any client or context here, so shut them
+        // down explicitly to avoid leaking their threads
+        sharedJobHandling.shutdownNow();
+        sharedScheduled.shutdownNow();
+      }
     }
 
     private static <T> ObjectProvider<T> providerOf(final T bean) {
