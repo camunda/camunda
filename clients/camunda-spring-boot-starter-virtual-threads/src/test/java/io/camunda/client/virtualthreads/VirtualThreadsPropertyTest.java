@@ -20,16 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
 import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
+import io.camunda.client.spring.configuration.CamundaClientFactory;
+import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -110,7 +115,7 @@ class VirtualThreadsPropertyTest {
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService)
-                    .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+                    .isNotInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
                 assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
@@ -136,7 +141,7 @@ class VirtualThreadsPropertyTest {
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
                 assertThat(executorService)
-                    .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+                    .isNotInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
                 assertJobHandlingRunsOnPlatformThreads(context.getBean(CamundaClient.class), 1);
               });
     }
@@ -166,7 +171,8 @@ class VirtualThreadsPropertyTest {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
-                assertThat(executorService).isInstanceOf(MeteredCamundaClientExecutorService.class);
+                assertThat(executorService)
+                    .isInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
                 assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
@@ -181,7 +187,8 @@ class VirtualThreadsPropertyTest {
                 assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
                 final CamundaClientExecutorService executorService =
                     context.getBean(CamundaClientExecutorService.class);
-                assertThat(executorService).isInstanceOf(MeteredCamundaClientExecutorService.class);
+                assertThat(executorService)
+                    .isInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
                 assertJobHandlingRunsOnVirtualThread(context.getBean(CamundaClient.class));
               });
     }
@@ -281,7 +288,7 @@ class VirtualThreadsPropertyTest {
                 // metering is Micrometer's concern, Micrometer is optional, and the multi-client
                 // factory path must not depend on it — see CamundaClientFactory
                 assertThat(context.getBean(CamundaClientExecutorService.class))
-                    .isInstanceOf(MeteredCamundaClientExecutorService.class);
+                    .isInstanceOf(MeteredVirtualThreadCamundaClientExecutorService.class);
                 assertThat(
                         context
                             .getBean("financeCamundaClient", CamundaClient.class)
@@ -365,6 +372,60 @@ class VirtualThreadsPropertyTest {
                     .as("primary client reuses the shared (virtual-thread) executor")
                     .isSameAs(sharedExecutor.getJobHandlingExecutor());
               });
+    }
+
+    /**
+     * Regression test for the class-name misclassification: a user-supplied shared executor built
+     * on a <em>platform</em> thread-per-task factory is also a JDK {@code ThreadPerTaskExecutor},
+     * so sniffing the executor's class name reads it as virtual. The factory must instead honour
+     * the explicit {@link io.camunda.client.jobhandling.VirtualThreadExecutorService} capability,
+     * which this custom bean does not implement — so the owned executor it builds is a
+     * platform-thread pool, not a virtual-thread executor.
+     */
+    @Test
+    void shouldNotTreatPlatformThreadPerTaskSharedExecutorAsVirtual() {
+      // given a shared executor bean whose job-handling executor is a platform thread-per-task
+      // executor (the shape the old class-name check misread as virtual)
+      final CamundaClientExecutorService platformPerTaskShared =
+          new CamundaClientExecutorService(
+              Executors.newScheduledThreadPool(1),
+              true,
+              Executors.newThreadPerTaskExecutor(Thread.ofPlatform().factory()),
+              true);
+      final CamundaClientFactory factory =
+          new CamundaClientFactory(
+              new CredentialsProviderConfiguration(),
+              emptyProvider(),
+              List.of(),
+              List.of(),
+              providerOf(platformPerTaskShared),
+              emptyProvider());
+      final CamundaClientProperties properties = new CamundaClientProperties();
+      properties.setExecutionThreads(2);
+
+      // when the factory builds an owned executor for a named client
+      final CamundaClient client = factory.createClient("finance", properties, false);
+
+      // then the owned executor is a platform-thread pool sized by execution-threads, not virtual
+      final ExecutorService owned = client.getConfiguration().jobHandlingExecutor();
+      assertThat(owned)
+          .as("a platform thread-per-task shared bean must not yield a virtual executor")
+          .isInstanceOf(ThreadPoolExecutor.class);
+      assertThat(((ThreadPoolExecutor) owned).getCorePoolSize()).isEqualTo(2);
+    }
+
+    private static <T> ObjectProvider<T> providerOf(final T bean) {
+      return new ObjectProvider<>() {
+        @Override
+        public T getObject() {
+          return bean;
+        }
+      };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> ObjectProvider<T> emptyProvider() {
+      return (ObjectProvider<T>) providerOf(null);
     }
   }
 }
