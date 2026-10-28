@@ -112,12 +112,27 @@ public final class MtlsMaterial {
               + "CAMUNDA_MTLS_CERT) and a private key (CAMUNDA_MTLS_KEY_PATH or CAMUNDA_MTLS_KEY) "
               + "are required for mTLS, but only one of them is configured.");
     }
-    if (legacyCaCertificatePath != null && hasMtlsTrust()) {
+    if (caPath != null || ca != null) {
+      if (truststorePath != null) {
+        throw new IllegalArgumentException(
+            "Invalid mTLS configuration: both an mTLS CA bundle (CAMUNDA_MTLS_CA_PATH or "
+                + "CAMUNDA_MTLS_CA) and a truststore (CAMUNDA_MTLS_TRUSTSTORE_PATH) are "
+                + "configured. Configure only one of them.");
+      }
+      if (legacyCaCertificatePath != null) {
+        throw new IllegalArgumentException(
+            "Invalid TLS configuration: both the legacy CA certificate "
+                + "(CAMUNDA_CA_CERTIFICATE_PATH / camunda.client.security.certpath) and an mTLS CA "
+                + "bundle (CAMUNDA_MTLS_CA_PATH / CAMUNDA_MTLS_CA) are configured. Configure only "
+                + "one of them.");
+      }
+    }
+    if (legacyCaCertificatePath != null && truststorePath != null) {
       throw new IllegalArgumentException(
           "Invalid TLS configuration: both the legacy CA certificate "
-              + "(CAMUNDA_CA_CERTIFICATE_PATH / camunda.client.security.certpath) and an mTLS CA "
-              + "bundle or truststore (CAMUNDA_MTLS_CA_PATH / CAMUNDA_MTLS_CA / "
-              + "CAMUNDA_MTLS_TRUSTSTORE_PATH) are configured. Configure only one of them.");
+              + "(CAMUNDA_CA_CERTIFICATE_PATH / camunda.client.security.certpath) and an mTLS "
+              + "truststore (CAMUNDA_MTLS_TRUSTSTORE_PATH) are configured. Configure only one of "
+              + "them.");
     }
     if (isConfigured()
         && AddressUtil.isPlaintextConnection(grpcAddress)
@@ -299,7 +314,10 @@ public final class MtlsMaterial {
     }
 
     public Builder keystoreKeyPassword(final String keystoreKeyPassword) {
-      this.keystoreKeyPassword = emptyToNull(keystoreKeyPassword);
+      // Assigned directly (no empty-to-null normalization): the key-entry password falls back to
+      // the keystore password only when null; an explicitly empty password is a valid, distinct
+      // password that must be preserved.
+      this.keystoreKeyPassword = keystoreKeyPassword;
       return this;
     }
 
