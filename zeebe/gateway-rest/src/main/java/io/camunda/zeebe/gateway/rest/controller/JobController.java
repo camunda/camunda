@@ -243,6 +243,7 @@ public class JobController {
                 failJobRequest.retryBackoff(),
                 failJobRequest.variables(),
                 failJobRequest.jobLeaseToken(),
+                failJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -257,6 +258,7 @@ public class JobController {
                 errorJobRequest.errorMessage(),
                 errorJobRequest.variables(),
                 errorJobRequest.jobLeaseToken(),
+                errorJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -271,6 +273,7 @@ public class JobController {
                 completeJobRequest.result(),
                 completeJobRequest.jobLeaseToken(),
                 completeJobRequest.businessId(),
+                completeJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
