@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
@@ -461,6 +462,37 @@ class SecretStoreConfigurationTest {
         .isThrownBy(() -> registries(resolver))
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldReleaseStoresAndMetersWhenTheRegistriesAreClosed(@TempDir final Path secretsDir) {
+    // given a built registry whose store has published cache meters
+    try (var construction =
+        mockConstruction(
+            FileBasedSecretStore.class,
+            (mock, context) -> {
+              when(mock.namesPerCall()).thenReturn(Integer.MAX_VALUE);
+              when(mock.resolve(Set.of("token")))
+                  .thenReturn(Map.of("token", new Resolved("token-value")));
+            })) {
+      final var meterRegistry = new SimpleMeterRegistry();
+      final var resolver =
+          resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+      final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry);
+      registries
+          .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+          .getStores()
+          .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+          .resolve(Set.of("token"));
+      assertThat(meterRegistry.getMeters()).isNotEmpty();
+
+      // when the application context shuts down
+      registries.close();
+
+      // then the store is closed and its meters no longer published, as in a failed startup
+      verify(construction.constructed().get(0)).close();
+      assertThat(meterRegistry.getMeters()).isEmpty();
+    }
   }
 
   @Test

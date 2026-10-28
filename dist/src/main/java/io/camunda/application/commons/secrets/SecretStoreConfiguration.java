@@ -33,17 +33,14 @@ import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +48,6 @@ import org.springframework.context.annotation.Configuration;
 
 /** Registers one {@link SecretStoreRegistry} per physical tenant, keyed by physical tenant ID. */
 @Configuration(proxyBeanMethods = false)
-@NullMarked
 public class SecretStoreConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
@@ -84,16 +80,10 @@ public class SecretStoreConfiguration {
       final ActorClockService clockService,
       final MeterRegistry meterRegistry) {
     final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
-    // tracks every store successfully constructed across all tenants processed so far, so a
-    // failure partway through (e.g. a later tenant's AWS store failing to build) can close
-    // them instead of leaking their underlying clients/connections
-    final List<SecretStore> created = new ArrayList<>();
-    // tracked for the same reason: a wrapped registry left behind by a failed startup would keep
-    // publishing the meters of a cache nothing resolves through
-    final List<MeterRegistry> tenantMeterRegistries = new ArrayList<>();
-    // tracked for the same reason: a pool backing a store that gets rolled back must not outlive
-    // it, since nothing else references the pool to shut it down later
-    final List<ExecutorService> concurrencyPools = new ArrayList<>();
+    // tracks everything built across all tenants processed so far, so a failure partway through
+    // (e.g. a later tenant's AWS store failing to build) can release it instead of leaking clients,
+    // pools and meters; on success it moves into the returned registries, which release it on close
+    final var resources = new SecretStoreResources();
     final var timeSource = new ActorClockInstantSource(clockService);
     try {
       resolver
@@ -102,31 +92,20 @@ public class SecretStoreConfiguration {
               (tenantId, secrets) ->
                   registries.put(
                       tenantId,
-                      buildRegistry(
-                          tenantId,
-                          secrets,
-                          created,
-                          timeSource,
-                          meterRegistry,
-                          tenantMeterRegistries,
-                          concurrencyPools)));
-    } catch (final RuntimeException e) {
-      closeAll(created);
-      tenantMeterRegistries.forEach(MicrometerUtil::close);
-      concurrencyPools.forEach(ExecutorService::shutdownNow);
+                      buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
+    } catch (final Throwable e) {
+      resources.close();
       throw e;
     }
-    return new SecretStoreRegistries(Map.copyOf(registries));
+    return new SecretStoreRegistries(registries, resources);
   }
 
   private static SecretStoreRegistry buildRegistry(
       final String tenantId,
       final Secrets secrets,
-      final List<SecretStore> created,
+      final SecretStoreResources resources,
       final InstantSource timeSource,
-      final MeterRegistry meterRegistry,
-      final List<MeterRegistry> tenantMeterRegistries,
-      final List<ExecutorService> concurrencyPools) {
+      final MeterRegistry meterRegistry) {
     final Stores config = secrets.getStores();
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
@@ -173,7 +152,7 @@ public class SecretStoreConfiguration {
           e);
     }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
-    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
+    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, resources, tenantId));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
@@ -187,12 +166,8 @@ public class SecretStoreConfiguration {
     // sequential backend calls it issues: wrapping a noop, container, or already-single-call store
     // would only add a thread hop with nothing to overlap. Threads are virtual (one per chunk, not
     // one per permit), so the semaphore alone bounds how many backend calls are in flight at once;
-    // the pool itself holds no threads to leak if it is never explicitly shut down. It is also
-    // never shut down on the happy path: it is owned by this Spring singleton bean, so it lives for
-    // the application's lifetime, the same as the registry it backs. The only effect of that is
-    // that in-flight resolutions are not interrupted at shutdown, which is acceptable for calls
-    // this
-    // short-lived.
+    // the pool holds no threads while idle and is shut down with the registries on close.
+    //
     // computed once, rather than calling namesPerCall() again per store below, since a store
     // answers with the same value for the life of this method
     final var concurrencyEligibleIds =
@@ -204,7 +179,7 @@ public class SecretStoreConfiguration {
       final var pool =
           Executors.newThreadPerTaskExecutor(
               Thread.ofVirtual().name("secret-resolution-" + tenantId + "-", 0).factory());
-      concurrencyPools.add(pool);
+      resources.addPool(pool);
       final var semaphore = new Semaphore(maxConcurrency, true);
       stores.replaceAll(
           (id, store) ->
@@ -217,7 +192,7 @@ public class SecretStoreConfiguration {
     final var tenantMeterRegistry =
         MicrometerUtil.wrap(
             meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
-    tenantMeterRegistries.add(tenantMeterRegistry);
+    resources.addMeterRegistry(tenantMeterRegistry);
     return new SecretStoreRegistry(
         Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
   }
@@ -245,25 +220,15 @@ public class SecretStoreConfiguration {
         config.getMaxSize(), config.getTtl(), timeSource, meterRegistry);
   }
 
-  private static void closeAll(final List<SecretStore> stores) {
-    for (final var store : stores) {
-      try {
-        store.close();
-      } catch (final RuntimeException closeFailure) {
-        LOG.warn("Failed to close secret store while rolling back a failed startup", closeFailure);
-      }
-    }
-  }
-
   private static void registerStore(
       final Map<String, SecretStore> stores,
-      final List<SecretStore> created,
+      final SecretStoreResources resources,
       final String normalizedId,
       final String tenantId,
       final String storeType,
       final SecretStore store) {
     stores.put(normalizedId, store);
-    created.add(store);
+    resources.addStore(store);
     LOG.info(
         "Registered {} secret store '{}' for physical tenant '{}'",
         storeType,
@@ -372,12 +337,6 @@ public class SecretStoreConfiguration {
     }
   }
 
-  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
-  @FunctionalInterface
-  private interface StoreFactory<C> {
-    SecretStore create(String storeId, String tenantId, C config);
-  }
-
   /**
    * Binds a secret store type to the config entries it reads and the factory that turns one such
    * entry into a {@link SecretStore}. The type parameter {@code C} keeps the selected config type
@@ -407,7 +366,7 @@ public class SecretStoreConfiguration {
     private void registerAll(
         final Stores config,
         final Map<String, SecretStore> stores,
-        final List<SecretStore> created,
+        final SecretStoreResources resources,
         final String tenantId) {
       selector
           .apply(config)
@@ -415,7 +374,7 @@ public class SecretStoreConfiguration {
               (storeId, entry) ->
                   registerStore(
                       stores,
-                      created,
+                      resources,
                       normalizeStoreId(storeId),
                       tenantId,
                       displayName,
@@ -423,5 +382,11 @@ public class SecretStoreConfiguration {
                       // own validation errors
                       factory.create(storeId, tenantId, entry)));
     }
+  }
+
+  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
+  @FunctionalInterface
+  private interface StoreFactory<C> {
+    SecretStore create(String storeId, String tenantId, C config);
   }
 }
