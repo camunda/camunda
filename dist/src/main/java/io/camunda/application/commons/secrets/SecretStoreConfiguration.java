@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -143,6 +144,32 @@ public class SecretStoreConfiguration {
       throw e;
     }
     return new InternalConfigSecrets(registries, resources);
+  }
+
+  @Bean
+  public SecretRefreshHealthIndicator physicalTenantSecretRefreshHealthIndicator() {
+    return new SecretRefreshHealthIndicator();
+  }
+
+  /** Refreshes the configuration references of each physical tenant at its refresh interval. */
+  @Bean
+  public InternalConfigRefreshers internalConfigRefreshers(
+      final PhysicalTenantResolver resolver,
+      final InternalConfigSecrets internalConfigSecrets,
+      final SecretRefreshHealth health) {
+    final Map<String, Duration> intervals = new LinkedHashMap<>();
+    resolver
+        .mapValues(Camunda::getSecrets)
+        .forEach(
+            (tenantId, secrets) -> {
+              try {
+                intervals.put(tenantId, secrets.getRefreshInterval());
+              } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                    "Physical tenant '" + tenantId + "' has an invalid " + e.getMessage(), e);
+              }
+            });
+    return InternalConfigRefreshers.of(internalConfigSecrets, intervals, health);
   }
 
   private static SecretStoreRegistry buildRegistry(
