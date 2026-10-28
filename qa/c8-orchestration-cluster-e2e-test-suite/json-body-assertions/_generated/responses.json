@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "5d1824e6f93186178409af406cf3563f3cb91872",
-    "generatedAt": "2026-10-27T12:12:40.650Z",
+    "commit": "local",
+    "generatedAt": "2026-10-28T03:49:47.482Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "1da64d63b7982502530d30ceea8575505bd0f62edecbb2f60ffa6111edaeb609"
+    "specSha256": "9319f06233999c797df97e33eab25c6fee7d568b5e9141954d3d0505a234ec04"
   },
   "responses": [
     {
@@ -3476,6 +3476,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -3677,6 +3682,11 @@
               "UNSPECIFIED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "tenantId",
@@ -7855,6 +7865,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "suspendedDate",
                   "type": "string",
                   "nullable": true
@@ -8013,6 +8028,11 @@
               "SUSPENDED",
               "TERMINATED"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "suspendedDate",
