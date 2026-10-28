@@ -1149,6 +1149,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
         final LogoutSuccessHandler logoutSuccessHandler,
+        final AssertionJwkProvider assertionJwkProvider,
         final OidcUserService oidcUserService)
         throws Exception {
       final var filterChainBuilder =
@@ -1216,6 +1217,17 @@ public class WebSecurityConfig {
                           .logoutUrl(LOGOUT_URL)
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
                           .invalidateHttpSession(true)
+                          // A logout handler, not a success handler: LogoutConfigurer appends its
+                          // own SecurityContextLogoutHandler after everything added this way, so
+                          // this still runs while the session holding the OAuth2AuthorizedClient,
+                          // and its refresh token, is readable.
+                          .addLogoutHandler(
+                              new RefreshTokenRevocationLogoutHandler(
+                                  clientRegistrationRepository,
+                                  authorizedClientRepository,
+                                  registration ->
+                                      assertionJwkProvider.createJwk(
+                                          registration.getRegistrationId())))
                           .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(

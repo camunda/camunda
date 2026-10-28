@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mirrors Log4j2's and Spring Boot's own console defaults, with one addition: follow="true".
+
+  Without it the appender resolves System.out once, when logging is first initialised, and keeps
+  writing to that stream. Spring Boot's OutputCaptureExtension swaps System.out per test, so the
+  stream captured by whichever test logged first is the one every later test's output goes to, and
+  a test asserting on a log line sees nothing. follow="true" makes the appender re-read System.out
+  on each write, which is what makes CapturedOutput assertions deterministic here.
+-->
+<Configuration>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT" follow="true">
+      <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %logger{36} - %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
