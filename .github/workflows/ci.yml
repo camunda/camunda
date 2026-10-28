@@ -1621,6 +1621,8 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -Dquickly
+          retry-max-attempts: 2
+          retry-timeout-minutes: 6
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
