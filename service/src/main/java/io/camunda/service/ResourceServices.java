@@ -70,6 +70,9 @@ public final class ResourceServices extends PhysicalTenantScopedApiServices<Reso
     final var brokerRequest = new BrokerDeployResourceRequest();
     deployResourcesRequest.resources().forEach(brokerRequest::addResource);
     brokerRequest.setTenantId(deployResourcesRequest.tenantId());
+    if (deployResourcesRequest.operationReference() != null) {
+      brokerRequest.setOperationReference(deployResourcesRequest.operationReference());
+    }
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -262,7 +265,8 @@ public final class ResourceServices extends PhysicalTenantScopedApiServices<Reso
     return mappedException;
   }
 
-  public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
+  public record DeployResourcesRequest(
+      Map<String, byte[]> resources, String tenantId, @Nullable Long operationReference) {}
 
   public record ResourceDeletionRequest(
       long resourceKey, Long operationReference, boolean deleteHistory) {}

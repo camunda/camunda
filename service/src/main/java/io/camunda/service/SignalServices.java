@@ -37,11 +37,15 @@ public class SignalServices extends PhysicalTenantScopedApiServices<SignalServic
       final String signalName,
       final Map<String, Object> variables,
       final String tenantId,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequestWithFullResponse(
+    final var brokerRequest =
         new BrokerBroadcastSignalRequest(signalName)
             .setVariables(getDocumentOrEmpty(variables))
-            .setTenantId(tenantId),
-        authentication);
+            .setTenantId(tenantId);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 }

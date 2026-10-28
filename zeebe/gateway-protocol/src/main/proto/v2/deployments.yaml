@@ -34,6 +34,8 @@ paths:
                     format: binary
                 tenantId:
                   $ref: 'identifiers.yaml#/components/schemas/TenantId'
+                operationReference:
+                  $ref: 'keys.yaml#/components/schemas/OperationReference'
               required:
                 - resources
       responses:

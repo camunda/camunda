@@ -384,6 +384,8 @@ components:
           description: The tenant ID of the decision.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - decisionDefinitionId
 
@@ -402,6 +404,8 @@ components:
           description: The tenant ID of the decision.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - decisionDefinitionKey
 

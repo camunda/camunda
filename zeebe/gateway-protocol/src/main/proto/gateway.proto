@@ -220,6 +220,8 @@ message CompleteJobRequest {
   // business id that differs from one already assigned rejects the whole completion, leaving the
   // job open; re-sending the identical business id is an idempotent no-op.
   optional string businessId = 5;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 6;
 }
 
 message JobResult{
@@ -440,6 +442,8 @@ message EvaluateDecisionRequest {
   string variables = 3;
   // the tenant identifier of the decision
   string tenantId = 4;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 5;
 }
 
 message EvaluateDecisionResponse {
@@ -560,6 +564,8 @@ message DeployResourceRequest {
   repeated Resource resources = 1;
   // the tenant id of the resources to deploy
   string tenantId = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
 }
 
 message Resource {
@@ -684,6 +690,8 @@ message FailJobRequest {
   // after the job timed out or failed and was re-activated by another worker). A job that was
   // activated without a lease requires no token.
   optional string jobLeaseToken = 6;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 7;
 }
 
 message FailJobResponse {
@@ -709,6 +717,8 @@ message ThrowErrorRequest {
   // after the job timed out or failed and was re-activated by another worker). A job that was
   // activated without a lease requires no token.
   optional string jobLeaseToken = 5;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 6;
 }
 
 message ThrowErrorResponse {
@@ -734,6 +744,8 @@ message PublishMessageRequest {
   // rejects starting a new process instance when another root process instance with the same
   // business id is already active for the same process definition.
   optional string businessId = 7;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 8;
 }
 
 message PublishMessageResponse {
@@ -1073,6 +1085,8 @@ message BroadcastSignalRequest {
   string variables = 2;
   // the id of the tenant that owns the signal.
   string tenantId = 3;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 4;
 }
 
 message BroadcastSignalResponse {
@@ -1090,6 +1104,8 @@ message EvaluateConditionalRequest {
   optional int64 processDefinitionKey = 2;
   // Serialised JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
   string variables = 3;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 4;
 }
 
 message ProcessInstanceReference {
