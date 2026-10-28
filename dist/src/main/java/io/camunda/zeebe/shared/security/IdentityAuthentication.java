@@ -7,15 +7,21 @@
  */
 package io.camunda.zeebe.shared.security;
 
-import io.camunda.identity.sdk.authentication.AccessToken;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
-public record IdentityAuthentication(AccessToken token, List<String> tenantIds)
+/**
+ * A REST request authenticated by a token that Identity's JWKS verified. Holds the verified token
+ * and the tenants it may access.
+ */
+public record IdentityAuthentication(DecodedJWT token, List<String> tenantIds)
     implements Authentication {
+
+  private static final String NAME_CLAIM = "name";
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -29,7 +35,7 @@ public record IdentityAuthentication(AccessToken token, List<String> tenantIds)
 
   @Override
   public Object getDetails() {
-    return token.getUserDetails();
+    return null;
   }
 
   @Override
@@ -52,6 +58,7 @@ public record IdentityAuthentication(AccessToken token, List<String> tenantIds)
 
   @Override
   public String getName() {
-    return token.getUserDetails().getName().orElse(token.getUserDetails().getId());
+    final var name = token.getClaim(NAME_CLAIM).asString();
+    return name != null ? name : token.getSubject();
   }
 }
