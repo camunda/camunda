@@ -229,7 +229,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     final UpdateAction<Object, Object> action =
         UpdateAction.of(
             b -> {
-              actionBuilder.apply(b);
+              final var unused = actionBuilder.apply(b);
               return b;
             });
     final BinaryData binaryAction = BinaryData.of(action, jsonpMapper);

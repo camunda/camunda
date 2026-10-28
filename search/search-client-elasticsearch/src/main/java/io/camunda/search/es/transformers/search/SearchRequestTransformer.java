@@ -79,7 +79,11 @@ public final class SearchRequestTransformer
 
     applySearchAggregations(value, builder);
 
-    Optional.ofNullable(customizer).ifPresent(customizer -> customizer.apply(builder));
+    Optional.ofNullable(customizer)
+        .ifPresent(
+            customizer -> {
+              final var unused = customizer.apply(builder);
+            });
 
     return builder;
   }

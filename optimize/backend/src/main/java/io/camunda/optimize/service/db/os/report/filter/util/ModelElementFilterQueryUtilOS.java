@@ -139,9 +139,10 @@ public final class ModelElementFilterQueryUtilOS {
                       filterContext.getTimezone(),
                       viewFilterInstanceQueryBuilder);
             } else {
-              FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
-                  .get(filter.getClass())
-                  .apply(viewFilterInstanceQueryBuilder);
+              final var unused =
+                  FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
+                      .get(filter.getClass())
+                      .apply(viewFilterInstanceQueryBuilder);
             }
           });
       return Optional.of(
