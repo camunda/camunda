@@ -14,13 +14,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.client.MockClientHttpResponse;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -31,8 +41,13 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.client.ResponseCreator;
+import org.springframework.web.client.RestTemplate;
 
 final class FailSoftOidcUserServiceTest {
+
+  private static final String USER_INFO_URI = "https://idp.example.com/userinfo";
 
   @SuppressWarnings("unchecked")
   private final OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate =
@@ -56,6 +71,73 @@ final class FailSoftOidcUserServiceTest {
     assertThat(user.getUserInfo()).isNull();
     assertThat(user.getIdToken().getSubject()).isEqualTo("subject-1");
     verify(delegate, times(1)).loadUser(any());
+  }
+
+  @Test
+  void shouldFallBackToIdTokenClaimsWhenUserInfoResponseIsNotReadable() {
+    // given - DefaultOAuth2UserService lets this escape instead of mapping it to an
+    // OAuth2AuthenticationException
+    when(delegate.loadUser(any()))
+        .thenThrow(
+            new HttpMessageNotReadableException(
+                "An error occurred reading the OAuth 2.0 Error",
+                new MockClientHttpResponse(new byte[0], HttpStatus.BAD_REQUEST)));
+    final var request = oidcUserRequest("subject-1");
+
+    // when
+    final var user = service.loadUser(request);
+
+    // then
+    assertThat(user.getUserInfo()).isNull();
+    assertThat(user.getIdToken().getSubject()).isEqualTo("subject-1");
+  }
+
+  /**
+   * The failure from camunda/camunda#55732, end to end: a 400 with an HTML body and no
+   * WWW-Authenticate header makes OAuth2ErrorResponseErrorHandler parse the HTML as OAuth2 error
+   * JSON, and the parse failure used to fail the login with a 500.
+   */
+  @Test
+  void shouldFallBackToIdTokenClaimsWhenUserInfoReturnsAnHtmlBadRequest() {
+    // given
+    final var userInfo =
+        withBadRequest()
+            .contentType(MediaType.TEXT_HTML)
+            .body("<html><body><h1>400 Bad Request</h1></body></html>");
+
+    // when/then - the userinfo call was made, failed, and the login continued on ID token claims
+    assertFallsBackOn(userInfo);
+  }
+
+  /**
+   * A userinfo response without the name attribute ({@code sub}) makes DefaultOAuth2UserService
+   * throw IllegalArgumentException, which it doesn't map to an OAuth2AuthenticationException.
+   */
+  @Test
+  void shouldFallBackToIdTokenClaimsWhenUserInfoLacksTheNameAttribute() {
+    // given
+    final var userInfo =
+        withSuccess("{\"email\":\"user@example.com\"}", MediaType.APPLICATION_JSON);
+
+    // when/then
+    assertFallsBackOn(userInfo);
+  }
+
+  /** Runs the same user service setup as WebSecurityConfig#oidcUserService against userInfo. */
+  private static void assertFallsBackOn(final ResponseCreator userInfo) {
+    final var restTemplate = new RestTemplate();
+    restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
+    final var server = MockRestServiceServer.bindTo(restTemplate).build();
+    server.expect(requestTo(USER_INFO_URI)).andRespond(userInfo);
+    final var defaultUserService = new DefaultOAuth2UserService();
+    defaultUserService.setRestOperations(restTemplate);
+    final var failSoft = new FailSoftOidcUserService(defaultUserService);
+
+    final var user = failSoft.loadUser(realOidcUserRequest("subject-1"));
+
+    server.verify();
+    assertThat(user.getUserInfo()).isNull();
+    assertThat(user.getIdToken().getSubject()).isEqualTo("subject-1");
   }
 
   @Test
@@ -88,9 +170,30 @@ final class FailSoftOidcUserServiceTest {
     assertThat(user.getUserInfo().getClaims()).containsEntry("email", "user@example.com");
   }
 
+  private static OidcUserRequest realOidcUserRequest(final String subject) {
+    final var clientRegistration =
+        ClientRegistration.withRegistrationId("test-provider")
+            .clientId("client-id")
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .redirectUri("https://camunda.example.com/sso-callback")
+            .authorizationUri("https://idp.example.com/authorize")
+            .tokenUri("https://idp.example.com/token")
+            .userInfoUri(USER_INFO_URI)
+            .userNameAttributeName("sub")
+            .build();
+    final var accessToken =
+        new OAuth2AccessToken(
+            TokenType.BEARER,
+            "access-token-value",
+            Instant.now(),
+            Instant.now().plusSeconds(60),
+            Set.of("openid", "profile", "email"));
+    return new OidcUserRequest(clientRegistration, accessToken, idToken(subject));
+  }
+
   private static OidcUserRequest oidcUserRequest(final String subject) {
     final var userInfoEndpoint = mock(ClientRegistration.ProviderDetails.UserInfoEndpoint.class);
-    when(userInfoEndpoint.getUri()).thenReturn("https://idp.example.com/userinfo");
+    when(userInfoEndpoint.getUri()).thenReturn(USER_INFO_URI);
 
     final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
     when(providerDetails.getUserInfoEndpoint()).thenReturn(userInfoEndpoint);
@@ -104,15 +207,17 @@ final class FailSoftOidcUserServiceTest {
     final var accessToken =
         new OAuth2AccessToken(
             TokenType.BEARER, "access-token-value", Instant.now(), Instant.now().plusSeconds(60));
-    final var idToken =
-        new OidcIdToken(
-            "id-token-value",
-            Instant.now(),
-            Instant.now().plusSeconds(60),
-            Map.of(
-                "sub", subject,
-                "iss", "https://idp.example.com",
-                "aud", "client-id"));
-    return new OidcUserRequest(clientRegistration, accessToken, idToken);
+    return new OidcUserRequest(clientRegistration, accessToken, idToken(subject));
+  }
+
+  private static OidcIdToken idToken(final String subject) {
+    return new OidcIdToken(
+        "id-token-value",
+        Instant.now(),
+        Instant.now().plusSeconds(60),
+        Map.of(
+            "sub", subject,
+            "iss", "https://idp.example.com",
+            "aud", "client-id"));
   }
 }
