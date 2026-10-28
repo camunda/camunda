@@ -12,9 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -110,6 +113,37 @@ public final class ProcessDeletionVersionTagTest {
         ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
     assertThat(childProcess(processInstanceKey).getProcessDefinitionKey())
         .isEqualTo(v1.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentAfterDeletingAllVersionsWithVersionTag() {
+    // given
+    final var childProcessId = helper.getBpmnProcessId() + "-child";
+    final var parentProcessId = deployParentCallingByVersionTag(childProcessId, "shared");
+    final var v1 = deploy(childProcessId, "shared", "v1");
+    final var v2 = deploy(childProcessId, "shared", "v2");
+    deploy(childProcessId, "other", "v3");
+
+    // when
+    deleteProcess(v2);
+    deleteProcess(v1);
+
+    // then
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .extracting(IncidentRecordValue::getErrorType, IncidentRecordValue::getErrorMessage)
+        .containsExactly(
+            ErrorType.CALLED_ELEMENT_ERROR,
+            """
+            Expected to call process with BPMN process id '%s' and version tag '%s', but no such process found. \
+            To resolve this incident, deploy a process with the given process id and version tag.\
+            """
+                .formatted(childProcessId, "shared"));
   }
 
   private ProcessMetadataValue deploy(
