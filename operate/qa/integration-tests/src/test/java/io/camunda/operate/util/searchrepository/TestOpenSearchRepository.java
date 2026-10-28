@@ -106,7 +106,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   public String createOrUpdateDocument(final String indexName, final Map<String, ?> doc)
       throws IOException {
     final String docId = UUID.randomUUID().toString();
-    if (createOrUpdateDocument(indexName, UUID.randomUUID().toString(), doc)) {
+    if (createOrUpdateDocument(indexName, docId, doc)) {
       return docId;
     } else {
       return null;
