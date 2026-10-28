@@ -53,7 +53,7 @@ jobs:
   c8-orchestration-cluster-api-tests:
     name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # headroom for the global-timeout cutoff; see #67452
     permissions:
       contents: read
     strategy:
@@ -248,6 +248,10 @@ jobs:
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Stop a hung run before timeout-minutes kills the job, so the verdict
+          # step still runs (see playwright.config.ts and #67452): ~10 min above
+          # the ~24 min healthy run, below the 45 min timeout-minutes.
+          C8E2E_GLOBAL_TIMEOUT_MIN: "35"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -298,7 +302,7 @@ jobs:
     if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), inputs.base) }}
     name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55 # build + global-timeout headroom; see #67452
     permissions:
       contents: read
     strategy:
@@ -453,6 +457,10 @@ jobs:
           DATABASE: "RDBMS"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Stop a hung run before timeout-minutes kills the job (see #67452):
+          # ~15 min above the ~10 min healthy test run; the source build has its
+          # own time under the 55 min timeout-minutes.
+          C8E2E_GLOBAL_TIMEOUT_MIN: "25"
         run: |
           echo "Running API tests against H2/RDBMS backend"
           set +e
@@ -717,6 +725,9 @@ jobs:
           OPTIMIZE_BASE_URL: "http://localhost:8083"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Stop a hung run before timeout-minutes kills the job (see #67452):
+          # ~13 min above the ~19 min healthy run, below the 45 min timeout.
+          C8E2E_GLOBAL_TIMEOUT_MIN: "32"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
