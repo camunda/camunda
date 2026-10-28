@@ -520,13 +520,7 @@ public class CamundaProcessTestExtension
     CamundaAssert.setJudgeConfig(null);
     CamundaAssert.setSemanticSimilarityConfig(null);
 
-    if (camundaClockClient != null) {
-      try {
-        camundaClockClient.close();
-      } catch (final Exception e) {
-        LOG.debug("Failed to close the clock client, continue.", e);
-      }
-    }
+    closeQuietly(camundaClockClient, "clock client");
 
     runtime.close();
   }
@@ -903,12 +897,19 @@ public class CamundaProcessTestExtension
 
   private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      try {
-        client.close();
-      } catch (final Exception e) {
-        LOG.debug("Failed to close client, continue.", e);
-      }
+      closeQuietly(client, "client");
     }
     createdClients.clear();
+  }
+
+  private static void closeQuietly(final AutoCloseable closeable, final String name) {
+    if (closeable == null) {
+      return;
+    }
+    try {
+      closeable.close();
+    } catch (final Exception e) {
+      LOG.debug("Failed to close {}, continue.", name, e);
+    }
   }
 }
