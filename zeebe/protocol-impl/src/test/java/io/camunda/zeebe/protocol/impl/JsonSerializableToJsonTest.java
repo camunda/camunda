@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -216,7 +217,8 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AuthInfo authInfo =
+                  new AuthInfo().setClaims(Map.of(AUTHORIZED_USERNAME, "foo"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
               recordMetadata
                   .intent(intent)
@@ -279,7 +281,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "fails",
                   "brokerVersion": "1.2.3",
                   "authorizations": {
-                    "foo" : "bar"
+                    "authorized_username" : "foo"
                   },
                   "agent": {
                     "elementId": "agent-element"
@@ -2925,7 +2927,7 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")))
+                  .setAuthInfo(new AuthInfo().setClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
                   .setStartTime(123L);
             },
         """
@@ -2958,7 +2960,7 @@ final class JsonSerializableToJsonTest {
                     "tenantId": "<default>",
                     "deploymentKey": -1
                   },
-                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"}}
+                  "authInfo":{"format":"UNKNOWN","claims":{"authorized_username": "foo"}}
                 }
                 """
       },

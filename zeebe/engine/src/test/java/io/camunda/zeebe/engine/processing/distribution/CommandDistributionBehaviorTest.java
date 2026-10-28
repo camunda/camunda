@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -87,7 +88,9 @@ class CommandDistributionBehaviorTest {
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     authInfo =
-        new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED).setClaims(Map.of("a", "b", "c", 3));
+        new AuthInfo()
+            .setFormat(AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(Map.of(AUTHORIZED_USERNAME, "user"));
 
     command =
         new MockTypedRecord<>(
@@ -213,7 +216,9 @@ class CommandDistributionBehaviorTest {
 
     // given command with auth info
     final var authInfo =
-        new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED).setClaims(Map.of("a", "b", "c", 3));
+        new AuthInfo()
+            .setFormat(AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(Map.of(AUTHORIZED_USERNAME, "user"));
 
     final var key = keyGenerator.nextKey();
     final var command =

@@ -247,7 +247,9 @@ final class InterPartitionCommandReceiverTest {
     final var receiverPartitionId = 7;
 
     final var authInfo = new AuthInfo();
-    final var claims = Map.<String, Object>of("sub", "user-123", "scope", "test");
+    final var claims =
+        Map.<String, Object>of(
+            "authorized_username", "user-123", "user_token_claims", Map.of("scope", "test"));
     authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED).setClaims(claims);
 
     final var sentMessage =
