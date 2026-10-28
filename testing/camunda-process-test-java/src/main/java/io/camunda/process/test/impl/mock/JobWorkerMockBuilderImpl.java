@@ -80,6 +80,8 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   @Override
   public JobWorkerMock thenComplete(
       final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
+    Objects.requireNonNull(variablesSupplier, "'variablesSupplier' must not be null");
+
     return withHandler(
         (jobClient, job) -> {
           final Map<String, Object> jobVariables = job.getVariablesAsMap();
@@ -102,6 +104,8 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   @Override
   public JobWorkerMock thenComplete(final VariablesTable variablesTable) {
+    Objects.requireNonNull(variablesTable, "'variablesTable' must not be null");
+
     final CamundaAssertJsonMapper assertJsonMapper =
         new CamundaAssertJsonMapper(client.getConfiguration().getJsonMapper());
 

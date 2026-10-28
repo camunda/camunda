@@ -196,6 +196,30 @@ public class MockJobWorkerTest {
   }
 
   @Test
+  void shouldRejectNullVariablesSupplier() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> nullSupplier = null;
+
+    // when/then
+    assertThatThrownBy(() -> processTestContext.mockJobWorker(JOB_TYPE).thenComplete(nullSupplier))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("'variablesSupplier' must not be null");
+    verify(camundaClient, never()).newWorker();
+  }
+
+  @Test
+  void shouldRejectNullVariablesTable() {
+    // given
+    final VariablesTable nullTable = null;
+
+    // when/then
+    assertThatThrownBy(() -> processTestContext.mockJobWorker(JOB_TYPE).thenComplete(nullTable))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("'variablesTable' must not be null");
+    verify(camundaClient, never()).newWorker();
+  }
+
+  @Test
   void shouldCompleteJobWithFirstMatchingRowOfVariablesTable() throws Exception {
     // given: a real JSON mapper so values are normalized the same way as the job's variables
     when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(new CamundaObjectMapper());
