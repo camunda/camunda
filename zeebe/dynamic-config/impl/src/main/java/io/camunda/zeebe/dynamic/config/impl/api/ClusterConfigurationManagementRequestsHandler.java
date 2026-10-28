@@ -25,6 +25,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest.Change;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
@@ -34,6 +36,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigChanges;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigStore;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
@@ -67,6 +71,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -79,16 +84,22 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validatorRegistry;
+  private final PhysicalTenantConfigStore physicalTenantConfigStore;
+  private final PhysicalTenantConfigChanges physicalTenantConfigChanges;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
       final ConcurrencyControl executor,
-      final RequestValidatorRegistry validatorRegistry) {
+      final RequestValidatorRegistry validatorRegistry,
+      final PhysicalTenantConfigStore physicalTenantConfigStore) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
     this.validatorRegistry = validatorRegistry;
+    this.physicalTenantConfigStore = physicalTenantConfigStore;
+    physicalTenantConfigChanges =
+        new PhysicalTenantConfigChanges(localMemberId, () -> UUID.randomUUID().toString());
   }
 
   @Override
@@ -230,6 +241,37 @@ public final class ClusterConfigurationManagementRequestsHandler
             removePhysicalTenantRequest.physicalTenantId(),
             localMemberId,
             removePhysicalTenantRequest.force()));
+  }
+
+  /**
+   * Stores the configuration of a created or updated tenant on the coordinator before the change
+   * starts, so that it is the first peer the other members can fetch it from.
+   */
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> changePhysicalTenantConfig(
+      final PhysicalTenantConfigRequest request) {
+    final var sha256 = PhysicalTenantConfigStore.sha256(request.configuration());
+    return coordinator.updateConfiguration(
+        current ->
+            physicalTenantConfigChanges
+                .apply(current, request, sha256)
+                .map(
+                    updated -> {
+                      if (request.dryRun()) {
+                        return current;
+                      }
+                      if (request.change() != Change.DELETE && !updated.equals(current)) {
+                        physicalTenantConfigStore.put(
+                            request.physicalTenantId(),
+                            updated
+                                .partitionGroup(request.physicalTenantId())
+                                .tenantConfig()
+                                .orElseThrow()
+                                .version(),
+                            request.configuration());
+                      }
+                      return updated;
+                    }));
   }
 
   @Override

@@ -58,6 +58,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
     registerRemovePhysicalTenantRequestHandler();
+    registerPhysicalTenantConfigRequestHandler();
     registerModeChangeHandler();
     registerExportingStateChangeHandler();
     registerRestoreHandler();
@@ -193,6 +194,15 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         serializer::decodeRemovePhysicalTenantRequest,
         request -> mapResponse(clusterConfigurationManagementApi.removePhysicalTenant(request)),
         this::encodeResponse);
+  }
+
+  private void registerPhysicalTenantConfigRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.PHYSICAL_TENANT_CONFIG.topic(),
+        serializer::decodePhysicalTenantConfigRequest,
+        request ->
+            mapResponse(clusterConfigurationManagementApi.changePhysicalTenantConfig(request)),
+        this::encodeClusterTopologyResponse);
   }
 
   private void registerPurgeRequestHandler() {

@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
@@ -130,6 +131,10 @@ public interface ClusterConfigurationRequestsSerializer {
       byte[] encodedResponse);
 
   UpdateRoutingStateRequest decodeUpdateRoutingStateRequest(byte[] bytes);
+
+  byte[] encodePhysicalTenantConfigRequest(PhysicalTenantConfigRequest request);
+
+  PhysicalTenantConfigRequest decodePhysicalTenantConfigRequest(byte[] encodedRequest);
 
   UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
       byte[] bytes);

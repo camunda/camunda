@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 
 public interface ConfigurationChangeCoordinator {
@@ -56,6 +57,19 @@ public interface ConfigurationChangeCoordinator {
    * @return a future which is completed when the change has been cancelled successfully.
    */
   ActorFuture<CurrentClusterConfiguration> cancelChange(long changeId);
+
+  /**
+   * Applies a change that the coordinator starts directly on the configuration rather than as a
+   * phased plan, such as a change of a physical tenant's configuration, which creates the tenant's
+   * group in the same step that starts its change. The change is computed against the latest
+   * configuration; a rejected change leaves the configuration as it was.
+   *
+   * @param change computes the new configuration, or the reason it is rejected
+   * @return a future completed with the updated configuration once it is persisted and gossiped, or
+   *     failed with the rejection
+   */
+  ActorFuture<CurrentClusterConfiguration> updateConfiguration(
+      Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>> change);
 
   @NullMarked
   record ConfigurationChangeResult(

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigStore;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.impl.util.RequestValidatorRegistry;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +41,11 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
       mock(ConfigurationChangeCoordinator.class);
   private final ClusterConfigurationManagementRequestsHandler handler =
       new ClusterConfigurationManagementRequestsHandler(
-          coordinator, LOCAL_MEMBER, executor, new RequestValidatorRegistry());
+          coordinator,
+          LOCAL_MEMBER,
+          executor,
+          new RequestValidatorRegistry(),
+          new PhysicalTenantConfigStore(Path.of("unused")));
 
   private static RestoreRequest restoreRequest(final boolean dryRun) {
     return new RestoreRequest(

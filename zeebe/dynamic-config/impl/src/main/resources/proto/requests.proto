@@ -191,6 +191,26 @@ message ClusterRestoreRequest {
   bool dryRun = 2;
 }
 
+// Creates, updates or deletes the configuration of a physical tenant. The configuration is opaque
+// to the cluster configuration, which records it only by version and hash.
+message PhysicalTenantConfigRequest {
+  string physicalTenantId = 1;
+  PhysicalTenantConfigChange change = 2;
+  topology_protocol.PhysicalTenantConfigOwner owner = 3;
+  bytes configuration = 4;
+  int64 expectedVersion = 5;
+  int32 partitionCount = 6;
+  repeated string exporterIds = 7;
+  bool dryRun = 8;
+}
+
+enum PhysicalTenantConfigChange {
+  PHYSICAL_TENANT_CONFIG_CHANGE_UNKNOWN = 0;
+  PHYSICAL_TENANT_CONFIG_CHANGE_CREATE = 1;
+  PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE = 2;
+  PHYSICAL_TENANT_CONFIG_CHANGE_DELETE = 3;
+}
+
 // Asks a peer for a version of a physical tenant's configuration. The peer answers with the stored
 // bytes, or with no bytes if it does not hold that version.
 message FetchPhysicalTenantConfigRequest {

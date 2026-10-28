@@ -30,11 +30,14 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +92,56 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   @Override
   public ActorFuture<CurrentClusterConfiguration> cancelChange(final long changeId) {
     return cancelChangeNewModel(changeId);
+  }
+
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> updateConfiguration(
+      final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+          change) {
+    final ActorFuture<CurrentClusterConfiguration> future = executor.createFuture();
+    final var rejection = new AtomicReference<Exception>();
+    executor.run(
+        () ->
+            clusterTopologyManager
+                .getMultiConfiguration()
+                .onComplete(
+                    (current, errorOnGettingConfig) -> {
+                      if (errorOnGettingConfig != null) {
+                        failFuture(future, errorOnGettingConfig);
+                        return;
+                      }
+                      if (!isCoordinator(current)) {
+                        failFuture(
+                            future,
+                            new ClusterConfigurationRequestFailedException.InternalError(
+                                "Cannot process request to change the configuration. The broker '%s' is not the coordinator."
+                                    .formatted(localMemberId)));
+                        return;
+                      }
+                      clusterTopologyManager
+                          .updateMultiConfiguration(
+                              latest -> {
+                                final var changed = change.apply(latest);
+                                if (changed.isLeft()) {
+                                  rejection.set(changed.getLeft());
+                                  return latest;
+                                }
+                                return changed.get();
+                              })
+                          .onComplete(
+                              (updated, error) -> {
+                                if (error != null) {
+                                  failFuture(future, error);
+                                } else if (rejection.get() != null) {
+                                  failFuture(future, rejection.get());
+                                } else {
+                                  future.complete(updated);
+                                }
+                              },
+                              executor);
+                    },
+                    executor));
+    return future;
   }
 
   private ActorFuture<ConfigurationChangeResult> applyOrDryRun(

@@ -15,10 +15,13 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -225,6 +228,109 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {
     public RemovePhysicalTenantRequest {
       assertNonEmpty("physicalTenantId").accept(physicalTenantId);
+    }
+  }
+
+  /**
+   * Creates, updates or deletes the configuration of a physical tenant. The coordinator records the
+   * configuration by version and hash, keeps the configuration itself on its disk, and starts a
+   * rolling apply on every member. Only one such change runs at a time across the cluster.
+   *
+   * @param change what to do with the tenant
+   * @param owner the input the request comes from; a tenant is changed only by the input that owns
+   *     it
+   * @param configuration the tenant's whole configuration subtree, opaque to the cluster
+   *     configuration; empty when the tenant is deleted
+   * @param expectedVersion for an update, the version the configuration was validated against; 0 to
+   *     accept any version
+   * @param partitionCount for a new tenant, the number of partitions to place
+   * @param exporterIds for a new tenant, the exporters its partitions start with
+   */
+  record PhysicalTenantConfigRequest(
+      String physicalTenantId,
+      Change change,
+      PhysicalTenantConfigReference.Owner owner,
+      byte[] configuration,
+      long expectedVersion,
+      int partitionCount,
+      Set<String> exporterIds,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+
+    public PhysicalTenantConfigRequest {
+      assertNonEmpty("physicalTenantId").accept(physicalTenantId);
+      exporterIds = Set.copyOf(exporterIds);
+    }
+
+    public static PhysicalTenantConfigRequest create(
+        final String physicalTenantId,
+        final PhysicalTenantConfigReference.Owner owner,
+        final byte[] configuration,
+        final int partitionCount,
+        final Set<String> exporterIds) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId,
+          Change.CREATE,
+          owner,
+          configuration,
+          0,
+          partitionCount,
+          exporterIds,
+          false);
+    }
+
+    public static PhysicalTenantConfigRequest update(
+        final String physicalTenantId,
+        final PhysicalTenantConfigReference.Owner owner,
+        final byte[] configuration,
+        final long expectedVersion) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId,
+          Change.UPDATE,
+          owner,
+          configuration,
+          expectedVersion,
+          0,
+          Set.of(),
+          false);
+    }
+
+    public static PhysicalTenantConfigRequest delete(
+        final String physicalTenantId, final PhysicalTenantConfigReference.Owner owner) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId, Change.DELETE, owner, new byte[0], 0, 0, Set.of(), false);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      return o instanceof final PhysicalTenantConfigRequest other
+          && physicalTenantId.equals(other.physicalTenantId)
+          && change == other.change
+          && owner == other.owner
+          && Arrays.equals(configuration, other.configuration)
+          && expectedVersion == other.expectedVersion
+          && partitionCount == other.partitionCount
+          && exporterIds.equals(other.exporterIds)
+          && dryRun == other.dryRun;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          physicalTenantId,
+          change,
+          owner,
+          Arrays.hashCode(configuration),
+          expectedVersion,
+          partitionCount,
+          exporterIds,
+          dryRun);
+    }
+
+    public enum Change {
+      CREATE,
+      UPDATE,
+      DELETE
     }
   }
 

@@ -269,7 +269,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 new ConfigurationChangeCoordinatorImpl(manager, coordinatorId, executor),
                 coordinatorId,
                 executor,
-                validatorRegistry));
+                validatorRegistry,
+                new PhysicalTenantConfigStore(tmp)));
     requestServer.start();
 
     // extra nodes may be resolved as the coordinator for a given request (see
@@ -286,7 +287,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                                 manager, entry.getKey(), executor),
                             entry.getKey(),
                             executor,
-                            validatorRegistry)))
+                            validatorRegistry,
+                            new PhysicalTenantConfigStore(tmp))))
             .toList();
     extraRequestServers.forEach(ClusterConfigurationRequestServer::start);
   }

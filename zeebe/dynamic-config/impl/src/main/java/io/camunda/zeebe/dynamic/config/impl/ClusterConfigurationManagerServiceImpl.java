@@ -139,7 +139,11 @@ public final class ClusterConfigurationManagerServiceImpl
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor, validators));
+                configurationChangeCoordinator,
+                localMemberId,
+                managerActor,
+                validators,
+                physicalTenantConfigStore));
 
     clusterConfigurationManager.setCurrentConfigurationGossiper(
         clusterConfigurationGossiper::updateCurrentClusterConfiguration);

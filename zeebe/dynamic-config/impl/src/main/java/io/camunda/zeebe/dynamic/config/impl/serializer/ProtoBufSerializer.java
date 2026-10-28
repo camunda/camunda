@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.impl.serializer;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
@@ -128,6 +130,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -1099,6 +1102,29 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodePhysicalTenantConfigRequest(final PhysicalTenantConfigRequest request) {
+    return Requests.PhysicalTenantConfigRequest.newBuilder()
+        .setPhysicalTenantId(request.physicalTenantId())
+        .setChange(
+            switch (request.change()) {
+              case CREATE ->
+                  Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_CREATE;
+              case UPDATE ->
+                  Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE;
+              case DELETE ->
+                  Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_DELETE;
+            })
+        .setOwner(encodeOwner(request.owner()))
+        .setConfiguration(ByteString.copyFrom(request.configuration()))
+        .setExpectedVersion(request.expectedVersion())
+        .setPartitionCount(request.partitionCount())
+        .addAllExporterIds(request.exporterIds())
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public byte[] encodeRemovePhysicalTenantRequest(final RemovePhysicalTenantRequest req) {
     return Requests.RemovePhysicalTenantRequest.newBuilder()
         .setDryRun(req.dryRun())
@@ -1497,6 +1523,34 @@ public class ProtoBufSerializer
               ? Optional.of(purgeRequest.getPhysicalTenantId())
               : Optional.empty();
       return new PurgeRequest(physicalTenantId, purgeRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public PhysicalTenantConfigRequest decodePhysicalTenantConfigRequest(
+      final byte[] encodedRequest) {
+    try {
+      final var request = Requests.PhysicalTenantConfigRequest.parseFrom(encodedRequest);
+      final var change =
+          switch (request.getChange()) {
+            case PHYSICAL_TENANT_CONFIG_CHANGE_CREATE -> PhysicalTenantConfigRequest.Change.CREATE;
+            case PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE -> PhysicalTenantConfigRequest.Change.UPDATE;
+            case PHYSICAL_TENANT_CONFIG_CHANGE_DELETE -> PhysicalTenantConfigRequest.Change.DELETE;
+            default ->
+                throw new DecodingFailed(
+                    "Unknown physical tenant config change " + request.getChange());
+          };
+      return new PhysicalTenantConfigRequest(
+          request.getPhysicalTenantId(),
+          change,
+          decodeOwner(request.getOwner()),
+          request.getConfiguration().toByteArray(),
+          request.getExpectedVersion(),
+          request.getPartitionCount(),
+          Set.copyOf(request.getExporterIdsList()),
+          request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -2209,11 +2263,7 @@ public class ProtoBufSerializer
     return Topology.PhysicalTenantConfigReference.newBuilder()
         .setVersion(reference.version())
         .setSha256(reference.sha256())
-        .setOwner(
-            switch (reference.owner()) {
-              case FILE -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_FILE;
-              case API -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_API;
-            })
+        .setOwner(encodeOwner(reference.owner()))
         .setIncarnationId(reference.incarnationId())
         .putAllAppliedVersions(
             reference.appliedVersions().entrySet().stream()
@@ -2221,20 +2271,28 @@ public class ProtoBufSerializer
         .build();
   }
 
+  private static Topology.PhysicalTenantConfigOwner encodeOwner(final Owner owner) {
+    return switch (owner) {
+      case FILE -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_FILE;
+      case API -> Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_API;
+    };
+  }
+
+  private static Owner decodeOwner(final Topology.PhysicalTenantConfigOwner owner) {
+    return owner == Topology.PhysicalTenantConfigOwner.PHYSICAL_TENANT_CONFIG_OWNER_API
+        ? Owner.API
+        : Owner.FILE;
+  }
+
   private PhysicalTenantConfigReference decodeTenantConfig(
       final Topology.PhysicalTenantConfigReference proto) {
-    final var owner =
-        switch (proto.getOwner()) {
-          case PHYSICAL_TENANT_CONFIG_OWNER_API -> Owner.API;
-          default -> Owner.FILE;
-        };
     final var applied =
         proto.getAppliedVersionsMap().entrySet().stream()
             .collect(Collectors.toMap(e -> MemberId.from(e.getKey()), Entry::getValue));
     return new PhysicalTenantConfigReference(
         proto.getVersion(),
         proto.getSha256(),
-        owner,
+        decodeOwner(proto.getOwner()),
         proto.getIncarnationId(),
         new TreeMap<>(applied));
   }

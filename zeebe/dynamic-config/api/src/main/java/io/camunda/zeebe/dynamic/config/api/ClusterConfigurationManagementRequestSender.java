@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
@@ -176,6 +177,21 @@ public final class ClusterConfigurationManagementRequestSender {
    * this local member — rather than by the (possibly dead) default coordinator, since sending it
    * there would simply reproduce the failure the operator is trying to route around.
    */
+  /**
+   * @return the cluster configuration once the coordinator accepted the change; the change then
+   *     rolls out to every member, see the tenant's {@code PhysicalTenantConfigReference}
+   */
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>>
+      changePhysicalTenantConfig(final PhysicalTenantConfigRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.PHYSICAL_TENANT_CONFIG.topic(),
+        request,
+        serializer::encodePhysicalTenantConfigRequest,
+        serializer::decodeClusterConfigurationResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
       removePhysicalTenant(final RemovePhysicalTenantRequest removePhysicalTenantRequest) {
     return communicationService.send(
