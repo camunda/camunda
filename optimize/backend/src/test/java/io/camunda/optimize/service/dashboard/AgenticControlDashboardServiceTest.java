@@ -7,59 +7,44 @@
  */
 package io.camunda.optimize.service.dashboard;
 
-import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.AGENT;
-import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.MODEL;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.NONE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.START_DATE;
-import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.TOOL;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ADOPTION_RATE_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ADOPTION_RATE_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ADOPTION_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P50_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P50_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P50_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P95_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P95_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_P95_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_BY_AGENT_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_BY_AGENT_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_BY_AGENT_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_OVER_TIME_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_OVER_TIME_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_OVER_TIME_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_BY_MODEL_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_BY_MODEL_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_BY_MODEL_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_OVER_TIME_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_OVER_TIME_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_OVER_TIME_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOOL_CALLS_BY_TOOL_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOOL_CALLS_BY_TOOL_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOOL_CALLS_BY_TOOL_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,13 +74,11 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -146,7 +129,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(30);
+    assertThat(saved.getTiles()).hasSize(12);
   }
 
   @Test
@@ -230,7 +213,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(30))
+    verify(reportWriter, times(12))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -306,7 +289,7 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldSeedOverviewTilesInFourSections() {
+  void shouldSeedKpiTrendAndAgentTrendSections() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
@@ -314,24 +297,17 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
     final Map<Object, Long> tilesPerSection =
-        saved.getTiles().stream()
-            .filter(tile -> levelsOf(tile).contains("overview"))
+        captureSavedDashboard().getTiles().stream()
             .collect(
                 Collectors.groupingBy(
-                    tile ->
-                        Optional.ofNullable((Map<?, ?>) configOf(tile).get("sectionByLevel"))
-                            .<Object>map(sectionByLevel -> sectionByLevel.get("overview"))
-                            .orElseGet(() -> configOf(tile).get("section")),
-                    Collectors.counting()));
+                    tile -> configOf(tile).get("section"), Collectors.counting()));
     assertThat(tilesPerSection)
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of("agentHealth", 6L, "processes", 5L, "volume", 5L, "costAndUsage", 3L));
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kpi", 6L, "trends", 3L, "agentTrends", 3L));
   }
 
   @Test
-  void shouldShowPhase1TilesAtProcessLevelAndPhase2TilesAtOverviewAndAgentLevel() {
+  void shouldShowKpisAtEveryLevelTrendsOnTheDashboardAndAgentTrendsInTheAgentView() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
@@ -342,68 +318,49 @@ public class AgenticControlDashboardServiceTest {
     final Map<String, List<String>> levelsById =
         captureSavedDashboard().getTiles().stream()
             .collect(Collectors.toMap(DashboardReportTileDto::getId, tile -> levelsOf(tile)));
-    assertThat(levelsById.values().stream().filter(levels -> levels.equals(List.of("process"))))
-        .hasSize(11);
     assertThat(levelsById)
-        .containsEntry(KPI_COMPLETED_REPORT_ID, List.of("overview", "process"))
-        .containsEntry(TOOL_CALLS_HEATMAP_REPORT_ID, List.of("process"))
-        .containsEntry(AGENT_INCIDENT_RATE_REPORT_ID, List.of("overview", "agent"))
-        .containsEntry(AGENT_TOKENS_BY_MODEL_REPORT_ID, List.of("overview", "agent"))
-        .containsEntry(AGENT_ADOPTION_RATE_REPORT_ID, List.of("overview"))
-        .containsEntry(AGENT_RUNS_BY_AGENT_REPORT_ID, List.of("overview"))
-        .containsEntry(TOKEN_CONSUMERS_REPORT_ID, List.of("overview"))
-        .containsEntry(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID, List.of("overview"));
+        .containsEntry(AGENT_SUCCESS_RATE_REPORT_ID, List.of("overview", "process", "agent"))
+        .containsEntry(AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID, List.of("overview", "process"))
+        .containsEntry(AGENT_TOKEN_BAND_REPORT_ID, List.of("agent"))
+        .containsEntry(AGENT_LIMIT_HIT_RATE_REPORT_ID, List.of("overview", "process"))
+        .containsEntry(AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID, List.of("agent"));
   }
 
   @Test
-  void shouldGroupProcessOutcomesInTheOverviewProcessesSection() {
+  void shouldCompareOnlyKpiTilesWithThePreviousPeriod() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
     // when
     underTest.reconcile();
 
-    // then the process KPIs keep their process-level layout but move to processes on the overview
-    final Map<String, Map<Object, Object>> configById =
+    // then
+    final Map<String, Object> goodDirectionById =
         captureSavedDashboard().getTiles().stream()
+            .filter(tile -> Boolean.TRUE.equals(configOf(tile).get("comparisonPeriod")))
             .collect(
                 Collectors.toMap(
-                    DashboardReportTileDto::getId, AgenticControlDashboardServiceTest::configOf));
-    assertThat(configById.get(KPI_COMPLETED_REPORT_ID))
-        .containsEntry("sectionByLevel", Map.of("overview", "processes"))
-        .doesNotContainKey("section");
-    assertThat(configById.get(TOKEN_CONSUMERS_REPORT_ID)).containsEntry("section", "processes");
-    assertThat(configById.get(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID))
-        .containsEntry("section", "processes");
+                    DashboardReportTileDto::getId,
+                    tile -> configOf(tile).get("deltaGoodDirection")));
+    assertThat(goodDirectionById)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                AGENT_TOTAL_TOKENS_REPORT_ID, "down",
+                AGENT_RUNS_REPORT_ID, "up",
+                AGENT_SUCCESS_RATE_REPORT_ID, "up"));
   }
 
   @Test
-  void shouldRankAgentIncidentRateByProcess() {
+  void shouldReadEveryTileFromTheAgentRunIndexForCompletedProcessInstancesOnly() {
     // when
-    final ProcessReportDataDto report =
-        seedAndCaptureReportsById().get(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID);
+    final List<ProcessReportDataDto> reports = seedAndCaptureReports();
 
     // then
-    assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
-    assertThat(report.getView().getProperties()).containsExactly(ViewProperty.INCIDENT_RATE);
-    assertThat(report.getGroupBy()).isInstanceOf(ProcessDefinitionKeyGroupByDto.class);
-    assertThat(report.getConfiguration().getSorting())
-        .contains(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC));
-  }
-
-  @Test
-  void shouldReadEveryAgentLevelTileFromTheAgentRunIndexForCompletedProcessInstancesOnly() {
-    // when
-    final List<ProcessReportDataDto> reports =
-        seedAndCaptureReports().stream()
-            .filter(report -> report.getView().getEntity() == ProcessViewEntity.AGENT_RUN)
-            .toList();
-
-    // then
-    assertThat(reports).hasSize(15);
     assertThat(reports)
+        .hasSize(12)
         .allSatisfy(
             report -> {
+              assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
               assertThat(report.isAgenticControlReport()).isTrue();
               assertThat(report.getFilter())
                   .hasSize(1)
@@ -418,114 +375,109 @@ public class AgenticControlDashboardServiceTest {
     final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
 
     // then
-    assertReport(reports, AGENT_INCIDENT_RATE_REPORT_ID, ViewProperty.INCIDENT_RATE, NONE);
-    assertReport(reports, AGENT_LIMIT_HIT_RATE_REPORT_ID, ViewProperty.LIMIT_HIT_RATE, NONE);
-    assertReport(reports, AGENT_DURATION_P50_REPORT_ID, ViewProperty.DURATION, NONE)
-        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 50.0));
-    assertReport(reports, AGENT_DURATION_P95_REPORT_ID, ViewProperty.DURATION, NONE)
-        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 95.0));
-    assertReport(reports, AGENT_ITERATIONS_REPORT_ID, ViewProperty.MODEL_CALLS, NONE)
-        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
-    assertReport(reports, AGENT_HUMAN_STEPS_REPORT_ID, ViewProperty.HUMAN_STEPS, NONE)
-        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
-    assertReport(reports, AGENT_RUNS_REPORT_ID, ViewProperty.FREQUENCY, NONE);
-    assertReport(reports, AGENT_RUNS_OVER_TIME_REPORT_ID, ViewProperty.FREQUENCY, START_DATE);
-    assertReport(reports, AGENT_RUNS_BY_AGENT_REPORT_ID, ViewProperty.FREQUENCY, AGENT);
-    assertReport(reports, AGENT_TOOL_CALLS_BY_TOOL_REPORT_ID, ViewProperty.TOOL_CALLS, TOOL)
+    assertReport(reports, AGENT_TOTAL_TOKENS_REPORT_ID, ViewProperty.TOTAL_TOKENS, NONE)
         .containsExactly(new AggregationDto(AggregationType.SUM));
-    assertReport(reports, AGENT_ADOPTION_RATE_REPORT_ID, ViewProperty.ADOPTION_RATE, NONE);
     assertReport(reports, AGENT_AVG_TOKENS_REPORT_ID, ViewProperty.TOTAL_TOKENS, NONE)
         .containsExactly(new AggregationDto(AggregationType.AVERAGE));
-    assertReport(reports, AGENT_TOKENS_BY_MODEL_REPORT_ID, ViewProperty.TOTAL_TOKENS, MODEL)
-        .containsExactly(new AggregationDto(AggregationType.SUM));
+    assertReport(reports, AGENT_RUNS_REPORT_ID, ViewProperty.FREQUENCY, NONE);
+    assertReport(reports, AGENT_SUCCESS_RATE_REPORT_ID, ViewProperty.SUCCESS_RATE, NONE);
+    assertReport(reports, AGENT_DURATION_REPORT_ID, ViewProperty.DURATION, NONE)
+        .containsExactly(
+            new AggregationDto(AggregationType.AVERAGE),
+            new AggregationDto(AggregationType.PERCENTILE, 50.0),
+            new AggregationDto(AggregationType.PERCENTILE, 95.0));
+    assertReport(reports, AGENT_HUMAN_WAIT_REPORT_ID, ViewProperty.HUMAN_WAIT, NONE)
+        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertReport(reports, AGENT_LIMIT_HIT_RATE_REPORT_ID, ViewProperty.LIMIT_HIT_RATE, NONE);
+    assertReport(reports, AGENT_ITERATIONS_REPORT_ID, ViewProperty.MODEL_CALLS, NONE)
+        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertThat(reports.get(AGENT_TOKEN_BREAKDOWN_REPORT_ID).getView().getProperties())
+        .containsExactly(
+            ViewProperty.INPUT_TOKENS,
+            ViewProperty.OUTPUT_TOKENS,
+            ViewProperty.CACHE_WRITE_TOKENS,
+            ViewProperty.CACHE_READ_TOKENS,
+            ViewProperty.REASONING_TOKENS);
   }
 
   @Test
-  void shouldShowTokensAndRunCountOnTheSameTimeTile() {
+  void shouldSplitMedianTokensPerRunByModelWeekByWeek() {
     // when
     final ProcessReportDataDto report =
-        seedAndCaptureReportsById().get(AGENT_TOKENS_OVER_TIME_REPORT_ID);
+        seedAndCaptureReportsById().get(AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID);
 
     // then
-    assertThat(report.getView().getProperties())
-        .containsExactly(ViewProperty.TOTAL_TOKENS, ViewProperty.FREQUENCY);
+    assertThat(report.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
     assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
     assertThat(((DateGroupByValueDto) report.getGroupBy().getValue()).getUnit())
         .isEqualTo(AggregateByDateUnit.WEEK);
+    assertThat(report.getDistributedBy()).isInstanceOf(AgentModelDistributedByDto.class);
     assertThat(report.getVisualization()).isEqualTo(ProcessVisualization.LINE);
+    assertThat(report.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 50.0));
   }
 
   @Test
-  void shouldFormatRatesAsPercentagesAndKeepDecimalsForAverages() {
+  void shouldBandTokensPerRunForTheAgentView() {
+    // when
+    final ProcessReportDataDto report = seedAndCaptureReportsById().get(AGENT_TOKEN_BAND_REPORT_ID);
+
+    // then
+    assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
+    assertThat(report.getConfiguration().getAggregationTypes())
+        .containsExactly(
+            new AggregationDto(AggregationType.PERCENTILE, 5.0),
+            new AggregationDto(AggregationType.PERCENTILE, 50.0),
+            new AggregationDto(AggregationType.PERCENTILE, 95.0),
+            new AggregationDto(AggregationType.AVERAGE));
+  }
+
+  @Test
+  void shouldFormatRatesAsPercentagesAndWaitTimeAsDuration() {
     // when
     final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
 
     // then
-    assertThat(reports.get(AGENT_INCIDENT_RATE_REPORT_ID).getConfiguration().getValueFormat())
+    assertThat(reports.get(AGENT_SUCCESS_RATE_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("percentage");
-    assertThat(reports.get(AGENT_ADOPTION_RATE_REPORT_ID).getConfiguration().getValueFormat())
-        .isEqualTo("percentage");
+    assertThat(reports.get(AGENT_HUMAN_WAIT_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("duration");
     assertThat(reports.get(AGENT_ITERATIONS_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("frequency");
-    assertThat(reports.get(AGENT_DURATION_P50_REPORT_ID).getConfiguration().getValueFormat())
-        .isNull();
+    assertThat(reports.get(AGENT_DURATION_REPORT_ID).getConfiguration().getValueFormat()).isNull();
   }
 
   @Test
-  void shouldSortBarTilesByValueDescending() {
-    // when
-    final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
-
-    // then
-    for (final String barReportId :
-        List.of(
-            AGENT_RUNS_BY_AGENT_REPORT_ID,
-            AGENT_TOOL_CALLS_BY_TOOL_REPORT_ID,
-            AGENT_TOKENS_BY_MODEL_REPORT_ID)) {
-      final ProcessReportDataDto report = reports.get(barReportId);
-      assertThat(report.getVisualization()).isEqualTo(ProcessVisualization.BAR);
-      assertThat(report.getConfiguration().getSorting())
-          .contains(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC));
-    }
-  }
-
-  @Test
-  void shouldResolvePhase2LocalizationCodesInEveryLocale() throws IOException {
+  void shouldResolveTileLocalizationCodesInEveryLocale() throws IOException {
     for (final String locale : new String[] {"en", "de"}) {
       @SuppressWarnings("unchecked")
       final Map<String, Object> report =
           (Map<String, Object>) readAgenticControlLocalization(locale).get("report");
       assertThat(report)
-          .as("locale '%s' must define all Phase 2 tile localization codes", locale)
+          .as("locale '%s' must define all tile localization codes", locale)
           .containsKeys(
-              AGENT_INCIDENT_RATE_NAME,
-              AGENT_INCIDENT_RATE_DESCRIPTION,
-              AGENT_LIMIT_HIT_RATE_NAME,
-              AGENT_LIMIT_HIT_RATE_DESCRIPTION,
-              AGENT_DURATION_P50_NAME,
-              AGENT_DURATION_P50_DESCRIPTION,
-              AGENT_DURATION_P95_NAME,
-              AGENT_DURATION_P95_DESCRIPTION,
-              AGENT_ITERATIONS_NAME,
-              AGENT_ITERATIONS_DESCRIPTION,
-              AGENT_HUMAN_STEPS_NAME,
-              AGENT_HUMAN_STEPS_DESCRIPTION,
-              AGENT_RUNS_NAME,
-              AGENT_RUNS_DESCRIPTION,
-              AGENT_RUNS_OVER_TIME_NAME,
-              AGENT_RUNS_OVER_TIME_DESCRIPTION,
-              AGENT_RUNS_BY_AGENT_NAME,
-              AGENT_RUNS_BY_AGENT_DESCRIPTION,
-              AGENT_TOOL_CALLS_BY_TOOL_NAME,
-              AGENT_TOOL_CALLS_BY_TOOL_DESCRIPTION,
-              AGENT_ADOPTION_RATE_NAME,
-              AGENT_ADOPTION_RATE_DESCRIPTION,
+              AGENT_TOTAL_TOKENS_NAME,
+              AGENT_TOTAL_TOKENS_DESCRIPTION,
               AGENT_AVG_TOKENS_NAME,
               AGENT_AVG_TOKENS_DESCRIPTION,
-              AGENT_TOKENS_OVER_TIME_NAME,
-              AGENT_TOKENS_OVER_TIME_DESCRIPTION,
-              AGENT_TOKENS_BY_MODEL_NAME,
-              AGENT_TOKENS_BY_MODEL_DESCRIPTION);
+              AGENT_RUNS_NAME,
+              AGENT_RUNS_DESCRIPTION,
+              AGENT_SUCCESS_RATE_NAME,
+              AGENT_SUCCESS_RATE_DESCRIPTION,
+              AGENT_DURATION_NAME,
+              AGENT_DURATION_DESCRIPTION,
+              AGENT_HUMAN_WAIT_NAME,
+              AGENT_HUMAN_WAIT_DESCRIPTION,
+              AGENT_TOKEN_BREAKDOWN_NAME,
+              AGENT_TOKEN_BREAKDOWN_DESCRIPTION,
+              AGENT_TOKENS_PER_RUN_BY_MODEL_NAME,
+              AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION,
+              AGENT_LIMIT_HIT_RATE_NAME,
+              AGENT_LIMIT_HIT_RATE_DESCRIPTION,
+              AGENT_TOKEN_BAND_NAME,
+              AGENT_TOKEN_BAND_DESCRIPTION,
+              AGENT_ITERATIONS_NAME,
+              AGENT_ITERATIONS_DESCRIPTION);
     }
   }
 
@@ -561,7 +513,7 @@ public class AgenticControlDashboardServiceTest {
     final ArgumentCaptor<ProcessReportDataDto> data =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
     underTest.reconcile();
-    verify(reportWriter, times(30))
+    verify(reportWriter, times(12))
         .createOrUpdateSingleProcessReport(
             ids.capture(), isNull(), data.capture(), any(), any(), isNull());
     final Map<String, ProcessReportDataDto> byId = new LinkedHashMap<>();

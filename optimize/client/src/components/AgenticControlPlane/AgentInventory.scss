@@ -7,12 +7,32 @@
  */
 
 .AgentInventory {
-  margin: 0.75rem 0 1rem;
-  overflow-x: auto;
+  margin: 0 0 1rem;
 
-  &.empty {
+  .summary {
+    margin-left: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--cds-text-secondary);
+  }
+
+  .toolbar {
+    margin: 0.75rem 0;
+    max-width: 24rem;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+  }
+
+  .empty,
+  .hint {
     color: var(--cds-text-secondary);
     font-size: 0.875rem;
+  }
+
+  .hint {
+    margin-top: 0.5rem;
   }
 
   .numeric {
@@ -28,40 +48,11 @@
   }
 
   .agentName {
-    background: none;
-    border: none;
-    padding: 0;
-    font: inherit;
     font-weight: 600;
     color: var(--cds-link-primary);
-    cursor: pointer;
-    text-align: left;
-
-    &:hover {
-      text-decoration: underline;
-    }
-
-    &:disabled {
-      color: var(--cds-text-primary);
-      cursor: default;
-      text-decoration: none;
-    }
   }
 
-  .agentDetails {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.25rem;
-    margin-top: 0.125rem;
-
-    .cds--tag {
-      margin: 0;
-    }
-
-    .limit {
-      font-size: 0.75rem;
-      color: var(--cds-text-secondary);
-    }
+  .cds--tag {
+    margin: 0;
   }
 }

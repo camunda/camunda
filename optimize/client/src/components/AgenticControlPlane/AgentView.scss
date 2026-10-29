@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.AgentView {
+  .AgentHeader {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--cds-border-subtle-01);
+    background: var(--cds-layer-01);
+
+    .agentName {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 2rem;
+      margin: 0;
+    }
+
+    .metaItem {
+      dt {
+        font-size: 0.75rem;
+        color: var(--cds-text-secondary);
+      }
+
+      dd {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .agentSection {
+    margin-top: 1rem;
+    min-width: 0;
+  }
+
+  .tableGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    gap: 0 2rem;
+  }
+
+  .note {
+    margin: 0.75rem 0 1rem;
+    font-size: 0.875rem;
+    color: var(--cds-text-secondary);
+  }
+}

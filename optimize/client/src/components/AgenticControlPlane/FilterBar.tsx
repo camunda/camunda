@@ -45,7 +45,6 @@ interface FilterBarProps {
   onAgentIdsChange: (agentIds: string[]) => void;
   models: string[];
   onModelsChange: (models: string[]) => void;
-  showModelFilter?: boolean;
 }
 
 interface Item {
@@ -83,7 +82,6 @@ export function FilterBar({
   onAgentIdsChange,
   models,
   onModelsChange,
-  showModelFilter = true,
 }: FilterBarProps) {
   const selected = DATE_PRESETS.find((p) => p.id === preset)!;
   const [processDefinitions, setProcessDefinitions] = useState<Definition[]>([]);
@@ -177,22 +175,20 @@ export function FilterBar({
           titleText=""
         />
       </div>
-      {showModelFilter && (
-        <div className="modelScope">
-          <span className="label">{t('agenticControlPlane.modelFilter.label')}</span>
-          <FilterableMultiSelect<Item>
-            key={`models-${processScope ?? '__all__'}`}
-            id="model-filter"
-            size="sm"
-            items={withSelected(modelItems, models)}
-            itemToString={(item) => item?.label ?? ''}
-            selectedItems={selectedOf(modelItems, models)}
-            onChange={({selectedItems}) => changeSelection(selectedItems, models, onModelsChange)}
-            placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
-            titleText=""
-          />
-        </div>
-      )}
+      <div className="modelScope">
+        <span className="label">{t('agenticControlPlane.modelFilter.label')}</span>
+        <FilterableMultiSelect<Item>
+          key={`models-${processScope ?? '__all__'}`}
+          id="model-filter"
+          size="sm"
+          items={withSelected(modelItems, models)}
+          itemToString={(item) => item?.label ?? ''}
+          selectedItems={selectedOf(modelItems, models)}
+          onChange={({selectedItems}) => changeSelection(selectedItems, models, onModelsChange)}
+          placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
+          titleText=""
+        />
+      </div>
       <div className="dateRange">
         <span className="label">{t('agenticControlPlane.dateRange')}</span>
         <MenuDropdown label={t(selected.translationKey) as string} size="sm">

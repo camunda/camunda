@@ -28,7 +28,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
@@ -58,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -253,6 +254,47 @@ public class AgenticControlDashboardService {
   public static final String AGENT_TOKENS_BY_MODEL_DESCRIPTION =
       "agenticRunTokensByModelDescription";
 
+  // Dashboard v2 agent run tiles (agentic-dashboard-v2-plan.md). Tiles of earlier slices that the
+  // plan drops are no longer placed on the dashboard; their builders below are kept for now.
+  public static final String AGENT_TOTAL_TOKENS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-total-tokens".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AGENT_TOTAL_TOKENS_NAME = "agenticRunTotalTokensName";
+  public static final String AGENT_TOTAL_TOKENS_DESCRIPTION = "agenticRunTotalTokensDescription";
+  public static final String AGENT_SUCCESS_RATE_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-success-rate".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AGENT_SUCCESS_RATE_NAME = "agenticRunSuccessRateName";
+  public static final String AGENT_SUCCESS_RATE_DESCRIPTION = "agenticRunSuccessRateDescription";
+  public static final String AGENT_DURATION_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-duration".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String AGENT_DURATION_NAME = "agenticRunDurationName";
+  public static final String AGENT_DURATION_DESCRIPTION = "agenticRunDurationDescription";
+  public static final String AGENT_HUMAN_WAIT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-human-wait".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String AGENT_HUMAN_WAIT_NAME = "agenticRunHumanWaitName";
+  public static final String AGENT_HUMAN_WAIT_DESCRIPTION = "agenticRunHumanWaitDescription";
+  public static final String AGENT_TOKEN_BREAKDOWN_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-token-breakdown".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AGENT_TOKEN_BREAKDOWN_NAME = "agenticRunTokenBreakdownName";
+  public static final String AGENT_TOKEN_BREAKDOWN_DESCRIPTION =
+      "agenticRunTokenBreakdownDescription";
+  public static final String AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-tokens-per-run-by-model".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AGENT_TOKENS_PER_RUN_BY_MODEL_NAME =
+      "agenticRunTokensPerRunByModelName";
+  public static final String AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION =
+      "agenticRunTokensPerRunByModelDescription";
+  public static final String AGENT_TOKEN_BAND_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-token-band".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String AGENT_TOKEN_BAND_NAME = "agenticRunTokenBandName";
+  public static final String AGENT_TOKEN_BAND_DESCRIPTION = "agenticRunTokenBandDescription";
+  public static final String AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-run-limit-hit-rate-agent".getBytes(StandardCharsets.UTF_8))
+          .toString();
+
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
 
   // Tile configuration keys consumed by the Agentic Control Plane frontend.
@@ -272,6 +314,11 @@ public class AgenticControlDashboardService {
   private static final String LEVEL_OVERVIEW = "overview";
   private static final String LEVEL_PROCESS = "process";
   private static final String LEVEL_AGENT = "agent";
+  private static final String TILE_SECTION_KPI = "kpi";
+  private static final String TILE_SECTION_TRENDS = "trends";
+  private static final String TILE_SECTION_AGENT_TRENDS = "agentTrends";
+  private static final String TILE_CONFIG_COMPARISON_PERIOD = "comparisonPeriod";
+  private static final String TILE_CONFIG_DELTA_GOOD_DIRECTION = "deltaGoodDirection";
   // Cross-process or cross-agent comparisons that say nothing once a single agent is selected.
   private static final Set<String> OVERVIEW_ONLY_REPORT_IDS =
       Set.of(
@@ -323,28 +370,9 @@ public class AgenticControlDashboardService {
     // Always upsert all KPI reports so config changes are applied on every restart.
     // Report IDs are deterministic so upserts are safe and tile references never orphan.
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
-    buildProcessLevelTiles()
-        .forEach(
-            tile ->
-                tiles.add(
-                    OVERVIEW_AND_PROCESS_REPORT_IDS.contains(tile.getId())
-                        ? inSectionAt(
-                            atLevels(tile, LEVEL_OVERVIEW, LEVEL_PROCESS),
-                            LEVEL_OVERVIEW,
-                            TILE_SECTION_PROCESSES)
-                        : atLevels(tile, LEVEL_PROCESS)));
-    Stream.of(
-            buildAgentHealthTiles(),
-            buildProcessesTiles(),
-            buildVolumeTiles(),
-            buildCostAndUsageTiles())
-        .flatMap(List::stream)
-        .map(
-            tile ->
-                OVERVIEW_ONLY_REPORT_IDS.contains(tile.getId())
-                    ? atLevels(tile, LEVEL_OVERVIEW)
-                    : atLevels(tile, LEVEL_OVERVIEW, LEVEL_AGENT))
-        .forEach(tiles::add);
+    tiles.addAll(buildKpiTiles());
+    tiles.addAll(buildTrendTiles());
+    tiles.addAll(buildAgentTrendTiles());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -1151,6 +1179,7 @@ public class AgenticControlDashboardService {
             AGENT_TOKENS_OVER_TIME_DESCRIPTION,
             List.of(ViewProperty.TOTAL_TOKENS, ViewProperty.FREQUENCY),
             weeklyStartDate(),
+            new NoneDistributedByDto(),
             ProcessVisualization.LINE,
             List.of(new AggregationDto(AggregationType.SUM)),
             TILE_SECTION_COST_AND_USAGE,
@@ -1167,6 +1196,238 @@ public class AgenticControlDashboardService {
             TILE_SECTION_COST_AND_USAGE,
             new PositionDto(9, 2),
             new DimensionDto(9, 4)));
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Dashboard v2 tiles. Levels: overview (dashboard tab, all processes), process (dashboard tab,
+  // one
+  // process), agent (single agent view). Comparison with the previous period on KPI tiles only.
+  // ---------------------------------------------------------------------------------------------
+
+  private List<DashboardReportTileDto> buildKpiTiles() {
+    final String[] levels = {LEVEL_OVERVIEW, LEVEL_PROCESS, LEVEL_AGENT};
+    return List.of(
+        v2Tile(
+            agentRunTile(
+                AGENT_TOTAL_TOKENS_REPORT_ID,
+                AGENT_TOTAL_TOKENS_NAME,
+                AGENT_TOTAL_TOKENS_DESCRIPTION,
+                ViewProperty.TOTAL_TOKENS,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(new AggregationDto(AggregationType.SUM)),
+                TILE_SECTION_KPI,
+                new PositionDto(0, 0),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            "down",
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_AVG_TOKENS_REPORT_ID,
+                AGENT_AVG_TOKENS_NAME,
+                AGENT_AVG_TOKENS_DESCRIPTION,
+                ViewProperty.TOTAL_TOKENS,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(new AggregationDto(AggregationType.AVERAGE)),
+                TILE_SECTION_KPI,
+                new PositionDto(6, 0),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            null,
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_RUNS_REPORT_ID,
+                AGENT_RUNS_NAME,
+                AGENT_RUNS_DESCRIPTION,
+                ViewProperty.FREQUENCY,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(),
+                TILE_SECTION_KPI,
+                new PositionDto(12, 0),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            "up",
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_SUCCESS_RATE_REPORT_ID,
+                AGENT_SUCCESS_RATE_NAME,
+                AGENT_SUCCESS_RATE_DESCRIPTION,
+                ViewProperty.SUCCESS_RATE,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(),
+                TILE_SECTION_KPI,
+                new PositionDto(0, 2),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            "up",
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_DURATION_REPORT_ID,
+                AGENT_DURATION_NAME,
+                AGENT_DURATION_DESCRIPTION,
+                ViewProperty.DURATION,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(
+                    new AggregationDto(AggregationType.AVERAGE),
+                    new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                    new AggregationDto(AggregationType.PERCENTILE, 95.0)),
+                TILE_SECTION_KPI,
+                new PositionDto(6, 2),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            null,
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_HUMAN_WAIT_REPORT_ID,
+                AGENT_HUMAN_WAIT_NAME,
+                AGENT_HUMAN_WAIT_DESCRIPTION,
+                ViewProperty.HUMAN_WAIT,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(new AggregationDto(AggregationType.AVERAGE)),
+                TILE_SECTION_KPI,
+                new PositionDto(12, 2),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_KPI,
+            null,
+            levels));
+  }
+
+  private List<DashboardReportTileDto> buildTrendTiles() {
+    final String[] levels = {LEVEL_OVERVIEW, LEVEL_PROCESS};
+    return List.of(
+        v2Tile(
+            agentRunTile(
+                AGENT_TOKEN_BREAKDOWN_REPORT_ID,
+                AGENT_TOKEN_BREAKDOWN_NAME,
+                AGENT_TOKEN_BREAKDOWN_DESCRIPTION,
+                List.of(
+                    ViewProperty.INPUT_TOKENS,
+                    ViewProperty.OUTPUT_TOKENS,
+                    ViewProperty.CACHE_WRITE_TOKENS,
+                    ViewProperty.CACHE_READ_TOKENS,
+                    ViewProperty.REASONING_TOKENS),
+                new NoneGroupByDto(),
+                new NoneDistributedByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(new AggregationDto(AggregationType.SUM)),
+                TILE_SECTION_TRENDS,
+                new PositionDto(0, 0),
+                new DimensionDto(6, 4)),
+            TILE_SECTION_TRENDS,
+            null,
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID,
+                AGENT_TOKENS_PER_RUN_BY_MODEL_NAME,
+                AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION,
+                List.of(ViewProperty.TOTAL_TOKENS),
+                weeklyStartDate(),
+                new AgentModelDistributedByDto(),
+                ProcessVisualization.LINE,
+                List.of(new AggregationDto(AggregationType.PERCENTILE, 50.0)),
+                TILE_SECTION_TRENDS,
+                new PositionDto(6, 0),
+                new DimensionDto(12, 4)),
+            TILE_SECTION_TRENDS,
+            null,
+            levels),
+        v2Tile(
+            agentRunTile(
+                AGENT_LIMIT_HIT_RATE_REPORT_ID,
+                AGENT_LIMIT_HIT_RATE_NAME,
+                AGENT_LIMIT_HIT_RATE_DESCRIPTION,
+                ViewProperty.LIMIT_HIT_RATE,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(),
+                TILE_SECTION_TRENDS,
+                new PositionDto(0, 4),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_TRENDS,
+            null,
+            levels));
+  }
+
+  private List<DashboardReportTileDto> buildAgentTrendTiles() {
+    return List.of(
+        v2Tile(
+            agentRunTile(
+                AGENT_TOKEN_BAND_REPORT_ID,
+                AGENT_TOKEN_BAND_NAME,
+                AGENT_TOKEN_BAND_DESCRIPTION,
+                List.of(ViewProperty.TOTAL_TOKENS),
+                weeklyStartDate(),
+                new NoneDistributedByDto(),
+                ProcessVisualization.LINE,
+                List.of(
+                    new AggregationDto(AggregationType.PERCENTILE, 5.0),
+                    new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                    new AggregationDto(AggregationType.PERCENTILE, 95.0),
+                    new AggregationDto(AggregationType.AVERAGE)),
+                TILE_SECTION_AGENT_TRENDS,
+                new PositionDto(0, 0),
+                new DimensionDto(12, 4)),
+            TILE_SECTION_AGENT_TRENDS,
+            null,
+            LEVEL_AGENT),
+        v2Tile(
+            agentRunTile(
+                AGENT_ITERATIONS_REPORT_ID,
+                AGENT_ITERATIONS_NAME,
+                AGENT_ITERATIONS_DESCRIPTION,
+                ViewProperty.MODEL_CALLS,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(new AggregationDto(AggregationType.AVERAGE)),
+                TILE_SECTION_AGENT_TRENDS,
+                new PositionDto(12, 0),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_AGENT_TRENDS,
+            null,
+            LEVEL_AGENT),
+        v2Tile(
+            agentRunTile(
+                AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID,
+                AGENT_LIMIT_HIT_RATE_NAME,
+                AGENT_LIMIT_HIT_RATE_DESCRIPTION,
+                ViewProperty.LIMIT_HIT_RATE,
+                new NoneGroupByDto(),
+                ProcessVisualization.NUMBER,
+                List.of(),
+                TILE_SECTION_AGENT_TRENDS,
+                new PositionDto(12, 2),
+                new DimensionDto(6, 2)),
+            TILE_SECTION_AGENT_TRENDS,
+            null,
+            LEVEL_AGENT));
+  }
+
+  /** Sets the v2 tile configuration: section, levels and, for KPIs, the period comparison. */
+  private static DashboardReportTileDto v2Tile(
+      final DashboardReportTileDto tile,
+      final String section,
+      final String deltaGoodDirection,
+      final String... levels) {
+    final Map<String, Object> configuration = new HashMap<>();
+    configuration.put(TILE_CONFIG_SECTION, section);
+    configuration.put(TILE_CONFIG_LEVELS, List.of(levels));
+    if (deltaGoodDirection != null) {
+      configuration.put(TILE_CONFIG_COMPARISON_PERIOD, true);
+      configuration.put(TILE_CONFIG_DELTA_GOOD_DIRECTION, deltaGoodDirection);
+    }
+    tile.setConfiguration(configuration);
+    return tile;
   }
 
   private DashboardReportTileDto agentRunTile(
@@ -1186,6 +1447,7 @@ public class AgenticControlDashboardService {
         descriptionKey,
         List.of(viewProperty),
         groupBy,
+        new NoneDistributedByDto(),
         visualization,
         aggregationTypes,
         section,
@@ -1199,6 +1461,7 @@ public class AgenticControlDashboardService {
       final String descriptionKey,
       final List<ViewProperty> viewProperties,
       final ProcessGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy,
       final ProcessVisualization visualization,
       final List<AggregationDto> aggregationTypes,
       final String section,
@@ -1220,7 +1483,7 @@ public class AgenticControlDashboardService {
             .definitions(Collections.emptyList())
             .view(new ProcessViewDto(ProcessViewEntity.AGENT_RUN, viewProperties))
             .groupBy(groupBy)
-            .distributedBy(new NoneDistributedByDto())
+            .distributedBy(distributedBy)
             .visualization(visualization)
             .configuration(configuration)
             .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
@@ -1236,8 +1499,12 @@ public class AgenticControlDashboardService {
   private static String valueFormatFor(final ViewProperty viewProperty) {
     if (ViewProperty.INCIDENT_RATE.equals(viewProperty)
         || ViewProperty.LIMIT_HIT_RATE.equals(viewProperty)
-        || ViewProperty.ADOPTION_RATE.equals(viewProperty)) {
+        || ViewProperty.ADOPTION_RATE.equals(viewProperty)
+        || ViewProperty.SUCCESS_RATE.equals(viewProperty)) {
       return "percentage";
+    }
+    if (ViewProperty.HUMAN_WAIT.equals(viewProperty)) {
+      return "duration";
     }
     if (ViewProperty.DURATION.equals(viewProperty)) {
       return null;
