@@ -11,15 +11,20 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.rest.agentic.AgentInventoryDto;
 import io.camunda.optimize.dto.optimize.rest.agentic.AgentInventoryDto.AgentInventoryEntry;
+import io.camunda.optimize.dto.optimize.rest.agentic.AgentInventoryDto.Summary;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.AgentInventoryReader;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Component;
 
 /** Lists agents for the agentic dashboard overview, busiest first, with process names. */
 @Component
 public class AgentInventoryService {
+
+  private static final String EXTERNAL_AGENT = "EXTERNAL_AGENT";
 
   private final AgentInventoryReader reader;
   private final DefinitionService definitionService;
@@ -30,40 +35,39 @@ public class AgentInventoryService {
     this.definitionService = definitionService;
   }
 
-  public AgentInventoryDto getAgentInventory(final OffsetDateTime endedFrom) {
-    return new AgentInventoryDto(
-        reader.getAgentInventory(endedFrom).stream()
-            .map(this::withProcessName)
+  public AgentInventoryDto getAgentInventory(
+      final OffsetDateTime endedFrom, final String processDefinitionKey) {
+    final List<AgentInventoryEntry> agents =
+        reader.getAgentInventory(endedFrom, processDefinitionKey).stream()
+            .map(
+                entry -> entry.withProcessDefinitionName(processName(entry.processDefinitionKey())))
             .sorted(
                 Comparator.comparingLong(AgentInventoryEntry::runs)
                     .reversed()
                     .thenComparing(AgentInventoryEntry::name))
-            .toList());
+            .toList();
+    return new AgentInventoryDto(summarize(agents), agents);
   }
 
-  private AgentInventoryEntry withProcessName(final AgentInventoryEntry entry) {
-    final String processName =
-        entry.processDefinitionKey() == null
-            ? null
-            : definitionService
-                .getLatestCachedDefinitionOnAnyTenant(
-                    DefinitionType.PROCESS, entry.processDefinitionKey())
-                .map(DefinitionOptimizeResponseDto::getName)
-                .filter(name -> !name.isBlank())
-                .orElse(entry.processDefinitionKey());
-    return new AgentInventoryEntry(
-        entry.agentId(),
-        entry.name(),
-        entry.agentType(),
-        entry.processDefinitionKey(),
-        processName,
-        entry.models(),
-        entry.maxModelCalls(),
-        entry.runs(),
-        entry.incidentRate(),
-        entry.limitHitRate(),
-        entry.durationP50Ms(),
-        entry.avgTokens(),
-        entry.lastRunDate());
+  static Summary summarize(final List<AgentInventoryEntry> agents) {
+    return new Summary(
+        agents.size(),
+        agents.stream()
+            .map(AgentInventoryEntry::processDefinitionKey)
+            .filter(Objects::nonNull)
+            .distinct()
+            .count(),
+        agents.stream().filter(agent -> EXTERNAL_AGENT.equals(agent.agentType())).count());
+  }
+
+  /** The latest name of the process definition, or its key when it has none. */
+  public String processName(final String processDefinitionKey) {
+    return processDefinitionKey == null
+        ? null
+        : definitionService
+            .getLatestCachedDefinitionOnAnyTenant(DefinitionType.PROCESS, processDefinitionKey)
+            .map(DefinitionOptimizeResponseDto::getName)
+            .filter(name -> !name.isBlank())
+            .orElse(processDefinitionKey);
   }
 }

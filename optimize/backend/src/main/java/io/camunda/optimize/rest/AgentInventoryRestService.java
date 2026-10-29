@@ -36,7 +36,9 @@ public class AgentInventoryRestService {
   public AgentInventoryDto getAgentInventory(
       @RequestParam(name = "endedFrom", required = false)
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-          final OffsetDateTime endedFrom) {
-    return agentInventoryService.getAgentInventory(endedFrom);
+          final OffsetDateTime endedFrom,
+      @RequestParam(name = "processDefinitionKey", required = false)
+          final String processDefinitionKey) {
+    return agentInventoryService.getAgentInventory(endedFrom, processDefinitionKey);
   }
 }

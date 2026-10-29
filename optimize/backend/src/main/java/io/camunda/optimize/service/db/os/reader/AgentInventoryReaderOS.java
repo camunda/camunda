@@ -21,7 +21,8 @@ import org.springframework.stereotype.Component;
 public class AgentInventoryReaderOS implements AgentInventoryReader {
 
   @Override
-  public List<AgentInventoryEntry> getAgentInventory(final OffsetDateTime endedFrom) {
+  public List<AgentInventoryEntry> getAgentInventory(
+      final OffsetDateTime endedFrom, final String processDefinitionKey) {
     throw new UnsupportedOperationException("The agent inventory is not supported on OpenSearch");
   }
 }

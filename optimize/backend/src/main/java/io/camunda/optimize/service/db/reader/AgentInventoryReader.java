@@ -15,8 +15,10 @@ public interface AgentInventoryReader {
 
   /**
    * Agents from the agent-definition index, plus agents seen only on runs, with metrics over runs
-   * of completed process instances that ended at or after {@code endedFrom} (all runs when null).
-   * Process definition names are left empty for the caller to resolve.
+   * of completed process instances that ended at or after {@code endedFrom} (all runs when null),
+   * restricted to one process when {@code processDefinitionKey} is set. Process definition names
+   * are left empty for the caller to resolve.
    */
-  List<AgentInventoryEntry> getAgentInventory(OffsetDateTime endedFrom);
+  List<AgentInventoryEntry> getAgentInventory(
+      OffsetDateTime endedFrom, String processDefinitionKey);
 }
