@@ -16,7 +16,6 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -44,6 +43,7 @@ import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
+import org.apache.hc.core5.http.nio.CapacityChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -105,8 +105,6 @@ public class DocumentDataConsumerTest {
     consumer.updateCapacity(reportedCapacity::set);
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
-    // error is thrown when data exceeds buffer capacity
-    assertThatCode(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));
@@ -130,6 +128,68 @@ public class DocumentDataConsumerTest {
     assertThat(remainingContent).isEqualTo(remainingData);
 
     verifyNoMoreInteractions(callback);
+  }
+
+  @Test
+  void shouldKeepIoLayerReadingWhenItsWindowRunsOutWhileBufferIsEmpty() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(8, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final Http1Window window = new Http1Window(16);
+    // the I/O layer hands over more than its window, and the reader takes most of it before the
+    // I/O layer debits it
+    consumer.consume(ByteBuffer.wrap(new byte[32]));
+    callback.inputStream.read(new byte[30]);
+    window.debit(consumer, 32);
+    callback.inputStream.read(new byte[2]);
+
+    // when
+    // the reader takes the next piece before the I/O layer debits it, which uses up the window
+    consumer.consume(ByteBuffer.wrap(new byte[4]));
+    callback.inputStream.read(new byte[4]);
+    window.debit(consumer, 4);
+
+    // then
+    // nothing is buffered, so nothing would ever grant capacity again if the I/O layer stopped
+    assertThat(window.readingEnabled).isTrue();
+  }
+
+  @Test
+  void shouldAcceptDataBeyondGrantedCapacityAndWithholdCapacityUntilBelowIt() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(4, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final AtomicInteger grantedCapacity = new AtomicInteger();
+    consumer.updateCapacity(grantedCapacity::addAndGet);
+    consumer.consume(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+    final byte[] content = new byte[8];
+    callback.inputStream.read(content, 0, 2);
+    // fills the buffer up to its capacity, wrapping around its end
+    consumer.consume(ByteBuffer.wrap(new byte[] {4, 5, 6}));
+
+    // when
+    consumer.consume(ByteBuffer.wrap(new byte[] {7, 8}));
+    callback.inputStream.read(content, 2, 2);
+
+    // then
+    // the buffer still holds its capacity, so more space would only let it overflow further
+    assertThat(grantedCapacity.get()).isEqualTo(6);
+
+    // when
+    callback.inputStream.read(content, 4, 4);
+
+    // then
+    assertThat(content).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    // all 8 bytes read are granted again once the buffer is below its capacity
+    assertThat(grantedCapacity.get()).isEqualTo(12);
   }
 
   @Test
@@ -382,6 +442,37 @@ public class DocumentDataConsumerTest {
         thread.join(TimeUnit.SECONDS.toMillis(5));
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  /**
+   * Follows the capacity window of httpcore5's HTTP/1.1 duplexer: any positive update lets it read
+   * again, and debiting received data stops reading and asks for capacity once the window is used
+   * up.
+   */
+  private static final class Http1Window implements CapacityChannel {
+
+    private int window;
+    private boolean readingEnabled = true;
+
+    private Http1Window(final int initialWindow) {
+      window = initialWindow;
+    }
+
+    @Override
+    public void update(final int increment) {
+      if (increment > 0) {
+        window += increment;
+        readingEnabled = true;
+      }
+    }
+
+    private void debit(final DocumentDataConsumer<?> consumer, final int bytes) throws IOException {
+      window -= bytes;
+      if (window <= 0) {
+        readingEnabled = false;
+        consumer.updateCapacity(this);
       }
     }
   }
