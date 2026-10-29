@@ -79,6 +79,27 @@ class RdbmsDataSourcesTest {
   }
 
   @Test
+  void shouldReachTheDatabaseWithoutStartingThePoolThroughTheUnpooledDataSource() throws Exception {
+    // given
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
+            new SimpleMeterRegistry())) {
+
+      // when
+      try (final var connection =
+          registry
+              .unpooledDataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .getConnection()) {
+
+        // then
+        assertThat(connection.isValid(1)).isTrue();
+        assertThat(registry.isPoolStarted(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).isFalse();
+      }
+    }
+  }
+
+  @Test
   void shouldApplyConnectionPoolSettings() throws Exception {
     final var rdbms = h2Rdbms();
     final var pool = new RdbmsConnectionPool();

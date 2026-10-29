@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.MyBatisConfiguration;
+import io.camunda.application.commons.rdbms.PhysicalTenantMyBatisResources;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
@@ -41,12 +42,15 @@ class MyBatisConfigurationPerTenantIT {
   @Test
   void shouldBuildIsolatedFactoryAndBundlePerTenantAndExposeDefaultAsSingleton() throws Exception {
     try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
-      assertThat(fixture.factories)
-          .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
       assertThat(fixture.bundles)
           .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
-      assertThat(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
-          .isNotSameAs(fixture.factories.get("tenantb"));
+      assertThat(
+              fixture
+                  .bundles
+                  .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                  .sqlSessionFactory()
+                  .getConfiguration())
+          .isNotSameAs(fixture.bundles.get("tenantb").sqlSessionFactory().getConfiguration());
     }
   }
 
@@ -72,7 +76,8 @@ class MyBatisConfigurationPerTenantIT {
     // given
     try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
       // when
-      final var configuration = fixture.factories.get("tenantb").getConfiguration();
+      final var configuration =
+          fixture.bundles.get("tenantb").sqlSessionFactory().getConfiguration();
 
       // then - fragments keep the parsed mapper DOM alive, statements stay fully resolved
       assertThat(configuration.getSqlFragments()).isEmpty();
@@ -105,14 +110,14 @@ class MyBatisConfigurationPerTenantIT {
         RdbmsDataSources.of(
             resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()),
             new SimpleMeterRegistry());
-    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver);
-    final var bundles = MY_BATIS.rdbmsMapperBundles(factories, dataSources);
-    return new TenantFixture(dataSources, factories, bundles);
+    final var myBatis = MY_BATIS.physicalTenantMyBatisResources(dataSources, resolver);
+    final var bundles = MY_BATIS.rdbmsMapperBundles(myBatis, dataSources);
+    return new TenantFixture(dataSources, myBatis, bundles);
   }
 
   private record TenantFixture(
       RdbmsDataSources dataSources,
-      java.util.Map<String, org.apache.ibatis.session.SqlSessionFactory> factories,
+      PhysicalTenantMyBatisResources myBatis,
       java.util.Map<String, io.camunda.db.rdbms.write.RdbmsMapperBundle> bundles)
       implements AutoCloseable {
 
@@ -122,6 +127,7 @@ class MyBatisConfigurationPerTenantIT {
 
     @Override
     public void close() {
+      myBatis.close();
       dataSources.close();
     }
   }

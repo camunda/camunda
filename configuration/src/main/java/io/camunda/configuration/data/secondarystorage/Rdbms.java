@@ -25,6 +25,7 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   private static final boolean DEFAULT_AUTO_DDL = true;
   private static final boolean DEFAULT_REWRITE_BATCHED_STATEMENTS = true;
+  private static final boolean DEFAULT_LAZY_INITIALIZATION = true;
 
   /** If true, the database schema is automatically created and updated on application startup. */
   private boolean autoDdl = DEFAULT_AUTO_DDL;
@@ -118,6 +119,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
    */
   private String databaseVendorId;
 
+  /**
+   * If true, a node creates the MyBatis mappers and the connection pool of this database on their
+   * first use, for example when it exports a partition of the physical tenant or serves one of its
+   * queries, rather than at startup. A node that never uses the database then holds nothing for it.
+   */
+  private boolean lazyInitialization = DEFAULT_LAZY_INITIALIZATION;
+
   public boolean getAutoDdl() {
     return autoDdl;
   }
@@ -189,6 +197,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setBatchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
     this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
+  }
+
+  public boolean isLazyInitialization() {
+    return lazyInitialization;
+  }
+
+  public void setLazyInitialization(final boolean lazyInitialization) {
+    this.lazyInitialization = lazyInitialization;
   }
 
   public boolean isRewriteBatchedStatements() {

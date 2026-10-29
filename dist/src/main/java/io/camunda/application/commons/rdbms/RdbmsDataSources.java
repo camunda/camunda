@@ -63,6 +63,7 @@ public final class RdbmsDataSources implements AutoCloseable {
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(5);
 
   private final Map<String, RefreshableDataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, DataSource> unpooledDataSources = new LinkedHashMap<>();
   private final Map<String, RdbmsConnection> configuredConnections = new LinkedHashMap<>();
   private final Map<String, RdbmsConnection> resolvedConnections = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
@@ -114,9 +115,15 @@ public final class RdbmsDataSources implements AutoCloseable {
         result.dataSources.put(currentPhysicalTenantId, ds);
         result.configuredConnections.put(currentPhysicalTenantId, configured);
         result.resolvedConnections.put(currentPhysicalTenantId, connection);
+        final var unpooled = new UnpooledDataSource(connection);
+        result.unpooledDataSources.put(currentPhysicalTenantId, unpooled);
         final var databaseId =
             vendorIdFor(
-                currentPhysicalTenantId, rdbms, connection.url(), ds, physicalTenantConfigs.size());
+                currentPhysicalTenantId,
+                rdbms,
+                connection.url(),
+                unpooled,
+                physicalTenantConfigs.size());
         result.vendorProperties.put(
             currentPhysicalTenantId, VendorDatabasePropertiesLoader.load(databaseId));
       } catch (final IOException | RuntimeException e) {
@@ -200,6 +207,27 @@ public final class RdbmsDataSources implements AutoCloseable {
 
   public Map<String, DataSource> dataSources() {
     return Map.<String, DataSource>copyOf(dataSources);
+  }
+
+  /**
+   * A data source of the tenant that opens a connection per use, for the work a node does on the
+   * tenant's database whether it serves the tenant or not, such as initializing its schema. It
+   * leaves the tenant's pool unstarted, so that the pool only holds connections on a node that uses
+   * them.
+   */
+  public DataSource unpooledDataSourceFor(final String physicalTenantId) {
+    final var ds = unpooledDataSources.get(physicalTenantId);
+    if (ds == null) {
+      throw new IllegalArgumentException(
+          "No DataSource configured for physical tenant " + physicalTenantId);
+    }
+    return ds;
+  }
+
+  /** Whether the tenant's pool has been started, and so holds connections to its database. */
+  public boolean isPoolStarted(final String physicalTenantId) {
+    final var ds = dataSources.get(physicalTenantId);
+    return ds != null && ds.pool().client().isRunning();
   }
 
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
