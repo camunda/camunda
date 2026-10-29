@@ -79,6 +79,7 @@ final class PhysicalTenantRolloutReadinessIT {
               rollout -> {
                 assertThat(rollout.minHealthyReplicas()).isGreaterThanOrEqualTo(QUORUM);
                 assertThat(rollout.belowQuorum()).isZero();
+                assertThat(rollout.leaderAfter()).isEqualTo(rollout.leaderBefore());
               });
     }
   }
@@ -157,6 +158,7 @@ final class PhysicalTenantRolloutReadinessIT {
       for (var version = 2; version <= ROLLOUTS + 1; version++) {
         sampler.reset();
         load.reset();
+        final var leaderBefore = leader(cluster, tenantId);
         final var started = System.nanoTime();
         assertThat(
                 send(cluster, "PUT", tenantId, tenantConfiguration(cluster, version)).statusCode())
@@ -173,7 +175,9 @@ final class PhysicalTenantRolloutReadinessIT {
                 load.failed(),
                 load.succeeded(),
                 sampler.minHealthy(),
-                sampler.belowQuorum());
+                sampler.belowQuorum(),
+                leaderBefore,
+                leader(cluster, tenantId));
         LOG.info("Rollout under load: {}", rollout);
         rollouts.add(rollout);
       }
@@ -243,6 +247,22 @@ final class PhysicalTenantRolloutReadinessIT {
     return configuration;
   }
 
+  private static String leader(final TestCluster cluster, final String tenantId) {
+    return cluster.brokers().entrySet().stream()
+        .filter(
+            broker -> {
+              final var context = broker.getValue().bean(Broker.class).getBrokerContext();
+              final var partitions =
+                  context == null ? null : context.getPartitionManagers().get(tenantId);
+              return partitions != null
+                  && partitions.getRaftPartitions().stream()
+                      .anyMatch(partition -> partition.getRole() == Role.LEADER);
+            })
+        .map(broker -> broker.getKey().id())
+        .findFirst()
+        .orElse("none");
+  }
+
   private static TestStandaloneBroker broker(final TestCluster cluster, final int nodeId) {
     return cluster.brokers().get(MemberId.from(String.valueOf(nodeId)));
   }
@@ -279,6 +299,8 @@ final class PhysicalTenantRolloutReadinessIT {
    *     broker
    * @param minHealthyReplicas the fewest healthy replicas of the tenant's partition seen at once
    * @param belowQuorum how long the partition had fewer than a quorum of healthy replicas
+   * @param leaderBefore the member that led the partition before the rollout
+   * @param leaderAfter the member that led it once every broker applied the change and served
    */
   private record Rollout(
       String readiness,
@@ -288,7 +310,9 @@ final class PhysicalTenantRolloutReadinessIT {
       int failed,
       int succeeded,
       int minHealthyReplicas,
-      Duration belowQuorum) {}
+      Duration belowQuorum,
+      String leaderBefore,
+      String leaderAfter) {}
 
   /** Publishes messages to the tenant through the gateway of every broker, without pause. */
   private static final class PublishLoad {
