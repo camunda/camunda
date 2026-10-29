@@ -13,6 +13,7 @@ keeps its own notes under [`poc-notes/`](poc-notes):
 | `pt-poc-lazy-tenant-resources`                     | [lazy-tenant-resources.md](poc-notes/lazy-tenant-resources.md)                          |
 | `pt-poc-tenant-disk-limit`                         | [tenant-disk-limit.md](poc-notes/tenant-disk-limit.md)                                  |
 | `pt-poc-csl-runtime-security` (this branch's tip)  | [Runtime HTTP security](#runtime-http-security-with-the-camunda-security-library) below |
+| `pt-poc-tenant-config-consumers`                   | [tenant-config-consumers.md](poc-notes/tenant-config-consumers.md)                      |
 
 ## What the integration proves
 
