@@ -103,6 +103,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRuntimeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -3130,6 +3131,37 @@ final class JsonSerializableToJsonTest {
                   "parentKey": -1,
                   "index": -1,
                   "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// UserTaskRuntimeRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserTaskRuntimeRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new UserTaskRuntimeRecord()
+                    .setUserTaskKey(123L)
+                    .setFetchVariables(List.of("foo", "bar"))
+                    .setTenantId("tenant-1"),
+        """
+                {
+                  "userTaskKey": 123,
+                  "fetchVariables": ["foo", "bar"],
+                  "tenantId": "tenant-1"
+                }
+                """
+      },
+      {
+        "Empty UserTaskRuntimeRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskRuntimeRecord::new,
+        """
+                {
+                  "userTaskKey": -1,
+                  "fetchVariables": [],
+                  "tenantId": "<default>"
                 }
                 """
       },

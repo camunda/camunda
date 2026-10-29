@@ -87,6 +87,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskRuntimeIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -156,6 +157,7 @@ import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRuntimeRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -322,6 +324,9 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.RESOURCE, new Mapping<>(Resource.class, ResourceIntent.class));
     mapping.put(
         ValueType.USER_TASK, new Mapping<>(UserTaskRecordValue.class, UserTaskIntent.class));
+    mapping.put(
+        ValueType.USER_TASK_RUNTIME,
+        new Mapping<>(UserTaskRuntimeRecordValue.class, UserTaskRuntimeIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new Mapping<>(

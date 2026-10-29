@@ -164,6 +164,21 @@ final class ElasticsearchExporterTest {
           .isTrue();
     }
 
+    @Test
+    void shouldNeverAcceptUserTaskRuntime() {
+      // given
+      TestSupport.provideValueTypes()
+          .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
+
+      // when
+      exporter.configure(context);
+
+      // then
+      assertThat(context.getRecordFilter().acceptValue(ValueType.USER_TASK_RUNTIME))
+          .as("user task runtime reads change no state and are never exported")
+          .isFalse();
+    }
+
     @ParameterizedTest(name = "{0}")
     @EnumSource(
         value = RecordType.class,

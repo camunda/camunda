@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRuntimeRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.util.Arrays;
@@ -90,6 +91,27 @@ class CompactRecordLoggerTest {
 
       // then
       assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");
+    }
+
+    @Test
+    void shouldSummarizeUserTaskRuntimeRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.USER_TASK_RUNTIME)
+              .withValue(
+                  ImmutableUserTaskRuntimeRecordValue.builder()
+                      .withUserTaskKey(123L)
+                      .withFetchVariables(List.of("foo", "bar"))
+                      .withTenantId("tenant-1")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeUserTaskRuntime(record);
+
+      // then
+      assertThat(summary).isEqualTo("task:K123 fetchVariables:[foo, bar] (tenant: tenant-1)");
     }
 
     @Test
