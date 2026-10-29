@@ -9,9 +9,12 @@ package io.camunda.zeebe.protocol.impl;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -80,6 +83,92 @@ final class RecordMetadataTest {
     // then
     assertThat(reread.getAuthorization().toClaimsMap())
         .isEqualTo(Map.of(AUTHORIZED_USERNAME, "user"));
+  }
+
+  @Test
+  void shouldWriteEmptyAuthorizationAsEncodedAuthInfoByDefault() {
+    // given
+    final var metadata = new RecordMetadata();
+
+    // when
+    final var buffer = write(metadata);
+
+    // then - as in previous versions, not as a zero-length field
+    final var decoder = new RecordMetadataDecoder();
+    final var header = new MessageHeaderDecoder().wrap(buffer, 0);
+    decoder.wrap(buffer, header.encodedLength(), header.blockLength(), header.version());
+    decoder.skipRejectionReason();
+    assertThat(decoder.authorizationLength()).isEqualTo(AuthInfo.EMPTY.getLength()).isPositive();
+  }
+
+  @Test
+  void shouldReportSameLengthBeforeAndAfterDecodingAuthorization() {
+    // given
+    final var original =
+        new RecordMetadata().authorization(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user")));
+    final var decoded = new RecordMetadata();
+    decoded.wrap(write(original), 0, original.getLength());
+    final var lengthBefore = decoded.getLength();
+
+    // when
+    decoded.getAuthorization();
+
+    // then
+    assertThat(lengthBefore).isEqualTo(original.getLength());
+    assertThat(decoded.getLength()).isEqualTo(lengthBefore);
+  }
+
+  @Test
+  void shouldBeEqualWhetherOrNotAuthorizationWasDecoded() {
+    // given
+    final var original =
+        new RecordMetadata().authorization(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user")));
+    final var buffer = write(original);
+    final var lazy = new RecordMetadata();
+    lazy.wrap(buffer, 0, buffer.capacity());
+    final var eager = new RecordMetadata();
+    eager.wrap(buffer, 0, buffer.capacity());
+    eager.getAuthorization();
+
+    // then
+    assertThat(lazy).isEqualTo(eager).hasSameHashCodeAs(eager).hasToString(eager.toString());
+    assertThat(lazy).isEqualTo(original);
+  }
+
+  @Test
+  void shouldNotMentionAuthorizationInToStringWhenEmpty() {
+    // given
+    final var buffer = write(new RecordMetadata());
+    final var metadata = new RecordMetadata();
+    metadata.wrap(buffer, 0, buffer.capacity());
+
+    // then
+    assertThat(metadata.toString()).doesNotContain("authorization");
+  }
+
+  @Test
+  void shouldResetAuthorizationOfWrappedMetadata() {
+    // given
+    final var withAuthorization =
+        new RecordMetadata().authorization(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user")));
+    final var metadata = new RecordMetadata();
+    metadata.wrap(write(withAuthorization), 0, withAuthorization.getLength());
+
+    // when
+    metadata.reset();
+
+    // then
+    assertThat(metadata.getAuthorization()).isEqualTo(AuthInfo.EMPTY);
+    assertThat(metadata.getLength()).isEqualTo(new RecordMetadata().getLength());
+  }
+
+  @Test
+  void shouldRejectNullAuthorization() {
+    // given
+    final var metadata = new RecordMetadata();
+
+    // when / then
+    assertThatThrownBy(() -> metadata.authorization(null)).isInstanceOf(NullPointerException.class);
   }
 
   private static UnsafeBuffer write(final RecordMetadata metadata) {

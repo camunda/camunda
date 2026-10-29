@@ -21,6 +21,7 @@ dependencies {
   implementation(project(":zeebe-auth"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Protocol Implementation"

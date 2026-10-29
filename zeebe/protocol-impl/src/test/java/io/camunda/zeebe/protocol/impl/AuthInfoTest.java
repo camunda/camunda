@@ -128,6 +128,48 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldCollapseToEmptyWhenNoClaimIsPresent() {
+      // when
+      final var authInfo = AuthInfo.ofClaims(Map.of("unknown", "value", AUTHORIZED_USERNAME, ""));
+
+      // then - the empty username is a present claim, unknown ones are ignored
+      assertThat(authInfo).isNotSameAs(AuthInfo.EMPTY);
+      assertThat(AuthInfo.ofClaims(Map.of("unknown", "value"))).isSameAs(AuthInfo.EMPTY);
+      assertThat(AuthInfo.ofClaims(Map.of())).isSameAs(AuthInfo.EMPTY);
+    }
+
+    @Test
+    void shouldHaveAnyClaimsWhenOnlyTokenClaimsArePresent() {
+      // when
+      final var authInfo = AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "user")));
+
+      // then
+      assertThat(authInfo.hasAnyClaims()).isTrue();
+    }
+
+    @Test
+    void shouldHaveAnyClaimsWhenOnlyAnonymousClaimIsPresent() {
+      // when
+      final var authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_ANONYMOUS_USER, false));
+
+      // then
+      assertThat(authInfo.hasAnyClaims()).isTrue();
+    }
+
+    @Test
+    void shouldHaveAnyClaimsIndependentOfFormat() {
+      // when
+      final var withClaims = AuthInfo.ofClaims(ALL_CLAIMS);
+      final var withoutClaims = AuthInfo.EMPTY;
+
+      // then
+      for (final var format : AuthDataFormat.values()) {
+        assertThat(withClaims.withFormat(format).hasAnyClaims()).isTrue();
+        assertThat(withoutClaims.withFormat(format).hasAnyClaims()).isFalse();
+      }
+    }
+
+    @Test
     void shouldBeAnonymousWhenClaimIsTrue() {
       // when
       final var authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_ANONYMOUS_USER, true));

@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Map;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
@@ -248,7 +249,18 @@ final class InterPartitionCommandReceiverTest {
 
     final var claims =
         Map.<String, Object>of(
-            "authorized_username", "user-123", "user_token_claims", Map.of("scope", "test"));
+            "authorized_anonymous_user",
+            false,
+            "authorized_username",
+            "user-123",
+            "authorized_client_id",
+            "client-123",
+            "authorized_tenants",
+            List.of("tenant-a", "tenant-b"),
+            "user_groups_claims",
+            List.of("group-a"),
+            "user_token_claims",
+            Map.of("scope", "test"));
     final var authInfo =
         AuthInfo.ofClaims(claims).withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
 
@@ -279,8 +291,7 @@ final class InterPartitionCommandReceiverTest {
                   final var writtenAuth = logEntry.recordMetadata().getAuthorization();
                   assertThat(writtenAuth.getFormat())
                       .isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
-                  assertThat(writtenAuth.getUsername()).isEqualTo("user-123");
-                  assertThat(writtenAuth.getTokenClaims()).isEqualTo(Map.of("scope", "test"));
+                  assertThat(writtenAuth.toClaimsMap()).isEqualTo(claims);
                 }));
   }
 
