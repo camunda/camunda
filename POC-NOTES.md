@@ -453,3 +453,97 @@ change" already means "its partitions are installed, caught up and led as before
 The IT logs a table per variant (`transfer back: 12 member restarts`), then `variant comparison`,
 the `replay |` rows (variant, log since snapshot, installed after, caught up after, outcome), and the
 `snapshot |` rows (variant, outcome, took, bytes, failure).
+
+# Self-handover under a realistic load: phases, fixes and what is open
+
+Branch `mk-pt-tenant-restart-handover`, on top of `pt-poc-integration` (834b56d765e). It carries the
+rollout-safety and leadership-handover branches and three fixes of the second integration round
+(the reclaim outside the module lock, disk-paused replicas, the last restart of a removed tenant)
+without the Camunda Security Library commits, so it builds from public and Camunda repositories
+only. Dropped as CSL-only: the HTTP security status in the actuator's `local` view, the `SECURITY`
+rejection reason, `PhysicalTenantRuntimeSecurityIT` and its leak-check commits, and the notes of
+the second integration round. Not for merge as is.
+
+The earlier evaluation of transfer back measured gaps in accepted message publications in a laptop
+IT and attributed the remaining ~0.25 s to gossip without measuring it. This branch adds the
+measurement, fixes what it found, and leaves the answer to a load-test cluster (plan in
+`~/Documents/pt-self-handover-bench/PLAN.md`).
+
+## Instrumentation
+
+One INFO line per phase from the `io.camunda.zeebe.handover` logger:
+`handover event=<event> group=<tenant> partition=<n> at=<epoch ms> key=value…`.
+
+|               Where               |                                                                                                         Events                                                                                                         |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| old leader (atomix)               | `transfer.started`, `transfer.frozen`, `transfer.caughtUp`, `transfer.timeoutNowSent`, `transfer.timeoutNowAccepted`, `transfer.leaderObserved`, `transfer.finished` (result), `transfer.refused` (reason)             |
+| target and every replica (atomix) | `transfer.requested` (a replica asks for the leadership), `raft.timeoutNowReceived`, `raft.role` (from, to, term), `raft.leaderReady` (initial entries committed)                                                      |
+| partition (broker)                | `partition.transition` (role, term, prepare ms, steps ms, ms per step), `partition.leaderListenersNotified`, `topology.leaderPublished`                                                                                |
+| stream processor                  | `replay.finished` (mode, from, to, positions, events, ms), `processing.started`, `processing.firstCommand` (age of the command), `processing.firstResponse`                                                            |
+| command API                       | `commandApi.<state>` on frozen, unfrozen, paused, resumed, recovered, leading, not leading, with the requests rejected since the previous state (frozen, paused, not leading) and accepted; `commandApi.firstAccepted` |
+| gateway                           | `gateway.leaderChanged` (leader, previous, term, which gateway)                                                                                                                                                        |
+| snapshot director                 | `snapshot.finished` (forced, mode, outcome, processed position, transient ms, total ms)                                                                                                                                |
+
+`POST /actuator/partitions/handOverLeadership?physicalTenant=<id>` moves the leadership of every
+partition a broker leads to another replica, through the transfer a tenant restart uses, so that a
+rebalance between warm brokers can be measured.
+
+`PhysicalTenantHandoverPhasesIT` puts it together: 3 brokers, a tenant created at runtime, 60 PI/s
+of one-task instances awaiting their result over gRPC, streaming workers with clients of their own,
+then leader-initiated transfers with rebalances, 24 forced snapshots against control windows, and
+two rollouts with transfer back. It writes the trace, client and job samples, and commit and
+processed positions to `target/handover-phases/`.
+
+## Measured locally (one laptop; medians, ms after the transfer started)
+
+|                                         | n  | Raft leader | leader ready | transition done | replay positions / ms | gateways all route |
+|-----------------------------------------|----|-------------|--------------|-----------------|-----------------------|--------------------|
+| CLT, leader-initiated, before the fixes | 6  | 1           | 2            | 16              | 3 / 1                 | 229                |
+| CLT rebalance, before                   | 12 | 2           | 3            | 68              | 3 / 1                 | 169                |
+| tenant restart, away, before            | 6  | 1           | 2            | 44              | 31 / 4                | 195                |
+| tenant restart, back, before            | 6  | 1           | 2            | 13              | 31 / 3                | 189                |
+| CLT, leader-initiated, after            | 6  | 2           | 4            | 24              | 33 / 5                | 25                 |
+| CLT rebalance, after                    | 14 | 4           | 5–6          | 27–31           | 33 / 4                | 69–73              |
+| tenant restart, away, after             | 6  | 1           | 2            | 43–56           | 31 / 3–4              | 61                 |
+| tenant restart, back, after             | 6  | 1–2         | 2            | 26–30           | 31 / 3–4              | 27–31              |
+
+- Gateways learned a new leader 100–250 ms after it published its role, because a broker's role
+  change was only noticed on the next 250 ms gossip round. Fixed: `fix: route requests to a new
+  partition leader without waiting for gossip`.
+- The freeze answered `Processing paused`, which reached clients as errors: 51–129 per run of 18–20
+  handovers. Fixed: `fix: redirect requests to the new leader while leadership moves` (from the
+  request-path round, adapted). After it, 0 such errors.
+- Replay at takeover was 3–33 positions in 1–5 ms in every kind of handover. Transfer back asks for
+  the leadership only once the replica is within 100 positions of its log end.
+- Forced snapshot: 36–122 ms. Processing latency on the leader during the snapshot (77–148 commands
+  over 12 snapshots per role) was not above that of equally long control windows, at the timer's
+  1 ms resolution.
+- Every role change forces a snapshot ~100 ms later on this tree: the post-migration snapshot step
+  re-arms on every transition while `areMigrationsPerformed()` stays true. Not changed here.
+
+## Open
+
+- **Job delivery stops for ~15 s after a rollout begins** in the full IT sequence: 6 of 6 runs, 0 of
+  3 runs with only some of the cycle kinds. No worker receives a job, by streaming or by polling;
+  Raft commit and the leaders' processing keep going, and ~900 jobs arrive at once afterwards. It is
+  not the shared gRPC connection of starter and worker (separate clients changed nothing). Not root
+  caused. It must be checked on the cluster before the arms are compared.
+- **Results lost on a leader change**: a few create-with-result requests per run time out
+  (`DEADLINE_EXCEEDED`). The fixes on `rest-await-result-timeout` (replicated await metadata,
+  response forwarding) are not on this branch.
+- A tenant added at runtime has no REST security chain without CSL, so the IT and the plan use gRPC.
+
+## How to run
+
+```bash
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dmaven.build.cache.enabled=false -Dit.test=PhysicalTenantHandoverPhasesIT
+# options: -DhandoverPhases.rate=60 -DhandoverPhases.cycles=6 -DhandoverPhases.kinds=clt,snapshot,restart
+#          -DhandoverPhases.streamingWorkers=true -DhandoverPhases.snapshot=false
+grep -A40 "handover phases, ms" zeebe/qa/integration-tests/target/failsafe-reports/*HandoverPhases*-output.txt
+./mvnw verify -pl zeebe/atomix/cluster -Dquickly -DskipTests=false -DskipITs -Dtest=SwimProtocolTest
+./mvnw verify -pl zeebe/broker -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='CommandApiRequestHandlerTest,ZeebePartitionTest,PartitionTransitionImplTest'
+```
+
