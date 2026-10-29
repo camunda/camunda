@@ -207,6 +207,7 @@ final class PhysicalTenantRestartHandoverIT {
       long unavailableMillis,
       long maxLatencyMillis,
       long failed,
+      long timedOut,
       long leaderlessMillis,
       long ownGatewayUnavailableMillis,
       long ownGatewayFailed) {}
@@ -279,7 +280,11 @@ final class PhysicalTenantRestartHandoverIT {
       return !inFlight.get();
     }
 
-    /** The longest time between two accepted requests that overlaps the window. */
+    /**
+     * The longest time between two accepted requests where the first of them completed in the
+     * window, which starts one request interval early so that a gap opened by the restart counts
+     * for it.
+     */
     private long longestGapNanos(final long fromNanos, final long toNanos) {
       long longest = 0;
       long previous = -1;
@@ -287,7 +292,8 @@ final class PhysicalTenantRestartHandoverIT {
         if (!sample.ok()) {
           continue;
         }
-        if (previous >= 0 && previous < toNanos && sample.endNanos() > fromNanos) {
+        final var slack = 10 * LOAD_INTERVAL.toNanos();
+        if (previous >= fromNanos - slack && previous < toNanos - slack) {
           longest = Math.max(longest, sample.endNanos() - previous);
         }
         previous = sample.endNanos();
@@ -633,6 +639,7 @@ final class PhysicalTenantRestartHandoverIT {
         long unavailable = 0;
         long maxLatency = 0;
         long failed = 0;
+        long timedOut = 0;
         long ownUnavailable = 0;
         long ownFailed = 0;
         for (final var entry : loads.entrySet()) {
@@ -649,6 +656,13 @@ final class PhysicalTenantRestartHandoverIT {
             } else {
               unavailable = Math.max(unavailable, gap);
               failed += failures;
+              timedOut +=
+                  started.stream()
+                      .filter(
+                          sample ->
+                              sample.endNanos() - sample.startNanos()
+                                  >= REQUEST_TIMEOUT.minusMillis(100).toNanos())
+                      .count();
               maxLatency =
                   Math.max(
                       maxLatency,
@@ -668,6 +682,7 @@ final class PhysicalTenantRestartHandoverIT {
                 TimeUnit.NANOSECONDS.toMillis(unavailable),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency),
                 failed,
+                timedOut,
                 TimeUnit.NANOSECONDS.toMillis(sampler.longestLeaderlessNanos(from, to)),
                 TimeUnit.NANOSECONDS.toMillis(ownUnavailable),
                 ownFailed));
@@ -712,11 +727,11 @@ final class PhysicalTenantRestartHandoverIT {
           "%n%s: %d member restarts, %d of a leader%n"
               .formatted(name, restarts.size(), leaderRestarts().size()));
       report.append(
-          "rollout member led unavailable-ms max-latency-ms failed leaderless-ms own-gateway-unavailable-ms own-gateway-failed handover%n"
+          "rollout member led unavailable-ms max-latency-ms failed timed-out leaderless-ms own-gateway-unavailable-ms own-gateway-failed handover%n"
               .formatted());
       for (final var restart : restarts) {
         report.append(
-            "%d %s %s %d %d %d %d %d %d %s%n"
+            "%d %s %s %d %d %d %d %d %d %d %s%n"
                 .formatted(
                     restart.rollout(),
                     restart.member().id(),
@@ -724,6 +739,7 @@ final class PhysicalTenantRestartHandoverIT {
                     restart.unavailableMillis(),
                     restart.maxLatencyMillis(),
                     restart.failed(),
+                    restart.timedOut(),
                     restart.leaderlessMillis(),
                     restart.ownGatewayUnavailableMillis(),
                     restart.ownGatewayFailed(),
@@ -749,10 +765,11 @@ final class PhysicalTenantRestartHandoverIT {
                       worst(leaders, Restart::unavailableMillis),
                       median(leaders, Restart::maxLatencyMillis),
                       worst(leaders, Restart::maxLatencyMillis))
-              + " failed median %d worst %d; leaderless median %d worst %d ms%n"
+              + " failed median %d worst %d; timed out %d in all; leaderless median %d worst %d ms%n"
                   .formatted(
                       median(leaders, Restart::failed),
                       worst(leaders, Restart::failed),
+                      leaders.stream().mapToLong(Restart::timedOut).sum(),
                       median(leaders, Restart::leaderlessMillis),
                       worst(leaders, Restart::leaderlessMillis)));
       report.append(
