@@ -264,7 +264,6 @@
 						"select": "Select a user",
 						"search": "Search by username",
 						"enterId": "Enter username",
-						"empty": "No users assigned to this group.",
 						"remove": "Remove user",
 						"confirmRemove": "Are you sure you want to remove <strong>{{id}}</strong> from this group?",
 						"assigned": "User {{id}} assigned",
@@ -279,7 +278,6 @@
 						"idLabel": "Role ID",
 						"select": "Select a role",
 						"search": "Search by role ID",
-						"empty": "No roles assigned to this group.",
 						"remove": "Remove role",
 						"confirmRemove": "Are you sure you want to remove the role <strong>{{id}}</strong> from this group?",
 						"assigned": "Role {{id}} assigned",
@@ -296,7 +294,6 @@
 						"idLabel": "Mapping rule ID",
 						"select": "Select a mapping rule",
 						"search": "Search by mapping rule ID",
-						"empty": "No mapping rules assigned to this group.",
 						"remove": "Remove mapping rule",
 						"confirmRemove": "Are you sure you want to remove the mapping rule <strong>{{id}}</strong> from this group?",
 						"assigned": "Mapping rule {{id}} assigned",
@@ -309,7 +306,6 @@
 						"assign": "Assign client",
 						"idLabel": "Client ID",
 						"enterId": "Enter client ID",
-						"empty": "No clients assigned to this group.",
 						"remove": "Remove client",
 						"confirmRemove": "Are you sure you want to remove the client <strong>{{id}}</strong> from this group?",
 						"assigned": "Client {{id}} assigned",
@@ -537,7 +533,6 @@
 						"select": "Select a user",
 						"search": "Search by username",
 						"enterId": "Enter username",
-						"empty": "No users assigned to this role.",
 						"remove": "Remove user",
 						"confirmRemove": "Are you sure you want to remove <strong>{{id}}</strong> from this role?",
 						"assigned": "User {{id}} assigned",
@@ -553,7 +548,6 @@
 						"enterId": "Enter group ID",
 						"select": "Select a group",
 						"search": "Search by group ID",
-						"empty": "No groups assigned to this role.",
 						"remove": "Remove group",
 						"confirmRemove": "Are you sure you want to remove the group <strong>{{id}}</strong> from this role?",
 						"assigned": "Group {{id}} assigned",
@@ -570,7 +564,6 @@
 						"idLabel": "Mapping rule ID",
 						"select": "Select a mapping rule",
 						"search": "Search by mapping rule ID",
-						"empty": "No mapping rules assigned to this role.",
 						"remove": "Remove mapping rule",
 						"confirmRemove": "Are you sure you want to remove the mapping rule <strong>{{id}}</strong> from this role?",
 						"assigned": "Mapping rule {{id}} assigned",
@@ -583,7 +576,6 @@
 						"assign": "Assign client",
 						"idLabel": "Client ID",
 						"enterId": "Enter client ID",
-						"empty": "No clients assigned to this role.",
 						"remove": "Remove client",
 						"confirmRemove": "Are you sure you want to remove the client <strong>{{id}}</strong> from this role?",
 						"assigned": "Client {{id}} assigned",
@@ -639,7 +631,6 @@
 					"candidatesLoadError": "Options could not be loaded",
 					"users": {
 						"tab": "Users",
-						"empty": "No users assigned to this tenant.",
 						"assign": "Assign user",
 						"idLabel": "Users",
 						"select": "Search and select users",
@@ -650,7 +641,6 @@
 					},
 					"groups": {
 						"tab": "Groups",
-						"empty": "No groups assigned to this tenant.",
 						"assign": "Assign group",
 						"idLabel": "Groups",
 						"select": "Search and select groups",
@@ -661,7 +651,6 @@
 					},
 					"roles": {
 						"tab": "Roles",
-						"empty": "No roles assigned to this tenant.",
 						"assign": "Assign role",
 						"idLabel": "Roles",
 						"select": "Search and select roles",
@@ -671,7 +660,6 @@
 					},
 					"mappingRules": {
 						"tab": "Mapping rules",
-						"empty": "No mapping rules assigned to this tenant.",
 						"assign": "Assign mapping rule",
 						"idLabel": "Mapping rules",
 						"select": "Search and select mapping rules",
@@ -681,7 +669,6 @@
 					},
 					"clients": {
 						"tab": "Clients",
-						"empty": "No clients assigned to this tenant.",
 						"assign": "Assign client",
 						"idLabel": "Client ID",
 						"enterId": "Enter a client ID",
@@ -696,13 +683,28 @@
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
 				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
 				"resourceSingular": "tenant",
-				"resourcePlural": "tenants"
+				"resourcePlural": "tenants",
+				"emptyStateDisclaimer": "Members of this tenant will be given access to the data within the tenant."
 			},
 			"emptyState": {
 				"title": "No {{resources}} created yet",
 				"description": "Start by creating a new {{resource}}.",
 				"createAction": "Create {{resource}}",
 				"learnMore": "Learn more about {{resources}}"
+			},
+			"members": {
+				"kinds": {
+					"users": "users",
+					"groups": "groups",
+					"roles": "roles",
+					"mappingRules": "mapping rules",
+					"clients": "clients"
+				},
+				"emptyState": {
+					"title": "No {{resources}} assigned to this {{parent}} yet",
+					"description": "Start by assigning one.",
+					"learnMore": "Learn more about {{resources}}"
+				}
 			}
 		},
 		"tasklist": {

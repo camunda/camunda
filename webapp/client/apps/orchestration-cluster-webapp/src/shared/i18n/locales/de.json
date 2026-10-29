@@ -264,7 +264,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Gruppe sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -279,7 +278,6 @@
 						"idLabel": "Rollen-ID",
 						"select": "Rolle auswählen",
 						"search": "Nach Rollen-ID suchen",
-						"empty": "Dieser Gruppe sind keine Rollen zugewiesen.",
 						"remove": "Rolle entfernen",
 						"confirmRemove": "Möchten Sie die Rolle <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Rolle {{id}} zugewiesen",
@@ -296,7 +294,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Gruppe sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -309,7 +306,6 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Gruppe sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
@@ -537,7 +533,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Rolle sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -553,7 +548,6 @@
 						"enterId": "Gruppen-ID eingeben",
 						"select": "Gruppe auswählen",
 						"search": "Nach Gruppen-ID suchen",
-						"empty": "Dieser Rolle sind keine Gruppen zugewiesen.",
 						"remove": "Gruppe entfernen",
 						"confirmRemove": "Möchten Sie die Gruppe <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Gruppe {{id}} zugewiesen",
@@ -570,7 +564,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Rolle sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -583,7 +576,6 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Rolle sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
@@ -639,7 +631,6 @@
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
 					"users": {
 						"tab": "Benutzer",
-						"empty": "Diesem Mandanten sind keine Benutzer zugewiesen.",
 						"assign": "Benutzer zuweisen",
 						"idLabel": "Benutzer",
 						"select": "Benutzer suchen und auswählen",
@@ -650,7 +641,6 @@
 					},
 					"groups": {
 						"tab": "Gruppen",
-						"empty": "Diesem Mandanten sind keine Gruppen zugewiesen.",
 						"assign": "Gruppe zuweisen",
 						"idLabel": "Gruppen",
 						"select": "Gruppen suchen und auswählen",
@@ -661,7 +651,6 @@
 					},
 					"roles": {
 						"tab": "Rollen",
-						"empty": "Diesem Mandanten sind keine Rollen zugewiesen.",
 						"assign": "Rolle zuweisen",
 						"idLabel": "Rollen",
 						"select": "Rollen suchen und auswählen",
@@ -671,7 +660,6 @@
 					},
 					"mappingRules": {
 						"tab": "Zuordnungsregeln",
-						"empty": "Diesem Mandanten sind keine Zuordnungsregeln zugewiesen.",
 						"assign": "Zuordnungsregel zuweisen",
 						"idLabel": "Zuordnungsregeln",
 						"select": "Zuordnungsregeln suchen und auswählen",
@@ -681,7 +669,6 @@
 					},
 					"clients": {
 						"tab": "Clients",
-						"empty": "Diesem Mandanten sind keine Clients zugewiesen.",
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
@@ -696,13 +683,28 @@
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
 				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
 				"resourceSingular": "Mandant",
-				"resourcePlural": "Mandanten"
+				"resourcePlural": "Mandanten",
+				"emptyStateDisclaimer": "Mitglieder dieses Mandanten erhalten Zugriff auf die Daten innerhalb des Mandanten."
 			},
 			"emptyState": {
 				"title": "Noch keine {{resources}} erstellt",
 				"description": "Legen Sie zunächst Folgendes an: {{resource}}.",
 				"createAction": "{{resource}} erstellen",
 				"learnMore": "Mehr über {{resources}} erfahren"
+			},
+			"members": {
+				"kinds": {
+					"users": "Benutzer",
+					"groups": "Gruppen",
+					"roles": "Rollen",
+					"mappingRules": "Zuordnungsregeln",
+					"clients": "Clients"
+				},
+				"emptyState": {
+					"title": "Diesem Element ({{parent}}) sind noch keine {{resources}} zugewiesen",
+					"description": "Beginnen Sie mit der ersten Zuweisung.",
+					"learnMore": "Mehr über {{resources}} erfahren"
+				}
 			}
 		},
 		"tasklist": {
