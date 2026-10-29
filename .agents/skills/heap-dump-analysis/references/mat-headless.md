@@ -2,9 +2,9 @@
 
 ## Launch
 
-We used Eclipse MAT 1.17 on macOS with Java 21+. `MAT_HOME` is the dir that has `plugins/`
-(default: `/Applications/MemoryAnalyzer.app/Contents/Eclipse`). `run_mat.sh` launches MAT
-with what we learned:
+Requires Eclipse MAT 1.17 or later and Java 21 or later; tested on macOS. `MAT_HOME` is the
+dir that has `plugins/` (default: `/Applications/MemoryAnalyzer.app/Contents/Eclipse`).
+`run_mat.sh` launches MAT with:
 
 - **The launcher jar, not the `MemoryAnalyzer` binary.** On macOS the native launcher opens
   a GUI error dialog when MAT fails, and the run hangs on it.
@@ -14,7 +14,7 @@ with what we learned:
 - **Output to `raw/`.** The log echoes queries and can show heap values.
 
 It runs MAT once per pack. It refuses to run without `OUT_DIR`, or when
-`OUT_DIR`, the output dir or the dump is inside a git repo. Our dumps were named
+`OUT_DIR`, the output dir or the dump is inside a git repo. Broker dumps are often named
 `<pod>_<date>_java_pid1.hprof`; the output name drops `_java_pid<N>`. `raw/.dump` records
 the dump, and another dump with the same name is refused: set `NAME`.
 

@@ -1,8 +1,8 @@
 # Writing queries for headless MAT
 
-What bit us in headless MAT on 8.9 broker dumps, and how to get numbers out of the CSVs.
+Known quirks of headless MAT on broker dumps, and how to get numbers out of the CSVs.
 
-## MAT quirks we hit
+## MAT quirks
 
 - **One throwing expression kills the whole report.** MAT evaluates CSV columns lazily while
   it writes the file. An exception in any row aborts the pack (rc != 0). Rerun the suspect
@@ -27,17 +27,18 @@ What bit us in headless MAT on 8.9 broker dumps, and how to get numbers out of t
 
 - **Partition of an engine state:** follow the inbound reference from `ProcessingDbState`,
   which has `partitionId` (`engine_states`). Not the dominator: shared objects have none.
-  Some `Db*State` aren't held by a `ProcessingDbState` and show an empty partition: 63 of
-  180 on zeebe-13.
+  Some `Db*State` aren't held by a `ProcessingDbState` and show an empty partition; that's
+  expected.
 - **Guava caches:** `LocalCache` -> `segments[]`. Each segment has its own `count` and cap
-  (`maxSegmentWeight`); compare each count with its cap. On zeebe-13, 84 of the 1167
-  `drg_entries` rows had no `Segment` as dominator, and 2 were still loading (empty
-  `retained`). To count entries per segment, use only rows whose `segId` matches a
+  (`maxSegmentWeight`); compare each count with its cap. Some `drg_entries` rows have no
+  `Segment` as dominator, and entries still loading have an empty `retained`. To count
+  entries per segment, use only rows whose `segId` matches a
   `cache_segments` row.
 - **Threads:** MAT writes the stacks to `<stem>.threads` next to the dump. Never print its
   lines; count threads per pattern with `scripts/count_threads.sh <stem>.threads <pattern>...`.
-  We used `ReplayStateMachine`, `DecisionRequirementsCreatedApplier`,
-  `DmnScalaDecisionEngine.parse` and `OutOfMemoryError.<init>`.
+  Patterns for an OOM during DMN replay, for example: `ReplayStateMachine`,
+  `DecisionRequirementsCreatedApplier`, `DmnScalaDecisionEngine.parse` and
+  `OutOfMemoryError.<init>`.
 - **Names change between versions.** Before you run a pack, check that each class and field
   it queries exists in the source at the customer's release tag. For example,
   `DbDecisionState` must still have a `drgCache` field.
@@ -60,7 +61,7 @@ Write your own one-liners that print only aggregates. What you need to know abou
 
 ## Truncated dumps
 
-4 of our 10 dumps were truncated. MAT logs it only on the first parse, as
+Expect truncated dumps. MAT logs it only on the first parse, as
 `Expected to read another N bytes, but only M`. `run_mat.sh` prints that count as
 `truncated=N`.
 
