@@ -77,9 +77,11 @@ final class PhysicalTenantChurnIT {
         .allSatisfy(
             names ->
                 assertThat(names)
-                    .contains(
-                        "zeebe.cluster.partition.balanced{broker-id,partition}",
-                        "zeebe.gateway.job.stream.clients{broker-id}"));
+                    .contains("zeebe.cluster.partition.balanced{broker-id,partition}"));
+    assertThat(meters.values().stream().flatMap(Set::stream))
+        .contains(
+            "zeebe.gateway.job.stream.clients{broker-id}",
+            "zeebe.gateway.topology.partition.roles{broker,broker-id,partition}");
   }
 
   @Test
