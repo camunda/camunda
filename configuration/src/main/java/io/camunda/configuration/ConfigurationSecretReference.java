@@ -23,10 +23,10 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class ConfigurationSecretReference {
 
-  public static final String PREFIX = "camunda.secrets.";
+  public static final String REFERENCE_PREFIX = "camunda.secrets.";
 
   private static final Pattern REFERENCE =
-      Pattern.compile(Pattern.quote(PREFIX) + "([\\p{Alnum}_-]+)");
+      Pattern.compile(Pattern.quote(REFERENCE_PREFIX) + "([\\p{Alnum}_-]+)");
 
   private ConfigurationSecretReference() {}
 
