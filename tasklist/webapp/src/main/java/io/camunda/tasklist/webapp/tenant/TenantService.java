@@ -13,6 +13,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
 import java.util.function.Function;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -34,20 +35,33 @@ public class TenantService {
 
   public TenantAccess getAuthenticatedTenants() {
     return withAuthenticationOrDefaultResult(
-        tenantAccessProvider::resolveTenantAccess, TenantAccess.wildcard(null));
+        tenantAccessProvider::resolveTenantAccess,
+        TenantAccess.wildcard(null),
+        TenantAccess.denied(null));
   }
 
   public boolean isTenantValid(final String tenantId) {
     return withAuthenticationOrDefaultResult(
         authentication ->
             tenantAccessProvider.hasTenantAccessByTenantId(authentication, tenantId).allowed(),
-        true);
+        true,
+        false);
   }
 
+  // Unauthenticated requests (e.g. public process pages) get no tenant access, never the
+  // wildcard default that applies when multi-tenancy checks are off.
   private <T> T withAuthenticationOrDefaultResult(
-      final Function<CamundaAuthentication, T> supplier, final T defaultValue) {
+      final Function<CamundaAuthentication, T> supplier,
+      final T defaultValue,
+      final T unauthenticatedValue) {
     if (hasNoneRequestContext() || !isMultiTenancyEnabled()) {
       return defaultValue;
+    }
+
+    // Public endpoints have no Spring authentication, and the authentication provider throws for
+    // that case instead of returning null. Check before asking the provider.
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      return unauthenticatedValue;
     }
 
     final var currentAuthentication = authenticationProvider.getCamundaAuthentication();

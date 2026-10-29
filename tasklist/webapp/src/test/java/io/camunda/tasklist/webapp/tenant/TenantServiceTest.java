@@ -17,12 +17,16 @@ import io.camunda.security.reader.TenantAccessProvider;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -33,6 +37,16 @@ public class TenantServiceTest {
   @Mock private TenantAccessProvider tenantAccessProvider;
   @Spy private SecurityConfiguration securityConfiguration;
   @InjectMocks private TenantService instance;
+
+  @BeforeEach
+  void setAuthenticatedRequest() {
+    SecurityContextHolder.getContext().setAuthentication(mock(Authentication.class));
+  }
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOff() {
@@ -98,5 +112,33 @@ public class TenantServiceTest {
 
     // when / then
     Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
+  }
+
+  @Test
+  void shouldDenyAllTenantsWhenThereIsNoAuthentication() {
+    // given
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
+    SecurityContextHolder.clearContext();
+
+    // when
+    final var result = instance.getAuthenticatedTenants();
+
+    // then
+    Assertions.assertThat(result.denied()).isTrue();
+    Assertions.assertThat(result.wildcard()).isFalse();
+    verifyNoInteractions(authenticationProvider, tenantAccessProvider);
+  }
+
+  @Test
+  void shouldNotValidateTenantWhenThereIsNoAuthentication() {
+    // given
+    RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
+    SecurityContextHolder.clearContext();
+
+    // when / then
+    Assertions.assertThat(instance.isTenantValid("A")).isFalse();
+    verifyNoInteractions(authenticationProvider, tenantAccessProvider);
   }
 }
