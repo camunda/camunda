@@ -21,6 +21,7 @@ import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.impl.RaftContext;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -63,6 +64,28 @@ final class LeadershipTransferAdmission {
       final MemberId coordinator,
       final long coordinatorConfigVersion,
       final RebalanceConfiguration configuration) {
+    return precheck(
+        desiredLeader,
+        () ->
+            raft.getLeadershipTransferCoordinatorCheck()
+                .validate(coordinator, coordinatorConfigVersion),
+        configuration);
+  }
+
+  /**
+   * Evaluates whether this leader may hand its leadership to {@code desiredLeader} on its own
+   * initiative, for example because its node is about to stop the partition. The same rules apply
+   * as for a coordinator's request, except that there is no coordinator to check.
+   */
+  Optional<LeadershipTransferResult> precheckOwnInitiative(
+      final MemberId desiredLeader, final RebalanceConfiguration configuration) {
+    return precheck(desiredLeader, Optional::empty, configuration);
+  }
+
+  private Optional<LeadershipTransferResult> precheck(
+      final MemberId desiredLeader,
+      final Supplier<Optional<LeadershipTransferResult>> requesterCheck,
+      final RebalanceConfiguration configuration) {
     raft.checkThread();
     final var localMember = raft.getCluster().getLocalMember().memberId();
 
@@ -72,11 +95,9 @@ final class LeadershipTransferAdmission {
     if (transferInProgress.getAsBoolean()) {
       return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
     }
-    final var coordinatorRejection =
-        raft.getLeadershipTransferCoordinatorCheck()
-            .validate(coordinator, coordinatorConfigVersion);
-    if (coordinatorRejection.isPresent()) {
-      return coordinatorRejection;
+    final var requesterRejection = requesterCheck.get();
+    if (requesterRejection.isPresent()) {
+      return requesterRejection;
     }
     // Until this term's initial entry is committed the pause refuses to freeze the log head, so
     // accepting here would freeze the partition only to roll it back again.

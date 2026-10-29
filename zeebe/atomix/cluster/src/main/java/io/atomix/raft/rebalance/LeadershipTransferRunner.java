@@ -15,6 +15,7 @@
  */
 package io.atomix.raft.rebalance;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
@@ -22,6 +23,7 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.roles.LeaderRole;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
@@ -99,6 +101,37 @@ public final class LeadershipTransferRunner {
     currentAttempt = attempt;
     attempt.start();
     return LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
+  }
+
+  /**
+   * Hands this leader's leadership to {@code desiredLeader} on its own initiative, bounded and
+   * admitted exactly like a coordinated transfer, without a coordinator to ask or report to.
+   *
+   * @return completes with the outcome once the transfer finished, or at once with the reason it
+   *     was not started
+   */
+  public CompletableFuture<LeadershipTransferResult> transferOnOwnInitiative(
+      final MemberId desiredLeader) {
+    raft.checkThread();
+    final var result = new CompletableFuture<LeadershipTransferResult>();
+    final var configuration = raft.getRebalanceConfiguration();
+    final var rejectionReason = admission.precheckOwnInitiative(desiredLeader, configuration);
+    if (rejectionReason.isPresent()) {
+      result.complete(rejectionReason.get());
+      return result;
+    }
+    LOG.info("Transferring leadership to {} before this node stops the partition", desiredLeader);
+    final var attempt =
+        new LeadershipTransferAttempt(
+            raft,
+            leader,
+            desiredLeader,
+            configuration,
+            () -> currentAttempt = null,
+            result::complete);
+    currentAttempt = attempt;
+    attempt.start();
+    return result;
   }
 
   public void onLeaderStopped() {

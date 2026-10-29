@@ -25,6 +25,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -1103,6 +1104,37 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           applied.complete(null);
         });
     return applied;
+  }
+
+  /**
+   * Hands this node's leadership of the partition to {@code desiredLeader}, on this node's own
+   * initiative, through the same freeze, catch-up and TimeoutNow promotion as a coordinated
+   * transfer. A node that is not the leader completes with {@link
+   * LeadershipTransferResult#LEADER_CHANGED}.
+   *
+   * @return completes with the outcome on the Raft thread
+   */
+  public CompletableFuture<LeadershipTransferResult> transferLeadership(
+      final MemberId desiredLeader) {
+    final var result = new CompletableFuture<LeadershipTransferResult>();
+    threadContext.execute(
+        () -> {
+          if (role instanceof final LeaderRole leader && leader.isRunning()) {
+            leader
+                .transferLeadership(desiredLeader)
+                .whenComplete(
+                    (outcome, error) -> {
+                      if (error != null) {
+                        result.completeExceptionally(error);
+                      } else {
+                        result.complete(outcome);
+                      }
+                    });
+          } else {
+            result.complete(LeadershipTransferResult.LEADER_CHANGED);
+          }
+        });
+    return result;
   }
 
   /**

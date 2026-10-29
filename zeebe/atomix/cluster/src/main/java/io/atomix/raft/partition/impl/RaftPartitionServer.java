@@ -24,6 +24,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -411,6 +412,15 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
+  }
+
+  /**
+   * Hands this member's leadership of the partition to {@code desiredLeader} before it stops the
+   * partition. See {@link io.atomix.raft.impl.RaftContext#transferLeadership}.
+   */
+  public CompletableFuture<LeadershipTransferResult> transferLeadership(
+      final MemberId desiredLeader) {
+    return server.getContext().transferLeadership(desiredLeader);
   }
 
   public CompletableFuture<RaftServer> anoint() {

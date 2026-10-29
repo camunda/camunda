@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
@@ -842,6 +843,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return future;
+  }
+
+  /**
+   * Hands leadership to {@code desiredLeader} on this leader's own initiative. See {@link
+   * LeadershipTransferRunner#transferOnOwnInitiative}.
+   */
+  public CompletableFuture<LeadershipTransferResult> transferLeadership(
+      final MemberId desiredLeader) {
+    raft.checkThread();
+    return leadershipTransferRunner.transferOnOwnInitiative(desiredLeader);
   }
 
   @Override
