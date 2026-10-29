@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,6 +182,36 @@ final class InternalConfigRefresherTest {
     // then
     assertThat(consumer.applied).isEmpty();
     assertThat(healthOf(DEFAULT)).isEqualTo(PhysicalTenantHealth.of(State.HEALTHY));
+  }
+
+  @Test
+  void shouldPollAConsumerWithoutReferencesThatWatchesAFile() {
+    // given
+    final var consumer = new PollingConsumer();
+    refresher.register(consumer, Map.of());
+
+    // when
+    refresher.refresh();
+    refresher.refresh();
+
+    // then
+    assertThat(consumer.polls).hasValue(2);
+    assertThat(healthOf(DEFAULT)).isEqualTo(PhysicalTenantHealth.of(State.HEALTHY));
+  }
+
+  @Test
+  void shouldReportTheTenantDegradedWhenAPollFails() {
+    // given
+    final var consumer = new PollingConsumer();
+    consumer.fail = true;
+    refresher.register(consumer, Map.of());
+
+    // when
+    refresher.refresh();
+
+    // then
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.DEGRADED);
+    assertThat(healthOf(DEFAULT).detail()).contains("polling", "key file unreadable");
   }
 
   @Test
@@ -343,6 +374,38 @@ final class InternalConfigRefresherTest {
     @Override
     public void close() {
       closed = true;
+    }
+  }
+
+  private static final class PollingConsumer implements InternalConfigRefresher.Consumer {
+
+    private final AtomicInteger polls = new AtomicInteger();
+    private volatile boolean fail;
+
+    @Override
+    public String name() {
+      return "polling";
+    }
+
+    @Override
+    public Map<String, String> configured() {
+      return Map.of("path", "/keys/tenant.p12");
+    }
+
+    @Override
+    public void apply(final Map<String, String> resolved) {}
+
+    @Override
+    public boolean polls() {
+      return true;
+    }
+
+    @Override
+    public void poll() {
+      polls.incrementAndGet();
+      if (fail) {
+        throw new IllegalStateException("key file unreadable");
+      }
     }
   }
 

@@ -12,6 +12,7 @@ import io.camunda.configuration.ConfigurationSecretReference;
 import io.camunda.configuration.Credential;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.search.connect.configuration.ProxyConfiguration;
+import io.camunda.security.api.model.config.AssertionConfiguration;
 import io.camunda.security.api.model.config.KeystoreConfiguration;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -53,6 +54,15 @@ public final class PhysicalTenantCredentialGuard {
           ConfiguredUser.class, Set.of("password"),
           ProxyConfiguration.class, Set.of("password"));
 
+  /**
+   * Fields of classes this module cannot annotate whose property name differs from the field name,
+   * so that an error names the property an operator configures.
+   */
+  static final Map<Class<?>, Map<String, String>> PROPERTY_NAMES_OF_OTHER_MODULES =
+      Map.of(
+          OidcConfiguration.class, Map.of("assertionConfiguration", "assertion"),
+          AssertionConfiguration.class, Map.of("keystoreConfiguration", "keystore"));
+
   private static final Pattern URL_WITH_PASSWORD =
       Pattern.compile("[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#@\\s:]*:[^/?#@\\s]+@");
   private static final Pattern CONNECTION_STRING_PASSWORD =
@@ -87,6 +97,12 @@ public final class PhysicalTenantCredentialGuard {
         || CREDENTIALS_OF_OTHER_MODULES
             .getOrDefault(field.getDeclaringClass(), Set.of())
             .contains(field.getName());
+  }
+
+  private static String propertyName(final Field field) {
+    return PROPERTY_NAMES_OF_OTHER_MODULES
+        .getOrDefault(field.getDeclaringClass(), Map.of())
+        .getOrDefault(field.getName(), propertyName(field.getName()));
   }
 
   static String propertyName(final String fieldName) {
@@ -159,7 +175,7 @@ public final class PhysicalTenantCredentialGuard {
           } catch (final IllegalAccessException e) {
             throw new IllegalStateException(e);
           }
-          visit(fieldValue, child(path, propertyName(field.getName())), field);
+          visit(fieldValue, child(path, propertyName(field)), field);
         }
       }
     }

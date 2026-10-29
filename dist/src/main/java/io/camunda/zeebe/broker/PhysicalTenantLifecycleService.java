@@ -322,21 +322,25 @@ public final class PhysicalTenantLifecycleService {
    * {@link State#DEGRADED} meanwhile.
    */
   private void addSecurity(final String physicalTenantId, final Candidate candidate) {
-    final var result = restSecurity.apply(physicalTenantId, candidate.environment());
-    if (result.isPresent() && !PhysicalTenantHttpSecurity.takesEffect(result.get())) {
+    final String why;
+    try {
+      final var result =
+          restSecurity.apply(physicalTenantId, candidate.environment(), candidate.configuration());
+      if (result.isEmpty() || PhysicalTenantHttpSecurity.takesEffect(result.get())) {
+        return;
+      }
+      why = SECURITY_NOT_APPLIED + result.get().outcome() + ": " + failureOf(physicalTenantId);
+    } catch (final RuntimeException e) {
+      LOG.warn("Physical tenant '{}' has no HTTP security", physicalTenantId, e);
       registry.reportHealth(
           physicalTenantId,
           new PhysicalTenantHealth(
               State.DEGRADED,
-              "%s%s: %s"
-                  .formatted(
-                      SECURITY_NOT_APPLIED,
-                      result.get().outcome(),
-                      restSecurity
-                          .status(physicalTenantId)
-                          .map(PhysicalTenantRestSecurity.Status::failure)
-                          .orElse(""))));
+              "has no HTTP security, its REST API answers 404: "
+                  + PhysicalTenantRestSecurity.describe(e)));
+      return;
     }
+    registry.reportHealth(physicalTenantId, new PhysicalTenantHealth(State.DEGRADED, why));
   }
 
   /**
@@ -347,28 +351,33 @@ public final class PhysicalTenantLifecycleService {
   private void replaceSecurity(final String physicalTenantId, final Candidate candidate) {
     final ScopeReloadResult result;
     try {
-      result = restSecurity.apply(physicalTenantId, candidate.environment()).orElse(null);
+      result =
+          restSecurity
+              .apply(physicalTenantId, candidate.environment(), candidate.configuration())
+              .orElse(null);
     } catch (final RuntimeException e) {
       restSecurity.revert(physicalTenantId);
       close(physicalTenantId, candidate.context());
-      throw rejected(Reason.SECURITY, physicalTenantId, "its HTTP security could not change", e);
+      final var why =
+          "its HTTP security could not change: " + PhysicalTenantRestSecurity.describe(e);
+      registry.reportHealth(physicalTenantId, new PhysicalTenantHealth(State.DEGRADED, why));
+      throw rejected(Reason.SECURITY, physicalTenantId, why, e);
     }
     if (result == null || PhysicalTenantHttpSecurity.takesEffect(result)) {
       return;
     }
     restSecurity.revert(physicalTenantId);
     close(physicalTenantId, candidate.context());
-    final var why =
-        "%s%s: %s"
-            .formatted(
-                SECURITY_NOT_APPLIED,
-                result.outcome(),
-                restSecurity
-                    .status(physicalTenantId)
-                    .map(PhysicalTenantRestSecurity.Status::failure)
-                    .orElse(""));
+    final var why = SECURITY_NOT_APPLIED + result.outcome() + ": " + failureOf(physicalTenantId);
     registry.reportHealth(physicalTenantId, new PhysicalTenantHealth(State.DEGRADED, why));
     throw rejected(Reason.SECURITY, physicalTenantId, why, result.failure());
+  }
+
+  private String failureOf(final String physicalTenantId) {
+    return restSecurity
+        .status(physicalTenantId)
+        .map(PhysicalTenantRestSecurity.Status::failure)
+        .orElse("no cause reported");
   }
 
   private void commit(final String physicalTenantId, final Candidate candidate) {

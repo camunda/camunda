@@ -85,6 +85,47 @@ final class PhysicalTenantCredentialGuardTest {
   }
 
   @Test
+  void shouldRejectLiteralCredentialsOfANamedProviderAndItsAssertionKeystore() {
+    // given
+    final var tenantConfig =
+        tenantConfig(
+            Map.of(
+                "security.authentication.providers.oidc.idp.client-secret", "provider-secret",
+                "security.authentication.oidc.assertion.keystore.password", "store-password",
+                "security.authentication.oidc.assertion.keystore.key-password", "key-password",
+                "security.authentication.oidc.assertion.keystore.path", "/keys/tenant.p12"));
+
+    // when / then
+    assertThatThrownBy(() -> PhysicalTenantCredentialGuard.validate("tenantj", tenantConfig, true))
+        .hasMessageContaining("security.authentication.providers.oidc.idp.client-secret")
+        .hasMessageContaining("security.authentication.oidc.assertion.keystore.password")
+        .hasMessageContaining("security.authentication.oidc.assertion.keystore.key-password")
+        .hasMessageNotContaining("keystore.path")
+        .hasMessageNotContaining("provider-secret")
+        .hasMessageNotContaining("store-password");
+  }
+
+  @Test
+  void shouldAcceptReferencesForEveryOidcCredential() {
+    // given
+    final var tenantConfig =
+        tenantConfig(
+            Map.of(
+                "security.authentication.oidc.client-secret", "camunda.secrets.client",
+                "security.authentication.providers.oidc.idp.client-secret",
+                    "camunda.secrets.provider",
+                "security.authentication.oidc.assertion.keystore.password", "camunda.secrets.store",
+                "security.authentication.oidc.assertion.keystore.key-password",
+                    "camunda.secrets.key",
+                "security.authentication.oidc.assertion.keystore.path",
+                    "camunda.secrets.keystore-path"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantCredentialGuard.validate("tenantk", tenantConfig, true))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldRejectAUrlWithAPassword() {
     // given
     final var tenantConfig =

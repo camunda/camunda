@@ -51,6 +51,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -221,8 +222,20 @@ public class BrokerModuleConfiguration implements CloseableSilently {
    */
   @Bean
   public PhysicalTenantRestSecurity physicalTenantRestSecurity(
-      final ObjectProvider<PhysicalTenantHttpSecurity> httpSecurity) {
-    return new PhysicalTenantRestSecurity(httpSecurity.getIfAvailable());
+      final ObjectProvider<PhysicalTenantHttpSecurity> httpSecurity,
+      final PhysicalTenantSecretStores secretStores,
+      final InternalConfigRefreshers refreshers) {
+    return new PhysicalTenantRestSecurity(httpSecurity.getIfAvailable(), secretStores, refreshers);
+  }
+
+  /**
+   * Resolves the credential references of the startup tenants once every security chain of the
+   * startup configuration exists.
+   */
+  @Bean
+  public SmartInitializingSingleton physicalTenantStartupCredentials(
+      final PhysicalTenantRestSecurity restSecurity, final ConfigurableEnvironment environment) {
+    return () -> restSecurity.startWith(physicalTenantResolver.getAll(), environment);
   }
 
   /**

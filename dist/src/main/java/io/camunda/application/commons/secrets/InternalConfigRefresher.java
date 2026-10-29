@@ -81,15 +81,16 @@ public final class InternalConfigRefresher implements AutoCloseable {
 
   /**
    * Registers a consumer whose client is built from {@code applied}. A consumer that references no
-   * secret has nothing to refresh and is not registered.
+   * secret and polls nothing has nothing to refresh and is not registered.
    */
   public void register(final Consumer consumer, final Map<String, String> applied) {
     if (closed) {
       throw new IllegalStateException(
           "The refresher of physical tenant '%s' is closed".formatted(resolver.physicalTenantId()));
     }
-    if (consumer.configured().values().stream()
-        .noneMatch(ConfigurationSecretReference::isReference)) {
+    if (!consumer.polls()
+        && consumer.configured().values().stream()
+            .noneMatch(ConfigurationSecretReference::isReference)) {
       return;
     }
     registrations.add(new Registration(consumer, applied));
@@ -114,6 +115,7 @@ public final class InternalConfigRefresher implements AutoCloseable {
         LOG.info(
             "Applied refreshed secrets to '{}' of physical tenant '{}'", consumer.name(), tenantId);
       }
+      consumer.poll();
       failures.remove(consumer.name());
     } catch (final Exception e) {
       LOG.warn(
@@ -172,6 +174,23 @@ public final class InternalConfigRefresher implements AutoCloseable {
 
     /** Releases the client, once the tenant it belongs to is removed. */
     default void close() {}
+
+    /**
+     * Whether {@link #poll()} has to run even when no configured value references the store, for a
+     * client built from a file that can change outside the store.
+     */
+    default boolean polls() {
+      return false;
+    }
+
+    /**
+     * Lets the consumer notice a change outside the store, such as a key file replaced at the same
+     * path; runs on every refresh, after a changed value was applied.
+     *
+     * @throws Exception if the change cannot be applied; the consumer must then keep its previous
+     *     client
+     */
+    default void poll() throws Exception {}
   }
 
   private static final class Registration {
