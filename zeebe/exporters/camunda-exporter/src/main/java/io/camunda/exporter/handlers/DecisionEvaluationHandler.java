@@ -78,6 +78,7 @@ public class DecisionEvaluationHandler
     final DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
     final CachedDecisions cached = getCachedDecisions(record);
     final List<EvaluatedDecisionValue> evaluatedDecisions = cached.decisions();
+    // fails on an unknown id instead of exporting an incomplete entity; see indexOf
     final int decisionIndex = cached.indexOf(entity.getId());
     if (cached.markExported(decisionIndex)) {
       cachedDecisions = null;
@@ -245,7 +246,18 @@ public class DecisionEvaluationHandler
       return ids;
     }
 
-    /** Returns the 1-based index of the decision exported under the given entity id. */
+    /**
+     * Returns the 1-based index of the decision exported under the given entity id.
+     *
+     * <p>Only reachable through a bug: the batch writer passes ids returned by {@link #ids()} for
+     * the same record, and all of them are in the map. The failure is deliberate. The exporter
+     * retries the record, so exporting on this partition stalls on it (as it did before, through an
+     * {@code IndexOutOfBoundsException}). That surfaces the bug, whereas skipping it would flush an
+     * id-only, empty decision instance, because {@code updateEntity} cannot drop an entity. The
+     * message omits the decision payload, since inputs and outputs may hold business data.
+     *
+     * @throws IllegalStateException if the id matches no evaluated decision of the record
+     */
     int indexOf(final String entityId) {
       final Integer index = indexById.get(entityId);
       if (index == null) {
