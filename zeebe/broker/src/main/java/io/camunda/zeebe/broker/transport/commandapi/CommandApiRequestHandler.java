@@ -42,8 +42,10 @@ final class CommandApiRequestHandler
   private final PartitionId partitionId;
   private long rejectedPaused;
   private long rejectedNotLeader;
+  private long rejectedFrozen;
   private long accepted;
   private boolean acceptedSinceLeading;
+  private boolean frozenForTransfer;
 
   CommandApiRequestHandler(final PartitionId partitionId) {
     super("CommandApi", partitionId, CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -98,10 +100,13 @@ final class CommandApiRequestHandler
         rejectedPaused,
         "rejectedNotLeader",
         rejectedNotLeader,
+        "rejectedFrozen",
+        rejectedFrozen,
         "accepted",
         accepted);
     rejectedPaused = 0;
     rejectedNotLeader = 0;
+    rejectedFrozen = 0;
     accepted = 0;
   }
 
@@ -126,6 +131,19 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
+    final var logStreamWriter = leadingStream;
+    // while leadership is moving away, the gateway retries a leader mismatch against the
+    // partition's next leader as soon as it learns of it, where any other error reaches the client
+    if (logStreamWriter == null || frozenForTransfer) {
+      if (logStreamWriter == null) {
+        rejectedNotLeader++;
+      } else {
+        rejectedFrozen++;
+      }
+      errorWriter.partitionLeaderMismatch(partitionId);
+      return Either.left(errorWriter);
+    }
+
     if (processingPaused) {
       rejectedPaused++;
       return Either.left(
@@ -134,7 +152,6 @@ final class CommandApiRequestHandler
     }
 
     final var command = reader.getMessageDecoder();
-    final var logStreamWriter = leadingStream;
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -148,12 +165,6 @@ final class CommandApiRequestHandler
     metadata.intent(intent);
     metadata.valueType(valueType);
     metadata.operationReference(operationReference);
-
-    if (logStreamWriter == null) {
-      rejectedNotLeader++;
-      errorWriter.partitionLeaderMismatch(partitionId);
-      return Either.left(errorWriter);
-    }
 
     if (value == null) {
       errorWriter.unsupportedMessage(valueType.name(), SUPPORTED_VALUE_TYPES);
@@ -211,7 +222,16 @@ final class CommandApiRequestHandler
         () -> {
           leadingStream = logStreamWriter;
           acceptedSinceLeading = false;
+          frozenForTransfer = false;
           traceState("leading");
+        });
+  }
+
+  void onTransferFreeze(final boolean frozen) {
+    actor.submit(
+        () -> {
+          frozenForTransfer = frozen;
+          traceState(frozen ? "frozen" : "unfrozen");
         });
   }
 

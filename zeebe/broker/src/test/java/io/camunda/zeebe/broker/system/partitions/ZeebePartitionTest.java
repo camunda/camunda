@@ -31,6 +31,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -95,6 +96,7 @@ public class ZeebePartitionTest {
     when(ctx.brokerHealthCheckService()).thenReturn(brokerCheckMock);
     when(ctx.getComponentTreeListener()).thenReturn(ComponentTreeListener.noop());
     when(ctx.getPartitionStartupMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(ctx.getCommandApiService()).thenReturn(mock(CommandApiService.class));
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
