@@ -29,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DecisionEvaluationHandler
     implements OrdinalIndexExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
@@ -61,19 +62,14 @@ public class DecisionEvaluationHandler
 
   @Override
   public List<String> generateIds(final Record<DecisionEvaluationRecordValue> record) {
-    // To ensure compatibility with older Zeebe versions, we first check if the IDs are already
-    // present in the record. If they are, we use them directly. If not,
-    // we fall back to the legacy ID generation method.
-    final var ids =
-        getCachedEvaluatedDecisions(record).stream()
+    final CachedDecisions cached = getCachedDecisions(record);
+    // Records written by older Zeebe versions have no decisionEvaluationInstanceKey (default "");
+    // for them we fall back to the legacy ids derived from the record key and decision index.
+    final List<String> instanceKeys =
+        cached.decisions().stream()
             .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
             .toList();
-    // If none of the IDs are empty, we can safely return the list.
-    // "" is the default value for the decisionEvaluationInstanceKey field.
-    if (!ids.contains("")) {
-      return ids;
-    }
-    return generateIdsLegacy(record);
+    return instanceKeys.contains("") ? cached.ids() : instanceKeys;
   }
 
   @Override
@@ -85,8 +81,9 @@ public class DecisionEvaluationHandler
   public void updateEntity(
       final Record<DecisionEvaluationRecordValue> record, final DecisionInstanceEntity entity) {
     final DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
-    final List<EvaluatedDecisionValue> evaluatedDecisions = getCachedEvaluatedDecisions(record);
-    final int decisionIndex = getDecisionIndex(record.getKey(), entity.getId(), evaluatedDecisions);
+    final CachedDecisions cached = getCachedDecisions(record);
+    final List<EvaluatedDecisionValue> evaluatedDecisions = cached.decisions();
+    final int decisionIndex = cached.indexOf(entity.getId());
     if (decisionIndex == evaluatedDecisions.size()) {
       // the last decision of the record is exported; release the copies
       cachedDecisions = null;
@@ -149,28 +146,11 @@ public class DecisionEvaluationHandler
     return indexName;
   }
 
-  private List<EvaluatedDecisionValue> getCachedEvaluatedDecisions(
-      final Record<DecisionEvaluationRecordValue> record) {
+  private CachedDecisions getCachedDecisions(final Record<DecisionEvaluationRecordValue> record) {
     if (cachedDecisions == null || !cachedDecisions.isFor(record)) {
       cachedDecisions = CachedDecisions.of(record);
     }
-    return cachedDecisions.decisions();
-  }
-
-  private static int getDecisionIndex(
-      final long key, final String entityId, final List<EvaluatedDecisionValue> decisions) {
-    for (int i = 1; i <= decisions.size(); i++) {
-      if (formatId(key, i).equals(entityId)) {
-        return i;
-      }
-    }
-    throw new IllegalStateException(
-        "Decision evaluation %d has no evaluated decision with id %s (%d decisions)"
-            .formatted(key, entityId, decisions.size()));
-  }
-
-  private static String formatId(final long key, final int index) {
-    return key + "-" + index;
+    return cachedDecisions;
   }
 
   private DecisionInstanceState getState(
@@ -216,30 +196,43 @@ public class DecisionEvaluationHandler
     return outputs;
   }
 
-  private List<String> generateIdsLegacy(final Record<DecisionEvaluationRecordValue> record) {
-    final var ids = new ArrayList<String>();
-    final int evaluatedDecisionsCount = getCachedEvaluatedDecisions(record).size();
-    for (int i = 1; i <= evaluatedDecisionsCount; i++) {
-      ids.add(formatId(record.getKey(), i));
-    }
-    return ids;
-  }
-
+  /**
+   * The evaluated decisions of one record, with their ids {@code <recordKey>-<index>} (1-based) in
+   * evaluation order. The engine builds decisionEvaluationInstanceKey the same way, so these ids
+   * resolve entities created from either the instance keys or the legacy ids.
+   */
   private record CachedDecisions(
-      int partitionId, long position, long key, List<EvaluatedDecisionValue> decisions) {
+      int partitionId,
+      long position,
+      long key,
+      List<EvaluatedDecisionValue> decisions,
+      List<String> ids) {
 
     static CachedDecisions of(final Record<DecisionEvaluationRecordValue> record) {
+      final List<EvaluatedDecisionValue> decisions = record.getValue().getEvaluatedDecisions();
+      final List<String> ids =
+          IntStream.rangeClosed(1, decisions.size())
+              .mapToObj(i -> record.getKey() + "-" + i)
+              .toList();
       return new CachedDecisions(
-          record.getPartitionId(),
-          record.getPosition(),
-          record.getKey(),
-          record.getValue().getEvaluatedDecisions());
+          record.getPartitionId(), record.getPosition(), record.getKey(), decisions, ids);
     }
 
     boolean isFor(final Record<DecisionEvaluationRecordValue> record) {
       return partitionId == record.getPartitionId()
           && position == record.getPosition()
           && key == record.getKey();
+    }
+
+    /** Returns the 1-based index of the decision exported under the given entity id. */
+    int indexOf(final String entityId) {
+      final int index = ids.indexOf(entityId);
+      if (index < 0) {
+        throw new IllegalStateException(
+            "Decision evaluation %d has no evaluated decision with id %s (%d decisions)"
+                .formatted(key, entityId, ids.size()));
+      }
+      return index + 1;
     }
   }
 }
