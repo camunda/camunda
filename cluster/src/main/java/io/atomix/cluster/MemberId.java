@@ -19,7 +19,6 @@ package io.atomix.cluster;
 import static io.camunda.zeebe.util.MemberIdUtil.validateZone;
 
 import io.camunda.zeebe.util.MemberIdUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
@@ -106,7 +105,6 @@ public class MemberId extends NodeId {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
   }
 
-  @VisibleForTesting
   public static MemberId from(final int nodeId) {
     return from(null, nodeId);
   }
