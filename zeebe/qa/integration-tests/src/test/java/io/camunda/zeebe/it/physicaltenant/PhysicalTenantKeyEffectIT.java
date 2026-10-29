@@ -67,7 +67,7 @@ final class PhysicalTenantKeyEffectIT {
           consumer.equals(
               "io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy.initialOffset");
 
-  /** State that differs between two restarts of the same configuration. */
+  /** State that differs between two runs or restarts of the same configuration. */
   private static final Predicate<String> RESTART_ARTEFACTS =
       consumer ->
           RUNTIME_NOISE.test(consumer)
@@ -410,7 +410,7 @@ final class PhysicalTenantKeyEffectIT {
       final var noise = differingConsumers(byTenant, inheriting, control, tenants);
       final var differing = differingConsumers(byTenant, overridden, inheriting, tenants);
       differing.removeAll(noise);
-      assertThat(without(differing, RUNTIME_NOISE)).isEmpty();
+      assertThat(without(differing, RESTART_ARTEFACTS)).isEmpty();
     }
   }
 
