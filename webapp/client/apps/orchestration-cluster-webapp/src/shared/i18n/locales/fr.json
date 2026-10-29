@@ -12,6 +12,7 @@
 		"headerNonProductionLicenseText": "Licence non production. Pour plus d'informations sur l'utilisation en production, veuillez consulter notre <2>page des termes et conditions</2> ou <6>contacter les ventes</6>.",
 		"headerInfoLabel": "Info",
 		"headerSettingsLabel": "Paramètres",
+		"headerUserMenuLabel": "Menu utilisateur, {{name}}",
 		"headerProfileLabel": "Profil",
 		"headerCookiePreferencesLabel": "Préférences des cookies",
 		"headerTermsOfUseLabel": "Conditions d'utilisation",

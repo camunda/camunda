@@ -10,15 +10,13 @@ import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
-import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
-import {themeStore} from '#/shared/theme/theme';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import {LanguageSelector} from './LanguageSelector';
+import {UserMenu} from './UserMenu';
 import {Link} from '@tanstack/react-router';
 import {useNavbar} from '#/shared/header/useNavbar';
 
@@ -70,7 +68,6 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 	const {t} = useTranslation();
 	const isSaas = getBootConfig().organizationId !== null;
 	const {canLogout} = getClientConfig().authentication;
-	const {selectedTheme, changeTheme} = themeStore;
 	const {displayName, salesPlanType} = currentUser;
 	const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 	const {app, elements} = useNavbar(currentUser);
@@ -112,73 +109,18 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 				ariaLabel: t('headerInfoLabel'),
 				elements: getInfoSidebarItems(['paid-cc', 'enterprise'].includes(salesPlanType ?? '')),
 			}}
-			userSideBar={{
-				ariaLabel: t('headerSettingsLabel'),
-				version: import.meta.env.VITE_VERSION,
-				customElements: {
-					profile: {
-						label: t('headerProfileLabel'),
-						user: {
-							name: displayName ?? currentUser.username,
-							email: '',
-						},
-					},
-					themeSelector: {
-						currentTheme: selectedTheme,
-						onChange: (theme: string) => {
-							if (theme === 'system' || theme === 'dark' || theme === 'light') {
-								changeTheme(theme);
-							}
-						},
-					},
-					customSection: <LanguageSelector />,
+			actionButtons={[
+				{
+					element: (
+						<UserMenu
+							key="user-menu"
+							userName={displayName ?? currentUser.username}
+							canLogout={canLogout}
+							onLogout={logoutWithNotification}
+						/>
+					),
 				},
-				elements: [
-					...(window.Osano?.cm === undefined
-						? []
-						: [
-								{
-									key: 'cookie',
-									label: t('headerCookiePreferencesLabel'),
-									onClick: () => {
-										window.Osano?.cm?.showDrawer('osano-cm-dom-info-dialog-open');
-									},
-								},
-							]),
-					{
-						key: 'terms',
-						label: t('headerTermsOfUseLabel'),
-						onClick: () => {
-							window.open('https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/', '_blank');
-						},
-					},
-					{
-						key: 'privacy',
-						label: t('headerPrivacyPolicyLabel'),
-						onClick: () => {
-							window.open('https://camunda.com/legal/privacy/', '_blank');
-						},
-					},
-					{
-						key: 'imprint',
-						label: t('headerImprintLabel'),
-						onClick: () => {
-							window.open('https://camunda.com/legal/imprint/', '_blank');
-						},
-					},
-				],
-				bottomElements: canLogout
-					? [
-							{
-								key: 'logout',
-								label: t('headerLogOutLabel'),
-								renderIcon: ArrowRight,
-								kind: 'ghost',
-								onClick: logoutWithNotification,
-							},
-						]
-					: undefined,
-			}}
+			]}
 		/>
 	);
 });
