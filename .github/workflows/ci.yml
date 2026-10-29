@@ -2474,6 +2474,7 @@ jobs:
         if: >-
           !github.event.pull_request.head.repo.fork &&
           (failure() || steps.check.outputs.status == 'breaking')
+        timeout-minutes: 3
         id: slack-secrets
         continue-on-error: true
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -2491,6 +2492,7 @@ jobs:
           !github.event.pull_request.head.repo.fork &&
           (failure() || steps.check.outputs.status == 'breaking') &&
           steps.slack-secrets.outcome == 'success'
+        timeout-minutes: 3
         continue-on-error: true
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
