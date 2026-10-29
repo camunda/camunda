@@ -237,6 +237,10 @@ public final class ContainerRuntimePropertiesUtil {
     return connectorsContainerRuntimeProperties.getConnectorsExposedPorts();
   }
 
+  public Map<String, String> getClusterSecrets() {
+    return camundaContainerRuntimeProperties.getClusterSecrets();
+  }
+
   public URI getRemoteCamundaMonitoringApiAddress() {
     return remoteRuntimeProperties.getCamundaMonitoringApiAddress();
   }
