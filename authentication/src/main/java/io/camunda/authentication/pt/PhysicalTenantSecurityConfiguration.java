@@ -12,6 +12,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.core.port.in.ScopedSecurityReloadPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,10 +67,12 @@ public class PhysicalTenantSecurityConfiguration {
   @Bean
   public PhysicalTenantHttpSecurity physicalTenantHttpSecurity(
       final PhysicalTenantScopeProvider physicalTenantScopeProvider,
-      final ScopedSecurityReloadPort scopedSecurityReloadPort,
+      final ObjectProvider<ScopedSecurityReloadPort> scopedSecurityReloadPort,
       final PhysicalTenantAuthentications physicalTenantAuthentications) {
     return new PhysicalTenantHttpSecurity(
-        physicalTenantScopeProvider, scopedSecurityReloadPort, physicalTenantAuthentications);
+        physicalTenantScopeProvider,
+        scopedSecurityReloadPort::getObject,
+        physicalTenantAuthentications);
   }
 
   /**

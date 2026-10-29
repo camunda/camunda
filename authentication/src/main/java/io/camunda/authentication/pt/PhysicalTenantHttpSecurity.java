@@ -41,13 +41,17 @@ public final class PhysicalTenantHttpSecurity {
   private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantHttpSecurity.class);
 
   private final PhysicalTenantScopeProvider scopes;
-  private final ScopedSecurityReloadPort port;
+  private final Supplier<ScopedSecurityReloadPort> port;
   private final PhysicalTenantAuthentications served;
   private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
+  /**
+   * @param port the security library's port, looked up when a tenant changes first: the library
+   *     registers it while it builds the chains, after this is created
+   */
   public PhysicalTenantHttpSecurity(
       final PhysicalTenantScopeProvider scopes,
-      final ScopedSecurityReloadPort port,
+      final Supplier<ScopedSecurityReloadPort> port,
       final PhysicalTenantAuthentications served) {
     this.scopes = scopes;
     this.port = port;
@@ -69,7 +73,7 @@ public final class PhysicalTenantHttpSecurity {
         physicalTenantId,
         () -> {
           final var descriptor = scopes.put(physicalTenantId, authentication);
-          return record(physicalTenantId, authentication, port.apply(descriptor));
+          return record(physicalTenantId, authentication, port.get().apply(descriptor));
         });
   }
 
@@ -87,7 +91,8 @@ public final class PhysicalTenantHttpSecurity {
           final var previous = scopes.descriptor(physicalTenantId);
           final var descriptor = scopes.put(physicalTenantId, authentication);
           try {
-            return record(physicalTenantId, authentication, port.rotateCredentials(descriptor));
+            return record(
+                physicalTenantId, authentication, port.get().rotateCredentials(descriptor));
           } catch (final IllegalArgumentException e) {
             previous.ifPresent(before -> scopes.put(physicalTenantId, before.authentication()));
             throw e;
@@ -102,7 +107,7 @@ public final class PhysicalTenantHttpSecurity {
         physicalTenantId,
         () -> {
           final var result =
-              port.refreshCredentials(PhysicalTenantScopeProvider.basePath(physicalTenantId));
+              port.get().refreshCredentials(PhysicalTenantScopeProvider.basePath(physicalTenantId));
           log(physicalTenantId, result);
           return result;
         });
@@ -131,7 +136,8 @@ public final class PhysicalTenantHttpSecurity {
     return locked(
         physicalTenantId,
         () -> {
-          final var result = port.remove(PhysicalTenantScopeProvider.basePath(physicalTenantId));
+          final var result =
+              port.get().remove(PhysicalTenantScopeProvider.basePath(physicalTenantId));
           served.remove(physicalTenantId);
           scopes.remove(physicalTenantId);
           log(physicalTenantId, result);
