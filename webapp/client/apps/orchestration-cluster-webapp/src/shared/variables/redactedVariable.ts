@@ -6,20 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// Variable values are JSON-encoded, so the redacted value is a JSON string literal and stays parseable.
-const REDACTED_VALUE = JSON.stringify('[REDACTED]');
+const JSON_ENCODED_REDACTED_VALUE = JSON.stringify('[REDACTED]');
 
 type ProtectableVariable = {metadata?: {protectionModes: readonly string[]} | null};
+type RedactableVariable = ProtectableVariable & {value: string; isTruncated: boolean};
 
 function isRedactedVariable(variable: ProtectableVariable): boolean {
 	return variable.metadata?.protectionModes.includes('REDACT') ?? false;
 }
 
-function redactValue<T extends ProtectableVariable & {value: string}>(variable: T): T {
-	return isRedactedVariable(variable) ? {...variable, value: REDACTED_VALUE} : variable;
+function redactValue<T extends RedactableVariable>(variable: T): T {
+	return isRedactedVariable(variable)
+		? {...variable, value: JSON_ENCODED_REDACTED_VALUE, isTruncated: false}
+		: variable;
 }
 
-function redactValues<T extends ProtectableVariable & {value: string}, R extends {items: T[]}>(result: R): R {
+function redactValues<T extends RedactableVariable, R extends {items: T[]}>(result: R): R {
 	return {...result, items: result.items.map(redactValue)};
 }
 
