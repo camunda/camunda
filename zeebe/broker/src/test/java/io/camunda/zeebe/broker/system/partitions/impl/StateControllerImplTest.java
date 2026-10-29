@@ -15,9 +15,11 @@ import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -313,6 +315,48 @@ public final class StateControllerImplTest {
     // when/then
     assertThatThrownBy(() -> snapshotController.recover().join())
         .hasCauseInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  public void shouldNotOpenDatabaseWhenRecoveryFails() throws Exception {
+    // given
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+
+    wrapper.wrap(snapshotController.recover().join());
+    wrapper.putInt("x", 1);
+
+    takeSnapshot(1);
+    snapshotController.close();
+    corruptLatestSnapshot();
+
+    // when
+    assertThatThrownBy(() -> snapshotController.recover().join())
+        .hasCauseInstanceOf(ZeebeDbException.class);
+
+    // then
+    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1, false).join())
+        .hasCauseInstanceOf(StateClosedException.class);
+  }
+
+  @Test
+  public void shouldRecoverFromLatestSnapshotAfterSnapshotForBootstrapIsDeleted() throws Exception {
+    // given
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    wrapper.wrap(snapshotController.recover().join());
+    wrapper.putInt("x", 1);
+    takeSnapshot(1);
+
+    final var latestSnapshot = store.getLatestSnapshot().orElseThrow();
+    store.copyForBootstrap(latestSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+    // the partition leader deletes the snapshot for bootstrap when it steps down
+    store.deleteBootstrapSnapshots().join();
+    snapshotController.close();
+
+    // when
+    wrapper.wrap(snapshotController.recover().join());
+
+    // then
+    assertThat(wrapper.getInt("x")).isEqualTo(1);
   }
 
   @Test

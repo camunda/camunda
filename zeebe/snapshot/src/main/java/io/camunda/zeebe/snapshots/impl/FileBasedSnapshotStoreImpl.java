@@ -506,19 +506,26 @@ public final class FileBasedSnapshotStoreImpl {
               metadata,
               this::onSnapshotDeleted,
               actor);
-      final var failed =
-          !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
-      if (failed) {
-        // we moved already the snapshot but we expected that this will be cleaned up by the next
-        // successful snapshot
-        final var errorMessage =
-            "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
-        throw new ConcurrentModificationException(
-            String.format(
-                errorMessage,
-                currentPersistedSnapshot,
-                newPersistedSnapshot.getSnapshotId(),
-                currentSnapshot.get()));
+
+      // a copy for bootstrap must never become the latest snapshot: it only contains part of the
+      // state and is deleted independently, e.g. when the partition leader steps down. A received
+      // snapshot with bootstrap metadata is the full state of a scaled up partition, so it must.
+      final var isCopyForBootstrap = destination.startsWith(bootstrapSnapshotsDirectory);
+      if (!isCopyForBootstrap) {
+        final var failed =
+            !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
+        if (failed) {
+          // we moved already the snapshot but we expected that this will be cleaned up by the next
+          // successful snapshot
+          final var errorMessage =
+              "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
+          throw new ConcurrentModificationException(
+              String.format(
+                  errorMessage,
+                  currentPersistedSnapshot,
+                  newPersistedSnapshot.getSnapshotId(),
+                  currentSnapshot.get()));
+        }
       }
 
       if (!isBootstrap) {
