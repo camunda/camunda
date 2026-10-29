@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.security;
 
+import io.camunda.configuration.Credential;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.io.File;
@@ -38,7 +39,7 @@ public class KeyStore implements Cloneable {
   private File filePath;
 
   /** Sets the password for the keystore file, if not set it is assumed there is no password */
-  private String password;
+  @Credential private String password;
 
   public File getFilePath() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(

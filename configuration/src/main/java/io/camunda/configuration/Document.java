@@ -254,7 +254,7 @@ public class Document {
     private String containerName;
     private String containerPath;
     private String endpoint;
-    private String connectionString;
+    @Credential private String connectionString;
 
     public String getContainerName() {
       return containerName;

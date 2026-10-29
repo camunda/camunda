@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration.security.clusteradmin;
 
+import io.camunda.configuration.Credential;
+
 /**
  * A cluster-admin user for HTTP Basic authentication against the {@code /cluster/v2/**} API.
  * Cluster-admin users are configured statically here rather than persisted, since there is no
@@ -15,4 +17,4 @@ package io.camunda.configuration.security.clusteradmin;
  * @param name the login name, unique among configured cluster-admin users
  * @param password the plaintext password, encoded once at startup
  */
-public record ClusterAdminUser(String name, String password) {}
+public record ClusterAdminUser(String name, @Credential String password) {}

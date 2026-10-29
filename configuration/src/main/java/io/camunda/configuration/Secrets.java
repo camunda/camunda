@@ -24,16 +24,22 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
  *   <li>{@code camunda.secrets.max-concurrency}
+ *   <li>{@code camunda.secrets.refresh-interval}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
+ *   <li>{@code camunda.secrets.stores.file.<id>.internal-config.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.aws.<id>.batch-enabled}
  *   <li>{@code camunda.secrets.stores.aws.<id>.batch-size}
  *   <li>{@code camunda.secrets.stores.aws.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.internal-config.path-prefix}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.internal-config.container-secret-id}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.project-id}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.internal-config.path-prefix}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.internal-config.container-secret-id}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -64,6 +70,8 @@ public class Secrets {
   private static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
 
   private static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
+
+  private static final Duration DEFAULT_REFRESH_INTERVAL = Duration.ofMinutes(5);
 
   /**
    * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
@@ -119,6 +127,15 @@ public class Secrets {
    */
   private Integer maxConcurrency = DEFAULT_MAX_CONCURRENCY;
 
+  /**
+   * How often each physical tenant reads the secrets that its configuration references from its
+   * internal-config store again. A changed value, for example a rotated secondary-storage password
+   * or a moved endpoint, is then applied without a restart.
+   *
+   * <p>Defaults to {@code 5m}.
+   */
+  private Duration refreshInterval = DEFAULT_REFRESH_INTERVAL;
+
   public Stores getStores() {
     return stores;
   }
@@ -158,6 +175,21 @@ public class Secrets {
    */
   public void setMaxConcurrency(final @Nullable Integer maxConcurrency) {
     this.maxConcurrency = maxConcurrency == null ? DEFAULT_MAX_CONCURRENCY : maxConcurrency;
+  }
+
+  /**
+   * @throws IllegalArgumentException if the refresh interval is not positive
+   */
+  public Duration getRefreshInterval() {
+    if (!refreshInterval.isPositive()) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.refresh-interval must be positive, but was " + refreshInterval);
+    }
+    return refreshInterval;
+  }
+
+  public void setRefreshInterval(final @Nullable Duration refreshInterval) {
+    this.refreshInterval = refreshInterval == null ? DEFAULT_REFRESH_INTERVAL : refreshInterval;
   }
 
   public static class Stores {
@@ -201,6 +233,13 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+
+    /** Whether a store entry has an internal-config block. */
+    public boolean hasInternalConfig() {
+      return file.values().stream().anyMatch(store -> store.getInternalConfig() != null)
+          || aws.values().stream().anyMatch(store -> store.getInternalConfig() != null)
+          || gcp.values().stream().anyMatch(store -> store.getInternalConfig() != null);
     }
   }
 
@@ -326,12 +365,79 @@ public class Secrets {
      */
     private String path = "/etc/camunda/secrets";
 
+    /**
+     * The internal-config store of this entry: the secrets that configuration references, for
+     * example a secondary-storage password, as opposed to the secrets that jobs reference. Jobs
+     * cannot read it. Without it, a reference in a connection key cannot resolve.
+     */
+    @NestedConfigurationProperty private @Nullable FileInternalConfig internalConfig;
+
     public String getPath() {
       return path;
     }
 
     public void setPath(final String path) {
       this.path = path;
+    }
+
+    public @Nullable FileInternalConfig getInternalConfig() {
+      return internalConfig;
+    }
+
+    public void setInternalConfig(final @Nullable FileInternalConfig internalConfig) {
+      this.internalConfig = internalConfig;
+    }
+
+    /**
+     * Returns this entry with the scope of its internal-config store, or {@code null} if it has
+     * none.
+     */
+    public @Nullable FileStore internalConfigStore() {
+      if (internalConfig == null) {
+        return null;
+      }
+      final var store = new FileStore();
+      store.setPath(internalConfig.getPath());
+      return store;
+    }
+  }
+
+  public static class FileInternalConfig {
+
+    /** Path to the directory that holds the secrets configuration references. */
+    private String path = "";
+
+    public String getPath() {
+      return path;
+    }
+
+    public void setPath(final String path) {
+      this.path = path;
+    }
+  }
+
+  public static class CloudInternalConfig {
+
+    /** Prefix prepended to every name the internal-config store resolves. */
+    private @Nullable String pathPrefix;
+
+    /** One secret holding every internal-config secret as a key of its JSON object. */
+    private @Nullable String containerSecretId;
+
+    public @Nullable String getPathPrefix() {
+      return pathPrefix;
+    }
+
+    public void setPathPrefix(final @Nullable String pathPrefix) {
+      this.pathPrefix = pathPrefix;
+    }
+
+    public @Nullable String getContainerSecretId() {
+      return containerSecretId;
+    }
+
+    public void setContainerSecretId(final @Nullable String containerSecretId) {
+      this.containerSecretId = containerSecretId;
     }
   }
 
@@ -397,6 +503,14 @@ public class Secrets {
      */
     private Duration attemptTimeout = DEFAULT_ATTEMPT_TIMEOUT;
 
+    /**
+     * The internal-config store of this entry: the secrets that configuration references, for
+     * example a secondary-storage password, as opposed to the secrets that jobs reference. Every
+     * other setting comes from this entry. Jobs cannot read it. Without it, a reference in a
+     * connection key cannot resolve.
+     */
+    @NestedConfigurationProperty private @Nullable CloudInternalConfig internalConfig;
+
     public @Nullable String getRegion() {
       return region;
     }
@@ -459,6 +573,34 @@ public class Secrets {
      */
     public void setAttemptTimeout(final @Nullable Duration attemptTimeout) {
       this.attemptTimeout = attemptTimeout == null ? DEFAULT_ATTEMPT_TIMEOUT : attemptTimeout;
+    }
+
+    public @Nullable CloudInternalConfig getInternalConfig() {
+      return internalConfig;
+    }
+
+    public void setInternalConfig(final @Nullable CloudInternalConfig internalConfig) {
+      this.internalConfig = internalConfig;
+    }
+
+    /**
+     * Returns this entry with the scope of its internal-config store, or {@code null} if it has
+     * none.
+     */
+    public @Nullable AwsSecretsManagerStore internalConfigStore(final String storeId) {
+      if (internalConfig == null) {
+        return null;
+      }
+      final var store = new AwsSecretsManagerStore();
+      store.setRegion(region);
+      store.setBatchEnabled(batchEnabled);
+      store.setBatchSize(batchSize);
+      store.setAttemptTimeout(attemptTimeout);
+      store.setPathPrefix(internalConfig.getPathPrefix());
+      store.setContainerSecretId(internalConfig.getContainerSecretId());
+      store.setCallTimeout(callTimeout);
+      store.validate(storeId + ".internal-config");
+      return store;
     }
 
     /**
@@ -584,6 +726,14 @@ public class Secrets {
      */
     private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
 
+    /**
+     * The internal-config store of this entry: the secrets that configuration references, for
+     * example a secondary-storage password, as opposed to the secrets that jobs reference. Every
+     * other setting comes from this entry. Jobs cannot read it. Without it, a reference in a
+     * connection key cannot resolve.
+     */
+    @NestedConfigurationProperty private @Nullable CloudInternalConfig internalConfig;
+
     public @Nullable String getProjectId() {
       return projectId;
     }
@@ -626,6 +776,32 @@ public class Secrets {
      */
     public void setCallTimeout(final @Nullable Duration callTimeout) {
       this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    public @Nullable CloudInternalConfig getInternalConfig() {
+      return internalConfig;
+    }
+
+    public void setInternalConfig(final @Nullable CloudInternalConfig internalConfig) {
+      this.internalConfig = internalConfig;
+    }
+
+    /**
+     * Returns this entry with the scope of its internal-config store, or {@code null} if it has
+     * none.
+     */
+    public @Nullable GcpSecretManagerStore internalConfigStore(final String storeId) {
+      if (internalConfig == null) {
+        return null;
+      }
+      final var store = new GcpSecretManagerStore();
+      store.setProjectId(projectId);
+      store.setEndpoint(endpoint);
+      store.setPathPrefix(internalConfig.getPathPrefix());
+      store.setContainerSecretId(internalConfig.getContainerSecretId());
+      store.setCallTimeout(callTimeout);
+      store.validate(storeId + ".internal-config");
+      return store;
     }
 
     /**

@@ -31,19 +31,19 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +51,6 @@ import org.springframework.context.annotation.Configuration;
 
 /** Registers one {@link SecretStoreRegistry} per physical tenant, keyed by physical tenant ID. */
 @Configuration(proxyBeanMethods = false)
-@NullMarked
 public class SecretStoreConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
@@ -64,11 +63,24 @@ public class SecretStoreConfiguration {
    */
   private static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
-          new StoreBinding<>("file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
+              "file",
+              "file",
+              Stores::getFile,
+              (entry, storeId) -> entry.internalConfigStore(),
+              SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "aws",
+              "AWS Secrets Manager",
+              Stores::getAws,
+              AwsSecretsManagerStore::internalConfigStore,
+              SecretStoreConfiguration::awsStore),
+          new StoreBinding<>(
+              "gcp",
+              "GCP Secret Manager",
+              Stores::getGcp,
+              GcpSecretManagerStore::internalConfigStore,
+              SecretStoreConfiguration::gcpStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -84,16 +96,10 @@ public class SecretStoreConfiguration {
       final ActorClockService clockService,
       final MeterRegistry meterRegistry) {
     final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
-    // tracks every store successfully constructed across all tenants processed so far, so a
-    // failure partway through (e.g. a later tenant's AWS store failing to build) can close
-    // them instead of leaking their underlying clients/connections
-    final List<SecretStore> created = new ArrayList<>();
-    // tracked for the same reason: a wrapped registry left behind by a failed startup would keep
-    // publishing the meters of a cache nothing resolves through
-    final List<MeterRegistry> tenantMeterRegistries = new ArrayList<>();
-    // tracked for the same reason: a pool backing a store that gets rolled back must not outlive
-    // it, since nothing else references the pool to shut it down later
-    final List<ExecutorService> concurrencyPools = new ArrayList<>();
+    // tracks everything built across all tenants processed so far, so a failure partway through
+    // (e.g. a later tenant's AWS store failing to build) can release it instead of leaking clients,
+    // pools and meters; on success it moves into the returned registries, which release it on close
+    final var resources = new SecretStoreResources();
     final var timeSource = new ActorClockInstantSource(clockService);
     try {
       resolver
@@ -102,48 +108,78 @@ public class SecretStoreConfiguration {
               (tenantId, secrets) ->
                   registries.put(
                       tenantId,
-                      buildRegistry(
-                          tenantId,
-                          secrets,
-                          created,
-                          timeSource,
-                          meterRegistry,
-                          tenantMeterRegistries,
-                          concurrencyPools)));
-    } catch (final RuntimeException e) {
-      closeAll(created);
-      tenantMeterRegistries.forEach(MicrometerUtil::close);
-      concurrencyPools.forEach(ExecutorService::shutdownNow);
+                      buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
+    } catch (final Throwable e) {
+      resources.close();
       throw e;
     }
-    return new SecretStoreRegistries(Map.copyOf(registries));
+    return new SecretStoreRegistries(registries, resources);
+  }
+
+  /**
+   * Builds the internal-config store of each physical tenant that configures one, apart from the
+   * job stores above: nothing on the job path is handed these stores, so a job cannot resolve a
+   * secret that configuration references.
+   */
+  @Bean
+  public InternalConfigSecrets internalConfigSecrets(final PhysicalTenantResolver resolver) {
+    final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
+    final var resources = new SecretStoreResources();
+    try {
+      resolver
+          .mapValues(Camunda::getSecrets)
+          .forEach(
+              (tenantId, secrets) -> {
+                final Stores config = secrets.getStores();
+                requireValidStores(tenantId, config);
+                final Map<String, SecretStore> stores = new LinkedHashMap<>();
+                STORE_BINDINGS.forEach(
+                    binding -> binding.registerInternalConfig(config, stores, resources, tenantId));
+                if (!stores.isEmpty()) {
+                  registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
+                }
+              });
+    } catch (final Throwable e) {
+      resources.close();
+      throw e;
+    }
+    return new InternalConfigSecrets(registries, resources);
+  }
+
+  @Bean
+  public SecretRefreshHealthIndicator physicalTenantSecretRefreshHealthIndicator() {
+    return new SecretRefreshHealthIndicator();
+  }
+
+  /** Refreshes the configuration references of each physical tenant at its refresh interval. */
+  @Bean
+  public InternalConfigRefreshers internalConfigRefreshers(
+      final PhysicalTenantResolver resolver,
+      final InternalConfigSecrets internalConfigSecrets,
+      final SecretRefreshHealth health) {
+    final Map<String, Duration> intervals = new LinkedHashMap<>();
+    resolver
+        .mapValues(Camunda::getSecrets)
+        .forEach(
+            (tenantId, secrets) -> {
+              try {
+                intervals.put(tenantId, secrets.getRefreshInterval());
+              } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                    "Physical tenant '" + tenantId + "' has an invalid " + e.getMessage(), e);
+              }
+            });
+    return InternalConfigRefreshers.of(internalConfigSecrets, intervals, health);
   }
 
   private static SecretStoreRegistry buildRegistry(
       final String tenantId,
       final Secrets secrets,
-      final List<SecretStore> created,
+      final SecretStoreResources resources,
       final InstantSource timeSource,
-      final MeterRegistry meterRegistry,
-      final List<MeterRegistry> tenantMeterRegistries,
-      final List<ExecutorService> concurrencyPools) {
+      final MeterRegistry meterRegistry) {
     final Stores config = secrets.getStores();
-    // cap is one store total per tenant, counted across all store types combined
-    final long totalStores =
-        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
-    if (totalStores > 1) {
-      throw new IllegalStateException(
-          "Physical tenant '"
-              + tenantId
-              + "' has "
-              + totalStores
-              + " secret stores configured, but only one is supported at this time");
-    }
-    // both rules are checked before any store is built, so the operator gets the configuration
-    // error rather than whatever the store's own construction fails with — an AWS or GCP store
-    // eagerly builds a client and probes credentials, which would otherwise surface first for a
-    // configuration that is rejected anyway
-    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    requireValidStores(tenantId, config);
     // read before any store is built, for the same reason: an out-of-bounds ttl/max-size fails
     // startup without first constructing an AWS/GCP client only to roll it back again
     final Secrets.Cache cacheConfig;
@@ -173,7 +209,7 @@ public class SecretStoreConfiguration {
           e);
     }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
-    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
+    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, resources, tenantId));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
@@ -187,12 +223,8 @@ public class SecretStoreConfiguration {
     // sequential backend calls it issues: wrapping a noop, container, or already-single-call store
     // would only add a thread hop with nothing to overlap. Threads are virtual (one per chunk, not
     // one per permit), so the semaphore alone bounds how many backend calls are in flight at once;
-    // the pool itself holds no threads to leak if it is never explicitly shut down. It is also
-    // never shut down on the happy path: it is owned by this Spring singleton bean, so it lives for
-    // the application's lifetime, the same as the registry it backs. The only effect of that is
-    // that in-flight resolutions are not interrupted at shutdown, which is acceptable for calls
-    // this
-    // short-lived.
+    // the pool holds no threads while idle and is shut down with the registries on close.
+    //
     // computed once, rather than calling namesPerCall() again per store below, since a store
     // answers with the same value for the life of this method
     final var concurrencyEligibleIds =
@@ -204,7 +236,7 @@ public class SecretStoreConfiguration {
       final var pool =
           Executors.newThreadPerTaskExecutor(
               Thread.ofVirtual().name("secret-resolution-" + tenantId + "-", 0).factory());
-      concurrencyPools.add(pool);
+      resources.addPool(pool);
       final var semaphore = new Semaphore(maxConcurrency, true);
       stores.replaceAll(
           (id, store) ->
@@ -217,9 +249,31 @@ public class SecretStoreConfiguration {
     final var tenantMeterRegistry =
         MicrometerUtil.wrap(
             meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
-    tenantMeterRegistries.add(tenantMeterRegistry);
+    resources.addMeterRegistry(tenantMeterRegistry);
     return new SecretStoreRegistry(
         Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
+  }
+
+  /**
+   * Checks the rules every store of a tenant must meet before any store is built, so the operator
+   * gets the configuration error rather than whatever the store's own construction fails with — an
+   * AWS or GCP store eagerly builds a client and probes credentials, which would otherwise surface
+   * first for a configuration that is rejected anyway.
+   */
+  private static void requireValidStores(final String tenantId, final Stores config) {
+    // cap is one store total per tenant, counted across all store types combined
+    final long totalStores =
+        STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
+    if (totalStores > 1) {
+      throw new IllegalStateException(
+          "Physical tenant '"
+              + tenantId
+              + "' has "
+              + totalStores
+              + " secret stores configured, but only one is supported at this time");
+    }
+    STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    InternalConfigScopes.requireSeparateScopes(tenantId, config);
   }
 
   /**
@@ -245,25 +299,15 @@ public class SecretStoreConfiguration {
         config.getMaxSize(), config.getTtl(), timeSource, meterRegistry);
   }
 
-  private static void closeAll(final List<SecretStore> stores) {
-    for (final var store : stores) {
-      try {
-        store.close();
-      } catch (final RuntimeException closeFailure) {
-        LOG.warn("Failed to close secret store while rolling back a failed startup", closeFailure);
-      }
-    }
-  }
-
   private static void registerStore(
       final Map<String, SecretStore> stores,
-      final List<SecretStore> created,
+      final SecretStoreResources resources,
       final String normalizedId,
       final String tenantId,
       final String storeType,
       final SecretStore store) {
     stores.put(normalizedId, store);
-    created.add(store);
+    resources.addStore(store);
     LOG.info(
         "Registered {} secret store '{}' for physical tenant '{}'",
         storeType,
@@ -372,12 +416,6 @@ public class SecretStoreConfiguration {
     }
   }
 
-  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
-  @FunctionalInterface
-  private interface StoreFactory<C> {
-    SecretStore create(String storeId, String tenantId, C config);
-  }
-
   /**
    * Binds a secret store type to the config entries it reads and the factory that turns one such
    * entry into a {@link SecretStore}. The type parameter {@code C} keeps the selected config type
@@ -388,12 +426,15 @@ public class SecretStoreConfiguration {
    *     configuration error can name the exact property the operator has to change
    * @param displayName human-readable store type name used in log messages
    * @param selector reads this type's {@code storeId -> config} entries from the tenant's stores
+   * @param internalConfig derives the internal-config scope of one entry, or {@code null} if the
+   *     entry has no internal-config block
    * @param factory builds a store from one entry, applying any per-type validation
    */
   private record StoreBinding<C>(
       String propertyKey,
       String displayName,
       Function<Stores, Map<String, C>> selector,
+      BiFunction<C, String, @Nullable C> internalConfig,
       StoreFactory<C> factory) {
 
     private Set<String> ids(final Stores config) {
@@ -407,7 +448,7 @@ public class SecretStoreConfiguration {
     private void registerAll(
         final Stores config,
         final Map<String, SecretStore> stores,
-        final List<SecretStore> created,
+        final SecretStoreResources resources,
         final String tenantId) {
       selector
           .apply(config)
@@ -415,7 +456,7 @@ public class SecretStoreConfiguration {
               (storeId, entry) ->
                   registerStore(
                       stores,
-                      created,
+                      resources,
                       normalizeStoreId(storeId),
                       tenantId,
                       displayName,
@@ -423,5 +464,33 @@ public class SecretStoreConfiguration {
                       // own validation errors
                       factory.create(storeId, tenantId, entry)));
     }
+
+    private void registerInternalConfig(
+        final Stores config,
+        final Map<String, SecretStore> stores,
+        final SecretStoreResources resources,
+        final String tenantId) {
+      selector
+          .apply(config)
+          .forEach(
+              (storeId, entry) -> {
+                final var scoped = internalConfig.apply(entry, storeId);
+                if (scoped != null) {
+                  registerStore(
+                      stores,
+                      resources,
+                      normalizeStoreId(storeId),
+                      tenantId,
+                      displayName + " internal-config",
+                      factory.create(storeId, tenantId, scoped));
+                }
+              });
+    }
+  }
+
+  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
+  @FunctionalInterface
+  private interface StoreFactory<C> {
+    SecretStore create(String storeId, String tenantId, C config);
   }
 }

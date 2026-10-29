@@ -10,6 +10,8 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
+import io.camunda.application.commons.secrets.InternalConfigRefreshers;
+import io.camunda.application.commons.secrets.InternalConfigSecrets;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
@@ -37,6 +39,7 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
@@ -155,14 +158,25 @@ public class MyBatisConfiguration {
     return physicalTenantConfigs;
   }
 
+  /**
+   * The internal-config secrets are optional, so that an application that does not build them
+   * (restore) still starts; a reference in its connection settings then fails to resolve.
+   */
   @Bean
   public RdbmsDataSources rdbmsDataSources(
-      final PhysicalTenantResolver physicalTenantResolver, final MeterRegistry meterRegistry)
+      final PhysicalTenantResolver physicalTenantResolver,
+      final MeterRegistry meterRegistry,
+      final ObjectProvider<InternalConfigSecrets> internalConfigSecrets,
+      final ObjectProvider<InternalConfigRefreshers> internalConfigRefreshers)
       throws IOException {
-    return RdbmsDataSources.of(
-        physicalTenantResolver.mapValues(
-            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
-        meterRegistry);
+    final var dataSources =
+        RdbmsDataSources.of(
+            physicalTenantResolver.mapValues(
+                camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+            meterRegistry,
+            internalConfigSecrets.getIfAvailable(InternalConfigSecrets::none));
+    internalConfigRefreshers.ifAvailable(dataSources::registerForRefresh);
+    return dataSources;
   }
 
   @Bean
