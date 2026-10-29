@@ -134,6 +134,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceKind;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -2139,7 +2140,8 @@ final class JsonSerializableToJsonTest {
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
-                  .setBusinessId(businessId);
+                  .setBusinessId(businessId)
+                  .setKind(ProcessInstanceKind.CASE_INSTANCE);
             },
         """
                 {
@@ -2163,6 +2165,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
+                  "kind": "CASE_INSTANCE",
                   "elementInstanceKey": -1
                 }
                 """
@@ -2198,6 +2201,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
+                  "kind": "PROCESS_INSTANCE",
                   "elementInstanceKey": -1
                 }
                 """
@@ -3041,6 +3045,7 @@ final class JsonSerializableToJsonTest {
                     "businessId": "",
                     "resumeFromJobKey": -1,
                     "resumeFromUserTaskKey": -1,
+                    "kind": "PROCESS_INSTANCE",
                     "elementInstanceKey": -1
                   }
                 }

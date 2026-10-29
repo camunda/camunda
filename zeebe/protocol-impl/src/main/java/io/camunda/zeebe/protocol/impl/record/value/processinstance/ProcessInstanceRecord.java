@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceKind;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -63,6 +64,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
   public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
       new StringValue("resumeFromUserTaskKey");
+  public static final StringValue KIND_KEY = new StringValue("kind");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -110,8 +112,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty resumeFromUserTaskKeyProp =
       new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
 
+  private final EnumProperty<ProcessInstanceKind> kindProp =
+      new EnumProperty<>(KIND_KEY, ProcessInstanceKind.class, ProcessInstanceKind.PROCESS_INSTANCE);
+
   public ProcessInstanceRecord() {
-    super(20);
+    super(21);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -131,7 +136,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(resumeFromUserTaskKeyProp);
+        .declareProperty(resumeFromUserTaskKeyProp)
+        .declareProperty(kindProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -151,6 +157,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
     resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
+    kindProp.setValue(record.getKind());
   }
 
   @JsonIgnore
@@ -316,6 +323,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceKind getKind() {
+    return kindProp.getValue();
+  }
+
+  public ProcessInstanceRecord setKind(final ProcessInstanceKind kind) {
+    kindProp.setValue(kind);
     return this;
   }
 

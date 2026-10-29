@@ -240,14 +240,18 @@ final class BulkIndexRequest {
 
   /**
    * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS
-   * commands to drive the resume; they must not be stored in the exported document. This mix-in is
-   * the most specific one for a process-instance value, so it shadows {@link StorageOrdinalMixin}
-   * and must also repeat the {@code storageOrdinal} ignoral it would otherwise inherit.
+   * commands to drive the resume; they must not be stored in the exported document.
+   * Process-instance values also carry {@code kind}, which is not stored either: the strict
+   * process-instance mapping does not map it, and secondary storage reads it from the record, not
+   * from this index. This mix-in is the most specific one for a process-instance value, so it
+   * shadows {@link StorageOrdinalMixin} and must also repeat the {@code storageOrdinal} ignoral it
+   * would otherwise inherit.
    */
   @JsonIgnoreProperties({
     STORAGE_ORDINAL_PROPERTY,
     RESUME_FROM_JOB_KEY_PROPERTY,
-    RESUME_FROM_USER_TASK_KEY_PROPERTY
+    RESUME_FROM_USER_TASK_KEY_PROPERTY,
+    KIND_PROPERTY
   })
   private static final class ProcessInstanceMixin {}
 }
