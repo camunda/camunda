@@ -1,7 +1,7 @@
+import buildlogic.frontendBuildSkipped
 import buildlogic.skipWhen
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
-import io.camunda.gradle.flags.asEnabledFlag
 import buildlogic.requiredVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.jvm.tasks.Jar
@@ -38,20 +38,7 @@ extensions.configure<NodeExtension> {
   nodeProjectDir.set(layout.projectDirectory)
 }
 
-// Tests only exercise the backend, so the frontend is built only for a release image or when
-// -Pskip.fe.build=false asks for it. The requested tasks are the only input known when the build is
-// configured, and they are part of the configuration cache key.
-val releaseImageRequested =
-  gradle.startParameter.taskRequests.any { request ->
-    request.args.any { it.substringAfterLast(':') == "buildDockerImageRelease" }
-  }
-
-val skipFrontendBuild =
-  providers
-    .gradleProperty("skip.fe.build")
-    .orElse(providers.gradleProperty("quickly"))
-    .asEnabledFlag()
-    .orElse(!releaseImageRequested)
+val skipFrontendBuild = frontendBuildSkipped()
 
 // The plugin's setup tasks are dependencies of the guarded tasks below and would still download
 // Node and npm when those are skipped.
@@ -116,6 +103,13 @@ val npmBuild =
   }
 
 tasks.named<Jar>("jar") {
-  mustRunAfter(npmBuild)
-  from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) { into(resourceTargetPath) }
+  // builtBy makes every consumer of the jar, such as the distribution, wait for the npm build.
+  from(
+    objects
+      .fileCollection()
+      .from(frontendPackagedDirectory.orElse(frontendBuildDirectory))
+      .builtBy(npmBuild)
+  ) {
+    into(resourceTargetPath)
+  }
 }
