@@ -235,6 +235,23 @@ final class PhysicalTenantRuntimeLifecycleIT {
   }
 
   @Test
+  void shouldForgetTheLastRestartOfARemovedTenant() {
+    // given
+    final var tenantId = uniqueTenantId();
+    lifecycle().add(tenantId, tenantConfiguration("Restarted"));
+    awaitHealth(tenantId, State.HEALTHY);
+    lifecycle().replace(tenantId, tenantConfiguration("Restarted again"));
+    awaitHealth(tenantId, State.HEALTHY);
+    assertThat(lifecycle().lastRestart(tenantId)).isPresent();
+
+    // when
+    lifecycle().remove(tenantId);
+
+    // then
+    assertThat(lifecycle().lastRestart(tenantId)).isEmpty();
+  }
+
+  @Test
   void shouldRejectRestRequestsForATenantWithoutSecurityChain() {
     // given
     final var tenantId = uniqueTenantId();

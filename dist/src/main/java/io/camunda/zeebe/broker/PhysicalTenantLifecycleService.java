@@ -237,6 +237,7 @@ public final class PhysicalTenantLifecycleService {
           releaseResources(physicalTenantId);
           registry.remove(physicalTenantId);
           configurations.remove(physicalTenantId);
+          lastRestarts.remove(physicalTenantId);
           environment =
               PhysicalTenantEnvironments.withTenants(
                   environment, Map.of(), Set.of(physicalTenantId));
