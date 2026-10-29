@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
@@ -39,9 +40,10 @@ import org.slf4j.Logger;
  * configuration this member already runs, by hash, restarts nothing.
  *
  * <p>The changes of one tenant run one after the other; changes of different tenants run at the
- * same time, except that only one tenant's module starts or stops at a time on this member. A
- * replace waits, before the restart, until the tenant's partitions keep a quorum on the other
- * members, and after it, until the tenant serves here again (see {@link
+ * same time, except that only one tenant's module starts or stops at a time on this member; taking
+ * back a restarted tenant's leadership does not hold up the others. A replace waits, before the
+ * restart, until the tenant's partitions keep a quorum on the other members, and after it, until
+ * the member took back the leadership it handed over and the tenant serves here again (see {@link
  * PhysicalTenantRolloutReadiness}); only then does the rollout go on to the next member. A tenant
  * that does not become ready in time reports {@link State#DEGRADED} and fails the step, which
  * dynamic-config retries; the retry waits again without restarting the tenant again.
@@ -185,12 +187,14 @@ public final class PhysicalTenantConfigExecutor
         readiness.awaitQuorumElsewhere(
             physicalTenantId,
             why -> waits(physicalTenantId, reference, "before the restart: " + why));
-        changeModule(
-            () ->
-                lifecycle.replace(
-                    physicalTenantId,
-                    PhysicalTenantConfigCodec.asProperties(subtree),
-                    handoverPreference(reference)));
+        final var replacement =
+            changeModuleFor(
+                () ->
+                    lifecycle.restart(
+                        physicalTenantId,
+                        PhysicalTenantConfigCodec.asProperties(subtree),
+                        handoverPreference(reference)));
+        lifecycle.completeRestart(physicalTenantId, replacement);
         applied.put(
             physicalTenantId, new Applied(reference.version(), reference.sha256(), subtree, false));
         awaitReady(physicalTenantId, reference);
@@ -257,9 +261,17 @@ public final class PhysicalTenantConfigExecutor
   }
 
   private void changeModule(final Runnable change) {
+    changeModuleFor(
+        () -> {
+          change.run();
+          return null;
+        });
+  }
+
+  private <T> T changeModuleFor(final Supplier<T> change) {
     moduleChanges.lock();
     try {
-      change.run();
+      return change.get();
     } finally {
       moduleChanges.unlock();
     }

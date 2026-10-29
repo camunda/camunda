@@ -204,6 +204,23 @@ public final class PhysicalTenantLifecycleService {
       final String physicalTenantId,
       final Map<String, Object> configuration,
       final Comparator<MemberId> handoverPreference) {
+    final var replacement = restart(physicalTenantId, configuration, handoverPreference);
+    completeRestart(physicalTenantId, replacement);
+    return replacement.tenant();
+  }
+
+  /**
+   * The first part of {@link #replace(String, Map, Comparator)}: hands over the leadership, stops
+   * the module and starts it with the new configuration. The caller completes the change with
+   * {@link #completeRestart}, which may take until {@code rebalance.leader-wait-timeout} and does
+   * not need the module to stay as it is, so it can run while other tenants' modules change.
+   *
+   * @throws PhysicalTenantChangeException if the change is rejected, or the module did not start
+   */
+  public Replacement restart(
+      final String physicalTenantId,
+      final Map<String, Object> configuration,
+      final Comparator<MemberId> handoverPreference) {
     return underChangeLock(
         () -> {
           final var current = requireChangeable(physicalTenantId);
@@ -249,9 +266,17 @@ public final class PhysicalTenantLifecycleService {
                     0);
             lastRestarts.put(physicalTenantId, restart);
           }
-          afterRestart(physicalTenantId, restart);
-          return replaced;
+          return new Replacement(replaced, restart);
         });
+  }
+
+  /**
+   * The second part of {@link #replace(String, Map, Comparator)}: takes back the leadership of the
+   * partitions handed over before the restart, once their replicas caught up, and returns after
+   * that.
+   */
+  public void completeRestart(final String physicalTenantId, final Replacement replacement) {
+    afterRestart(physicalTenantId, replacement.restart());
   }
 
   /**
@@ -602,7 +627,8 @@ public final class PhysicalTenantLifecycleService {
       }
     }
     final var completed = restart.after(reclaimed, System.nanoTime());
-    lastRestarts.put(physicalTenantId, completed);
+    lastRestarts.computeIfPresent(
+        physicalTenantId, (id, current) -> current == restart ? completed : current);
     caughtUp.thenAccept(
         watched ->
             lastRestarts.computeIfPresent(
@@ -780,6 +806,11 @@ public final class PhysicalTenantLifecycleService {
    *
    * @param lastRestart empty until the tenant restarted on this node for a configuration change
    */
+  /**
+   * A tenant whose module was restarted with a new configuration, and how the restart went so far.
+   */
+  public record Replacement(PhysicalTenant tenant, TenantRestart restart) {}
+
   public record LocalStatus(
       State health, @Nullable String healthDetail, @Nullable String lastRestart) {}
 

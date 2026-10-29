@@ -34,6 +34,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -77,7 +78,7 @@ final class PhysicalTenantConfigExecutorTest {
 
     // then
     assertThat(retry).succeedsWithin(TIMEOUT);
-    verify(lifecycle, times(1)).replace(eq("slow"), anyMap(), any());
+    verify(lifecycle, times(1)).restart(eq("slow"), anyMap(), any());
     verify(readiness, times(2)).awaitReady(eq("slow"), any());
     assertThat(executor.applied("slow").orElseThrow().version()).isEqualTo(2);
     assertThat(registry.health("slow").orElseThrow().state()).isEqualTo(State.HEALTHY);
@@ -109,12 +110,40 @@ final class PhysicalTenantConfigExecutorTest {
   }
 
   @Test
+  void shouldRestartAnotherTenantWhileOneTakesBackItsLeadership() {
+    // given
+    executor.runsFromStaticConfiguration("slow", Map.of("a", "1"));
+    executor.runsFromStaticConfiguration("fast", Map.of("b", "1"));
+    final var takenBack = new CompletableFuture<Void>();
+    doAnswer(
+            invocation -> {
+              takenBack.join();
+              return null;
+            })
+        .when(lifecycle)
+        .completeRestart(eq("slow"), any());
+    final var slow = executor.apply("slow", reference(2, "a", "2"), encode("a", "2"));
+    Awaitility.await().untilAsserted(() -> verify(lifecycle).completeRestart(eq("slow"), any()));
+
+    // when
+    final var fast = executor.apply("fast", reference(2, "b", "2"), encode("b", "2"));
+
+    // then
+    assertThat(fast).succeedsWithin(TIMEOUT);
+    verify(lifecycle).restart(eq("fast"), anyMap(), any());
+    assertThat(slow).isNotDone();
+    verify(readiness, never()).awaitReady(eq("slow"), any());
+    takenBack.complete(null);
+    assertThat(slow).succeedsWithin(TIMEOUT);
+  }
+
+  @Test
   void shouldRestartNothingAndRecoverWhenARejectedChangeIsRolledBack() {
     // given
     executor.runsFromStaticConfiguration("slow", Map.of("a", "1"));
     doThrow(new PhysicalTenantChangeException(Reason.INVALID, "invalid", null))
         .when(lifecycle)
-        .replace(eq("slow"), anyMap(), any());
+        .restart(eq("slow"), anyMap(), any());
     assertThat(executor.apply("slow", reference(2, "a", "2"), encode("a", "2")))
         .failsWithin(TIMEOUT);
 
@@ -123,7 +152,7 @@ final class PhysicalTenantConfigExecutorTest {
 
     // then
     assertThat(rolledBack).succeedsWithin(TIMEOUT);
-    verify(lifecycle, times(1)).replace(eq("slow"), anyMap(), any());
+    verify(lifecycle, times(1)).restart(eq("slow"), anyMap(), any());
     verify(readiness, never()).awaitReady(eq("slow"), any());
     assertThat(executor.applied("slow").orElseThrow().version()).isEqualTo(3);
     assertThat(registry.health("slow").orElseThrow().state()).isEqualTo(State.HEALTHY);
