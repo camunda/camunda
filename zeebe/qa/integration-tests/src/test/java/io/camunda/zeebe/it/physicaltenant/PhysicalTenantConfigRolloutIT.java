@@ -11,11 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -220,6 +222,7 @@ final class PhysicalTenantConfigRolloutIT {
     final var tenantId = createRolledOut(uniqueTenantId());
     final var stopped = CLUSTER.brokers().get(MemberId.from("2"));
     stopped.stop();
+    awaitSeenDown(tenantId, MemberId.from("2"));
     final var updated = tenantConfiguration("While a broker is down");
     updated.put("data.snapshot-period", "9m");
 
@@ -406,6 +409,25 @@ final class PhysicalTenantConfigRolloutIT {
                 .getDirectory())
         .resolve(tenantId)
         .resolve("partitions");
+  }
+
+  private static void awaitSeenDown(final String tenantId, final MemberId down) {
+    Awaitility.await("the running brokers no longer see broker %s".formatted(down.id()))
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () ->
+                CLUSTER.brokers().entrySet().stream()
+                    .filter(entry -> !entry.getKey().equals(down))
+                    .forEach(
+                        entry ->
+                            assertThat(
+                                    entry
+                                        .getValue()
+                                        .bean(BrokerTopologyManager.class)
+                                        .getTopology(tenantId)
+                                        .getBrokers())
+                                .extracting(BrokerMemberId::memberId)
+                                .doesNotContain(down)));
   }
 
   private static void awaitPortReleased(final int port) {
