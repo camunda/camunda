@@ -264,6 +264,25 @@ final class PhysicalTenantRuntimeLifecycleIT {
   }
 
   @Test
+  void shouldAnswerASecondaryStorageRequestOfATenantAddedAtRuntimeLikeABootTenant() {
+    // given
+    final var tenantId = uniqueTenantId();
+    lifecycle().add(tenantId, tenantConfiguration("Without secondary storage"));
+    awaitHealth(tenantId, State.HEALTHY);
+    final var bootTenant =
+        restResponse("/physical-tenants/" + BOOT_TENANT + "/v2/process-instances/1");
+
+    // when
+    final var addedTenant =
+        restResponse("/physical-tenants/" + tenantId + "/v2/process-instances/1");
+
+    // then
+    assertThat(bootTenant.body()).contains("secondary storage");
+    assertThat(addedTenant.statusCode()).isEqualTo(bootTenant.statusCode());
+    assertThat(addedTenant.body().replace(tenantId, BOOT_TENANT)).isEqualTo(bootTenant.body());
+  }
+
+  @Test
   void shouldExposeTenantHealthThroughTheActuator() {
     // given
     final var tenantId = uniqueTenantId();
@@ -385,6 +404,10 @@ final class PhysicalTenantRuntimeLifecycleIT {
 
   private String body(final String actuatorPath) {
     return send(broker.monitoringUri(actuatorPath)).body();
+  }
+
+  private HttpResponse<String> restResponse(final String path) {
+    return send(URI.create(broker.restAddress().toString().replaceAll("/$", "") + path));
   }
 
   private int restStatus(final String path) {

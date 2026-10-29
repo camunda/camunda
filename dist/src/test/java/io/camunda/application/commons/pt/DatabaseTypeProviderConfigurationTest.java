@@ -10,16 +10,21 @@ package io.camunda.application.commons.pt;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
 
 class DatabaseTypeProviderConfigurationTest {
@@ -77,7 +82,7 @@ class DatabaseTypeProviderConfigurationTest {
 
     // when
     final var databaseTypeProvider =
-        new DatabaseTypeProviderConfiguration().databaseTypeProvider(resolver);
+        new DatabaseTypeProviderConfiguration().databaseTypeProvider(resolver, noLifecycle());
 
     // then each tenant resolves its own configured type
     assertThat(databaseTypeProvider.apply(DEFAULT_PHYSICAL_TENANT_ID))
@@ -93,12 +98,38 @@ class DatabaseTypeProviderConfigurationTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  void shouldResolveTheTypeOfATenantTheLifecycleAdded() {
+    // given
+    final Camunda root = new Camunda();
+    root.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+    final Camunda added = new Camunda();
+    added.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+    final PhysicalTenantLifecycleService lifecycle = mock(PhysicalTenantLifecycleService.class);
+    when(lifecycle.configuration("added")).thenReturn(Optional.of(added));
+    final ObjectProvider<PhysicalTenantLifecycleService> provider = noLifecycle();
+    when(provider.getIfAvailable()).thenReturn(lifecycle);
+
+    // when
+    final var databaseTypeProvider =
+        new DatabaseTypeProviderConfiguration()
+            .databaseTypeProvider(PhysicalTenantResolver.of(new MockEnvironment(), root), provider);
+
+    // then
+    assertThat(databaseTypeProvider.apply("added")).isEqualTo(DatabaseType.NONE);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static ObjectProvider<PhysicalTenantLifecycleService> noLifecycle() {
+    return mock(ObjectProvider.class);
+  }
+
   private static Function<String, DatabaseType> databaseTypeProviderFor(
       final SecondaryStorageType secondaryStorageType) {
     final Camunda camunda = new Camunda();
     camunda.getData().getSecondaryStorage().setType(secondaryStorageType);
     final PhysicalTenantResolver resolver =
         PhysicalTenantResolver.of(new MockEnvironment(), camunda);
-    return new DatabaseTypeProviderConfiguration().databaseTypeProvider(resolver);
+    return new DatabaseTypeProviderConfiguration().databaseTypeProvider(resolver, noLifecycle());
   }
 }
