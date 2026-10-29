@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.pt.JwksTestServer;
 import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
@@ -236,7 +237,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantAccessTokenTest {
         membershipPort,
         propagator,
         environment,
-        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
+        configuration.physicalTenantOidcSettings(
+            PhysicalTenantAuthentications.of(environment), membershipPort, propagator));
   }
 
   /**

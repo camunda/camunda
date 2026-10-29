@@ -22,15 +22,17 @@ import io.camunda.authentication.config.AbstractWebSecurityConfigTest;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -71,7 +73,9 @@ public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityCo
   private static final String ANSWERING_ISSUER_PATH = "/answering";
   private static final String SILENT_ISSUER_PATH = "/silent";
 
-  @Autowired private OidcTokenAuthenticationConverter converter;
+  @Autowired
+  @Qualifier("oidcTokenAuthenticationConverter")
+  private CamundaAuthenticationConverter<Authentication> converter;
 
   @DynamicPropertySource
   static void registerIssuerUris(final DynamicPropertyRegistry registry) {

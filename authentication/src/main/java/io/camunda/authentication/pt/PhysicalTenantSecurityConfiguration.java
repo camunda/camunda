@@ -48,6 +48,17 @@ public class PhysicalTenantSecurityConfiguration {
   }
 
   /**
+   * The authentication configuration each physical tenant's HTTP security serves on this node,
+   * which host-side per-tenant state (claim converters, OIDC settings, groups claims) is built
+   * from.
+   */
+  @Bean
+  public PhysicalTenantAuthentications physicalTenantAuthentications(
+      final Environment environment) {
+    return PhysicalTenantAuthentications.of(environment);
+  }
+
+  /**
    * Unifies the unprefixed cluster ({@code /v2}) security chain with the {@code default} physical
    * tenant, so the two surfaces for the default tenant are identical.
    *

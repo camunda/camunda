@@ -9,23 +9,34 @@ package io.camunda.authentication.config;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 
 /**
  * The {@link PhysicalTenantOidcSettings} of every non-default physical tenant, and the one rule
- * that picks the settings for the request's tenant.
+ * that picks the settings for the request's tenant. A tenant's settings are looked up per request,
+ * so they follow the configuration its HTTP security serves.
  */
 final class PhysicalTenantOidcSettingsRegistry {
 
-  private final Map<String, PhysicalTenantOidcSettings> settingsByPhysicalTenant;
+  private final Function<String, Optional<PhysicalTenantOidcSettings>> settingsByPhysicalTenant;
 
   PhysicalTenantOidcSettingsRegistry(
       final Map<String, PhysicalTenantOidcSettings> settingsByPhysicalTenant) {
-    this.settingsByPhysicalTenant = Map.copyOf(settingsByPhysicalTenant);
+    final var settings = Map.copyOf(settingsByPhysicalTenant);
+    this.settingsByPhysicalTenant = id -> Optional.ofNullable(settings.get(id));
+  }
+
+  PhysicalTenantOidcSettingsRegistry(
+      final PhysicalTenantAuthentications.Derived<PhysicalTenantOidcSettings>
+          settingsByPhysicalTenant) {
+    this.settingsByPhysicalTenant = settingsByPhysicalTenant::get;
   }
 
   /**
@@ -40,7 +51,7 @@ final class PhysicalTenantOidcSettingsRegistry {
     if (physicalTenantId == null || DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return null;
     }
-    final var settings = settingsByPhysicalTenant.get(physicalTenantId);
+    final var settings = settingsByPhysicalTenant.apply(physicalTenantId).orElse(null);
     if (settings == null) {
       throw new OAuth2AuthenticationException(
           new OAuth2Error(

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -71,7 +72,7 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
             membershipPort,
             MembershipResolutionContextPropagator.identity(),
             scopedOidcClaimsProviderFactory,
-            environment);
+            PhysicalTenantAuthentications.of(environment));
     final var jwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());
@@ -99,7 +100,7 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
             membershipPort,
             MembershipResolutionContextPropagator.identity(),
             scopedOidcClaimsProviderFactory,
-            environment);
+            PhysicalTenantAuthentications.of(environment));
 
     final var entraJwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(entraJwt.getClaims(), entraJwt.getTokenValue()))
@@ -133,7 +134,7 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
             membershipPort,
             MembershipResolutionContextPropagator.identity(),
             scopedOidcClaimsProviderFactory,
-            environment);
+            PhysicalTenantAuthentications.of(environment));
     final var jwt = jwtWithIssuer("https://auth0.example.com");
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());
@@ -160,7 +161,7 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
             membershipPort,
             MembershipResolutionContextPropagator.identity(),
             scopedOidcClaimsProviderFactory,
-            environment);
+            PhysicalTenantAuthentications.of(environment));
     final var jwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());

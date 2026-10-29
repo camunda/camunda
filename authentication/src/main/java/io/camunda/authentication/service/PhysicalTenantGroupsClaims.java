@@ -9,13 +9,12 @@ package io.camunda.authentication.service;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.PhysicalTenantContext;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,8 @@ final class PhysicalTenantGroupsClaims {
 
   private static final String ISSUER_CLAIM = "iss";
 
-  private final Map<String, TenantGroupsClaims> byPhysicalTenant = new HashMap<>();
+  private final PhysicalTenantAuthentications.Derived<TenantGroupsClaims> byPhysicalTenant;
+  private final TenantGroupsClaims defaultTenant;
 
   /**
    * @param cslProperties the config of the cluster surface, which is the {@code default} tenant's
@@ -46,11 +46,20 @@ final class PhysicalTenantGroupsClaims {
    */
   PhysicalTenantGroupsClaims(
       final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
-    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
-        .forEach(
-            (tenantId, config) -> byPhysicalTenant.put(tenantId, TenantGroupsClaims.of(config)));
-    byPhysicalTenant.put(
-        DEFAULT_PHYSICAL_TENANT_ID, TenantGroupsClaims.of(cslProperties.getAuthentication()));
+    this(cslProperties, PhysicalTenantAuthentications.of(environment));
+  }
+
+  /**
+   * @param cslProperties the config of the cluster surface, which is the {@code default} tenant's
+   *     resolved config when physical tenants are configured
+   * @param authentications the configuration every other physical tenant is served with, which
+   *     changes with the tenant lifecycle
+   */
+  PhysicalTenantGroupsClaims(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final PhysicalTenantAuthentications authentications) {
+    byPhysicalTenant = authentications.derive((tenantId, config) -> TenantGroupsClaims.of(config));
+    defaultTenant = TenantGroupsClaims.of(cslProperties.getAuthentication());
   }
 
   /**
@@ -61,8 +70,11 @@ final class PhysicalTenantGroupsClaims {
    *     tenant fails instead of reading groups with another tenant's groups mode
    */
   TenantGroupsClaims current() {
-    final TenantGroupsClaims claims = byPhysicalTenant.get(PhysicalTenantContext.current());
-    return claims != null ? claims : byPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
+    final String physicalTenantId = PhysicalTenantContext.current();
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return defaultTenant;
+    }
+    return byPhysicalTenant.get(physicalTenantId).orElse(defaultTenant);
   }
 
   private static boolean hasText(final String value) {

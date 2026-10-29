@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -200,7 +201,7 @@ final class OidcOverrideBeansConfigurationClaimInheritanceTest {
             membershipPort,
             propagator,
             claimsProviderFactory,
-            environment);
+            PhysicalTenantAuthentications.of(environment));
     final var jwt = Jwt.withTokenValue("token").header("alg", "none");
     claims.forEach(jwt::claim);
     return converter.convert(new JwtAuthenticationToken(jwt.build()));
@@ -229,7 +230,8 @@ final class OidcOverrideBeansConfigurationClaimInheritanceTest {
             membershipPort,
             propagator,
             environment,
-            configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
+            configuration.physicalTenantOidcSettings(
+                PhysicalTenantAuthentications.of(environment), membershipPort, propagator));
     final var principal = mock(OidcUser.class);
     when(principal.getAttributes()).thenReturn(new HashMap<>(claims));
     return converter.convert(new OAuth2AuthenticationToken(principal, List.of(), registrationId));

@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.authentication.utils.OutageLog;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.entities.GroupEntity;
@@ -37,6 +38,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -83,6 +86,19 @@ public class DefaultMembershipService implements MembershipPort {
       final Environment environment) {
     this.serviceRegistry = serviceRegistry;
     groupsClaims = new PhysicalTenantGroupsClaims(cslProperties, environment);
+  }
+
+  @Autowired
+  public DefaultMembershipService(
+      final ServiceRegistry serviceRegistry,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final ObjectProvider<PhysicalTenantAuthentications> authentications,
+      final Environment environment) {
+    this.serviceRegistry = serviceRegistry;
+    groupsClaims =
+        new PhysicalTenantGroupsClaims(
+            cslProperties,
+            authentications.getIfAvailable(() -> PhysicalTenantAuthentications.of(environment)));
   }
 
   @Override

@@ -13,9 +13,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -118,7 +121,51 @@ final class OidcOverrideBeansConfigurationPhysicalTenantWiringTest {
         .hasMessageContaining("root_client");
   }
 
-  private CamundaAuthenticationConverter<Authentication> buildConverter(final MockEnvironment env) {
+  @Test
+  void shouldResolveATokenOfATenantAddedAfterStartupWithItsOwnClaim() {
+    // given
+    final var authentications = PhysicalTenantAuthentications.of(environmentWithTenantA());
+    final var converter = buildConverter(authentications);
+    authentications.put(
+        "added",
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("added", environmentWithAdded()));
+    bindRequestForTenant("added");
+
+    // when
+    final var result = converter.convert(jwt("https://added.example", "added_user", "carol"));
+
+    // then
+    assertThat(result.authenticatedUsername()).isEqualTo("carol");
+  }
+
+  @Test
+  void shouldResolveATokenWithTheClaimATenantWasChangedTo() {
+    // given
+    final var authentications = PhysicalTenantAuthentications.of(environmentWithTenantA());
+    final var converter = buildConverter(authentications);
+    bindRequestForTenant(TENANT_A);
+    assertThat(converter.convert(jwt(TENANT_A_ISSUER, "tenanta_user", "alice")))
+        .extracting(CamundaAuthentication::authenticatedUsername)
+        .isEqualTo("alice");
+    final var changed = environmentWithTenantA();
+    changed.setProperty(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.username-claim",
+        "changed_user");
+
+    // when
+    authentications.put(
+        TENANT_A, PhysicalTenantAuthConfigurations.forPhysicalTenant(TENANT_A, changed));
+
+    // then
+    assertThat(converter.convert(jwt(TENANT_A_ISSUER, "changed_user", "dave")))
+        .extracting(CamundaAuthentication::authenticatedUsername)
+        .isEqualTo("dave");
+    assertThatThrownBy(() -> converter.convert(jwt(TENANT_A_ISSUER, "tenanta_user", "alice")))
+        .isInstanceOf(OAuth2AuthenticationException.class);
+  }
+
+  private CamundaAuthenticationConverter<Authentication> buildConverter(
+      final PhysicalTenantAuthentications authentications) {
     when(scopedOidcClaimsProviderFactory.buildClaimsProvider(any(), any()))
         .thenReturn(passthrough());
     return configuration.oidcTokenAuthenticationConverter(
@@ -128,7 +175,21 @@ final class OidcOverrideBeansConfigurationPhysicalTenantWiringTest {
         membershipPort,
         MembershipResolutionContextPropagator.identity(),
         scopedOidcClaimsProviderFactory,
-        env);
+        authentications);
+  }
+
+  private static MockEnvironment environmentWithAdded() {
+    final var env = environmentWithTenantA();
+    final var flat = "camunda.physical-tenants.added.security.authentication.oidc.";
+    env.setProperty(flat + "issuer-uri", "https://added.example");
+    env.setProperty(flat + "client-id", "added-client");
+    env.setProperty(flat + "username-claim", "added_user");
+    env.setProperty(flat + "client-id-claim", "added_client");
+    return env;
+  }
+
+  private CamundaAuthenticationConverter<Authentication> buildConverter(final MockEnvironment env) {
+    return buildConverter(PhysicalTenantAuthentications.of(env));
   }
 
   private static MockEnvironment environmentWithTenantA() {

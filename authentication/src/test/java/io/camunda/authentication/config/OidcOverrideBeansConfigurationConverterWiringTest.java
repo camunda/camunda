@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
@@ -231,7 +232,8 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         membershipPort,
         propagator,
         environment,
-        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
+        configuration.physicalTenantOidcSettings(
+            PhysicalTenantAuthentications.of(environment), membershipPort, propagator));
   }
 
   private static OAuth2AuthenticationToken login(

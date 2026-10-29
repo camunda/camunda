@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
@@ -195,7 +196,8 @@ class OidcOverrideBeansConfigurationPhysicalTenantClaimMappingTest {
         membershipPort,
         propagator,
         environment,
-        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
+        configuration.physicalTenantOidcSettings(
+            PhysicalTenantAuthentications.of(environment), membershipPort, propagator));
   }
 
   private static OAuth2AuthenticationToken login(final String registrationId) {

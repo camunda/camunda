@@ -7,12 +7,15 @@
  */
 package io.camunda.authentication.service;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthentications;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,17 @@ public class NoDBMembershipService implements MembershipPort {
   public NoDBMembershipService(
       final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
     groupsClaims = new PhysicalTenantGroupsClaims(cslProperties, environment);
+  }
+
+  @Autowired
+  public NoDBMembershipService(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final ObjectProvider<PhysicalTenantAuthentications> authentications,
+      final Environment environment) {
+    groupsClaims =
+        new PhysicalTenantGroupsClaims(
+            cslProperties,
+            authentications.getIfAvailable(() -> PhysicalTenantAuthentications.of(environment)));
   }
 
   @Override

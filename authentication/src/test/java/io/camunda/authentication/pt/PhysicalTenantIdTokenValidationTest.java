@@ -244,7 +244,7 @@ class PhysicalTenantIdTokenValidationTest {
     final var configuration = new OidcOverrideBeansConfiguration(cslProperties);
     final var settings =
         configuration.physicalTenantOidcSettings(
-            environment,
+            PhysicalTenantAuthentications.of(environment),
             mock(MembershipPort.class),
             MembershipResolutionContextPropagator.identity());
     return configuration.idTokenDecoderFactory(rootValidators, port, settings);

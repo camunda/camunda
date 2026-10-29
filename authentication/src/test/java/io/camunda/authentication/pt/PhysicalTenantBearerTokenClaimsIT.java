@@ -177,6 +177,6 @@ class PhysicalTenantBearerTokenClaimsIT {
                 httpClient,
                 new ObjectMapper(),
                 meterRegistry),
-            environment);
+            PhysicalTenantAuthentications.of(environment));
   }
 }
