@@ -66,6 +66,8 @@ data.primary-storage.backup.s3.support-legacy-md5
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
 data.primary-storage.backup.write-timeout
+data.primary-storage.disk.used-space.processing
+data.primary-storage.disk.used-space.replication
 data.primary-storage.log-stream.log-index-density
 data.primary-storage.log-stream.log-segment-size
 data.primary-storage.rocks-db.access-metrics

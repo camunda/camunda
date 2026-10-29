@@ -10,6 +10,7 @@ package io.camunda.configuration.data.primarystorage;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.data.primarystorage.disk.FreeSpace;
+import io.camunda.configuration.data.primarystorage.disk.UsedSpace;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -35,12 +36,22 @@ public class Disk {
 
   @NestedConfigurationProperty private FreeSpace freeSpace = new FreeSpace();
 
+  @NestedConfigurationProperty private UsedSpace usedSpace = new UsedSpace();
+
   public FreeSpace getFreeSpace() {
     return freeSpace;
   }
 
   public void setFreeSpace(final FreeSpace freeSpace) {
     this.freeSpace = freeSpace;
+  }
+
+  public UsedSpace getUsedSpace() {
+    return usedSpace;
+  }
+
+  public void setUsedSpace(final UsedSpace usedSpace) {
+    this.usedSpace = usedSpace;
   }
 
   public boolean isMonitoringEnabled() {

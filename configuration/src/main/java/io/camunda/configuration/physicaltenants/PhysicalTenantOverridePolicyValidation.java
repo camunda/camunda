@@ -115,8 +115,11 @@ final class PhysicalTenantOverridePolicyValidation {
               "data.primary-storage.directory",
               "data.primary-storage.versioned-directory-retention-count",
               // #56648: DiskSpaceUsageMonitorActor is a single broker-wide actor built before any
-              // per-tenant BrokerCfg exists, so every disk.* knob is silently ignored per tenant
-              "data.primary-storage.disk",
+              // per-tenant BrokerCfg exists, so these volume-level knobs are silently ignored per
+              // tenant; disk.used-space stays overridable since it is enforced per tenant
+              "data.primary-storage.disk.monitoring-enabled",
+              "data.primary-storage.disk.monitoring-interval",
+              "data.primary-storage.disk.free-space",
               // #56648: RocksDbResources sizes one shared block-cache/write-buffer pool from the
               // root config by design ("adding physical tenants does not multiply RocksDB memory
               // usage") — a per-tenant override of these is silently ignored; sibling

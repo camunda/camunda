@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -26,14 +27,22 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
+  private final UnaryOperator<SegmentAllocator> segmentAllocatorDecorator;
 
   public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+    this(brokerCfg, UnaryOperator.identity());
+  }
+
+  public RaftPartitionFactory(
+      final BrokerCfg brokerCfg, final UnaryOperator<SegmentAllocator> segmentAllocatorDecorator) {
     this.brokerCfg = brokerCfg;
+    this.segmentAllocatorDecorator = segmentAllocatorDecorator;
   }
 
   public RaftPartition createRaftPartition(
@@ -87,7 +96,12 @@ public final class RaftPartitionFactory {
         brokerCfg.getData().getDisk().getFreeSpace().getReplication().toBytes());
     storageConfig.setJournalIndexDensity(brokerCfg.getData().getLogIndexDensity());
     storageConfig.setSegmentAllocator(
-        brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy().segmentAllocator());
+        segmentAllocatorDecorator.apply(
+            brokerCfg
+                .getExperimental()
+                .getRaft()
+                .getSegmentPreallocationStrategy()
+                .segmentAllocator()));
 
     partitionConfig.setStorageConfig(storageConfig);
     partitionConfig.setEntryValidator(new ZeebeEntryValidator());

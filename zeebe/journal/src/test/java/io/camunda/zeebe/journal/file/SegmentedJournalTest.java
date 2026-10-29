@@ -17,6 +17,8 @@ package io.camunda.zeebe.journal.file;
 
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -35,6 +37,9 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.FileDescriptor;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1186,6 +1191,64 @@ class SegmentedJournalTest {
     assertThatThrownBy(() -> journal.append(4, journalFactory.entry()))
         .isInstanceOf(OutOfDiskSpace.class)
         .hasMessage("Nope, no free space.");
+  }
+
+  @Test
+  void shouldNotCreateSegmentFileWhenAllocatorRefusesSegment() throws IOException {
+    // given
+    final var permittedSegments = new AtomicInteger(2);
+    journal = openJournalWithSegmentPermits(permittedSegments);
+    journal.append(1, journalFactory.entry());
+    journal.append(2, journalFactory.entry());
+
+    // when
+    final var refusal = catchThrowable(() -> journal.append(3, journalFactory.entry()));
+
+    // then
+    assertThat(refusal).isInstanceOf(OutOfDiskSpace.class).hasMessage("Segment refused");
+    assertThat(segmentFiles()).hasSize(2);
+  }
+
+  @Test
+  void shouldAppendAgainOnceAllocatorPermitsSegment() {
+    // given
+    final var permittedSegments = new AtomicInteger(2);
+    journal = openJournalWithSegmentPermits(permittedSegments);
+    journal.append(1, journalFactory.entry());
+    journal.append(2, journalFactory.entry());
+    catchThrowable(() -> journal.append(3, journalFactory.entry()));
+
+    // when
+    permittedSegments.set(1);
+
+    // then
+    assertThatCode(() -> journal.append(3, journalFactory.entry())).doesNotThrowAnyException();
+  }
+
+  private SegmentedJournal openJournalWithSegmentPermits(final AtomicInteger permittedSegments) {
+    final var allocator =
+        new SegmentAllocator() {
+          @Override
+          public void allocate(
+              final FileChannel channel, final FileDescriptor fileDescriptor, final long size) {}
+
+          @Override
+          public void checkCanAllocate(final long segmentSize) {
+            if (permittedSegments.getAndUpdate(n -> Math.max(0, n - 1)) == 0) {
+              throw new OutOfDiskSpace("Segment refused");
+            }
+          }
+        };
+    journalFactory = new TestJournalFactory("test", 1, allocator);
+    final var segmentedJournal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(segmentedJournal);
+    return segmentedJournal;
+  }
+
+  private List<Path> segmentFiles() throws IOException {
+    try (final var files = Files.list(directory.resolve("data"))) {
+      return files.filter(file -> file.getFileName().toString().endsWith(".log")).toList();
+    }
   }
 
   @Test
