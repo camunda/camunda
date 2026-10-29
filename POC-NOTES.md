@@ -104,3 +104,129 @@ meters), actors, RocksDB instances and file descriptors constant, restarts 75–
 - Elasticsearch/OpenSearch clients, the CSL dispatcher and leadership transfer before a restart are
   unchanged from the branches' notes.
 
+# Rollout safety: per-tenant changes, readiness gate and cancel
+
+Branch `pt-poc-rollout-safety`, written on top of `pt-poc-csl-runtime-security` (ae1a3b56a1a) and
+carried here without the Camunda Security Library commits. The scenarios that ran in
+`PhysicalTenantRuntimeSecurityIT` (an unreachable identity provider holding a tenant's change) are
+not on this branch; the table names the tests that remain. Not for merge as is.
+
+Two problems measured on the branch below: one global change lock (a tenant change that cannot
+complete blocks every other tenant's change cluster-wide), and a rolling restart that moves on to
+the next member before the restarted replica is healthy again.
+
+## What is proven, and by which test
+
+|                                  Claim                                   |                                                                                                                        Evidence                                                                                                                         |                                                                      Test                                                                       |
+|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Changes of different tenants roll out independently                      | While one tenant's change cannot apply on the first member, other tenants' changes roll out to every member                                                                                                                                             | `PhysicalTenantConfigRolloutTest#shouldRollOutChangesOfOtherTenantsWhileOneTenantsChangeCannotApply` (3 members, real messaging, fake executor) |
+| A second change of the same tenant is rejected (US-8)                    | `409 IN_PROGRESS` "A change of physical tenant '…' is in progress" from the coordinator (a delete while the update rolls out)                                                                                                                           | `PhysicalTenantConfigRolloutIT#shouldRejectASecondChangeOfATenantWhileItsChangeRollsOut`; `PhysicalTenantConfigChangesTest`                     |
+| Another tenant's change is accepted while one rolls out                  | `202`, both roll out                                                                                                                                                                                                                                    | `PhysicalTenantConfigRolloutIT#shouldRollOutAChangeOfAnotherTenantWhileOneRollsOut`                                                             |
+| Cluster plans stay serialised against tenant rollouts                    | A cluster-wide plan (member leave) and a plan for the rolling tenant's group are rejected (`ConcurrentModificationException` naming the tenant); a plan for another group is admitted. Without the guard the member leave was admitted (mutation check) | `NewModelConfigurationChangeCoordinatorTest` (3 new tests)                                                                                      |
+| Cancel rolls a stuck update back                                         | `POST /actuator/physicalTenants/<id>/cancel` → `202`; version 3 with the hash of version 1 rolled out on every broker; old tokens 200; no module restarted (same module contexts); member 0 `HEALTHY` again; a second cancel `400` "No change"          | not on this branch (needed the security IT)                                                                                                     |
+| Cancel restarts only members that applied the cancelled version          | member 0 applied version 2, member 1 could not, member 2 was not reached: after the cancel member 0 ran 1, 2, 3 and member 2 ran 1, 3; every member runs version 1's configuration                                                                      | `PhysicalTenantConfigRolloutTest#shouldRollACancelledUpdateBackOnEveryMember`; rules in `PhysicalTenantConfigChangesTest` (6 tests)             |
+| Quorum is never lost under load with the readiness gate                  | 3 brokers, RF 3, continuous `publishMessage` through all three gateways, healthy replicas sampled every 10 ms on every broker: minimum 2 healthy replicas, 0 ms below quorum, in 6 of 6 rollouts (2 runs)                                               | `PhysicalTenantRolloutReadinessIT#shouldKeepAQuorumOfTheChangedTenantsPartitionUnderLoad`                                                       |
+| Without a wait the quorum is lost                                        | readiness `NONE`: minimum 0 healthy replicas, ~2.8 s below quorum per rollout                                                                                                                                                                           | `PhysicalTenantRolloutReadinessIT#shouldLoseTheQuorumWhenTheRolloutDoesNotWait`                                                                 |
+| A rollout that would lose a quorum is held                               | broker 2 down: the update waits on member 0 before restarting ("before the restart: partition 1 has 1 of the 2 healthy replicas …"), no replica restarts, and completes once broker 2 is back                                                           | `PhysicalTenantConfigRolloutIT#shouldHoldARolloutThatWouldLoseAQuorumUntilTheDownBrokerReturns`                                                 |
+| A never-ready member stops the rollout, shows in health, no restart loop | readiness timeout → tenant `DEGRADED` with the reason, step fails, the retry waits again without a second restart, then `HEALTHY`                                                                                                                       | `PhysicalTenantConfigExecutorTest` (3, incl. another tenant applying on the same member while one waits)                                        |
+
+A replica counts as healthy in the IT when its Raft role is leader or follower and its
+`ZeebePartition` reports `HEALTHY`.
+
+## How it works
+
+|              Piece               |     Where      |                                                                                                                                                                                             What                                                                                                                                                                                             |
+|----------------------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Per-tenant lock                  | dynamic-config | `PhysicalTenantConfigChanges` no longer rejects a change because another tenant's group has a pending rollout. dynamic-config already drives each group with its own `GraphScopeReconciler` and per-operation retries, so nothing else had to change for rollouts to run side by side                                                                                                        |
+| Cluster plans vs rollouts        | dynamic-config | `ConfigurationChangeCoordinatorImpl` rejects a phased plan whose scope covers a group that is rolling out a tenant config (`PartitionGroupConfiguration#isChangingPhysicalTenantConfig`): a `Global` plan (scaling, member join/leave) while any tenant rolls out, a `Groups` plan while its own group does. Tenant changes were already rejected while a conflicting phased plan is pending |
+| Cancel                           | dynamic-config | `PhysicalTenantConfigRequest.Change.CANCEL` (proto value 4). The coordinator reads version v-1 from its blob store, `cancelPendingChanges()` on the group (recorded as `CANCELLED`), and starts version v+1 with v-1's hash on every live member. Only an update can be cancelled                                                                                                            |
+| Per-tenant execution on a member | dist           | `PhysicalTenantConfigExecutor` chains each tenant's changes on virtual threads; different tenants run concurrently; module start/stop is serialised by a member-wide lock (the lifecycle's own lock stays as a guard)                                                                                                                                                                        |
+| Readiness gate                   | dist           | `PhysicalTenantRolloutReadiness`: before the restart, every local partition of the tenant must keep `min(⌊RF/2⌋+1, RF-1)` healthy replicas on other members (gossiped topology of the embedded broker client); after it, installed + role leader/follower + leader known + partition `HEALTHY`. Bounded, polled every 50 ms                                                                  |
+| No restart loop                  | dist           | the executor records the new configuration as running but not ready; a retry of the same version only waits again                                                                                                                                                                                                                                                                            |
+| Health                           | dist           | a readiness timeout reports `DEGRADED` "applied version N …, but is not ready: …"; a degradation from a rejected change (`INVALID`) or a readiness timeout is cleared once the member runs a version again (e.g. the rollback)                                                                                                                                                               |
+| Observability (US-9)             | dist           | existing: `appliedVersions`, `rolledOut`, `changing`, gauge `zeebe.physical.tenant.config.applied.version`. Added: `pendingMembers` (in order; the first is the member the rollout runs on or waits for) and `rollout` (what it waits for on the answering member, version, since)                                                                                                           |
+| Configuration                    | dist           | `physical-tenant-rollout.readiness` = `NONE` / `INSTALLED` (the previous behaviour) / `SERVING` (default); `physical-tenant-rollout.readiness-timeout` (default 2 min). PoC knobs outside the unified configuration                                                                                                                                                                          |
+
+Cancel semantics: the tenant goes back to the configuration before the update, as a new version, so
+versions only grow and every member records the rollback. A member that applied the cancelled
+version restarts the tenant on the previous configuration; a member that did not runs it already
+(same hash) and restarts nothing; a member whose apply was rejected (`KEPT_PREVIOUS`) becomes
+healthy again. Cancelling a rollback goes back to the version before it, i.e. the cancelled one.
+
+## Measurements
+
+Apple-silicon laptop, three brokers in one JVM, warm JVM, other agents' builds running on the
+machine. Load: one gRPC client per broker gateway publishing messages in a loop (5 s timeout).
+"Longest gap" is the longest time in which no publish succeeded through any gateway.
+
+|  Readiness  | Rollouts | Rollout to 3 brokers | Longest gap |  Failed / accepted   | Min healthy replicas | Below quorum |
+|-------------|----------|----------------------|-------------|----------------------|----------------------|--------------|
+| `NONE`      | 3        | 0.24–0.70 s          | 5.0 s (×3)  | 21–82 / 350–522      | 0                    | 2.74–2.90 s  |
+| `INSTALLED` | 3        | 5.4–8.1 s            | 2.8–3.9 s   | 113–165 / 3352–10021 | 1                    | 23–92 ms     |
+| `SERVING`   | 6        | 5.6–8.4 s            | 2.9–3.4 s   | 80–274 / 5502–8857   | 2                    | 0            |
+
+`NONE`'s 5.0 s gaps are bounded below by the client's 5 s request timeout: requests sent while no
+replica could commit hung until it. The ~3 s gap that remains with `SERVING` is the election after
+the leader's member restarts (as on the earlier branches); leadership transfer before the restart
+(US-17) is what would shorten it.
+
+Other numbers:
+
+|                             What                             |              Result              |
+|--------------------------------------------------------------|----------------------------------|
+| Two other tenants' updates rolled out while a third is stuck | 3.9–4.0 s for both (2 runs)      |
+| Cancel of a stuck update, rolled back on every broker        | 129–130 ms (2 runs; no restarts) |
+| Rollout IT update without load (`SERVING`)                   | 3.3–3.4 s; longest gap 2.7–2.8 s |
+
+## Results on this tree (2026-10-29)
+
+|                                                                        Suite                                                                        |                                                                                   Result                                                                                    |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| dynamic-config impl: `PhysicalTenantConfig*Test`, `NewModelConfigurationChangeCoordinatorTest`, `ClusterConfigurationManagementRequestsHandlerTest` | 51/51; 49/49 on a re-run without the handler test                                                                                                                           |
+| dist `PhysicalTenantConfigExecutorTest`                                                                                                             | 3/3                                                                                                                                                                         |
+| `PhysicalTenantRolloutReadinessIT`                                                                                                                  | 3/3 (plus 1/1 SERVING alone)                                                                                                                                                |
+| `PhysicalTenantConfigRolloutIT`                                                                                                                     | 9/9 (first run 6/9: the down-broker test expected the old behaviour and the next two tests timed out behind the stopped broker; the test was rewritten for the quorum hold) |
+| `PhysicalTenantRuntimeLifecycleIT`                                                                                                                  | 8/8                                                                                                                                                                         |
+
+## Not done, or limits
+
+- **Cancel of a create or a delete** is rejected. A stuck create would need a rollback to "not
+  present" (the delete path) and a stuck delete has nothing to go back to.
+- **Cancel needs version v-1 on the coordinator**: it reads its own blob store; a coordinator that
+  does not hold it rejects the cancel (no fetch from peers).
+- **Cancel through the file input** is not possible: a `FILE`-owned tenant's change is cancelled
+  only through its owner, and the file would send its version again on the next coordinator start.
+- **The cancel of a member's in-flight apply is not interrupted**: dynamic-config forgets the
+  operation, but an apply already running completes and is then rolled back by the next version,
+  because a tenant's changes run one after the other on the member.
+- **The quorum hold makes a rollout wait while a replica of the tenant is down** (e.g. a broker is
+  down), up to the timeout and then with dynamic-config's retries. This is the intended trade (no
+  restart that loses a quorum), but it changes slice 1's "members that are up apply the change"
+  behaviour; an operator can cancel. A forced mode is not implemented.
+- **The pre-restart check reads the gossiped topology**, so it can be a gossip round behind; the
+  post-restart check is local. Replicas that are healthy but lagging are not detected beyond what
+  Raft's "ready after the first commit" and partition health show.
+- **The INSTALLED vs SERVING difference** is in the minimum healthy replicas, not in the measured
+  unavailability: three rollouts each are too few to tell their gaps apart, and the dip with
+  `INSTALLED` was 23–92 ms.
+- **Readiness knobs are Spring properties outside the unified configuration**, not validated and
+  not per tenant.
+- **No metric for "rollout waiting"** or per-member cluster-wide wait reasons: `rollout` shows the
+  answering member only; `pendingMembers` shows which member to ask.
+- **The end-to-end cancel of a stuck change** ran in the security IT, which is not on this branch.
+  The same behaviour is shown by `PhysicalTenantConfigRolloutTest` with a failing fake executor.
+- The coordinator-side unit tests of the handler were not extended for cancel; the cancel path is
+  covered by the rollout test (real messaging).
+
+## How to run
+
+```bash
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/dynamic-config/impl -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='PhysicalTenantConfig*Test,NewModelConfigurationChangeCoordinatorTest'
+./mvnw verify -pl dist -Dquickly -DskipTests=false -DskipITs -Dtest=PhysicalTenantConfigExecutorTest
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dit.test='PhysicalTenantRolloutReadinessIT,PhysicalTenantConfigRolloutIT,PhysicalTenantRuntimeLifecycleIT'
+# measurements: grep "Rollout under load" zeebe/qa/integration-tests/target/failsafe-reports/*Readiness*-output.txt
+```
+
