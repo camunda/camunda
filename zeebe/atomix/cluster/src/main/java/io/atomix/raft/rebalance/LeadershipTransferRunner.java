@@ -15,14 +15,19 @@
  */
 package io.atomix.raft.rebalance;
 
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
+import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.roles.LeaderRole;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The single entry point for coordinated leadership transfers on the leader: decides whether to
@@ -33,6 +38,7 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public final class LeadershipTransferRunner {
+  private static final Logger LOG = LoggerFactory.getLogger(LeadershipTransferRunner.class);
   private final RaftContext raft;
   private final LeaderRole leader;
   private final LeadershipTransferAdmission admission;
@@ -84,7 +90,12 @@ public final class LeadershipTransferRunner {
     }
     final var attempt =
         new LeadershipTransferAttempt(
-            raft, leader, request, configuration, () -> currentAttempt = null);
+            raft,
+            leader,
+            request.desiredLeader(),
+            configuration,
+            () -> currentAttempt = null,
+            reportingTo(raft, request));
     currentAttempt = attempt;
     attempt.start();
     return LeadershipTransferInitiateResponse.builder().withStatus(Status.OK).build();
@@ -114,5 +125,32 @@ public final class LeadershipTransferRunner {
     if (attempt != null) {
       attempt.onPauseDeadlineExpired();
     }
+  }
+
+  /** Reports the outcome of a transfer to the coordinator that requested it. */
+  static Consumer<LeadershipTransferResult> reportingTo(
+      final RaftContext raft, final LeadershipTransferInitiateRequest request) {
+    final var coordinator = request.coordinator();
+    return result -> {
+      final var notification =
+          LeadershipTransferResultRequest.builder()
+              .withLeader(raft.getCluster().getLocalMember().memberId())
+              .withDesiredLeader(request.desiredLeader())
+              .withResult(result)
+              .withCorrelationId(request.correlationId())
+              .build();
+      raft.getProtocol()
+          .leadershipTransferResult(coordinator, notification)
+          .whenComplete(
+              (ack, notifyError) -> {
+                if (notifyError != null) {
+                  LOG.debug(
+                      "Failed to notify coordinator {} of transfer result {}",
+                      coordinator,
+                      result,
+                      notifyError);
+                }
+              });
+    };
   }
 }

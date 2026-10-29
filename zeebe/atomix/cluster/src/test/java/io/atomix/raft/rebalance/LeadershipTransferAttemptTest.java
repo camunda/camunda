@@ -105,9 +105,10 @@ public class LeadershipTransferAttemptTest {
         new LeadershipTransferAttempt(
             leader.getContext(),
             leaderRole(leader),
-            request,
+            request.desiredLeader(),
             leader.getContext().getRebalanceConfiguration(),
-            () -> {});
+            () -> {},
+            LeadershipTransferRunner.reportingTo(leader.getContext(), request));
     leader.getContext().getThreadContext().execute(attempt::start);
   }
 

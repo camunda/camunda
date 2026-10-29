@@ -20,11 +20,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
-import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -32,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * One accepted coordinated leadership transfer, sequenced from freezing the partition to reporting
- * the result to the coordinator: pause, wait for the desired leader to catch up, promote it, then
- * resume and report. A fresh attempt is created per accepted transfer, so no state can leak from
- * one transfer into the next.
+ * its result to whoever asked for it: pause, wait for the desired leader to catch up, promote it,
+ * then resume and report. A fresh attempt is created per accepted transfer, so no state can leak
+ * from one transfer into the next.
  *
  * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
  * currently in flight, and every terminal outcome converges on {@link #finish}.
@@ -81,9 +80,9 @@ import org.slf4j.LoggerFactory;
  * </pre>
  *
  * <p>Every outcome above lands in {@link #finish}, which undoes both sides of the pause before
- * reporting to the coordinator (but only while this node is still the leader) - once leadership has
- * moved, the step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves
- * that to the step-down for the same reason.
+ * reporting the result (but only while this node is still the leader) - once leadership has moved,
+ * the step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves that to
+ * the step-down for the same reason.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -92,10 +91,9 @@ final class LeadershipTransferAttempt {
   private final RaftContext raft;
   private final LeaderRole leader;
   private final MemberId desiredLeader;
-  private final MemberId coordinator;
-  private final long correlationId;
   private final RebalanceConfiguration configuration;
   private final Runnable finishListener;
+  private final Consumer<LeadershipTransferResult> resultReporter;
   private long startMs;
   private boolean finished;
   private @Nullable TransferPhase activePhase;
@@ -103,16 +101,16 @@ final class LeadershipTransferAttempt {
   LeadershipTransferAttempt(
       final RaftContext raft,
       final LeaderRole leader,
-      final LeadershipTransferInitiateRequest request,
+      final MemberId desiredLeader,
       final RebalanceConfiguration configuration,
-      final Runnable finishListener) {
+      final Runnable finishListener,
+      final Consumer<LeadershipTransferResult> resultReporter) {
     this.raft = raft;
     this.leader = leader;
-    desiredLeader = request.desiredLeader();
-    coordinator = request.coordinator();
-    correlationId = request.correlationId();
+    this.desiredLeader = desiredLeader;
     this.configuration = configuration;
     this.finishListener = finishListener;
+    this.resultReporter = resultReporter;
   }
 
   void start() {
@@ -226,43 +224,21 @@ final class LeadershipTransferAttempt {
     finishListener.run();
     if (!leader.isRunning()) {
       // the step-down that ended this leader already lifted the freeze
-      reportResult(result);
+      resultReporter.accept(result);
       return;
     }
-    resume().whenComplete((ignored, resumeError) -> reportResult(result));
+    resume().whenComplete((ignored, resumeError) -> resultReporter.accept(result));
   }
 
   private void abandon(final LeadershipTransferResult result) {
     finished = true;
     finishListener.run();
-    reportResult(result);
+    resultReporter.accept(result);
   }
 
   /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
   private Duration pauseBudget() {
     return configuration.pauseBudget(raft.getHeartbeatInterval());
-  }
-
-  private void reportResult(final LeadershipTransferResult result) {
-    final var notification =
-        LeadershipTransferResultRequest.builder()
-            .withLeader(raft.getCluster().getLocalMember().memberId())
-            .withDesiredLeader(desiredLeader)
-            .withResult(result)
-            .withCorrelationId(correlationId)
-            .build();
-    raft.getProtocol()
-        .leadershipTransferResult(coordinator, notification)
-        .whenComplete(
-            (ack, notifyError) -> {
-              if (notifyError != null) {
-                LOG.debug(
-                    "Failed to notify coordinator {} of transfer result {}",
-                    coordinator,
-                    result,
-                    notifyError);
-              }
-            });
   }
 
   /**
