@@ -13,7 +13,9 @@ update both together. Run everything from the repo root.
 
 - Project paths come from `settings.gradle.kts` (`registerProject`), not directories:
   `zeebe/engine` is `:zeebe-workflow-engine`. Look the name up before guessing.
-- Scope to one project (`:project:task`). Never run root-level `test`.
+- Scope to one project (`:project:task`). Never run root-level `test`. An unqualified task name
+  runs in every project that has it: `./gradlew distTar` also builds Optimize
+  (`:camunda-optimize:distTar`). Use `:camunda-zeebe:distTar` or `buildDistball`.
 - Essentially never run `build`: it launches everything (all tests, checks, assembly).
 - `test` = unit tests (Surefire). `it` = `IT*`, `*IT`, `*ITCase` (Failsafe). Same source set.
 - `check` depends on `it`, so `check` runs unit and integration tests.
@@ -55,6 +57,7 @@ IT classes: same filter on the `it` task.
 ./gradlew :<project>:it --tests <Class>                # integration test
 ./gradlew buildDistball                                # dist tar incl. frontend build
 ./gradlew buildDistballZip                             # dist zip incl. frontend build
+./gradlew -Pdist.tar.gzip=true buildDistball           # dist tar.gz instead of an uncompressed tar
 ./gradlew -Pskip.fe.build=true buildDistball           # backend-only dist, skips frontend
 ./gradlew -p gradle/build-logic test                   # build-logic tests (not run by CI)
 ```
