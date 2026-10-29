@@ -17,10 +17,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.NodeId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
@@ -34,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -306,7 +302,7 @@ class RepositoryNodeIdProviderIT {
 
     // when
     final var expectedMappings = Map.of(1, Version.of(2), 2, Version.of(2), 3, Version.of(1));
-    nodeIdProvider.setMembers(getMembers(expectedMappings));
+    nodeIdProvider.setMemberVersions(memberVersions(expectedMappings));
     // move the clock forward
     clock.setInstant(clock.instant().plusSeconds(2));
 
@@ -332,11 +328,11 @@ class RepositoryNodeIdProviderIT {
     final var firstLease = nodeIdProvider.getCurrentLease();
 
     // when members of two zones share the same nodeIdx
-    nodeIdProvider.setMembers(
-        Set.of(
-            zonedMember("zone-a", 0, Version.of(2)),
-            zonedMember("zone-a", 1, Version.of(3)),
-            zonedMember("zone-b", 0, Version.of(5))));
+    nodeIdProvider.setMemberVersions(
+        Map.of(
+            MemberId.from("zone-a", 0), Version.of(2),
+            MemberId.from("zone-a", 1), Version.of(3),
+            MemberId.from("zone-b", 0), Version.of(5)));
     clock.setInstant(clock.instant().plusSeconds(2));
 
     // then only the members of zone-a are known
@@ -348,23 +344,9 @@ class RepositoryNodeIdProviderIT {
         .containsExactlyInAnyOrderEntriesOf(Map.of(0, Version.of(2), 1, Version.of(3)));
   }
 
-  private Member zonedMember(final String zone, final int nodeIdx, final Version version) {
-    return new Member(
-        new MemberConfig()
-            .setId(MemberId.from(zone, nodeIdx))
-            .setZoneId(zone)
-            .setNodeVersion(version.version()));
-  }
-
-  private Set<Member> getMembers(final Map<Integer, Version> nodeIdVersions) {
+  private Map<MemberId, Version> memberVersions(final Map<Integer, Version> nodeIdVersions) {
     return nodeIdVersions.entrySet().stream()
-        .map(
-            entry ->
-                new Member(
-                    new MemberConfig()
-                        .setId(NodeId.from(entry.getKey().toString()))
-                        .setNodeVersion(entry.getValue().version())))
-        .collect(Collectors.toSet());
+        .collect(Collectors.toMap(e -> MemberId.from(e.getKey()), Map.Entry::getValue));
   }
 
   @Test
@@ -510,8 +492,8 @@ class RepositoryNodeIdProviderIT {
       final NodeInstance nodeInstance = nodeIdProvider.currentNodeInstance();
       // Only the version of this node is updated in all other nodes for this node to be ready
       final var expectedMappings = Map.of(nodeInstance.id(), nodeInstance.version());
-      nodeIdProviderOtherOne.setMembers(getMembers(expectedMappings));
-      nodeIdProviderOtherTwo.setMembers(getMembers(expectedMappings));
+      nodeIdProviderOtherOne.setMemberVersions(memberVersions(expectedMappings));
+      nodeIdProviderOtherTwo.setMemberVersions(memberVersions(expectedMappings));
 
       // then
       assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION).isEqualTo(true);

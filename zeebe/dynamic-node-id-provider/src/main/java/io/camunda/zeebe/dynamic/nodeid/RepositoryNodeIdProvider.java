@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -20,7 +19,6 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -146,8 +144,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
-  public void setMembers(final Set<Member> currentMembers) {
-    executor.execute(() -> updateVersionMappings(currentMembers));
+  public void setMemberVersions(final Map<MemberId, Version> memberVersions) {
+    executor.execute(() -> updateVersionMappings(memberVersions));
   }
 
   @Override
@@ -336,13 +334,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private void updateVersionMappings(final Set<Member> currentMembers) {
+  private void updateVersionMappings(final Map<MemberId, Version> memberVersions) {
     final var nodeInstances =
-        currentMembers.stream()
+        memberVersions.entrySet().stream()
             // leases are per zone, but members of different zones share the same nodeIdx
-            .filter(m -> isBroker(m.id()) && m.id().isInZone(zone))
-            .map(m -> Map.entry(m.id().nodeIdx(), Version.of(m.nodeVersion())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .filter(e -> isBroker(e.getKey()) && e.getKey().isInZone(zone))
+            .collect(Collectors.toMap(e -> e.getKey().nodeIdx(), Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
     LOG.trace("Updating known version mappings to {}", knownVersionMappings);
   }

@@ -13,22 +13,28 @@ import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.getS3Node
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,7 +136,7 @@ public class NodeIdProviderConfiguration {
         l -> {
           switch (l.type()) {
             case MEMBER_ADDED, MEMBER_REMOVED ->
-                nodeIdProvider.setMembers(membershipService.getMembers());
+                nodeIdProvider.setMemberVersions(memberVersions(membershipService.getMembers()));
             default -> {
               // noop
             }
@@ -138,10 +144,14 @@ public class NodeIdProviderConfiguration {
         });
 
     // initialize current members
-    nodeIdProvider.setMembers(membershipService.getMembers());
+    nodeIdProvider.setMemberVersions(memberVersions(membershipService.getMembers()));
 
     final var isReady = nodeIdProvider.awaitReadiness().join();
     return new NodeIdProviderReadinessAwaiter(isReady);
+  }
+
+  private static Map<MemberId, Version> memberVersions(final Set<Member> members) {
+    return members.stream().collect(Collectors.toMap(Member::id, m -> Version.of(m.nodeVersion())));
   }
 
   public record NodeIdProviderReadinessAwaiter(boolean isReady) {}
