@@ -364,3 +364,87 @@ The table below therefore drops every 5-minute slice that holds a moved pod, a m
 - Run B was slower than in Step 2 (0.65 s against 0.49 s at p99). Its slow minutes come in short bursts and line up loosely with broker CPU throttling (correlation 0.45 per minute between 12:40 and 13:12 UTC; 0.41 in A, 0.57 in C).
 - **Spot nodes are a real risk for this setup:** brokers on the 8 core pool were shut down twice in 2 hours. Elasticsearch and PostgreSQL also run on spot nodes in all load tests; `stable-vms=true` only moves the brokers.
 
+## Step 5: only the added item of a multi-instance result list
+
+### Question and setup (2026-10-29)
+
+The multi-instance result list `refundedAmount` made 56% of the recorded bytes, because every update writes the whole list again: 50 updates of a list that holds 25 KB on average. Step 5 records only the item that each update adds (about 1 KB) and keeps one history entry per update, so the trail of each inner instance stays.
+
+- The engine tags each output collection update with the slot it fills (`collectionIndex` on the variable source, -1 for every other write). Creating the empty list and copying the final list to the parent scope stay full values.
+- `camunda.data.audit-log.variable-history-collection-items: true` makes both exporters store only the element in that slot.
+- Not stored: the slot itself, which a real design needs to rebuild the list at a point in time. It is one number per record.
+
+Four runs on one image (`bcan-vh-mi-es-items-20261029-00d51d70`, built from `00d51d70d63`), the Step 1 workload at 0.5 root instances/s, side by side. No 0% run: today's values come from Step 1 (Elasticsearch, 2026-10-26) and Step 4 run A (PostgreSQL, 2026-10-27). Dispatched at 10:27 UTC (with the image build) and 10:35 UTC, ready by about 10:40, **window 11:35 to 12:35 UTC**.
+
+|             Namespace             |     Store     |           Recorded           |                                Actions run                                 |
+|-----------------------------------|---------------|------------------------------|----------------------------------------------------------------------------|
+| `c8-bcan-vh-mi-es-100-20261029`   | Elasticsearch | 100%, full values            | [40858798668](https://github.com/camunda/camunda/actions/runs/40858798668) |
+| `c8-bcan-vh-mi-es-items-20261029` | Elasticsearch | 100%, result list items only | [40857710407](https://github.com/camunda/camunda/actions/runs/40857710407) |
+| `c8-bcan-vh-mi-pg-100-20261029`   | PostgreSQL    | 100%, full values            | [40858802953](https://github.com/camunda/camunda/actions/runs/40858802953) |
+| `c8-bcan-vh-mi-pg-items-20261029` | PostgreSQL    | 100%, result list items only | [40858807005](https://github.com/camunda/camunda/actions/runs/40858807005) |
+
+Metrics workflow reports: [es-100](https://github.com/camunda/camunda/actions/runs/40874589548), [es-items](https://github.com/camunda/camunda/actions/runs/40874595446), [pg-100](https://github.com/camunda/camunda/actions/runs/40874602062), [pg-items](https://github.com/camunda/camunda/actions/runs/40874609279).
+
+No pod was moved or restarted in the window. The pg-100 starter was preempted by another pod at 11:25 UTC and back within 30 s, before the window.
+
+### What was recorded
+
+|                                    |    ES 100%     |  ES items   | PG 100%  | PG items |
+|------------------------------------|----------------|-------------|----------|----------|
+| History records per root instance  | 765            | 765         | 765      | 765      |
+| History values per root instance   | 2,334 KB       | 1,131 KB    | 2,341 KB | 1,121 KB |
+| `refundedAmount` per root instance | 1,313 KB (56%) | 100 KB (9%) |          |          |
+| `refundedAmount` update, average   | 26 KB          | 1.0 KB      |          |          |
+| History on disk per root instance  |                |             | 2.45 MB  | 1.05 MB  |
+
+The 100 KB left for `refundedAmount` are the 50 items (50 KB) and the two full copies (50 KB): the empty list at creation and the final list copied to the parent scope.
+
+### Elasticsearch, window 11:35 to 12:35 UTC
+
+|              Metric              | Today (Step 1) | 100% full | 100% items | Extra cost removed |
+|----------------------------------|----------------|-----------|------------|--------------------|
+| Storage space, x without history | x1             | x1.88     | x1.31      | 65%                |
+| Disk growth in the window        | +5.4 GiB       | +11.3 GiB | +6.9 GiB   | 75%                |
+| Elasticsearch CPU (cores)        | 1.42           | 2.43      | 1.61       | 81%                |
+| Exporting latency p99            | 0.46 s         | 0.63 s    | 0.49 s     | 81%                |
+| Exporting latency p50            |                | 0.024 s   | 0.024 s    |                    |
+| Data availability p99            | 2.50 s         | 3.79 s    | 3.22 s     | 44%                |
+| Data availability p50            |                | 1.51 s    | 1.48 s     |                    |
+| Archived documents/s             | 2,021          | 2,401     | 2,407      | none               |
+| Archiver run, average            | 0.60 s         | 0.92 s    | 0.64 s     | 88%                |
+| Broker CPU, average of pods      |                | 1.27      | 1.34       |                    |
+
+- Storage space compares all indices with all indices minus the history indices of the same run, so it needs no 0% run.
+- Data availability p99 moves in steps of the histogram buckets (2.49, 3.31, 3.87, 4.16 s per 5-minute slice), so its "removed" share is rough. Median of the 5-minute slices: 3.87 s full, 3.31 s items.
+
+### PostgreSQL, window 11:35 to 12:35 UTC
+
+|                     Metric                      | Today (Step 4 A) |   100% full   |  100% items   | Extra cost removed |
+|-------------------------------------------------|------------------|---------------|---------------|--------------------|
+| Database, x without history                     | x1               | x2.35         | x1.81         | 40% (one snapshot) |
+| WAL written                                     | 1.77 MiB/s       | 3.81 MiB/s    | 3.06 MiB/s    | 37%                |
+| WAL full page images/s                          | 49               | 237           | 167           | 37%                |
+| Checkpoints forced per hour                     | 2.5              | 6             | 5             |                    |
+| Checkpoint buffers written per hour             | 0.20 M           | 0.77 M        | 0.51 M        | 45%                |
+| Cleanup run, average                            | 0.76 s           | 1.89 s        | 1.45 s        | 39%                |
+| Rows deleted by cleanup/s                       |                  | 1,215         | 1,228         | none               |
+| Exporting latency p99                           | 0.24 s           | 0.58 s        | 0.48 s        | 30%                |
+| Exporting latency p99, median of slices / worst | 0.24 / 0.24 s    | 0.48 / 1.53 s | 0.47 / 0.90 s |                    |
+| Exporting latency p50                           | 0.024 s          | 0.045 s       | 0.043 s       |                    |
+| Data availability p99                           | 0.99 s           | 1.00 s        | 1.09 s        | none               |
+| PostgreSQL CPU                                  | 0.23             | 0.20          | 0.29          | see below          |
+| Statement time since start                      |                  | 554 s         | 540 s         |                    |
+| Broker CPU, average of pods                     | 1.25             | 1.28          | 1.37          |                    |
+
+- The database ratio is one snapshot at 12:36 UTC. With a 10-minute history, it depends on where each cleanup cycle stands (the history held 320 root instances in the full run and 443 in the items run). History on disk per root instance (2.45 MB to 1.05 MB, -57%) is the steadier number.
+- PostgreSQL CPU was higher in the items run for the whole hour (0.29 against 0.20 cores), with the same total statement time. Statements that do not touch the history were also 15% to 30% slower per call there, and its node ran nothing else of note. Earlier runs measured 0.14 to 0.26 cores for the same setups, so this is read as run-to-run noise.
+- Broker CPU was 0.07 to 0.09 cores higher in both items runs. Cutting the item out of the list costs microseconds per update (25 updates/s), and smaller documents should cost less, not more. Earlier runs varied by about 0.1 cores between brokers of the same setup.
+
+### Step 5 observations
+
+- **Half of the recorded data goes away.** Recording only the added item cuts the history from about 2.3 MB to 1.1 MB per root instance on both stores. The number of records stays the same (765), so the trail of each inner instance is kept.
+- **Elasticsearch gets most of the way back to today.** The extra storage space drops from +88% to +31%, Elasticsearch CPU from +1.0 to +0.2 cores, and the export delay p99 from 0.63 s to 0.49 s (today 0.46 s). The archiver moves as many documents as before, but each run is as fast as today.
+- **PostgreSQL gains less.** The extra disk writes drop by about a third (WAL 3.8 to 3.1 MiB/s, today 1.8), the history on disk per root instance by 57%, and cleanup runs get faster. The export delay changes little: Step 4 showed it is limited by broker CPU, which this change does not touch.
+- **Unchanged:** the number of records, so archived documents and deleted rows per second stay at the full-tracing level, and Operate's data availability on PostgreSQL, which was already close to today.
+- Today's values come from runs on other days; same-day 0% runs were not repeated.
+
