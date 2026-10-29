@@ -212,4 +212,56 @@ describe('CopyVariableButton', () => {
       '{"jsonVariable":{"a":123,"b":[1,2,3],"c":"text"},"numberVariable":666,"stringVariable":"text"}',
     );
   });
+
+  it('should copy [REDACTED] for a redacted variable and stay enabled when it is reported as truncated', async () => {
+    const redactedVariable = {
+      ...createVariable({
+        name: 'password',
+        value: '"irrelevant',
+        isTruncated: true,
+      }),
+      metadata: {protectionModes: ['REDACT']},
+    };
+    const response: QueryVariablesResponseBody = {
+      items: [createVariable({name: 'amount', value: '100'}), redactedVariable],
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    };
+
+    mockServer.use(
+      http.get(
+        '/v2/process-instances/:processInstanceKey',
+        () => {
+          return HttpResponse.json(
+            createProcessInstance({processInstanceKey: '123456'}),
+          );
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v2/variables/search',
+        () => {
+          return HttpResponse.json(response);
+        },
+        {once: true},
+      ),
+    );
+
+    const {user} = render(<CopyVariablesButton />, {wrapper: createWrapper()});
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Copy variables'}),
+      ).toBeEnabled();
+    });
+    await user.click(screen.getByRole('button', {name: 'Copy variables'}));
+
+    expect(mockWriteToClipboard).toHaveBeenCalledWith(
+      '{"amount":100,"password":"[REDACTED]"}',
+    );
+  });
 });

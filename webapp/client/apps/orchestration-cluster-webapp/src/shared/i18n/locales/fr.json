@@ -2,6 +2,7 @@
 	"translation": {
 		"globalDatePlaceholder": "jj/mm/aaaa",
 		"globalWrittenCalendarDateFormat": "d/m/Y",
+		"globalRedactedValueLabel": "[CAVIARDÉ]",
 		"headerSidebarDocumentationLink": "Documentation",
 		"headerSidebarCamundaAcademyLink": "Camunda Academy",
 		"headerSidebarFeedbackAndSupportLink": "Commentaires et assistance",
