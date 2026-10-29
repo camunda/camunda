@@ -12,6 +12,8 @@
 #   <property> REJECT <reason>          rejected; reasons:
 #     storage-location  changing it splits the tenant's data
 #     exporter-ids      changing the exporters a tenant runs strands their positions
+#     partitions        the partitions of a tenant are fixed when it is created; a running
+#                       tenant keeps them, so a change would look applied and change nothing
 #     outside-module    read by a component that a tenant module restart does not rebuild
 #     root-only         read from the root configuration only, so a tenant override has no effect
 #     initialization    applied by the engine when the tenant's deployment partition recovers:
@@ -22,7 +24,7 @@ api.rest.cluster-variable.max-metadata-size REJECT outside-module
 api.rest.process-cache.expiration-idle REJECT outside-module
 api.rest.process-cache.max-size REJECT outside-module
 cluster.global-listeners.user-task RESTART
-cluster.partition-count RESTART
+cluster.partition-count REJECT partitions
 data.audit-log.client.categories REJECT outside-module
 data.audit-log.client.excludes REJECT outside-module
 data.audit-log.enabled REJECT outside-module
@@ -385,9 +387,9 @@ document.default-store-id REJECT outside-module
 document.thread-pool-size REJECT outside-module
 expression.timeout RESTART
 mode REJECT outside-module
-monitoring.jfr RESTART
-monitoring.metrics.actor RESTART
-monitoring.metrics.enable-exporter-execution-metrics RESTART
+monitoring.jfr REJECT root-only
+monitoring.metrics.actor REJECT root-only
+monitoring.metrics.enable-exporter-execution-metrics REJECT exporter-ids
 monitoring.metrics.job-metrics.enabled RESTART
 monitoring.metrics.job-metrics.export-interval RESTART
 monitoring.metrics.job-metrics.max-job-type-length RESTART
@@ -556,7 +558,7 @@ security.initialization.users REJECT initialization
 security.saas REJECT root-only
 security.saas.cluster-id REJECT root-only
 security.saas.organization-id REJECT root-only
-system.clock-controlled RESTART
+system.clock-controlled REJECT root-only
 system.legacy-query-api.enabled REJECT outside-module
 webapps.identity.enabled REJECT outside-module
 webapps.identity.ui-enabled REJECT outside-module

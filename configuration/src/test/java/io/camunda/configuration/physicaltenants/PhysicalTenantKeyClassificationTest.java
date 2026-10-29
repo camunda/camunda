@@ -177,6 +177,38 @@ final class PhysicalTenantKeyClassificationTest {
     assertThat(violations).isEmpty();
   }
 
+  @Test
+  void shouldRejectKeysThatChangeNothingOnARunningTenant() {
+    // when
+    final var violations =
+        classification.validate(
+            update(
+                with(
+                    Map.of(
+                        "cluster.partition-count", "3",
+                        "system.clock-controlled", "true",
+                        "monitoring.jfr", "true",
+                        "monitoring.metrics.actor", "true",
+                        "monitoring.metrics.enable-exporter-execution-metrics", "true"))));
+
+    // then
+    assertThat(violations)
+        .hasSize(5)
+        .anySatisfy(violation -> assertThat(violation).contains("partition-count", "partitions"))
+        .anySatisfy(violation -> assertThat(violation).contains("clock-controlled", "root-only"))
+        .anySatisfy(violation -> assertThat(violation).contains("monitoring.jfr", "root-only"))
+        .anySatisfy(violation -> assertThat(violation).contains("metrics.actor", "root-only"))
+        .anySatisfy(
+            violation ->
+                assertThat(violation).contains("exporter-execution-metrics", "exporter-ids"));
+  }
+
+  private static Map<String, String> with(final Map<String, String> changes) {
+    final var proposed = new HashMap<>(CURRENT);
+    proposed.putAll(changes);
+    return proposed;
+  }
+
   private static Map<String, String> with(final String name, final String value) {
     final var proposed = new HashMap<>(CURRENT);
     proposed.put(name, value);
