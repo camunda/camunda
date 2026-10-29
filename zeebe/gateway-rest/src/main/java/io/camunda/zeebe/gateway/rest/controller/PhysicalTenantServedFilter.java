@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
-import io.camunda.cluster.PhysicalTenant;
 import io.camunda.cluster.PhysicalTenantRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,21 +17,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Rejects every {@code /physical-tenants/{id}/...} request for a physical tenant whose HTTP
- * security chain this node does not have, with the same fixed 404 as an unknown tenant.
+ * security chain this node does not serve, with the same fixed 404 as an unknown tenant.
  *
- * <p>The Camunda Security Library builds one security chain per physical tenant once, at startup. A
- * tenant added at runtime has no chain, and a removed tenant still has one. Both must fail closed
- * rather than reach a controller, so this filter only lets through the incarnation of a tenant that
- * existed when the chains were built and that is still part of the node. It runs before Spring
- * Security, next to {@link PhysicalTenantFilter}; see ADR-0003.
+ * <p>The Camunda Security Library adds, replaces and removes a tenant's chains at runtime, when the
+ * tenant lifecycle asks it to. Between a tenant joining the tenant set and its chains being added
+ * (or when adding them failed), and once a removal has started, the tenant must fail closed rather
+ * than reach a controller, so this filter only lets through a tenant that is part of the node and
+ * whose chains serve. A node without the security library's scoped chains (no {@code
+ * consolidated-auth} profile) has no chain to wait for and lets through every tenant that is part
+ * of the node. It runs before Spring Security, next to {@link PhysicalTenantFilter}; see ADR-0003.
  */
 @NullMarked
 public final class PhysicalTenantServedFilter extends HttpFilter {
@@ -43,18 +42,21 @@ public final class PhysicalTenantServedFilter extends HttpFilter {
           .getBytes(StandardCharsets.UTF_8);
 
   private final PhysicalTenantRegistry registry;
-  private final Map<String, UUID> incarnationsWithSecurityChain;
+  private final Predicate<String> hasSecurityChain;
 
   /**
-   * @param registry the live tenant set; must still hold the boot tenants, since their incarnations
-   *     are the ones with a security chain
+   * @param registry the live tenant set
+   * @param hasSecurityChain whether this node serves the HTTP security chain of a tenant now
    */
-  public PhysicalTenantServedFilter(final PhysicalTenantRegistry registry) {
+  public PhysicalTenantServedFilter(
+      final PhysicalTenantRegistry registry, final Predicate<String> hasSecurityChain) {
     this.registry = registry;
-    incarnationsWithSecurityChain =
-        registry.tenants().stream()
-            .collect(
-                Collectors.toUnmodifiableMap(PhysicalTenant::id, PhysicalTenant::incarnationId));
+    this.hasSecurityChain = hasSecurityChain;
+  }
+
+  /** Lets through every tenant that is part of the node, for a node without scoped chains. */
+  public PhysicalTenantServedFilter(final PhysicalTenantRegistry registry) {
+    this(registry, physicalTenantId -> true);
   }
 
   @Override
@@ -73,12 +75,7 @@ public final class PhysicalTenantServedFilter extends HttpFilter {
   }
 
   private boolean isServed(final String physicalTenantId) {
-    final var incarnation = incarnationsWithSecurityChain.get(physicalTenantId);
-    return incarnation != null
-        && registry
-            .find(physicalTenantId)
-            .filter(current -> current.incarnationId().equals(incarnation))
-            .isPresent();
+    return registry.find(physicalTenantId).isPresent() && hasSecurityChain.test(physicalTenantId);
   }
 
   private static @Nullable String tenantIdOf(final HttpServletRequest request) {

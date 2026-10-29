@@ -14,6 +14,7 @@ import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
+import io.camunda.authentication.pt.PhysicalTenantHttpSecurity;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -199,7 +200,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final Broker broker,
       final ConfigurableEnvironment environment,
       final ObjectProvider<PhysicalTenantResources> resources,
-      final PhysicalTenantSecretStores secretStores) {
+      final PhysicalTenantSecretStores secretStores,
+      final PhysicalTenantRestSecurity restSecurity) {
     return new PhysicalTenantLifecycleService(
         broker,
         systemContextLoader,
@@ -209,7 +211,18 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         physicalTenantRegistry,
         PHYSICAL_TENANT_CHANGE_TIMEOUT,
         resources.orderedStream().toList(),
-        secretStores);
+        secretStores,
+        restSecurity);
+  }
+
+  /**
+   * Changes the scoped HTTP security of a tenant through the security library; inert on a node
+   * without it.
+   */
+  @Bean
+  public PhysicalTenantRestSecurity physicalTenantRestSecurity(
+      final ObjectProvider<PhysicalTenantHttpSecurity> httpSecurity) {
+    return new PhysicalTenantRestSecurity(httpSecurity.getIfAvailable());
   }
 
   /**

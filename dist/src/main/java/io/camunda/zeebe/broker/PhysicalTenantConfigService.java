@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.core.env.Environment;
 
@@ -255,7 +256,8 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
         group.availability().state(),
         applied,
         reference.isAppliedBy(configuration.liveMembers()),
-        group.pendingChanges().isPresent());
+        group.pendingChanges().isPresent(),
+        lifecycle.localStatus(physicalTenantId).orElse(null));
   }
 
   /** Starts every tenant the cluster runs that this member does not run with the same config. */
@@ -425,6 +427,8 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
    * @param appliedVersions the version each live member applied, by member id
    * @param rolledOut whether every live member applied the current version
    * @param changing whether a change of the tenant is in progress
+   * @param local the tenant's health on the member that answers, and the last change of its HTTP
+   *     security there; absent where the tenant does not run
    */
   public record PhysicalTenantStatus(
       String id,
@@ -435,5 +439,6 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
       TenantAvailability.State state,
       Map<String, Long> appliedVersions,
       boolean rolledOut,
-      boolean changing) {}
+      boolean changing,
+      PhysicalTenantLifecycleService.@Nullable LocalStatus local) {}
 }

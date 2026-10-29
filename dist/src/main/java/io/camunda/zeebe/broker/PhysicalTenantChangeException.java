@@ -34,6 +34,12 @@ public final class PhysicalTenantChangeException extends RuntimeException {
     /** The configuration fails the boot validations; nothing was changed. */
     INVALID,
     /** The change was accepted but the tenant module did not start; the tenant is FAILED. */
-    FAILED
+    FAILED,
+    /**
+     * The tenant's HTTP security did not take the change, for example because its new identity
+     * provider cannot be reached; nothing was changed and the tenant is DEGRADED until a retry
+     * applies it.
+     */
+    SECURITY
   }
 }

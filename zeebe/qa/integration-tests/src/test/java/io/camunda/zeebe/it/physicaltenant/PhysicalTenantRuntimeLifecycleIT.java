@@ -235,10 +235,10 @@ final class PhysicalTenantRuntimeLifecycleIT {
   }
 
   @Test
-  void shouldRejectRestRequestsForATenantWithoutSecurityChain() {
+  void shouldServeRestRequestsForATenantAddedAtRuntime() {
     // given
     final var tenantId = uniqueTenantId();
-    lifecycle().add(tenantId, tenantConfiguration("No chain"));
+    lifecycle().add(tenantId, tenantConfiguration("Added"));
     awaitHealth(tenantId, State.HEALTHY);
 
     // when
@@ -246,12 +246,12 @@ final class PhysicalTenantRuntimeLifecycleIT {
     final var bootTenant = restStatus("/physical-tenants/" + BOOT_TENANT + "/v2/topology");
 
     // then
-    assertThat(addedTenant).isEqualTo(404);
+    assertThat(addedTenant).isEqualTo(200);
     assertThat(bootTenant).isEqualTo(200);
   }
 
   @Test
-  void shouldRejectRestRequestsForARemovedTenantThatStillHasASecurityChain() {
+  void shouldRejectRestRequestsForARemovedTenant() {
     // given
     final var path = "/physical-tenants/" + BOOT_TENANT + "/v2/topology";
     assertThat(restStatus(path)).isEqualTo(200);

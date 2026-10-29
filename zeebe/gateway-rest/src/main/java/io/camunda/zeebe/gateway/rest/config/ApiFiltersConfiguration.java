@@ -12,6 +12,7 @@ import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.pt.PhysicalTenantHttpSecurity;
 import io.camunda.cluster.PhysicalTenantRegistry;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
@@ -84,18 +85,24 @@ public class ApiFiltersConfiguration {
   }
 
   /**
-   * Rejects requests for a physical tenant that has no HTTP security chain on this node, i.e. one
-   * added or removed at runtime, before Spring Security selects a chain. Disabled where no live
-   * tenant set exists.
+   * Rejects requests for a physical tenant whose HTTP security chain this node does not serve, such
+   * as one being added or removed at runtime, before Spring Security selects a chain. Disabled
+   * where no live tenant set exists.
    */
   @Bean
   public FilterRegistrationBean<Filter> physicalTenantServedFilter(
-      final ObjectProvider<PhysicalTenantRegistry> physicalTenantRegistry) {
+      final ObjectProvider<PhysicalTenantRegistry> physicalTenantRegistry,
+      final ObjectProvider<PhysicalTenantHttpSecurity> physicalTenantHttpSecurity) {
     final var registry = physicalTenantRegistry.getIfAvailable();
-    final Filter filter =
-        registry != null
-            ? new PhysicalTenantServedFilter(registry)
-            : (request, response, chain) -> chain.doFilter(request, response);
+    final var httpSecurity = physicalTenantHttpSecurity.getIfAvailable();
+    final Filter filter;
+    if (registry == null) {
+      filter = (request, response, chain) -> chain.doFilter(request, response);
+    } else if (httpSecurity != null) {
+      filter = new PhysicalTenantServedFilter(registry, httpSecurity::serves);
+    } else {
+      filter = new PhysicalTenantServedFilter(registry);
+    }
     final FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(filter);
     registration.setEnabled(registry != null);
     registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
+import io.camunda.authentication.pt.PhysicalTenantHttpSecurity;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenant;
 import io.camunda.cluster.PhysicalTenantHealth;
@@ -18,6 +19,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.api.model.scope.ScopeReloadResult;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
@@ -53,9 +55,13 @@ import org.springframework.core.env.ConfigurableEnvironment;
  * validations. A change that fails them leaves the node as it was.
  *
  * <p>A change stops and starts the tenant module: the broker module through {@link
- * PhysicalTenantModules} and the gateway module through {@link GatewayPhysicalTenants}. The HTTP
- * security chains of the Camunda Security Library are built once at startup, so the REST API only
- * serves the incarnation of a tenant that existed at startup.
+ * PhysicalTenantModules} and the gateway module through {@link GatewayPhysicalTenants}. The
+ * tenant's HTTP security (its scoped chains in the Camunda Security Library) changes through {@link
+ * PhysicalTenantRestSecurity}: an added tenant gets it once its module started, so its REST API
+ * serves once it can; a replaced tenant gets it before its module stops, and a change the library
+ * keeps back (an identity provider that cannot be reached) rejects the whole change, so REST and
+ * gRPC never serve different configurations of the tenant; a removed tenant loses it first, so its
+ * REST API answers 404 while its module stops.
  *
  * <p>Only one change is applied at a time; a concurrent change is rejected, not queued.
  */
@@ -63,6 +69,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public final class PhysicalTenantLifecycleService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  static final String SECURITY_NOT_APPLIED =
+      "keeps its previous HTTP security, the change is not applied: ";
 
   private final Broker broker;
   private final SystemContextLoader systemContextLoader;
@@ -73,6 +81,7 @@ public final class PhysicalTenantLifecycleService {
   private static final SecretStoreRegistry NOT_BUILT_YET = new SecretStoreRegistry(Map.of());
 
   private final PhysicalTenantSecretStores secretStores;
+  private final PhysicalTenantRestSecurity restSecurity;
   // the job secret stores built for a runtime context, released when the context is closed; the
   // stores of a boot context belong to the application context
   private final Map<PhysicalTenantContext, Owned<SecretStoreRegistry>> ownedSecretStores =
@@ -91,10 +100,12 @@ public final class PhysicalTenantLifecycleService {
       final DefaultPhysicalTenantRegistry registry,
       final Duration timeout,
       final List<PhysicalTenantResources> resources,
-      final PhysicalTenantSecretStores secretStores) {
+      final PhysicalTenantSecretStores secretStores,
+      final PhysicalTenantRestSecurity restSecurity) {
     this.broker = broker;
     this.resources = List.copyOf(resources);
     this.secretStores = secretStores;
+    this.restSecurity = restSecurity;
     this.systemContextLoader = systemContextLoader;
     environment = bootEnvironment;
     this.rootCamunda = rootCamunda;
@@ -146,6 +157,7 @@ public final class PhysicalTenantLifecycleService {
           registry.add(tenant);
           commit(physicalTenantId, candidate);
           startModule(tenant, candidate.context());
+          addSecurity(physicalTenantId, candidate);
           return tenant;
         });
   }
@@ -162,6 +174,7 @@ public final class PhysicalTenantLifecycleService {
         () -> {
           final var current = requireChangeable(physicalTenantId);
           final var candidate = resolve(physicalTenantId, configuration);
+          replaceSecurity(physicalTenantId, candidate);
           registry.reportHealth(
               physicalTenantId,
               new PhysicalTenantHealth(State.RESTARTING, "applying a configuration change"));
@@ -197,6 +210,7 @@ public final class PhysicalTenantLifecycleService {
     underChangeLock(
         () -> {
           requireChangeable(physicalTenantId);
+          restSecurity.remove(physicalTenantId);
           gateway().ifPresent(gateway -> gateway.remove(physicalTenantId));
           stopModule(physicalTenantId);
           releaseResources(physicalTenantId);
@@ -248,6 +262,18 @@ public final class PhysicalTenantLifecycleService {
     return modules().awaitReady(physicalTenantId);
   }
 
+  /** The health of a tenant on this node and the last change of its HTTP security. */
+  public Optional<LocalStatus> localStatus(final String physicalTenantId) {
+    return registry
+        .health(physicalTenantId)
+        .map(
+            health ->
+                new LocalStatus(
+                    health.state(),
+                    health.detail(),
+                    restSecurity.status(physicalTenantId).orElse(null)));
+  }
+
   /** The resolved configuration a tenant currently runs with. */
   public Optional<Camunda> configuration(final String physicalTenantId) {
     return Optional.ofNullable(configurations.get(physicalTenantId));
@@ -288,6 +314,61 @@ public final class PhysicalTenantLifecycleService {
     }
     return new Candidate(
         candidateEnvironment, camunda, context, resolver.nameOf(physicalTenantId).orElse(null));
+  }
+
+  /**
+   * Gives an added tenant its HTTP security. A tenant whose security cannot be built keeps running
+   * and fails closed on REST (404) until a later change of its configuration applies; it reports
+   * {@link State#DEGRADED} meanwhile.
+   */
+  private void addSecurity(final String physicalTenantId, final Candidate candidate) {
+    final var result = restSecurity.apply(physicalTenantId, candidate.environment());
+    if (result.isPresent() && !PhysicalTenantHttpSecurity.takesEffect(result.get())) {
+      registry.reportHealth(
+          physicalTenantId,
+          new PhysicalTenantHealth(
+              State.DEGRADED,
+              "%s%s: %s"
+                  .formatted(
+                      SECURITY_NOT_APPLIED,
+                      result.get().outcome(),
+                      restSecurity
+                          .status(physicalTenantId)
+                          .map(PhysicalTenantRestSecurity.Status::failure)
+                          .orElse(""))));
+    }
+  }
+
+  /**
+   * Changes the HTTP security of a replaced tenant before its module stops. If the security library
+   * keeps the previous security, the whole change is rejected and the tenant keeps running as it
+   * was, reporting {@link State#DEGRADED}; the caller retries.
+   */
+  private void replaceSecurity(final String physicalTenantId, final Candidate candidate) {
+    final ScopeReloadResult result;
+    try {
+      result = restSecurity.apply(physicalTenantId, candidate.environment()).orElse(null);
+    } catch (final RuntimeException e) {
+      restSecurity.revert(physicalTenantId);
+      close(physicalTenantId, candidate.context());
+      throw rejected(Reason.SECURITY, physicalTenantId, "its HTTP security could not change", e);
+    }
+    if (result == null || PhysicalTenantHttpSecurity.takesEffect(result)) {
+      return;
+    }
+    restSecurity.revert(physicalTenantId);
+    close(physicalTenantId, candidate.context());
+    final var why =
+        "%s%s: %s"
+            .formatted(
+                SECURITY_NOT_APPLIED,
+                result.outcome(),
+                restSecurity
+                    .status(physicalTenantId)
+                    .map(PhysicalTenantRestSecurity.Status::failure)
+                    .orElse(""));
+    registry.reportHealth(physicalTenantId, new PhysicalTenantHealth(State.DEGRADED, why));
+    throw rejected(Reason.SECURITY, physicalTenantId, why, result.failure());
   }
 
   private void commit(final String physicalTenantId, final Candidate candidate) {
@@ -473,6 +554,16 @@ public final class PhysicalTenantLifecycleService {
   private interface Change<T> {
     T apply();
   }
+
+  /**
+   * The health of a tenant on this node, and the last change of its HTTP security.
+   *
+   * @param httpSecurity empty until the tenant's HTTP security changed on this node
+   */
+  public record LocalStatus(
+      State health,
+      @Nullable String healthDetail,
+      PhysicalTenantRestSecurity.@Nullable Status httpSecurity) {}
 
   private record Candidate(
       ConfigurableEnvironment environment,

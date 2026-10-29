@@ -10,6 +10,7 @@ package io.camunda.authentication.pt;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
+import io.camunda.security.core.port.in.ScopedSecurityReloadPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
@@ -42,7 +43,7 @@ public class PhysicalTenantSecurityConfiguration {
    * (camunda/camunda-security-library adopter requirement).
    */
   @Bean
-  public static CamundaSecurityScopeProvider physicalTenantScopeProvider(
+  public static PhysicalTenantScopeProvider physicalTenantScopeProvider(
       final Environment environment) {
     return new PhysicalTenantScopeProvider(environment);
   }
@@ -56,6 +57,19 @@ public class PhysicalTenantSecurityConfiguration {
   public PhysicalTenantAuthentications physicalTenantAuthentications(
       final Environment environment) {
     return PhysicalTenantAuthentications.of(environment);
+  }
+
+  /**
+   * Adds, replaces and removes a physical tenant's HTTP security while the node runs; the tenant
+   * lifecycle calls it on every member.
+   */
+  @Bean
+  public PhysicalTenantHttpSecurity physicalTenantHttpSecurity(
+      final PhysicalTenantScopeProvider physicalTenantScopeProvider,
+      final ScopedSecurityReloadPort scopedSecurityReloadPort,
+      final PhysicalTenantAuthentications physicalTenantAuthentications) {
+    return new PhysicalTenantHttpSecurity(
+        physicalTenantScopeProvider, scopedSecurityReloadPort, physicalTenantAuthentications);
   }
 
   /**
