@@ -152,6 +152,25 @@ public class SnapshotMigrationTransitionStepTest {
       value = Role.class,
       mode = Mode.EXCLUDE,
       names = {"INACTIVE"})
+  public void shouldNotScheduleASnapshotOnceTheMigrationSnapshotWasTaken(final Role role) {
+    // given
+    transitionContext.markMigrationsDone();
+    transitionContext.markMigrationSnapshotTaken();
+
+    // when
+    step.prepareTransition(transitionContext, 0, role).join();
+    step.transitionTo(transitionContext, 0, role).join();
+
+    // then
+    assertThat(concurrencyControl.scheduledTasks()).isZero();
+    verify(snapshotDirector, times(0)).forceSnapshot();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      mode = Mode.EXCLUDE,
+      names = {"INACTIVE"})
   public void shouldNotScheduleASnapshotWhenNoMigrationWasPerformed(final Role role) {
     // when
     step.prepareTransition(transitionContext, 0, role).join();
