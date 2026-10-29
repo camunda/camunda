@@ -70,6 +70,22 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String LAST_RECORD_POSITION = AgentRunDto.Fields.lastRecordPosition;
   public static final String LAST_METRIC_TOTALS = AgentRunDto.Fields.lastMetricTotals;
   public static final String ENRICHED_AT = AgentRunDto.Fields.enrichedAt;
+  public static final String ACTIVE_DURATION_MS = AgentRunDto.Fields.activeDurationMs;
+  public static final String HUMAN_WAIT_DURATION_MS = AgentRunDto.Fields.humanWaitDurationMs;
+  public static final String HUMAN_STEP_COUNT = AgentRunDto.Fields.humanStepCount;
+  public static final String TOOL_INCIDENT_COUNT = AgentRunDto.Fields.toolIncidentCount;
+  public static final String TOOL_INCIDENTS_BY_TOOL = AgentRunDto.Fields.toolIncidentsByTool;
+  public static final String FAILURE_REASONS = AgentRunDto.Fields.failureReasons;
+  public static final String FAILURE_REASON_FLOW_NODE_ID =
+      AgentRunDto.FailureReasonDto.Fields.flowNodeId;
+  public static final String FAILURE_REASON_TOOL_NAME =
+      AgentRunDto.FailureReasonDto.Fields.toolName;
+  public static final String FAILURE_REASON_ERROR_TYPE =
+      AgentRunDto.FailureReasonDto.Fields.errorType;
+  public static final String FAILURE_REASON_MESSAGE = AgentRunDto.FailureReasonDto.Fields.message;
+  public static final String FAILURE_REASON_COUNT = AgentRunDto.FailureReasonDto.Fields.count;
+  public static final String ROOT_PROCESS_DEFINITION_KEY =
+      AgentRunDto.Fields.rootProcessDefinitionKey;
 
   @Override
   public String getIndexName() {
@@ -161,6 +177,30 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(LAST_RECORD_POSITION, p -> p.long_(k -> k))
         // Import bookkeeping only, never queried.
         .properties(LAST_METRIC_TOTALS, p -> p.object(o -> o.enabled(false)))
-        .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)));
+        .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))
+        .properties(HUMAN_WAIT_DURATION_MS, p -> p.long_(k -> k))
+        .properties(HUMAN_STEP_COUNT, p -> p.long_(k -> k))
+        .properties(TOOL_INCIDENT_COUNT, p -> p.long_(k -> k))
+        .properties(
+            TOOL_INCIDENTS_BY_TOOL,
+            p ->
+                p.nested(
+                    n ->
+                        n.properties(TOOL_CALLS_TOOL_FLOW_NODE_ID, np -> np.keyword(k -> k))
+                            .properties(TOOL_CALLS_TOOL_NAME, np -> np.keyword(k -> k))
+                            .properties(TOOL_CALLS_COUNT, np -> np.long_(k -> k))))
+        .properties(
+            FAILURE_REASONS,
+            p ->
+                p.nested(
+                    n ->
+                        n.properties(FAILURE_REASON_FLOW_NODE_ID, np -> np.keyword(k -> k))
+                            .properties(FAILURE_REASON_TOOL_NAME, np -> np.keyword(k -> k))
+                            .properties(FAILURE_REASON_ERROR_TYPE, np -> np.keyword(k -> k))
+                            // Truncated by the enrichment, so it fits a keyword for grouping.
+                            .properties(FAILURE_REASON_MESSAGE, np -> np.keyword(k -> k))
+                            .properties(FAILURE_REASON_COUNT, np -> np.long_(k -> k))))
+        .properties(ROOT_PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k));
   }
 }

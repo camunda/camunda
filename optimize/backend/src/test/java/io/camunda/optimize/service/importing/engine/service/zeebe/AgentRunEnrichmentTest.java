@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import io.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto.FailureReasonDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto.ToolCallsDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import java.time.OffsetDateTime;
@@ -106,6 +108,160 @@ class AgentRunEnrichmentTest {
             tuple("searchTask", "search", 2L),
             tuple("scoreTask", "score", 1L),
             tuple("unusedTask", "unused", 0L));
+  }
+
+  @Test
+  void shouldSumEndedAgentElementInstancesWithoutTimeSpentInUserTaskTools() {
+    // given a chat agent entered twice, waiting 30s on a user-task tool in the first activation
+    final ProcessInstanceDto processInstance = processInstance();
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("124", "review", "adHocSubProcess"), 0, 100));
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("125", "review", "adHocSubProcess"), 500, 520));
+    processInstance.getFlowNodeInstances().add(timed(node("126", "askHuman", "userTask"), 10, 40));
+    // a user task outside the agent that the person needed 300s for
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("127", "feedback", "userTask"), 150, 450));
+
+    final AgentRunDto run = runWithTools();
+    run.setFlowNodeInstanceIds(List.of("124", "125"));
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(run, processInstance, NOW);
+
+    // then
+    assertThat(enriched.getActiveDurationMs()).isEqualTo(90_000L);
+    assertThat(enriched.getHumanWaitDurationMs()).isEqualTo(30_000L);
+    assertThat(enriched.getHumanStepCount()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldLeaveActiveDurationEmptyUntilAnElementInstanceEnded() {
+    // given
+    final ProcessInstanceDto processInstance = processInstance();
+    final FlowNodeInstanceDto running = node("124", "review", "adHocSubProcess");
+    running.setStartDate(NOW);
+    processInstance.getFlowNodeInstances().add(running);
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(runWithTools(), processInstance, NOW);
+
+    // then
+    assertThat(enriched.getActiveDurationMs()).isNull();
+  }
+
+  @Test
+  void shouldCountIncidentsOnToolElementsAndKeepOneReasonPerElementAndErrorType() {
+    // given
+    final ProcessInstanceDto processInstance = processInstance();
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("124", "review", "adHocSubProcess"), 0, 100));
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("201", "searchTask", "serviceTask"), 5, 6));
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("202", "searchTask", "serviceTask"), 7, 8));
+    processInstance
+        .getIncidents()
+        .add(incident("201", "JOB_NO_RETRIES", "bearer token expired", 6));
+    processInstance.getIncidents().add(incident("202", "JOB_NO_RETRIES", "timeout", 8));
+    processInstance.getIncidents().add(incident("124", "EXTRACT_VALUE_ERROR", "bad output", 9));
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(runWithTools(), processInstance, NOW);
+
+    // then
+    assertThat(enriched.getToolIncidentCount()).isEqualTo(2L);
+    assertThat(enriched.getToolIncidentsByTool())
+        .extracting(
+            ToolCallsDto::getToolFlowNodeId, ToolCallsDto::getToolName, ToolCallsDto::getCount)
+        .containsExactly(tuple("searchTask", "search", 2L));
+    assertThat(enriched.getFailureReasons())
+        .extracting(
+            FailureReasonDto::getFlowNodeId,
+            FailureReasonDto::getToolName,
+            FailureReasonDto::getErrorType,
+            FailureReasonDto::getMessage,
+            FailureReasonDto::getCount)
+        .containsExactly(
+            tuple("searchTask", "search", "JOB_NO_RETRIES", "bearer token expired", 2L),
+            tuple("review", null, "EXTRACT_VALUE_ERROR", "bad output", 1L));
+  }
+
+  @Test
+  void shouldIgnoreToolIncidentsOutsideTheRun() {
+    // given a second run of the same agent element used the tool later
+    final ProcessInstanceDto processInstance = processInstance();
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("124", "review", "adHocSubProcess"), 0, 100));
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("301", "searchTask", "serviceTask"), 200, 210));
+    processInstance.getIncidents().add(incident("301", "JOB_NO_RETRIES", "later", 210));
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(runWithTools(), processInstance, NOW);
+
+    // then
+    assertThat(enriched.getToolIncidentCount()).isZero();
+    assertThat(enriched.getFailureReasons()).isEmpty();
+  }
+
+  @Test
+  void shouldTakeTheRootProcessFromItsOwnInstanceOrTheLookedUpKey() {
+    // given
+    final ProcessInstanceDto processInstance = processInstance();
+    processInstance.setProcessDefinitionKey("child-process");
+    final AgentRunDto ownRoot = runWithTools();
+    ownRoot.setProcessInstanceId("123");
+    ownRoot.setRootProcessInstanceId("123");
+    final AgentRunDto calledRun = runWithTools();
+    calledRun.setProcessInstanceId("123");
+    calledRun.setRootProcessInstanceId("99");
+
+    // when
+    final AgentRunDto own = AgentRunEnrichment.compute(ownRoot, processInstance, "ignored", NOW);
+    final AgentRunDto called =
+        AgentRunEnrichment.compute(calledRun, processInstance, "parent-process", NOW);
+
+    // then
+    assertThat(own.getRootProcessDefinitionKey()).isEqualTo("child-process");
+    assertThat(called.getRootProcessDefinitionKey()).isEqualTo("parent-process");
+  }
+
+  private static AgentRunDto runWithTools() {
+    final AgentRunDto run = run();
+    run.setStartDate(at(0));
+    run.setToolFlowNodeIds(new ArrayList<>(List.of("searchTask", "scoreTask", "askHuman")));
+    run.getToolCallsByTool().add(tool("askHuman", "ask a person"));
+    return run;
+  }
+
+  private static OffsetDateTime at(final long seconds) {
+    return NOW.plusSeconds(seconds);
+  }
+
+  private static FlowNodeInstanceDto timed(
+      final FlowNodeInstanceDto node, final long startSeconds, final long endSeconds) {
+    node.setStartDate(at(startSeconds));
+    node.setEndDate(at(endSeconds));
+    node.setTotalDurationInMs((endSeconds - startSeconds) * 1000);
+    return node;
+  }
+
+  private static IncidentDto incident(
+      final String activityId, final String errorType, final String message, final long atSeconds) {
+    final IncidentDto incident = incident(activityId);
+    incident.setIncidentType(IncidentType.valueOfId(errorType));
+    incident.setIncidentMessage(message);
+    incident.setCreateTime(at(atSeconds));
+    return incident;
   }
 
   private static AgentRunDto run() {

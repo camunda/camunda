@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -23,6 +24,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.AgentRunEnrichmentReader;
 import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
+import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
@@ -119,6 +121,48 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
                 })
             .toList();
     return multiGet(docs, ProcessInstanceDto.class);
+  }
+
+  @Override
+  public Map<String, String> getProcessDefinitionKeys(final Collection<String> processInstanceIds) {
+    if (processInstanceIds.isEmpty()) {
+      return Map.of();
+    }
+    final SearchRequest request =
+        OptimizeSearchRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(esClient, PROCESS_INSTANCE_MULTI_ALIAS)
+                    .query(
+                        q ->
+                            q.terms(
+                                t ->
+                                    t.field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
+                                        .terms(
+                                            tv ->
+                                                tv.value(
+                                                    processInstanceIds.stream()
+                                                        .map(FieldValue::of)
+                                                        .toList()))))
+                    .source(
+                        s ->
+                            s.filter(
+                                f ->
+                                    f.includes(
+                                        ProcessInstanceIndex.PROCESS_INSTANCE_ID,
+                                        ProcessInstanceIndex.PROCESS_DEFINITION_KEY)))
+                    .size(processInstanceIds.size()));
+    try {
+      final Map<String, String> keys = new HashMap<>();
+      esClient.search(request, ProcessInstanceDto.class).hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .forEach(
+              instance ->
+                  keys.put(instance.getProcessInstanceId(), instance.getProcessDefinitionKey()));
+      return keys;
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not look up root process instances", e);
+    }
   }
 
   private <T> Map<String, T> multiGet(final List<MultiGetOperation> docs, final Class<T> type) {

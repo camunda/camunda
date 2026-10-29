@@ -28,4 +28,10 @@ public interface AgentRunEnrichmentReader {
    */
   Map<String, ProcessInstanceDto> getProcessInstances(
       Map<String, String> processDefinitionKeyByProcessInstanceId);
+
+  /**
+   * Search-based lookup of the process definition key of each given process instance, for root
+   * process instances whose definition isn't known. Instances not found are left out.
+   */
+  Map<String, String> getProcessDefinitionKeys(Collection<String> processInstanceIds);
 }

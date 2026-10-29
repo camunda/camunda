@@ -168,7 +168,14 @@ public class AgentRunWriter {
           AgentRunDto.Fields.incidentFlowNodeIds,
           AgentRunDto.Fields.processUserTaskCount,
           AgentRunDto.Fields.toolCallsByTool,
-          AgentRunDto.Fields.enrichedAt);
+          AgentRunDto.Fields.enrichedAt,
+          AgentRunDto.Fields.activeDurationMs,
+          AgentRunDto.Fields.humanWaitDurationMs,
+          AgentRunDto.Fields.humanStepCount,
+          AgentRunDto.Fields.toolIncidentCount,
+          AgentRunDto.Fields.toolIncidentsByTool,
+          AgentRunDto.Fields.failureReasons,
+          AgentRunDto.Fields.rootProcessDefinitionKey);
 
   private final ObjectMapper objectMapper;
 

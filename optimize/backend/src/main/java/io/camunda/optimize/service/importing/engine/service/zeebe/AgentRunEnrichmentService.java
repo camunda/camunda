@@ -137,6 +137,13 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
                         AgentRunDto::getProcessInstanceId,
                         AgentRunDto::getProcessDefinitionKey,
                         (a, b) -> a)));
+    final Map<String, String> rootProcessDefinitionKeys =
+        reader.getProcessDefinitionKeys(
+            runs.stream()
+                .map(AgentRunDto::getRootProcessInstanceId)
+                .filter(Objects::nonNull)
+                .filter(root -> !processInstances.containsKey(root))
+                .collect(Collectors.toSet()));
     final OffsetDateTime now = OffsetDateTime.now();
     final List<AgentRunDto> enriched =
         runs.stream()
@@ -144,7 +151,11 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
                 run ->
                     processInstances.containsKey(run.getProcessInstanceId())
                         ? AgentRunEnrichment.compute(
-                            run, processInstances.get(run.getProcessInstanceId()), now)
+                            run,
+                            processInstances.get(run.getProcessInstanceId()),
+                            rootProcessDefinitionKey(
+                                run, processInstances, rootProcessDefinitionKeys),
+                            now)
                         : null)
             .filter(Objects::nonNull)
             .toList();
@@ -156,5 +167,17 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
         agentRunWriter.generateEnrichmentImports(enriched),
         configurationService.getSkipDataAfterNestedDocLimitReached());
     LOG.debug("Enriched {} of {} agent runs.", enriched.size(), runs.size());
+  }
+
+  private static String rootProcessDefinitionKey(
+      final AgentRunDto run,
+      final Map<String, ProcessInstanceDto> processInstances,
+      final Map<String, String> lookedUp) {
+    final String root = run.getRootProcessInstanceId();
+    if (root == null) {
+      return null;
+    }
+    final ProcessInstanceDto loaded = processInstances.get(root);
+    return loaded != null ? loaded.getProcessDefinitionKey() : lookedUp.get(root);
   }
 }

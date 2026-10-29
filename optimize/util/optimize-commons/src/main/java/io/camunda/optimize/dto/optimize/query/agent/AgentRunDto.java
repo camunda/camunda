@@ -66,6 +66,13 @@ public class AgentRunDto implements OptimizeDto {
   private Long lastRecordPosition;
   private MetricTotalsDto lastMetricTotals;
   private OffsetDateTime enrichedAt;
+  private Long activeDurationMs;
+  private Long humanWaitDurationMs;
+  private Long humanStepCount;
+  private Long toolIncidentCount;
+  private List<ToolCallsDto> toolIncidentsByTool = new ArrayList<>();
+  private List<FailureReasonDto> failureReasons = new ArrayList<>();
+  private String rootProcessDefinitionKey;
 
   public AgentRunDto() {}
 
@@ -413,6 +420,62 @@ public class AgentRunDto implements OptimizeDto {
     this.enrichedAt = enrichedAt;
   }
 
+  public Long getActiveDurationMs() {
+    return activeDurationMs;
+  }
+
+  public void setActiveDurationMs(final Long activeDurationMs) {
+    this.activeDurationMs = activeDurationMs;
+  }
+
+  public Long getHumanWaitDurationMs() {
+    return humanWaitDurationMs;
+  }
+
+  public void setHumanWaitDurationMs(final Long humanWaitDurationMs) {
+    this.humanWaitDurationMs = humanWaitDurationMs;
+  }
+
+  public Long getHumanStepCount() {
+    return humanStepCount;
+  }
+
+  public void setHumanStepCount(final Long humanStepCount) {
+    this.humanStepCount = humanStepCount;
+  }
+
+  public Long getToolIncidentCount() {
+    return toolIncidentCount;
+  }
+
+  public void setToolIncidentCount(final Long toolIncidentCount) {
+    this.toolIncidentCount = toolIncidentCount;
+  }
+
+  public List<ToolCallsDto> getToolIncidentsByTool() {
+    return toolIncidentsByTool;
+  }
+
+  public void setToolIncidentsByTool(final List<ToolCallsDto> toolIncidentsByTool) {
+    this.toolIncidentsByTool = toolIncidentsByTool;
+  }
+
+  public List<FailureReasonDto> getFailureReasons() {
+    return failureReasons;
+  }
+
+  public void setFailureReasons(final List<FailureReasonDto> failureReasons) {
+    this.failureReasons = failureReasons;
+  }
+
+  public String getRootProcessDefinitionKey() {
+    return rootProcessDefinitionKey;
+  }
+
+  public void setRootProcessDefinitionKey(final String rootProcessDefinitionKey) {
+    this.rootProcessDefinitionKey = rootProcessDefinitionKey;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -461,7 +524,14 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(processUserTaskCount, that.processUserTaskCount)
         && Objects.equals(lastRecordPosition, that.lastRecordPosition)
         && Objects.equals(lastMetricTotals, that.lastMetricTotals)
-        && Objects.equals(enrichedAt, that.enrichedAt);
+        && Objects.equals(enrichedAt, that.enrichedAt)
+        && Objects.equals(activeDurationMs, that.activeDurationMs)
+        && Objects.equals(humanWaitDurationMs, that.humanWaitDurationMs)
+        && Objects.equals(humanStepCount, that.humanStepCount)
+        && Objects.equals(toolIncidentCount, that.toolIncidentCount)
+        && Objects.equals(toolIncidentsByTool, that.toolIncidentsByTool)
+        && Objects.equals(failureReasons, that.failureReasons)
+        && Objects.equals(rootProcessDefinitionKey, that.rootProcessDefinitionKey);
   }
 
   @Override
@@ -509,7 +579,14 @@ public class AgentRunDto implements OptimizeDto {
         processUserTaskCount,
         lastRecordPosition,
         lastMetricTotals,
-        enrichedAt);
+        enrichedAt,
+        activeDurationMs,
+        humanWaitDurationMs,
+        humanStepCount,
+        toolIncidentCount,
+        toolIncidentsByTool,
+        failureReasons,
+        rootProcessDefinitionKey);
   }
 
   @Override
@@ -601,6 +678,20 @@ public class AgentRunDto implements OptimizeDto {
         + lastMetricTotals
         + ", enrichedAt="
         + enrichedAt
+        + ", activeDurationMs="
+        + activeDurationMs
+        + ", humanWaitDurationMs="
+        + humanWaitDurationMs
+        + ", humanStepCount="
+        + humanStepCount
+        + ", toolIncidentCount="
+        + toolIncidentCount
+        + ", toolIncidentsByTool="
+        + toolIncidentsByTool
+        + ", failureReasons="
+        + failureReasons
+        + ", rootProcessDefinitionKey="
+        + rootProcessDefinitionKey
         + ")";
   }
 
@@ -650,9 +741,19 @@ public class AgentRunDto implements OptimizeDto {
     public static final String lastRecordPosition = "lastRecordPosition";
     public static final String lastMetricTotals = "lastMetricTotals";
     public static final String enrichedAt = "enrichedAt";
+    public static final String activeDurationMs = "activeDurationMs";
+    public static final String humanWaitDurationMs = "humanWaitDurationMs";
+    public static final String humanStepCount = "humanStepCount";
+    public static final String toolIncidentCount = "toolIncidentCount";
+    public static final String toolIncidentsByTool = "toolIncidentsByTool";
+    public static final String failureReasons = "failureReasons";
+    public static final String rootProcessDefinitionKey = "rootProcessDefinitionKey";
   }
 
-  /** Number of flow node instances of one tool element in the run's process instance. */
+  /**
+   * A count per tool element of the run: its flow node instances in {@code toolCallsByTool}, its
+   * incidents in {@code toolIncidentsByTool}.
+   */
   public static class ToolCallsDto {
 
     private String toolFlowNodeId;
@@ -959,6 +1060,106 @@ public class AgentRunDto implements OptimizeDto {
       public static final String reasoningTokens = "reasoningTokens";
       public static final String cacheCreationTokens = "cacheCreationTokens";
       public static final String cacheReadTokens = "cacheReadTokens";
+    }
+  }
+
+  /**
+   * Why a run failed on one element: the first incident message seen for that element and error
+   * type, and how many incidents of the run share them.
+   */
+  public static class FailureReasonDto {
+
+    private String flowNodeId;
+    private String toolName;
+    private String errorType;
+    private String message;
+    private Long count;
+
+    public FailureReasonDto() {}
+
+    public String getFlowNodeId() {
+      return flowNodeId;
+    }
+
+    public void setFlowNodeId(final String flowNodeId) {
+      this.flowNodeId = flowNodeId;
+    }
+
+    /** The tool's name when the incident was on a tool element, null for the agent element. */
+    public String getToolName() {
+      return toolName;
+    }
+
+    public void setToolName(final String toolName) {
+      this.toolName = toolName;
+    }
+
+    public String getErrorType() {
+      return errorType;
+    }
+
+    public void setErrorType(final String errorType) {
+      this.errorType = errorType;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public void setMessage(final String message) {
+      this.message = message;
+    }
+
+    public Long getCount() {
+      return count;
+    }
+
+    public void setCount(final Long count) {
+      this.count = count;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final FailureReasonDto that = (FailureReasonDto) o;
+      return Objects.equals(flowNodeId, that.flowNodeId)
+          && Objects.equals(toolName, that.toolName)
+          && Objects.equals(errorType, that.errorType)
+          && Objects.equals(message, that.message)
+          && Objects.equals(count, that.count);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(flowNodeId, toolName, errorType, message, count);
+    }
+
+    @Override
+    public String toString() {
+      return "FailureReasonDto("
+          + "flowNodeId="
+          + flowNodeId
+          + ", toolName="
+          + toolName
+          + ", errorType="
+          + errorType
+          + ", message="
+          + message
+          + ", count="
+          + count
+          + ")";
+    }
+
+    @SuppressWarnings("checkstyle:ConstantName")
+    public static final class Fields {
+
+      public static final String flowNodeId = "flowNodeId";
+      public static final String toolName = "toolName";
+      public static final String errorType = "errorType";
+      public static final String message = "message";
+      public static final String count = "count";
     }
   }
 }
