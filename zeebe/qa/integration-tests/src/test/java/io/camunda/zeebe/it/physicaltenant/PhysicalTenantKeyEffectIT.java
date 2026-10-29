@@ -14,9 +14,12 @@ import io.camunda.cluster.PhysicalTenantHealth;
 import io.camunda.cluster.PhysicalTenantHealth.State;
 import io.camunda.zeebe.broker.PhysicalTenantConfigService;
 import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.it.physicaltenant.EffectiveState.Attributed;
 import io.camunda.zeebe.it.physicaltenant.EffectiveState.Hit;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -34,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -55,11 +59,19 @@ final class PhysicalTenantKeyEffectIT {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(60);
   private static final Path REPORTS = Path.of("target", "physical-tenant-key-effect");
+  private static final String ASSIGNED_EXPORTER = "harness.assigned-exporter";
+
+  /** State that differs between two runs of the same configuration. */
+  private static final Predicate<String> RUNTIME_NOISE =
+      consumer ->
+          consumer.equals(
+              "io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy.initialOffset");
 
   /** State that differs between two restarts of the same configuration. */
   private static final Predicate<String> RESTART_ARTEFACTS =
       consumer ->
-          consumer.startsWith("io.atomix.utils.serializer.")
+          RUNTIME_NOISE.test(consumer)
+              || consumer.startsWith("io.atomix.utils.serializer.")
               || consumer.startsWith("org.apache.commons.lang3.tuple.")
               || consumer.startsWith("io.micrometer.")
               || consumer.startsWith("io.camunda.zeebe.util.health.HealthIssue.")
@@ -104,6 +116,14 @@ final class PhysicalTenantKeyEffectIT {
   static Stream<SentinelBatch> sentinelBatches() {
     return Stream.of(
         new SentinelBatch("engine", Map.of(), engineSentinels()),
+        new SentinelBatch(
+            "exporter-arguments",
+            Map.of(
+                "data.exporters.keyeffect.class-name",
+                ArgumentsExporter.class.getName(),
+                ASSIGNED_EXPORTER,
+                "keyeffect"),
+            List.of(Sentinel.text("data.exporters.keyeffect.args.marker", "exporter-argument"))),
         new SentinelBatch(
             "flow-control-aimd",
             Map.of(
@@ -390,7 +410,7 @@ final class PhysicalTenantKeyEffectIT {
       final var noise = differingConsumers(byTenant, inheriting, control, tenants);
       final var differing = differingConsumers(byTenant, overridden, inheriting, tenants);
       differing.removeAll(noise);
-      assertThat(differing).isEmpty();
+      assertThat(without(differing, RUNTIME_NOISE)).isEmpty();
     }
   }
 
@@ -909,6 +929,20 @@ final class PhysicalTenantKeyEffectIT {
     }
   }
 
+  /** Keeps the arguments it was configured with, so the harness can find them. */
+  public static final class ArgumentsExporter implements Exporter {
+
+    private Map<String, Object> arguments = Map.of();
+
+    @Override
+    public void configure(final Context context) {
+      arguments = Map.copyOf(context.getConfiguration().getArguments());
+    }
+
+    @Override
+    public void export(final Record<?> record) {}
+  }
+
   private record App(
       TestStandaloneBroker broker,
       ConfigurableApplicationContext context,
@@ -956,10 +990,16 @@ final class PhysicalTenantKeyEffectIT {
       configuration.put("name", "Key effect " + tenantId);
       configuration.put("data.secondary-storage.type", "none");
       configuration.put("security.initialization.default-roles.admin.users[0]", "admin");
+      final List<String> assigned = new ArrayList<>();
       if (hasRecordingExporter) {
-        configuration.put("data.exporters-assigned[0]", TestStandaloneBroker.RECORDING_EXPORTER_ID);
+        assigned.add(TestStandaloneBroker.RECORDING_EXPORTER_ID);
       }
-      configuration.putAll(properties);
+      final Map<String, String> remaining = new LinkedHashMap<>(properties);
+      Optional.ofNullable(remaining.remove(ASSIGNED_EXPORTER)).ifPresent(assigned::add);
+      for (int i = 0; i < assigned.size(); i++) {
+        configuration.put("data.exporters-assigned[" + i + "]", assigned.get(i));
+      }
+      configuration.putAll(remaining);
       return new HashMap<>(configuration);
     }
 
