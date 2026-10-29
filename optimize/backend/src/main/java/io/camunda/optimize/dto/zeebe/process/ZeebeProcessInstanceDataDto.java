@@ -136,6 +136,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   }
 
   @Override
+  public String getRequester() {
+    return ""; // not used in Optimize
+  }
+
+  @Override
   public int getStorageOrdinal() {
     return -1; // not used in Optimize
   }
