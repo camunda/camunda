@@ -36,6 +36,7 @@ import {
 	mockDeleteResourceEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryVariablesEndpoint,
+	mockQueryAgentInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -89,6 +90,7 @@ function getProcessInstanceShellHandlers({
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_INSTANCE_XML)}),
 		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 		mockQueryVariablesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockQueryAgentInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 	] as const;
 }
 
@@ -144,25 +146,27 @@ test.describe('Operate processes page', () => {
 		page,
 		operateProcessesPage,
 	}) => {
+		const definitions = [
+			createProcessDefinition({
+				processDefinitionId: 'my_simple_process',
+				processDefinitionKey: '123',
+				version: 1,
+			}),
+			createProcessDefinition({
+				processDefinitionId: 'my_simple_process',
+				processDefinitionKey: '124',
+				version: 2,
+			}),
+		];
+		let isTargetDeployed = false;
 		network.use(
-			mockQueryProcessDefinitionsEndpoint({
-				successResponse: HttpResponse.json(
+			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), () =>
+				HttpResponse.json(
 					createQueryProcessDefinitionsResponse({
-						items: [
-							createProcessDefinition({
-								processDefinitionId: 'my_simple_process',
-								processDefinitionKey: '123',
-								version: 1,
-							}),
-							createProcessDefinition({
-								processDefinitionId: 'my_simple_process',
-								processDefinitionKey: '124',
-								version: 2,
-							}),
-						],
+						items: isTargetDeployed ? definitions : definitions.slice(0, 1),
 					}),
 				),
-			}),
+			),
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
@@ -188,12 +192,15 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto('?process=my_simple_process&version=1');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&process=my_simple_process&version=1');
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+		isTargetDeployed = true;
 		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
 		await operateProcessesPage.migrateButton.click();
 		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
 		await page.getByRole('button', {name: 'Next'}).click();
 		await expect(page.getByText('Migration step 2 - confirm')).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Process Instances');
 		await page.getByRole('button', {name: 'Confirm'}).click();
 		const confirmation = page.getByRole('dialog', {name: 'Migration confirmation'});
 		await confirmation.getByRole('textbox', {name: 'Type MIGRATE to confirm'}).fill('MIGRATE');
@@ -203,6 +210,8 @@ test.describe('Operate processes page', () => {
 		await expect(page.getByText('Migration step 2 - confirm')).toHaveCount(0);
 		await expect(page).toHaveURL(/process=my_simple_process/);
 		await expect(page).toHaveURL(/version=2/);
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+		await expect(page.getByRole('status').getByText('Process could not be found')).toHaveCount(0);
 	});
 
 	test('should move a selected process instance and keep the filters and selection', async ({
@@ -244,7 +253,9 @@ test.describe('Operate processes page', () => {
 		const frameTitle = page.getByTestId('frame-container').getByText('Batch Modification Mode', {exact: true});
 
 		await test.step('enter batch modification mode', async () => {
-			await operateProcessesPage.goto('?process=my_simple_process&version=1&elementId=task-1');
+			await operateProcessesPage.goto(
+				'?active=true&suspended=true&incidents=true&process=my_simple_process&version=1&elementId=task-1',
+			);
 			await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
 			await operateProcessesPage.moveButton.click();
 			await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
@@ -272,11 +283,17 @@ test.describe('Operate processes page', () => {
 			const submitted = page.waitForRequest((request) => request.url().endsWith('/v2/process-instances/modification'));
 			await page.getByRole('dialog').getByRole('button', {name: 'Apply'}).click();
 
-			expect((await submitted).postDataJSON()).toMatchObject({
+			const body = (await submitted).postDataJSON();
+			expect(body).toMatchObject({
 				filter: {
 					processDefinitionId: {$eq: 'my_simple_process'},
 					processInstanceKey: {$in: ['1001']},
 					state: {$eq: 'ACTIVE'},
+					$or: [
+						{state: {$eq: 'ACTIVE'}, hasIncident: false},
+						{state: {$eq: 'SUSPENDED'}},
+						{hasIncident: true, state: {$neq: 'SUSPENDED'}},
+					],
 				},
 				moveInstructions: [{sourceElementId: 'task-1', targetElementId: 'end_event'}],
 			});
@@ -372,7 +389,7 @@ test.describe('Operate processes page', () => {
 			}),
 			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation())}),
 		);
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await page.getByRole('checkbox', {name: 'Select all items'}).check({force: true});
 		await page.getByRole('button', {name: 'Cancel', exact: true}).click();
 		await expect(page.getByRole('dialog')).toContainText(
@@ -395,11 +412,99 @@ test.describe('Operate processes page', () => {
 		await expect(page.getByRole('checkbox', {name: 'Select all items'})).not.toBeChecked();
 	});
 
-	test('should render the filters panel with the process combobox', async ({operateProcessesPage}) => {
+	test('should render the filters panel with the process combobox', async ({page, operateProcessesPage}) => {
 		await operateProcessesPage.goto();
 
 		await expect(operateProcessesPage.filtersPanel).toBeVisible();
 		await expect(operateProcessesPage.processCombobox).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Process Instances');
+	});
+
+	test('should drop an unknown process from the URL and notify that it could not be found', async ({
+		page,
+		operateProcessesPage,
+	}) => {
+		await operateProcessesPage.goto('?processDefinitionId=testProcess&processDefinitionVersion=1');
+
+		await expect(page.getByRole('status').getByText('Process could not be found')).toBeVisible();
+		await expect(page).toHaveURL('/operate/processes');
+		await expect(operateProcessesPage.processCombobox).toHaveValue('');
+
+		await operateProcessesPage.goto('?process=testProcess&version=1&canceled=true&elementId=task-1');
+
+		await expect(page).toHaveURL(/^[^?]*\/operate\/processes\?canceled=true&elementId=task-1$/);
+		await expect(page.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
+	});
+
+	test('should preserve tenant filters and legacy Back behavior when clearing an unknown version', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		const definitions = [
+			createProcessDefinition({
+				processDefinitionId: 'orders',
+				processDefinitionKey: 'tenant-a-1',
+				version: 1,
+				tenantId: 'tenant-a',
+			}),
+			createProcessDefinition({
+				processDefinitionId: 'orders',
+				processDefinitionKey: 'tenant-b-2',
+				version: 2,
+				tenantId: 'tenant-b',
+			}),
+		];
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					}),
+				),
+			}),
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+							{tenantId: 'tenant-b', name: 'Tenant B', description: null},
+						],
+					}),
+				),
+			}),
+			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const {filter} = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				return HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: definitions.filter((definition) => !filter?.tenantId || definition.tenantId === filter.tenantId),
+					}),
+				);
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		await operateProcessesPage.goto('?tenantId=tenant-a&process=orders&version=1');
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+		const previousUrl = page.url();
+		await operateProcessesPage.goto('?tenantId=tenant-a&process=orders&version=2&canceled=true&elementId=task-1');
+
+		const notFound = page.getByRole('status').getByText('Process could not be found');
+		await expect(notFound).toHaveCount(1);
+		await expect(page).toHaveURL('/operate/processes?tenantId=tenant-a&canceled=true&elementId=task-1');
+		await expect(operateProcessesPage.processCombobox).toHaveValue('');
+		await expect(page.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
+
+		await page.goBack();
+		await expect(notFound).toHaveCount(2);
+		await expect(page).toHaveURL('/operate/processes?tenantId=tenant-a&canceled=true&elementId=task-1');
+		await page.evaluate(() => window.history.go(-2));
+		await expect(page).toHaveURL(previousUrl);
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
 	});
 
 	test('should synchronize the element combobox and diagram with URL history and instance requests', async ({
@@ -668,6 +773,8 @@ test.describe('Operate processes page', () => {
 		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
 		await expect(operateProcessesPage.elementCombobox).toHaveValue('task-1');
 		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toBeVisible();
+		await expect(page.getByRole('status').getByText('Process could not be found')).toHaveCount(0);
+		await expect(page).toHaveURL(/process=order-process/);
 
 		lookupFailureStatus = undefined;
 		await operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'}).click();
@@ -698,7 +805,7 @@ test.describe('Operate processes page', () => {
 	});
 
 	test('should render the reset filters button disabled by default', async ({operateProcessesPage}) => {
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.resetFiltersButton).toBeDisabled();
 	});
@@ -707,7 +814,7 @@ test.describe('Operate processes page', () => {
 		page,
 		operateProcessesPage,
 	}) => {
-		await operateProcessesPage.goto('?businessId=eq_order-123');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&businessId=eq_order-123');
 		await operateProcessesPage.addOptionalFilter('Variables');
 		await page.getByRole('textbox', {name: 'Name'}).fill('status');
 		await page.getByRole('textbox', {name: 'Value'}).fill('"open"');
@@ -754,7 +861,7 @@ test.describe('Operate processes page', () => {
 		operateProcessesPage,
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.instancesTable).toBeVisible();
 		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
@@ -858,7 +965,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page).toHaveURL('/operate/processes/1001/incidents');
@@ -895,7 +1002,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page.getByRole('button', {name: 'More'})).toBeVisible();
@@ -910,14 +1017,123 @@ test.describe('Operate processes page', () => {
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
 
-		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus');
+		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus#diagram');
 
 		await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
-		const {searchParams} = new URL(page.url());
+		const {searchParams, hash} = new URL(page.url());
 		expect(searchParams.get('elementId')).toBe('call-activity');
 		expect(searchParams.get('isPlaceholder')).toBe('true');
 		expect(searchParams.get('customHint')).toBe('focus');
+		expect(hash).toBe('#diagram');
 		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	});
+
+	test('should open legacy process instance bookmarks', async ({network, page}) => {
+		network.use(...getProcessInstanceShellHandlers());
+
+		for (const path of ['/operate/instances/1001', '/operate/processes/1001']) {
+			await page.goto(`${path}?flowNodeId=1e3&tenantId=1.00#diagram`);
+
+			await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('elementId')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.get('flowNodeId')).toBeNull();
+			expect(hash).toBe('#diagram');
+		}
+	});
+
+	test('should open legacy process list bookmarks', async ({network, page, operateProcessesPage}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processInstanceKey?.$in?.includes('1001'),
+			);
+			await page.goto(
+				`${path}?processDefinitionId=order-process&processDefinitionVersion=1&ids=1001&retriesLeft=true&operationId=batch-1`,
+			);
+
+			await expect(page).toHaveURL(
+				(url) => url.pathname.endsWith('/operate/processes') && !url.searchParams.has('ids'),
+			);
+			const {searchParams} = new URL(page.url());
+			expect(searchParams.get('process')).toBe('order-process');
+			expect(searchParams.get('version')).toBe('1');
+			expect(searchParams.get('retriesLeft')).toBeNull();
+			expect(searchParams.get('operationId')).toBeNull();
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			expect((await request).postDataJSON().filter).toMatchObject({
+				processInstanceKey: {$in: ['1001']},
+				batchOperationKey: {$eq: 'batch-1'},
+				hasRetriesLeft: true,
+			});
+		}
+	});
+
+	test('should preserve raw filter values and current-name precedence in bookmarks', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Order Process', processDefinitionId: '1e3', tenantId: '1.00'})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processDefinitionId?.$eq === '1e3',
+			);
+			await page.goto(
+				`${path}?active=true&suspended=true&incidents=true&process=1e3&processDefinitionId=old&version=all&processDefinitionVersion=2&tenant=old&tenantId=1.00&retriesLeft=true&hasRetriesLeft=false#diagram`,
+			);
+
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			await expect(page).toHaveURL(
+				(url) =>
+					url.pathname.endsWith('/operate/processes') &&
+					!['tenant', 'processDefinitionId', 'processDefinitionVersion', 'version', 'retriesLeft'].some((key) =>
+						url.searchParams.has(key),
+					),
+			);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('process')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.has('processDefinitionId')).toBe(false);
+			expect(searchParams.has('processDefinitionVersion')).toBe(false);
+			expect(searchParams.has('version')).toBe(false);
+			expect(searchParams.get('hasRetriesLeft')).not.toBe('true');
+			expect(searchParams.has('retriesLeft')).toBe(false);
+			expect(hash).toBe('#diagram');
+			const filter = (await request).postDataJSON().filter;
+			expect(filter).toMatchObject({
+				processDefinitionId: {$eq: '1e3'},
+				tenantId: {$eq: '1.00'},
+			});
+			expect(filter).not.toHaveProperty('hasRetriesLeft');
+			expect(filter).not.toHaveProperty('processDefinitionVersion');
+		}
 	});
 
 	test('should recover waiting statistics before choosing the default tab', async ({

@@ -14,6 +14,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.IN
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -85,7 +86,8 @@ public class ListViewFlowNodeFromIncidentHandler
         .setPositionIncident(record.getPosition())
         .setActivityId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));

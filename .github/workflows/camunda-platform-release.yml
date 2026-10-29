@@ -511,12 +511,12 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: reg.mini.dev
           username: minimus
@@ -529,7 +529,7 @@ jobs:
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
       - name: Login to infosec registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
@@ -646,12 +646,12 @@ jobs:
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: reg.mini.dev
           username: minimus
@@ -1119,6 +1119,15 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/mask-camunda-client-config
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
       - name: Extract Maven Central deployment ID
         id: extract-deployment-id
         # Never block notifications on extraction failure — the deployment ID is
@@ -1178,6 +1187,7 @@ jobs:
             echo "ℹ️ No Maven Central deployment ID found in build output" >&2
           fi
       - name: Report release success to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1192,6 +1202,9 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
@@ -1271,6 +1284,17 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/mask-camunda-client-config
+
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
+
       - name: Extract Maven Central deployment ID
         id: extract-deployment-id
         # Best-effort: the release job may have failed before publishing to Maven Central,
@@ -1331,6 +1355,7 @@ jobs:
           fi
 
       - name: Report release failure to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1345,6 +1370,9 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5

@@ -17,10 +17,15 @@ function useDebouncedUrlFilter(
 ) {
 	const [draft, setDraft] = useState(appliedValue);
 	const [lastAppliedValue, setLastAppliedValue] = useState(appliedValue);
+	const [committedValues, setCommittedValues] = useState<string[]>([]);
 	const commit = useEffectEvent(onCommit);
 
 	if (lastAppliedValue !== appliedValue) {
-		if (draft === lastAppliedValue) {
+		// Commits land in order, so an acknowledged value retires itself and everything before it.
+		const ownIndex = committedValues.indexOf(appliedValue);
+		setCommittedValues(ownIndex === -1 ? [] : committedValues.slice(ownIndex + 1));
+		// A value we did not commit is navigation: it wins over an edited draft.
+		if (draft === lastAppliedValue || ownIndex === -1) {
 			setDraft(appliedValue);
 		}
 		setLastAppliedValue(appliedValue);
@@ -31,7 +36,10 @@ function useDebouncedUrlFilter(
 			return;
 		}
 
-		const timeoutId = setTimeout(() => commit(draft === '' ? undefined : draft), delay);
+		const timeoutId = setTimeout(() => {
+			setCommittedValues((values) => [...values, draft]);
+			commit(draft === '' ? undefined : draft);
+		}, delay);
 		return () => clearTimeout(timeoutId);
 	}, [appliedValue, draft, delay]);
 

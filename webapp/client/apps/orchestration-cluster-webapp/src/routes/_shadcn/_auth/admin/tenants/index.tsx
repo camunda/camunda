@@ -15,6 +15,7 @@ import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminTenantsPage} from '#/admin/pages/AdminTenantsPage';
 import {getTenantsRequestBody} from '#/admin/modules/tenants/getTenantsRequestBody';
 import {DEFAULT_PAGE_SIZE, tenantsSearchSchema, type TenantsSearch} from '#/admin/modules/tenants/searchSchema';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
@@ -27,7 +28,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/tenants/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query(queries.queryTenants(getTenantsRequestBody(search)));
+		await queryClient.query(adminListQuery(queries.queryTenants(getTenantsRequestBody(search))));
 	},
 	errorComponent: function AdminTenantsErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -46,7 +47,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/tenants/')({
 	component: function AdminTenantsRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryTenants(getTenantsRequestBody(search)));
+		const {data} = useSuspenseQuery(adminListQuery(queries.queryTenants(getTenantsRequestBody(search))));
 
 		const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
 		const lastPage = Math.max(1, Math.ceil(data.page.totalItems / pageSize));

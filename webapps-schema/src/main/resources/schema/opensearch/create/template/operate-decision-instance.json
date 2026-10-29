@@ -124,6 +124,9 @@
       },
       "businessId": {
         "type": "keyword"
+      },
+      "storageOrdinal": {
+        "type": "integer"
       }
     }
   }

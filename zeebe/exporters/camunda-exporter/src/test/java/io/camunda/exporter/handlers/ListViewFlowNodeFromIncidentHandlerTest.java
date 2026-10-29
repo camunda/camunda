@@ -187,4 +187,40 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   private Record<IncidentRecordValue> createIncidentRecordWithIntent(final IncidentIntent intent) {
     return factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withStorageOrdinal(42)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(incidentRecordValue.getStorageOrdinal());
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenDefault() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
+  }
 }

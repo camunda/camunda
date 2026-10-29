@@ -83,7 +83,7 @@ test('should have no accessibility violations in the bulk toolbar and confirmati
 	operateProcessesPage,
 	makeAxeBuilder,
 }) => {
-	await operateProcessesPage.goto();
+	await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 	await page.getByRole('checkbox', {name: 'Select all items'}).check({force: true});
 	await expect(page.getByRole('button', {name: 'Cancel', exact: true})).toBeVisible();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);

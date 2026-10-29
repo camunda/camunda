@@ -99,7 +99,7 @@ public final class BufferedCommandDrainProcessorTest {
   }
 
   @Test
-  void shouldAppendResumeJobsWhenBufferEmpty() {
+  void shouldAppendResumeJobsWhenBufferEmptyAndNoUserTaskSuspended() {
     // when
     processor.processRecord(drainCommand());
 
@@ -109,7 +109,29 @@ public final class BufferedCommandDrainProcessorTest {
             eq(PROCESS_INSTANCE_KEY),
             eq(ProcessInstanceIntent.RESUME_JOBS),
             any(ProcessInstanceRecord.class));
+    verify(commandWriter, never())
+        .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_USER_TASKS), any());
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
+  }
+
+  @Test
+  void shouldAppendResumeUserTasksWhenBufferEmptyAndUserTaskSuspended() {
+    // given - user tasks resume before jobs
+    processingState.getUserTaskState().markSuspended(PROCESS_INSTANCE_KEY, 300L);
+
+    // when
+    processor.processRecord(drainCommand());
+
+    // then
+    final var followUp = ArgumentCaptor.forClass(ProcessInstanceRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(ProcessInstanceIntent.RESUME_USER_TASKS),
+            followUp.capture());
+    assertThat(followUp.getValue().getResumeFromUserTaskKey()).isEqualTo(-1L);
+    verify(commandWriter, never())
+        .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_JOBS), any());
   }
 
   @Test

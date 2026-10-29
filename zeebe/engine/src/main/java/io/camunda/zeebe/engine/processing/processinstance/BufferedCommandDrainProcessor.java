@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.BufferedCommand;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
@@ -35,8 +36,9 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Drains buffered commands one per {@code DRAIN} cycle: if one is found, it's drained and another
  * {@code DRAIN} is scheduled unconditionally; the cycle that finds the buffer empty hands off to
- * {@code RESUME_JOBS} instead, to {@link ProcessInstanceResumeJobsProcessor}, which un-parks jobs
- * and appends {@code COMPLETE_RESUMING} itself. {@code DRAIN} is always processed while {@code
+ * {@code RESUME_USER_TASKS} instead, to {@link ProcessInstanceResumeUserTasksProcessor}, which
+ * resumes the suspended user tasks and then hands off to {@code RESUME_JOBS}, or straight to {@code
+ * RESUME_JOBS} if no user task is suspended. {@code DRAIN} is always processed while {@code
  * RESUMING}: gating it would strand the instance there forever. While {@code SUSPENDING} or {@code
  * SUSPENDED} it is rejected, as draining would write buffered commands back to the log before the
  * instance resumes.
@@ -64,6 +66,7 @@ public final class BufferedCommandDrainProcessor
   private final SuspensionState suspensionState;
   private final ElementInstanceState elementInstanceState;
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
 
   public BufferedCommandDrainProcessor(
@@ -76,6 +79,7 @@ public final class BufferedCommandDrainProcessor
     suspensionState = processingState.getSuspensionState();
     elementInstanceState = processingState.getElementInstanceState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    userTaskState = processingState.getUserTaskState();
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -105,10 +109,10 @@ public final class BufferedCommandDrainProcessor
 
   /**
    * Buffer drained. If a suspend-driven close is still CLOSING, its ack will restore the manifest
-   * and buffer a {@code REOPEN}, so advancing to {@code RESUME_JOBS} now would finish the resume
+   * and buffer a {@code REOPEN}, so advancing to the next resume step now could finish the resume
    * before that row is re-subscribed; reject and wait (the delete-ack re-triggers a {@code DRAIN}).
    * {@code DRAIN} does not ban on error, so the rejection is a safe terminal record. Otherwise hand
-   * off to {@code RESUME_JOBS}.
+   * off to {@code RESUME_USER_TASKS}, or to {@code RESUME_JOBS} if no user task is suspended.
    *
    * <p>This resume-side wait exists only because suspend completes ({@code SUSPENDED}) while its
    * closes are still in flight, so resume can start with subscriptions still CLOSING. Once #61057
@@ -128,7 +132,13 @@ public final class BufferedCommandDrainProcessor
           WAITING_CLOSE_ACKS_MESSAGE.formatted(drainValue.getProcessInstanceKey()));
       return;
     }
-    appendResumeJobs(drainValue, storageOrdinal);
+    // go straight to RESUME_JOBS when no user task is suspended: each extra cycle gives a drained
+    // command more time to end the instance before RESUMED is written (#66736)
+    final var nextIntent =
+        userTaskState.hasSuspendedUserTasks(drainValue.getProcessInstanceKey())
+            ? ProcessInstanceIntent.RESUME_USER_TASKS
+            : ProcessInstanceIntent.RESUME_JOBS;
+    appendNextResumeStep(drainValue, nextIntent, storageOrdinal);
   }
 
   /** Read-only BFS over the element-instance tree: reports whether any subscription is CLOSING. */
@@ -221,10 +231,13 @@ public final class BufferedCommandDrainProcessor
             .setStorageOrdinal(storageOrdinal));
   }
 
-  private void appendResumeJobs(final BufferedCommandRecord drainValue, final int storageOrdinal) {
+  private void appendNextResumeStep(
+      final BufferedCommandRecord drainValue,
+      final ProcessInstanceIntent nextIntent,
+      final int storageOrdinal) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
-        ProcessInstanceIntent.RESUME_JOBS,
+        nextIntent,
         new ProcessInstanceRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())

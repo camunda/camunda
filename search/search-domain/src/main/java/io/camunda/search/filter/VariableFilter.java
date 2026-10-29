@@ -26,7 +26,7 @@ public record VariableFilter(
     List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
     Boolean isTruncated,
-    List<ProtectionMode> protectionModes)
+    List<Operation<String>> protectionModeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
@@ -38,7 +38,7 @@ public record VariableFilter(
     private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private Boolean isTruncated;
-    private List<ProtectionMode> protectionModes;
+    private List<Operation<String>> protectionModeOperations;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
       nameOperations = addValuesToList(nameOperations, operations);
@@ -164,13 +164,21 @@ public record VariableFilter(
       return this;
     }
 
-    public Builder protectionModes(final ProtectionMode value, final ProtectionMode... values) {
-      return protectionModes(collectValues(value, values));
+    public Builder protectionModeOperations(final List<Operation<String>> operations) {
+      protectionModeOperations = addValuesToList(protectionModeOperations, operations);
+      return this;
     }
 
-    public Builder protectionModes(final List<ProtectionMode> values) {
-      protectionModes = addValuesToList(protectionModes, values);
-      return this;
+    @SafeVarargs
+    public final Builder protectionModeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return protectionModeOperations(collectValues(operation, operations));
+    }
+
+    /** Matches variables that have at least one of the given protection modes. */
+    public Builder protectionModes(final ProtectionMode value, final ProtectionMode... values) {
+      return protectionModeOperations(
+          Operation.in(collectValues(value, values).stream().map(Enum::name).toList()));
     }
 
     public Builder copyFrom(final VariableFilter sourceFilter) {
@@ -182,7 +190,7 @@ public record VariableFilter(
           .variableKeyOperations(sourceFilter.variableKeyOperations())
           .tenantIds(sourceFilter.tenantIds())
           .isTruncated(sourceFilter.isTruncated())
-          .protectionModes(sourceFilter.protectionModes());
+          .protectionModeOperations(sourceFilter.protectionModeOperations());
     }
 
     @Override
@@ -196,7 +204,7 @@ public record VariableFilter(
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
           isTruncated,
-          Objects.requireNonNullElseGet(protectionModes, Collections::emptyList));
+          Objects.requireNonNullElseGet(protectionModeOperations, Collections::emptyList));
     }
   }
 }

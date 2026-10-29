@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue.Builder;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -668,5 +669,49 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r -> r.withIntent(intent).withValue(processInstanceRecordValue));
     return processInstanceRecord;
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

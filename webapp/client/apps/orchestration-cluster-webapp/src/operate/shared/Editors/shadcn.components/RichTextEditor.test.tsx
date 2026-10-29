@@ -6,13 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi, beforeAll} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
 import {RichTextEditor} from './RichTextEditor';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 describe('RichTextEditor', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(async () => {
 		await cleanup();
 	});

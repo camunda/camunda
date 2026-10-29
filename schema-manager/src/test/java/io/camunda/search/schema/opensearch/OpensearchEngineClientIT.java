@@ -194,6 +194,24 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadShardCountsForExistingIndices() {
+    // given
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_shards-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(3);
+    opensearchEngineClient.createIndex(index, settings);
+
+    // when
+    final var shardCounts =
+        opensearchEngineClient.getNumberOfShards(List.of(index.getFullQualifiedName() + "*"));
+
+    // then
+    assertThat(shardCounts).containsEntry(index.getFullQualifiedName(), 3);
+  }
+
+  @Test
   void shouldReadReplicaCountsForExistingIndices() throws IOException {
     final var index =
         createTestIndexDescriptor(
@@ -206,6 +224,39 @@ public class OpensearchEngineClientIT {
         opensearchEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
 
     assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
+  void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue() throws IOException {
+    // given - the engine accepts and stores a string for a setting the typed client model expects
+    // to be an object, which makes parsing the full settings of this index fail
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_unexpected_setting-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    opensearchEngineClient.createIndex(index, settings);
+    final var indexName = index.getFullQualifiedName();
+    executeRaw("POST", indexName + "/_close", null);
+    executeRaw("PUT", indexName + "/_settings", "{\"index.analysis.filter\": \"_none\"}");
+    executeRaw("POST", indexName + "/_open", null);
+
+    // when
+    final var replicaCounts = opensearchEngineClient.getNumberOfReplicas(List.of(indexName + "*"));
+
+    // then
+    assertThat(replicaCounts).containsEntry(indexName, 2);
+  }
+
+  private void executeRaw(final String method, final String endpoint, final String body)
+      throws IOException {
+    final var builder = Requests.builder().method(method).endpoint(endpoint);
+    if (body != null) {
+      builder.body(Body.from(body.getBytes(StandardCharsets.UTF_8), "application/json"));
+    }
+    try (final var response = openSearchClient.generic().execute(builder.build())) {
+      assertThat(response.getStatus()).isEqualTo(200);
+    }
   }
 
   @Test

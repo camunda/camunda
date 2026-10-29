@@ -12,9 +12,15 @@ import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {StateOverlay} from '#/operate/shared/StateOverlay/StateOverlay';
-import {DrdJS, type DecisionStateOverlay} from './DrdJS';
+import {DrdJS, type DecisionStateOverlay} from '#/operate/shared/DecisionViewer/DrdJS';
 import type {DrdData} from './drdData.queries';
 import {ViewerCanvas} from './DrdViewer.styled';
+
+const DRD_COLORS = {
+	defaultFillColor: 'var(--cds-layer)',
+	defaultStrokeColor: 'var(--cds-icon-secondary)',
+	defaultLabelColor: 'var(--cds-text-primary)',
+};
 
 type Props = {
 	xml: string;
@@ -58,7 +64,7 @@ function DrdViewer({
 	);
 
 	if (viewerRef.current === null) {
-		viewerRef.current = new DrdJS();
+		viewerRef.current = new DrdJS(DRD_COLORS);
 	}
 	if (failure !== null && failure.signature === inputSignature) {
 		throw failure.error;

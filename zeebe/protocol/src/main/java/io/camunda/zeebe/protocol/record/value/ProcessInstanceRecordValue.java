@@ -232,4 +232,21 @@ public interface ProcessInstanceRecordValue
   default long getResumeFromJobKey() {
     return -1L;
   }
+
+  /**
+   * Returns the user task key from which the next {@code RESUME_USER_TASKS} cycle continues
+   * resuming the instance's suspended user tasks, so a long resume can continue where the previous
+   * cycle stopped instead of re-scanning from the beginning. A negative value means "start from the
+   * beginning."
+   *
+   * <p>Only meaningful on {@code RESUME_USER_TASKS} commands. All other record intents carry the
+   * default value {@code -1}, which is safe to ignore.
+   *
+   * @return the user task key to resume from (inclusive), or {@code -1} if none has been resumed
+   *     yet
+   * @since 8.11
+   */
+  default long getResumeFromUserTaskKey() {
+    return -1L;
+  }
 }

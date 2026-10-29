@@ -38,12 +38,14 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
+import io.camunda.process.test.api.testCases.ImmutableVariablesTableRow;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstancesInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
@@ -73,6 +75,8 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErro
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
+import io.camunda.process.test.api.testCases.instructions.assertIncident.IncidentErrorType;
+import io.camunda.process.test.api.testCases.instructions.assertIncident.IncidentState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
@@ -368,6 +372,28 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())),
+        // ===== ASSERT_INCIDENT =====
+        Arguments.of(
+            "assert incident: minimal",
+            singleTestCase(
+                ImmutableAssertIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "assert incident: full",
+            singleTestCase(
+                ImmutableAssertIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .state(IncidentState.IS_ACTIVE)
+                    .errorType(IncidentErrorType.JOB_NO_RETRIES)
+                    .errorMessage("No retries left")
+                    .elementId("task1")
+                    .build())),
         // ===== COMPLETE_USER_TASK =====
         Arguments.of(
             "complete user task: minimal",
@@ -493,6 +519,28 @@ public class PojoCompatibilityTest {
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables expression",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .variablesExpression("={status: \"sent\"}")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables table",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("pick-sample")
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putWhen("loopCounter", 1)
+                            .putVariables("sampleType", "regolith")
+                            .build())
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putVariables("sampleType", "basalt")
+                            .build())
                     .build())),
         // ===== MOCK_DMN_DECISION =====
         Arguments.of(

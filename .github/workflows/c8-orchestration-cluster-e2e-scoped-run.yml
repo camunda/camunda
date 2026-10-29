@@ -1,6 +1,6 @@
 # description: Runs ONE case of the orchestration-cluster E2E suite against a
 #              local stack, on demand. The verify step of coverage-plan test
-#              generation — see camunda/team-test-automation#83.
+#              generation.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/test-automation-team
@@ -102,7 +102,7 @@ jobs:
       # runs are not the same question, and conflating them locked out the
       # caller this workflow was built for. A generation branch carries the
       # test to run but has no published image, so it was refused below before
-      # a test could start -- see camunda/team-test-automation#83.
+      # a test could start.
       #
       # `branch` stays the code. `image_branch` is the image, and defaults to
       # `branch` so every existing dispatch behaves exactly as before: main
@@ -159,7 +159,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY | dockerhub-token;
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ steps.dockerhub-secrets.outputs.dockerhub-username }}
           password: ${{ steps.dockerhub-secrets.outputs.dockerhub-token }}
@@ -226,7 +226,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: npm

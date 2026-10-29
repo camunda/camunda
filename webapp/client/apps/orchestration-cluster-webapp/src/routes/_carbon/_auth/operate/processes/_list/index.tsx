@@ -6,8 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, redirect} from '@tanstack/react-router';
+import {withCanonicalProcessesSearch} from '#/operate/pages/Processes/processesFilter';
+import {migrateLegacyProcessSearch} from '#/operate/shared/utils/migrateLegacyProcessSearch';
 
-const Route = createFileRoute('/_carbon/_auth/operate/processes/_list/')({});
+const Route = createFileRoute('/_carbon/_auth/operate/processes/_list/')({
+	beforeLoad: ({location}) => {
+		const migrated = migrateLegacyProcessSearch(location);
+		if (migrated !== null) {
+			throw redirect({
+				to: '/operate/processes',
+				search: withCanonicalProcessesSearch(migrated),
+				hash: location.hash,
+				replace: true,
+			});
+		}
+	},
+});
 
 export {Route};

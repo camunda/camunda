@@ -11,6 +11,7 @@ import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
+import java.util.function.LongPredicate;
 
 public interface UserTaskState {
 
@@ -23,6 +24,21 @@ public interface UserTaskState {
   UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey);
 
   Optional<String> findInitialAssignee(long key);
+
+  boolean isSuspended(long processInstanceKey, long userTaskKey);
+
+  boolean hasSuspendedUserTasks(long processInstanceKey);
+
+  /**
+   * Visits the keys of the suspended user tasks of the given process instance, in ascending order.
+   *
+   * @param processInstanceKey the process instance whose suspended user tasks to visit
+   * @param startAtUserTaskKey the user task key to start at (inclusive), or a negative value to
+   *     start at the beginning
+   * @param visitor called with each user task key; returning {@code false} stops the iteration
+   */
+  void forEachSuspendedUserTask(
+      long processInstanceKey, long startAtUserTaskKey, LongPredicate visitor);
 
   enum LifecycleState {
     NOT_FOUND((byte) 0),

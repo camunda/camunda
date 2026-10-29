@@ -100,7 +100,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 		await expect.element(screen.getByTestId('FAILED-icon-2')).toBeInTheDocument();
 		await expect.element(screen.getByText('Evaluated', {exact: true})).toBeInTheDocument();
 		await expect.element(screen.getByText('Failed', {exact: true})).toBeInTheDocument();
-		await expect.element(screen.getByRole('link', {name: '1'})).toHaveAttribute('href', '/operate/decisions/1');
+		await expect.element(screen.getByRole('link', {name: '1'})).toHaveAttribute('href', '/operate-preview/decisions/1');
 	});
 
 	it('should show the business ID column only when at least one row has one', async ({worker}) => {
@@ -116,7 +116,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('button', {name: 'Evaluation Date'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Evaluation date'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Business ID'})).not.toBeInTheDocument();
 	});
 
@@ -142,7 +142,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable({search: {evaluated: false, failed: false}});
 
-		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+		await expect.element(screen.getByText('To see some results, select at least one instance state')).toBeVisible();
 	});
 
 	it('should render an empty message when no instances match the filter', async ({worker}) => {
@@ -150,7 +150,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('There are no instances matching this filter set')).toBeVisible();
 	});
 
 	it('should render an error message when the request fails', async ({worker}) => {
@@ -296,7 +296,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			await expect
 				.element(screen.getByRole('link', {name: '1'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/1`);
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate-preview/decisions/1`);
 		},
 	);
 
@@ -306,6 +306,17 @@ describe('<InstancesTable /> (shadcn)', () => {
 		worker.use(
 			mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: undefined})]),
 		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByText('None')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /view process instance/i})).not.toBeInTheDocument();
+	});
+
+	it('should render "None" instead of a process instance link when the process instance key is -1', async ({
+		worker,
+	}) => {
+		worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: '-1'})]));
 
 		const screen = await renderInstancesTable();
 

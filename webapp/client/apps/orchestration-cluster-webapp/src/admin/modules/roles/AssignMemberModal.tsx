@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import {X} from '@camunda/design-system/icons';
 import {
 	Button,
-	Combobox,
 	Dialog,
 	DialogBody,
 	DialogContent,
@@ -21,7 +20,8 @@ import {
 	DialogTitle,
 	Input,
 	Label,
-	type ComboboxOption,
+	MultiSelect,
+	type MultiSelectOption,
 } from '@camunda/design-system';
 import {getMembersQuery, toMemberRow, type MemberKind} from './members';
 import {useRoleMemberMutations} from './useRoleMemberMutations';
@@ -31,7 +31,7 @@ const CANDIDATE_LIMIT = 20;
 const CANDIDATE_SEARCH_DEBOUNCE = 300;
 const ASSIGNED_MEMBERS_LIMIT = 1000;
 
-type Candidates = {options: ComboboxOption[]; isError: boolean};
+type Candidates = {options: MultiSelectOption[]; isError: boolean};
 
 function useCandidates(
 	roleId: string,
@@ -46,40 +46,46 @@ function useCandidates(
 		...getMembersQuery(kind, roleId, {page: {from: 0, limit: ASSIGNED_MEMBERS_LIMIT}}),
 		enabled: usersEnabled || groupsEnabled || kind === 'mappingRules',
 	});
-	const assignedIds = new Set((assignedMembers?.items ?? []).map((item) => toMemberRow(kind, item).id));
-	const unassigned = (options: ComboboxOption[]) => options.filter(({value}) => !assignedIds.has(value));
-	const filterValue = searchTerm === '' ? undefined : {$like: `*${searchTerm}*`};
+	// Candidates wait for the assigned members so they are never listed before being excluded.
+	const assignedIds = (assignedMembers?.items ?? []).map((item) => toMemberRow(kind, item).id);
+	const idFilter = {
+		...(searchTerm === '' ? {} : {$like: `*${searchTerm}*`}),
+		...(assignedIds.length === 0 ? {} : {$notIn: assignedIds}),
+	};
+	const hasIdFilter = Object.keys(idFilter).length > 0;
+	const assignedLoaded = assignedMembers !== undefined;
 	const page = {from: 0, limit: CANDIDATE_LIMIT};
 
 	const users = useQuery({
-		...queries.queryUsers({filter: filterValue ? {username: filterValue} : {}, page}),
-		enabled: usersEnabled,
+		...queries.queryUsers({filter: hasIdFilter ? {username: idFilter} : {}, page}),
+		enabled: usersEnabled && assignedLoaded,
 	});
 	const groups = useQuery({
-		...queries.queryGroups({filter: filterValue ? {groupId: filterValue} : {}, page}),
-		enabled: groupsEnabled,
+		...queries.queryGroups({filter: hasIdFilter ? {groupId: idFilter} : {}, page}),
+		enabled: groupsEnabled && assignedLoaded,
 	});
 	const mappingRules = useQuery({
-		...queries.queryMappingRules({filter: filterValue ? {mappingRuleId: filterValue} : {}, page}),
-		enabled: kind === 'mappingRules',
+		...queries.queryMappingRules({filter: hasIdFilter ? {mappingRuleId: idFilter} : {}, page}),
+		enabled: kind === 'mappingRules' && assignedLoaded,
 	});
 
 	switch (kind) {
 		case 'users':
 			return {
-				options: unassigned((users.data?.items ?? []).map(({username}) => ({value: username, label: username}))),
+				options: (users.data?.items ?? []).map(({username}) => ({value: username, label: username})),
 				isError: users.isError || isAssignedError,
 			};
 		case 'groups':
 			return {
-				options: unassigned((groups.data?.items ?? []).map(({groupId}) => ({value: groupId, label: groupId}))),
+				options: (groups.data?.items ?? []).map(({groupId}) => ({value: groupId, label: groupId})),
 				isError: groups.isError || isAssignedError,
 			};
 		case 'mappingRules':
 			return {
-				options: unassigned(
-					(mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({value: mappingRuleId, label: mappingRuleId})),
-				),
+				options: (mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({
+					value: mappingRuleId,
+					label: mappingRuleId,
+				})),
 				isError: mappingRules.isError || isAssignedError,
 			};
 		case 'clients':
@@ -100,6 +106,7 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, roleId, kind, isOidc, isCam
 	const {t} = useTranslation();
 	const {assign} = useRoleMemberMutations(roleId);
 	const [selectedId, setSelectedId] = useState('');
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [searchDraft, setSearchDraft] = useState('');
 	const [searchTerm, setSearchTerm] = useState('');
 	const {options, isError: isCandidatesError} = useCandidates(roleId, kind, isOidc, isCamundaGroupsEnabled, searchTerm);
@@ -115,12 +122,29 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, roleId, kind, isOidc, isCam
 		return () => clearTimeout(timeoutId);
 	}, [searchDraft]);
 
+	// Selected members stay listed while a search narrows the candidates, so their chips keep a label.
+	const pickerOptions = [
+		...selectedIds.filter((id) => !options.some(({value}) => value === id)).map((id) => ({value: id, label: id})),
+		...options,
+	];
+	const idsToAssign = entersIdAsText ? [selectedId.trim()].filter((id) => id !== '') : selectedIds;
+
 	const handleSubmit = () => {
-		const id = selectedId.trim();
-		if (id === '') {
+		if (idsToAssign.length === 0) {
 			return;
 		}
-		assign.mutate({kind, id}, {onSuccess: onClose});
+		assign.mutate(
+			{kind, ids: idsToAssign},
+			{
+				onSuccess: ({failed}) => {
+					if (failed.length === 0) {
+						onClose();
+					} else {
+						setSelectedIds(failed.map(({id}) => id));
+					}
+				},
+			},
+		);
 	};
 
 	return (
@@ -170,12 +194,14 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, roleId, kind, isOidc, isCam
 								onChange={(event) => setSelectedId(event.target.value)}
 							/>
 						) : (
-							<Combobox
+							<MultiSelect
 								id={inputId}
+								className="w-full"
+								aria-label={t(`admin.roles.members.${kind}.idLabel`)}
 								externalFiltering
-								options={options}
-								value={selectedId === '' ? undefined : selectedId}
-								onValueChange={(value) => setSelectedId(value ?? '')}
+								options={pickerOptions}
+								value={selectedIds}
+								onValueChange={setSelectedIds}
 								onInputChange={setSearchDraft}
 								placeholder={t(`admin.roles.members.${kind}.select`)}
 								searchPlaceholder={t(`admin.roles.members.${kind}.search`)}
@@ -192,7 +218,7 @@ const AssignMemberModal: React.FC<Props> = ({isOpen, roleId, kind, isOidc, isCam
 					<Button type="button" variant="secondary" onClick={onClose}>
 						{t('admin.roles.cancel')}
 					</Button>
-					<Button type="button" loading={assign.isPending} disabled={selectedId.trim() === ''} onClick={handleSubmit}>
+					<Button type="button" loading={assign.isPending} disabled={idsToAssign.length === 0} onClick={handleSubmit}>
 						{title}
 					</Button>
 				</DialogFooter>

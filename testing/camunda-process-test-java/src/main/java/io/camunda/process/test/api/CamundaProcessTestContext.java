@@ -83,7 +83,9 @@ public interface CamundaProcessTestContext {
    * waiting until a due date is reached, for example, of a BPMN timer event.
    *
    * @param timeToAdd the duration to add to the current time
-   * @throws ArithmeticException if numeric overflow occurs
+   * @throws ArithmeticException if the duration doesn't fit into a long number of milliseconds
+   * @throws RuntimeException if the runtime rejects the new time, for example, because it would be
+   *     too large
    */
   void increaseTime(final Duration timeToAdd);
 
@@ -93,7 +95,10 @@ public interface CamundaProcessTestContext {
    * date.
    *
    * @param timeToSet the time to set
-   * @throws ArithmeticException if numeric overflow occurs
+   * @throws ArithmeticException if the difference to the current time doesn't fit into a long
+   *     number of milliseconds
+   * @throws RuntimeException if the runtime rejects the new time, for example, because it is before
+   *     1970-01-01T00:00:00Z
    */
   void setTime(final Instant timeToSet);
 

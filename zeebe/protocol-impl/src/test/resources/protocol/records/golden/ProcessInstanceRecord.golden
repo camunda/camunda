@@ -62,6 +62,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue REQUESTER_KEY = new StringValue("requester");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
+  public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
+      new StringValue("resumeFromUserTaskKey");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -106,10 +108,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
 
+  private final LongProperty resumeFromUserTaskKeyProp =
+      new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
+
   private final StringProperty requesterProp = new StringProperty(REQUESTER_KEY, "");
 
   public ProcessInstanceRecord() {
-    super(20);
+    super(21);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -129,6 +134,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
+        .declareProperty(resumeFromUserTaskKeyProp)
         .declareProperty(requesterProp);
   }
 
@@ -148,6 +154,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
+    resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
     requesterProp.setValue(record.getRequesterBuffer());
   }
 
@@ -344,6 +351,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {
     resumeFromJobKeyProp.setValue(resumeFromJobKey);
+    return this;
+  }
+
+  @Override
+  public long getResumeFromUserTaskKey() {
+    return resumeFromUserTaskKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setResumeFromUserTaskKey(final long resumeFromUserTaskKey) {
+    resumeFromUserTaskKeyProp.setValue(resumeFromUserTaskKey);
     return this;
   }
 

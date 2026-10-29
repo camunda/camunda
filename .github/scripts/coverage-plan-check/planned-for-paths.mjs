@@ -3,11 +3,11 @@
 // Tell a pull request's author which PLANNED coverage cases their changed
 // files own.
 //
-// Part of camunda/team-test-automation#83. The generation loop there turns a
-// reviewed coverage plan into tests, but only once the epic reaches Validate
-// and the plan is merged -- which is after the code was written. By then the
-// author has moved on, and a unit or component case lands in a generated pull
-// request they never asked for, in a file they last touched weeks ago.
+// The generation loop turns a reviewed coverage plan into tests, but only once
+// the epic reaches Validate and the plan is merged -- which is after the code
+// was written. By then the author has moved on, and a unit or component case
+// lands in a generated pull request they never asked for, in a file they last
+// touched weeks ago.
 //
 // The cases that belong at those two levels are the ones the author should
 // write, because they wrote the code. This does not write anything: it tells

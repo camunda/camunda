@@ -493,6 +493,26 @@ kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identi
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
 
+#### Browser login on physical-tenant runs
+
+When `physical_tenant_count > 0`, Keycloak uses the hostname `keycloak` and not `localhost`. The
+brokers must reach the token issuer from inside the cluster, and `localhost` in a broker pod is the
+pod itself. The SSO redirect therefore sends your browser to `http://keycloak:18080`, and your
+browser must resolve `keycloak` to `127.0.0.1` (the port-forward).
+
+Start Chrome or Chromium with a host-resolver rule. This needs no root access and affects only this
+browser instance:
+
+```sh
+google-chrome --user-data-dir=/tmp/pt-sso --host-resolver-rules="MAP keycloak 127.0.0.1"
+```
+
+For other browsers, add this line to `/etc/hosts`:
+
+```text
+127.0.0.1 keycloak
+```
+
 #### Keycloak admin credentials
 
 The Keycloak admin console user is `admin` (or whatever `keycloak.adminUser.username` is set to). Its password is generated the same way as every other credential in this chart (see [Where credentials come from](#where-credentials-come-from)) and stored under the `identity-keycloak-admin-password` key:

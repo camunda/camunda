@@ -305,7 +305,8 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            suspendedDate); // suspendedDate
+            suspendedDate, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
@@ -335,13 +336,78 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            null); // suspendedDate
+            null, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
     assertThat(response.getSuspendedDate()).isNull();
+  }
+
+  @Test
+  void shouldMapStorageOrdinalForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            Set.of(), // tags
+            null, // businessId
+            null, // suspendedDate
+            1001); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            Set.of(), // tags
+            null, // businessId
+            null, // suspendedDate
+            null); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -573,6 +639,7 @@ class SearchQueryResponseMapperTest {
             .result("result")
             .tenantId("tenant")
             .businessId("business-1")
+            .storageOrdinal(1001)
             .build();
 
     // when
@@ -581,6 +648,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
     assertThat(response.getBusinessId()).isEqualTo("business-1");
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
@@ -664,7 +732,7 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldOmitMetadataForUnprotectedVariable() {
+  void shouldMapEmptyProtectionModesForUnprotectedVariable() {
     // given
     final var entity =
         new VariableEntity(
@@ -683,7 +751,8 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.getMetadata()).isNull();
+    assertThat(response.getMetadata()).isNotNull();
+    assertThat(response.getMetadata().getProtectionModes()).isEmpty();
   }
 
   @Test
@@ -1339,6 +1408,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getBusinessId()).isNull();
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test

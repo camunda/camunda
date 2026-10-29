@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
@@ -183,7 +184,10 @@ public final class ScriptTaskProcessor
       final ExecutableScriptTask element, final BpmnElementContext context) {
     final var resultOrFailure =
         expressionProcessor.evaluateAnyExpressionToBuffer(
-            element.getExpression(), context.getElementInstanceKey(), context.getTenantId());
+            element.getExpression(),
+            context.getElementInstanceKey(),
+            context.getTenantId(),
+            ExpressionLabel.scriptExpression(context.getElementId()));
 
     resultOrFailure.ifRight(
         result ->

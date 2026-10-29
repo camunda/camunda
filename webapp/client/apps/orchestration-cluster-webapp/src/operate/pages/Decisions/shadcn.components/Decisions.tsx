@@ -9,18 +9,22 @@
 import type {FormApi} from 'final-form';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from '@tanstack/react-router';
+import {useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Heading, PageLayout} from '@camunda/design-system';
-import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/FiltersPanel';
+import {Heading, PageLayout, Separator} from '@camunda/design-system';
+import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
+import {DecisionFilters} from './DecisionFilters';
 import {DecisionPanel} from './DecisionPanel';
 import {InstancesTable} from './InstancesTable';
+import {DecisionOperations} from '../DecisionOperations/shadcn.components/DecisionOperations';
 import {useDecisionDefinitionSelection} from './useDecisionDefinitionSelection';
+
+type FilterFormValues = OptionalFilterValues & {tenantId?: string};
 
 type Props = {
 	search: DecisionsSearch;
@@ -29,6 +33,15 @@ type Props = {
 const Decisions: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const {state} = useLocation();
+	const headingRef = useRef<HTMLHeadingElement>(null);
+	const didFocusFromDrd = useRef(false);
+	useEffect(() => {
+		if (state.operateDecisionFocus === 'list' && !didFocusFromDrd.current) {
+			headingRef.current?.focus();
+			didFocusFromDrd.current = true;
+		}
+	}, [state.operateDecisionFocus]);
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<OptionalFilterValues> | null>(null);
 	const selection = useDecisionDefinitionSelection({
@@ -40,6 +53,10 @@ const Decisions: React.FC<Props> = ({search}) => {
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo}),
 		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
+	);
+	const filterFormValues = useMemo<FilterFormValues>(
+		() => ({tenantId: search.tenantId, ...optionalFilterValues}),
+		[search.tenantId, optionalFilterValues],
 	);
 	const isResetDisabled =
 		search.evaluated &&
@@ -66,15 +83,19 @@ const Decisions: React.FC<Props> = ({search}) => {
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<div className="flex h-full min-h-0 flex-1 overflow-hidden">
-				<Heading as="h1" className="sr-only">
+				<Heading as="h1" className="sr-only" ref={headingRef} tabIndex={-1}>
 					{t('operate.decisions.title')}
 				</Heading>
-				<Form<OptionalFilterValues>
+				<Form<FilterFormValues>
 					onSubmit={(values) => {
 						void navigate({
 							to: '.',
 							search: (prev) => ({
 								...prev,
+								...((values.tenantId || undefined) !== prev.tenantId
+									? {decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}
+									: {}),
+								tenantId: values.tenantId || undefined,
 								decisionEvaluationInstanceKey: values.decisionEvaluationInstanceKey || undefined,
 								processInstanceKey: values.processInstanceKey || undefined,
 								businessId: values.businessId || undefined,
@@ -83,12 +104,12 @@ const Decisions: React.FC<Props> = ({search}) => {
 							}),
 						});
 					}}
-					initialValues={optionalFilterValues}
+					initialValues={filterFormValues}
 				>
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
-							<AutoSubmit />
-							<FiltersPanel
+							<AutoSubmit fieldsToSkipTimeout={['tenantId']} />
+							<FilterSidebar
 								localStorageKey="isDecisionsFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
@@ -97,36 +118,56 @@ const Decisions: React.FC<Props> = ({search}) => {
 									void navigate({to: '.', search: {evaluated: true, failed: true}});
 								}}
 							>
-								<OptionalFiltersFormGroup
-									filters={optionalFilterValues}
-									visibleFilters={visibleFilters}
-									onVisibleFilterChange={setVisibleFilters}
-									onFilterClear={(keys) => {
-										if (
-											Object.entries(optionalFilterValues).some(
-												([key, value]) => keys.includes(key) && value !== undefined,
-											)
-										) {
-											form.setConfig('keepDirtyOnReinitialize', true);
-											preservingFormRef.current = form;
-										}
-										void navigate({
-											to: '.',
-											search: (prev) => ({...prev, ...Object.fromEntries(keys.map((key) => [key, undefined]))}),
-										});
-									}}
-								/>
-							</FiltersPanel>
+								<div className="flex flex-col gap-8">
+									<DecisionFilters
+										decisionDefinitionId={search.decisionDefinitionId}
+										decisionDefinitionVersion={search.decisionDefinitionVersion}
+										tenantId={search.tenantId}
+										evaluated={search.evaluated}
+										failed={search.failed}
+									/>
+									<Separator />
+									<OptionalFiltersFormGroup
+										filters={optionalFilterValues}
+										visibleFilters={visibleFilters}
+										onVisibleFilterChange={setVisibleFilters}
+										onFilterClear={(keys) => {
+											if (
+												Object.entries(optionalFilterValues).some(
+													([key, value]) => keys.includes(key) && value !== undefined,
+												)
+											) {
+												form.setConfig('keepDirtyOnReinitialize', true);
+												preservingFormRef.current = form;
+											}
+											void navigate({
+												to: '.',
+												search: (prev) => ({...prev, ...Object.fromEntries(keys.map((key) => [key, undefined]))}),
+											});
+										}}
+									/>
+								</div>
+							</FilterSidebar>
 						</form>
 					)}
 				</Form>
 				<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
 					<ResizablePanel
-						panelId="decisions-instances-vertical-panel"
+						panelId="decision-instances-vertical-panel"
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
-						<DecisionPanel {...selection} />
+						<DecisionPanel
+							{...selection}
+							headerActions={
+								selection.decisionDefinitionSelection.kind === 'single-version' ? (
+									<DecisionOperations
+										key={selection.decisionDefinitionSelection.definition.decisionDefinitionKey}
+										definition={selection.decisionDefinitionSelection.definition}
+									/>
+								) : undefined
+							}
+						/>
 						<div className="h-full overflow-hidden">
 							<InstancesTable search={search} />
 						</div>

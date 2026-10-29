@@ -1,6 +1,6 @@
 # description: Runs ONE component (vitest) case of the orchestration-cluster
 #              webapp, on demand. The verify step of coverage-plan test
-#              generation — see camunda/team-test-automation#83.
+#              generation.
 # test location: /webapp/client/apps/orchestration-cluster-webapp
 # type: CI
 # owner: @camunda/test-automation-team

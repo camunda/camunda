@@ -83,10 +83,11 @@ describe('<AdminMappingRulesPage />', () => {
 	});
 
 	it('should not overwrite newer input when a stale search term is applied', async () => {
-		const {screen} = await renderPage();
+		const {screen, onSearchChange} = await renderPage();
 		const searchBox = screen.getByRole('searchbox');
 
 		await userEvent.fill(searchBox, 'a');
+		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined}), DEBOUNCED);
 		await userEvent.fill(searchBox, 'ab');
 
 		// Simulates the route applying the debounced "a" navigation while the reader kept typing.

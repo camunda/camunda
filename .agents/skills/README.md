@@ -36,6 +36,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`)            |
 | `babysit-pr`                   | Self-driving loop to shepherd one or more PRs (incl. backports) to merged: rerun flaky CI, enqueue, re-enqueue |
+| `backport`                     | Trigger a backport via label or `/backport` comment and resolve conflicts on the bot's draft backport PR       |
 | `bug-investigation`            | Investigate a triaged bug issue end to end: reproduce, root-cause, validate a fix, report on the issue         |
 | `camunda-api-zod-schemas`      | Change or release `@camunda/camunda-api-zod-schemas`: fields, endpoints, modules, version trees, version bump  |
 | `ci-flood-triage`              | Orient fast when a flood of CI incidents opens at once — find the shared pattern, flag outliers                |
@@ -51,7 +52,9 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
 | `new-k6-load-test`             | Add or extend a k6 load test in the `load-test-setup` chart (`load-tests/setup/charts/load-test-setup/k6/`)     |
+| `github-permalink`             | Build a stable GitHub permalink to repo code lines for issues, PR descriptions, and review comments            |
 | `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps)                  |
+| `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
 | `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |

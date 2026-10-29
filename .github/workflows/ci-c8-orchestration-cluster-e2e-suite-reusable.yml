@@ -53,7 +53,7 @@ jobs:
   c8-orchestration-cluster-api-tests:
     name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50 # budget for the global-timeout cutoff; see #67452
     permissions:
       contents: read
     strategy:
@@ -70,6 +70,9 @@ jobs:
           echo "Test ref: $TEST_REF"
           echo "Base branch: $BASE_BRANCH"
           echo "Camunda mode: $CAMUNDA_MODE"
+          # Record job start so the test step can set Playwright's globalTimeout
+          # to the job budget still left after setup (which varies). See #67452.
+          echo "C8E2E_JOB_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -108,7 +111,9 @@ jobs:
                 unset CAMUNDA_MODE
                 echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
               fi
-              DATABASE=elasticsearch docker compose up -d camunda
+              # `|| return 1` so a failed camunda start always propagates out of
+              # the function, independent of any command that may follow.
+              DATABASE=elasticsearch docker compose up -d camunda || return 1
             fi
           }
 
@@ -246,7 +251,22 @@ jobs:
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Keep in sync with this job's timeout-minutes below.
+          JOB_TIMEOUT_MIN: "50"
         run: |
+          # Give Playwright the job budget still left after setup, minus a
+          # reserve for its shutdown, the verdict step and the report upload, so
+          # the run always stops before timeout-minutes kills the job and the
+          # changed-spec verdict runs (see #67452). Computed here, not fixed,
+          # because setup time (image pull, the readiness wait, and for RDBMS the
+          # source build) varies and a fixed cutoff could land past the deadline.
+          reserve_min=4
+          start_epoch="${C8E2E_JOB_START_EPOCH:-$(date +%s)}"
+          elapsed_min=$(( ( $(date +%s) - start_epoch ) / 60 ))
+          budget_min=$(( JOB_TIMEOUT_MIN - reserve_min - elapsed_min ))
+          if (( budget_min < 2 )); then budget_min=2; fi
+          export C8E2E_GLOBAL_TIMEOUT_MIN="$budget_min"
+          echo "Playwright globalTimeout=${budget_min}m (job ${JOB_TIMEOUT_MIN}m - reserve ${reserve_min}m - setup ${elapsed_min}m)"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
@@ -272,6 +292,15 @@ jobs:
           path: ${{ env.SUITE_DIR }}/html-report
           retention-days: 10
 
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - API (Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/json-report
+          retention-days: 10
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -287,7 +316,7 @@ jobs:
     if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), inputs.base) }}
     name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 58 # build + global-timeout budget; see #67452
     permissions:
       contents: read
     strategy:
@@ -304,6 +333,9 @@ jobs:
           echo "Test ref: $TEST_REF"
           echo "Base branch: $BASE_BRANCH"
           echo "Camunda mode: $CAMUNDA_MODE"
+          # Record job start so the test step can set Playwright's globalTimeout
+          # to the job budget still left after setup (which varies). See #67452.
+          echo "C8E2E_JOB_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -442,7 +474,19 @@ jobs:
           DATABASE: "RDBMS"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Keep in sync with this job's timeout-minutes below.
+          JOB_TIMEOUT_MIN: "58"
         run: |
+          # Give Playwright the job budget still left after setup (here that
+          # includes the source build) so the run stops before timeout-minutes
+          # and the changed-spec verdict runs — see the ES job and #67452.
+          reserve_min=4
+          start_epoch="${C8E2E_JOB_START_EPOCH:-$(date +%s)}"
+          elapsed_min=$(( ( $(date +%s) - start_epoch ) / 60 ))
+          budget_min=$(( JOB_TIMEOUT_MIN - reserve_min - elapsed_min ))
+          if (( budget_min < 2 )); then budget_min=2; fi
+          export C8E2E_GLOBAL_TIMEOUT_MIN="$budget_min"
+          echo "Playwright globalTimeout=${budget_min}m (job ${JOB_TIMEOUT_MIN}m - reserve ${reserve_min}m - setup ${elapsed_min}m)"
           echo "Running API tests against H2/RDBMS backend"
           set +e
           npm run test -- --project=api-tests
@@ -463,6 +507,15 @@ jobs:
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
           path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - API (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/json-report
           retention-days: 10
 
       - name: Stop Camunda
@@ -490,7 +543,7 @@ jobs:
       matrix:
         include: ${{ fromJSON( inputs.base == 'main' && '[{"camunda_mode":"profiles"},{"camunda_mode":"all-in-one"}]' || (inputs.base == 'stable/8.6' || inputs.base == 'stable/8.7') && '[{"camunda_mode":"profiles","tasklist_mode":"v1"}]' || inputs.base == 'stable/8.9' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"all-in-one","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"},{"camunda_mode":"all-in-one","tasklist_mode":"v2"}]' || inputs.base == 'stable/8.8' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"}]' || '[{"camunda_mode":"profiles","tasklist_mode":"v2"}]' ) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 48 # global-timeout budget; see #67452
     permissions:
       contents: read
     steps:
@@ -507,6 +560,9 @@ jobs:
           if [[ -n "$TASKLIST_MODE" ]]; then
             echo "Tasklist mode: $TASKLIST_MODE"
           fi
+          # Record job start so the test step can set Playwright's globalTimeout
+          # to the job budget still left after setup (which varies). See #67452.
+          echo "C8E2E_JOB_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -547,11 +603,15 @@ jobs:
                 echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
               fi
 
+              # `|| return 1` so a failed camunda start propagates: the Optimize
+              # step below is the function's last command, and without this a
+              # successful Optimize start would mask a failed camunda start and
+              # make the retry loop treat the attempt as succeeded.
               if [[ ("$BASE_BRANCH" == "stable/8.8" || "$BASE_BRANCH" == "stable/8.9") && "$MATRIX_TASKLIST_MODE" == "v1" ]]; then
                 echo "Starting with Tasklist V1 mode enabled"
-                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda || return 1
               else
-                DATABASE=elasticsearch docker compose up -d camunda
+                DATABASE=elasticsearch docker compose up -d camunda || return 1
               fi
 
               # Optimize is a separate application (reads exported data from
@@ -693,7 +753,19 @@ jobs:
           OPTIMIZE_BASE_URL: "http://localhost:8083"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          # Keep in sync with this job's timeout-minutes below.
+          JOB_TIMEOUT_MIN: "48"
         run: |
+          # Give Playwright the job budget still left after setup so the run
+          # stops before timeout-minutes and the verdict runs — see the ES job
+          # and #67452.
+          reserve_min=4
+          start_epoch="${C8E2E_JOB_START_EPOCH:-$(date +%s)}"
+          elapsed_min=$(( ( $(date +%s) - start_epoch ) / 60 ))
+          budget_min=$(( JOB_TIMEOUT_MIN - reserve_min - elapsed_min ))
+          if (( budget_min < 2 )); then budget_min=2; fi
+          export C8E2E_GLOBAL_TIMEOUT_MIN="$budget_min"
+          echo "Playwright globalTimeout=${budget_min}m (job ${JOB_TIMEOUT_MIN}m - reserve ${reserve_min}m - setup ${elapsed_min}m)"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
@@ -758,6 +830,15 @@ jobs:
         with:
           name: C8 Orchestration Cluster E2E Test Result (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
           path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # JSON report for the non-blocking "Full Result" check, which reds on any
+        # test failure (not only the PR's changed specs). Uploaded on every run.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Suite JSON Report - E2E (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
+          path: ${{ env.SUITE_DIR }}/json-report
           retention-days: 10
 
       - name: Observe build status

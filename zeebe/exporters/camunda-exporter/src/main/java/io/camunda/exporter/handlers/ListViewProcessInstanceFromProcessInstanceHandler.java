@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -113,7 +114,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setProcessName(
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
         .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
-        .setBusinessId(emptyToNull(recordValue.getBusinessId()));
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
       piEntity.setTags(recordValue.getTags());

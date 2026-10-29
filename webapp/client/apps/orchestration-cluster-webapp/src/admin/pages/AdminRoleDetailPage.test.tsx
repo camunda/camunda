@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -31,6 +32,7 @@ import {
 	mockUnassignUserFromRoleEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createMembersPage, createRole} from '#/shared-test-modules/api-mocks/roles';
+import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 import {AdminRoleDetailPage, type AdminRoleDetailPageProps} from './AdminRoleDetailPage';
 
@@ -60,6 +62,19 @@ async function renderPage(overrides: Partial<AdminRoleDetailPageProps> = {}) {
 	);
 
 	return {screen, onTabChange, onDeleted};
+}
+
+// Searches like the real backend: applies the id filter's $notIn, then the page limit.
+function mockCandidateSearch(url: string, idField: string, items: Record<string, unknown>[]) {
+	return http.post(decodeURIComponent(url), async ({request}) => {
+		const body = (await request.json()) as {
+			filter?: Record<string, {$notIn?: string[]} | undefined>;
+			page: {limit: number};
+		};
+		const excluded = body.filter?.[idField]?.$notIn ?? [];
+		const matching = items.filter((item) => !excluded.includes(String(item[idField])));
+		return HttpResponse.json(createMembersPage(matching.slice(0, body.page.limit), matching.length));
+	});
 }
 
 describe('<AdminRoleDetailPage />', () => {
@@ -241,6 +256,7 @@ describe('<AdminRoleDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
 		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
 		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.keyboard('{Escape}');
 		worker.use(
 			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{username: 'jane.doe'}]))}),
 		);
@@ -248,6 +264,155 @@ describe('<AdminRoleDetailPage />', () => {
 
 		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
 	});
+
+	it('should assign several users at once', async ({worker}) => {
+		// given
+		let assigned: string[] = [];
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), () =>
+				HttpResponse.json(createMembersPage(assigned.map((username) => ({username})))),
+			),
+			http.put(
+				decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+				({params}) => {
+					assigned = [...assigned, String(params.username)];
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
+				createUser({username: 'jane.doe'}),
+				createUser({username: 'john.roe'}),
+			]),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
+		await expect.element(screen.getByText('User john.roe assigned')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'jane.doe', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
+	});
+
+	it('should keep the dialog open with the failed users still selected', async ({worker}) => {
+		// given
+		let assigned = false;
+		worker.use(
+			http.put(
+				decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+				({params}) => {
+					if (params.username === 'john.roe') {
+						return HttpResponse.json({title: 'Conflict', status: 409, detail: 'already a member'}, {status: 409});
+					}
+					assigned = true;
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), () =>
+				HttpResponse.json(createMembersPage(assigned ? [{username: 'jane.doe'}] : [])),
+			),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
+				createUser({username: 'jane.doe'}),
+				createUser({username: 'john.roe'}),
+			]),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
+		await expect.element(screen.getByText('Failed to assign')).toBeVisible();
+		await expect.element(screen.getByRole('dialog').getByText('john.roe')).toBeVisible();
+		await expect.element(screen.getByRole('dialog').getByText('jane.doe')).not.toBeInTheDocument();
+	});
+
+	it('should confirm several assigned users with one scan of the role members', async ({worker}) => {
+		// given
+		let assigned: string[] = [];
+		let scans = 0;
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), async ({request}) => {
+				const {page} = (await request.json()) as {page: {limit: number}};
+				// The confirmation scans in pages of 100, unlike the table and the assigned-members lookup.
+				if (page.limit === 100) {
+					scans += 1;
+				}
+				return HttpResponse.json(createMembersPage(assigned.map((username) => ({username}))));
+			}),
+			http.put(
+				decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+				({params}) => {
+					assigned = [...assigned, String(params.username)];
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
+				createUser({username: 'jane.doe'}),
+				createUser({username: 'john.roe'}),
+			]),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
+		expect(scans).toBe(1);
+	});
+
+	it('should refresh the members when only some assignments are confirmed', async ({worker}) => {
+		// given
+		let assigned = false;
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), () =>
+				HttpResponse.json(createMembersPage(assigned ? [{username: 'jane.doe'}] : [])),
+			),
+			http.put(
+				decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+				() => {
+					assigned = true;
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
+				createUser({username: 'jane.doe'}),
+				createUser({username: 'john.roe'}),
+			]),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'jane.doe', exact: true})).toBeVisible();
+	}, 15_000);
 
 	it('should assign a group chosen from the list when Camunda groups are enabled', async ({worker}) => {
 		// given
@@ -264,6 +429,7 @@ describe('<AdminRoleDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
 		await userEvent.click(screen.getByRole('combobox', {name: 'Group ID'}));
 		await userEvent.click(screen.getByRole('option', {name: 'eng'}));
+		await userEvent.keyboard('{Escape}');
 		worker.use(
 			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{groupId: 'eng'}]))}),
 		);
@@ -312,6 +478,7 @@ describe('<AdminRoleDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
 		await userEvent.click(screen.getByRole('combobox', {name: 'Mapping rule ID'}));
 		await userEvent.click(screen.getByRole('option', {name: 'rule-1'}));
+		await userEvent.keyboard('{Escape}');
 		worker.use(
 			mockQueryMappingRulesByRoleEndpoint({
 				successResponse: HttpResponse.json(
@@ -379,6 +546,168 @@ describe('<AdminRoleDetailPage />', () => {
 
 		// then
 		await expect.element(screen.getByText('User external.user assigned')).toBeVisible();
+	});
+
+	it('should not offer users that are already in the role', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{username: 'jane.doe'}]))}),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
+				createUser({username: 'jane.doe'}),
+				createUser({username: 'john.roe'}),
+			]),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'john.roe'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'jane.doe'})).not.toBeInTheDocument();
+	});
+
+	it('should still offer users created after the first page of candidates is fully assigned', async ({worker}) => {
+		// given
+		const everyone = Array.from({length: 22}, (_, index) => `user-${String(index).padStart(2, '0')}`);
+		worker.use(
+			mockQueryUsersByRoleEndpoint({
+				successResponse: HttpResponse.json(createMembersPage(everyone.slice(0, 20).map((username) => ({username})))),
+			}),
+			mockCandidateSearch(
+				endpoints.queryUsers.getUrl(),
+				'username',
+				everyone.map((username) => createUser({username})),
+			),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'user-20'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-21'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-00'})).not.toBeInTheDocument();
+	});
+
+	it('should not offer groups that are already in the role', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{groupId: 'eng'}]))}),
+			mockCandidateSearch(endpoints.queryGroups.getUrl(), 'groupId', [
+				{groupId: 'eng', name: 'Engineering'},
+				{groupId: 'ops', name: 'Operations'},
+			]),
+		);
+		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: true});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Group ID'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'ops'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'eng'})).not.toBeInTheDocument();
+	});
+
+	it('should not offer mapping rules that are already in the role', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryMappingRulesByRoleEndpoint({
+				successResponse: HttpResponse.json(createMembersPage([createMappingRule({mappingRuleId: 'assigned-rule'})])),
+			}),
+			mockCandidateSearch(endpoints.queryMappingRules.getUrl(), 'mappingRuleId', [
+				createMappingRule({mappingRuleId: 'assigned-rule'}),
+				createMappingRule({mappingRuleId: 'free-rule'}),
+			]),
+		);
+		const {screen} = await renderPage({isOidc: true, activeTab: 'mappingRules'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Mapping rule ID'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'free-rule'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'assigned-rule'})).not.toBeInTheDocument();
+	});
+
+	it('should keep the dialog open and show the backend error when assigning fails', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+			mockAssignUserToRoleEndpoint({
+				successResponse: HttpResponse.json(
+					{type: 'about:blank', title: 'CONFLICT', status: 409, detail: 'already a member', instance: '/v2/roles'},
+					{status: 409},
+				),
+			}),
+		);
+		const {screen} = await renderPage({isOidc: true});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'external.user');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByText('Failed to assign')).toBeVisible();
+		await expect.element(screen.getByText('already a member')).toBeVisible();
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+		await expect.element(screen.getByLabelText('Username')).toHaveValue('external.user');
+	});
+
+	it('should warn when an assigned user cannot be confirmed on the server', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+			mockAssignUserToRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+		);
+		const {screen} = await renderPage({isOidc: true});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'external.user');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// then
+		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
+	}, 15_000);
+
+	it('should step back a page when removing the last member of the last page', async ({worker}) => {
+		// given
+		let removed = false;
+		const users = Array.from({length: 21}, (_, index) => ({username: `user-${index}`}));
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), async ({request}) => {
+				const {page} = (await request.json()) as {page: {from: number; limit: number}};
+				const total = removed ? 20 : 21;
+				return HttpResponse.json(
+					createMembersPage(users.slice(page.from, Math.min(page.from + page.limit, total)), total),
+				);
+			}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+			http.delete(
+				decodeURIComponent(endpoints.unassignUserFromRole.getUrl({roleId: ':roleId', username: ':username'})),
+				() => {
+					removed = true;
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+		);
+		const {screen} = await renderPage();
+		await userEvent.click(screen.getByRole('button', {name: 'Next', exact: true}));
+		await expect.element(screen.getByRole('cell', {name: 'user-20'})).toBeVisible();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Remove user user-20', exact: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'Remove user', exact: true}));
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'user-0', exact: true})).toBeVisible();
 	});
 
 	it('should report a failed member lookup instead of an empty role', async ({worker}) => {

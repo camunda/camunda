@@ -57,6 +57,9 @@
           "$ref": "#/definitions/AssertElementInstancesInstruction"
         },
         {
+          "$ref": "#/definitions/AssertIncidentInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
@@ -530,6 +533,87 @@
         "processInstanceSelector",
         "elementSelectors",
         "state"
+      ],
+      "additionalProperties": false
+    },
+    "AssertIncidentInstruction": {
+      "description": "An instruction to assert an incident.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_INCIDENT"
+        },
+        "incidentSelector": {
+          "description": "The selector to identify the incident.",
+          "$ref": "#/definitions/IncidentSelector"
+        },
+        "state": {
+          "description": "The expected state of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_RESOLVED"
+          ]
+        },
+        "errorType": {
+          "description": "The expected error type of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "UNSPECIFIED",
+            "UNKNOWN",
+            "IO_MAPPING_ERROR",
+            "JOB_NO_RETRIES",
+            "EXECUTION_LISTENER_NO_RETRIES",
+            "TASK_LISTENER_NO_RETRIES",
+            "AD_HOC_SUB_PROCESS_NO_RETRIES",
+            "CONDITION_ERROR",
+            "EXTRACT_VALUE_ERROR",
+            "CALLED_ELEMENT_ERROR",
+            "UNHANDLED_ERROR_EVENT",
+            "MESSAGE_SIZE_EXCEEDED",
+            "CALLED_DECISION_ERROR",
+            "DECISION_EVALUATION_ERROR",
+            "FORM_NOT_FOUND",
+            "RESOURCE_NOT_FOUND",
+            "SECRET_RESOLUTION_ERROR",
+            "UNKNOWN_ENUM_VALUE"
+          ]
+        },
+        "errorMessage": {
+          "description": "The expected error message of the incident. Optional.",
+          "type": "string"
+        },
+        "elementId": {
+          "description": "The expected BPMN element ID of the incident. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "incidentSelector"
+      ],
+      "additionalProperties": false
+    },
+    "VariablesTableRow": {
+      "description": "A row in a variables table used to derive job worker output variables from the job's own variables.",
+      "type": "object",
+      "properties": {
+        "when": {
+          "description": "The variables to match against the job's variables. Every entry must be present in the job's variables with an equal value for this row to match. An empty map matches every job.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "variables": {
+          "description": "The variables to complete the job with when this row matches.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "when",
+        "variables"
       ],
       "additionalProperties": false
     },
@@ -1050,12 +1134,23 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to complete the job with. Optional.",
+          "description": "The variables to complete the job with. Optional. Mutually exclusive with variablesExpression and a non-empty variablesTable. The legacy combination with useExampleData still ignores these variables.",
           "type": "object",
           "additionalProperties": true
         },
+        "variablesExpression": {
+          "description": "A FEEL expression evaluated with the job's variables as context. Must evaluate to a JSON object; its entries become the job's output variables. A leading '=' is optional. Mutually exclusive with variables, variablesTable and useExampleData.",
+          "type": "string"
+        },
+        "variablesTable": {
+          "description": "A list of when/variables rows. Rows are evaluated in order; the first row whose when map is a subset match of the job's variables (equal values after normalization, no numeric widening) supplies the output variables. An empty when matches every job, so it can be used as a catch-all last row. If no row matches, the job completes without variables. Mutually exclusive with variables, variablesExpression and useExampleData.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VariablesTableRow"
+          }
+        },
         "useExampleData": {
-          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored. Defaults to false.",
+          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored. Defaults to false. Mutually exclusive with variablesExpression and a non-empty variablesTable.",
           "type": "boolean",
           "default": false
         }

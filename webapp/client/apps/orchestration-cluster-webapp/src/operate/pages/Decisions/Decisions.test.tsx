@@ -33,6 +33,9 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionsHarness} from './DecisionsHarness';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {Header} from '#/shared/header/components/Header';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -46,6 +49,15 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 );
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+function DecisionsWithHeader() {
+	return (
+		<>
+			<Header currentUser={createCurrentUser()} license={createLicense()} />
+			<DecisionsHarness />
+		</>
+	);
+}
 
 function renderDecisionsPage(searchParams: Record<string, string> = {}, legacy = false) {
 	const query = new URLSearchParams({
@@ -354,6 +366,35 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
 	});
 
+	it('should send the evaluation date range as ISO-8601 in the instances request', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						evaluationDate: z.strictObject({
+							$gt: z.literal('2024-01-01T08:00:00.000Z'),
+							$lt: z.literal('2024-01-02T08:00:00.000Z'),
+						}),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '123567'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		const screen = await renderDecisionsPage({
+			evaluationDateFrom: '2024-01-01T10:00:00.000+0200',
+			evaluationDateTo: '2024-01-02T10:00:00.000+0200',
+		});
+
+		await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+	});
+
 	describe('legacy bookmarks', () => {
 		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
 			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
@@ -382,13 +423,13 @@ describe('<Decisions />', () => {
 				to: '/operate/decisions',
 				search: {evaluated: true, failed: true},
 			});
-			await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).toBeVisible();
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 123567'}), {force: true});
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
 
 			screen.router.history.back();
 			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
-			await expect.element(screen.getByTitle('View decision instance 123567')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});
 
@@ -540,5 +581,35 @@ describe('<Decisions />', () => {
 
 			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
 		});
+	});
+
+	it('should hide the optional filters on every click on Decisions in the header', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+		const screen = await renderWithRouter(DecisionsWithHeader, {
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?evaluated=true&failed=true',
+		});
+		const decisionsHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Decisions'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));
+		await expect.element(screen.getByLabelText('Decision Instance Key(s)', {exact: true})).toBeVisible();
+
+		await userEvent.click(decisionsHeaderLink);
+
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByLabelText('Decision Instance Key(s)', {exact: true})).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
+
+		await userEvent.click(decisionsHeaderLink);
+
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 	});
 });

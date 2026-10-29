@@ -7,8 +7,10 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
@@ -21,6 +23,33 @@ public record VariableDbQuery(
     List<String> authorizedTenantIds,
     DbQuerySorting<VariableEntity> sort,
     DbQueryPage page) {
+
+  /**
+   * The protection mode operations of the filter, with the mode names replaced by the codes stored
+   * in the database, as the stored column holds the code rather than the name.
+   */
+  public List<Operation<Integer>> protectionModeCodeOperations() {
+    return filter.protectionModeOperations().stream()
+        .map(
+            operation -> {
+              final List<Integer> codes =
+                  operation.values() == null
+                      ? null
+                      : operation.values().stream()
+                          .map(VariableDbQuery::toProtectionModeCode)
+                          .toList();
+              return new Operation<>(operation.operator(), codes);
+            })
+        .toList();
+  }
+
+  private static int toProtectionModeCode(final String name) {
+    try {
+      return ProtectionModeDbModel.valueOf(name).getCode();
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException("Unknown protection mode '%s'".formatted(name), e);
+    }
+  }
 
   public static VariableDbQuery of(
       final Function<VariableDbQuery.Builder, ObjectBuilder<VariableDbQuery>> fn) {

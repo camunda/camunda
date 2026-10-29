@@ -168,12 +168,12 @@ describe('<BatchOperations />', () => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
 		const screen = await renderRoute();
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: 'Batch state'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Batch state'})).toBeVisible();
 
 		await i18n.changeLanguage('de');
 
 		await expect.element(screen.getByText('1–20 von 25 Elementen')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: 'Stapelstatus'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sortieren nach Stapelstatus'})).toBeVisible();
 		await expect.element(screen.getByText('von 2 Seiten')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Elemente pro Seite:'})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Seite von 2 Seiten'})).toBeVisible();
@@ -253,32 +253,32 @@ describe('<BatchOperations />', () => {
 	});
 
 	it('should request sorted and paginated results and restore them through browser history', async ({worker}) => {
-		const requestFor = (from: number, limit: number, field: string, order: 'ASC' | 'DESC') =>
+		const request = (from: number, field: string) =>
+			z.object({
+				page: z.object({from: z.literal(from), limit: z.literal(20)}),
+				sort: z.array(z.object({field: z.literal(field), order: z.literal('DESC')})),
+			});
+		worker.use(
 			mockQueryBatchOperationsEndpoint({
-				schema: z.object({
-					page: z.object({from: z.literal(from), limit: z.literal(limit)}),
-					sort: z.array(z.object({field: z.literal(field), order: z.literal(order)})),
-				}),
+				schema: z.union([request(0, 'endDate'), request(0, 'actorId'), request(20, 'actorId')]),
 				successResponse: RESPONSE_EXCEEDING_PAGE_SIZE,
 				failureResponse: HttpResponse.json({}, {status: 500}),
-			});
-		worker.use(requestFor(0, 20, 'endDate', 'DESC'));
+			}),
+		);
 		const screen = await renderRoute();
+		const actorHeader = screen.getByRole('columnheader', {name: 'Sort by Actor'});
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 
-		worker.use(requestFor(0, 20, 'actorId', 'DESC'));
-		await userEvent.click(screen.getByRole('columnheader', {name: 'Actor'}));
-		await expect
-			.poll(() => batchOperationsSearchSchema.parse(screen.router.state.location.search).sort)
-			.toBe('actorId+DESC');
+		await userEvent.click(actorHeader);
+		await expect.element(actorHeader).toHaveAttribute('aria-sort', 'descending');
+		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 
-		worker.use(requestFor(20, 20, 'actorId', 'DESC'));
 		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
 		await expect.element(screen.getByText('21–25 of 25 items')).toBeVisible();
 
 		screen.router.history.back();
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
-		expect(batchOperationsSearchSchema.parse(screen.router.state.location.search).sort).toBe('actorId+DESC');
+		await expect.element(actorHeader).toHaveAttribute('aria-sort', 'descending');
 		screen.router.history.forward();
 		await expect.element(screen.getByText('21–25 of 25 items')).toBeVisible();
 	});
@@ -360,6 +360,10 @@ describe('batch operations URL search', () => {
 		{label: 'repeated parameter array', value: ['state+ASC', 'actorId+DESC']},
 	] as const)('should replace malformed $label sort with the legacy default', ({value}) => {
 		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+DESC');
+	});
+
+	it('should accept a lowercase sort order', () => {
+		expect(batchOperationsSearchSchema.parse({sort: 'operationType+asc'}).sort).toBe('operationType+ASC');
 	});
 
 	it('should accept every API sort field and valid order', () => {

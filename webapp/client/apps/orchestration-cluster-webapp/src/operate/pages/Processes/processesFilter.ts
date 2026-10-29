@@ -48,50 +48,62 @@ type ProcessesSearch = {
 	sort?: string;
 };
 
+const processesSearchDefaults = {
+	active: false,
+	incidents: false,
+	completed: false,
+	canceled: false,
+	suspended: false,
+};
+
 const processesSearchSchema = z
 	.object({
 		process: z.string().optional(),
-		version: z.number().int().positive().optional(),
-		processDefinitionId: z.coerce.string().optional(),
+		version: z.union([z.number().int().positive(), z.literal('all')]).optional(),
+		processDefinitionId: z.string().optional(),
 		processDefinitionVersion: z
-			.union([z.coerce.number().int().positive(), z.literal('all')])
+			.union([z.number().int().positive(), z.literal('all')])
 			.optional()
 			.catch(undefined),
 		elementId: z.string().optional(),
-		tenantId: z.coerce.string().optional(),
-		processInstanceKey: z.coerce.string().optional(),
-		parentProcessInstanceKey: z.coerce.string().optional(),
-		businessId: z.coerce.string().optional(),
-		batchOperationKey: z.coerce.string().optional(),
-		errorMessage: z.coerce.string().optional(),
-		incidentErrorHashCode: z
-			.union([
-				z.number().int(),
-				z
-					.string()
-					.regex(/^-?\d+$/)
-					.transform(Number)
-					.pipe(z.number().int()),
-			])
-			.optional()
-			.catch(undefined),
+		tenantId: z.string().optional(),
+		processInstanceKey: z.string().optional(),
+		parentProcessInstanceKey: z.string().optional(),
+		businessId: z.string().optional(),
+		batchOperationKey: z.string().optional(),
+		errorMessage: z.string().optional(),
+		incidentErrorHashCode: z.number().int().optional().catch(undefined),
 		hasRetriesLeft: z.boolean().optional(),
 		startDateFrom: z.string().optional(),
 		startDateTo: z.string().optional(),
 		endDateFrom: z.string().optional(),
 		endDateTo: z.string().optional(),
-		active: z.boolean().default(true),
-		incidents: z.boolean().default(true),
-		completed: z.boolean().default(false),
-		canceled: z.boolean().default(false),
-		suspended: z.boolean().default(true),
+		active: z.boolean().default(processesSearchDefaults.active),
+		incidents: z.boolean().default(processesSearchDefaults.incidents),
+		completed: z.boolean().default(processesSearchDefaults.completed),
+		canceled: z.boolean().default(processesSearchDefaults.canceled),
+		suspended: z.boolean().default(processesSearchDefaults.suspended),
 		sort: z.string().optional(),
 	})
-	.transform(({processDefinitionId, processDefinitionVersion, ...search}) => ({
+	.transform(({processDefinitionId, processDefinitionVersion, version, ...search}) => {
+		const resolvedVersion = version ?? processDefinitionVersion;
+		return {
+			...search,
+			process: search.process ?? processDefinitionId,
+			version: resolvedVersion === 'all' ? undefined : resolvedVersion,
+		};
+	});
+
+function withCanonicalProcessesSearch(search: Record<string, unknown>): Record<string, unknown> {
+	const {process, version} = processesSearchSchema.parse(search);
+	return {
 		...search,
-		process: search.process ?? processDefinitionId,
-		version: search.version ?? (processDefinitionVersion === 'all' ? undefined : processDefinitionVersion),
-	}));
+		process,
+		version,
+		processDefinitionId: undefined,
+		processDefinitionVersion: undefined,
+	};
+}
 
 const stripLegacyProcessFilters: SearchMiddleware<z.output<typeof processesSearchSchema>> = ({search, next}) => {
 	const withoutAliases = {...search, processDefinitionId: undefined, processDefinitionVersion: undefined};
@@ -284,5 +296,12 @@ function mapProcessInstancesSort(sort: string | undefined): ResolvedProcessInsta
 	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
-export {mapProcessInstancesFilter, mapProcessInstancesSort, processesSearchSchema, stripLegacyProcessFilters};
+export {
+	mapProcessInstancesFilter,
+	mapProcessInstancesSort,
+	processesSearchDefaults,
+	processesSearchSchema,
+	stripLegacyProcessFilters,
+	withCanonicalProcessesSearch,
+};
 export type {ProcessesSearch};

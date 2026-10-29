@@ -1034,6 +1034,7 @@
 		"operate": {
 			"dashboard": {
 				"title": "Dashboard",
+				"pageTitle": "Operate: Dashboard",
 				"runningInstancesTotal": "{{count}} running process instances in total",
 				"runningInstancesTotalPending": "Running process instances in total",
 				"metricFetchError": "Process statistics could not be fetched",
@@ -1187,8 +1188,8 @@
 					"ignoreNonActive": "Instances that aren't active in your selection will be ignored.",
 					"ignoreNonSuspended": "Instances that aren't suspended in your selection will be ignored.",
 					"noFinished": "No finished process instances selected. Select at least one completed or canceled process instance to delete.",
-					"noRunning": "No running process instances selected. Select at least one active or incident process instance to cancel.",
-					"noRunningToSuspend": "No running process instances selected. Select at least one active or incident process instance to suspend.",
+					"noRunning": "No running process instances selected. Select at least one active, incident or suspended process instance to cancel.",
+					"noRunningToSuspend": "No active process instances selected. Select at least one active process instance to suspend.",
 					"noIncidents": "No process instances with an incident selected. Select at least one process instance with an incident to retry.",
 					"noSuspended": "No suspended process instances selected. Select at least one suspended process instance to resume.",
 					"actionMode": "Not available in batch modification mode",
@@ -1201,6 +1202,7 @@
 					"progressUnavailable": "Batch operation progress is temporarily unavailable"
 				},
 				"title": "Processes",
+				"pageTitle": "Operate: Process Instances",
 				"variableFilter": {
 					"title": "Variables",
 					"name": "Name",
@@ -1282,6 +1284,7 @@
 				},
 				"instancesTable": {
 					"title": "Process Instances",
+					"panelLabel": "Process Instances Panel",
 					"name": "Name",
 					"processInstanceKey": "Process Instance Key",
 					"version": "Version",
@@ -1347,11 +1350,13 @@
 					"multipleTenantsSelected": "Process \"{{name}}\" exists in more than one Tenant",
 					"selectSingleTenant": "To see a Diagram, select a single Tenant",
 					"noProcessSelected": "There is no Process selected",
-					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel"
+					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel",
+					"processNotFoundTitle": "Process could not be found"
 				}
 			},
 			"decisions": {
 				"title": "Decisions",
+				"pageTitle": "Operate: Decision Instances",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Filters panel placeholder"
 				},
@@ -1361,13 +1366,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Decision \"{{name}}\"",
+					"ariaLabel": "Decision Panel",
 					"selectSingleVersion": "To see a Decision Table or a Literal Expression, select a single Version",
 					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one Tenant",
 					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
 					"noDecisionSelected": "There is no Decision selected",
 					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
-					"decisionNotFoundTitle": "Couldn't find the decision",
-					"ariaLabel": "Decision Panel"
+					"decisionNotFoundTitle": "Couldn't find the decision"
 				},
 				"filters": {
 					"tenant": "Tenant",
@@ -1413,6 +1418,7 @@
 				"toolbar": {
 					"delete": "Delete",
 					"discard": "Discard",
+					"bulkActionsLabel": "Bulk actions",
 					"itemsSelected": "{{count}} items selected",
 					"itemSelected": "{{count}} item selected",
 					"itemsSelectedTruncated": "{{count}}+ items selected",
@@ -1429,6 +1435,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
+					"loadingMessage": "Deleting decision definition",
 					"title": "Delete DRD",
 					"description": "You are about to delete the following DRD:",
 					"confirmation": "Yes, I confirm I want to delete this DRD and all related instances.",
@@ -1439,6 +1446,40 @@
 					"details": "DRD Details",
 					"drdName": "DRD name",
 					"successTitle": "Operation created"
+				},
+				"ds": {
+					"diagramPanel": {
+						"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
+						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
+						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
+						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
+						"noDecisionSelected": "There is no decision selected",
+						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
+					},
+					"filters": {
+						"searchByName": "Search by decision name",
+						"selectVersion": "Select a decision version",
+						"instancesStates": "Instances states",
+						"decisionInstanceKey": "Decision instance key(s)",
+						"processInstanceKey": "Process instance key",
+						"evaluationDateRange": "Evaluation date range",
+						"removeFilter": "Remove {{label}} filter"
+					},
+					"instancesTable": {
+						"title": "Decision instances",
+						"decisionInstanceKey": "Decision instance key",
+						"evaluationDate": "Evaluation date",
+						"processInstanceKey": "Process instance key",
+						"emptyMessage": "There are no instances matching this filter set",
+						"emptyAdditionalInfo": "To see some results, select at least one instance state"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "You can track its progress in the batch operation page"
+					},
+					"definitionDeletion": {
+						"buttonTitle": "Delete decision definition \"{{name}} - version {{version}}\"",
+						"details": "DRD details"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -1489,6 +1530,39 @@
 				"panel": {
 					"label": "decision panel",
 					"unknownEvaluationFailure": "Evaluation failed with unknown error"
+				},
+				"ds": {
+					"drd": {
+						"title": "Decision requirements diagram",
+						"resize": "Resize DRD panel",
+						"maximize": "Maximize DRD panel",
+						"minimize": "Minimize DRD panel",
+						"close": "Close DRD panel",
+						"zoomIn": "Zoom in",
+						"zoomOut": "Zoom out",
+						"resetZoom": "Reset zoom",
+						"unavailableTitle": "No diagram available",
+						"unavailableInfo": "This decision is not part of a decision requirements diagram.",
+						"content": "Decision requirements diagram content"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Decision instance key",
+						"evaluationDateColumn": "Evaluation date",
+						"processInstanceColumn": "Process instance key",
+						"openDrdButton": "Open decision requirements diagram"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Variable panel tabs",
+						"inputsAndOutputs": "Inputs and outputs"
+					},
+					"forbidden": {
+						"heading": "You do not have permission to view this information"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "Evaluation failed for an unknown reason. Check the input values and the decision definition.",
+						"expandFailure": "Show full message",
+						"collapseFailure": "Collapse message"
+					}
 				}
 			},
 			"processInstance": {
@@ -1603,7 +1677,12 @@
 				},
 				"operationsLog": {
 					"multiInstance": "To view the Operations Log, select a single Element Instance in the Instance History.",
-					"empty": "No operations found for this instance"
+					"empty": "No operations found for this instance",
+					"table": {
+						"operationType": "Operation Type",
+						"entityType": "Entity Type",
+						"entityKey": "Entity Key"
+					}
 				},
 				"variables": {
 					"search": "Search variables by name",
@@ -1943,6 +2022,7 @@
 			},
 			"operationsLog": {
 				"title": "Operations Log",
+				"pageTitle": "Operate: Operations Log",
 				"decisionDefinitionsLookupFailed": "Couldn't load decision names. Audit logs are still available.",
 				"decisionDefinitionsRetry": "Retry decision names",
 				"table": {
@@ -2186,7 +2266,41 @@
 					"allTenants": "All tenants"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "More Filters"
+					"moreFilters": "More Filters",
+					"allFiltersAdded": "All filters are already added",
+					"removeFilter": "Remove",
+					"moreFiltersDs": "More filters"
+				},
+				"dateRangeField": {
+					"custom": "Custom",
+					"enterDateRange": "Enter date range",
+					"openModal": "Open date range modal",
+					"datePlaceholder": "YYYY-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "From date",
+					"toDate": "To date",
+					"fromTime": "From time",
+					"toTime": "To time",
+					"timeZone": "Time zone: {{timeZone}}",
+					"cancel": "Cancel",
+					"apply": "Apply"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Enter a date and time",
+					"endBeforeStart": "The end must not be before the start",
+					"timeZone": "Time zone: {{timeZone}}",
+					"invalidDateTime": "Enter a date and time as YYYY-MM-DD HH:mm:ss",
+					"from": "From",
+					"to": "To",
+					"time": "Time",
+					"quickRanges": "Quick ranges",
+					"selectQuickRange": "Select a quick range",
+					"lastMinutes_one": "Last {{count}} minute",
+					"lastMinutes_other": "Last {{count}} minutes",
+					"lastHours_one": "Last {{count}} hour",
+					"lastHours_other": "Last {{count}} hours",
+					"lastDays_one": "Last {{count}} day",
+					"lastDays_other": "Last {{count}} days"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",
@@ -2312,6 +2426,9 @@
 					"incidents_other": "{{count}} instances with incidents",
 					"active_one": "{{count}} active instance",
 					"active_other": "{{count}} active instances"
+				},
+				"sortableTable": {
+					"sortBy": "Sort by {{label}}"
 				}
 			}
 		}

@@ -250,6 +250,32 @@ describe('Processes migration', () => {
 		await expect.element(screen.getByRole('button', {name: 'Migrate'})).toHaveAttribute('title', reason);
 	});
 
+	it('should disable Migrate for a suspended-only selection that Cancel accepts', async ({worker}) => {
+		mockPage(worker);
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '4', state: 'SUSPENDED'}),
+						],
+						page: {totalItems: 2},
+					}),
+				),
+			}),
+		);
+		const screen = await renderPage();
+
+		await selectInstance(screen, '4');
+
+		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Migrate'})).toBeDisabled();
+		await expect
+			.element(screen.getByRole('button', {name: 'Migrate'}))
+			.toHaveAttribute('title', 'You can only migrate instances in active or incident state.');
+	});
+
 	it('should disable Migrate in batch modification mode', async ({worker}) => {
 		mockPage(worker);
 		storeStateLocally('operate.hideMoveModificationHelperModal', true);

@@ -116,15 +116,59 @@
       <if test="filter.isTruncated != null">
         AND IS_PREVIEW = #{filter.isTruncated}
       </if>
-      <if test="filter.protectionModes != null and !filter.protectionModes.isEmpty()">
-        AND EXISTS (
-          SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-          WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-          AND PM.PROTECTION_MODE IN
-          <foreach collection="filter.protectionModes" item="mode" open="(" separator="," close=")">
-            #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler}
-          </foreach>
-        )
+      <if
+        test="protectionModeCodeOperations != null and !protectionModeCodeOperations.isEmpty()">
+        <foreach collection="protectionModeCodeOperations" item="operation">
+          AND
+          <choose>
+            <when test="operation.operator.name().equals('EXISTS')">
+              EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+              )
+            </when>
+            <when test="operation.operator.name().equals('NOT_EXISTS')">
+              NOT EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+              )
+            </when>
+            <when test="operation.operator.name().equals('EQUALS')">
+              EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+                AND PM.PROTECTION_MODE = #{operation.value}
+              )
+            </when>
+            <when test="operation.operator.name().equals('NOT_EQUALS')">
+              NOT EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+                AND PM.PROTECTION_MODE = #{operation.value}
+              )
+            </when>
+            <when test="operation.operator.name().equals('IN')">
+              EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+                AND PM.PROTECTION_MODE IN
+                <foreach collection="operation.values" item="mode" open="(" separator="," close=")">
+                  #{mode}
+                </foreach>
+              )
+            </when>
+            <when test="operation.operator.name().equals('NOT_IN')">
+              NOT EXISTS (
+                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+                AND PM.PROTECTION_MODE IN
+                <foreach collection="operation.values" item="mode" open="(" separator="," close=")">
+                  #{mode}
+                </foreach>
+              )
+            </when>
+          </choose>
+        </foreach>
       </if>
       <!-- advanced filters on variable name / values -->
       <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">

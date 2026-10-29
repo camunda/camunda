@@ -261,6 +261,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -996,6 +997,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
+        .storageOrdinal(p.storageOrdinal())
         .build();
   }
 
@@ -1488,6 +1490,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .build();
   }
@@ -1515,6 +1518,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .evaluatedInputs(
             requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))
@@ -1657,12 +1661,8 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static @Nullable VariableMetadata toVariableMetadata(
-      final VariableEntity variableEntity) {
-    final var protectionModes = variableEntity.protectionModes();
-    if (protectionModes == null || protectionModes.isEmpty()) {
-      return null;
-    }
+  private static VariableMetadata toVariableMetadata(final VariableEntity variableEntity) {
+    final var protectionModes = ofNullable(variableEntity.protectionModes()).orElseGet(Set::of);
     return VariableMetadata.Builder.create()
         .protectionModes(
             protectionModes.stream()

@@ -1022,6 +1022,7 @@
 		"operate": {
 			"dashboard": {
 				"title": "Panel de control",
+				"pageTitle": "Operate: Panel de control",
 				"runningInstancesTotal": "{{count}} instancias de proceso en ejecución en total",
 				"runningInstancesTotalPending": "Instancias de proceso en ejecución en total",
 				"metricFetchError": "No se pudieron recuperar las estadísticas de proceso",
@@ -1175,8 +1176,8 @@
 					"ignoreNonActive": "Se ignorarán las instancias no activas de su selección.",
 					"ignoreNonSuspended": "Se ignorarán las instancias no suspendidas de su selección.",
 					"noFinished": "No se han seleccionado instancias de proceso finalizadas. Seleccione al menos una instancia completada o cancelada para eliminarla.",
-					"noRunning": "No se han seleccionado instancias de proceso en ejecución. Seleccione al menos una instancia activa o con incidente para cancelarla.",
-					"noRunningToSuspend": "No se han seleccionado instancias de proceso en ejecución. Seleccione al menos una instancia activa o con incidente para suspenderla.",
+					"noRunning": "No se han seleccionado instancias de proceso en ejecución. Seleccione al menos una instancia activa, suspendida o con incidente para cancelarla.",
+					"noRunningToSuspend": "No se han seleccionado instancias de proceso activas. Seleccione al menos una instancia activa para suspenderla.",
 					"noIncidents": "No se han seleccionado instancias de proceso con incidente. Seleccione al menos una instancia con incidente para reintentar.",
 					"noSuspended": "No se han seleccionado instancias de proceso suspendidas. Seleccione al menos una instancia suspendida para reanudarla.",
 					"actionMode": "No disponible en el modo de modificación por lotes",
@@ -1189,6 +1190,7 @@
 					"progressUnavailable": "El progreso de la operación por lotes no está disponible temporalmente"
 				},
 				"title": "Procesos",
+				"pageTitle": "Operate: Instancias de proceso",
 				"variableFilter": {
 					"title": "Variables",
 					"name": "Nombre",
@@ -1270,6 +1272,7 @@
 				},
 				"instancesTable": {
 					"title": "Instancias de proceso",
+					"panelLabel": "Panel de instancias de proceso",
 					"name": "Nombre",
 					"processInstanceKey": "Clave de instancia de proceso",
 					"version": "Versión",
@@ -1335,11 +1338,13 @@
 					"multipleTenantsSelected": "El proceso \"{{name}}\" existe en varios inquilinos",
 					"selectSingleTenant": "Para ver un diagrama, seleccione un solo inquilino",
 					"noProcessSelected": "No hay ningún proceso seleccionado",
-					"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros"
+					"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros",
+					"processNotFoundTitle": "No se pudo encontrar el proceso"
 				}
 			},
 			"decisions": {
 				"title": "Decisiones",
+				"pageTitle": "Operate: Instancias de decisión",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros"
 				},
@@ -1349,13 +1354,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+					"ariaLabel": "Panel de decisión",
 					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
 					"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
 					"noDecisionSelected": "No hay ninguna decisión seleccionada",
 					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
-					"decisionNotFoundTitle": "No se pudo encontrar la decisión",
-					"ariaLabel": "Panel de decisión"
+					"decisionNotFoundTitle": "No se pudo encontrar la decisión"
 				},
 				"filters": {
 					"tenant": "Inquilino",
@@ -1401,6 +1406,7 @@
 				"toolbar": {
 					"delete": "Eliminar",
 					"discard": "Descartar",
+					"bulkActionsLabel": "Acciones en bloque",
 					"itemsSelected": "{{count}} elementos seleccionados",
 					"itemSelected": "{{count}} elemento seleccionado",
 					"itemsSelectedTruncated": "{{count}}+ elementos seleccionados",
@@ -1417,6 +1423,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Eliminar la definición de decisión \"{{name}} - Versión {{version}}\"",
+					"loadingMessage": "Eliminando la definición de decisión",
 					"title": "Eliminar DRD",
 					"description": "Está a punto de eliminar el siguiente DRD:",
 					"confirmation": "Sí, confirmo que quiero eliminar este DRD y todas las instancias relacionadas.",
@@ -1427,6 +1434,40 @@
 					"details": "Detalles del DRD",
 					"drdName": "Nombre del DRD",
 					"successTitle": "Operación creada"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Eliminar la definición de decisión \"{{name}} - versión {{version}}\"",
+						"details": "Detalles del DRD"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
+						"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+						"noDecisionSelected": "No hay ninguna decisión seleccionada",
+						"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
+						"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
+						"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión"
+					},
+					"filters": {
+						"decisionInstanceKey": "Clave(s) de instancia de decisión",
+						"evaluationDateRange": "Rango de fechas de evaluación",
+						"instancesStates": "Estados de instancias",
+						"processInstanceKey": "Clave de instancia de proceso",
+						"removeFilter": "Eliminar filtro {{label}}",
+						"searchByName": "Buscar por nombre de decisión",
+						"selectVersion": "Seleccionar una versión de decisión"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Clave de instancia de decisión",
+						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+						"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
+						"evaluationDate": "Fecha de evaluación",
+						"processInstanceKey": "Clave de instancia de proceso",
+						"title": "Instancias de decisión"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Puede seguir su progreso en la página Operaciones por lotes"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -1477,6 +1518,39 @@
 				"panel": {
 					"label": "panel de decisión",
 					"unknownEvaluationFailure": "La evaluación falló con un error desconocido"
+				},
+				"ds": {
+					"drd": {
+						"title": "Diagrama de requisitos de decisión",
+						"resize": "Cambiar tamaño del panel DRD",
+						"maximize": "Maximizar panel DRD",
+						"minimize": "Minimizar panel DRD",
+						"close": "Cerrar panel DRD",
+						"zoomIn": "Acercar",
+						"zoomOut": "Alejar",
+						"resetZoom": "Restablecer zoom",
+						"unavailableTitle": "Diagrama no disponible",
+						"unavailableInfo": "Esta decisión no forma parte de un diagrama de requisitos de decisión.",
+						"content": "Contenido del diagrama de requisitos de decisión"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Clave de instancia de decisión",
+						"evaluationDateColumn": "Fecha de evaluación",
+						"processInstanceColumn": "Clave de instancia de proceso",
+						"openDrdButton": "Abrir diagrama de requisitos de decisión"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Pestañas del panel de variables",
+						"inputsAndOutputs": "Entradas y salidas"
+					},
+					"forbidden": {
+						"heading": "No tiene permiso para ver esta información"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "La evaluación falló por un motivo desconocido. Revise los valores de entrada y la definición de decisión.",
+						"expandFailure": "Mostrar mensaje completo",
+						"collapseFailure": "Contraer mensaje"
+					}
 				}
 			},
 			"processInstance": {
@@ -1591,7 +1665,12 @@
 				},
 				"operationsLog": {
 					"multiInstance": "Para ver el registro de operaciones, seleccione una única instancia de elemento en el historial de la instancia.",
-					"empty": "No se encontraron operaciones para esta instancia"
+					"empty": "No se encontraron operaciones para esta instancia",
+					"table": {
+						"operationType": "Tipo de operación",
+						"entityType": "Tipo de entidad",
+						"entityKey": "Clave de entidad"
+					}
 				},
 				"variables": {
 					"search": "Buscar variables por nombre",
@@ -1931,6 +2010,7 @@
 			},
 			"operationsLog": {
 				"title": "Registro de operaciones",
+				"pageTitle": "Operate: Registro de operaciones",
 				"decisionDefinitionsLookupFailed": "No se pudieron cargar los nombres de las decisiones. El registro de operaciones sigue disponible.",
 				"decisionDefinitionsRetry": "Volver a cargar los nombres de las decisiones",
 				"table": {
@@ -2174,7 +2254,41 @@
 					"allTenants": "Todos los arrendatarios"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Más filtros"
+					"moreFilters": "Más filtros",
+					"allFiltersAdded": "Ya se han añadido todos los filtros",
+					"removeFilter": "Quitar",
+					"moreFiltersDs": "Más filtros"
+				},
+				"dateRangeField": {
+					"custom": "Personalizado",
+					"enterDateRange": "Introduzca un intervalo de fechas",
+					"openModal": "Abrir el diálogo de intervalo de fechas",
+					"datePlaceholder": "AAAA-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Fecha de inicio",
+					"toDate": "Fecha de fin",
+					"fromTime": "Hora de inicio",
+					"toTime": "Hora de fin",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"cancel": "Cancelar",
+					"apply": "Aplicar"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Introduzca una fecha y hora",
+					"endBeforeStart": "El fin no puede ser anterior al inicio",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"invalidDateTime": "Introduzca una fecha y hora con el formato YYYY-MM-DD HH:mm:ss",
+					"from": "Desde",
+					"to": "Hasta",
+					"time": "Hora",
+					"quickRanges": "Rangos rápidos",
+					"selectQuickRange": "Seleccionar un rango rápido",
+					"lastMinutes_one": "Último {{count}} minuto",
+					"lastMinutes_other": "Últimos {{count}} minutos",
+					"lastHours_one": "Última {{count}} hora",
+					"lastHours_other": "Últimas {{count}} horas",
+					"lastDays_one": "Último {{count}} día",
+					"lastDays_other": "Últimos {{count}} días"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",
@@ -2300,6 +2414,9 @@
 					"incidents_other": "{{count}} instancias con incidentes",
 					"active_one": "{{count}} instancia activa",
 					"active_other": "{{count}} instancias activas"
+				},
+				"sortableTable": {
+					"sortBy": "Ordenar por {{label}}"
 				}
 			}
 		}

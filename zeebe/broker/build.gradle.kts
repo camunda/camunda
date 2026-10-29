@@ -2,7 +2,6 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.sbe-conventions")
-  id("buildlogic.serial-test-conventions")
   id("buildlogic.test-jar-conventions")
 }
 
@@ -97,6 +96,7 @@ dependencies {
   testImplementation(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.yaml)
   testImplementation(libs.org.openjdk.jmh.jmh.core)
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
+  testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
 tasks.withType<Test>().configureEach { jvmArgs("-Xmx2g") }

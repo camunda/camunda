@@ -11,7 +11,7 @@ import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi, beforeAll} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
@@ -25,8 +25,7 @@ import {
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
 import {createQueryTenantsResponse, createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {AddClusterVariableModal} from './AddClusterVariableModal';
-
-const MONACO_LOAD = {timeout: 15_000};
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -46,14 +45,14 @@ async function renderModal(props: Partial<React.ComponentProps<typeof AddCluster
 	const screen = await render(<AddClusterVariableModal isOpen isTenantScopeAvailable onClose={onClose} {...props} />, {
 		wrapper: getWrapper(),
 	});
-	await expect
-		.element(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'}), MONACO_LOAD)
-		.toBeInTheDocument();
+	await expect.element(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'})).toBeInTheDocument();
 
 	return {screen, onClose};
 }
 
 describe('<AddClusterVariableModal />', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(async () => {
 		await cleanup();
 		toast.dismiss();

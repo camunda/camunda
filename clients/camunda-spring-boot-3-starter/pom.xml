@@ -32,7 +32,7 @@
          to newer Micrometer APIs fail here instead of with NoSuchMethodError in users' apps
          (https://github.com/camunda/camunda/issues/59640). Not a dependency: it is never compiled
          against or published, so it must not be declared in <dependencies>. -->
-    <version.micrometer-spring-boot-3>1.17.1</version.micrometer-spring-boot-3>
+    <version.micrometer-spring-boot-3>1.17.2</version.micrometer-spring-boot-3>
     <version.aspectjweaver>1.9.26</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>

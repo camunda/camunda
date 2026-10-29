@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
 import {InlineLoading, InlineNotification, Link, Modal} from '@carbon/react';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -24,11 +25,12 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 	const {t} = useTranslation();
 	const {data: callHierarchy, isError, isPending} = useCallHierarchy(processInstanceKey, {enabled: open});
 	const rootInstanceId = callHierarchy?.[0]?.processInstanceKey;
+	const portalContainer = document.querySelector('main') ?? document.body;
 
 	if (rootInstanceId) {
 		const rootInstancePath = mergePathname(getBootConfig().contextPath, `/operate/processes/${rootInstanceId}`);
 
-		return (
+		return createPortal(
 			<Modal
 				open={open}
 				preventCloseOnClickOutside
@@ -48,11 +50,12 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 					</Link>{' '}
 					{t('operate.shared.operations.cancelRootInstanceModal.bodyAfterLink')}
 				</p>
-			</Modal>
+			</Modal>,
+			portalContainer,
 		);
 	}
 
-	return (
+	return createPortal(
 		<Modal
 			open={open}
 			preventCloseOnClickOutside
@@ -78,7 +81,8 @@ const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 					title={t('operate.shared.operations.cancelConfirmationModal.verificationError')}
 				/>
 			)}
-		</Modal>
+		</Modal>,
+		portalContainer,
 	);
 };
 

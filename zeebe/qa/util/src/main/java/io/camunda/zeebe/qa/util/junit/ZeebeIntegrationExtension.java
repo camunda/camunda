@@ -29,10 +29,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -66,7 +68,11 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
-    implements BeforeAllCallback, BeforeEachCallback, TestWatcher, AfterEachCallback {
+    implements BeforeAllCallback,
+        BeforeEachCallback,
+        TestWatcher,
+        AfterEachCallback,
+        AfterAllCallback {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
@@ -103,9 +109,33 @@ final class ZeebeIntegrationExtension
     RecordingExporter.reset();
   }
 
+  /**
+   * {@link TestWatcher} does not see class-level failures, e.g. a startup failure in {@link
+   * #beforeAll} or a failing {@code @AfterAll}, so mark the class group as failed here. This runs
+   * before the group is closed.
+   */
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    final var group = store(context).get(ZeebeResourceGroup.class, ZeebeResourceGroup.class);
+    if (group != null && context.getExecutionException().isPresent()) {
+      group.markFailed();
+    }
+  }
+
   @Override
   public void testFailed(final ExtensionContext context, final Throwable cause) {
     RecordLogger.logRecords();
+
+    // the failed test may belong to a resource group of any enclosing context, e.g. the class
+    for (var current = Optional.of(context);
+        current.isPresent();
+        current = current.get().getParent()) {
+      final var group =
+          store(current.get()).get(ZeebeResourceGroup.class, ZeebeResourceGroup.class);
+      if (group != null) {
+        group.markFailed();
+      }
+    }
   }
 
   private Iterable<ClusterResource> lookupClusters(
@@ -351,6 +381,7 @@ final class ZeebeIntegrationExtension
 
   private static final class ZeebeResourceGroup implements AutoCloseable {
     private final Set<TestZeebeResource> resources = new HashSet<>();
+    private boolean failed;
 
     private void add(final TestZeebeResource resource) {
       resources.add(resource);
@@ -360,10 +391,24 @@ final class ZeebeIntegrationExtension
       return resources;
     }
 
+    private void markFailed() {
+      failed = true;
+    }
+
     @Override
     public void close() {
       CloseHelper.closeAll(
           (error) -> LOG.warn("Failed to close resources {}", resources, error), resources);
+
+      // Keep the ports of a group with a failed test reserved. This only matters for Maven:
+      // Surefire's rerunFailingTestsCount reruns a failed class in the same JVM, without running
+      // inline static field initializers again, so it restarts these same applications on their
+      // configured ports. Releasing them would let another fork claim them in between. Gradle's
+      // test-retry reruns in a new JVM that builds new applications on new ports, so it would not
+      // need this. The cost is that the ports stay reserved until the JVM exits.
+      if (!failed) {
+        resources.forEach(TestZeebeResource::releasePorts);
+      }
     }
   }
 
@@ -384,6 +429,11 @@ final class ZeebeIntegrationExtension
           error ->
               LOG.warn("Failed to close cluster {}, leaking resources", cluster().name(), error),
           cluster());
+    }
+
+    @Override
+    public void releasePorts() {
+      cluster().releasePorts();
     }
 
     @Override
@@ -436,6 +486,11 @@ final class ZeebeIntegrationExtension
     }
 
     @Override
+    public void releasePorts() {
+      app().releasePorts();
+    }
+
+    @Override
     public void start() {
       app().start();
     }
@@ -479,6 +534,8 @@ final class ZeebeIntegrationExtension
     TestZeebe annotation();
 
     Field field();
+
+    void releasePorts();
 
     void start();
 

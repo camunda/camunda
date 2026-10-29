@@ -54,6 +54,12 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     }
   }
 
+  /** Labels an expression as the script expression of a script task. */
+  public static ExpressionLabel scriptExpression(final DirectBuffer scriptTaskId) {
+    return new ExpressionLabel(
+        "script expression", "script task '%s'".formatted(BufferUtil.bufferAsString(scriptTaskId)));
+  }
+
   /**
    * Labels an expression as the condition expression of a sequence flow, e.g. for the gateway
    * failure message "Expected result of the condition expression '...' of sequence flow 's2' to be
@@ -78,8 +84,27 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("version tag expression", businessRuleTask(businessRuleTaskId));
   }
 
+  /** Labels an expression as the signal name expression of a throwing or catching event. */
+  public static ExpressionLabel signalNameExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("signal name expression", event(eventId));
+  }
+
+  /** Labels an expression as the error code expression of an error end event. */
+  public static ExpressionLabel errorCodeExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("error code expression", event(eventId));
+  }
+
+  /** Labels an expression as the escalation code expression of a throwing escalation event. */
+  public static ExpressionLabel escalationCodeExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("escalation code expression", event(eventId));
+  }
+
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
     return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
+  }
+
+  private static String event(final DirectBuffer eventId) {
+    return "event '%s'".formatted(BufferUtil.bufferAsString(eventId));
   }
 
   /**
@@ -96,5 +121,15 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
    */
   String describeTarget() {
     return target == null ? "" : " of %s".formatted(target);
+  }
+
+  /**
+   * Labels an expression as the correlation key expression of a message catch element. The element
+   * is not always an event (e.g. a receive task), so it is named "element".
+   */
+  public static ExpressionLabel correlationKeyExpression(final DirectBuffer elementId) {
+    return new ExpressionLabel(
+        "correlation key expression",
+        "element '%s'".formatted(BufferUtil.bufferAsString(elementId)));
   }
 }

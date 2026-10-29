@@ -28,7 +28,11 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Integration test for authentication behavior in no-database mode. This test validates that the
@@ -87,18 +91,24 @@ public class NoSecondaryStorageAuthenticationTest {
     final var oidcService = context.getBean(LazyTokenClaimsConverter.class);
     assertThat(oidcService).isNotNull();
 
-    // and - the service should work with limited functionality
-    final Map<String, Object> claims =
-        Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
-    final var camundaAuthentication = oidcService.convert(claims);
+    // and - the service should work with limited functionality, within a request as in production
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+    try {
+      final Map<String, Object> claims =
+          Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
+      final var camundaAuthentication = oidcService.convert(claims);
 
-    assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("testuser");
-    assertThat(camundaAuthentication.authenticatedGroupIds())
-        .containsExactlyInAnyOrder("group1", "group2");
-    // No secondary storage access, so these should be empty
-    assertThat(camundaAuthentication.authenticatedRoleIds()).isEmpty();
-    assertThat(camundaAuthentication.authenticatedTenantIds()).isEmpty();
-    assertThat(camundaAuthentication.authenticatedMappingRuleIds()).isEmpty();
+      assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("testuser");
+      assertThat(camundaAuthentication.authenticatedGroupIds())
+          .containsExactlyInAnyOrder("group1", "group2");
+      // No secondary storage access, so these should be empty
+      assertThat(camundaAuthentication.authenticatedRoleIds()).isEmpty();
+      assertThat(camundaAuthentication.authenticatedTenantIds()).isEmpty();
+      assertThat(camundaAuthentication.authenticatedMappingRuleIds()).isEmpty();
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+    }
 
     context.close();
   }
@@ -121,8 +131,8 @@ public class NoSecondaryStorageAuthenticationTest {
 
     @Bean
     public NoDBMembershipService noDBMembershipService(
-        final CamundaSecurityLibraryProperties cslProperties) {
-      return new NoDBMembershipService(cslProperties);
+        final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
+      return new NoDBMembershipService(cslProperties, environment);
     }
 
     @Bean

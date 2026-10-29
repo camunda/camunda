@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {Table, TableCell, TableHead, TableHeader, TableRow} from '@camunda/design-system';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@camunda/design-system';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 import {cn} from '#/shared/cn';
 
@@ -38,9 +38,16 @@ type Props = {
 	verticalCellPadding?: string;
 	dataTestId?: string;
 	isFlush?: boolean;
+	cellClassName?: string;
+	containerClassName?: string;
+	headerClassName?: string;
 } & Pick<React.ComponentProps<typeof InfiniteScroller>, 'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'>;
 
-const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({rows, verticalCellPadding}) => {
+const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding' | 'cellClassName'>> = ({
+	rows,
+	verticalCellPadding,
+	cellClassName = 'align-top',
+}) => {
 	return (
 		<>
 			{rows.map(({key, dataTestId, columns}) => (
@@ -48,7 +55,7 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
 					{columns.map(({cellContent, width}, index) => (
 						<TableCell
 							key={index}
-							className="align-top"
+							className={cellClassName}
 							style={{
 								width,
 								...(verticalCellPadding ? {paddingTop: verticalCellPadding, paddingBottom: verticalCellPadding} : {}),
@@ -78,19 +85,22 @@ const StructuredList: React.FC<Props> = ({
 	onVerticalScrollStartReach,
 	onVerticalScrollEndReach,
 	isFlush = true,
+	cellClassName,
+	containerClassName,
+	headerClassName,
 }) => {
 	const scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
 	return (
 		<div className={cn('overflow-y-auto', className)} data-testid={dataTestId} ref={scrollableContentRef}>
-			<Table aria-label={label}>
-				<TableHeader>
+			<Table aria-label={label} containerClassName={containerClassName}>
+				<TableHeader className={headerClassName}>
 					<TableRow>
 						{headerColumns.map(({cellContent, width}, index) => (
 							<TableHead
 								key={index}
-								className={cn(headerSize === 'sm' && 'text-xs', isFlush && index === 0 && 'pl-0')}
-								style={{width}}
+								className={cn(headerSize === 'sm' && 'text-xs')}
+								style={{width, ...(isFlush && index === 0 ? {paddingLeft: 0} : {})}}
 							>
 								{cellContent}
 							</TableHead>
@@ -102,7 +112,7 @@ const StructuredList: React.FC<Props> = ({
 					onVerticalScrollEndReach={onVerticalScrollEndReach}
 					scrollableContainerRef={scrollableContentRef}
 				>
-					<tbody
+					<TableBody
 						className={cn(
 							'[&_tr:last-child]:border-0',
 							// Applied at the tbody level (rather than per-cell in `StructuredRows`) so
@@ -117,8 +127,8 @@ const StructuredList: React.FC<Props> = ({
 						)}
 					>
 						{dynamicRows}
-						<StructuredRows rows={rows} verticalCellPadding={verticalCellPadding} />
-					</tbody>
+						<StructuredRows rows={rows} verticalCellPadding={verticalCellPadding} cellClassName={cellClassName} />
+					</TableBody>
 				</InfiniteScroller>
 			</Table>
 		</div>

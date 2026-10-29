@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import java.util.Date;
@@ -310,5 +311,49 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     underTest.updateEntity(processInstanceRecord, entity);
 
     assertThat(entity.getActivityState()).isEqualTo(FlowNodeState.TERMINATED);
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

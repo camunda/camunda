@@ -32,36 +32,8 @@ Before modifying code in any module:
 Not every module has a README yet — when one exists, treat it as the primary reference for that
 module.
 
-**Path map:**
-
-|       Module       |                                       Description                                        |
-|--------------------|------------------------------------------------------------------------------------------|
-| `zeebe/`           | Core process engine (broker, engine, protocol, exporters)                                |
-| `zeebe/gateway`    | gRPC gateway for client access                                                           |
-| `operate/`         | Process monitoring webapp                                                                |
-| `tasklist/`        | User task management webapp                                                              |
-| `identity/`        | Authentication and authorization                                                         |
-| `optimize/`        | Process analytics (skipped with `-Dquickly`)                                             |
-| `db/`              | Database layer (rdbms, rdbms-schema)                                                     |
-| `search/`          | Search client abstraction (Elasticsearch, OpenSearch, RDBMS)                             |
-| `service/`         | Domain service layer between REST controllers and engine                                 |
-| `clients/`         | Client libraries (Java, Spring Boot starters)                                            |
-| `gateways/`        | Gateway implementations (HTTP mapping, MCP)                                              |
-| `security/`        | Security core, protocol, validation                                                      |
-| `qa/`              | Cross-component acceptance tests                                                         |
-| `testing/`         | Process testing libraries                                                                |
-| `authentication/`  | OIDC token processing and Spring Security integration                                    |
-| `document/`        | Document API and storage                                                                 |
-| `monitor/`         | Metrics and monitoring definitions for Camunda components                                |
-| `schema-manager/`  | Elasticsearch/OpenSearch index schema management                                         |
-| `microbenchmarks/` | JMH benchmarks for performance validation                                                |
-| `load-tests/`      | Cluster-level load and reliability tests                                                 |
-| `c8run/`           | Packaged Camunda 8 distribution for local spin-up                                        |
-| `debug-cli/`       | CLI tool for inspecting and troubleshooting Camunda clusters                             |
-| `webapp/`          | Unified webapp: React/TypeScript frontend (`client/`) and Spring Boot server (`server/`) |
-| `webapps-common/`  | Shared Java utilities used across Operate, Tasklist, and other web modules               |
-| `webapps-backup/`  | Shared backup/restore service for Elasticsearch/OpenSearch snapshots                     |
-| `webapps-schema/`  | Shared Elasticsearch/OpenSearch index mappings and templates for web application data    |
+For a map of top-level modules and what each owns, see the Module map in
+`docs/architecture/overview.md`; each module's `README.md` has the details.
 
 **Ask first:**
 
@@ -125,32 +97,9 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ### Referencing code in issues, PRs, and comments
 
-When pointing at specific lines of repository code in any GitHub-rendered or shared artifact — issue,
-PR description, PR/review comment, or a linked note — use a **stable GitHub permalink** instead of a
-bare `path:line` reference. GitHub renders the linked lines inline, and pinning a commit SHA keeps the
-reference correct even after the file changes later. A bare `path:line` is only acceptable in local,
-throwaway context (never in something a teammate will read on GitHub).
-
-Derive the link locally — no API calls, no `gh`:
-
-```bash
-slug=$(git remote get-url origin | sed -E 's#^(git@github\.com:|https?://github\.com/)##; s#\.git$##')
-sha=$(git log -1 --format=%H -- "<path>")   # commit that last touched the file
-echo "https://github.com/$slug/blob/$sha/<path>#L<start>-L<end>"   # single line: #L<start>
-```
-
-- **SHA choice:** default to the file's last-touching commit (`git log -1 --format=%H -- <path>`). The
-  file content at that commit equals the current committed content, so the line numbers are valid, and
-  for existing code that commit is already on the remote. Use `git rev-parse HEAD` when linking code
-  from the current PR branch. Always use the full 40-char SHA — a branch name or short SHA is less
-  stable and can 404.
-- **Format:** `https://github.com/<slug>/blob/<sha>/<path>#L<start>` for one line, `#L<start>-L<end>`
-  for a range. `<path>` is repo-root-relative.
-- **The SHA must already be pushed to the remote**, otherwise the link 404s — verify with
-  `git branch -r --contains <sha>` (non-empty). The file's last-touching commit satisfies this once the
-  code is merged. If the file has local edits that are not pushed yet, do not link an unpushed SHA: pick
-  a SHA that is already on `main` (e.g. `git rev-parse origin/main`) and select the line range against
-  that version of the file.
+In anything a teammate reads on GitHub (issues, PR descriptions, PR or review comments), link
+repository code with a stable GitHub permalink pinned to a pushed commit SHA. Never use a bare
+`path:line`. Load the `github-permalink` skill before writing the text — it builds the link.
 
 ### Build pipeline
 
@@ -208,12 +157,9 @@ If a test fails during the baseline check, re-run it once to determine whether i
 passes on retry, treat the baseline as green and proceed. If it fails consistently, it should not
 be on the target branch — stop and inform the engineer.
 
-If it is flaky (non-deterministic):
-
-1. Search for an existing open issue in camunda/camunda. If none exists, raise one using
-   the `create-issue` skill (use the bug template; also add the `kind/flake` label).
-2. Assign the issue to the engineer.
-3. Treat the baseline as passed and proceed — do not disable the test.
+If it is flaky (non-deterministic), it does not block the session: treat the baseline as passed and
+proceed. Never disable the test. Track the flake as described in
+`.agents/skills/ci-fix-failure/references/flaky-tests.md`.
 
 #### Module-scoped builds (preferred)
 
@@ -329,26 +275,13 @@ read it. If you can't name both, don't write it.
 - Keep descriptions brief and concise
 - For bug fixes: ask the engineer whether the fix needs backporting to stable branches before
   opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it
-  (see "Backporting" below).
+  (see "Backporting" below and the `backport` skill).
 
 ### Backporting
 
-Automated by a GitHub Action (`korthout/backport-action`, see `.github/workflows/backport.yml`;
-human docs in `CONTRIBUTING.md`). **Never create backport PRs, branches, or cherry-picks yourself,
-and never offer to.** Trigger a backport only through the automation — a label, or a `/backport`
-comment — never by hand.
-
-- **Start:** add one `backport stable/X.Y` label per target branch (e.g. `backport stable/8.7`).
-  Not-yet-merged PR → runs on merge. Already-merged PR → comment `/backport`. Multiple labels →
-  multiple backport PRs.
-- **Success:** action opens the backport PR. A bot approves it and enables auto-merge once CI passes,
-  but only when the backport touches `zeebe/`, `clients/`, a `pom.xml`, shared build/webapps config,
-  or CI-relevant `.github/` files — the approval job lives in the Zeebe CI workflow and is gated on
-  those paths. A backport touching none of them needs a human review and merge.
-- **Conflicts:** action opens a **draft** PR with conflict markers committed as-is plus a comment
-  with resolution steps. You may resolve them (check out the branch, fix conflicts and markers) —
-  but only on a draft PR the action already opened. When asked to backport, first check whether
-  such a draft PR exists.
+Backports run only through the backport automation (a `backport stable/X.Y` label or a `/backport`
+comment). **Never create backport PRs, branches, or cherry-picks yourself, and never offer to.** For
+how to trigger one and handle conflicts, use the `backport` skill.
 
 ### Git workflow
 

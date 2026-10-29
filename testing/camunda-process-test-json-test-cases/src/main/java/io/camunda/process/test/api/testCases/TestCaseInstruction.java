@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import io.camunda.process.test.api.testCases.instructions.AssertDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertElementInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertElementInstancesInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruction;
@@ -63,6 +64,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = AssertElementInstancesInstruction.class,
       name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCES),
+  @JsonSubTypes.Type(
+      value = AssertIncidentInstruction.class,
+      name = TestCaseInstructionType.ASSERT_INCIDENT),
   @JsonSubTypes.Type(
       value = AssertProcessInstanceInstruction.class,
       name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE),

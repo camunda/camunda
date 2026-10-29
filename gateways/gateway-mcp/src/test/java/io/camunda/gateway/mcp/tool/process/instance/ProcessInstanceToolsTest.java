@@ -41,6 +41,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -89,6 +90,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"),
+          null,
           null,
           null);
 
@@ -947,6 +949,91 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldForwardVariablesMetadataOnCreateProcessInstance() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(-1)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of());
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionKey",
+                          "123",
+                          "variables",
+                          Map.of("secret", "value"),
+                          "variablesMetadata",
+                          Map.of("secret", Map.of("protectionModes", List.of("REDACT")))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      assertThat(createRequestCaptor.getValue().variablesMetadata())
+          .containsOnlyKeys("secret")
+          .extractingByKey("secret")
+          .satisfies(
+              metadata ->
+                  assertThat(metadata.getProtectionModes()).containsExactly(ProtectionMode.REDACT));
+    }
+
+    @Test
+    void shouldForwardVariablesMetadataOnCreateProcessInstanceWithAwaitCompletion() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+      final var createResponse =
+          new ProcessInstanceResultRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(7)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of());
+      when(processInstanceServices.createProcessInstanceWithResult(
+              any(ProcessInstanceCreateRequest.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionKey",
+                          "123",
+                          "awaitCompletion",
+                          true,
+                          "variables",
+                          Map.of("secret", "value"),
+                          "variablesMetadata",
+                          Map.of("secret", Map.of("protectionModes", List.of("REDACT")))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      verify(processInstanceServices)
+          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
+      assertThat(createRequestCaptor.getValue().variablesMetadata())
+          .containsOnlyKeys("secret")
+          .extractingByKey("secret")
+          .satisfies(
+              metadata ->
+                  assertThat(metadata.getProtectionModes()).containsExactly(ProtectionMode.REDACT));
     }
 
     @Test

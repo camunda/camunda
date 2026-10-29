@@ -3,7 +3,7 @@
 // Decide whether ONE coverage-plan case passed, from a Playwright JSON report.
 //
 // Used by .github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml, which
-// runs a single case for a generation loop — see camunda/team-test-automation#83.
+// runs a single case for a generation loop.
 //
 // Playwright's exit code is not the verdict on its own. A run whose --grep
 // selected nothing exits 0, and a scoped run that matched no test must never

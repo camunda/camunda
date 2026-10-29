@@ -854,8 +854,9 @@ public class CamundaMultiDBExtension
         && !databaseType.storageType().isElasticSearch()
         && !databaseType.storageType().isOpenSearch()) {
       throw new IllegalStateException(
-          "Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
-              + " storage; got %s.".formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+          ("Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
+                  + " storage; got %s.")
+              .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
     }
 
     // Multi-PT mode: @MultiDbPhysicalTenants overrides the single-PT path
@@ -919,7 +920,10 @@ public class CamundaMultiDBExtension
               isHistoryRelatedTest, "jdbc:postgresql:camunda", "camunda", "camunda");
       case RDBMS_MARIADB ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest, "jdbc:mariadb://localhost:3306/camunda", "camunda", "camunda");
+              isHistoryRelatedTest,
+              "jdbc:mariadb://localhost:3306/camunda?sslMode=disable",
+              "camunda",
+              "camunda");
       case RDBMS_MYSQL ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest, "jdbc:mysql://localhost:3306/camunda", "camunda", "camunda");

@@ -24,6 +24,10 @@ import org.junit.Test;
  */
 public final class SuspendedBatchOperationBlocksQueueTest extends AbstractBatchOperationTest {
 
+  public SuspendedBatchOperationBlocksQueueTest() {
+    super(false);
+  }
+
   @Test
   public void shouldNotBlockOtherBatchOperationsWhenOneSuspended() {
     // given — create batchA and suspend it
@@ -42,6 +46,8 @@ public final class SuspendedBatchOperationBlocksQueueTest extends AbstractBatchO
     // when — create batchB which should complete independently of the suspended batchA
     final var batchBKeys = Set.of(4L, 5L, 6L);
     final var batchBKey = createNewCancelProcessInstanceBatchOperation(batchBKeys);
+    advanceSchedulerUntil(
+        r -> r.getIntent() == BatchOperationIntent.COMPLETED && r.getKey() == batchBKey);
 
     // then — batchB should complete while batchA remains suspended.
     // RecordingExporter blocks (up to its configured timeout) until the COMPLETED event appears.

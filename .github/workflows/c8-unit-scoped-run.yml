@@ -1,6 +1,5 @@
 # description: Runs ONE unit (JUnit) case of a Maven module, on demand. The
-#              verify step of coverage-plan test generation — see
-#              camunda/team-test-automation#83.
+#              verify step of coverage-plan test generation.
 # type: CI
 # owner: @camunda/test-automation-team
 ---

@@ -13,13 +13,16 @@ import io.camunda.zeebe.gateway.impl.broker.HashBasedDispatchStrategy;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.gateway.validation.VariablesMetadataValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -58,6 +61,14 @@ public final class BrokerCreateProcessInstanceWithResultRequest
 
   public BrokerCreateProcessInstanceWithResultRequest setTenantId(final String tenantId) {
     requestDto.setTenantId(tenantId);
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceWithResultRequest setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    VariablesMetadataValidator.validateVariablesMetadata(
+        requestDto.getVariablesBuffer(), variablesMetadata);
+    requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
 

@@ -12,6 +12,7 @@ import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockAssignUserToTenantEndpoint,
@@ -234,6 +235,39 @@ describe('<AdminTenantDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
 
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
+	});
+
+	it('should still offer users when the first candidates are all assigned on the current page', async ({worker}) => {
+		// given
+		const everyone = Array.from({length: 102}, (_, index) => `user-${String(index).padStart(3, '0')}`);
+		worker.use(
+			mockQueryUsersByTenantEndpoint({
+				successResponse: HttpResponse.json(createQueryUsersByTenantResponse(everyone.slice(0, 100))),
+			}),
+			http.post(decodeURIComponent(endpoints.queryUsers.getUrl()), async ({request}) => {
+				const body = (await request.json()) as {
+					filter?: {username?: {$notIn?: string[]}};
+					page: {limit: number};
+				};
+				const excluded = body.filter?.username?.$notIn ?? [];
+				const matching = everyone.filter((username) => !excluded.includes(username));
+				return HttpResponse.json({
+					items: matching.slice(0, body.page.limit).map((username) => ({username})),
+					page: {totalItems: matching.length},
+				});
+			}),
+		);
+		const {screen} = await renderPage({search: {pageSize: 100}});
+		await expect.element(screen.getByRole('cell', {name: 'user-099'})).toBeVisible();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Users'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'user-100'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-101'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-000'})).not.toBeInTheDocument();
 	});
 
 	it('should keep the user options in alphabetical order while users are picked', async ({worker}) => {

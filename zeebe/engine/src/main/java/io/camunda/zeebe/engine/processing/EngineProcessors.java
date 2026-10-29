@@ -404,13 +404,7 @@ public final class EngineProcessors {
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState,
-            bpmnBehaviors,
-            writers,
-            asyncRequestBehavior,
-            cslCheck,
-            tenantCheck,
-            suspensionMetrics);
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -670,8 +664,7 @@ public final class EngineProcessors {
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck,
-      final SuspensionMetrics suspensionMetrics) {
+      final CslTenantCheck tenantCheck) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -680,8 +673,7 @@ public final class EngineProcessors {
         writers,
         asyncRequestBehavior,
         cslCheck,
-        tenantCheck,
-        suspensionMetrics);
+        tenantCheck);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(

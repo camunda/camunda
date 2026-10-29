@@ -125,19 +125,19 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 		{key: 'result', label: '', render: (row: AuditLog) => <CellResult item={row} />},
 		{
 			key: 'operationType',
-			label: t('operate.operationsLog.table.operationType'),
+			label: t('operate.processInstance.operationsLog.table.operationType'),
 			sortKey: 'operationType',
 			render: (row: AuditLog) => spaceAndCapitalize(row.operationType),
 		},
 		{
 			key: 'entityType',
-			label: t('operate.operationsLog.table.entityType'),
+			label: t('operate.processInstance.operationsLog.table.entityType'),
 			sortKey: 'entityType',
 			render: (row: AuditLog) => spaceAndCapitalize(row.entityType),
 		},
 		{
 			key: 'entityKey',
-			label: t('operate.operationsLog.table.entityKey'),
+			label: t('operate.processInstance.operationsLog.table.entityKey'),
 			sortKey: 'entityKey',
 			render: (row: AuditLog) => <CellEntityKey item={row} />,
 		},
