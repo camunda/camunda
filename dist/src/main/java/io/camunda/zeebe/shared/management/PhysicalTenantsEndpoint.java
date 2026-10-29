@@ -33,7 +33,9 @@ import org.springframework.web.bind.annotation.RequestBody;
  * flat map, with property names relative to {@code camunda.physical-tenants.<id>}.
  *
  * <p>A change is accepted once the coordinator started rolling it out ({@code 202}); its progress
- * shows in {@code rolledOut} and {@code appliedVersions}.
+ * shows in {@code rolledOut}, {@code appliedVersions} and {@code pendingMembers}. {@code POST
+ * <id>/cancel} cancels the rollout of an update and rolls the tenant back to the configuration it
+ * had before.
  */
 @NullMarked
 @Component
@@ -69,6 +71,11 @@ public class PhysicalTenantsEndpoint {
       @PathVariable final String physicalTenantId,
       @RequestBody final Map<String, String> configuration) {
     return ResponseEntity.accepted().body(service.update(physicalTenantId, configuration));
+  }
+
+  @PostMapping("/{physicalTenantId}/cancel")
+  public ResponseEntity<PhysicalTenantStatus> cancel(@PathVariable final String physicalTenantId) {
+    return ResponseEntity.accepted().body(service.cancel(physicalTenantId));
   }
 
   @DeleteMapping("/{physicalTenantId}")

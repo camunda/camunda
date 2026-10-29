@@ -52,7 +52,7 @@ public final class PhysicalTenantConfigRejectedException extends RuntimeExceptio
     INVALID,
     /** The tenant does not exist. */
     NOT_FOUND,
-    /** Another tenant change runs; retry once it completed. */
+    /** A change of the tenant, or of its group or the cluster, runs; retry once it completed. */
     IN_PROGRESS,
     /** The tenant is owned by the other input. */
     NOT_OWNER,

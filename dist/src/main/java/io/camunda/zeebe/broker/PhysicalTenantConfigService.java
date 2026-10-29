@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.core.env.Environment;
 
@@ -153,6 +155,16 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     send(PhysicalTenantConfigRequest.delete(physicalTenantId, Owner.API));
   }
 
+  /**
+   * Cancels the rollout of an update of a tenant owned by the management API: the tenant rolls back
+   * to the configuration it had before, as the next version. Members that applied the cancelled
+   * version restart the tenant on it; the others restart nothing.
+   */
+  public PhysicalTenantStatus cancel(final String physicalTenantId) {
+    send(PhysicalTenantConfigRequest.cancel(physicalTenantId, Owner.API));
+    return get(physicalTenantId).orElseThrow();
+  }
+
   private PhysicalTenantStatus update(
       final String physicalTenantId, final Map<String, String> subtree, final Owner owner) {
     final var reference =
@@ -255,7 +267,27 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
         group.availability().state(),
         applied,
         reference.isAppliedBy(configuration.liveMembers()),
-        group.pendingChanges().isPresent());
+        group.pendingChanges().isPresent(),
+        pendingMembers(group),
+        lifecycle.localStatus(physicalTenantId).orElse(null),
+        executor.rolloutStep(physicalTenantId).orElse(null));
+  }
+
+  /** The members the tenant's rollout still has to run on, in the order it runs on them. */
+  private static List<String> pendingMembers(final PartitionGroupConfiguration group) {
+    return group
+        .pendingChanges()
+        .map(
+            plan ->
+                plan.pendingOperations().stream()
+                    .filter(
+                        operation ->
+                            operation instanceof ApplyPhysicalTenantConfigOperation
+                                || operation instanceof StopPhysicalTenantOperation)
+                    .map(operation -> operation.memberId().id())
+                    .distinct()
+                    .toList())
+        .orElse(List.of());
   }
 
   /** Starts every tenant the cluster runs that this member does not run with the same config. */
@@ -425,6 +457,11 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
    * @param appliedVersions the version each live member applied, by member id
    * @param rolledOut whether every live member applied the current version
    * @param changing whether a change of the tenant is in progress
+   * @param pendingMembers the members the change still has to run on, in order; the first one is
+   *     the member it runs on or waits for
+   * @param local the tenant's health on the member that answers; absent where the tenant does not
+   *     run
+   * @param rollout what the rollout waits for on the member that answers, if it waits there
    */
   public record PhysicalTenantStatus(
       String id,
@@ -435,5 +472,8 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
       TenantAvailability.State state,
       Map<String, Long> appliedVersions,
       boolean rolledOut,
-      boolean changing) {}
+      boolean changing,
+      List<String> pendingMembers,
+      PhysicalTenantLifecycleService.@Nullable LocalStatus local,
+      PhysicalTenantConfigExecutor.@Nullable RolloutStep rollout) {}
 }

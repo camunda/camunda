@@ -248,6 +248,13 @@ public final class PhysicalTenantLifecycleService {
     return modules().awaitReady(physicalTenantId);
   }
 
+  /** The health of a tenant on this node. */
+  public Optional<LocalStatus> localStatus(final String physicalTenantId) {
+    return registry
+        .health(physicalTenantId)
+        .map(health -> new LocalStatus(health.state(), health.detail()));
+  }
+
   /** The resolved configuration a tenant currently runs with. */
   public Optional<Camunda> configuration(final String physicalTenantId) {
     return Optional.ofNullable(configurations.get(physicalTenantId));
@@ -473,6 +480,9 @@ public final class PhysicalTenantLifecycleService {
   private interface Change<T> {
     T apply();
   }
+
+  /** The health of a tenant on this node. */
+  public record LocalStatus(State health, @Nullable String healthDetail) {}
 
   private record Candidate(
       ConfigurableEnvironment environment,
