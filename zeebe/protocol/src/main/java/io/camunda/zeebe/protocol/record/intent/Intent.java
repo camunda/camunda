@@ -31,7 +31,7 @@ public interface Intent {
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
-  @SuppressWarnings("deprecated")
+  @SuppressWarnings("deprecation")
   static Map<ValueType, Class<? extends Intent>> computeValueTypeToIntentMap() {
     final Map<ValueType, Class<? extends Intent>> map = new LinkedHashMap<>();
     map.put(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.class);
