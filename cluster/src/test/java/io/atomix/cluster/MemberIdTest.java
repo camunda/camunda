@@ -168,6 +168,37 @@ final class MemberIdTest {
     assertThat(MemberId.from(id).isInZone(zone)).isEqualTo(expected);
   }
 
+  static Stream<Named<String>> validMemberIds() {
+    return Stream.of(
+        Named.of("zoned", "us-east1_2"),
+        Named.of("zoned 1 letter", "a_2"),
+        Named.of("zoned 1 number", "1_2"),
+        Named.of("zoned w/ 63 chars", "b".repeat(63) + "_2"),
+        Named.of("without zone", "2"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("illegalZones")
+  void shouldThrowWhenZoneIsIllegalValidatingZone(final String zone) {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.validateZone(zone))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("illegalZones")
+  void shouldNotMatchIllegalZoneWithRegex(final String zone) {
+    // given / when / then
+    assertThat(MemberId.regex().matcher(zone).matches()).isFalse();
+  }
+
+  @ParameterizedTest
+  @MethodSource("validMemberIds")
+  void shouldMatchMemberIdWithRegex(final String memberId) {
+    // given / when / then
+    assertThat(MemberId.regex().matcher(memberId).matches()).isTrue();
+  }
+
   private void assertEncodeDecode(final MemberId memberId) {
     final var decoded = MemberId.from(memberId.id());
     assertThat(decoded).isEqualTo(memberId).returns(memberId.hashCode(), MemberId::hashCode);
