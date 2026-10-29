@@ -561,8 +561,6 @@
           "description": "The expected error type of the incident. Optional.",
           "type": "string",
           "enum": [
-            "UNSPECIFIED",
-            "UNKNOWN",
             "IO_MAPPING_ERROR",
             "JOB_NO_RETRIES",
             "EXECUTION_LISTENER_NO_RETRIES",
@@ -577,8 +575,7 @@
             "DECISION_EVALUATION_ERROR",
             "FORM_NOT_FOUND",
             "RESOURCE_NOT_FOUND",
-            "SECRET_RESOLUTION_ERROR",
-            "UNKNOWN_ENUM_VALUE"
+            "SECRET_RESOLUTION_ERROR"
           ]
         },
         "errorMessage": {
