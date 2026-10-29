@@ -62,9 +62,10 @@ import org.jspecify.annotations.NullMarked;
  *       on disk and its id stays reserved.
  * </ul>
  *
- * <p>A tenant is changed only through the input that owns it. Only one tenant changes at a time
- * across the cluster: a request that arrives while another tenant change runs is rejected, not
- * queued.
+ * <p>A tenant is changed only through the input that owns it. Each tenant has its own rollout: a
+ * request for a tenant whose change still runs is rejected, not queued, while changes of different
+ * tenants roll out at the same time. A change that conflicts with a pending cluster change of the
+ * tenant's group, or of the whole cluster, is rejected too.
  */
 @NullMarked
 public final class PhysicalTenantConfigChanges {
@@ -268,16 +269,6 @@ public final class PhysicalTenantConfigChanges {
           "A change of physical tenant '%s' is in progress; retry once it completed"
               .formatted(tenantId));
     }
-    final var otherTenant =
-        configuration.partitionGroups().entrySet().stream()
-            .filter(entry -> isChangingTenantConfig(entry.getValue()))
-            .map(Map.Entry::getKey)
-            .findFirst();
-    if (otherTenant.isPresent()) {
-      return Optional.of(
-          "A change of physical tenant '%s' is in progress; physical tenants change one at a time"
-              .formatted(otherTenant.get()));
-    }
     final var scope = new Groups(Set.of(tenantId));
     return configuration.phasedChangeState().pending().values().stream()
         .filter(plan -> PhasedChangePlan.conflicts(scope, plan.scope()))
@@ -286,18 +277,5 @@ public final class PhysicalTenantConfigChanges {
             plan ->
                 "Configuration change %d involving physical tenant '%s' is in progress"
                     .formatted(plan.id(), tenantId));
-  }
-
-  private static boolean isChangingTenantConfig(final PartitionGroupConfiguration group) {
-    return group
-        .pendingChanges()
-        .map(
-            plan ->
-                plan.pendingOperations().stream()
-                    .anyMatch(
-                        operation ->
-                            operation instanceof ApplyPhysicalTenantConfigOperation
-                                || operation instanceof StopPhysicalTenantOperation))
-        .orElse(false);
   }
 }

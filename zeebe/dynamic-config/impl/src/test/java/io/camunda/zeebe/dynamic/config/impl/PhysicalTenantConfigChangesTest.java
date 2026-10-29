@@ -206,7 +206,7 @@ final class PhysicalTenantConfigChangesTest {
   }
 
   @Test
-  void shouldRejectAChangeWhileAnotherTenantChanges() {
+  void shouldStartAChangeWhileAnotherTenantChanges() {
     // given
     final var creating = created("tenant", Owner.API);
 
@@ -214,9 +214,29 @@ final class PhysicalTenantConfigChangesTest {
     final var result = changes.apply(creating, create("other", Owner.API, 1), SHA);
 
     // then
-    assertThat(result.getLeft())
+    assertThat(result.get().partitionGroup("other").isChangingPhysicalTenantConfig()).isTrue();
+    assertThat(result.get().partitionGroup("tenant").isChangingPhysicalTenantConfig()).isTrue();
+  }
+
+  @Test
+  void shouldRejectASecondChangeOfATenantWhoseChangeRollsOut() {
+    // given
+    final var updating = updated(completed(created("tenant", Owner.API), "tenant"), "a=2");
+
+    // when
+    final var update =
+        changes.apply(
+            updating,
+            PhysicalTenantConfigRequest.update("tenant", Owner.API, bytes("a=3"), 2),
+            sha("a=3"));
+    final var delete =
+        changes.apply(updating, PhysicalTenantConfigRequest.delete("tenant", Owner.API), "");
+
+    // then
+    assertThat(update.getLeft())
         .isInstanceOf(ConcurrentModificationException.class)
-        .hasMessageContaining("one at a time");
+        .hasMessageContaining("'tenant' is in progress");
+    assertThat(delete.getLeft()).isInstanceOf(ConcurrentModificationException.class);
   }
 
   @Test
@@ -244,6 +264,16 @@ final class PhysicalTenantConfigChangesTest {
   private CurrentClusterConfiguration created(final String tenantId, final Owner owner) {
     final var registered = owner == Owner.FILE ? cluster().initPartitionGroup(tenantId) : cluster();
     return changes.apply(registered, create(tenantId, owner, 1), SHA).get();
+  }
+
+  private CurrentClusterConfiguration updated(
+      final CurrentClusterConfiguration configuration, final String newConfiguration) {
+    return changes
+        .apply(
+            configuration,
+            PhysicalTenantConfigRequest.update("tenant", Owner.API, bytes(newConfiguration), 0),
+            sha(newConfiguration))
+        .get();
   }
 
   private static CurrentClusterConfiguration completed(

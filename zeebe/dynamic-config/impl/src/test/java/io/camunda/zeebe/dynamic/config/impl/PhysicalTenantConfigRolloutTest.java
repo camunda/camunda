@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
@@ -141,27 +142,75 @@ final class PhysicalTenantConfigRolloutTest {
   }
 
   @Test
-  void shouldRejectAChangeWhileAnotherTenantChangeIsInProgress() {
+  void shouldRollOutChangesOfOtherTenantsWhileOneTenantsChangeCannotApply() {
     // given
-    final var blocked = new CompletableFuture<Void>();
-    members.get(1).executor().gate = blocked;
+    final var stuck = uniqueTenantId();
+    members.get(0).sender().changePhysicalTenantConfig(create(stuck, bytes("a=1"))).join();
+    awaitRolledOut(stuck, 1);
+    members.get(1).executor().failing = (tenantId, configuration) -> tenantId.equals(stuck);
+    members
+        .get(0)
+        .sender()
+        .changePhysicalTenantConfig(
+            PhysicalTenantConfigRequest.update(stuck, Owner.API, bytes("a=2"), 1))
+        .join();
+    Awaitility.await("the first member applies the stuck change")
+        .atMost(TIMEOUT)
+        .until(() -> appliedBy(0, stuck) == 2);
+    final var created = uniqueTenantId();
+    final var updated = uniqueTenantId();
+    members.get(2).sender().changePhysicalTenantConfig(create(updated, bytes("u=1"))).join();
+    awaitRolledOut(updated, 1);
+
+    // when
+    final var create =
+        members.get(2).sender().changePhysicalTenantConfig(create(created, bytes("c=1"))).join();
+    final var update =
+        members
+            .get(1)
+            .sender()
+            .changePhysicalTenantConfig(
+                PhysicalTenantConfigRequest.update(updated, Owner.API, bytes("u=2"), 1))
+            .join();
+
+    // then
+    assertThat(create.isRight()).isTrue();
+    assertThat(update.isRight()).isTrue();
+    awaitRolledOut(created, 1);
+    awaitRolledOut(updated, 2);
+    assertThat(appliedBy(1, stuck)).isEqualTo(1);
+    assertThat(members.get(1).configuration().partitionGroup(stuck).hasPendingChanges()).isTrue();
+  }
+
+  @Test
+  void shouldRejectASecondChangeOfATenantWhileItsChangeRollsOut() {
+    // given
     final var tenantId = uniqueTenantId();
     members.get(0).sender().changePhysicalTenantConfig(create(tenantId, bytes("a=1"))).join();
+    awaitRolledOut(tenantId, 1);
+    members.get(1).executor().gate = new CompletableFuture<>();
+    members
+        .get(0)
+        .sender()
+        .changePhysicalTenantConfig(
+            PhysicalTenantConfigRequest.update(tenantId, Owner.API, bytes("a=2"), 1))
+        .join();
 
     // when
     final var second =
         members
             .get(2)
             .sender()
-            .changePhysicalTenantConfig(create(uniqueTenantId(), bytes("b=1")))
+            .changePhysicalTenantConfig(
+                PhysicalTenantConfigRequest.update(tenantId, Owner.API, bytes("a=3"), 2))
             .join();
 
     // then
     assertThat(second.getLeft())
         .extracting(ErrorResponse::code)
         .isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
-    blocked.complete(null);
-    awaitRolledOut(tenantId, 1);
+    members.get(1).executor().gate.complete(null);
+    awaitRolledOut(tenantId, 2);
   }
 
   @Test
@@ -347,6 +396,7 @@ final class PhysicalTenantConfigRolloutTest {
     private final ClusterConfigurationManagerServiceImpl service;
     private final Map<String, byte[]> running = new ConcurrentHashMap<>();
     private volatile CompletableFuture<Void> gate = CompletableFuture.completedFuture(null);
+    private volatile BiPredicate<String, byte[]> failing = (tenantId, configuration) -> false;
 
     private RecordingExecutor(final ClusterConfigurationManagerServiceImpl service) {
       this.service = service;
@@ -357,6 +407,10 @@ final class PhysicalTenantConfigRolloutTest {
         final String physicalTenantId,
         final PhysicalTenantConfigReference reference,
         final byte[] configuration) {
+      if (failing.test(physicalTenantId, configuration)) {
+        return CompletableFuture.failedFuture(
+            new IllegalStateException("a dependency of the tenant is unreachable"));
+      }
       return gate.thenRunAsync(
           () -> {
             registerGroupExecutors(service, physicalTenantId);
