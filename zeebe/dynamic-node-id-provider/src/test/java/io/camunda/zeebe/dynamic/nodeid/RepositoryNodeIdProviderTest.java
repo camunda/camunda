@@ -57,6 +57,7 @@ class RepositoryNodeIdProviderTest {
             Duration.ofSeconds(60),
             Duration.ofSeconds(12),
             TASK_ID,
+            null,
             () -> leaseFailedFlag.set(true));
   }
 
