@@ -214,9 +214,13 @@ public interface ProcessInstanceRecordValue
    * authenticated on the creating command. A called instance inherits it from its parent. The
    * engine sets it once, at creation; no variable and no later command can change it.
    *
+   * <p>The exporters do not store it yet, so it is not an attribute of the immutable value.
+   *
    * @return the requester, or an empty string when nobody started the instance (a timer start)
    */
-  String getRequester();
+  default String getRequester() {
+    return "";
+  }
 
   /**
    * Returns the resume cursor carried by a {@code RESUME_JOBS} command: the job key of the last job
