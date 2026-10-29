@@ -198,7 +198,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   public PhysicalTenantLifecycleService physicalTenantLifecycleService(
       final Broker broker,
       final ConfigurableEnvironment environment,
-      final ObjectProvider<PhysicalTenantResources> resources) {
+      final ObjectProvider<PhysicalTenantResources> resources,
+      final PhysicalTenantSecretStores secretStores) {
     return new PhysicalTenantLifecycleService(
         broker,
         systemContextLoader,
@@ -207,7 +208,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         physicalTenantResolver,
         physicalTenantRegistry,
         PHYSICAL_TENANT_CHANGE_TIMEOUT,
-        resources.orderedStream().toList());
+        resources.orderedStream().toList(),
+        secretStores);
   }
 
   /**

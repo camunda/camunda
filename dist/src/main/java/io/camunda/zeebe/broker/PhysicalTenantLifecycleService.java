@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
+import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenant;
 import io.camunda.cluster.PhysicalTenantHealth;
@@ -15,12 +17,15 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,6 +70,13 @@ public final class PhysicalTenantLifecycleService {
   private final DefaultPhysicalTenantRegistry registry;
   private final Duration timeout;
   private final List<PhysicalTenantResources> resources;
+  private static final SecretStoreRegistry NOT_BUILT_YET = new SecretStoreRegistry(Map.of());
+
+  private final PhysicalTenantSecretStores secretStores;
+  // the job secret stores built for a runtime context, released when the context is closed; the
+  // stores of a boot context belong to the application context
+  private final Map<PhysicalTenantContext, Owned<SecretStoreRegistry>> ownedSecretStores =
+      Collections.synchronizedMap(new IdentityHashMap<>());
   private final ReentrantLock changeLock = new ReentrantLock();
   private final Map<String, Camunda> configurations = new ConcurrentHashMap<>();
   private final Map<String, PhysicalTenantContext> contexts = new ConcurrentHashMap<>();
@@ -78,9 +90,11 @@ public final class PhysicalTenantLifecycleService {
       final PhysicalTenantResolver bootResolver,
       final DefaultPhysicalTenantRegistry registry,
       final Duration timeout,
-      final List<PhysicalTenantResources> resources) {
+      final List<PhysicalTenantResources> resources,
+      final PhysicalTenantSecretStores secretStores) {
     this.broker = broker;
     this.resources = List.copyOf(resources);
+    this.secretStores = secretStores;
     this.systemContextLoader = systemContextLoader;
     environment = bootEnvironment;
     this.rootCamunda = rootCamunda;
@@ -256,7 +270,10 @@ public final class PhysicalTenantLifecycleService {
 
     final PhysicalTenantContext context;
     try {
-      context = systemContextLoader.buildPhysicalTenantContext(physicalTenantId, camunda);
+      secretStores.validate(physicalTenantId, camunda.getSecrets());
+      // the stores are built when the module starts, see withOwnJobStores
+      context =
+          systemContextLoader.buildPhysicalTenantContext(physicalTenantId, camunda, NOT_BUILT_YET);
     } catch (final RuntimeException e) {
       throw rejected(Reason.INVALID, physicalTenantId, e.getMessage(), e);
     }
@@ -279,10 +296,12 @@ public final class PhysicalTenantLifecycleService {
     contexts.put(physicalTenantId, candidate.context());
   }
 
-  private void startModule(final PhysicalTenant tenant, final PhysicalTenantContext context) {
+  private void startModule(final PhysicalTenant tenant, final PhysicalTenantContext candidate) {
     final var modules = modules();
+    var context = candidate;
     try {
       final var configuration = Objects.requireNonNull(configurations.get(tenant.id()));
+      context = withOwnJobStores(tenant.id(), configuration, candidate);
       resources.forEach(resource -> resource.apply(tenant.id(), configuration));
       await(modules.start(tenant.id(), context));
     } catch (final RuntimeException e) {
@@ -291,13 +310,36 @@ public final class PhysicalTenantLifecycleService {
       gateway()
           .ifPresent(
               gateway -> {
-                gateway.put(tenant.id(), context.securityConfig());
+                gateway.put(tenant.id(), candidate.securityConfig());
                 gateway.markUnavailable(tenant.id(), "its module failed to start");
               });
       throw rejected(Reason.FAILED, tenant.id(), "its module failed to start", e);
     }
-    gateway().ifPresent(gateway -> gateway.put(tenant.id(), context.securityConfig()));
+    gateway().ifPresent(gateway -> gateway.put(tenant.id(), candidate.securityConfig()));
     markHealthyWhenReady(tenant, modules);
+  }
+
+  /**
+   * Builds the secret stores that the tenant's jobs resolve from, for this start alone. They are
+   * built only once the previous module of the tenant stopped and released its own: the stores of
+   * both would publish the same meters, and releasing the previous ones would remove them.
+   */
+  private PhysicalTenantContext withOwnJobStores(
+      final String physicalTenantId,
+      final Camunda configuration,
+      final PhysicalTenantContext candidate) {
+    final var jobStores = secretStores.jobStores(physicalTenantId, configuration.getSecrets());
+    final var context =
+        new PhysicalTenantContext(
+            candidate.securityConfig(),
+            candidate.authorizationConverter(),
+            candidate.featureFlags(),
+            candidate.config(),
+            candidate.exporterRepository(),
+            jobStores.value());
+    ownedSecretStores.put(context, jobStores);
+    contexts.put(physicalTenantId, context);
+    return context;
   }
 
   private void markHealthyWhenReady(
@@ -390,11 +432,19 @@ public final class PhysicalTenantLifecycleService {
     }
   }
 
-  private static void close(final String physicalTenantId, final PhysicalTenantContext context) {
+  private void close(final String physicalTenantId, final PhysicalTenantContext context) {
     try {
       context.exporterRepository().close();
     } catch (final Exception e) {
       LOG.warn("Failed to close the exporters of physical tenant '{}'", physicalTenantId, e);
+    }
+    final var jobStores = ownedSecretStores.remove(context);
+    if (jobStores != null) {
+      try {
+        jobStores.close();
+      } catch (final RuntimeException e) {
+        LOG.warn("Failed to close the secret stores of physical tenant '{}'", physicalTenantId, e);
+      }
     }
   }
 

@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.physicaltenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.management.UnixOperatingSystemMXBean;
+import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.client.CamundaClient;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenantHealth;
@@ -22,7 +23,10 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +40,7 @@ import javax.management.ObjectName;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @ZeebeIntegration
 final class PhysicalTenantRestartLeakIT {
@@ -52,6 +57,7 @@ final class PhysicalTenantRestartLeakIT {
   private static final String JVM_METER_PREFIX = "jvm.";
   // gRPC event loops start their fixed number of threads lazily, so they are not a leak
   private static final String GRPC_EVENT_LOOP_THREAD = "grpc-nio-worker-";
+  private static final String SECRET_CACHE_METER_PREFIX = "camunda.secret.cache.";
   // owned by the cluster configuration, which keeps a removed tenant's partition group, by the
   // gateway job stream client, which keeps one set of meters per tenant it has seen, or by the
   // shared messaging service, which keeps one set per topic
@@ -71,6 +77,7 @@ final class PhysicalTenantRestartLeakIT {
   private final TestStandaloneBroker broker =
       TENANTS.configure(new TestStandaloneBroker().withUnauthenticatedAccess());
 
+  @TempDir private Path secrets;
   private CamundaClient client;
 
   @AfterEach
@@ -81,12 +88,15 @@ final class PhysicalTenantRestartLeakIT {
   }
 
   @Test
-  void shouldNotLeakWhenRestartingOneTenantRepeatedly() {
+  void shouldNotLeakWhenRestartingOneTenantRepeatedly() throws IOException {
     // given
     final var tenantId =
         "leak" + Long.toString(Math.abs(UUID.randomUUID().getLeastSignificantBits()), 36);
     final var configuration = tenantConfiguration();
     lifecycle().add(tenantId, configuration);
+    assertThat(secretCacheMeters(tenantId))
+        .describedAs("the tenant's own secret stores are measured")
+        .isNotEmpty();
     client = TENANTS.newClientBuilder(broker, tenantId).preferRestOverGrpc(false).build();
     awaitServing(tenantId);
     for (int i = 0; i < WARM_UP_RESTARTS; i++) {
@@ -100,6 +110,7 @@ final class PhysicalTenantRestartLeakIT {
       restartMillis.add(restart(tenantId, configuration));
     }
     final var after = Resources.measure(broker.bean(MeterRegistry.class), tenantId);
+    final var secretCacheMetersAfterRestarts = secretCacheMeters(tenantId);
 
     // then
     lifecycle().remove(tenantId);
@@ -117,7 +128,12 @@ final class PhysicalTenantRestartLeakIT {
         MEASURED_RESTARTS, before.summary(), after.summary(), restartMillis);
     assertThat(after.metersOfOtherTenants())
         .containsExactlyInAnyOrderElementsOf(before.metersOfOtherTenants());
+    assertThat(secretCacheMetersAfterRestarts)
+        .describedAs("a restarted tenant keeps the meters of its secret stores")
+        .isNotEmpty();
     assertThat(metersKeptAfterRemove).isEmpty();
+    assertThat(secretCacheMeters(tenantId)).isEmpty();
+    assertThat(refreshers().forPhysicalTenant(tenantId)).isEmpty();
     assertThat(after.rocksDbInstances()).isEqualTo(before.rocksDbInstances());
     assertThat(after.actorTasks()).isEqualTo(before.actorTasks());
     assertThat(after.threads()).isLessThanOrEqualTo(before.threads());
@@ -147,9 +163,23 @@ final class PhysicalTenantRestartLeakIT {
         .join(10, TimeUnit.SECONDS);
   }
 
-  private Map<String, Object> tenantConfiguration() {
+  private List<String> secretCacheMeters(final String tenantId) {
+    return broker.bean(MeterRegistry.class).getMeters().stream()
+        .filter(meter -> meter.getId().getName().startsWith(SECRET_CACHE_METER_PREFIX))
+        .filter(meter -> Resources.isTaggedWith(meter, tenantId))
+        .map(meter -> meter.getId().toString())
+        .toList();
+  }
+
+  private Map<String, Object> tenantConfiguration() throws IOException {
     final Map<String, Object> configuration = new HashMap<>();
     configuration.put("data.secondary-storage.type", "none");
+    configuration.put(
+        "secrets.stores.file.default.path",
+        Files.createDirectories(secrets.resolve("jobs")).toString());
+    configuration.put(
+        "secrets.stores.file.default.internal-config.path",
+        Files.createDirectories(secrets.resolve("internal")).toString());
     configuration.put("security.initialization.default-roles.admin.users[0]", "admin");
     if (broker
         .unifiedConfig()
@@ -163,6 +193,10 @@ final class PhysicalTenantRestartLeakIT {
 
   private PhysicalTenantLifecycleService lifecycle() {
     return broker.bean(PhysicalTenantLifecycleService.class);
+  }
+
+  private InternalConfigRefreshers refreshers() {
+    return broker.bean(InternalConfigRefreshers.class);
   }
 
   private DefaultPhysicalTenantRegistry registry() {

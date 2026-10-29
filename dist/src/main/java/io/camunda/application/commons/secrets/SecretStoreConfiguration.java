@@ -269,7 +269,7 @@ public class SecretStoreConfiguration {
    * AWS or GCP store eagerly builds a client and probes credentials, which would otherwise surface
    * first for a configuration that is rejected anyway.
    */
-  private static void requireValidStores(final String tenantId, final Stores config) {
+  static void requireValidStores(final String tenantId, final Stores config) {
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
         STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();

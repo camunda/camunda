@@ -14,6 +14,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -253,6 +254,18 @@ public final class SystemContextLoader {
    */
   public PhysicalTenantContext buildPhysicalTenantContext(
       final String physicalTenantId, final Camunda camunda) {
+    return buildPhysicalTenantContext(
+        physicalTenantId, camunda, secretStoreRegistries.forPhysicalTenant(physicalTenantId));
+  }
+
+  /**
+   * As {@link #buildPhysicalTenantContext(String, Camunda)}, with the secret stores that the
+   * tenant's jobs resolve from, for a tenant whose stores are built for this context alone.
+   */
+  public PhysicalTenantContext buildPhysicalTenantContext(
+      final String physicalTenantId,
+      final Camunda camunda,
+      final SecretStoreRegistry secretStoreRegistry) {
     final var s = camunda.getSecurity();
     final var securityConfig =
         new EngineSecurityConfig(
@@ -299,7 +312,7 @@ public final class SystemContextLoader {
         featureFlags,
         brokerConfig,
         exporterRepository,
-        secretStoreRegistries.forPhysicalTenant(physicalTenantId));
+        secretStoreRegistry);
   }
 
   private ExporterRepository predefinedExporterRepository() {

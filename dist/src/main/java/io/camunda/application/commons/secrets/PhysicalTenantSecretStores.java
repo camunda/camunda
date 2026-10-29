@@ -29,6 +29,18 @@ public final class PhysicalTenantSecretStores {
     this.meterRegistry = meterRegistry;
   }
 
+  /**
+   * Checks the secret store configuration of a tenant without building any store, so that a change
+   * can be validated while the tenant runs with its current stores.
+   *
+   * @throws RuntimeException naming the tenant and the invalid setting
+   */
+  public void validate(final String physicalTenantId, final Secrets secrets) {
+    SecretStoreConfiguration.requireValidStores(physicalTenantId, secrets.getStores());
+    secrets.getCache();
+    secrets.getMaxConcurrency();
+  }
+
   /** The stores that jobs resolve secrets from, with their caches and meters. */
   public Owned<SecretStoreRegistry> jobStores(
       final String physicalTenantId, final Secrets secrets) {
