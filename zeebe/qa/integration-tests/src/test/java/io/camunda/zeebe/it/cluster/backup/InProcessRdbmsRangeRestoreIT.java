@@ -12,6 +12,9 @@ import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverri
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.client.protocol.rest.RestoreBrokerStatus;
+import io.camunda.client.protocol.rest.RestorePartitionStatus;
+import io.camunda.client.protocol.rest.RestorePartitionStatus.StateEnum;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
@@ -263,8 +266,36 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     }
   }
 
+  /** A partition whose restore fails is retried rather than reported, so it stays restoring. */
+  @Override
+  void assertRestoreNotApplied(final RestoreTarget target, final String expectedMessage) {
+    final var clusterActuator = enterRecovering();
+    try (final var client = broker.newClientBuilder().build()) {
+      final var changeId = InProcessRestoreTestUtil.triggerRestore(client, requestBody(target));
+      Awaitility.await("a partition keeps retrying its restore")
+          .during(Duration.ofSeconds(20))
+          .atMost(Duration.ofSeconds(40))
+          .pollInterval(Duration.ofSeconds(2))
+          .untilAsserted(
+              () -> {
+                progressClock(broker, 3000);
+                assertThat(InProcessRestoreTestUtil.getRestoreStatus(client).getBrokers())
+                    .flatExtracting(RestoreBrokerStatus::getPartitions)
+                    .extracting(RestorePartitionStatus::getState)
+                    .contains(StateEnum.RESTORING);
+                assertThat(clusterActuator.getTopology().getPendingChange())
+                    .describedAs("the restore change is still pending")
+                    .isNotNull()
+                    .satisfies(change -> assertThat(change.getId()).isEqualTo(changeId));
+              });
+    }
+  }
+
   private static Map<String, Object> requestBody(final RestoreTarget target) {
     final Map<String, Object> body = new HashMap<>();
+    if (!target.backupIds().isEmpty()) {
+      body.put("backupIds", target.backupIds());
+    }
     if (target.from() != null) {
       body.put("from", target.from().toString());
     }
