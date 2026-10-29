@@ -441,10 +441,6 @@ public final class ReconfigurationHelper {
               true);
 
       raftContext.getCluster().configure(newConfiguration);
-      // The initiator handles no ForceConfigureRequest of its own, so it must persist here like
-      // PassiveRole#onForceConfigure does. Otherwise a restart forgets a force that already
-      // succeeded.
-      raftContext.getCluster().commitCurrentConfiguration();
     } else if (!(currentConfiguration.allMembers().equals(newMembers))) {
       // This is not expected. When force configuration is retried, we expect that they are
       // retried with the same state. If this is not the case, it is likely that there are two
