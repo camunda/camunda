@@ -132,7 +132,8 @@ public final class AuthInfo implements BufferWriter {
 
   /**
    * Decodes an auth info from its msgpack encoding, copying the bytes: later changes to the buffer
-   * have no effect. An empty range decodes to {@link #EMPTY}.
+   * have no effect. An empty range, which is how SBE messages encode an absent authorization,
+   * decodes to {@link #EMPTY}, although {@code EMPTY} itself is written as a non-empty msgpack map.
    */
   public static AuthInfo decode(final DirectBuffer buffer, final int offset, final int length) {
     if (length == 0) {
