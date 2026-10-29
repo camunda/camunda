@@ -3038,7 +3038,7 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL;
-      # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url), no nested blocks
+      # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url, reason), no nested blocks
       - name: Notify Slack on breaking changes or failure
         if: >-
           !github.event.pull_request.head.repo.fork &&
@@ -3051,7 +3051,7 @@ jobs:
           webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           payload: |
-            {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+            {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "reason": "${{ steps.check.outputs.status == 'breaking' && 'breaking changes found' || 'check errored' }}"}
       - name: Observe build status
         if: always()
         continue-on-error: true
