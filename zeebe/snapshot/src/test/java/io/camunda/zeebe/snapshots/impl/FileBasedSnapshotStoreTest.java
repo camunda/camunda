@@ -500,6 +500,36 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldNotReplaceLatestSnapshotWithSnapshotForBootstrap() throws IOException {
+    // given
+    final var persistedSnapshot = takeTransientSnapshotWithFiles(123L).persist().join();
+
+    // when
+    snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).hasValue(persistedSnapshot);
+  }
+
+  @Test
+  public void shouldKeepLatestSnapshotWhenDeletingSnapshotForBootstrap() throws IOException {
+    // given
+    final var persistedSnapshot = takeTransientSnapshotWithFiles(123L).persist().join();
+    snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+
+    // when
+    snapshotStore.deleteBootstrapSnapshots().join();
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot())
+        .hasValueSatisfying(
+            snapshot -> {
+              assertThat(snapshot).isEqualTo(persistedSnapshot);
+              assertThat(snapshot.getPath()).exists();
+            });
+  }
+
+  @Test
   public void shouldRestoreASnapshotForBootstrapCorrectly() throws IOException {
     // given
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
