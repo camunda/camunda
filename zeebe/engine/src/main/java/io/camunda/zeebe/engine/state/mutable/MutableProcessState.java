@@ -56,8 +56,20 @@ public interface MutableProcessState extends ProcessState {
    * Deletes a process from the state and cache
    *
    * @param processRecord the record of the process that is deleted
+   * @deprecated only for replaying Process:DELETED v1 events, use {@link
+   *     #deleteProcessAndRepointVersionTag(ProcessRecord)} instead
    */
+  @Deprecated
   void deleteProcess(final ProcessRecord processRecord);
+
+  /**
+   * Deletes a process like {@link #deleteProcess(ProcessRecord)}, but keeps the version tag lookup
+   * of other versions with the same tag: if it points at the deleted process, it is re-pointed to
+   * the latest remaining version with that tag, otherwise it is left untouched.
+   *
+   * @param processRecord the record of the process that is deleted
+   */
+  void deleteProcessAndRepointVersionTag(final ProcessRecord processRecord);
 
   /**
    * Records that the given partition still owes a drain report for the given process definition.

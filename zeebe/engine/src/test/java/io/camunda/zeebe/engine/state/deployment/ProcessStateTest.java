@@ -1193,6 +1193,91 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldKeepVersionTagLookupWhenDeletingOlderVersionWithSameTag() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var v1 = putProcessWithVersionTag(processId, 1, "shared");
+    final var v2 = putProcessWithVersionTag(processId, 2, "shared");
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(v1);
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString(processId), "shared", TENANT_ID))
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(v2.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldFallBackToPreviousVersionWithSameTagWhenDeletingLatestVersionWithTag() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var v1 = putProcessWithVersionTag(processId, 1, "shared");
+    putProcessWithVersionTag(processId, 2, "other");
+    final var v3 = putProcessWithVersionTag(processId, 3, "shared");
+    putProcessWithVersionTag(processId, 4, "other");
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(v3);
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString(processId), "shared", TENANT_ID))
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(v1.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldRemoveVersionTagLookupWhenDeletingLastVersionWithTag() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var v1 = putProcessWithVersionTag(processId, 1, "shared");
+    final var v2 = putProcessWithVersionTag(processId, 2, "shared");
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(v2);
+    processState.deleteProcessAndRepointVersionTag(v1);
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString(processId), "shared", TENANT_ID))
+        .isNull();
+  }
+
+  @Test
+  public void shouldNotChangeVersionTagLookupOfOtherTagWhenDeletingVersion() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var v1 = putProcessWithVersionTag(processId, 1, "a");
+    final var v2 = putProcessWithVersionTag(processId, 2, "b");
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(v2);
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(wrapString(processId), "a", TENANT_ID))
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(v1.getProcessDefinitionKey());
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(wrapString(processId), "b", TENANT_ID))
+        .isNull();
+  }
+
+  private ProcessRecord putProcessWithVersionTag(
+      final String processId, final int version, final String versionTag) {
+    final var processRecord =
+        creatingProcessRecord(processingState, processId, version, versionTag);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
+    return processRecord;
+  }
+
+  @Test
   public void shouldAddProcessAfterOnlyVersionIsDeleted() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
