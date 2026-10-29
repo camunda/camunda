@@ -16,6 +16,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.process.ExecOperations
 
 /**
@@ -25,6 +26,7 @@ import org.gradle.process.ExecOperations
  * relies on the container layer cache; it is never restored from the build cache. The image id file
  * is the output that records the last build.
  */
+@DisableCachingByDefault(because = "The image lives in the container daemon, not in the outputs")
 abstract class BuildDockerImage
 @Inject
 constructor(private val execOperations: ExecOperations, providers: ProviderFactory) :
