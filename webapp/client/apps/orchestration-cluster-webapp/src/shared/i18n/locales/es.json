@@ -1084,8 +1084,14 @@
 				"drainingDescriptionVersion": "Esta versión de la definición de proceso está programada para su eliminación y se eliminará automáticamente una vez que todas sus instancias en ejecución hayan finalizado."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Buscar por nombre de proceso",
+						"selectVersion": "Seleccionar una versión de proceso",
+						"searchByElement": "Buscar por elemento de proceso"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
 					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama",
 					"instancesTablePlaceholder": "Marcador de posición de la tabla de instancias"
 				},

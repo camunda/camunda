@@ -1084,8 +1084,14 @@
 				"drainingDescriptionVersion": "Diese Version der Prozessdefinition ist zur Löschung vorgesehen und wird automatisch entfernt, sobald alle ihre laufenden Instanzen abgeschlossen sind."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Nach Prozessname suchen",
+						"selectVersion": "Prozessversion auswählen",
+						"searchByElement": "Nach Prozesselement suchen"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
 					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
 					"instancesTablePlaceholder": "Platzhalter für die Instanztabelle"
 				},

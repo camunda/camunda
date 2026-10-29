@@ -1096,8 +1096,14 @@
 				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Search by process name",
+						"selectVersion": "Select a process version",
+						"searchByElement": "Search by process element"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Filters panel placeholder",
 					"diagramPanelPlaceholder": "Diagram panel placeholder",
 					"instancesTablePlaceholder": "Instances table placeholder"
 				},
