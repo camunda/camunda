@@ -104,8 +104,8 @@ public final class MultiInstanceOutputCollectionBehavior {
                       variableName)
                   .map(
                       updatedCollection -> {
-                        stateBehavior.setLocalVariable(
-                            flowScopeContext, variableName, updatedCollection);
+                        stateBehavior.setOutputCollection(
+                            flowScopeContext, variableName, updatedCollection, loopCounter - 1);
                         return null;
                       });
             });

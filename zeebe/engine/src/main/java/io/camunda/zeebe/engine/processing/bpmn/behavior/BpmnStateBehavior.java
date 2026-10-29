@@ -42,6 +42,8 @@ public final class BpmnStateBehavior {
   private final JobState jobState;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
+  private final VariableSourceRecord outputCollectionSource = VariableSourceRecord.engine();
+  private final VariableBehavior outputCollectionVariableBehavior;
   private final MultiInstanceState multiInstanceState;
 
   public BpmnStateBehavior(
@@ -49,6 +51,7 @@ public final class BpmnStateBehavior {
     // every variable write of this behavior is decided by the model: multi-instance, ad-hoc
     // sub-process and call activity copies
     this.variableBehavior = variableBehavior.withVariableSource(VariableSourceRecord.engine());
+    outputCollectionVariableBehavior = variableBehavior.withVariableSource(outputCollectionSource);
 
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
@@ -216,6 +219,36 @@ public final class BpmnStateBehavior {
   }
 
   public void setLocalVariable(
+      final BpmnElementContext context,
+      final DirectBuffer variableName,
+      final DirectBuffer variableValue,
+      final int valueOffset,
+      final int valueLength) {
+    setLocalVariable(
+        variableBehavior, context, variableName, variableValue, valueOffset, valueLength);
+  }
+
+  /**
+   * PoC for the variable history: writes a multi-instance output collection, tagged with the slot
+   * that this update fills.
+   */
+  public void setOutputCollection(
+      final BpmnElementContext context,
+      final DirectBuffer variableName,
+      final DirectBuffer collection,
+      final int collectionIndex) {
+    outputCollectionSource.setCollectionIndex(collectionIndex);
+    setLocalVariable(
+        outputCollectionVariableBehavior,
+        context,
+        variableName,
+        collection,
+        0,
+        collection.capacity());
+  }
+
+  private static void setLocalVariable(
+      final VariableBehavior variableBehavior,
       final BpmnElementContext context,
       final DirectBuffer variableName,
       final DirectBuffer variableValue,
