@@ -182,7 +182,7 @@ final class PhysicalTenantConfigRolloutIT {
   }
 
   @Test
-  void shouldRejectASecondChangeWhileOneRollsOut() {
+  void shouldRollOutAChangeOfAnotherTenantWhileOneRollsOut() {
     // given
     final var first = uniqueTenantId();
     final var second = uniqueTenantId();
@@ -192,13 +192,30 @@ final class PhysicalTenantConfigRolloutIT {
     final var response = send("POST", broker(1), second, tenantConfiguration("Second"));
 
     // then
-    assertThat(response.statusCode()).isEqualTo(409);
-    assertThat(response.body()).contains("IN_PROGRESS");
+    assertThat(response.statusCode()).isEqualTo(202);
     awaitRolledOut(first, 1);
+    awaitRolledOut(second, 1);
   }
 
   @Test
-  void shouldApplyAChangeOnABrokerThatWasDownOnceItReturns() {
+  void shouldRejectASecondChangeOfATenantWhileItsChangeRollsOut() {
+    // given
+    final var tenantId = createRolledOut(uniqueTenantId());
+    final var updated = tenantConfiguration("Updated");
+    updated.put("data.snapshot-period", "6m");
+    assertThat(send("PUT", broker(0), tenantId, updated).statusCode()).isEqualTo(202);
+
+    // when
+    final var response = send("DELETE", broker(1), tenantId, null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(409);
+    assertThat(response.body()).contains("IN_PROGRESS", "'" + tenantId + "' is in progress");
+    awaitRolledOut(tenantId, 2);
+  }
+
+  @Test
+  void shouldHoldARolloutThatWouldLoseAQuorumUntilTheDownBrokerReturns() {
     // given
     final var tenantId = createRolledOut(uniqueTenantId());
     final var stopped = CLUSTER.brokers().get(MemberId.from("2"));
@@ -208,15 +225,18 @@ final class PhysicalTenantConfigRolloutIT {
 
     // when
     final var response = send("PUT", broker(0), tenantId, updated);
-    Awaitility.await("the running brokers apply the change")
+    Awaitility.await("the first broker holds the rollout before restarting its replica")
         .atMost(TIMEOUT)
         .untilAsserted(
             () -> {
-              final var applied = status(tenantId).get("appliedVersions");
-              assertThat(applied.get("0").asLong()).isEqualTo(2);
-              assertThat(applied.get("1").asLong()).isEqualTo(2);
-              assertThat(applied.get("2").asLong()).isEqualTo(1);
+              final var status = status(tenantId);
+              assertThat(status.path("pendingMembers").get(0).asText()).isEqualTo("0");
+              assertThat(status.path("rollout").path("waitingFor").asText())
+                  .contains("before the restart", "quorum");
             });
+    final var applied = status(tenantId).get("appliedVersions");
+    assertThat(applied.get("0").asLong()).isEqualTo(1);
+    assertThat(applied.get("1").asLong()).isEqualTo(1);
     awaitPortReleased(stopped.mappedPort(TestZeebePort.CLUSTER));
     stopped.start();
 
