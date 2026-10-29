@@ -293,7 +293,7 @@ tasks.register<Test>("dockerIt") {
   val image = dockerImageName()
   useDockerImage(image, layout.files(buildDockerImage))
   systemProperty("camunda.docker.test.enabled", "true")
-  systemProperty("camunda.docker.test.image", image.get())
+  doFirst { systemProperty("camunda.docker.test.image", image.get()) }
 }
 
 // The container tests need the image and are run by dockerIt.
