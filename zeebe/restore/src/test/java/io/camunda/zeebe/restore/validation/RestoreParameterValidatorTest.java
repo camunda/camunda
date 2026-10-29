@@ -155,6 +155,48 @@ final class RestoreParameterValidatorTest {
   }
 
   @Nested
+  final class NoSecondaryStorage {
+
+    private static final String DB = "none";
+
+    private final RestoreValidator validatorWithoutExportedPositions =
+        new RestoreValidator(1, null, null);
+
+    @Test
+    void shouldAcceptTimeRangeWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptFromAloneWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, null, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectToAloneWithoutExportedPositions() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, null, LATER, DB, true)))
+          .withMessage(
+              "Cannot resolve a restore point: from is required for a time range restore when "
+                  + "no exported-position data is available.");
+    }
+  }
+
+  @Nested
   final class Elasticsearch {
 
     private static final String DB = "elasticsearch";

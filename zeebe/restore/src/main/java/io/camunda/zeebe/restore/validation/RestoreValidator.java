@@ -119,10 +119,15 @@ public final class RestoreValidator
             "Invalid time range: from (%s) must be before to (%s)"
                 .formatted(instantFrom, instantTo));
         Preconditions.test(
-            !hasBackupIds && exportedPositionSupplier == null,
+            !hasBackupIds && !hasTimeRange && exportedPositionSupplier == null,
             "Cannot resolve a restore point: no backupId was specified and no exported-position "
                 + "data is available. Configure RDBMS as the secondary storage to enable "
                 + "time-range restores, or specify a backupId.");
+        // Without exported positions, only `from` tells which range of backups to restore from.
+        Preconditions.test(
+            hasTimeRange && instantFrom == null && exportedPositionSupplier == null,
+            "Cannot resolve a restore point: from is required for a time range restore when no "
+                + "exported-position data is available.");
       }
       case "elasticsearch", "opensearch" -> {
         Preconditions.test(
@@ -208,13 +213,14 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
-    // Exported positions are mandatory for a range restore: validateParameters rejects the request
-    // without a way to read them, and they are what the partitions to restore are taken from.
+    if (exportedPositionSupplier == null) {
+      // No secondary storage to keep consistent with: restore the configured partitions from the
+      // backups in the time range alone.
+      return RestorePointResolver.resolve(
+          loadMetadataForAllPartitions(partitionCount), instantFrom, instantTo, null);
+    }
     final var exportedPositions =
-        requireExportedPositions(
-            exportedPositions(
-                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
-                partitionCount));
+        requireExportedPositions(exportedPositions(exportedPositionSupplier, partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
     final var restorableBackups =
