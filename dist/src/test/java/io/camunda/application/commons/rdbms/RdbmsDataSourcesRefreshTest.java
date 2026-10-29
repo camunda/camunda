@@ -8,8 +8,10 @@
 package io.camunda.application.commons.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.camunda.application.commons.pt.LazyPhysicalTenantResource.State;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.application.commons.secrets.InternalConfigSecrets;
 import io.camunda.application.commons.secrets.SecretRefreshHealthIndicator;
@@ -191,6 +193,98 @@ final class RdbmsDataSourcesRefreshTest {
     // then
     assertThat(dataSource.unwrap(HikariDataSource.class)).isSameAs(oldPool);
     assertThat(health.health().getDetails().toString()).contains("from a h2 database");
+  }
+
+  @Test
+  void shouldBuildNoPoolWhenTheUrlRotatesBeforeFirstUse() throws Exception {
+    // given
+    writeSecret("db-url", secondUrl);
+
+    // when
+    refresh();
+
+    // then
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+    assertThat(dataSources.isPoolStarted(DEFAULT)).isFalse();
+    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    final var dataSource = dataSources.dataSourceFor(DEFAULT);
+    assertThat(databaseNameOf(dataSource)).isEqualTo("SECOND");
+    assertThat(dataSource.unwrap(HikariDataSource.class).getPoolName())
+        .isEqualTo("camunda-rdbms-default");
+  }
+
+  @Test
+  void shouldBuildThePoolWithAPasswordRotatedBeforeFirstUse() throws Exception {
+    // given
+    alterPassword(firstUrl, "new");
+    writeSecret("db-password", "new");
+
+    // when
+    refresh();
+
+    // then
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+    assertThat(databaseNameOf(dataSources.dataSourceFor(DEFAULT))).isEqualTo("FIRST");
+  }
+
+  @Test
+  void shouldReadTheSchemaOverTheRotatedSettingsWithoutBuildingAPool() throws Exception {
+    // given
+    writeSecret("db-url", secondUrl);
+    refresh();
+
+    // when
+    final var database = databaseNameOf(dataSources.unpooledDataSourceFor(DEFAULT));
+
+    // then
+    assertThat(database).isEqualTo("SECOND");
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+  }
+
+  @Test
+  void shouldCloseWithoutBuildingAPoolBeforeFirstUse() throws Exception {
+    // given
+    writeSecret("db-url", secondUrl);
+    refresh();
+
+    // when
+    dataSources.close();
+
+    // then
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+    assertThatThrownBy(() -> dataSources.dataSourceFor(DEFAULT).getConnection())
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldCloseThePoolBuiltOnFirstUse() throws Exception {
+    // given
+    final var pool = dataSources.dataSourceFor(DEFAULT).unwrap(HikariDataSource.class);
+    assertThat(databaseNameOf(dataSources.dataSourceFor(DEFAULT))).isEqualTo("FIRST");
+
+    // when
+    dataSources.close();
+
+    // then
+    assertThat(pool.isClosed()).isTrue();
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+  }
+
+  @Test
+  void shouldCloseThePoolThatReplacedTheFirstOne() throws Exception {
+    // given
+    final var dataSource = dataSources.dataSourceFor(DEFAULT);
+    final var firstPool = dataSource.unwrap(HikariDataSource.class);
+    writeSecret("db-url", secondUrl);
+    refresh();
+    final var secondPool = dataSource.unwrap(HikariDataSource.class);
+
+    // when
+    dataSources.close();
+
+    // then
+    assertThat(firstPool.isClosed()).isTrue();
+    assertThat(secondPool.isClosed()).isTrue();
   }
 
   private void refresh() {

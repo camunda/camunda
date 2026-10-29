@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.secrets.RefreshableClient;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -20,64 +19,65 @@ import org.jspecify.annotations.NullMarked;
 /**
  * The data source every consumer of a physical tenant's database holds: MyBatis for the readers and
  * the exporter, Liquibase and the health indicator. Each call goes to the pool that is current at
- * that moment, so a pool replaced after a secret refresh reaches all of them at once.
+ * that moment, so a pool replaced after a secret refresh reaches all of them at once. The first
+ * call builds the pool.
  */
 @NullMarked
 final class RefreshableDataSource implements DataSource {
 
-  private final RefreshableClient<RdbmsConnection, HikariDataSource> pool;
+  private final RefreshableClient<RdbmsConnection, LazyPool> pool;
 
-  RefreshableDataSource(final RefreshableClient<RdbmsConnection, HikariDataSource> pool) {
+  RefreshableDataSource(final RefreshableClient<RdbmsConnection, LazyPool> pool) {
     this.pool = pool;
   }
 
-  RefreshableClient<RdbmsConnection, HikariDataSource> pool() {
+  RefreshableClient<RdbmsConnection, LazyPool> pool() {
     return pool;
   }
 
   @Override
   public Connection getConnection() throws SQLException {
-    return pool.client().getConnection();
+    return pool.client().get().getConnection();
   }
 
   @Override
   public Connection getConnection(final String username, final String password)
       throws SQLException {
-    return pool.client().getConnection(username, password);
+    return pool.client().get().getConnection(username, password);
   }
 
   @Override
   public PrintWriter getLogWriter() throws SQLException {
-    return pool.client().getLogWriter();
+    return pool.client().get().getLogWriter();
   }
 
   @Override
   public void setLogWriter(final PrintWriter out) throws SQLException {
-    pool.client().setLogWriter(out);
+    pool.client().get().setLogWriter(out);
   }
 
   @Override
   public void setLoginTimeout(final int seconds) throws SQLException {
-    pool.client().setLoginTimeout(seconds);
+    pool.client().get().setLoginTimeout(seconds);
   }
 
   @Override
   public int getLoginTimeout() throws SQLException {
-    return pool.client().getLoginTimeout();
+    return pool.client().get().getLoginTimeout();
   }
 
   @Override
   public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-    return pool.client().getParentLogger();
+    return pool.client().get().getParentLogger();
   }
 
   @Override
   public <T> T unwrap(final Class<T> type) throws SQLException {
-    return type.isInstance(this) ? type.cast(this) : pool.client().unwrap(type);
+    return type.isInstance(this) ? type.cast(this) : pool.client().get().unwrap(type);
   }
 
   @Override
   public boolean isWrapperFor(final Class<?> type) throws SQLException {
-    return type.isInstance(this) || pool.client().isWrapperFor(type);
+    return type.isInstance(this) || pool.client().get().isWrapperFor(type);
   }
 }

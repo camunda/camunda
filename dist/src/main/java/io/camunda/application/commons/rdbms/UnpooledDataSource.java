@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.jspecify.annotations.NullMarked;
@@ -21,22 +22,23 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jdbc.DatabaseDriver;
 
 /**
- * Opens a new connection to a physical tenant's database on every use. The driver is only looked up
- * on the first use, so that a URL no driver on the classpath accepts fails where it is used rather
- * than where the node is configured.
+ * Opens a new connection to a physical tenant's database on every use, with the connection settings
+ * current at that moment, so that it follows a rotation of the tenant's secrets. The driver is only
+ * looked up on the first use, so that a URL no driver on the classpath accepts fails where it is
+ * used rather than where the node is configured.
  */
 @NullMarked
 final class UnpooledDataSource implements DataSource {
 
-  private final RdbmsConnection connection;
-  private volatile @Nullable DataSource driver;
+  private final Supplier<RdbmsConnection> settings;
+  private volatile @Nullable Driver driver;
 
   UnpooledDataSource(final Rdbms rdbms) {
-    this(RdbmsConnection.configured(rdbms));
+    this(() -> RdbmsConnection.configured(rdbms));
   }
 
-  UnpooledDataSource(final RdbmsConnection connection) {
-    this.connection = connection;
+  UnpooledDataSource(final Supplier<RdbmsConnection> settings) {
+    this.settings = settings;
   }
 
   @Override
@@ -85,22 +87,27 @@ final class UnpooledDataSource implements DataSource {
   }
 
   private DataSource driver() {
+    final var current = settings.get();
     var resolved = driver;
-    if (resolved == null) {
+    if (resolved == null || !resolved.settings().equals(current)) {
       synchronized (this) {
         resolved = driver;
-        if (resolved == null) {
+        if (resolved == null || !resolved.settings().equals(current)) {
           resolved =
-              new DriverDataSource(
-                  connection.url(),
-                  DatabaseDriver.fromJdbcUrl(connection.url()).getDriverClassName(),
-                  new Properties(),
-                  connection.username(),
-                  connection.password());
+              new Driver(
+                  current,
+                  new DriverDataSource(
+                      current.url(),
+                      DatabaseDriver.fromJdbcUrl(current.url()).getDriverClassName(),
+                      new Properties(),
+                      current.username(),
+                      current.password()));
           driver = resolved;
         }
       }
     }
-    return resolved;
+    return resolved.dataSource();
   }
+
+  private record Driver(RdbmsConnection settings, DataSource dataSource) {}
 }

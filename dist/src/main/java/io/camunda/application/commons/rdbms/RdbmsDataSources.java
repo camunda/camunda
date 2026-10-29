@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import io.camunda.application.commons.pt.LazyPhysicalTenantResource;
 import io.camunda.application.commons.secrets.InternalConfigRefresher;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.application.commons.secrets.InternalConfigSecrets;
@@ -115,7 +116,7 @@ public final class RdbmsDataSources implements AutoCloseable {
         result.dataSources.put(currentPhysicalTenantId, ds);
         result.configuredConnections.put(currentPhysicalTenantId, configured);
         result.resolvedConnections.put(currentPhysicalTenantId, connection);
-        final var unpooled = new UnpooledDataSource(connection);
+        final var unpooled = new UnpooledDataSource(pool::settings);
         result.unpooledDataSources.put(currentPhysicalTenantId, unpooled);
         final var databaseId =
             vendorIdFor(
@@ -227,7 +228,14 @@ public final class RdbmsDataSources implements AutoCloseable {
   /** Whether the tenant's pool has been started, and so holds connections to its database. */
   public boolean isPoolStarted(final String physicalTenantId) {
     final var ds = dataSources.get(physicalTenantId);
-    return ds != null && ds.pool().client().isRunning();
+    return ds != null
+        && ds.pool().client().getIfCreated().map(HikariDataSource::isRunning).orElse(false);
+  }
+
+  /** Whether anything has built the tenant's pool yet; a pool is built on its first use. */
+  @VisibleForTesting
+  LazyPhysicalTenantResource.State poolState(final String physicalTenantId) {
+    return dataSources.get(physicalTenantId).pool().client().state();
   }
 
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
@@ -368,13 +376,15 @@ public final class RdbmsDataSources implements AutoCloseable {
   }
 
   /**
-   * Builds the pools of one tenant. A new password or username is applied to the running pool,
-   * which then opens new connections with it and retires the open ones as they are returned. A new
-   * URL needs a new pool, which is named after its generation so that its metrics do not collide
-   * with those of the pool it replaces while that one drains.
+   * Builds the pools of one tenant, each on its first use. Before that use, new settings only
+   * replace the ones the pool will be built with, so nothing connects to the database. After it, a
+   * new password or username is applied to the running pool, which then opens new connections with
+   * it and retires the open ones as they are returned. A new URL needs a new pool, which is built
+   * and verified at once, and named after its generation so that its metrics do not collide with
+   * those of the pool it replaces while that one drains.
    */
   private static final class PoolLifecycle
-      implements RefreshableClient.Lifecycle<RdbmsConnection, HikariDataSource> {
+      implements RefreshableClient.Lifecycle<RdbmsConnection, LazyPool> {
 
     private final String physicalTenantId;
     private final Rdbms rdbms;
@@ -389,7 +399,11 @@ public final class RdbmsDataSources implements AutoCloseable {
     }
 
     @Override
-    public HikariDataSource build(final RdbmsConnection connection) {
+    public LazyPool build(final RdbmsConnection connection) {
+      return new LazyPool(physicalTenantId, connection, this::buildPool);
+    }
+
+    private synchronized HikariDataSource buildPool(final RdbmsConnection connection) {
       final var poolName =
           "camunda-rdbms-" + physicalTenantId + (generation == 0 ? "" : "-" + generation);
       generation++;
@@ -397,16 +411,20 @@ public final class RdbmsDataSources implements AutoCloseable {
     }
 
     @Override
-    public void verify(final HikariDataSource pool) throws SQLException {
-      try (final var connection = pool.getConnection()) {
+    public void verify(final LazyPool pool) throws SQLException {
+      try (final var connection = pool.get().getConnection()) {
         requireValid(connection);
       }
     }
 
     @Override
     public boolean updateInPlace(
-        final HikariDataSource pool, final RdbmsConnection current, final RdbmsConnection next)
+        final LazyPool lazyPool, final RdbmsConnection current, final RdbmsConnection next)
         throws SQLException {
+      if (lazyPool.updateIfNotCreated(next)) {
+        return true;
+      }
+      final var pool = lazyPool.getIfCreated().orElseThrow();
       if (!current.url().equals(next.url())) {
         return false;
       }
@@ -431,7 +449,11 @@ public final class RdbmsDataSources implements AutoCloseable {
     }
 
     @Override
-    public void drain(final HikariDataSource pool) {
+    public void drain(final LazyPool lazyPool) {
+      lazyPool.getIfCreated().ifPresent(PoolLifecycle::drain);
+    }
+
+    private static void drain(final HikariDataSource pool) {
       final var running = pool.getHikariPoolMXBean();
       if (running == null) {
         return;
@@ -454,8 +476,8 @@ public final class RdbmsDataSources implements AutoCloseable {
     }
 
     @Override
-    public void close(final HikariDataSource pool) {
-      closeQuietly(pool);
+    public void close(final LazyPool pool) {
+      pool.close();
     }
 
     private static void requireValid(final Connection connection) throws SQLException {

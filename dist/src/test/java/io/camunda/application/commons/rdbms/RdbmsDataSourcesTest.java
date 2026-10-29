@@ -10,8 +10,9 @@ package io.camunda.application.commons.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -29,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 class RdbmsDataSourcesTest {
@@ -423,7 +423,7 @@ class RdbmsDataSourcesTest {
   }
 
   @Test
-  void shouldCloseAlreadyOpenedDataSourcesWhenLaterTenantFails() {
+  void shouldOpenNoPoolWhenLaterTenantFails() {
     try (final MockedStatic<RdbmsDataSources> spy =
         mockStatic(RdbmsDataSources.class, CALLS_REAL_METHODS)) {
       // given: tenant-a initialises normally; tenant-b carries an invalid databaseVendorId so that
@@ -440,13 +440,7 @@ class RdbmsDataSourcesTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("unsupported");
 
-      final var captor = ArgumentCaptor.forClass(HikariDataSource.class);
-      spy.verify(() -> RdbmsDataSources.closeQuietly(captor.capture()), times(2));
-      for (final var dataSource : captor.getAllValues()) {
-        assertThat(dataSource.isClosed())
-            .as("opened HikariDataSource should be closed on failure")
-            .isTrue();
-      }
+      spy.verify(() -> RdbmsDataSources.closeQuietly(any()), never());
     }
   }
 

@@ -85,6 +85,26 @@ public final class LazyPhysicalTenantResource<T> implements AutoCloseable {
     return Optional.ofNullable(resource);
   }
 
+  /**
+   * Runs the action while nothing has created the resource, excluding a concurrent first use, so
+   * that a change the action makes to what the factory reads reaches the resource once it is
+   * created.
+   *
+   * @return whether the action ran; false if the resource exists or is closed
+   */
+  public boolean runIfNotCreated(final Runnable action) {
+    lock.lock();
+    try {
+      if (resource != null || state == State.CLOSED) {
+        return false;
+      }
+      action.run();
+      return true;
+    } finally {
+      lock.unlock();
+    }
+  }
+
   public State state() {
     return state;
   }
