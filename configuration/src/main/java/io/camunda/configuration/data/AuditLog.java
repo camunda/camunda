@@ -25,6 +25,12 @@ public class AuditLog {
    */
   private int variableHistoryPercent = 0;
 
+  /**
+   * PoC for the variable history write load: an update of a multi-instance output collection
+   * records only the item it adds instead of the whole collection.
+   */
+  private boolean variableHistoryCollectionItems = false;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -65,11 +71,20 @@ public class AuditLog {
     this.variableHistoryPercent = variableHistoryPercent;
   }
 
+  public boolean isVariableHistoryCollectionItems() {
+    return variableHistoryCollectionItems;
+  }
+
+  public void setVariableHistoryCollectionItems(final boolean variableHistoryCollectionItems) {
+    this.variableHistoryCollectionItems = variableHistoryCollectionItems;
+  }
+
   /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
     auditLogConfiguration.setEnabled(isEnabled());
     auditLogConfiguration.setVariableHistoryPercent(getVariableHistoryPercent());
+    auditLogConfiguration.setVariableHistoryCollectionItems(isVariableHistoryCollectionItems());
     auditLogConfiguration
         .getClient()
         .setCategories(getClient().getCategories())

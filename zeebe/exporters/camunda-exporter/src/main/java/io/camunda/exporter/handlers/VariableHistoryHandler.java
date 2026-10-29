@@ -29,12 +29,17 @@ public class VariableHistoryHandler
   private final String indexName;
   private final int variableSizeThreshold;
   private final int percent;
+  private final boolean collectionItems;
 
   public VariableHistoryHandler(
-      final String indexName, final int variableSizeThreshold, final int percent) {
+      final String indexName,
+      final int variableSizeThreshold,
+      final int percent,
+      final boolean collectionItems) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
     this.percent = percent;
+    this.collectionItems = collectionItems;
   }
 
   @Override
@@ -67,7 +72,7 @@ public class VariableHistoryHandler
       final Record<VariableRecordValue> record, final VariableHistoryEntity entity) {
     final var recordValue = record.getValue();
     final var actor = VariableHistory.actorOf(record);
-    final var value = recordValue.getValue();
+    final var value = VariableHistory.valueOf(record, collectionItems);
 
     entity
         .setKey(record.getKey())

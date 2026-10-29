@@ -457,7 +457,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           new VariableHistoryHandler(
               indexDescriptors.get(VariableHistoryTemplate.class).getFullQualifiedName(),
               configuration.getIndex().getVariableSizeThreshold(),
-              variableHistoryPercent));
+              variableHistoryPercent,
+              configuration.getAuditLog().isVariableHistoryCollectionItems()));
     }
 
     if (configuration.getWaitState().isEnabled()) {

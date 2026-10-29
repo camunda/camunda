@@ -20,11 +20,15 @@ public class VariableHistoryExportHandler implements RdbmsExportHandler<Variable
 
   private final VariableHistoryWriter variableHistoryWriter;
   private final int percent;
+  private final boolean collectionItems;
 
   public VariableHistoryExportHandler(
-      final VariableHistoryWriter variableHistoryWriter, final int percent) {
+      final VariableHistoryWriter variableHistoryWriter,
+      final int percent,
+      final boolean collectionItems) {
     this.variableHistoryWriter = variableHistoryWriter;
     this.percent = percent;
+    this.collectionItems = collectionItems;
   }
 
   @Override
@@ -37,6 +41,7 @@ public class VariableHistoryExportHandler implements RdbmsExportHandler<Variable
     final var value = record.getValue();
     final var actor = VariableHistory.actorOf(record);
     final var rootProcessInstanceKey = value.getRootProcessInstanceKey();
+    final var recordedValue = VariableHistory.valueOf(record, collectionItems);
 
     variableHistoryWriter.create(
         new VariableHistoryDbModel(
@@ -55,9 +60,9 @@ public class VariableHistoryExportHandler implements RdbmsExportHandler<Variable
             record.getIntent().name(),
             actor.type(),
             actor.id(),
-            value.getValue().length(),
+            recordedValue.length(),
             false,
-            value.getValue(),
+            recordedValue,
             null));
   }
 }

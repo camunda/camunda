@@ -373,7 +373,9 @@ public class RdbmsExporterWrapper implements Exporter {
       builder.withHandler(
           ValueType.VARIABLE,
           new VariableHistoryExportHandler(
-              rdbmsWriters.getVariableHistoryWriter(), variableHistoryPercent));
+              rdbmsWriters.getVariableHistoryWriter(),
+              variableHistoryPercent,
+              config.getAuditLog().isVariableHistoryCollectionItems()));
     }
 
     if (config.getWaitState().isEnabled()) {
