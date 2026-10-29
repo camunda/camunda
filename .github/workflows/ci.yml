@@ -2219,6 +2219,7 @@ jobs:
           (cd "${dir}" && grep -F " ${asset}" checksums.txt | sha256sum -c -)
           tar -xzf "${dir}/${asset}" -C "${dir}" oasdiff
       - name: Check for breaking changes
+        id: check
         shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -2232,6 +2233,9 @@ jobs:
           if [ -f "${out}/report.md" ]; then
             cat "${out}/report.md" >> "${GITHUB_STEP_SUMMARY}"
           fi
+          if [ -f "${out}/status" ]; then
+            echo "status=$(cat "${out}/status")" >> "${GITHUB_OUTPUT}"
+          fi
           exit "${rc}"
       - name: Post PR comment
         # Fork PRs have a read-only token and cannot comment; they get the job summary above.
@@ -2244,6 +2248,31 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: bash "${CHECK_DIR}/post-comment.sh"
+      - name: Import Slack webhook secret
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking')
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL;
+      # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url), no nested blocks
+      - name: Notify Slack on breaking changes or failure
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking')
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
       - name: Observe build status
         if: always()
         continue-on-error: true
