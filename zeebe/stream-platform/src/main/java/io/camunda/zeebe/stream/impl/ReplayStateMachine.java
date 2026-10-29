@@ -37,6 +37,7 @@ import io.camunda.zeebe.stream.impl.metrics.ReplayMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
@@ -81,6 +82,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
 
   private long snapshotPosition;
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
+  private long replayStartedAtMs;
+  private long replayedEvents;
   private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
   private @Nullable ActorFuture<LastProcessingPositions> recoveryFuture;
@@ -131,6 +134,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
     this.snapshotPosition = snapshotPosition;
     lastSourceEventPosition =
         snapshotPosition > 0 ? snapshotPosition : StreamProcessor.UNSET_POSITION;
+    replayStartedAtMs = System.currentTimeMillis();
+    replayedEvents = 0;
 
     // start after snapshot
     logStreamBatchReader.seekToNextBatch(snapshotPosition);
@@ -299,6 +304,21 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
         new LastProcessingPositions(lastProcessedPosition, lastWrittenPosition);
 
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
+    HandoverTrace.raftEvent(
+        "replay.finished",
+        logStream.getLogName(),
+        "mode",
+        streamProcessorMode,
+        "fromPosition",
+        snapshotPosition,
+        "toPosition",
+        lastReadRecordPosition,
+        "positions",
+        Math.max(0, lastReadRecordPosition - snapshotPosition),
+        "events",
+        replayedEvents,
+        "tookMs",
+        System.currentTimeMillis() - replayStartedAtMs);
     requireNonNull(recoveryFuture).complete(lastProcessingPositions);
   }
 
@@ -310,6 +330,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
    */
   private void onRecordReplayed(final LoggedEvent currentEvent) {
     replayMetrics.event();
+    replayedEvents++;
     // release the reference to the event as soon as possible
     currentStateDescription.status("awaiting record to replay");
     final var sourceEventPosition = currentEvent.getSourceEventPosition();

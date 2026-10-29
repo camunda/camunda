@@ -23,6 +23,7 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.roles.LeaderRole;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -85,6 +86,15 @@ public final class LeadershipTransferRunner {
             request.coordinatorConfigVersion(),
             configuration);
     if (rejectionReason.isPresent()) {
+      HandoverTrace.raftEvent(
+          "transfer.refused",
+          raft.getName(),
+          "term",
+          raft.getTerm(),
+          "target",
+          request.desiredLeader().id(),
+          "reason",
+          rejectionReason.get());
       return LeadershipTransferInitiateResponse.builder()
           .withStatus(Status.OK)
           .withRejectionReason(rejectionReason.get())
@@ -117,6 +127,15 @@ public final class LeadershipTransferRunner {
     final var configuration = raft.getRebalanceConfiguration();
     final var rejectionReason = admission.precheckOwnInitiative(desiredLeader, configuration);
     if (rejectionReason.isPresent()) {
+      HandoverTrace.raftEvent(
+          "transfer.refused",
+          raft.getName(),
+          "term",
+          raft.getTerm(),
+          "target",
+          desiredLeader.id(),
+          "reason",
+          rejectionReason.get());
       result.complete(rejectionReason.get());
       return result;
     }

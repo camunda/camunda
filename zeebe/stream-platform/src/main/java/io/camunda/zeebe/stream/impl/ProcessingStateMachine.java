@@ -50,6 +50,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -172,6 +173,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private @Nullable RecordProcessor currentProcessor;
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
+  private boolean processedAny;
+  private long processingStartedAtMs;
   private final int maxCommandsInBatch;
   private final int maxPendingSideEffects;
   private int processedCommandsCount;
@@ -224,6 +227,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     sideEffectRunner =
         new SideEffectRunner(
             context.getPartitionId(),
+            context.getLogStream().getLogName(),
             actor,
             processingMetrics,
             context.getCommandResponseWriter(),
@@ -749,6 +753,18 @@ public final class ProcessingStateMachine implements CloseableSilently {
               lastSuccessfulProcessedRecordPosition = requireNonNull(currentRecord).getPosition();
               processingMetrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
+              if (!processedAny) {
+                processedAny = true;
+                HandoverTrace.raftEvent(
+                    "processing.firstCommand",
+                    context.getLogStream().getLogName(),
+                    "position",
+                    lastSuccessfulProcessedRecordPosition,
+                    "commandAgeMs",
+                    clock.millis() - currentRecord.getTimestamp(),
+                    "sinceStartMs",
+                    System.currentTimeMillis() - processingStartedAtMs);
+              }
               return true;
             },
             abortCondition);
@@ -823,6 +839,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
   }
 
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
+    processingStartedAtMs = System.currentTimeMillis();
     // Replay ends at the end of the log and returns the lastSourceRecordPosition
     // which is equal to the last processed position
     // we need to seek to the next record after that position where the processing should start

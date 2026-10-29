@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -38,9 +39,15 @@ final class CommandApiRequestHandler
   private @Nullable LogStreamWriter leadingStream;
   private boolean isDiskSpaceAvailable = true;
   private boolean processingPaused;
+  private final PartitionId partitionId;
+  private long rejectedPaused;
+  private long rejectedNotLeader;
+  private long accepted;
+  private boolean acceptedSinceLeading;
 
   CommandApiRequestHandler(final PartitionId partitionId) {
     super("CommandApi", partitionId, CommandApiRequestReader::new, CommandApiResponseWriter::new);
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -55,15 +62,47 @@ final class CommandApiRequestHandler
   }
 
   public void onRecovered(final int partitionId) {
-    actor.run(() -> processingPaused = false);
+    actor.run(
+        () -> {
+          processingPaused = false;
+          traceState("recovered");
+        });
   }
 
   public void onPaused(final int partitionId) {
-    actor.run(() -> processingPaused = true);
+    actor.run(
+        () -> {
+          processingPaused = true;
+          traceState("paused");
+        });
   }
 
   public void onResumed(final int partitionId) {
-    actor.run(() -> processingPaused = false);
+    actor.run(
+        () -> {
+          processingPaused = false;
+          traceState("resumed");
+        });
+  }
+
+  /**
+   * Reports how the requests since the previous state change were answered, so a handover shows how
+   * many requests the old leader turned away while paused or no longer leading.
+   */
+  private void traceState(final String state) {
+    HandoverTrace.event(
+        "commandApi." + state,
+        partitionId.group(),
+        partitionId.number(),
+        "rejectedPaused",
+        rejectedPaused,
+        "rejectedNotLeader",
+        rejectedNotLeader,
+        "accepted",
+        accepted);
+    rejectedPaused = 0;
+    rejectedNotLeader = 0;
+    accepted = 0;
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
@@ -88,6 +127,7 @@ final class CommandApiRequestHandler
     }
 
     if (processingPaused) {
+      rejectedPaused++;
       return Either.left(
           errorWriter.partitionUnavailable(
               String.format("Processing paused for partition '%s'", partitionId)));
@@ -110,6 +150,7 @@ final class CommandApiRequestHandler
     metadata.operationReference(operationReference);
 
     if (logStreamWriter == null) {
+      rejectedNotLeader++;
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
     }
@@ -119,6 +160,12 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter);
     }
 
+    accepted++;
+    if (!acceptedSinceLeading) {
+      acceptedSinceLeading = true;
+      HandoverTrace.event(
+          "commandApi.firstAccepted", this.partitionId.group(), this.partitionId.number());
+    }
     try {
       return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
           .map(b -> responseWriter)
@@ -160,11 +207,20 @@ final class CommandApiRequestHandler
   }
 
   void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
-    actor.submit(() -> leadingStream = logStreamWriter);
+    actor.submit(
+        () -> {
+          leadingStream = logStreamWriter;
+          acceptedSinceLeading = false;
+          traceState("leading");
+        });
   }
 
   void removePartition(final int partitionId) {
-    actor.submit(() -> leadingStream = null);
+    actor.submit(
+        () -> {
+          leadingStream = null;
+          traceState("notLeading");
+        });
   }
 
   void onDiskSpaceNotAvailable() {

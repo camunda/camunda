@@ -43,6 +43,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -215,6 +216,13 @@ public final class FollowerRole extends ActiveRole {
                 return;
               }
 
+              HandoverTrace.raftEvent(
+                  "raft.timeoutNowReceived",
+                  raft.getName(),
+                  "term",
+                  request.term(),
+                  "from",
+                  request.leader().id());
               log.info(
                   "Received TimeoutNow from leader {} in term {}, starting election immediately",
                   request.leader(),

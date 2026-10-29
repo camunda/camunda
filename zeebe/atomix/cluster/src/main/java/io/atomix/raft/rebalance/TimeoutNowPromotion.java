@@ -23,6 +23,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.utils.concurrent.Scheduled;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -149,6 +150,15 @@ final class TimeoutNowPromotion implements TransferPhase {
             .withLeader(raft.getCluster().getLocalMember().memberId())
             .build();
     LOG.debug("Sending TimeoutNow to {} (attempt {})", target, attempts);
+    HandoverTrace.raftEvent(
+        "transfer.timeoutNowSent",
+        raft.getName(),
+        "term",
+        raft.getTerm(),
+        "target",
+        target.id(),
+        "attempt",
+        attempts);
     raft.getProtocol()
         .timeoutNow(target, request)
         .whenCompleteAsync(
@@ -178,6 +188,15 @@ final class TimeoutNowPromotion implements TransferPhase {
         target,
         attempts);
     timeoutNowAccepted = true;
+    HandoverTrace.raftEvent(
+        "transfer.timeoutNowAccepted",
+        raft.getName(),
+        "term",
+        raft.getTerm(),
+        "target",
+        target.id(),
+        "attempt",
+        attempts);
   }
 
   private void onLeaderObserved(final RaftMember newLeader) {
@@ -205,6 +224,15 @@ final class TimeoutNowPromotion implements TransferPhase {
       }
       return;
     }
+    HandoverTrace.raftEvent(
+        "transfer.leaderObserved",
+        raft.getName(),
+        "term",
+        raft.getTerm(),
+        "target",
+        target.id(),
+        "leader",
+        newLeader.memberId().id());
     if (newLeader.memberId().equals(target)) {
       LOG.info(
           "Leadership moved to the desired leader {} after {} TimeoutNow attempts",

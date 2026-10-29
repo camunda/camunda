@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.health.HealthIssue;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -49,6 +50,11 @@ final class PartitionTransitionProcess {
   private boolean completed = false;
 
   private long stepStartedAtMs = -1;
+  private long prepareStartedAtMs = -1;
+  private long prepareMs = 0;
+  private long startedAtMs = -1;
+  private final StringBuilder stepTimings = new StringBuilder();
+  private String currentStepName = "";
 
   PartitionTransitionProcess(
       final List<PartitionTransitionStep> pendingSteps,
@@ -67,6 +73,7 @@ final class PartitionTransitionProcess {
 
   void start(final ActorFuture<Void> future) {
     LOG.info("Transition to {} on term {} starting", role, term);
+    startedAtMs = ActorClock.currentTimeMillis();
 
     if (pendingSteps.isEmpty()) {
       LOG.info("No steps defined for transition");
@@ -90,8 +97,8 @@ final class PartitionTransitionProcess {
           final var nextStep = pendingSteps.remove(0);
           currentStep = nextStep;
           stepStartedAtMs = ActorClock.currentTimeMillis();
-          LOG.debug(
-              "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
+          currentStepName = nextStep.getName();
+          LOG.debug("Transition to {} on term {} - transitioning {}", role, term, currentStepName);
 
           CompletableActorFuture.catching(() -> nextStep.transitionTo(context, term, role))
               .onComplete((ok, error) -> onStepCompletion(future, error));
@@ -99,6 +106,13 @@ final class PartitionTransitionProcess {
   }
 
   private void onStepCompletion(final ActorFuture<Void> future, final Throwable error) {
+    if (currentStep != null) {
+      stepTimings
+          .append(stepTimings.isEmpty() ? "" : ",")
+          .append(currentStepName)
+          .append(':')
+          .append(ActorClock.currentTimeMillis() - stepStartedAtMs);
+    }
     if (error != null) {
       future.completeExceptionally(error);
       return;
@@ -106,6 +120,21 @@ final class PartitionTransitionProcess {
 
     if (pendingSteps.isEmpty()) {
       LOG.info("Transition to {} on term {} completed", role, term);
+      final var partitionId = context.partitionId();
+      HandoverTrace.event(
+          "partition.transition",
+          partitionId == null ? "unknown" : partitionId.group(),
+          context.getPartitionId(),
+          "term",
+          term,
+          "role",
+          role,
+          "prepareMs",
+          prepareMs,
+          "stepsMs",
+          ActorClock.currentTimeMillis() - startedAtMs,
+          "steps",
+          stepTimings);
       future.complete(null);
       completed = true;
       currentStep = null;
@@ -124,6 +153,7 @@ final class PartitionTransitionProcess {
         newRole,
         newTerm);
     final ActorFuture<Void> prepareFuture = concurrencyControl.createFuture();
+    prepareStartedAtMs = ActorClock.currentTimeMillis();
 
     if (stepsToPrepare.isEmpty()) {
       LOG.info("No steps to prepare transition");
@@ -167,6 +197,7 @@ final class PartitionTransitionProcess {
     }
 
     if (stepsToPrepare.isEmpty()) {
+      prepareMs = ActorClock.currentTimeMillis() - prepareStartedAtMs;
       LOG.info(
           MSG_PREPARE_TRANSITION_COMPLETED,
           context.getCurrentRole(),

@@ -89,6 +89,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -750,6 +751,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         raftLog.getLastIndex(),
         raftLog.getCommitIndex());
 
+    HandoverTrace.raftEvent(
+        "raft.role", name, "term", term, "from", this.role.role(), "role", role);
     startTransition();
 
     // Close the old state.
@@ -787,6 +790,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         leaderRole.onInitialEntriesCommitted(
             () -> {
               if (this.role == leaderRole) { // ensure no other role change happened in between
+                HandoverTrace.raftEvent("raft.leaderReady", name, "term", term);
                 notifyRoleChangeListeners();
                 // Transitioning to leader completes
                 // once the initial entry gets committed
@@ -1165,6 +1169,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             return;
           }
           final var localMember = cluster.getLocalMember().memberId();
+          HandoverTrace.raftEvent(
+              "transfer.requested", name, "term", term, "leader", currentLeader.id());
           final RaftRoleChangeListener leads =
               (newRole, newTerm) -> {
                 if (newRole == Role.LEADER) {

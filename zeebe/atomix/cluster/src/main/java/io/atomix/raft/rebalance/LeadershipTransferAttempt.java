@@ -21,6 +21,7 @@ import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.roles.LeaderRole;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -116,6 +117,8 @@ final class LeadershipTransferAttempt {
   void start() {
     raft.checkThread();
     startMs = System.currentTimeMillis();
+    HandoverTrace.raftEvent(
+        "transfer.started", raft.getName(), "term", raft.getTerm(), "target", desiredLeader.id());
     raft.getLeadershipTransferWriteBarrier()
         .freeze(configuration.replicationTimeout())
         .whenCompleteAsync(
@@ -140,6 +143,15 @@ final class LeadershipTransferAttempt {
    * broker's writes are frozen, then starts the catch-up wait.
    */
   private void armRaftPause(final long writesFrozenSinceMs) {
+    HandoverTrace.raftEvent(
+        "transfer.frozen",
+        raft.getName(),
+        "term",
+        raft.getTerm(),
+        "target",
+        desiredLeader.id(),
+        "sinceStartMs",
+        writesFrozenSinceMs - startMs);
     final long targetIndex;
     try {
       targetIndex = leader.pauseForTransfer(pauseBudget(), writesFrozenSinceMs);
@@ -197,6 +209,19 @@ final class LeadershipTransferAttempt {
         .whenComplete(
             (failureReason, ignored) -> {
               activePhase = null;
+              HandoverTrace.raftEvent(
+                  "transfer.caughtUp",
+                  raft.getName(),
+                  "term",
+                  raft.getTerm(),
+                  "target",
+                  desiredLeader.id(),
+                  "targetIndex",
+                  targetIndex,
+                  "failure",
+                  failureReason.map(Enum::name).orElse("none"),
+                  "sinceStartMs",
+                  System.currentTimeMillis() - startMs);
               failureReason.ifPresentOrElse(this::finish, this::promote);
             });
   }
@@ -221,6 +246,17 @@ final class LeadershipTransferAttempt {
       return;
     }
     finished = true;
+    HandoverTrace.raftEvent(
+        "transfer.finished",
+        raft.getName(),
+        "term",
+        raft.getTerm(),
+        "target",
+        desiredLeader.id(),
+        "result",
+        result,
+        "sinceStartMs",
+        System.currentTimeMillis() - startMs);
     finishListener.run();
     if (!leader.isRunning()) {
       // the step-down that ended this leader already lifted the freeze

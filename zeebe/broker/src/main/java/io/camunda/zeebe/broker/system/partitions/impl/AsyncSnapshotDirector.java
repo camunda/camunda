@@ -28,6 +28,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final StateController stateController;
   private final Duration snapshotRate;
   private final String processorName;
+  private final PartitionId partitionId;
   private final StreamProcessor streamProcessor;
   private final StreamProcessorMode streamProcessorMode;
   private final Callable<CompletableFuture<Void>> flushLog;
@@ -79,6 +81,7 @@ public final class AsyncSnapshotDirector extends Actor
       final Callable<CompletableFuture<Void>> flushLog,
       final StatePositionSupplier positionSupplier) {
     super("SnapshotDirector", partitionId);
+    this.partitionId = partitionId;
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
@@ -204,6 +207,7 @@ public final class AsyncSnapshotDirector extends Actor
     final CompletableActorFuture<PersistedSnapshot> snapshotFuture = new CompletableActorFuture<>();
     ongoingSnapshotFuture = snapshotFuture;
     final InProgressSnapshot inProgressSnapshot = new InProgressSnapshot();
+    inProgressSnapshot.startedAtMs = System.currentTimeMillis();
 
     streamProcessor
         .getLastProcessedPositionAsync()
@@ -229,6 +233,26 @@ public final class AsyncSnapshotDirector extends Actor
         (snapshot, snapshotError) -> {
           if (snapshotError != null && inProgressSnapshot.pendingSnapshot != null) {
             inProgressSnapshot.pendingSnapshot.abort();
+          }
+          if (snapshot != null || forceSnapshot) {
+            HandoverTrace.event(
+                "snapshot.finished",
+                partitionId.group(),
+                partitionId.number(),
+                "forced",
+                forceSnapshot,
+                "mode",
+                streamProcessorMode,
+                "outcome",
+                snapshotError != null ? "failed" : snapshot == null ? "skipped" : "persisted",
+                "processedPosition",
+                inProgressSnapshot.lowerBoundSnapshotPosition,
+                "transientMs",
+                inProgressSnapshot.transientTakenAtMs == 0
+                    ? -1
+                    : inProgressSnapshot.transientTakenAtMs - inProgressSnapshot.startedAtMs,
+                "tookMs",
+                System.currentTimeMillis() - inProgressSnapshot.startedAtMs);
           }
           // We allow only one ongoing snapshot. Reset the future to indicate there is
           // no ongoing snapshot.
@@ -359,6 +383,7 @@ public final class AsyncSnapshotDirector extends Actor
                 return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.pendingSnapshot = snapshot;
+                inProgressSnapshot.transientTakenAtMs = System.currentTimeMillis();
                 onRecovered();
                 return CompletableActorFuture.completed(null);
               }
@@ -425,6 +450,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private static final class InProgressSnapshot {
+    private long startedAtMs;
+    private long transientTakenAtMs;
     private long lastWrittenPosition;
     private long lastProcessedPosition;
     private TransientSnapshot pendingSnapshot;

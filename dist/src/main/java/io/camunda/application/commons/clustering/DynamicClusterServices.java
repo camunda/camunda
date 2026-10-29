@@ -79,7 +79,10 @@ public class DynamicClusterServices {
   @Profile("broker")
   public BrokerTopologyManager brokerTopologyManagerForEmbeddedBrokerClient() {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
+        new BrokerTopologyManagerImpl(
+            clusterMembershipService::getMembers,
+            brokerTopologyMetrics,
+            () -> clusterMembershipService.getLocalMember().id().id());
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
@@ -93,7 +96,10 @@ public class DynamicClusterServices {
   public BrokerTopologyManager brokerTopologyManager(
       final GatewayClusterConfigurationService gatewayClusterConfigurationService) {
     final var brokerTopologyManager =
-        new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
+        new BrokerTopologyManagerImpl(
+            clusterMembershipService::getMembers,
+            brokerTopologyMetrics,
+            () -> clusterMembershipService.getLocalMember().id().id());
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED

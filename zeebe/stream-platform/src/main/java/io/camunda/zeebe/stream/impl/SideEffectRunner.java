@@ -15,11 +15,13 @@ import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +50,14 @@ final class SideEffectRunner implements CommittedPositionListener {
   private final Queue<SideEffects> sideEffects;
   private long highestCommittedPosition = StreamProcessor.UNSET_POSITION;
   private boolean executingSideEffects;
+  private final @Nullable String logName;
+  private boolean respondedAny;
   private volatile boolean capacityExhausted;
   private volatile long capacityExhaustedSinceMillis;
 
   SideEffectRunner(
       final int partitionId,
+      final @Nullable String logName,
       final ActorControl actor,
       final ProcessingMetrics processingMetrics,
       final CommandResponseWriter responseWriter,
@@ -62,6 +67,7 @@ final class SideEffectRunner implements CommittedPositionListener {
     this.processingMetrics = processingMetrics;
     this.responseWriter = responseWriter;
     this.partitionId = partitionId;
+    this.logName = logName;
     this.maxPendingSideEffects = maxPendingSideEffects;
     this.onCapacityAvailable = onCapacityAvailable;
     sideEffects = new ArrayDeque<>();
@@ -185,6 +191,10 @@ final class SideEffectRunner implements CommittedPositionListener {
   }
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {
+    if (!respondedAny && !responses.isEmpty()) {
+      respondedAny = true;
+      HandoverTrace.raftEvent("processing.firstResponse", logName, "responses", responses.size());
+    }
     for (final var processingResponse : responses) {
       final var responseValue = processingResponse.responseValue();
       final var recordMetadata = responseValue.recordMetadata();

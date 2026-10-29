@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -358,6 +359,12 @@ public final class ZeebePartition extends Actor
                   if (t != null) {
                     onInstallFailure(t);
                   } else {
+                    HandoverTrace.event(
+                        "partition.leaderListenersNotified",
+                        context.partitionId().group(),
+                        context.getPartitionId(),
+                        "term",
+                        newTerm);
                     onRecoveredInternal();
                   }
                 });

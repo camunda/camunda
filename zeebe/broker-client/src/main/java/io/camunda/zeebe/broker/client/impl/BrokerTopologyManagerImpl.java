@@ -25,13 +25,17 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.util.logging.HandoverTrace;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,15 +58,28 @@ public final class BrokerTopologyManagerImpl extends Actor
       CurrentClusterConfiguration.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
   private final BrokerClientTopologyMetrics topologyMetrics;
+  private final Supplier<String> localMemberId;
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
 
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
       final BrokerClientTopologyMetrics topologyMetrics) {
+    this(membersSupplier, topologyMetrics, () -> "unknown");
+  }
+
+  /**
+   * @param localMemberId the member this gateway runs on, to tell the gateways apart in the {@link
+   *     HandoverTrace} of a leader change
+   */
+  public BrokerTopologyManagerImpl(
+      final Supplier<Set<Member>> membersSupplier,
+      final BrokerClientTopologyMetrics topologyMetrics,
+      final Supplier<String> localMemberId) {
     super("GatewayTopologyManager");
     this.membersSupplier = membersSupplier;
     this.topologyMetrics = topologyMetrics;
+    this.localMemberId = localMemberId;
   }
 
   @Override
@@ -165,11 +182,48 @@ public final class BrokerTopologyManagerImpl extends Actor
         BrokerClientTopologyImpl.fromMemberProperties(groupMembers, configuredState);
 
     final Map<String, BrokerClientTopologyImpl> updated = new HashMap<>(topologyPerGroup);
-    updated.put(physicalTenantId, newGroupTopology);
+    final var previous = updated.put(physicalTenantId, newGroupTopology);
     topologyPerGroup = Map.copyOf(updated);
+    if (HandoverTrace.isEnabled()) {
+      traceLeaderChanges(physicalTenantId, previous, newGroupTopology, groupMembers);
+    }
 
     // temp: only update metrics for default group until we support group-specific metrics
     updateMetrics(physicalTenantId, newGroupTopology);
+  }
+
+  private void traceLeaderChanges(
+      final String physicalTenantId,
+      final @Nullable BrokerClusterState previous,
+      final BrokerClusterState current,
+      final Collection<BrokerInfo> groupMembers) {
+    for (final int partition : current.getPartitions()) {
+      final var leader = current.getLeaderForPartition(partition);
+      final var previousLeader =
+          previous == null ? null : previous.getLeaderForPartition(partition);
+      if (leader == null || leader.equals(previousLeader)) {
+        continue;
+      }
+      final var term =
+          groupMembers.stream()
+              .filter(info -> BrokerMemberId.from(info.getZone(), info.getNodeId()).equals(leader))
+              .map(info -> info.getPartitionLeaderTerms().get(partition))
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(-1L);
+      HandoverTrace.event(
+          "gateway.leaderChanged",
+          physicalTenantId,
+          partition,
+          "term",
+          term,
+          "leader",
+          leader.id(),
+          "previous",
+          previousLeader == null ? null : previousLeader.id(),
+          "gateway",
+          localMemberId.get());
+    }
   }
 
   private ConfiguredClusterState currentConfiguredState(final String physicalTenantId) {

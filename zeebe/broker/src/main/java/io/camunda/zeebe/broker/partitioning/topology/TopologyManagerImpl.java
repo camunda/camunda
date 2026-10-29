@@ -24,6 +24,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,14 @@ public final class TopologyManagerImpl extends Actor
           partitionLeaders.put(partitionId, localPartitionGroupInfo);
           localPartitionGroupInfo.setLeaderForPartition(partitionId, term);
           publishTopologyChanges();
+          HandoverTrace.event(
+              "topology.leaderPublished",
+              localPartitionGroupInfo.getPartitionGroup(),
+              partitionId,
+              "term",
+              term,
+              "broker",
+              localPartitionGroupInfo.getNodeId());
           notifyPartitionLeaderUpdated(partitionId, localPartitionGroupInfo);
         });
   }

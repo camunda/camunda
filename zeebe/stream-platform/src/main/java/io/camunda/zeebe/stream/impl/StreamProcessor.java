@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.HandoverTrace;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
@@ -120,6 +121,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable ProcessingStateMachine processingStateMachine;
   private @Nullable ReplayStateMachine replayStateMachine;
+  private long openedAtMs;
 
   private @Nullable CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
@@ -173,6 +175,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   protected void onActorStarted() {
     try {
       final var startRecoveryTimer = metrics.startRecoveryTimer();
+      openedAtMs = System.currentTimeMillis();
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
 
@@ -426,6 +429,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.logStreamWriter(writer);
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
     metrics.setStreamProcessorProcessing();
+    HandoverTrace.raftEvent(
+        "processing.started",
+        logStream.getLogName(),
+        "lastProcessedPosition",
+        lastProcessingPositions.getLastProcessedPosition(),
+        "sinceOpenMs",
+        System.currentTimeMillis() - openedAtMs);
 
     requireNonNull(asyncScheduleServiceContext)
         .submitActors(actor)
