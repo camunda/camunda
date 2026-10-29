@@ -172,6 +172,36 @@ public class SwimProtocolTest extends ConcurrentTestCase {
    * still leave that listener with the member's current properties.
    */
   @Test
+  public void shouldPublishALocalPropertyChangeWithoutWaitingForTheNextGossipRound() {
+    // given
+    reset(false);
+    final var protocol =
+        startProtocol(
+            member1,
+            config ->
+                config
+                    .setGossipInterval(Duration.ofSeconds(30))
+                    .setSyncInterval(Duration.ofSeconds(30)),
+            member1.id().toString());
+    final List<String> published = new CopyOnWriteArrayList<>();
+    protocol.addListener(
+        event -> {
+          if (event.type() == METADATA_CHANGED) {
+            published.add(event.member().properties().getProperty("leader"));
+          }
+        });
+
+    // when
+    member1.properties().setProperty("leader", "1");
+    protocol.propagateLocalMemberChange();
+
+    // then
+    Awaitility.await("until the change is published")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(published).contains("1"));
+  }
+
+  @Test
   public void shouldNotifyListenersOfPropertyChangedWithCorrectValue() throws Exception {
     // given - a listener that is blocked while being notified of a first property change; the
     // gossip interval is long enough that no further metadata check runs while the test changes the

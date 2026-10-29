@@ -58,4 +58,11 @@ public interface ClusterMembershipService
         .findFirst()
         .orElse(null);
   }
+
+  /**
+   * Spreads a change of the local member's properties through the cluster now, instead of with the
+   * next periodic round of the membership protocol. Use it for changes that others act on, such as
+   * a new partition leader that gateways route to.
+   */
+  default void propagateLocalMemberChange() {}
 }

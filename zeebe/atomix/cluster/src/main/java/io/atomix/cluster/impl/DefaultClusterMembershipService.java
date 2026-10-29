@@ -85,6 +85,11 @@ public class DefaultClusterMembershipService
   }
 
   @Override
+  public void propagateLocalMemberChange() {
+    protocol.propagateLocalMemberChange();
+  }
+
+  @Override
   public CompletableFuture<ClusterMembershipService> start() {
     if (started.compareAndSet(false, true)) {
       protocol.addListener(membershipEventListener);

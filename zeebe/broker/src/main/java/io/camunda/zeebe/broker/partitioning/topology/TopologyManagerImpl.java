@@ -90,7 +90,7 @@ public final class TopologyManagerImpl extends Actor
         () -> {
           partitionLeaders.put(partitionId, localPartitionGroupInfo);
           localPartitionGroupInfo.setLeaderForPartition(partitionId, term);
-          publishTopologyChanges();
+          publishRoleChange();
           HandoverTrace.event(
               "topology.leaderPublished",
               localPartitionGroupInfo.getPartitionGroup(),
@@ -108,7 +108,7 @@ public final class TopologyManagerImpl extends Actor
         () -> {
           removeIfLeader(localPartitionGroupInfo, partitionId);
           localPartitionGroupInfo.setFollowerForPartition(partitionId);
-          publishTopologyChanges();
+          publishRoleChange();
         });
   }
 
@@ -127,7 +127,7 @@ public final class TopologyManagerImpl extends Actor
         () -> {
           removeIfLeader(localPartitionGroupInfo, partitionId);
           localPartitionGroupInfo.setInactiveForPartition(partitionId);
-          publishTopologyChanges();
+          publishRoleChange();
         });
   }
 
@@ -234,6 +234,15 @@ public final class TopologyManagerImpl extends Actor
   private void publishTopologyChanges() {
     final Properties memberProperties = membershipService.getLocalMember().properties();
     localPartitionGroupInfo.writeIntoProperties(memberProperties);
+  }
+
+  /**
+   * Publishes a change of this broker's partition roles to the cluster at once, so gateways route
+   * to a new leader as soon as it serves rather than with the next round of membership gossip.
+   */
+  private void publishRoleChange() {
+    publishTopologyChanges();
+    membershipService.propagateLocalMemberChange();
   }
 
   @Override

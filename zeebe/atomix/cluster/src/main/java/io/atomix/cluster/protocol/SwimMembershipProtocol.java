@@ -52,6 +52,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -300,6 +301,31 @@ public class SwimMembershipProtocol
 
   public boolean isStarted() {
     return started.get();
+  }
+
+  @Override
+  public void propagateLocalMemberChange() {
+    if (!started.get()) {
+      return;
+    }
+    try {
+      swimScheduler.execute(this::gossipLocalMemberChange);
+    } catch (final RejectedExecutionException e) {
+      LOGGER.trace("{} - Not propagating a local change while stopping", localMember.id(), e);
+    }
+  }
+
+  /**
+   * Publishes a change of the local properties to the local listeners and gossips it to the peers a
+   * regular round would pick, without waiting for that round.
+   */
+  private void gossipLocalMemberChange() {
+    checkMetadata();
+    if (!updates.isEmpty()) {
+      final List<ImmutableMember> pending = Lists.newArrayList(updates.values());
+      updates.clear();
+      gossip(pending);
+    }
   }
 
   /** Checks the local member metadata for changes. */

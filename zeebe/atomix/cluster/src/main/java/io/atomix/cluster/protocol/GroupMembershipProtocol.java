@@ -65,6 +65,12 @@ public interface GroupMembershipProtocol
   }
 
   /**
+   * Spreads a change of the local member's properties through the cluster now, instead of with the
+   * next periodic round of the protocol.
+   */
+  default void propagateLocalMemberChange() {}
+
+  /**
    * Joins the cluster.
    *
    * @param bootstrap the bootstrap service
