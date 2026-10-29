@@ -10,8 +10,10 @@ package io.camunda.application.commons.secrets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
@@ -48,6 +50,8 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -464,7 +468,40 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
-  void shouldCloseAlreadyBuiltStoresWhenALaterTenantFailsToBuild() {
+  void shouldReleaseStoresAndMetersWhenTheRegistriesAreClosed(@TempDir final Path secretsDir) {
+    // given a built registry whose store has published cache meters
+    try (var construction =
+        mockConstruction(
+            FileBasedSecretStore.class,
+            (mock, context) -> {
+              when(mock.namesPerCall()).thenReturn(Integer.MAX_VALUE);
+              when(mock.resolve(Set.of("token")))
+                  .thenReturn(Map.of("token", new Resolved("token-value")));
+            })) {
+      final var meterRegistry = new SimpleMeterRegistry();
+      final var resolver =
+          resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
+      final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry);
+      registries
+          .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+          .getStores()
+          .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+          .resolve(Set.of("token"));
+      assertThat(meterRegistry.getMeters()).isNotEmpty();
+
+      // when the application context shuts down
+      registries.close();
+
+      // then the store is closed and its meters no longer published, as in a failed startup
+      verify(construction.constructed().get(0)).close();
+      assertThat(meterRegistry.getMeters()).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("buildFailures")
+  void shouldCloseAlreadyBuiltStoresWhenALaterTenantFailsToBuild(final Throwable buildFailure)
+      throws Throwable {
     // given two tenants each with a single file store; the second store's construction blows up,
     // simulating a store that fails to build after an earlier tenant's store was already created.
     // Counting constructions (not tenants) keeps this deterministic regardless of tenant iteration
@@ -474,7 +511,7 @@ class SecretStoreConfigurationTest {
             FileBasedSecretStore.class,
             (mock, context) -> {
               if (context.getCount() == 2) {
-                throw new IllegalStateException("second tenant's store failed to build");
+                throw buildFailure;
               }
             })) {
       final var resolver =
@@ -494,11 +531,13 @@ class SecretStoreConfigurationTest {
                   "tenantb"));
       final var meterRegistry = new SimpleMeterRegistry();
 
-      // when / then — the build fails and the failure propagates (Mockito wraps the construction
-      // failure, but it is still a RuntimeException the rollback path catches)
+      // when / then — the build fails and the failure propagates, whether an Exception or an Error
+      // (Mockito may wrap the construction failure, so only the root cause is asserted)
       assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry))
-          .isInstanceOf(RuntimeException.class)
-          .hasRootCauseInstanceOf(IllegalStateException.class);
+          .satisfies(
+              thrown ->
+                  assertThat(thrown.getCause() == null ? thrown : rootCause(thrown))
+                      .isSameAs(buildFailure));
 
       // then — the first tenant's already-built store is rolled back (closed) so its client does
       // not leak
@@ -511,6 +550,63 @@ class SecretStoreConfigurationTest {
                   .filter(name -> name.startsWith("camunda.secret.cache.")))
           .isEmpty();
     }
+  }
+
+  @Test
+  void shouldKeepTheStartupFailureAsTheCauseWhenRollbackFailsToo() {
+    // given two tenants; the first store's close() throws an Error and the second fails to build
+    final var startupFailure = new IllegalStateException("second tenant's store failed to build");
+    final var closeFailure = new NoClassDefFoundError("closing the first store");
+    try (var construction =
+        mockConstruction(
+            FileBasedSecretStore.class,
+            (mock, context) -> {
+              if (context.getCount() == 2) {
+                throw startupFailure;
+              }
+              doThrow(closeFailure).when(mock).close();
+            })) {
+      final var resolver =
+          resolverFor(
+              Map.of(
+                  "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
+                  "/etc/tenanta/secrets",
+                  "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                  "tenanta-admin",
+                  "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                  "tenanta",
+                  "camunda.physical-tenants.tenantb.secrets.stores.file.default.path",
+                  "/etc/tenantb/secrets",
+                  "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                  "tenantb-admin",
+                  "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                  "tenantb"));
+
+      // when / then — the rollback failure rides along instead of replacing the startup failure
+      assertThatThrownBy(
+              () ->
+                  CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry()))
+          .satisfies(
+              thrown -> {
+                final var origin = thrown.getCause() == null ? thrown : rootCause(thrown);
+                assertThat(origin).isSameAs(startupFailure);
+                assertThat(thrown.getSuppressed()).contains(closeFailure);
+              });
+    }
+  }
+
+  private static Stream<Throwable> buildFailures() {
+    return Stream.of(
+        new IllegalStateException("second tenant's store failed to build"),
+        new NoClassDefFoundError("second tenant's store failed to build"));
+  }
+
+  private static Throwable rootCause(final Throwable throwable) {
+    var cause = throwable;
+    while (cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 
   @Test
