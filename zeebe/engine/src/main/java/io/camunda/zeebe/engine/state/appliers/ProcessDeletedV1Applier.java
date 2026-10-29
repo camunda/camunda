@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
-public class ProcessDeletedApplier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
+public class ProcessDeletedV1Applier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
   private final MutableProcessState processState;
 
-  public ProcessDeletedApplier(final MutableProcessingState state) {
+  public ProcessDeletedV1Applier(final MutableProcessingState state) {
     processState = state.getProcessState();
   }
 
