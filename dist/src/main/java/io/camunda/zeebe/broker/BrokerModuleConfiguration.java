@@ -15,6 +15,7 @@ import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantConfigValidator;
+import io.camunda.configuration.physicaltenants.PhysicalTenantCredentialValidator;
 import io.camunda.configuration.physicaltenants.PhysicalTenantKeyClassification;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
@@ -205,6 +206,15 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   @Bean
   public PhysicalTenantKeyClassification physicalTenantKeyClassification() {
     return PhysicalTenantKeyClassification.load();
+  }
+
+  @Bean
+  public PhysicalTenantCredentialValidator physicalTenantCredentialValidator(
+      final PhysicalTenantLifecycleService lifecycle) {
+    return new PhysicalTenantCredentialValidator(
+        (physicalTenantId, subtree) ->
+            lifecycle.effectiveConfiguration(
+                physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)));
   }
 
   @Bean(destroyMethod = "close")

@@ -203,6 +203,25 @@ public final class PhysicalTenantLifecycleService {
   }
 
   /**
+   * Resolves the configuration a tenant would run with, the root merged with the given subtree,
+   * without the boot validations of {@link #validate}.
+   *
+   * @throws PhysicalTenantChangeException with {@link Reason#INVALID} if it does not resolve
+   */
+  public Camunda effectiveConfiguration(
+      final String physicalTenantId, final Map<String, Object> configuration) {
+    try {
+      return PhysicalTenantResolver.of(
+              PhysicalTenantEnvironments.withTenants(
+                  environment, Map.of(physicalTenantId, configuration), Set.of()),
+              rootCamunda)
+          .forPhysicalTenant(physicalTenantId);
+    } catch (final RuntimeException e) {
+      throw rejected(Reason.INVALID, physicalTenantId, e.getMessage(), e);
+    }
+  }
+
+  /**
    * @return completes once every local partition of the tenant is installed after its last start
    */
   public CompletableFuture<Void> awaitReady(final String physicalTenantId) {

@@ -192,15 +192,7 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
   }
 
   private BrokerCfg validate(final PhysicalTenantConfigChange change) {
-    final var violations = new ArrayList<String>();
-    validators.forEach(validator -> violations.addAll(validator.validate(change)));
-    if (!violations.isEmpty()) {
-      throw new PhysicalTenantConfigRejectedException(
-          PhysicalTenantConfigRejectedException.Status.INVALID,
-          "The configuration of physical tenant '%s' cannot be applied"
-              .formatted(change.physicalTenantId()),
-          violations);
-    }
+    runValidators(change);
     try {
       return lifecycle.validate(
           change.physicalTenantId(), PhysicalTenantConfigCodec.asProperties(change.proposed()));
@@ -210,6 +202,22 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
           "The configuration of physical tenant '%s' fails the boot validations"
               .formatted(change.physicalTenantId()),
           List.of(String.valueOf(e.getMessage())));
+    }
+  }
+
+  /**
+   * Runs every plugged validator. The file registration of a tenant that already runs uses this
+   * alone, since the tenant passed the boot validations when the node started.
+   */
+  private void runValidators(final PhysicalTenantConfigChange change) {
+    final var violations = new ArrayList<String>();
+    validators.forEach(validator -> violations.addAll(validator.validate(change)));
+    if (!violations.isEmpty()) {
+      throw new PhysicalTenantConfigRejectedException(
+          PhysicalTenantConfigRejectedException.Status.INVALID,
+          "The configuration of physical tenant '%s' cannot be applied"
+              .formatted(change.physicalTenantId()),
+          violations);
     }
   }
 
@@ -368,6 +376,7 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     }
     try {
       if (reference.isEmpty()) {
+        runValidators(PhysicalTenantConfigChange.create(tenantId, subtree));
         send(
             PhysicalTenantConfigRequest.create(
                 tenantId, Owner.FILE, PhysicalTenantConfigCodec.encode(subtree), 0, Set.of()));
