@@ -187,7 +187,44 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 	const isElementDisabled =
 		!areDefinitionsReady || selectedDefinitionKey === undefined || isXmlError || elementItems.length === 0;
 
+	// Changing the process or version invalidates the selected element, so both reset it.
+	const selectProcess = (value: string | undefined) => {
+		if (value === selectedProcess?.id) {
+			return;
+		}
+		const item = processItems.find(({id}) => id === value);
+		void navigate({
+			to: '.',
+			search: (prev) => ({
+				...prev,
+				...(isMultiTenancyEnabled && item?.tenantId !== undefined ? {tenantId: item.tenantId} : {}),
+				process: item?.processDefinitionId,
+				version: item?.version,
+				elementId: undefined,
+			}),
+		});
+	};
+	const selectVersion = (value: string) => {
+		if (value === '') {
+			return;
+		}
+		void navigate({
+			to: '.',
+			search: (prev) => ({
+				...prev,
+				version: value === 'all' ? undefined : Number(value),
+				elementId: undefined,
+			}),
+		});
+	};
+	const selectElement = (value: string | undefined) => {
+		void navigate({to: '.', search: (prev) => ({...prev, elementId: value})});
+	};
+
 	return {
+		selectProcess,
+		selectVersion,
+		selectElement,
 		processItems,
 		selectedProcess,
 		versionNumbers,

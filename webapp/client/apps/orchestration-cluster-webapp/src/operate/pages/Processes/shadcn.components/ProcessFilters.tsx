@@ -88,6 +88,9 @@ const ProcessFilters: React.FC<Props> = ({
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const {
+		selectProcess,
+		selectVersion,
+		selectElement,
 		processItems,
 		selectedProcess,
 		versionNumbers,
@@ -153,22 +156,7 @@ const ProcessFilters: React.FC<Props> = ({
 							disabled={isMultiTenancyEnabled && tenantId === undefined}
 							placeholder={t('operate.processes.ds.filters.searchByName')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByName')}
-							onValueChange={(value) => {
-								if (value === selectedProcess?.id) {
-									return;
-								}
-								const item = processItems.find(({id}) => id === value);
-								void navigate({
-									to: '.',
-									search: (prev) => ({
-										...prev,
-										...(isMultiTenancyEnabled && item?.tenantId !== undefined ? {tenantId: item.tenantId} : {}),
-										process: item?.processDefinitionId,
-										version: item?.version,
-										elementId: undefined,
-									}),
-								});
-							}}
+							onValueChange={selectProcess}
 						/>
 					</div>
 					<div className="flex flex-col gap-1.5">
@@ -176,19 +164,7 @@ const ProcessFilters: React.FC<Props> = ({
 						<Select
 							value={selectedVersion}
 							disabled={!areDefinitionsReady || versionNumbers.length === 0}
-							onValueChange={(value) => {
-								if (value === '') {
-									return;
-								}
-								void navigate({
-									to: '.',
-									search: (prev) => ({
-										...prev,
-										version: value === ALL_VERSIONS ? undefined : Number(value),
-										elementId: undefined,
-									}),
-								});
-							}}
+							onValueChange={selectVersion}
 						>
 							<SelectTrigger id="process-version-filter" size="sm" className="w-full">
 								<SelectValue placeholder={t('operate.processes.ds.filters.selectVersion')} />
@@ -216,22 +192,14 @@ const ProcessFilters: React.FC<Props> = ({
 							disabled={isElementDisabled}
 							placeholder={t('operate.processes.ds.filters.searchByElement')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByElement')}
-							onValueChange={(value) => {
-								void navigate({to: '.', search: (prev) => ({...prev, elementId: value})});
-							}}
+							onValueChange={selectElement}
 						/>
 					</div>
 					{isXmlError && selectedDefinitionKey !== undefined && (
 						<LoadError error={xmlError} onRetry={() => void refetchDiagramXml()} />
 					)}
 					{isElementDisabled && elementId && (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => {
-								void navigate({to: '.', search: (prev) => ({...prev, elementId: undefined})});
-							}}
-						>
+						<Button variant="ghost" size="sm" onClick={() => selectElement(undefined)}>
 							{t('operate.processes.filters.clearElement')}
 						</Button>
 					)}
