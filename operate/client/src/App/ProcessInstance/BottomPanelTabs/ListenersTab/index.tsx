@@ -68,7 +68,7 @@ const ListenersTab: React.FC = () => {
         elementId: selectedElementId ?? undefined,
         elementInstanceKey: resolvedElementInstanceKey ?? undefined,
         kind: listenerTypeFilter ?? {
-          $in: ['EXECUTION_LISTENER', 'TASK_LISTENER'],
+          $in: ['BPMN_ELEMENT', 'EXECUTION_LISTENER', 'TASK_LISTENER'],
         },
       },
     },
