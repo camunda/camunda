@@ -14,10 +14,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {
-  CORRELATE_MESSAGE4,
-  PUBLISH_NEW_MESSAGE,
-} from '../../../../utils/beans/requestBeans';
+import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
 import {
   cancelProcessInstance,
   createInstances,
@@ -32,6 +29,11 @@ const CORRELATE_UPDATE_FORBIDDEN_DETAIL =
 const CORRELATE_CREATE_FORBIDDEN_DETAIL =
   "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'";
 
+const CATCH_EVENT_PROCESS_RESOURCE =
+  './resources/messageCatchEventForbidden.bpmn';
+const CATCH_EVENT_PROCESS_ID = 'Process_message_catch_event_forbidden_test';
+const CATCH_EVENT_MESSAGE_NAME = 'Message_1j9t80c';
+const CATCH_EVENT_CORRELATION_KEY = '12312';
 const MESSAGE_START_PROCESS_RESOURCE =
   './resources/message_start_business_id_process.bpmn';
 const START_MESSAGE_NAME = 'start_business_id_msg';
@@ -48,8 +50,8 @@ test.describe.serial('Message Permission API - Forbidden', () => {
   let userWithoutPermissionsToken: string;
 
   test.beforeAll(async ({request}) => {
-    await deploy(['./resources/messageCatchEvent4.bpmn']);
-    const processes = await createInstances('messageCatchEvent4', 1, 1);
+    await deploy([CATCH_EVENT_PROCESS_RESOURCE]);
+    const processes = await createInstances(CATCH_EVENT_PROCESS_ID, 1, 1);
     state['processInstanceKey'] = processes[0].processInstanceKey;
 
     await deploy([MESSAGE_START_PROCESS_RESOURCE]);
@@ -88,7 +90,11 @@ test.describe.serial('Message Permission API - Forbidden', () => {
     // when the user correlates the matching message
     const res = await request.post(buildUrl('/messages/correlation'), {
       headers: jsonHeaders(userWithoutPermissionsToken),
-      data: CORRELATE_MESSAGE4,
+      data: {
+        name: CATCH_EVENT_MESSAGE_NAME,
+        correlationKey: CATCH_EVENT_CORRELATION_KEY,
+        tenantId: '<default>',
+      },
     });
 
     // then the request is rejected with 403 FORBIDDEN
