@@ -59,22 +59,6 @@ public final class AuthInfo implements BufferWriter {
   public static final AuthInfo EMPTY =
       new AuthInfo(AuthDataFormat.UNKNOWN, null, null, null, null, null, null, null);
 
-  private static final String FORMAT_KEY = "format";
-  private static final String CLAIMS_KEY = "claims";
-
-  private static final DirectBuffer FORMAT_KEY_BUFFER = BufferUtil.wrapString(FORMAT_KEY);
-  private static final DirectBuffer CLAIMS_KEY_BUFFER = BufferUtil.wrapString(CLAIMS_KEY);
-  private static final DirectBuffer ANONYMOUS_KEY_BUFFER =
-      BufferUtil.wrapString(AUTHORIZED_ANONYMOUS_USER);
-  private static final DirectBuffer USERNAME_KEY_BUFFER =
-      BufferUtil.wrapString(AUTHORIZED_USERNAME);
-  private static final DirectBuffer CLIENT_ID_KEY_BUFFER =
-      BufferUtil.wrapString(AUTHORIZED_CLIENT_ID);
-  private static final DirectBuffer TENANTS_KEY_BUFFER = BufferUtil.wrapString(AUTHORIZED_TENANTS);
-  private static final DirectBuffer GROUPS_KEY_BUFFER = BufferUtil.wrapString(USER_GROUPS_CLAIMS);
-  private static final DirectBuffer TOKEN_CLAIMS_KEY_BUFFER =
-      BufferUtil.wrapString(USER_TOKEN_CLAIMS);
-
   private final AuthDataFormat format;
   private final @Nullable Boolean anonymous;
   private final @Nullable String username;
@@ -142,7 +126,7 @@ public final class AuthInfo implements BufferWriter {
 
     final var bytes = new byte[length];
     buffer.getBytes(offset, bytes);
-    return decode(new UnsafeBuffer(bytes));
+    return Codec.decode(new UnsafeBuffer(bytes));
   }
 
   /** Decodes an auth info embedded in another msgpack value, e.g. as property of an object. */
@@ -281,61 +265,10 @@ public final class AuthInfo implements BufferWriter {
     var bytes = encoded;
     if (bytes == null) {
       // racing threads encode the same bytes, so it doesn't matter which one wins
-      bytes = encode();
+      bytes = Codec.encode(this);
       encoded = bytes;
     }
     return bytes;
-  }
-
-  private DirectBuffer encode() {
-    final var writer = new MsgPackWriter();
-
-    final var claimsBuffer = new ExpandableArrayBuffer();
-    writer.wrap(claimsBuffer, 0);
-    writer.writeMapHeader(presentClaims());
-    if (anonymous != null) {
-      writer.writeString(ANONYMOUS_KEY_BUFFER);
-      writer.writeBoolean(anonymous);
-    }
-    writeStringClaim(writer, USERNAME_KEY_BUFFER, username);
-    writeStringClaim(writer, CLIENT_ID_KEY_BUFFER, clientId);
-    writeStringsClaim(writer, TENANTS_KEY_BUFFER, tenants);
-    writeStringsClaim(writer, GROUPS_KEY_BUFFER, groups);
-    if (tokenClaims != null) {
-      writer.writeString(TOKEN_CLAIMS_KEY_BUFFER);
-      writer.writeRaw(tokenClaims);
-    }
-    final int claimsLength = writer.getOffset();
-
-    final var buffer = new ExpandableArrayBuffer();
-    writer.wrap(buffer, 0);
-    writer.writeMapHeader(2);
-    writer.writeString(FORMAT_KEY_BUFFER);
-    writer.writeString(format.encodedName);
-    writer.writeString(CLAIMS_KEY_BUFFER);
-    writer.writeBinary(claimsBuffer, 0, claimsLength);
-    return new UnsafeBuffer(Arrays.copyOf(buffer.byteArray(), writer.getOffset()));
-  }
-
-  private static void writeStringClaim(
-      final MsgPackWriter writer, final DirectBuffer key, final @Nullable String value) {
-    if (value != null) {
-      writer.writeString(key);
-      writeString(writer, value);
-    }
-  }
-
-  private static void writeStringsClaim(
-      final MsgPackWriter writer, final DirectBuffer key, final @Nullable List<String> values) {
-    if (values != null) {
-      writer.writeString(key);
-      writer.writeArrayHeader(values.size());
-      values.forEach(value -> writeString(writer, value));
-    }
-  }
-
-  private static void writeString(final MsgPackWriter writer, final String string) {
-    writer.writeString(BufferUtil.wrapString(string));
   }
 
   private static void putIfPresent(
@@ -394,90 +327,6 @@ public final class AuthInfo implements BufferWriter {
     return value;
   }
 
-  /** Decodes the given buffer, which must be owned by the returned instance. */
-  private static AuthInfo decode(final DirectBuffer encoded) {
-    try {
-      final var reader = new MsgPackReader().wrap(encoded, 0, encoded.capacity());
-      var format = AuthDataFormat.UNKNOWN;
-      Boolean anonymous = null;
-      String username = null;
-      String clientId = null;
-      List<String> tenants = null;
-      List<String> groups = null;
-      DirectBuffer tokenClaims = null;
-
-      final int properties = reader.readMapHeader();
-      for (int i = 0; i < properties; i++) {
-        switch (readString(reader)) {
-          case FORMAT_KEY -> format = AuthDataFormat.ofName(readString(reader));
-          case CLAIMS_KEY -> {
-            final int claimsLength = reader.readBinaryLength();
-            final var claimsReader =
-                new MsgPackReader().wrap(reader.getBuffer(), reader.getOffset(), claimsLength);
-            reader.skipBytes(claimsLength);
-
-            final int claims = isNil(claimsReader, claimsLength) ? 0 : claimsReader.readMapHeader();
-            for (int j = 0; j < claims; j++) {
-              final var key = readString(claimsReader);
-              if (isNil(claimsReader, claimsLength)) {
-                claimsReader.skipValue();
-                continue;
-              }
-
-              switch (key) {
-                case AUTHORIZED_ANONYMOUS_USER -> anonymous = claimsReader.readBoolean();
-                case AUTHORIZED_USERNAME -> username = readString(claimsReader);
-                case AUTHORIZED_CLIENT_ID -> clientId = readString(claimsReader);
-                case AUTHORIZED_TENANTS -> tenants = readStrings(claimsReader);
-                case USER_GROUPS_CLAIMS -> groups = readStrings(claimsReader);
-                case USER_TOKEN_CLAIMS -> tokenClaims = readMap(claimsReader);
-                default -> claimsReader.skipValue();
-              }
-            }
-          }
-          default -> reader.skipValue();
-        }
-      }
-
-      return new AuthInfo(
-          format, anonymous, username, clientId, tenants, groups, tokenClaims, encoded);
-    } catch (final RuntimeException e) {
-      throw new IllegalArgumentException("Expected to decode auth info, but it is malformed", e);
-    }
-  }
-
-  private static boolean isNil(final MsgPackReader reader, final int length) {
-    return length == 0
-        || reader.getOffset() >= length
-        || reader.getBuffer().getByte(reader.getOffset()) == MsgPackCodes.NIL;
-  }
-
-  private static String readString(final MsgPackReader reader) {
-    final int length = reader.readStringLength();
-    final var string = reader.getBuffer().getStringWithoutLengthUtf8(reader.getOffset(), length);
-    reader.skipBytes(length);
-    return string;
-  }
-
-  private static List<String> readStrings(final MsgPackReader reader) {
-    final int size = reader.readArrayHeader();
-    final var strings = new ArrayList<String>(size);
-    for (int i = 0; i < size; i++) {
-      strings.add(readString(reader));
-    }
-    return Collections.unmodifiableList(strings);
-  }
-
-  /** Returns a view of the map at the reader's offset, whose buffer must never change. */
-  private static DirectBuffer readMap(final MsgPackReader reader) {
-    final int offset = reader.getOffset();
-    if (!MsgPackCodes.isMap(reader.getBuffer().getByte(offset))) {
-      throw new IllegalArgumentException("Expected a map at offset " + offset);
-    }
-    reader.skipValue();
-    return new UnsafeBuffer(reader.getBuffer(), offset, reader.getOffset() - offset);
-  }
-
   public enum AuthDataFormat {
     UNKNOWN((short) 0),
     PRE_AUTHORIZED((short) 2);
@@ -497,6 +346,161 @@ public final class AuthInfo implements BufferWriter {
         }
       }
       return UNKNOWN;
+    }
+  }
+
+  private static final class Codec {
+    private static final String FORMAT_KEY = "format";
+    private static final String CLAIMS_KEY = "claims";
+
+    private static final DirectBuffer FORMAT_KEY_BUFFER = BufferUtil.wrapString(FORMAT_KEY);
+    private static final DirectBuffer CLAIMS_KEY_BUFFER = BufferUtil.wrapString(CLAIMS_KEY);
+    private static final DirectBuffer ANONYMOUS_KEY_BUFFER =
+        BufferUtil.wrapString(AUTHORIZED_ANONYMOUS_USER);
+    private static final DirectBuffer USERNAME_KEY_BUFFER =
+        BufferUtil.wrapString(AUTHORIZED_USERNAME);
+    private static final DirectBuffer CLIENT_ID_KEY_BUFFER =
+        BufferUtil.wrapString(AUTHORIZED_CLIENT_ID);
+    private static final DirectBuffer TENANTS_KEY_BUFFER =
+        BufferUtil.wrapString(AUTHORIZED_TENANTS);
+    private static final DirectBuffer GROUPS_KEY_BUFFER = BufferUtil.wrapString(USER_GROUPS_CLAIMS);
+    private static final DirectBuffer TOKEN_CLAIMS_KEY_BUFFER =
+        BufferUtil.wrapString(USER_TOKEN_CLAIMS);
+
+    private static DirectBuffer encode(final AuthInfo authInfo) {
+      final var writer = new MsgPackWriter();
+
+      final var claimsBuffer = new ExpandableArrayBuffer();
+      writer.wrap(claimsBuffer, 0);
+      writer.writeMapHeader(authInfo.presentClaims());
+      if (authInfo.anonymous != null) {
+        writer.writeString(ANONYMOUS_KEY_BUFFER);
+        writer.writeBoolean(authInfo.anonymous);
+      }
+      writeStringClaim(writer, USERNAME_KEY_BUFFER, authInfo.username);
+      writeStringClaim(writer, CLIENT_ID_KEY_BUFFER, authInfo.clientId);
+      writeStringsClaim(writer, TENANTS_KEY_BUFFER, authInfo.tenants);
+      writeStringsClaim(writer, GROUPS_KEY_BUFFER, authInfo.groups);
+      if (authInfo.tokenClaims != null) {
+        writer.writeString(TOKEN_CLAIMS_KEY_BUFFER);
+        writer.writeRaw(authInfo.tokenClaims);
+      }
+      final int claimsLength = writer.getOffset();
+
+      final var buffer = new ExpandableArrayBuffer();
+      writer.wrap(buffer, 0);
+      writer.writeMapHeader(2);
+      writer.writeString(FORMAT_KEY_BUFFER);
+      writer.writeString(authInfo.format.encodedName);
+      writer.writeString(CLAIMS_KEY_BUFFER);
+      writer.writeBinary(claimsBuffer, 0, claimsLength);
+      return new UnsafeBuffer(Arrays.copyOf(buffer.byteArray(), writer.getOffset()));
+    }
+
+    private static void writeStringClaim(
+        final MsgPackWriter writer, final DirectBuffer key, final @Nullable String value) {
+      if (value != null) {
+        writer.writeString(key);
+        writeString(writer, value);
+      }
+    }
+
+    private static void writeStringsClaim(
+        final MsgPackWriter writer, final DirectBuffer key, final @Nullable List<String> values) {
+      if (values != null) {
+        writer.writeString(key);
+        writer.writeArrayHeader(values.size());
+        values.forEach(value -> writeString(writer, value));
+      }
+    }
+
+    private static void writeString(final MsgPackWriter writer, final String string) {
+      writer.writeString(BufferUtil.wrapString(string));
+    }
+
+    /** Decodes the given buffer, which must be owned by the returned instance. */
+    static AuthInfo decode(final DirectBuffer encoded) {
+      try {
+        final var reader = new MsgPackReader().wrap(encoded, 0, encoded.capacity());
+        var format = AuthDataFormat.UNKNOWN;
+        Boolean anonymous = null;
+        String username = null;
+        String clientId = null;
+        List<String> tenants = null;
+        List<String> groups = null;
+        DirectBuffer tokenClaims = null;
+
+        final int properties = reader.readMapHeader();
+        for (int i = 0; i < properties; i++) {
+          switch (readString(reader)) {
+            case FORMAT_KEY -> format = AuthDataFormat.ofName(readString(reader));
+            case CLAIMS_KEY -> {
+              final int claimsLength = reader.readBinaryLength();
+              final var claimsReader =
+                  new MsgPackReader().wrap(reader.getBuffer(), reader.getOffset(), claimsLength);
+              reader.skipBytes(claimsLength);
+
+              final int claims =
+                  isNil(claimsReader, claimsLength) ? 0 : claimsReader.readMapHeader();
+              for (int j = 0; j < claims; j++) {
+                final var key = readString(claimsReader);
+                if (isNil(claimsReader, claimsLength)) {
+                  claimsReader.skipValue();
+                  continue;
+                }
+
+                switch (key) {
+                  case AUTHORIZED_ANONYMOUS_USER -> anonymous = claimsReader.readBoolean();
+                  case AUTHORIZED_USERNAME -> username = readString(claimsReader);
+                  case AUTHORIZED_CLIENT_ID -> clientId = readString(claimsReader);
+                  case AUTHORIZED_TENANTS -> tenants = readStrings(claimsReader);
+                  case USER_GROUPS_CLAIMS -> groups = readStrings(claimsReader);
+                  case USER_TOKEN_CLAIMS -> tokenClaims = readMap(claimsReader);
+                  default -> claimsReader.skipValue();
+                }
+              }
+            }
+            default -> reader.skipValue();
+          }
+        }
+
+        return new AuthInfo(
+            format, anonymous, username, clientId, tenants, groups, tokenClaims, encoded);
+      } catch (final RuntimeException e) {
+        throw new IllegalArgumentException("Expected to decode auth info, but it is malformed", e);
+      }
+    }
+
+    private static boolean isNil(final MsgPackReader reader, final int length) {
+      return length == 0
+          || reader.getOffset() >= length
+          || reader.getBuffer().getByte(reader.getOffset()) == MsgPackCodes.NIL;
+    }
+
+    private static String readString(final MsgPackReader reader) {
+      final int length = reader.readStringLength();
+      final var string = reader.getBuffer().getStringWithoutLengthUtf8(reader.getOffset(), length);
+      reader.skipBytes(length);
+      return string;
+    }
+
+    private static List<String> readStrings(final MsgPackReader reader) {
+      final int size = reader.readArrayHeader();
+      final var strings = new ArrayList<String>(size);
+      for (int i = 0; i < size; i++) {
+        strings.add(readString(reader));
+      }
+      return Collections.unmodifiableList(strings);
+    }
+
+    /** Returns a view of the map at the reader's offset, whose buffer must never change. */
+    private static DirectBuffer readMap(final MsgPackReader reader) {
+      final int offset = reader.getOffset();
+      if (!MsgPackCodes.isMap(reader.getBuffer().getByte(offset))) {
+        throw new IllegalArgumentException("Expected a map at offset " + offset);
+      }
+      reader.skipValue();
+      return new UnsafeBuffer(reader.getBuffer(), offset, reader.getOffset() - offset);
     }
   }
 }
