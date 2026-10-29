@@ -17,4 +17,8 @@ val dockerImageIdFiles =
 
 dependencies { add(dockerImageProviders.name, project(":camunda-zeebe")) }
 
-tasks.named<Test>("it") { useDockerImage(dockerImageName(), dockerImageIdFiles.get()) }
+tasks.withType<Test>().configureEach {
+  if (name == "it") {
+    useDockerImage(dockerImageName(), dockerImageIdFiles.get())
+  }
+}
