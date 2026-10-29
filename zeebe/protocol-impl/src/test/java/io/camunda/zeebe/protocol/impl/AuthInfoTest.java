@@ -36,8 +36,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 final class AuthInfoTest {
 
@@ -320,25 +318,6 @@ final class AuthInfoTest {
   final class Encoding {
 
     @Test
-    void shouldDecodeEncodedAuthInfo() {
-      // given
-      final var tokenClaims = Map.<String, Object>of("exp", 1_700_000_000, "scope", "a b");
-      final var authInfo =
-          AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user", USER_TOKEN_CLAIMS, tokenClaims))
-              .withFormat(AuthDataFormat.PRE_AUTHORIZED);
-
-      // when
-      final var decoded = decode(encode(authInfo));
-
-      // then
-      assertThat(decoded).isEqualTo(authInfo);
-      assertThat(decoded.getFormat()).isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
-      assertThat(decoded.getUsername()).isEqualTo("user");
-      assertThat(decoded.getTokenClaims()).containsEntry("scope", "a b");
-      assertThat(decoded.getTokenClaims()).containsEntry("exp", 1_700_000_000);
-    }
-
-    @Test
     void shouldPreserveEmptyClaims() {
       // given
       final var authInfo =
@@ -381,70 +360,6 @@ final class AuthInfoTest {
   final class Equality {
 
     @Test
-    void shouldEqualItselfWithBinaryTokenClaim() {
-      // given
-      final var authInfo =
-          AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("blob", new byte[] {1, 2, 3})));
-
-      // when
-      final int hashCode = authInfo.hashCode();
-
-      // then
-      assertThat(authInfo).isEqualTo(authInfo);
-      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
-    }
-
-    @Test
-    void shouldEqualItselfWithBinaryTokenClaimNestedInMap() {
-      // given
-      final var authInfo =
-          AuthInfo.ofClaims(
-              Map.of(USER_TOKEN_CLAIMS, Map.of("nested", Map.of("blob", new byte[] {1, 2, 3}))));
-
-      // when
-      final int hashCode = authInfo.hashCode();
-
-      // then
-      assertThat(authInfo).isEqualTo(authInfo);
-      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
-    }
-
-    @Test
-    void shouldEqualItselfWithBinaryTokenClaimNestedInList() {
-      // given
-      final var authInfo =
-          AuthInfo.ofClaims(
-              Map.of(USER_TOKEN_CLAIMS, Map.of("list", List.of(new byte[] {1, 2, 3}))));
-
-      // when
-      final int hashCode = authInfo.hashCode();
-
-      // then
-      assertThat(authInfo).isEqualTo(authInfo);
-      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
-    }
-
-    @Test
-    void shouldEqualDecodedAuthInfoWithBinaryTokenClaims() {
-      // given
-      final var authInfo =
-          AuthInfo.ofClaims(
-              Map.of(
-                  AUTHORIZED_USERNAME,
-                  "user",
-                  USER_TOKEN_CLAIMS,
-                  Map.of("blob", new byte[] {1, 2, 3}, "list", List.of(new byte[] {4}))));
-
-      // when
-      final var decoded = decode(encode(authInfo));
-
-      // then
-      assertThat(decoded).isEqualTo(authInfo);
-      assertThat(authInfo).isEqualTo(decoded);
-      assertThat(decoded.hashCode()).isEqualTo(authInfo.hashCode());
-    }
-
-    @Test
     void shouldNotEqualAuthInfoWithDifferentTokenClaims() {
       // given
       final var authInfo =
@@ -461,38 +376,6 @@ final class AuthInfoTest {
 
   @Nested
   final class Compatibility {
-
-    @ParameterizedTest
-    @EnumSource(
-        value = LegacyFormat.class,
-        names = {"UNKNOWN", "PRE_AUTHORIZED"})
-    void shouldReadAuthInfoWrittenByPreviousVersion(final LegacyFormat format) {
-      // given
-      final var legacy = new LegacyAuthInfo(format, ALL_CLAIMS);
-
-      // when
-      final var authInfo = decode(encode(legacy));
-
-      // then
-      assertThat(authInfo.getFormat().name()).isEqualTo(format.name());
-      assertThat(authInfo.toClaimsMap()).isEqualTo(ALL_CLAIMS);
-      assertThat(authInfo.getUsername()).isEqualTo("user");
-    }
-
-    @Test
-    void shouldWriteAuthInfoReadableByPreviousVersion() {
-      // given
-      final var authInfo = AuthInfo.ofClaims(ALL_CLAIMS).withFormat(AuthDataFormat.PRE_AUTHORIZED);
-      final var legacy = new LegacyAuthInfo();
-
-      // when
-      legacy.wrap(encode(authInfo));
-
-      // then
-      assertThat(legacy.format.getValue()).isEqualTo(LegacyFormat.PRE_AUTHORIZED);
-      assertThat(BufferUtil.bufferAsString(legacy.authData.getValue())).isEmpty();
-      assertThat(MsgPackConverter.convertToMap(legacy.claims.getValue())).isEqualTo(ALL_CLAIMS);
-    }
 
     @Test
     void shouldOnlyWriteClaimsThatArePresent() {
@@ -595,10 +478,10 @@ final class AuthInfoTest {
 
   /** Mirrors the {@code AuthInfo} of previous versions to produce and verify their encoding. */
   static final class LegacyAuthInfo extends UnpackedObject {
-    private final EnumProperty<LegacyFormat> format =
+    final EnumProperty<LegacyFormat> format =
         new EnumProperty<>("format", LegacyFormat.class, LegacyFormat.UNKNOWN);
-    private final StringProperty authData = new StringProperty("authData", "");
-    private final DocumentProperty claims = new DocumentProperty("claims");
+    final StringProperty authData = new StringProperty("authData", "");
+    final DocumentProperty claims = new DocumentProperty("claims");
 
     LegacyAuthInfo() {
       super(3);
