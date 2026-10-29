@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCase;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeVersionTag;
 import java.util.Collection;
 import java.util.function.Consumer;
@@ -170,6 +171,11 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder>
 
   public ProcessBuilder versionTag(final String value) {
     addExtensionElement(ZeebeVersionTag.class, versionTag -> versionTag.setValue(value));
+    return this;
+  }
+
+  public ProcessBuilder zeebeCase(final String title) {
+    addExtensionElement(ZeebeCase.class, zeebeCase -> zeebeCase.setTitle(title));
     return this;
   }
 }
