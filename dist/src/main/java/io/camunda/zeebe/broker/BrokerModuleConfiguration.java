@@ -30,6 +30,7 @@ import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
@@ -72,6 +73,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
     })
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {
+  static final String ROLLOUT_READINESS = "physical-tenant-rollout.readiness";
+  static final String ROLLOUT_READINESS_TIMEOUT = "physical-tenant-rollout.readiness-timeout";
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
   private static final Duration PHYSICAL_TENANT_CHANGE_TIMEOUT = Duration.ofMinutes(2);
 
@@ -251,10 +254,31 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                 physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)));
   }
 
+  /**
+   * What the rollout of a tenant's configuration waits for on each member, set by {@value
+   * #ROLLOUT_READINESS} ({@code NONE}, {@code INSTALLED} or {@code SERVING}, the default) and
+   * {@value #ROLLOUT_READINESS_TIMEOUT} (default two minutes).
+   */
   @Bean(destroyMethod = "close")
   public PhysicalTenantConfigExecutor physicalTenantConfigExecutor(
-      final PhysicalTenantLifecycleService lifecycle) {
-    return new PhysicalTenantConfigExecutor(lifecycle, physicalTenantRegistry, meterRegistry);
+      final Broker broker,
+      final PhysicalTenantLifecycleService lifecycle,
+      final ObjectProvider<BrokerTopologyManager> topologyManager,
+      final ConfigurableEnvironment environment) {
+    final var readiness =
+        new PhysicalTenantRolloutReadiness(
+            broker,
+            lifecycle,
+            topologyManager::getIfAvailable,
+            cluster.getMembershipService().getLocalMember().id(),
+            environment.getProperty(
+                ROLLOUT_READINESS,
+                PhysicalTenantRolloutReadiness.Mode.class,
+                PhysicalTenantRolloutReadiness.Mode.SERVING),
+            environment.getProperty(
+                ROLLOUT_READINESS_TIMEOUT, Duration.class, Duration.ofMinutes(2)));
+    return new PhysicalTenantConfigExecutor(
+        lifecycle, physicalTenantRegistry, meterRegistry, readiness);
   }
 
   @Bean(destroyMethod = "close")

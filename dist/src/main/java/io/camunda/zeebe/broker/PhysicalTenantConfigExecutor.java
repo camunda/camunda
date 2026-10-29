@@ -12,21 +12,21 @@ import io.camunda.cluster.PhysicalTenantHealth;
 import io.camunda.cluster.PhysicalTenantHealth.State;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
+import io.camunda.zeebe.broker.PhysicalTenantRolloutReadiness.NotReadyException;
 import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
@@ -36,9 +36,13 @@ import org.slf4j.Logger;
  * cluster agreed on, a running one is replaced, and a removed one is stopped. A change whose
  * configuration this member already runs, by hash, restarts nothing.
  *
- * <p>Changes run one at a time on a thread of their own, since a tenant restart blocks until the
- * module is up again. A change this member cannot apply fails, and dynamic-config retries it; the
- * tenant reports {@link State#DEGRADED} until it applies.
+ * <p>The changes of one tenant run one after the other; changes of different tenants run at the
+ * same time, except that only one tenant's module starts or stops at a time on this member. A
+ * replace waits, before the restart, until the tenant's partitions keep a quorum on the other
+ * members, and after it, until the tenant serves here again (see {@link
+ * PhysicalTenantRolloutReadiness}); only then does the rollout go on to the next member. A tenant
+ * that does not become ready in time reports {@link State#DEGRADED} and fails the step, which
+ * dynamic-config retries; the retry waits again without restarting the tenant again.
  *
  * <p>The version each tenant runs with on this member is exposed as the gauge {@value
  * #APPLIED_VERSION_METRIC}.
@@ -49,24 +53,30 @@ public final class PhysicalTenantConfigExecutor
 
   static final String APPLIED_VERSION_METRIC = "zeebe.physical.tenant.config.applied.version";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final Duration READY_TIMEOUT = Duration.ofMinutes(2);
 
   private final PhysicalTenantLifecycleService lifecycle;
   private final DefaultPhysicalTenantRegistry registry;
   private final MeterRegistry meterRegistry;
+  private final PhysicalTenantRolloutReadiness readiness;
   private final ExecutorService changes =
-      Executors.newSingleThreadExecutor(
-          Thread.ofPlatform().name("physical-tenant-config").daemon().factory());
+      Executors.newThreadPerTaskExecutor(
+          Thread.ofVirtual().name("physical-tenant-config-", 0).factory());
+  private final ReentrantLock moduleChanges = new ReentrantLock();
+  private final Map<String, CompletableFuture<Void>> lastChange = new ConcurrentHashMap<>();
   private final Map<String, Applied> applied = new ConcurrentHashMap<>();
+  private final Map<String, RolloutStep> steps = new ConcurrentHashMap<>();
+  private final Set<String> degradedByChange = ConcurrentHashMap.newKeySet();
   private final Map<String, Gauge> gauges = new ConcurrentHashMap<>();
 
   public PhysicalTenantConfigExecutor(
       final PhysicalTenantLifecycleService lifecycle,
       final DefaultPhysicalTenantRegistry registry,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final PhysicalTenantRolloutReadiness readiness) {
     this.lifecycle = lifecycle;
     this.registry = registry;
     this.meterRegistry = meterRegistry;
+    this.readiness = readiness;
   }
 
   /** Records the subtree a tenant runs with since this node started, before any change. */
@@ -77,7 +87,8 @@ public final class PhysicalTenantConfigExecutor
         new Applied(
             0,
             PhysicalTenantConfigCodec.sha256(PhysicalTenantConfigCodec.encode(subtree)),
-            subtree));
+            subtree,
+            true));
     registerGauge(physicalTenantId);
   }
 
@@ -87,7 +98,8 @@ public final class PhysicalTenantConfigExecutor
         physicalTenantId,
         (id, running) ->
             running.sha256().equals(reference.sha256())
-                ? new Applied(reference.version(), running.sha256(), running.subtree())
+                ? new Applied(
+                    reference.version(), running.sha256(), running.subtree(), running.ready())
                 : running);
   }
 
@@ -96,29 +108,46 @@ public final class PhysicalTenantConfigExecutor
     return Optional.ofNullable(applied.get(physicalTenantId));
   }
 
+  /** What the rollout of a tenant's configuration waits for on this member, if it waits. */
+  Optional<RolloutStep> rolloutStep(final String physicalTenantId) {
+    return Optional.ofNullable(steps.get(physicalTenantId));
+  }
+
   @Override
   public CompletableFuture<Void> apply(
       final String physicalTenantId,
       final PhysicalTenantConfigReference reference,
       final byte[] configuration) {
-    return CompletableFuture.runAsync(
-        () -> applyNow(physicalTenantId, reference, configuration), changes);
+    return afterPreviousChange(
+        physicalTenantId, () -> applyNow(physicalTenantId, reference, configuration));
   }
 
   @Override
   public CompletableFuture<Void> stop(final String physicalTenantId) {
-    return CompletableFuture.runAsync(
+    return afterPreviousChange(
+        physicalTenantId,
         () -> {
           if (registry.find(physicalTenantId).isPresent()) {
-            lifecycle.remove(physicalTenantId);
+            changeModule(() -> lifecycle.remove(physicalTenantId));
           }
           applied.remove(physicalTenantId);
+          steps.remove(physicalTenantId);
+          degradedByChange.remove(physicalTenantId);
           final var gauge = gauges.remove(physicalTenantId);
           if (gauge != null) {
             meterRegistry.remove(gauge);
           }
-        },
-        changes);
+        });
+  }
+
+  private CompletableFuture<Void> afterPreviousChange(
+      final String physicalTenantId, final Runnable change) {
+    return lastChange.compute(
+        physicalTenantId,
+        (id, previous) ->
+            (previous == null ? CompletableFuture.<Void>completedFuture(null) : previous)
+                .handle((ignored, error) -> null)
+                .thenRunAsync(change, changes));
   }
 
   private void applyNow(
@@ -129,7 +158,11 @@ public final class PhysicalTenantConfigExecutor
     final var running = applied.get(physicalTenantId);
     final var runsHere = registry.find(physicalTenantId).isPresent();
     if (runsHere && running != null && running.sha256().equals(reference.sha256())) {
+      if (!running.ready()) {
+        awaitReady(physicalTenantId, reference);
+      }
       record(physicalTenantId, reference, subtree);
+      clearDegradation(physicalTenantId);
       return;
     }
     if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
@@ -147,13 +180,23 @@ public final class PhysicalTenantConfigExecutor
     }
     try {
       if (runsHere) {
-        lifecycle.replace(physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree));
-        awaitReady(physicalTenantId);
-      } else {
-        lifecycle.add(
+        readiness.awaitQuorumElsewhere(
             physicalTenantId,
-            PhysicalTenantConfigCodec.asProperties(subtree),
-            UUID.fromString(reference.incarnationId()));
+            why -> waits(physicalTenantId, reference, "before the restart: " + why));
+        changeModule(
+            () ->
+                lifecycle.replace(
+                    physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)));
+        applied.put(
+            physicalTenantId, new Applied(reference.version(), reference.sha256(), subtree, false));
+        awaitReady(physicalTenantId, reference);
+      } else {
+        changeModule(
+            () ->
+                lifecycle.add(
+                    physicalTenantId,
+                    PhysicalTenantConfigCodec.asProperties(subtree),
+                    UUID.fromString(reference.incarnationId())));
       }
     } catch (final PhysicalTenantChangeException e) {
       if (e.reason() == Reason.INVALID && registry.find(physicalTenantId).isPresent()) {
@@ -163,28 +206,58 @@ public final class PhysicalTenantConfigExecutor
                 State.DEGRADED,
                 "cannot apply version %d of its configuration: %s"
                     .formatted(reference.version(), e.getMessage())));
+        degradedByChange.add(physicalTenantId);
       }
       throw e;
     }
     record(physicalTenantId, reference, subtree);
   }
 
-  /**
-   * Holds the rollout on this member until the restarted tenant installed its partitions again, so
-   * that the next member restarts only once this one serves; otherwise a partition could lose its
-   * quorum while every replica restarts at once. A tenant that is being added has no partitions
-   * yet: they are bootstrapped once every member runs it, so an add is not held.
-   */
-  private void awaitReady(final String physicalTenantId) {
+  private void awaitReady(
+      final String physicalTenantId, final PhysicalTenantConfigReference reference) {
     try {
-      lifecycle.awaitReady(physicalTenantId).get(READY_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException(e);
-    } catch (final ExecutionException | TimeoutException e) {
-      throw new IllegalStateException(
-          "Physical tenant '%s' did not become ready after its restart".formatted(physicalTenantId),
-          e);
+      readiness.awaitReady(
+          physicalTenantId, why -> waits(physicalTenantId, reference, "after the restart: " + why));
+    } catch (final NotReadyException e) {
+      final var why =
+          "applied version %d of its configuration, but is not ready: %s"
+              .formatted(reference.version(), e.getMessage());
+      LOG.warn("Physical tenant '{}' {}; the rollout waits", physicalTenantId, why);
+      registry.reportHealth(physicalTenantId, new PhysicalTenantHealth(State.DEGRADED, why));
+      degradedByChange.add(physicalTenantId);
+      throw e;
+    }
+    clearDegradation(physicalTenantId);
+  }
+
+  private void clearDegradation(final String physicalTenantId) {
+    if (degradedByChange.remove(physicalTenantId)
+        && registry
+            .health(physicalTenantId)
+            .filter(health -> health.state() == State.DEGRADED)
+            .isPresent()) {
+      registry.reportHealth(physicalTenantId, PhysicalTenantHealth.of(State.HEALTHY));
+    }
+  }
+
+  private void waits(
+      final String physicalTenantId,
+      final PhysicalTenantConfigReference reference,
+      final String why) {
+    steps.compute(
+        physicalTenantId,
+        (id, step) ->
+            step != null && step.version() == reference.version()
+                ? new RolloutStep(reference.version(), why, step.since())
+                : new RolloutStep(reference.version(), why, Instant.now()));
+  }
+
+  private void changeModule(final Runnable change) {
+    moduleChanges.lock();
+    try {
+      change.run();
+    } finally {
+      moduleChanges.unlock();
     }
   }
 
@@ -192,7 +265,9 @@ public final class PhysicalTenantConfigExecutor
       final String physicalTenantId,
       final PhysicalTenantConfigReference reference,
       final Map<String, String> subtree) {
-    applied.put(physicalTenantId, new Applied(reference.version(), reference.sha256(), subtree));
+    applied.put(
+        physicalTenantId, new Applied(reference.version(), reference.sha256(), subtree, true));
+    steps.remove(physicalTenantId);
     registerGauge(physicalTenantId);
   }
 
@@ -219,6 +294,12 @@ public final class PhysicalTenantConfigExecutor
     gauges.clear();
   }
 
-  /** The configuration a tenant runs with on this member, and its version (0 if from the file). */
-  record Applied(long version, String sha256, Map<String, String> subtree) {}
+  /**
+   * The configuration a tenant runs with on this member, its version (0 if from the file), and
+   * whether it was ready since it last restarted with it.
+   */
+  record Applied(long version, String sha256, Map<String, String> subtree, boolean ready) {}
+
+  /** The rollout of a version waits on this member, since the given instant, for the reason. */
+  public record RolloutStep(long version, String waitingFor, Instant since) {}
 }
