@@ -6,8 +6,9 @@
 # generator (optimize/docs/proto/preview-seed/) into Elasticsearch, once per
 # preview. Each record type goes into its own `zeebe-record_<type>_seed` index
 # behind the `zeebe-record-<type>` alias that Optimize imports from, next to
-# the exporter's own indices. Positions start at 1e9 so Optimize's import
-# never skips the seed because of records the exporter wrote first.
+# the exporter's own indices. The records are on partition 2, which the
+# single-partition cluster never writes to, so Optimize tracks a separate import
+# position for them and still imports the cluster's real records on partition 1.
 apiVersion: batch/v1
 kind: Job
 metadata:
