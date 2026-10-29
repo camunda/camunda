@@ -6,8 +6,8 @@
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
 ARG BASE_DIGEST="sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c"
-ARG JDK_IMAGE="eclipse-temurin:21.0.11_10-jdk-noble"
-ARG JDK_DIGEST="sha256:8a79c84cdf6967ae437eba13c8859d74d41aeccb1e65a42191ca57b1992ad0b8"
+ARG JDK_IMAGE="eclipse-temurin:21.0.12.1_1-jdk-noble"
+ARG JDK_DIGEST="sha256:57424b1d8eca9c4cf8a4fe226207027911f08d6758628891bf59fcfb53777029"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
