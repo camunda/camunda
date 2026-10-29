@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {APIRequestContext, expect, test} from '@playwright/test';
 import {
   assertForbiddenRequest,
+  assertStatusCode,
   buildUrl,
   encode,
   jsonHeaders,
 } from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
 import {
@@ -20,7 +22,11 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {
+  createUser,
+  expectStartSubscriptionPresent,
+  grantUserResourceAuthorization,
+} from '@requestHelpers';
 
 const PUBLISH_FORBIDDEN_DETAIL =
   "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'";
@@ -36,7 +42,26 @@ const CATCH_EVENT_MESSAGE_NAME = 'Message_1j9t80c';
 const CATCH_EVENT_CORRELATION_KEY = '12312';
 const MESSAGE_START_PROCESS_RESOURCE =
   './resources/message_start_business_id_process.bpmn';
+const MESSAGE_START_PROCESS_ID = 'message_start_business_id_process';
 const START_MESSAGE_NAME = 'start_business_id_msg';
+
+// createInstances() returns before the catch event opens its message
+// subscription, so a correlate sent right away can hit NOT_FOUND before the
+// permission check runs. Wait until the subscription exists.
+async function expectSubscriptionOpened(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/message-subscriptions/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey}},
+    });
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
+  }).toPass(defaultAssertionOptions);
+}
 
 test.describe.serial('Message Permission API - Forbidden', () => {
   const state: Record<string, unknown> = {};
@@ -53,8 +78,17 @@ test.describe.serial('Message Permission API - Forbidden', () => {
     await deploy([CATCH_EVENT_PROCESS_RESOURCE]);
     const processes = await createInstances(CATCH_EVENT_PROCESS_ID, 1, 1);
     state['processInstanceKey'] = processes[0].processInstanceKey;
+    await expectSubscriptionOpened(
+      request,
+      processes[0].processInstanceKey as string,
+    );
 
-    await deploy([MESSAGE_START_PROCESS_RESOURCE]);
+    const startDeployment = await deploy([MESSAGE_START_PROCESS_RESOURCE]);
+    await expectStartSubscriptionPresent(
+      request,
+      MESSAGE_START_PROCESS_ID,
+      startDeployment.processes[0].processDefinitionKey,
+    );
 
     userWithoutPermissions = await createUser(request);
     await grantUserResourceAuthorization(request, userWithoutPermissions);
