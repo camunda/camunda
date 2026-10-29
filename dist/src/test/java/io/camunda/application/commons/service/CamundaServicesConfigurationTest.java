@@ -394,6 +394,64 @@ class CamundaServicesConfigurationTest {
     return new SecretStoreRegistry(Map.of("main", store));
   }
 
+  @Test
+  void shouldServeATenantAddedAtRuntime() {
+    // given
+    final var tenants =
+        buildPhysicalTenantRegistry(
+            Map.of(TENANT_A, new Camunda()),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of()));
+    assertThatThrownBy(() -> tenants.registry().topologyServices("added"))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    // when
+    tenants.apply("added", new Camunda());
+
+    // then
+    assertThat(tenants.registry().topologyServices("added"))
+        .isNotNull()
+        .isNotSameAs(tenants.registry().topologyServices(TENANT_A));
+    assertThat(tenants.runtimeTenants()).containsExactly("added");
+    assertThat(tenants.registry().managementServices()).isNotNull();
+  }
+
+  @Test
+  void shouldBuildTheServicesOfAReplacedTenantFromItsNewConfiguration() {
+    // given
+    final var tenants =
+        buildPhysicalTenantRegistry(
+            Map.of(TENANT_A, tenantWithAuthorizations(true)),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of()));
+    final var before = tenants.registry().messageServices(TENANT_A);
+
+    // when
+    tenants.apply(TENANT_A, tenantWithAuthorizations(false));
+
+    // then
+    assertThat(tenants.registry().messageServices(TENANT_A)).isNotSameAs(before);
+  }
+
+  @Test
+  void shouldDropTheServicesOfARemovedTenant() {
+    // given
+    final var tenants =
+        buildPhysicalTenantRegistry(
+            Map.of(TENANT_A, new Camunda()),
+            new AuthorizationCheckerProvider(sharedAuthorizationChecker, Map.of()),
+            new SecretStoreRegistries(Map.of()));
+    tenants.apply("added", new Camunda());
+
+    // when
+    tenants.release("added");
+
+    // then
+    assertThatThrownBy(() -> tenants.registry().topologyServices("added"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(tenants.runtimeTenants()).isEmpty();
+  }
+
   private ServiceRegistry buildRegistry(
       final Map<String, Camunda> tenants,
       final AuthorizationCheckerProvider authorizationCheckerProvider) {
@@ -405,10 +463,18 @@ class CamundaServicesConfigurationTest {
       final Map<String, Camunda> tenants,
       final AuthorizationCheckerProvider authorizationCheckerProvider,
       final SecretStoreRegistries secretStoreRegistries) {
+    return buildPhysicalTenantRegistry(tenants, authorizationCheckerProvider, secretStoreRegistries)
+        .registry();
+  }
+
+  private PhysicalTenantServiceRegistry buildPhysicalTenantRegistry(
+      final Map<String, Camunda> tenants,
+      final AuthorizationCheckerProvider authorizationCheckerProvider,
+      final SecretStoreRegistries secretStoreRegistries) {
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(tenants);
 
-    return configuration.serviceRegistry(
+    return configuration.physicalTenantServiceRegistry(
         physicalTenantResolver,
         mock(BrokerClient.class),
         new SecurityContextProvider(),
