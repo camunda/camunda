@@ -338,6 +338,10 @@ final class InternalConfigRefresherTest {
     return PhysicalTenantResolver.of(env, camunda);
   }
 
+  private PhysicalTenantHealth healthOf(final String physicalTenantId) {
+    return registry.health(physicalTenantId).orElseThrow();
+  }
+
   private static final class RecordingConsumer implements InternalConfigRefresher.Consumer {
 
     private final Map<String, String> configured;
@@ -407,9 +411,5 @@ final class InternalConfigRefresherTest {
         throw new IllegalStateException("key file unreadable");
       }
     }
-  }
-
-  private PhysicalTenantHealth healthOf(final String physicalTenantId) {
-    return registry.health(physicalTenantId).orElseThrow();
   }
 }

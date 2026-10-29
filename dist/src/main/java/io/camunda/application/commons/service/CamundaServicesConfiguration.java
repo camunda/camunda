@@ -253,6 +253,48 @@ public class CamundaServicesConfiguration {
   }
 
   /**
+   * Builds the per-tenant runtime-backup port, mirroring the wiring of the {@code backupRuntime}
+   * actuator ({@code BackupEndpoint}): backup ids must be omitted (they are generated from the
+   * current timestamp plus the configured offset) whenever continuous backups, a backup schedule,
+   * or a checkpoint interval is configured for the physical tenant.
+   *
+   * <p>The port is what both the per-tenant and the cluster-wide service are built on, so the mode
+   * the per-tenant endpoint enforces is by construction the mode the cluster-wide one reports.
+   */
+  private static PhysicalTenantBackupPort runtimeBackupPort(
+      final String tenantId, final Camunda tenantConfig, final BrokerClient brokerClient) {
+    final var backupCfg = tenantConfig.getData().getPrimaryStorage().getBackup();
+    final var backupIdGenerated =
+        backupCfg.isContinuous()
+            || !(Schedule.parseSchedule(backupCfg.getSchedule()) instanceof Schedule.NoneSchedule)
+            || (backupCfg.getCheckpointInterval() != null
+                && !backupCfg.getCheckpointInterval().isZero());
+    final var backupApi =
+        new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
+    return new PhysicalTenantBackupPort(tenantId, backupApi, backupIdGenerated);
+  }
+
+  private static RuntimeBackupServices runtimeBackupServices(
+      final PhysicalTenantBackupPort port,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuthorizationChecker authorizationChecker,
+      final AuthorizationsConfiguration authorizationsConfig,
+      final ApiServicesExecutorProvider executor,
+      final BrokerRequestAuthorizationConverter converter) {
+    return new RuntimeBackupServices(
+        port.physicalTenantId(),
+        brokerClient,
+        securityContextProvider,
+        port.api(),
+        authorizationChecker,
+        authorizationsConfig,
+        port.backupIdGenerated(),
+        executor,
+        converter);
+  }
+
+  /**
    * Builds the services of one physical tenant, bound to its search-client view, its authorization
    * checker and a broker request converter derived from its own security configuration. Used for
    * every tenant of the startup configuration, and for a tenant added or replaced at runtime.
@@ -589,47 +631,5 @@ public class CamundaServicesConfiguration {
                       tenantSecurity.getAuthorizations(),
                       executor)));
     }
-  }
-
-  /**
-   * Builds the per-tenant runtime-backup port, mirroring the wiring of the {@code backupRuntime}
-   * actuator ({@code BackupEndpoint}): backup ids must be omitted (they are generated from the
-   * current timestamp plus the configured offset) whenever continuous backups, a backup schedule,
-   * or a checkpoint interval is configured for the physical tenant.
-   *
-   * <p>The port is what both the per-tenant and the cluster-wide service are built on, so the mode
-   * the per-tenant endpoint enforces is by construction the mode the cluster-wide one reports.
-   */
-  private static PhysicalTenantBackupPort runtimeBackupPort(
-      final String tenantId, final Camunda tenantConfig, final BrokerClient brokerClient) {
-    final var backupCfg = tenantConfig.getData().getPrimaryStorage().getBackup();
-    final var backupIdGenerated =
-        backupCfg.isContinuous()
-            || !(Schedule.parseSchedule(backupCfg.getSchedule()) instanceof Schedule.NoneSchedule)
-            || (backupCfg.getCheckpointInterval() != null
-                && !backupCfg.getCheckpointInterval().isZero());
-    final var backupApi =
-        new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
-    return new PhysicalTenantBackupPort(tenantId, backupApi, backupIdGenerated);
-  }
-
-  private static RuntimeBackupServices runtimeBackupServices(
-      final PhysicalTenantBackupPort port,
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AuthorizationChecker authorizationChecker,
-      final AuthorizationsConfiguration authorizationsConfig,
-      final ApiServicesExecutorProvider executor,
-      final BrokerRequestAuthorizationConverter converter) {
-    return new RuntimeBackupServices(
-        port.physicalTenantId(),
-        brokerClient,
-        securityContextProvider,
-        port.api(),
-        authorizationChecker,
-        authorizationsConfig,
-        port.backupIdGenerated(),
-        executor,
-        converter);
   }
 }

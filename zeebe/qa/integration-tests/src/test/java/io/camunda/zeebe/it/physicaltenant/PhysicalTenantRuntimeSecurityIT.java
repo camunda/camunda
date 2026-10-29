@@ -146,7 +146,7 @@ final class PhysicalTenantRuntimeSecurityIT {
   @TempDir private static Path secrets;
 
   private static Path internalSecrets;
-  private static Realm BOOT;
+  private static Realm bootRealm;
   private static Proxy idpProxy;
   private static RestLoad bootLoad;
 
@@ -160,7 +160,7 @@ final class PhysicalTenantRuntimeSecurityIT {
 
     final var root = Realm.create(ROOT_REALM, directIssuer(ROOT_REALM));
     final var boot = Realm.create(BOOT_REALM, directIssuer(BOOT_REALM));
-    BOOT = boot;
+    bootRealm = boot;
     writeSecret(BOOT_TENANT + "-web", boot.webSecret());
     CLUSTER
         .brokers()
@@ -273,7 +273,7 @@ final class PhysicalTenantRuntimeSecurityIT {
     assertThat(publish(broker(2), tenantId, before.serviceToken(Realm.OTHER_SERVICE_CLIENT)))
         .isEqualTo(403);
     final var tenantSession = login(broker(0), tenantId, before);
-    final var bootSession = login(broker(0), BOOT_TENANT, bootRealm());
+    final var bootSession = login(broker(0), BOOT_TENANT, bootRealm);
     assertThat(tenantSession.topology()).isEqualTo(200);
     assertThat(bootSession.topology()).isEqualTo(200);
     writeSecret(tenantId + "-web", after.webSecret());
@@ -463,7 +463,7 @@ final class PhysicalTenantRuntimeSecurityIT {
     awaitOnEveryBroker(tenantId, realm.serviceToken(Realm.SERVICE_CLIENT), 200);
     final var modules = moduleContexts(tenantId);
     final var session = login(broker(0), tenantId, realm);
-    final var bootSession = login(broker(0), BOOT_TENANT, bootRealm());
+    final var bootSession = login(broker(0), BOOT_TENANT, bootRealm);
     assertThat(session.topology()).isEqualTo(200);
     final var rotated = realm.rotateWebSecret();
     assertThat(realm.acceptsWebSecret(realm.webSecret())).isTrue();
@@ -625,103 +625,6 @@ final class PhysicalTenantRuntimeSecurityIT {
                         broker -> assertThat(publish(broker, tenantId, token)).isEqualTo(200)));
   }
 
-  /**
-   * What the HTTP security of every broker in this JVM holds. Meters of traffic register a series
-   * per topic, peer or outcome when it first occurs, also for the other tenants' traffic or a 503
-   * while a restarted partition elects its leader, so they are not compared. Pooled threads that
-   * start on demand up to a fixed size, such as the REST API executor's, which starts a thread per
-   * request until its core size, are not counted.
-   */
-  private record SecurityResources(
-      long scopeGenerations,
-      long oidcClientStacks,
-      long filterChains,
-      long bearerConverters,
-      long claimsConverters,
-      int threads,
-      Map<String, Long> threadNames,
-      Set<String> meters) {
-
-    /** What the security library keeps per served generation of every scope. */
-    List<Long> chains() {
-      return List.of(scopeGenerations, oidcClientStacks, filterChains);
-    }
-
-    Set<String> added(final SecurityResources before) {
-      final var added = new java.util.TreeSet<>(meters);
-      added.removeAll(before.meters());
-      return added;
-    }
-
-    @Override
-    public String toString() {
-      return "generations=%d, oidcClientStacks=%d, filterChains=%d, bearerConverters=%d,"
-              .formatted(scopeGenerations, oidcClientStacks, filterChains, bearerConverters)
-          + " claimsConverters=%d, threads=%d, meters=%d"
-              .formatted(claimsConverters, threads, meters.size());
-    }
-
-    static SecurityResources measure() {
-      final var histogram = liveInstancesAfterFullGc();
-      return new SecurityResources(
-          histogram.getOrDefault("io.camunda.security.spring.scope.ScopeGeneration", 0L),
-          histogram.getOrDefault("io.camunda.security.spring.oidc.ScopedOidcClients", 0L),
-          histogram.getOrDefault("org.springframework.security.web.DefaultSecurityFilterChain", 0L),
-          histogram.getOrDefault(
-              "io.camunda.security.spring.converter.OidcTokenAuthenticationConverter", 0L),
-          histogram.getOrDefault("io.camunda.security.core.authz.LazyTokenClaimsConverter", 0L),
-          (int)
-              Thread.getAllStackTraces().keySet().stream()
-                  .map(Thread::getName)
-                  .filter(name -> POOLED_THREADS.stream().noneMatch(name::startsWith))
-                  .count(),
-          Thread.getAllStackTraces().keySet().stream()
-              .collect(
-                  Collectors.groupingBy(
-                      thread -> thread.getName().replaceAll("[0-9]+", "#"),
-                      java.util.TreeMap::new,
-                      Collectors.counting())),
-          CLUSTER.brokers().entrySet().stream()
-              .flatMap(
-                  broker ->
-                      broker
-                          .getValue()
-                          .bean(io.micrometer.core.instrument.MeterRegistry.class)
-                          .getMeters()
-                          .stream()
-                          .filter(
-                              meter ->
-                                  TRAFFIC_METERS.stream()
-                                      .noneMatch(meter.getId().getName()::startsWith))
-                          .map(meter -> broker.getKey() + " " + meter.getId()))
-              .collect(Collectors.toSet()));
-    }
-
-    private static Map<String, Long> liveInstancesAfterFullGc() {
-      try {
-        final String table =
-            (String)
-                java.lang.management.ManagementFactory.getPlatformMBeanServer()
-                    .invoke(
-                        new javax.management.ObjectName(
-                            "com.sun.management:type=DiagnosticCommand"),
-                        "gcClassHistogram",
-                        new Object[] {new String[0]},
-                        new String[] {String[].class.getName()});
-        final Map<String, Long> instances = new HashMap<>();
-        for (final String line : table.split("\n")) {
-          final var columns = line.trim().split("\\s+");
-          if (columns.length >= 4 && columns[0].endsWith(":")) {
-            instances.merge(columns[3], Long.parseLong(columns[1]), Long::sum);
-          }
-        }
-        return instances;
-      } catch (final Exception e) {
-        throw new IllegalStateException("Failed to read the class histogram", e);
-      }
-    }
-  }
-
   private static void awaitSecurityOutcomeOnEveryBroker(
       final String tenantId, final String outcome) {
     Awaitility.await("every broker reports %s for '%s'".formatted(outcome, tenantId))
@@ -774,10 +677,6 @@ final class PhysicalTenantRuntimeSecurityIT {
             });
   }
 
-  private static Realm bootRealm() {
-    return BOOT;
-  }
-
   /** Logs the user in on a tenant through the authorization code flow, as a browser would. */
   private static Session login(
       final TestStandaloneBroker broker, final String tenantId, final Realm realm)
@@ -818,20 +717,6 @@ final class PhysicalTenantRuntimeSecurityIT {
 
   private static String location(final HttpResponse<?> response) {
     return response.headers().firstValue("location").orElseThrow();
-  }
-
-  /** A browser that logged in on a tenant. */
-  private record Session(Browser browser, String tenantBase) {
-
-    int topology() throws Exception {
-      return browser
-          .send(
-              HttpRequest.newBuilder(URI.create(tenantBase + "/v2/topology"))
-                  .header("Accept", "application/json")
-                  .GET(),
-              BodyHandlers.discarding())
-          .statusCode();
-    }
   }
 
   private static void assertOnEveryBroker(
@@ -993,6 +878,117 @@ final class PhysicalTenantRuntimeSecurityIT {
 
   private static String uniqueTenantId() {
     return "t" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+  }
+
+  /**
+   * What the HTTP security of every broker in this JVM holds. Meters of traffic register a series
+   * per topic, peer or outcome when it first occurs, also for the other tenants' traffic or a 503
+   * while a restarted partition elects its leader, so they are not compared. Pooled threads that
+   * start on demand up to a fixed size, such as the REST API executor's, which starts a thread per
+   * request until its core size, are not counted.
+   */
+  private record SecurityResources(
+      long scopeGenerations,
+      long oidcClientStacks,
+      long filterChains,
+      long bearerConverters,
+      long claimsConverters,
+      int threads,
+      Map<String, Long> threadNames,
+      Set<String> meters) {
+
+    /** What the security library keeps per served generation of every scope. */
+    List<Long> chains() {
+      return List.of(scopeGenerations, oidcClientStacks, filterChains);
+    }
+
+    Set<String> added(final SecurityResources before) {
+      final var added = new java.util.TreeSet<>(meters);
+      added.removeAll(before.meters());
+      return added;
+    }
+
+    @Override
+    public String toString() {
+      return "generations=%d, oidcClientStacks=%d, filterChains=%d, bearerConverters=%d,"
+              .formatted(scopeGenerations, oidcClientStacks, filterChains, bearerConverters)
+          + " claimsConverters=%d, threads=%d, meters=%d"
+              .formatted(claimsConverters, threads, meters.size());
+    }
+
+    static SecurityResources measure() {
+      final var histogram = liveInstancesAfterFullGc();
+      return new SecurityResources(
+          histogram.getOrDefault("io.camunda.security.spring.scope.ScopeGeneration", 0L),
+          histogram.getOrDefault("io.camunda.security.spring.oidc.ScopedOidcClients", 0L),
+          histogram.getOrDefault("org.springframework.security.web.DefaultSecurityFilterChain", 0L),
+          histogram.getOrDefault(
+              "io.camunda.security.spring.converter.OidcTokenAuthenticationConverter", 0L),
+          histogram.getOrDefault("io.camunda.security.core.authz.LazyTokenClaimsConverter", 0L),
+          (int)
+              Thread.getAllStackTraces().keySet().stream()
+                  .map(Thread::getName)
+                  .filter(name -> POOLED_THREADS.stream().noneMatch(name::startsWith))
+                  .count(),
+          Thread.getAllStackTraces().keySet().stream()
+              .collect(
+                  Collectors.groupingBy(
+                      thread -> thread.getName().replaceAll("[0-9]+", "#"),
+                      java.util.TreeMap::new,
+                      Collectors.counting())),
+          CLUSTER.brokers().entrySet().stream()
+              .flatMap(
+                  broker ->
+                      broker
+                          .getValue()
+                          .bean(io.micrometer.core.instrument.MeterRegistry.class)
+                          .getMeters()
+                          .stream()
+                          .filter(
+                              meter ->
+                                  TRAFFIC_METERS.stream()
+                                      .noneMatch(meter.getId().getName()::startsWith))
+                          .map(meter -> broker.getKey() + " " + meter.getId()))
+              .collect(Collectors.toSet()));
+    }
+
+    private static Map<String, Long> liveInstancesAfterFullGc() {
+      try {
+        final String table =
+            (String)
+                java.lang.management.ManagementFactory.getPlatformMBeanServer()
+                    .invoke(
+                        new javax.management.ObjectName(
+                            "com.sun.management:type=DiagnosticCommand"),
+                        "gcClassHistogram",
+                        new Object[] {new String[0]},
+                        new String[] {String[].class.getName()});
+        final Map<String, Long> instances = new HashMap<>();
+        for (final String line : table.split("\n")) {
+          final var columns = line.trim().split("\\s+");
+          if (columns.length >= 4 && columns[0].endsWith(":")) {
+            instances.merge(columns[3], Long.parseLong(columns[1]), Long::sum);
+          }
+        }
+        return instances;
+      } catch (final Exception e) {
+        throw new IllegalStateException("Failed to read the class histogram", e);
+      }
+    }
+  }
+
+  /** A browser that logged in on a tenant. */
+  private record Session(Browser browser, String tenantBase) {
+
+    int topology() throws Exception {
+      return browser
+          .send(
+              HttpRequest.newBuilder(URI.create(tenantBase + "/v2/topology"))
+                  .header("Accept", "application/json")
+                  .GET(),
+              BodyHandlers.discarding())
+          .statusCode();
+    }
   }
 
   /**

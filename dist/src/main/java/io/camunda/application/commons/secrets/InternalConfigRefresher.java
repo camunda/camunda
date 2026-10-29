@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class InternalConfigRefresher implements AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(InternalConfigRefresher.class);
-
   /** Marks a degraded health as reported by this refresher, so that it only clears its own. */
   static final String DEGRADED_DETAIL = "secrets could not be refreshed: ";
+
+  private static final Logger LOG = LoggerFactory.getLogger(InternalConfigRefresher.class);
 
   private final PhysicalTenantRegistry registry;
   private final List<Registration> registrations = new CopyOnWriteArrayList<>();

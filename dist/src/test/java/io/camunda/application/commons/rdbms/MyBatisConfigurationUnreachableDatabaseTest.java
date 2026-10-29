@@ -53,9 +53,9 @@ class MyBatisConfigurationUnreachableDatabaseTest {
 
   private static final String TENANT_B = "tenantb";
 
-  private final MyBatisConfiguration configuration = new MyBatisConfiguration();
-
   private static final DefaultListableBeanFactory NO_BEANS = new DefaultListableBeanFactory();
+
+  private final MyBatisConfiguration configuration = new MyBatisConfiguration();
 
   @BeforeAll
   @AfterAll

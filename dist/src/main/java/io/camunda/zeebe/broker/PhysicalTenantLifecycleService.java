@@ -69,7 +69,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public final class PhysicalTenantLifecycleService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  static final String SECURITY_NOT_APPLIED =
+  private static final SecretStoreRegistry NOT_BUILT_YET = new SecretStoreRegistry(Map.of());
+  private static final String SECURITY_NOT_APPLIED =
       "keeps its previous HTTP security, the change is not applied: ";
 
   private final Broker broker;
@@ -78,7 +79,6 @@ public final class PhysicalTenantLifecycleService {
   private final DefaultPhysicalTenantRegistry registry;
   private final Duration timeout;
   private final List<PhysicalTenantResources> resources;
-  private static final SecretStoreRegistry NOT_BUILT_YET = new SecretStoreRegistry(Map.of());
 
   private final PhysicalTenantSecretStores secretStores;
   private final PhysicalTenantRestSecurity restSecurity;

@@ -52,13 +52,13 @@ import org.springframework.boot.jdbc.DatabaseDriver;
  */
 public final class RdbmsDataSources implements AutoCloseable {
 
+  /** How long a replaced pool may finish the statements in flight before it is closed anyway. */
+  static final Duration DRAIN_TIMEOUT = Duration.ofSeconds(30);
+
   private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsDataSources.class);
   private static final String MYSQL_REWRITE_BATCHED_STATEMENTS_PROPERTY =
       "rewriteBatchedStatements";
   private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
-
-  /** How long a replaced pool may finish the statements in flight before it is closed anyway. */
-  static final Duration DRAIN_TIMEOUT = Duration.ofSeconds(30);
 
   private static final Duration DRAIN_POLL_INTERVAL = Duration.ofMillis(50);
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(5);

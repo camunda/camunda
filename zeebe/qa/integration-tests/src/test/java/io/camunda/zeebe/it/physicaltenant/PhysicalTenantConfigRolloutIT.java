@@ -425,6 +425,10 @@ final class PhysicalTenantConfigRolloutIT {
     }
   }
 
+  private static String uniqueTenantId() {
+    return "rt" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+  }
+
   private static final class PublishLoad implements Runnable {
     private final CamundaClient client;
     private final AtomicBoolean running = new AtomicBoolean(true);
@@ -473,9 +477,5 @@ final class PhysicalTenantConfigRolloutIT {
     private Duration longestGap() {
       return Duration.ofNanos(longestGapNanos);
     }
-  }
-
-  private static String uniqueTenantId() {
-    return "rt" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
   }
 }
