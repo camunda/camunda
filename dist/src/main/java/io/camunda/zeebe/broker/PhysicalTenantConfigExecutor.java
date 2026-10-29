@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenantHealth;
 import io.camunda.cluster.PhysicalTenantHealth.State;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -186,7 +188,9 @@ public final class PhysicalTenantConfigExecutor
         changeModule(
             () ->
                 lifecycle.replace(
-                    physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)));
+                    physicalTenantId,
+                    PhysicalTenantConfigCodec.asProperties(subtree),
+                    handoverPreference(reference)));
         applied.put(
             physicalTenantId, new Applied(reference.version(), reference.sha256(), subtree, false));
         awaitReady(physicalTenantId, reference);
@@ -259,6 +263,22 @@ public final class PhysicalTenantConfigExecutor
     } finally {
       moduleChanges.unlock();
     }
+  }
+
+  /**
+   * Orders the replicas that may take over the leadership of the tenant's partitions from this
+   * member: first the members that already run this version, so the leadership does not move again
+   * when they restart; then the others in reverse rollout order (live members by id), so the one
+   * that restarts last is preferred.
+   */
+  static Comparator<MemberId> handoverPreference(final PhysicalTenantConfigReference reference) {
+    final Comparator<MemberId> appliedFirst =
+        Comparator.comparing(member -> reference.appliedVersion(member) < reference.version());
+    return appliedFirst.thenComparing(
+        (left, right) ->
+            reference.appliedVersion(left) >= reference.version()
+                ? MemberId.ID_COMPARATOR.compare(left, right)
+                : MemberId.ID_COMPARATOR.compare(right, left));
   }
 
   private void record(

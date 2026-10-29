@@ -494,6 +494,14 @@ public class Raft {
      */
     private Duration leaderWaitTimeout = Duration.ofMinutes(1);
 
+    /**
+     * Whether a member that restarts the module of a physical tenant first transfers the leadership
+     * of the tenant's partitions it leads to other replicas, so that the partitions keep a leader
+     * during the restart. A partition that no replica takes over within the replication timeout is
+     * restarted as without it.
+     */
+    private boolean handOverBeforeTenantRestart = true;
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -528,6 +536,14 @@ public class Raft {
             "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
       }
       this.maxTransferAttempts = maxTransferAttempts;
+    }
+
+    public boolean isHandOverBeforeTenantRestart() {
+      return handOverBeforeTenantRestart;
+    }
+
+    public void setHandOverBeforeTenantRestart(final boolean handOverBeforeTenantRestart) {
+      this.handOverBeforeTenantRestart = handOverBeforeTenantRestart;
     }
 
     public Duration getLeaderWaitTimeout() {

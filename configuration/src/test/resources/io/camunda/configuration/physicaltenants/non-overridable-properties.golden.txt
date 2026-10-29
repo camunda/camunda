@@ -80,6 +80,7 @@ cluster.raft.preallocate-segment-files
 cluster.raft.prefer-snapshot-replication-threshold
 cluster.raft.priority-election-enabled
 cluster.raft.promotion-lag-threshold
+cluster.raft.rebalance.hand-over-before-tenant-restart
 cluster.raft.rebalance.leader-wait-timeout
 cluster.raft.rebalance.max-transfer-attempts
 cluster.raft.rebalance.replication-lag-threshold

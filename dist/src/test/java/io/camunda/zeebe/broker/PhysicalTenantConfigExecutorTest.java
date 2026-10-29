@@ -18,6 +18,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenant;
 import io.camunda.cluster.PhysicalTenantHealth.State;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -75,7 +77,7 @@ final class PhysicalTenantConfigExecutorTest {
 
     // then
     assertThat(retry).succeedsWithin(TIMEOUT);
-    verify(lifecycle, times(1)).replace(eq("slow"), anyMap());
+    verify(lifecycle, times(1)).replace(eq("slow"), anyMap(), any());
     verify(readiness, times(2)).awaitReady(eq("slow"), any());
     assertThat(executor.applied("slow").orElseThrow().version()).isEqualTo(2);
     assertThat(registry.health("slow").orElseThrow().state()).isEqualTo(State.HEALTHY);
@@ -112,7 +114,7 @@ final class PhysicalTenantConfigExecutorTest {
     executor.runsFromStaticConfiguration("slow", Map.of("a", "1"));
     doThrow(new PhysicalTenantChangeException(Reason.INVALID, "invalid", null))
         .when(lifecycle)
-        .replace(eq("slow"), anyMap());
+        .replace(eq("slow"), anyMap(), any());
     assertThat(executor.apply("slow", reference(2, "a", "2"), encode("a", "2")))
         .failsWithin(TIMEOUT);
 
@@ -121,10 +123,31 @@ final class PhysicalTenantConfigExecutorTest {
 
     // then
     assertThat(rolledBack).succeedsWithin(TIMEOUT);
-    verify(lifecycle, times(1)).replace(eq("slow"), anyMap());
+    verify(lifecycle, times(1)).replace(eq("slow"), anyMap(), any());
     verify(readiness, never()).awaitReady(eq("slow"), any());
     assertThat(executor.applied("slow").orElseThrow().version()).isEqualTo(3);
     assertThat(registry.health("slow").orElseThrow().state()).isEqualTo(State.HEALTHY);
+  }
+
+  @Test
+  void shouldPreferMembersThatAppliedTheVersionThenTheOnesThatRestartLast() {
+    // given
+    final var applied = new TreeMap<MemberId, Long>(MemberId.ID_COMPARATOR);
+    applied.put(member(1), 3L);
+    applied.put(member(3), 3L);
+    applied.put(member(4), 2L);
+    final var reference =
+        new PhysicalTenantConfigReference(
+            3, "sha", Owner.API, UUID.randomUUID().toString(), applied);
+
+    // when
+    final var preferred =
+        Stream.of(member(0), member(1), member(3), member(4), member(5))
+            .sorted(PhysicalTenantConfigExecutor.handoverPreference(reference))
+            .toList();
+
+    // then
+    assertThat(preferred).isEqualTo(List.of(member(1), member(3), member(5), member(4), member(0)));
   }
 
   private static PhysicalTenantConfigReference reference(
@@ -139,5 +162,9 @@ final class PhysicalTenantConfigExecutorTest {
 
   private static byte[] encode(final String key, final String value) {
     return PhysicalTenantConfigCodec.encode(Map.of(key, value));
+  }
+
+  private static MemberId member(final int id) {
+    return MemberId.from(String.valueOf(id));
   }
 }

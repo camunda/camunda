@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
@@ -19,12 +20,16 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover.Report;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +62,19 @@ import org.springframework.core.env.ConfigurableEnvironment;
  * security chains of the Camunda Security Library are built once at startup, so the REST API only
  * serves the incarnation of a tenant that existed at startup.
  *
+ * <p>Before a replaced tenant's module stops, the member hands the leadership of the tenant's
+ * partitions it leads to other replicas (see {@link PartitionLeadershipHandover}), so the
+ * partitions keep serving through the restart. A partition no replica takes over is restarted as it
+ * is, and {@link #lastRestart} says why. {@code
+ * camunda.cluster.raft.rebalance.hand-over-before-tenant-restart} turns this off.
+ *
  * <p>Only one change is applied at a time; a concurrent change is rejected, not queued.
  */
 @NullMarked
 public final class PhysicalTenantLifecycleService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final Duration HANDOVER_SLACK = Duration.ofSeconds(5);
 
   private final Broker broker;
   private final SystemContextLoader systemContextLoader;
@@ -80,6 +92,7 @@ public final class PhysicalTenantLifecycleService {
   private final ReentrantLock changeLock = new ReentrantLock();
   private final Map<String, Camunda> configurations = new ConcurrentHashMap<>();
   private final Map<String, PhysicalTenantContext> contexts = new ConcurrentHashMap<>();
+  private final Map<String, TenantRestart> lastRestarts = new ConcurrentHashMap<>();
   private ConfigurableEnvironment environment;
 
   public PhysicalTenantLifecycleService(
@@ -158,6 +171,17 @@ public final class PhysicalTenantLifecycleService {
    */
   public PhysicalTenant replace(
       final String physicalTenantId, final Map<String, Object> configuration) {
+    return replace(physicalTenantId, configuration, MemberId.ID_COMPARATOR);
+  }
+
+  /**
+   * Replaces the configuration of a tenant as {@link #replace(String, Map)} does, handing the
+   * leadership of its partitions to the replicas in the given order of preference first.
+   */
+  public PhysicalTenant replace(
+      final String physicalTenantId,
+      final Map<String, Object> configuration,
+      final Comparator<MemberId> handoverPreference) {
     return underChangeLock(
         () -> {
           final var current = requireChangeable(physicalTenantId);
@@ -165,6 +189,9 @@ public final class PhysicalTenantLifecycleService {
           registry.reportHealth(
               physicalTenantId,
               new PhysicalTenantHealth(State.RESTARTING, "applying a configuration change"));
+          final var startedNanos = System.nanoTime();
+          final var startedAt = Instant.now();
+          final var handover = handOverLeadership(physicalTenantId, handoverPreference);
           gateway()
               .ifPresent(
                   gateway ->
@@ -179,10 +206,18 @@ public final class PhysicalTenantLifecycleService {
                 new PhysicalTenantHealth(State.FAILED, "module failed to stop: " + e));
             throw rejected(Reason.FAILED, physicalTenantId, "its module failed to stop", e);
           }
+          final var stoppedNanos = System.nanoTime();
           final var replaced = current.withName(candidate.name());
           registry.replace(replaced);
           commit(physicalTenantId, candidate);
-          startModule(replaced, candidate.context());
+          try {
+            startModule(replaced, candidate.context());
+          } finally {
+            lastRestarts.put(
+                physicalTenantId,
+                new TenantRestart(
+                    startedAt, startedNanos, handover, stoppedNanos, System.nanoTime()));
+          }
           return replaced;
         });
   }
@@ -248,11 +283,21 @@ public final class PhysicalTenantLifecycleService {
     return modules().awaitReady(physicalTenantId);
   }
 
-  /** The health of a tenant on this node. */
+  /** The health of a tenant on this node and its last restart. */
   public Optional<LocalStatus> localStatus(final String physicalTenantId) {
     return registry
         .health(physicalTenantId)
-        .map(health -> new LocalStatus(health.state(), health.detail()));
+        .map(
+            health ->
+                new LocalStatus(
+                    health.state(),
+                    health.detail(),
+                    lastRestart(physicalTenantId).map(TenantRestart::describe).orElse(null)));
+  }
+
+  /** The last restart of a tenant's module on this node for a configuration change. */
+  public Optional<TenantRestart> lastRestart(final String physicalTenantId) {
+    return Optional.ofNullable(lastRestarts.get(physicalTenantId));
   }
 
   /** The resolved configuration a tenant currently runs with. */
@@ -372,6 +417,53 @@ public final class PhysicalTenantLifecycleService {
             });
   }
 
+  /**
+   * Hands the leadership of the tenant's partitions that this member leads to other replicas, so
+   * they keep a leader while the module restarts. Never fails the change: a partition that is not
+   * handed over is restarted as it is.
+   */
+  private Report handOverLeadership(
+      final String physicalTenantId, final Comparator<MemberId> preference) {
+    final var brokerConfiguration = broker.getSystemContext().getBrokerConfiguration();
+    final var raft = brokerConfiguration.getCluster().getRaft();
+    final var context = broker.getBrokerContext();
+    final var partitionManager =
+        context == null ? null : context.getPartitionManagers().get(physicalTenantId);
+    if (partitionManager == null) {
+      return Report.skipped();
+    }
+    if (!raft.isHandOverBeforeTenantRestart()) {
+      return PartitionLeadershipHandover.withoutHandover(partitionManager.getRaftPartitions());
+    }
+    final var bound = raft.getRebalanceReplicationTimeout().plus(HANDOVER_SLACK);
+    final var handover =
+        new PartitionLeadershipHandover(
+            MemberId.from(String.valueOf(brokerConfiguration.getCluster().getNodeId())), bound);
+    try {
+      final var report =
+          handover
+              .handOverRaftPartitions(partitionManager.getRaftPartitions(), preference)
+              .get(bound.plus(HANDOVER_SLACK).toMillis(), TimeUnit.MILLISECONDS);
+      final var fallbacks = report.fallbacks();
+      if (!fallbacks.isEmpty()) {
+        LOG.info(
+            "Restarting physical tenant '{}' without handing over the leadership of {}",
+            physicalTenantId,
+            fallbacks);
+      }
+      return report;
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return Report.skipped();
+    } catch (final ExecutionException | TimeoutException e) {
+      LOG.warn(
+          "Failed to hand over the leadership of physical tenant '{}' before its restart",
+          physicalTenantId,
+          e);
+      return Report.skipped();
+    }
+  }
+
   private void stopModule(final String physicalTenantId) {
     final var modules = modules();
     if (modules.running().contains(physicalTenantId)) {
@@ -481,8 +573,59 @@ public final class PhysicalTenantLifecycleService {
     T apply();
   }
 
-  /** The health of a tenant on this node. */
-  public record LocalStatus(State health, @Nullable String healthDetail) {}
+  /**
+   * The health of a tenant on this node, and its last restart.
+   *
+   * @param lastRestart empty until the tenant restarted on this node for a configuration change
+   */
+  public record LocalStatus(
+      State health, @Nullable String healthDetail, @Nullable String lastRestart) {}
+
+  /**
+   * A restart of a tenant's module for a configuration change.
+   *
+   * @param startedNanos {@link System#nanoTime()} when the restart began, after the change passed
+   *     its checks
+   * @param handover how the leadership of the tenant's partitions was handed over; no partitions if
+   *     the handover is turned off
+   * @param stoppedNanos {@link System#nanoTime()} once the module stopped
+   * @param startedAgainNanos {@link System#nanoTime()} once the module started again, before its
+   *     partitions were installed
+   */
+  public record TenantRestart(
+      Instant startedAt,
+      long startedNanos,
+      Report handover,
+      long stoppedNanos,
+      long startedAgainNanos) {
+
+    /** Whether this member led any partition of the tenant when the restart began. */
+    public boolean led() {
+      return handover.partitions().stream()
+          .anyMatch(PartitionLeadershipHandover.PartitionReport::led);
+    }
+
+    String describe() {
+      final var partitions =
+          handover.partitions().stream()
+              .filter(PartitionLeadershipHandover.PartitionReport::led)
+              .map(
+                  partition ->
+                      partition.partition().number()
+                          + ": "
+                          + partition.outcome()
+                          + (partition.newLeader() == null ? "" : " to " + partition.newLeader())
+                          + " in "
+                          + partition.took().toMillis()
+                          + " ms")
+              .toList();
+      return "at %s, handover %s, module down %d ms"
+          .formatted(
+              startedAt,
+              partitions.isEmpty() ? "of no partition" : String.join(", ", partitions),
+              Duration.ofNanos(startedAgainNanos - stoppedNanos).toMillis());
+    }
+  }
 
   private record Candidate(
       ConfigurableEnvironment environment,

@@ -17,6 +17,7 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   public static final Duration DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT = Duration.ofMinutes(1);
+  public static final boolean DEFAULT_HAND_OVER_BEFORE_TENANT_RESTART = true;
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
@@ -26,6 +27,7 @@ public final class RaftCfg implements ConfigurationEntry {
   private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
   private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private Duration rebalanceLeaderWaitTimeout = DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT;
+  private boolean handOverBeforeTenantRestart = DEFAULT_HAND_OVER_BEFORE_TENANT_RESTART;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -75,6 +77,14 @@ public final class RaftCfg implements ConfigurationEntry {
     this.rebalanceLeaderWaitTimeout = rebalanceLeaderWaitTimeout;
   }
 
+  public boolean isHandOverBeforeTenantRestart() {
+    return handOverBeforeTenantRestart;
+  }
+
+  public void setHandOverBeforeTenantRestart(final boolean handOverBeforeTenantRestart) {
+    this.handOverBeforeTenantRestart = handOverBeforeTenantRestart;
+  }
+
   @Override
   public String toString() {
     return "RaftCfg{"
@@ -90,6 +100,8 @@ public final class RaftCfg implements ConfigurationEntry {
         + rebalanceMaxTransferAttempts
         + ", rebalanceLeaderWaitTimeout="
         + rebalanceLeaderWaitTimeout
+        + ", handOverBeforeTenantRestart="
+        + handOverBeforeTenantRestart
         + '}';
   }
 
