@@ -4,8 +4,8 @@
   <artifactId>dmn-engine</artifactId>
   <versioning>
     <versions>
-      <version>1.12.6-improvements-release-model-SNAPSHOT</version>
+      <version>1.12.6-dmn-main-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20261023142205</lastUpdated>
+    <lastUpdated>20261029144209</lastUpdated>
   </versioning>
 </metadata>

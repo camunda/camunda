@@ -3,23 +3,23 @@
   <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
   <artifactId>dmn-engine</artifactId>
   <versioning>
-    <lastUpdated>20261023142205</lastUpdated>
+    <lastUpdated>20261029144209</lastUpdated>
     <snapshot>
-      <timestamp>20261023.142205</timestamp>
+      <timestamp>20261029.144209</timestamp>
       <buildNumber>1</buildNumber>
     </snapshot>
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>1.12.6-improvements-release-model-20261023.142205-1</value>
-        <updated>20261023142205</updated>
+        <value>1.12.6-dmn-main-20261029.144209-1</value>
+        <updated>20261029144209</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>1.12.6-improvements-release-model-20261023.142205-1</value>
-        <updated>20261023142205</updated>
+        <value>1.12.6-dmn-main-20261029.144209-1</value>
+        <updated>20261029144209</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
-  <version>1.12.6-improvements-release-model-SNAPSHOT</version>
+  <version>1.12.6-dmn-main-SNAPSHOT</version>
 </metadata>
