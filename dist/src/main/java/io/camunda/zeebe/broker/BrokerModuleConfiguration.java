@@ -11,8 +11,11 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.pt.SchemaInitializer;
+import io.camunda.application.commons.secrets.InternalConfigRefreshers;
+import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantConfigValidator;
 import io.camunda.configuration.physicaltenants.PhysicalTenantCredentialValidator;
@@ -52,6 +55,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -192,7 +196,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean
   public PhysicalTenantLifecycleService physicalTenantLifecycleService(
-      final Broker broker, final ConfigurableEnvironment environment) {
+      final Broker broker,
+      final ConfigurableEnvironment environment,
+      final ObjectProvider<PhysicalTenantResources> resources) {
     return new PhysicalTenantLifecycleService(
         broker,
         systemContextLoader,
@@ -200,7 +206,33 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         unifiedConfiguration.getCamunda(),
         physicalTenantResolver,
         physicalTenantRegistry,
-        PHYSICAL_TENANT_CHANGE_TIMEOUT);
+        PHYSICAL_TENANT_CHANGE_TIMEOUT,
+        resources.orderedStream().toList());
+  }
+
+  /**
+   * Starts the secret refresher of a tenant added at runtime, re-points it to the store and
+   * interval of a replaced tenant's configuration, and stops it with a removed tenant.
+   */
+  @Bean
+  @Order(0)
+  public PhysicalTenantResources physicalTenantSecretRefresh(
+      final InternalConfigRefreshers refreshers, final PhysicalTenantSecretStores secretStores) {
+    return new PhysicalTenantResources() {
+      @Override
+      public void apply(final String physicalTenantId, final Camunda configuration) {
+        final var secrets = configuration.getSecrets();
+        refreshers.start(
+            physicalTenantId,
+            secretStores.internalConfig(physicalTenantId, secrets),
+            secrets.getRefreshInterval());
+      }
+
+      @Override
+      public void release(final String physicalTenantId) {
+        refreshers.stop(physicalTenantId);
+      }
+    };
   }
 
   @Bean

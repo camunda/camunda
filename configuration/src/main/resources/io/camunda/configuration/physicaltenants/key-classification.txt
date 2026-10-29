@@ -478,7 +478,7 @@ processing.skip-positions RESTART
 secrets.cache.max-size REJECT outside-module
 secrets.cache.ttl REJECT outside-module
 secrets.max-concurrency REJECT outside-module
-secrets.refresh-interval REJECT outside-module
+secrets.refresh-interval RESTART
 secrets.stores.aws REJECT outside-module
 secrets.stores.file REJECT outside-module
 secrets.stores.gcp REJECT outside-module

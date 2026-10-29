@@ -9,16 +9,20 @@ package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -162,6 +166,102 @@ final class InternalConfigRefresherTest {
     }
   }
 
+  @Test
+  void shouldStartRefreshingATenantAddedAtRuntime() throws IOException {
+    // given
+    final var addedStore = Files.createDirectory(root.resolve("added"));
+    Files.writeString(addedStore.resolve("db-password"), "old");
+    final var consumer = new RecordingConsumer();
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+
+      // when
+      refreshers.start("added", internalConfigStore("added", addedStore), Duration.ofMillis(50));
+      refreshers
+          .forPhysicalTenant("added")
+          .orElseThrow()
+          .register(consumer, Map.of("password", "old"));
+      Files.writeString(addedStore.resolve("db-password"), "new");
+
+      // then
+      Awaitility.await("the rotated value is pushed")
+          .untilAsserted(() -> assertThat(consumer.applied).contains(Map.of("password", "new")));
+    }
+  }
+
+  @Test
+  void shouldKeepTheConsumersAndReadTheNewStoreOnceReplaced() throws IOException {
+    // given
+    final var firstStore = Files.createDirectory(root.resolve("first"));
+    final var secondStore = Files.createDirectory(root.resolve("second"));
+    Files.writeString(firstStore.resolve("db-password"), "old");
+    Files.writeString(secondStore.resolve("db-password"), "old");
+    final var consumer = new RecordingConsumer();
+    final var released = new AtomicBoolean();
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+      final var first = internalConfigStore("replaced", firstStore);
+      refreshers.start(
+          "replaced", new Owned<>(first.value(), () -> released.set(true)), Duration.ofHours(1));
+      final var refresher = refreshers.forPhysicalTenant("replaced").orElseThrow();
+      refresher.register(consumer, Map.of("password", "old"));
+
+      // when
+      refreshers.start(
+          "replaced", internalConfigStore("replaced", secondStore), Duration.ofMillis(50));
+      Files.writeString(secondStore.resolve("db-password"), "second");
+
+      // then
+      assertThat(released).isTrue();
+      assertThat(refreshers.forPhysicalTenant("replaced")).containsSame(refresher);
+      Awaitility.await("the value of the new store is pushed")
+          .untilAsserted(() -> assertThat(consumer.applied).contains(Map.of("password", "second")));
+    }
+  }
+
+  @Test
+  void shouldStopRefreshingAndCloseTheConsumersOfARemovedTenant() throws IOException {
+    // given
+    final var removedStore = Files.createDirectory(root.resolve("removed"));
+    Files.writeString(removedStore.resolve("db-password"), "old");
+    final var consumer = new RecordingConsumer();
+    final var released = new AtomicBoolean();
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+      final var store = internalConfigStore("removed", removedStore);
+      refreshers.start(
+          "removed", new Owned<>(store.value(), () -> released.set(true)), Duration.ofMillis(20));
+      refreshers
+          .forPhysicalTenant("removed")
+          .orElseThrow()
+          .register(consumer, Map.of("password", "old"));
+
+      // when
+      refreshers.stop("removed");
+      Files.writeString(removedStore.resolve("db-password"), "new");
+
+      // then
+      assertThat(consumer.closed).isTrue();
+      assertThat(released).isTrue();
+      assertThat(refreshers.forPhysicalTenant("removed")).isEmpty();
+      Awaitility.await("no refresh runs after the tenant was removed")
+          .during(Duration.ofMillis(200))
+          .atMost(Duration.ofSeconds(2))
+          .until(() -> consumer.applied.isEmpty());
+    }
+  }
+
+  private Owned<InternalConfigSecretResolver> internalConfigStore(
+      final String physicalTenantId, final Path internalConfigPath) throws IOException {
+    final var jobs = Files.createDirectories(root.resolve(physicalTenantId + "-jobs"));
+    final var configuration =
+        resolverFor(
+                Map.of(
+                    "camunda.secrets.stores.file.default.path", jobs.toString(),
+                    "camunda.secrets.stores.file.default.internal-config.path",
+                        internalConfigPath.toString()))
+            .forPhysicalTenant(DEFAULT);
+    return new PhysicalTenantSecretStores(InstantSource.system(), new SimpleMeterRegistry())
+        .internalConfig(physicalTenantId, configuration.getSecrets());
+  }
+
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {
     final var env = new MockEnvironment();
     env.getPropertySources().addFirst(new MapPropertySource("test", properties));
@@ -175,6 +275,7 @@ final class InternalConfigRefresherTest {
     private final Map<String, String> configured;
     private final List<Map<String, String>> applied = new CopyOnWriteArrayList<>();
     private volatile boolean fail;
+    private volatile boolean closed;
 
     private RecordingConsumer() {
       this(CONFIGURED);
@@ -200,6 +301,11 @@ final class InternalConfigRefresherTest {
       if (fail) {
         throw new IllegalStateException("cannot connect");
       }
+    }
+
+    @Override
+    public void close() {
+      closed = true;
     }
   }
 }

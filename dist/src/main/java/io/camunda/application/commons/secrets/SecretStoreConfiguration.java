@@ -130,13 +130,9 @@ public class SecretStoreConfiguration {
           .mapValues(Camunda::getSecrets)
           .forEach(
               (tenantId, secrets) -> {
-                final Stores config = secrets.getStores();
-                requireValidStores(tenantId, config);
-                final Map<String, SecretStore> stores = new LinkedHashMap<>();
-                STORE_BINDINGS.forEach(
-                    binding -> binding.registerInternalConfig(config, stores, resources, tenantId));
-                if (!stores.isEmpty()) {
-                  registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
+                final var registry = buildInternalConfigRegistry(tenantId, secrets, resources);
+                if (registry != null) {
+                  registries.put(tenantId, registry);
                 }
               });
     } catch (final Throwable e) {
@@ -144,6 +140,23 @@ public class SecretStoreConfiguration {
       throw e;
     }
     return new InternalConfigSecrets(registries, resources);
+  }
+
+  /** Builds the secret stores of a physical tenant that is added or replaced at runtime. */
+  @Bean
+  public PhysicalTenantSecretStores physicalTenantSecretStores(
+      final ActorClockService clockService, final MeterRegistry meterRegistry) {
+    return new PhysicalTenantSecretStores(new ActorClockInstantSource(clockService), meterRegistry);
+  }
+
+  static @Nullable SecretStoreRegistry buildInternalConfigRegistry(
+      final String tenantId, final Secrets secrets, final SecretStoreResources resources) {
+    final Stores config = secrets.getStores();
+    requireValidStores(tenantId, config);
+    final Map<String, SecretStore> stores = new LinkedHashMap<>();
+    STORE_BINDINGS.forEach(
+        binding -> binding.registerInternalConfig(config, stores, resources, tenantId));
+    return stores.isEmpty() ? null : new SecretStoreRegistry(Map.copyOf(stores));
   }
 
   @Bean
@@ -172,7 +185,7 @@ public class SecretStoreConfiguration {
     return InternalConfigRefreshers.of(internalConfigSecrets, intervals, health);
   }
 
-  private static SecretStoreRegistry buildRegistry(
+  static SecretStoreRegistry buildRegistry(
       final String tenantId,
       final Secrets secrets,
       final SecretStoreResources resources,

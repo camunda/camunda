@@ -373,6 +373,11 @@ public final class RdbmsDataSources implements AutoCloseable {
       }
       dataSource.pool().refresh(connection);
     }
+
+    @Override
+    public void close() {
+      dataSource.pool().close();
+    }
   }
 
   /**

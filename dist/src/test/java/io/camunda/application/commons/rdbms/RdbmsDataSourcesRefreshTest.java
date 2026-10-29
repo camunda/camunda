@@ -287,6 +287,21 @@ final class RdbmsDataSourcesRefreshTest {
     assertThat(secondPool.isClosed()).isTrue();
   }
 
+  @Test
+  void shouldCloseThePoolWhenTheTenantIsRemoved() throws Exception {
+    // given
+    final var dataSource = dataSources.dataSourceFor(DEFAULT);
+    final var pool = dataSource.unwrap(HikariDataSource.class);
+
+    // when
+    refreshers.stop(DEFAULT);
+
+    // then
+    assertThat(pool.isClosed()).isTrue();
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+    assertThat(refreshers.forPhysicalTenant(DEFAULT)).isEmpty();
+  }
+
   private void refresh() {
     refreshers.forPhysicalTenant(DEFAULT).orElseThrow().refresh();
   }

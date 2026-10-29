@@ -21,7 +21,9 @@ import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -62,6 +64,7 @@ public final class PhysicalTenantLifecycleService {
   private final Camunda rootCamunda;
   private final DefaultPhysicalTenantRegistry registry;
   private final Duration timeout;
+  private final List<PhysicalTenantResources> resources;
   private final ReentrantLock changeLock = new ReentrantLock();
   private final Map<String, Camunda> configurations = new ConcurrentHashMap<>();
   private final Map<String, PhysicalTenantContext> contexts = new ConcurrentHashMap<>();
@@ -74,8 +77,10 @@ public final class PhysicalTenantLifecycleService {
       final Camunda rootCamunda,
       final PhysicalTenantResolver bootResolver,
       final DefaultPhysicalTenantRegistry registry,
-      final Duration timeout) {
+      final Duration timeout,
+      final List<PhysicalTenantResources> resources) {
     this.broker = broker;
+    this.resources = List.copyOf(resources);
     this.systemContextLoader = systemContextLoader;
     environment = bootEnvironment;
     this.rootCamunda = rootCamunda;
@@ -180,6 +185,7 @@ public final class PhysicalTenantLifecycleService {
           requireChangeable(physicalTenantId);
           gateway().ifPresent(gateway -> gateway.remove(physicalTenantId));
           stopModule(physicalTenantId);
+          releaseResources(physicalTenantId);
           registry.remove(physicalTenantId);
           configurations.remove(physicalTenantId);
           environment =
@@ -243,6 +249,7 @@ public final class PhysicalTenantLifecycleService {
     try {
       resolver = PhysicalTenantResolver.of(candidateEnvironment, rootCamunda);
       camunda = resolver.forPhysicalTenant(physicalTenantId);
+      camunda.getSecrets().getRefreshInterval();
     } catch (final RuntimeException e) {
       throw rejected(Reason.INVALID, physicalTenantId, e.getMessage(), e);
     }
@@ -275,6 +282,8 @@ public final class PhysicalTenantLifecycleService {
   private void startModule(final PhysicalTenant tenant, final PhysicalTenantContext context) {
     final var modules = modules();
     try {
+      final var configuration = Objects.requireNonNull(configurations.get(tenant.id()));
+      resources.forEach(resource -> resource.apply(tenant.id(), configuration));
       await(modules.start(tenant.id(), context));
     } catch (final RuntimeException e) {
       registry.reportHealth(
@@ -323,6 +332,20 @@ public final class PhysicalTenantLifecycleService {
     if (context != null) {
       close(physicalTenantId, context);
     }
+  }
+
+  private void releaseResources(final String physicalTenantId) {
+    resources.forEach(
+        resource -> {
+          try {
+            resource.release(physicalTenantId);
+          } catch (final RuntimeException e) {
+            LOG.warn(
+                "Failed to release a resource of removed physical tenant '{}'",
+                physicalTenantId,
+                e);
+          }
+        });
   }
 
   private PhysicalTenant requireChangeable(final String physicalTenantId) {

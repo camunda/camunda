@@ -14,6 +14,17 @@ package io.camunda.application.commons.secrets;
  */
 public interface SecretRefreshHealth {
 
+  /** Reports nowhere, for refreshers that no tenant health depends on. */
+  SecretRefreshHealth IGNORED =
+      new SecretRefreshHealth() {
+        @Override
+        public void refreshed(final String physicalTenantId, final String consumer) {}
+
+        @Override
+        public void failed(
+            final String physicalTenantId, final String consumer, final String reason) {}
+      };
+
   void refreshed(String physicalTenantId, String consumer);
 
   /**

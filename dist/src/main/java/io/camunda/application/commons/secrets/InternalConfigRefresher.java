@@ -21,14 +21,19 @@ import org.slf4j.LoggerFactory;
  *
  * <p>A consumer whose refresh fails keeps its previous client and is retried on the next run; the
  * tenant is reported as degraded until it succeeds.
+ *
+ * <p>The refresher follows the tenant's lifecycle: a replaced tenant re-points it to the store of
+ * its new configuration and its consumers stay registered; a removed tenant closes it together with
+ * every consumer.
  */
-public final class InternalConfigRefresher {
+public final class InternalConfigRefresher implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(InternalConfigRefresher.class);
 
-  private final InternalConfigSecretResolver resolver;
   private final SecretRefreshHealth health;
   private final List<Registration> registrations = new CopyOnWriteArrayList<>();
+  private volatile InternalConfigSecretResolver resolver;
+  private volatile boolean closed;
 
   public InternalConfigRefresher(
       final InternalConfigSecretResolver resolver, final SecretRefreshHealth health) {
@@ -36,11 +41,43 @@ public final class InternalConfigRefresher {
     this.health = health;
   }
 
+  /** Resolves the references from another store from the next run on. */
+  void repoint(final InternalConfigSecretResolver resolver) {
+    this.resolver = resolver;
+  }
+
+  /** Stops refreshing and closes every registered consumer, for a tenant that was removed. */
+  @Override
+  public void close() {
+    closed = true;
+    registrations.forEach(
+        registration -> {
+          try {
+            registration.consumer().close();
+          } catch (final RuntimeException e) {
+            LOG.warn(
+                "Failed to close '{}' of physical tenant '{}'",
+                registration.consumer().name(),
+                resolver.physicalTenantId(),
+                e);
+          }
+        });
+    registrations.clear();
+  }
+
+  public boolean isClosed() {
+    return closed;
+  }
+
   /**
    * Registers a consumer whose client is built from {@code applied}. A consumer that references no
    * secret has nothing to refresh and is not registered.
    */
   public void register(final Consumer consumer, final Map<String, String> applied) {
+    if (closed) {
+      throw new IllegalStateException(
+          "The refresher of physical tenant '%s' is closed".formatted(resolver.physicalTenantId()));
+    }
     if (consumer.configured().values().stream()
         .noneMatch(ConfigurationSecretReference::isReference)) {
       return;
@@ -51,7 +88,9 @@ public final class InternalConfigRefresher {
 
   /** Runs one refresh of every registered consumer. */
   public void refresh() {
-    registrations.forEach(this::refresh);
+    if (!closed) {
+      registrations.forEach(this::refresh);
+    }
   }
 
   private void refresh(final Registration registration) {
@@ -91,6 +130,9 @@ public final class InternalConfigRefresher {
      * @throws Exception if they cannot be applied; the consumer must then keep its previous client
      */
     void apply(Map<String, String> resolved) throws Exception;
+
+    /** Releases the client, once the tenant it belongs to is removed. */
+    default void close() {}
   }
 
   private static final class Registration {
