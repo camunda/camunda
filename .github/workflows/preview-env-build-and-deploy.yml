@@ -252,7 +252,7 @@ jobs:
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
           --helm-set global.preview.ingress.domain=camunda.camunda.cloud \
-          --helm-set camunda-platform.orchestration.image.tag=${docker_tag} \
+          --helm-set camunda-platform.orchestration.image.tag=${orchestration_tag} \
           --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
           --name ${app_name} \
           --revision ${revision} \
@@ -260,6 +260,8 @@ jobs:
           --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
         docker_tag: ${{ needs.resolve-image-tag.outputs.image-tag }}
+        # prototype: the agentic Phase 2 preview runs the cluster on the 8.10 line
+        orchestration_tag: ${{ (inputs.ref || github.head_ref || github.ref_name) == 'sherrin/agentic-phase2-proto' && '8.10-SNAPSHOT' || needs.resolve-image-tag.outputs.image-tag }}
         helm_extra_args: ${{ inputs.helm-extra-args }}
         labels: ${{ inputs.labels }}
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}

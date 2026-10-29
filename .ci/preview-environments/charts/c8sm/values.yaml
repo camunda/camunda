@@ -210,9 +210,18 @@ camunda-platform:
     enabled: true
     fullnameOverride: orchestration
     contextPath: /orchestration
+    # prototype: the agentic Phase 2 preview runs the released 8.10 line so real
+    # AI Agent runs match what customers have; the workflow sets the tag to
+    # 8.10-SNAPSHOT for this branch.
     image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/camunda
+      registry: docker.io
+      repository: camunda/camunda
+      pullPolicy: Always
+    # prototype: 8.10's Optimize-mode exporter filter drops AGENT_DEFINITION
+    # records, which the Phase 2 import needs for agent names and types.
+    env:
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_OPTIMIZEMODEENABLED
+      value: "false"
     clusterSize: "1"
     partitionCount: "1"
     replicationFactor: "1"
