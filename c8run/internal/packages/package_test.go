@@ -3,8 +3,10 @@ package packages
 import (
 	"archive/zip"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1811,5 +1813,138 @@ func TestMaterializeSymlinksReplacesSymlinkWithDirectory(t *testing.T) {
 	}
 	if string(content) != "jre legal text" {
 		t.Fatalf("expected materialized content %q, got %q", "jre legal text", string(content))
+	}
+}
+
+func TestFindDistrustedAliasesMatchesBySubjectCommonName(t *testing.T) {
+	listing := `Keystore type: PKCS12
+
+Alias name: comodoaaaca [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=AAA Certificate Services, O=Comodo CA Limited, L=Salford, ST=Greater Manchester, C=GB
+Issuer: CN=AAA Certificate Services, O=Comodo CA Limited, L=Salford, ST=Greater Manchester, C=GB
+
+Alias name: cn_emsign_ecc_root_ca__g3
+Entry type: trustedCertEntry
+
+Owner: CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+Issuer: CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+
+Alias name: emsignrootcag1 [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=emSign Root CA - G1, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN
+
+Alias name: digicertglobalrootg2 [jdk]
+Entry type: trustedCertEntry
+
+Owner: CN=DigiCert Global Root G2, OU=www.digicert.com, O=DigiCert Inc, C=US
+`
+
+	got := findDistrustedAliases(listing)
+
+	want := []string{"cn_emsign_ecc_root_ca__g3"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func addTrustedCert(t *testing.T, keystore, alias, dname string) {
+	t.Helper()
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source.p12")
+	certFile := filepath.Join(dir, "cert.pem")
+	runKeytool(t, "-genkeypair", "-keyalg", "EC", "-alias", "src", "-dname", dname,
+		"-keystore", source, "-storepass", cacertsStorePass, "-validity", "1")
+	runKeytool(t, "-exportcert", "-rfc", "-alias", "src", "-file", certFile,
+		"-keystore", source, "-storepass", cacertsStorePass)
+	runKeytool(t, "-importcert", "-noprompt", "-alias", alias, "-file", certFile,
+		"-keystore", keystore, "-storetype", "PKCS12", "-storepass", cacertsStorePass)
+}
+
+func runKeytool(t *testing.T, args ...string) {
+	t.Helper()
+	out, err := exec.Command("keytool", args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("keytool %v failed: %v\n%s", args, err, out)
+	}
+}
+
+func keystoreHasAlias(keystore, alias string) bool {
+	return exec.Command("keytool", "-list", "-alias", alias,
+		"-keystore", keystore, "-storepass", cacertsStorePass).Run() == nil
+}
+
+func TestRemoveDistrustedCACertsDeletesOnlyEMudhraG3Roots(t *testing.T) {
+	if _, err := exec.LookPath("keytool"); err != nil {
+		t.Skip("keytool not available")
+	}
+
+	// given
+	cacerts := filepath.Join(t.TempDir(), "cacerts")
+	distrusted := map[string]string{
+		"ecc-g3": "CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"tls-g3": "CN=emSign Root TLS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"cs-g3":  "CN=emSign Root CS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+	}
+	kept := map[string]string{
+		"aaa":       "CN=AAA Certificate Services, O=Comodo CA Limited, C=GB",
+		"emsign-g1": "CN=emSign Root CA - G1, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+	}
+	for alias, dname := range distrusted {
+		addTrustedCert(t, cacerts, alias, dname)
+	}
+	for alias, dname := range kept {
+		addTrustedCert(t, cacerts, alias, dname)
+	}
+
+	// when
+	if err := removeDistrustedCACerts(cacerts); err != nil {
+		t.Fatal(err)
+	}
+
+	// then
+	for alias := range distrusted {
+		if keystoreHasAlias(cacerts, alias) {
+			t.Errorf("expected alias %q to be removed", alias)
+		}
+	}
+	for alias := range kept {
+		if !keystoreHasAlias(cacerts, alias) {
+			t.Errorf("expected alias %q to be kept", alias)
+		}
+	}
+}
+
+func TestRemoveDistrustedCACertsFailsWhenRootSurvivesDeletion(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake keytool is a shell script")
+	}
+
+	// given a keytool that reports success on delete but keeps listing the root
+	fakeKeytool := filepath.Join(t.TempDir(), "keytool")
+	script := `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = "-list" ]; then
+    echo "Alias name: emsigneccrootcag3 [jdk]"
+    echo "Owner: CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN"
+  fi
+done
+exit 0
+`
+	if err := os.WriteFile(fakeKeytool, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	previous := keytoolCommand
+	keytoolCommand = fakeKeytool
+	t.Cleanup(func() { keytoolCommand = previous })
+
+	// when
+	err := removeDistrustedCACerts(filepath.Join(t.TempDir(), "cacerts"))
+
+	// then
+	if err == nil || !strings.Contains(err.Error(), "distrusted CAs still present after removal") {
+		t.Fatalf("expected remaining-certificate error, got %v", err)
 	}
 }
