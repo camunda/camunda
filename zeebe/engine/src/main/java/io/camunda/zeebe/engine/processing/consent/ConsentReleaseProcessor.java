@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.consent;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -26,7 +27,10 @@ import java.util.List;
  * Hands out the jobs that a grant released, in batches: the parked jobs of the grant's subject,
  * connection and operation that now pass the gate. A job the grant does not cover stays parked, for
  * example one that someone else asked for and no rule admits.
+ *
+ * <p>Only the engine writes this command, after a grant that passed the subject check.
  */
+@ExcludeAuthorizationCheck
 public final class ConsentReleaseProcessor implements TypedRecordProcessor<ConsentRecord> {
 
   private static final int MAX_BATCH_SIZE = 100;

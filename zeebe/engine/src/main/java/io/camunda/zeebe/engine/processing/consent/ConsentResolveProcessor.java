@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.consent;
 
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
@@ -51,7 +52,11 @@ import java.util.Optional;
  *   <li>{@code DECLINE} throws {@code CONSENT_DECLINED} to the job's catch event, without a worker
  *       and without a worker's permission check, or raises an incident when nothing catches it.
  * </ul>
+ *
+ * <p>The subject check takes the place of a permission check, which is why the processor is
+ * excluded from the rule that every processor checks a permission.
  */
+@ExcludeAuthorizationCheck
 public final class ConsentResolveProcessor implements TypedRecordProcessor<ConsentRecord> {
 
   public static final String CONSENT_DECLINED = "CONSENT_DECLINED";

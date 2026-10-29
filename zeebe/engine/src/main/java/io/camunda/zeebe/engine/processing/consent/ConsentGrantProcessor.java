@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.consent;
 
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,7 +31,11 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  *
  * <p>The grant is distributed to every partition through an ordered queue, so the jobs that wait on
  * it are released wherever they sit, and a revocation never overtakes the grant it revokes.
+ *
+ * <p>The subject check takes the place of a permission check, which is why the processor is
+ * excluded from the rule that every processor checks a permission.
  */
+@ExcludeAuthorizationCheck
 public final class ConsentGrantProcessor implements DistributedTypedRecordProcessor<ConsentRecord> {
 
   private final ConsentState consentState;
