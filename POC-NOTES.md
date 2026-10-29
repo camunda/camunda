@@ -5,13 +5,14 @@ Branch `pt-poc-integration`, on top of `pt-poc-lifecycle-api`. Local only, not f
 This branch combines the proof-of-concept branches of the initiative into one tree. Each branch
 keeps its own notes under [`poc-notes/`](poc-notes):
 
-|                       Branch                       |                               Notes                                |
-|----------------------------------------------------|--------------------------------------------------------------------|
-| `pt-poc-lifecycle-tenant-set` (lifecycle slice 0)  | [lifecycle-tenant-set.md](poc-notes/lifecycle-tenant-set.md)       |
-| `pt-poc-lifecycle-api` (lifecycle slice 1)         | [lifecycle-api.md](poc-notes/lifecycle-api.md)                     |
-| `pt-poc-dynamic-secrets-refresh` (incl. PR #67248) | [dynamic-secrets-refresh.md](poc-notes/dynamic-secrets-refresh.md) |
-| `pt-poc-lazy-tenant-resources`                     | [lazy-tenant-resources.md](poc-notes/lazy-tenant-resources.md)     |
-| `pt-poc-tenant-disk-limit`                         | [tenant-disk-limit.md](poc-notes/tenant-disk-limit.md)             |
+|                       Branch                       |                                                  Notes                                                  |
+|----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `pt-poc-lifecycle-tenant-set` (lifecycle slice 0)  | [lifecycle-tenant-set.md](poc-notes/lifecycle-tenant-set.md)                                            |
+| `pt-poc-lifecycle-api` (lifecycle slice 1)         | [lifecycle-api.md](poc-notes/lifecycle-api.md)                                                          |
+| `pt-poc-dynamic-secrets-refresh` (incl. PR #67248) | [dynamic-secrets-refresh.md](poc-notes/dynamic-secrets-refresh.md)                                      |
+| `pt-poc-lazy-tenant-resources`                     | [lazy-tenant-resources.md](poc-notes/lazy-tenant-resources.md)                                          |
+| `pt-poc-tenant-disk-limit`                         | [tenant-disk-limit.md](poc-notes/tenant-disk-limit.md)                                                  |
+| `pt-poc-tenant-restart-handover`                   | [Leadership handover before a tenant restart](#leadership-handover-before-a-tenant-restart-us-17) below |
 
 ## What the integration proves
 
@@ -230,3 +231,113 @@ Other numbers:
 # measurements: grep "Rollout under load" zeebe/qa/integration-tests/target/failsafe-reports/*Readiness*-output.txt
 ```
 
+# Leadership handover before a tenant restart (US-17)
+
+Branch `pt-poc-tenant-restart-handover`, written on top of `pt-poc-csl-runtime-security` and carried
+here without the Camunda Security Library commits. Not for merge as is.
+
+Before a member restarts a physical tenant's module for a configuration change, it hands the
+leadership of every partition of that tenant it leads to another replica through coordinated
+leadership transfer (CLT), then stops the module. The tenant's partitions keep a leader through the
+whole rolling apply.
+
+## How it works
+
+|                              Piece                               |     Where     |                                                                                                                                                      What                                                                                                                                                       |
+|------------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RaftPartition#transferLeadership(MemberId)`                     | atomix        | A CLT transfer that the leader starts itself: same admission (caught up, acked, reachable, lag under `replication-lag-threshold`, no transfer or reconfiguration running), same attempt (freeze writes, catch up within `replication-timeout`, TimeoutNow); no coordinator check, the result completes a future |
+| `LeadershipTransferAttempt` (refactor)                           | atomix        | Reports through a consumer; the runner keeps the report to the rebalance coordinator                                                                                                                                                                                                                            |
+| `PartitionLeadershipHandover`                                    | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on `NOT_MEMBER`, `NOT_REPLICATING`, `UNREACHABLE`, `LAG_TOO_HIGH`, `REPLICATION_TIMED_OUT`, `TIMEOUT_NOW_EXHAUSTED`; stops on a refusal no other replica changes; bounded; a report per partition                                     |
+| `PhysicalTenantLifecycleService#replace`                         | dist          | Before the module stops: hand over (bound `rebalance.replication-timeout` + 5 s), then stop. Never fails the change: a partition not handed over restarts as before and the reason is logged                                                                                                                    |
+| `PhysicalTenantConfigExecutor#handoverPreference`                | dist          | Members that already run the new version first (the leadership does not move again), then the others in reverse rollout order (the one restarting last first)                                                                                                                                                   |
+| `camunda.cluster.raft.rebalance.hand-over-before-tenant-restart` | configuration | `true` by default; cluster-wide (non-overridable per tenant)                                                                                                                                                                                                                                                    |
+| `TenantRestart`, actuator `local.lastRestart`                    | dist          | The last restart of a tenant on the member: when, the outcome per partition it led (`TRANSFERRED to 2 in 1 ms`, `TURNED_OFF`, `NO_REPLICA_TOOK_OVER`, …), how long the module was down                                                                                                                          |
+
+Remove is unchanged: a delete disables the tenant cluster-wide in the same configuration update that
+starts the stops, so it serves no requests while members stop it and there is nothing to keep led.
+
+## What is proven, and by which test
+
+|                                                                                            Claim                                                                                            |                                                                                                Test                                                                                                 |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A leader hands over on its own initiative, also when the coordinator check would refuse; a follower answers `LEADER_CHANGED`; an unreachable target is refused and the leader keeps leading | `RaftOwnInitiativeLeadershipTransferTest` (4)                                                                                                                                                       |
+| CLT still works for the coordinator after the refactor                                                                                                                                      | `LeadershipTransferAttemptTest` (2), `RaftLeadershipTransferInitiateTest` (12), `RaftCoordinatedLeadershipTransferTest` (11), `RaftLeadershipTransferConfigurationTest` (6), `-Pinclude-slow-tests` |
+| Preference order, next replica on a lagging one, fallback reasons (no other replica, none took over, refused, timed out), only led partitions, all led partitions                           | `PartitionLeadershipHandoverTest` (8)                                                                                                                                                               |
+| Rollout-aware preference                                                                                                                                                                    | `PhysicalTenantConfigExecutorTest` (1)                                                                                                                                                              |
+| Flag mapping and golden file                                                                                                                                                                | `ClusterRaftTest`, `PhysicalTenantOverridablePropertiesGoldenTest`                                                                                                                                  |
+| End to end, with vs without                                                                                                                                                                 | `PhysicalTenantRestartHandoverIT` (below)                                                                                                                                                           |
+| Nothing else in the lifecycle broke                                                                                                                                                         | `PhysicalTenantConfigRolloutIT` (8), `PhysicalTenantRuntimeLifecycleIT` (8)                                                                                                                         |
+
+`PhysicalTenantRestartHandoverIT`: two clusters of three brokers in one JVM, RF 3, each with the
+flag on or off (handover cluster first, so a warmer JVM cannot favour it). A tenant with three
+partitions is created at runtime. Before each rollout every broker is given the leadership of one
+partition (through `transferLeadership`), so every member restart is a leader restart in both
+clusters. Load: `PublishMessage` to each partition through each broker's gateway, one request in
+flight per (gateway, partition), on a 10 ms schedule; and to a second tenant through each gateway.
+One unmeasured rollout, then four measured rollouts (12 member restarts per cluster). Per restart
+(window = this member's restart start to the next one's): the longest time without an accepted
+request on any partition through the *other* members' gateways ("unavailable"), the longest request,
+failed and timed-out (10 s) requests, and the longest leaderless period from a 5 ms sampler of the
+Raft roles. Asserts: median unavailable with < without; every led partition `TRANSFERRED`; every
+partition has a leader after each rollout; 0 failed requests on the other tenant.
+
+## Measurements
+
+Apple-silicon laptop shared with other builds, 2026-10-29, leader restarts only (all were).
+
+| Run (12 restarts per arm) | Unavailable median, with / without | Worst, with / without | Leaderless median (worst), with / without | Max latency median, with / without |
+|---------------------------|------------------------------------|-----------------------|-------------------------------------------|------------------------------------|
+| 1                         | 486 / 2869 ms                      | 10018 / 10020 ms      | 0 (4) / 2484 (2564) ms                    | 313 / 2810 ms                      |
+| 2                         | 681 / 2930 ms                      | 10019 / 10021 ms      | 0 (5) / 2485 (2555) ms                    | 291 / 2701 ms                      |
+| 3                         | 302 / 2773 ms                      | 10021 / 10020 ms      | 0 (0) / 2490 (2550) ms                    | 208 / 2666 ms                      |
+| 4 (gap counted once)      | 302 / 2800 ms                      | 10021 / 10020 ms      | 0 (109) / 2490 (2579) ms                  | 212 / 2792 ms                      |
+
+- Transfer per partition: median 2 ms, max 115 ms (64 handovers over the four runs).
+- Without handover the interruption is the election: leaderless ~2.5 s each time, matching the
+  ~2.7 s of the slice 1 notes.
+- With handover the partition never lacks a leader (one 109 ms blip in 48 restarts); what remains,
+  100–700 ms, is the other gateways sending to the old leader until they learn the new one
+  (`UNAVAILABLE: Processing paused for partition`), so more requests fail fast (median 3–14 per
+  restart vs 0) instead of waiting ~2.7 s.
+- Worst case is the same in both arms: a request that is never answered and runs into the client's
+  10 s timeout (`DEADLINE_EXCEEDED`). Every run had at least one in each arm; run 4, the only one
+  that counted them, had 5 with and 2 without. The handover does not fix it; see below.
+- Other tenant during the measured rollouts: 0 failed of 3194–11239 requests per arm, max latency
+  64–159 ms (60–138 ms between rollouts).
+
+## Not done, and why
+
+- **Lost requests during a restart.** A request in flight to the member whose module stops is never
+  answered and waits for the full client timeout, with or without the handover. Not investigated:
+  candidates are the stopping command API dropping requests instead of rejecting them, and gateways
+  routing to the old leader until gossip arrives. A short drain after the handover (until the local
+  topology shows the new leaders) might cut it; not tried.
+- **The residual 100–700 ms** is topology propagation to the gateways, not Raft; the handover
+  cannot shorten it on its own. A gateway that retried `Processing paused` on the new leader at
+  once would.
+- **Fallback paths are unit-tested only** (`PartitionLeadershipHandoverTest`): no IT with one
+  replica, a lagging follower or a timeout. RF 1 has no other replica and restarts as before.
+- **Order of preference assumes the current rollout order** (live members by id). If dynamic-config
+  changes the order, `handoverPreference` must follow.
+- **Leadership skews after a rollout**: the first members' partitions end up on the members that
+  restarted earlier (in the IT, member 0 leads all three after a rollout). Nothing rebalances
+  afterwards; a rebalance after the rollout would be the natural follow-up.
+- **The handover bypasses the rebalance coordinator.** The leader admits one transfer at a time, so a
+  running rebalance and a handover cannot both move a partition, but the coordinator does not know
+  about the handover and may report `TRANSFER_IN_PROGRESS` for that partition.
+- **Remove** gets no handover (the tenant is disabled first, see above).
+
+## How to run
+
+```bash
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dmaven.build.cache.enabled=false \
+  -Dit.test='PhysicalTenantRestartHandoverIT,PhysicalTenantConfigRolloutIT,PhysicalTenantRuntimeLifecycleIT'
+./mvnw verify -pl zeebe/atomix/cluster -Pinclude-slow-tests -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='RaftOwnInitiativeLeadershipTransferTest,LeadershipTransferAttemptTest,RaftLeadershipTransferInitiateTest,RaftCoordinatedLeadershipTransferTest,RaftLeadershipTransferConfigurationTest'
+./mvnw verify -pl zeebe/broker -Dquickly -DskipTests=false -DskipITs -Dtest=PartitionLeadershipHandoverTest
+./mvnw verify -pl dist -Dquickly -DskipTests=false -DskipITs -Dtest=PhysicalTenantConfigExecutorTest
+```
+
+The IT logs a table per arm (`with handover: 12 member restarts`) in its output file.
