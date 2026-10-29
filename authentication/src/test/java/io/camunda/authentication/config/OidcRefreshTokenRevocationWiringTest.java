@@ -60,6 +60,9 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  * {@code
  * ScopedWebappSecurityChainBuilderScopedTest#primaryOidcChainRevokesRefreshTokenBeforeInvalidatingTheSession}.
  *
+ * <p>This asserts the wiring, not the default: on 8.10 revocation is off unless an operator sets
+ * {@code revocation-enabled=true}, which the properties below do.
+ *
  * <p>A real {@link HttpServer} stands in for the IdP: CSL builds the handler's HTTP client itself
  * and holds it statically, so there is no transport to replace, and the revocation endpoint is the
  * only seam. Its port is known only at runtime, hence {@link DynamicPropertySource}.
@@ -78,7 +81,14 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
       "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
       "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
       "camunda.security.authentication.oidc.token-uri=https://token.example.com",
-      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com"
+      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com",
+      // Opted in explicitly. 8.10 ships revocation off by default, through
+      // OidcRevocationDefaultPostProcessor in dist, so the CSL default of on does not reach a
+      // deployment. That post-processor is an EnvironmentPostProcessor registered in dist's
+      // spring.factories, and this module does not depend on dist, so without this property the
+      // test would quietly assert the library default and read as though 8.10 revokes out of the
+      // box. The shipped default is covered by OidcRevocationDefaultPostProcessorTest.
+      "camunda.security.authentication.oidc.revocation-enabled=true"
     })
 public class OidcRefreshTokenRevocationWiringTest extends AbstractWebSecurityConfigTest {
 
