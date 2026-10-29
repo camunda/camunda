@@ -345,6 +345,10 @@ public class ContainerRuntimePropertiesUtilTest {
       expectedConnectorsSecrets.put("keyH", "secret2");
       expectedConnectorsSecrets.put("keyI", "secret3");
 
+      final Map<String, String> expectedClusterSecrets = new HashMap<>();
+      expectedClusterSecrets.put("keyJ", "clusterSecret1");
+      expectedClusterSecrets.put("keyK", "clusterSecret2");
+
       assertThat(propertiesUtil.getCamundaExposedPorts())
           .containsExactlyInAnyOrder(8080, 8081, 8088);
       assertThat(propertiesUtil.getCamundaEnvVars()).containsAllEntriesOf(expectedCamundaEnvVars);
@@ -354,6 +358,7 @@ public class ContainerRuntimePropertiesUtilTest {
           .containsAllEntriesOf(expectedConnectorsEnvVars);
       assertThat(propertiesUtil.getConnectorsSecrets())
           .containsAllEntriesOf(expectedConnectorsSecrets);
+      assertThat(propertiesUtil.getClusterSecrets()).containsAllEntriesOf(expectedClusterSecrets);
       assertThat(propertiesUtil.getConnectorsExposedPorts())
           .containsExactlyInAnyOrder(9080, 9081, 9088);
 
