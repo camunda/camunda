@@ -1195,10 +1195,13 @@ class SegmentedJournalTest {
             Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS),
             (mock, context) -> {
               // the construction mock bypasses the constructor, so inject the metastore which the
-              // real flush method stores the last flushed index in
+              // real flush method stores the last flushed index in, and the segments it checks
               final var metaStoreField = SegmentedJournalWriter.class.getDeclaredField("metaStore");
               metaStoreField.setAccessible(true);
               metaStoreField.set(mock, journalFactory.metaStore());
+              final var segmentsField = SegmentedJournalWriter.class.getDeclaredField("segments");
+              segmentsField.setAccessible(true);
+              segmentsField.set(mock, segments);
 
               doAnswer(
                       (invocation) -> {

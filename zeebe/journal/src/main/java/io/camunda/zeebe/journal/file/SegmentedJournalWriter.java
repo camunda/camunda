@@ -151,6 +151,9 @@ final class SegmentedJournalWriter {
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
     currentWriter.truncate(index);
+    if (overwritesDeletedRecords) {
+      currentSegment.markTruncated(index);
+    }
 
     if (overwritesDeletedRecords && preserveDeletedRecords) {
       LOGGER.debug(
@@ -217,6 +220,10 @@ final class SegmentedJournalWriter {
   private synchronized void advanceLastFlushedIndex(
       final long flushedIndex, final int segmentsCount) {
     if (flushedIndex > lastFlushedIndex) {
+      // only checked when assertions are enabled, i.e. in tests
+      assert segments.firstSegmentNotForcedUpTo(flushedIndex) == null
+          : "Expected all records up to index %d to be forced, but segment %s was not"
+              .formatted(flushedIndex, segments.firstSegmentNotForcedUpTo(flushedIndex));
       LOGGER.trace(
           "Flushed {} segment(s), from index {} to index {}",
           segmentsCount,

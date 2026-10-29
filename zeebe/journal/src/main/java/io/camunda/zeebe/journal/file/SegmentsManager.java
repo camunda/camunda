@@ -343,6 +343,21 @@ final class SegmentsManager implements AutoCloseable {
         segments.subMap(segment.index(), true, segments.lastKey(), true)); // inclusive
   }
 
+  /**
+   * Returns the first segment which holds records up to the given index that were not forced, or
+   * which was truncated since it was last forced; null if there is none. A flushed index must never
+   * cover such a segment, which tests verify, see {@link
+   * SegmentedJournalWriter#advanceLastFlushedIndex(long, int)}.
+   */
+  @Nullable Segment firstSegmentNotForcedUpTo(final long index) {
+    for (final Segment segment : segments.headMap(index, true).values()) {
+      if (!segment.isForcedUpTo(index)) {
+        return segment;
+      }
+    }
+    return null;
+  }
+
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createUninitializedSegment(segmentFile, descriptor, journalIndex);
