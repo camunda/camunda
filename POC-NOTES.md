@@ -238,94 +238,202 @@ here without the Camunda Security Library commits. Not for merge as is.
 
 Before a member restarts a physical tenant's module for a configuration change, it hands the
 leadership of every partition of that tenant it leads to another replica through coordinated
-leadership transfer (CLT), then stops the module. The tenant's partitions keep a leader through the
-whole rolling apply.
+leadership transfer (CLT), optionally snapshots the tenant's partitions, and stops the module. With
+the default (`TRANSFER_BACK`), it asks for the leadership back through CLT once each restarted
+replica has replayed its log, and only then reports the change as applied on this member. The tenant's
+partitions keep a leader through the whole rolling apply, and the leader distribution is the same
+after it.
 
 ## How it works
 
-|                              Piece                               |     Where     |                                                                                                                                                      What                                                                                                                                                       |
-|------------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `RaftPartition#transferLeadership(MemberId)`                     | atomix        | A CLT transfer that the leader starts itself: same admission (caught up, acked, reachable, lag under `replication-lag-threshold`, no transfer or reconfiguration running), same attempt (freeze writes, catch up within `replication-timeout`, TimeoutNow); no coordinator check, the result completes a future |
-| `LeadershipTransferAttempt` (refactor)                           | atomix        | Reports through a consumer; the runner keeps the report to the rebalance coordinator                                                                                                                                                                                                                            |
-| `PartitionLeadershipHandover`                                    | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on `NOT_MEMBER`, `NOT_REPLICATING`, `UNREACHABLE`, `LAG_TOO_HIGH`, `REPLICATION_TIMED_OUT`, `TIMEOUT_NOW_EXHAUSTED`; stops on a refusal no other replica changes; bounded; a report per partition                                     |
-| `PhysicalTenantLifecycleService#replace`                         | dist          | Before the module stops: hand over (bound `rebalance.replication-timeout` + 5 s), then stop. Never fails the change: a partition not handed over restarts as before and the reason is logged                                                                                                                    |
-| `PhysicalTenantConfigExecutor#handoverPreference`                | dist          | Members that already run the new version first (the leadership does not move again), then the others in reverse rollout order (the one restarting last first)                                                                                                                                                   |
-| `camunda.cluster.raft.rebalance.hand-over-before-tenant-restart` | configuration | `true` by default; cluster-wide (non-overridable per tenant)                                                                                                                                                                                                                                                    |
-| `TenantRestart`, actuator `local.lastRestart`                    | dist          | The last restart of a tenant on the member: when, the outcome per partition it led (`TRANSFERRED to 2 in 1 ms`, `TURNED_OFF`, `NO_REPLICA_TOOK_OVER`, …), how long the module was down                                                                                                                          |
+|                             Piece                              |     Where     |                                                                                                                  What                                                                                                                   |
+|----------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RaftPartition#transferLeadership(MemberId)`                   | atomix        | A CLT transfer the leader starts itself: same admission and attempt as a coordinated one (caught up, lag under `replication-lag-threshold`, freeze, catch-up within `replication-timeout`, TimeoutNow)                                  |
+| `RaftPartition#requestLeadership(Duration)`                    | atomix        | A replica asks the leader for the leadership for itself (coordinator = desired leader); answers the leader's refusal, or `TRANSFERRED` once it leads, `LEADER_CHANGED`, or fails after the bound                                        |
+| `PartitionLeadershipHandover`                                  | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on a refusal another replica may not give; bounded; a report per partition                                                                                    |
+| `ZeebePartition#forceSnapshot`, `#replayProgress`              | zeebe/broker  | A snapshot on demand in either role, once the current role transition completed; the log end (from the log stream, as a follower's snapshot director does not follow commits), last replayed event, snapshot position                   |
+| `PartitionRestartSnapshots`                                    | zeebe/broker  | Snapshots every partition within one bound; a skipped, failed or timed-out snapshot never fails the restart                                                                                                                             |
+| `PartitionLeadershipReclaim`                                   | zeebe/broker  | Per partition: wait until installed and within 100 positions of its log end, then `requestLeadership`; asks again on `LAG_TOO_HIGH`, `TRANSFER_IN_PROGRESS`, …; bounded by `rebalance.leader-wait-timeout`; or only follow the catch-up |
+| `PhysicalTenantLifecycleService#replace`                       | dist          | handover → snapshot (if on) → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                        |
+| `camunda.cluster.raft.rebalance.tenant-restart-handover`       | configuration | `NONE`, `TRANSFER_AWAY`, `TRANSFER_BACK` (default); cluster-wide                                                                                                                                                                        |
+| `…tenant-restart-snapshot`, `…tenant-restart-snapshot-timeout` | configuration | `false` by default; 10 s                                                                                                                                                                                                                |
 
 Remove is unchanged: a delete disables the tenant cluster-wide in the same configuration update that
 starts the stops, so it serves no requests while members stop it and there is nothing to keep led.
 
 ## What is proven, and by which test
 
-|                                                                                            Claim                                                                                            |                                                                                                Test                                                                                                 |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A leader hands over on its own initiative, also when the coordinator check would refuse; a follower answers `LEADER_CHANGED`; an unreachable target is refused and the leader keeps leading | `RaftOwnInitiativeLeadershipTransferTest` (4)                                                                                                                                                       |
-| CLT still works for the coordinator after the refactor                                                                                                                                      | `LeadershipTransferAttemptTest` (2), `RaftLeadershipTransferInitiateTest` (12), `RaftCoordinatedLeadershipTransferTest` (11), `RaftLeadershipTransferConfigurationTest` (6), `-Pinclude-slow-tests` |
-| Preference order, next replica on a lagging one, fallback reasons (no other replica, none took over, refused, timed out), only led partitions, all led partitions                           | `PartitionLeadershipHandoverTest` (8)                                                                                                                                                               |
-| Rollout-aware preference                                                                                                                                                                    | `PhysicalTenantConfigExecutorTest` (1)                                                                                                                                                              |
-| Flag mapping and golden file                                                                                                                                                                | `ClusterRaftTest`, `PhysicalTenantOverridablePropertiesGoldenTest`                                                                                                                                  |
-| End to end, with vs without                                                                                                                                                                 | `PhysicalTenantRestartHandoverIT` (below)                                                                                                                                                           |
-| Nothing else in the lifecycle broke                                                                                                                                                         | `PhysicalTenantConfigRolloutIT` (8), `PhysicalTenantRuntimeLifecycleIT` (8)                                                                                                                         |
+|                                                                                         Claim                                                                                          |                                                                                                Test                                                                                                 |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A leader hands over on its own initiative; a replica obtains the leadership by asking for it; a leader asking for its own leadership gets `ALREADY_LEADER`                             | `RaftOwnInitiativeLeadershipTransferTest` (8)                                                                                                                                                       |
+| CLT still works for the coordinator                                                                                                                                                    | `LeadershipTransferAttemptTest` (2), `RaftLeadershipTransferInitiateTest` (12), `RaftCoordinatedLeadershipTransferTest` (11), `RaftLeadershipTransferConfigurationTest` (6), `-Pinclude-slow-tests` |
+| Handover preference, fallbacks                                                                                                                                                         | `PartitionLeadershipHandoverTest` (8)                                                                                                                                                               |
+| Reclaim asks only once caught up, waits for the install, asks again while the leader finds it behind, stops on a final refusal, gives up after the bound, can only follow the catch-up | `PartitionLeadershipReclaimTest` (6)                                                                                                                                                                |
+| A failed, skipped, timed-out or unaskable snapshot never holds up or fails the restart                                                                                                 | `PartitionRestartSnapshotsTest` (4)                                                                                                                                                                 |
+| Configuration mapping and golden file                                                                                                                                                  | `ClusterRaftTest`, `PhysicalTenantOverridablePropertiesGoldenTest` (24)                                                                                                                             |
+| End to end, every variant against no handover, other tenant unaffected                                                                                                                 | `PhysicalTenantRestartHandoverIT` (below), passed three times in a row                                                                                                                              |
+| Nothing else in the lifecycle broke                                                                                                                                                    | `PhysicalTenantConfigRolloutIT` (8), `PhysicalTenantRuntimeLifecycleIT` (8), dist `PhysicalTenant*Test` (52)                                                                                        |
 
-`PhysicalTenantRestartHandoverIT`: two clusters of three brokers in one JVM, RF 3, each with the
-flag on or off (handover cluster first, so a warmer JVM cannot favour it). A tenant with three
-partitions is created at runtime. Before each rollout every broker is given the leadership of one
-partition (through `transferLeadership`), so every member restart is a leader restart in both
-clusters. Load: `PublishMessage` to each partition through each broker's gateway, one request in
-flight per (gateway, partition), on a 10 ms schedule; and to a second tenant through each gateway.
-One unmeasured rollout, then four measured rollouts (12 member restarts per cluster). Per restart
-(window = this member's restart start to the next one's): the longest time without an accepted
-request on any partition through the *other* members' gateways ("unavailable"), the longest request,
-failed and timed-out (10 s) requests, and the longest leaderless period from a 5 ms sampler of the
-Raft roles. Asserts: median unavailable with < without; every led partition `TRANSFERRED`; every
-partition has a leader after each rollout; 0 failed requests on the other tenant.
+`PhysicalTenantRestartHandoverIT`: one cluster per variant, three brokers, RF 3, all in one JVM, run
+in this order: transfer back with and without snapshot, transfer away with and without snapshot,
+transfer away with a rebalance through `POST /cluster/v2/rebalance` after each rollout, no handover
+(last, so a warmer JVM cannot favour it). A tenant with three partitions is created at runtime.
+Before each rollout every broker is given the leadership of one partition, so every member restart
+is a leader restart. Load: `PublishMessage` to each partition through each broker's gateway, one
+request in flight per gateway and partition, every 10 ms; and to a second tenant through each
+gateway. One unmeasured rollout, then four measured ones (12 member restarts per variant).
+
+Per member restart (window: this member's restart start to the next one's):
+
+- *unavailable*: the longest time a partition accepted no request through any of the *other*
+  members' gateways;
+- *max latency*, *failed*, *timed out* (a request that waited the client's full 10 s);
+- *leaderless*: the longest time a partition had no leader, from a 5 ms sampler of the Raft roles.
+
+Per rollout: the sum of the restarts' unavailable (plus the rebalance's), the rollout's duration, and
+the leaders per member afterwards.
+
+The IT asserts:
+
+- every handover variant has a lower median unavailable than no handover;
+- no partition is leaderless for as long as the election timeout;
+- every led partition was `TRANSFERRED`;
+- transfer back took back every partition and leaves one leader per member;
+- the rebalance does the same;
+- every snapshot variant took snapshots;
+- every partition has a leader after each rollout;
+- the other tenant has no failed request.
 
 ## Measurements
 
-Apple-silicon laptop shared with other builds, 2026-10-29, leader restarts only (all were).
+Apple-silicon laptop shared with other agents' builds, 2026-10-29. Two runs (B and C) of the final
+IT. Every one of the 12 restarts per variant was a leader restart.
 
-| Run (12 restarts per arm) | Unavailable median, with / without | Worst, with / without | Leaderless median (worst), with / without | Max latency median, with / without |
-|---------------------------|------------------------------------|-----------------------|-------------------------------------------|------------------------------------|
-| 1                         | 486 / 2869 ms                      | 10018 / 10020 ms      | 0 (4) / 2484 (2564) ms                    | 313 / 2810 ms                      |
-| 2                         | 681 / 2930 ms                      | 10019 / 10021 ms      | 0 (5) / 2485 (2555) ms                    | 291 / 2701 ms                      |
-| 3                         | 302 / 2773 ms                      | 10021 / 10020 ms      | 0 (0) / 2490 (2550) ms                    | 208 / 2666 ms                      |
-| 4 (gap counted once)      | 302 / 2800 ms                      | 10021 / 10020 ms      | 0 (109) / 2490 (2579) ms                  | 212 / 2792 ms                      |
+|            Variant             | Unavailable per restart, median (worst), ms |           Rollout sum, median, ms           | Failed per restart, median | Leaderless worst, ms | Rollout duration, median, ms | Leaders per member after each rollout |
+|--------------------------------|---------------------------------------------|---------------------------------------------|----------------------------|----------------------|------------------------------|---------------------------------------|
+| transfer back                  | B 228 (323) · C 258 (429)                   | B 566 · C 791                               | 22 · 23                    | 0 · 6                | 4259 · 3432                  | 1/1/1 every time                      |
+| transfer back + snapshot       | B 239 (9209) · C 258 (330)                  | B 778 · C 741                               | 74 · 87                    | 5 · 75               | 6648 · 9099                  | 1/1/1 every time                      |
+| transfer away                  | B 259 (486) · C 243 (328)                   | B 926 · C 588                               | 6 · 6                      | 0 · 5                | 3002 · 2917                  | 3/0/0 every time                      |
+| transfer away + snapshot       | B 279 (404) · C 179 (269)                   | B 789 · C 538                               | 54 · 34                    | 74 · 5               | 6260 · 6535                  | 3/0/0 every time                      |
+| transfer away, rebalance after | B 380 (964) · C 277 (886)                   | B 1682 · C 1529 (rebalance worst 565 · 628) | 20 · 16                    | 0 · 6                | 775 · 1029 (+ rebalance)     | 3/0/0, 1/1/1 after the rebalance      |
+| no handover                    | B 2731 (10018) · C 2726 (10018)             | B 8441 · C 8706                             | 0 · 0                      | 2555 · 2584          | 7800 · 7848                  | 1/1/1 (elected by priority)           |
 
-- Transfer per partition: median 2 ms, max 115 ms (64 handovers over the four runs).
-- Without handover the interruption is the election: leaderless ~2.5 s each time, matching the
-  ~2.7 s of the slice 1 notes.
-- With handover the partition never lacks a leader (one 109 ms blip in 48 restarts); what remains,
-  100–700 ms, is the other gateways sending to the old leader until they learn the new one
-  (`UNAVAILABLE: Processing paused for partition`), so more requests fail fast (median 3–14 per
-  restart vs 0) instead of waiting ~2.7 s.
-- Worst case is the same in both arms: a request that is never answered and runs into the client's
-  10 s timeout (`DEADLINE_EXCEEDED`). Every run had at least one in each arm; run 4, the only one
-  that counted them, had 5 with and 2 without. The handover does not fix it; see below.
-- Other tenant during the measured rollouts: 0 failed of 3194–11239 requests per arm, max latency
-  64–159 ms (60–138 ms between rollouts).
+- Requests that waited the full 10 s timeout: 1–5 per variant and run, in every variant, including
+  no handover. In run B, one transfer-back-with-snapshot restart had a 9.2 s gap on one partition
+  after the transfer back; cause not established.
+- The other tenant during the measured rollouts: 0 failed requests in every variant and run (3792 to
+  11640 requests per variant), max latency 58–124 ms.
+- A handover takes 1–126 ms; a transfer back 200–900 ms after the module started (most of it is
+  waiting for the replica to be installed and to catch up), up to ~2.9 s when the install is slow
+  (see below).
+- An earlier run (A), which counted a gap per client rather than per partition, gave the same medians
+  (transfer back 229 ms, transfer away 239 ms, no handover 2687 ms). Its worst values were inflated
+  by the 10 s timeouts, so it led to the per-partition measure.
+
+What the variants cost:
+
+- **Transfer away** interrupts a partition for ~250 ms per restart (gateways send to the old leader
+  until they learn the new one; the requests fail fast with `Processing paused`). It leaves every
+  leadership on the member that restarted first (3/0/0 after every rollout).
+- **Transfer back** costs the same per restart (two handovers per leader restart, each ~200 ms
+  interruption, at different times) and roughly twice the fast-failing requests. It keeps the
+  distribution at 1/1/1. The rollout is longer only by the wait for each restarted replica to
+  catch up, which the next member's restart should wait for anyway.
+- **Rebalance after the rollout** restores 1/1/1 but adds a third interruption per moved partition
+  (worst 565–628 ms for the rebalance). It can only run after the rollout, because the coordinator
+  refuses while any cluster configuration change is pending, and the rollout is one. The
+  priority-election rebalance of the actuator is election-based. So this variant always costs more
+  than transfer back, and leaves the tenant unbalanced in between.
+- **No handover**: ~2.7 s per leader restart (the election timeout), about 10x the others.
+
+### Replay against log length
+
+The restarted replica's catch-up (from installed to within 100 positions of its log end) against the
+log since its latest snapshot, all variants, runs A and B (restarts with a slow install left out):
+
+| Log since snapshot (positions) | Restarts | Catch-up, mean (max), ms |
+|--------------------------------|----------|--------------------------|
+| < 1 000                        | 68       | 9 (87)                   |
+| 1 000 – 4 999                  | 34       | 21 (40)                  |
+| 5 000 – 9 999                  | 37       | 74 (239)                 |
+| 10 000 – 19 999                | 61       | 199 (388)                |
+| 20 000 – 29 999                | 74       | 359 (614)                |
+| 30 000 – 39 999                | 32       | 557 (930)                |
+| 40 000 – 54 999                | 25       | ~670 (967)               |
+
+Replay runs at roughly 55–60 k positions/s, ~17 ms per 1 000 positions, from the first replayed
+record. The JVM stays up across a tenant restart, so the restarted module does not start cold:
+the transfer back moves the leadership to a module that is seconds old, and its interruption and
+latency (`back-ms`, max latency) are no worse than the transfer away's. A node restart would show
+a JIT warm-up tail; a tenant restart does not, so warm-up does not need handling here.
+
+Replay never interrupts the tenant here: with a handover the leader is elsewhere while the
+restarted replica replays, and transfer back asks only once it caught up.
+
+### Forced snapshot
+
+- Cost: 180–245 ms per partition on average (max 582 ms), taken on the follower right after the
+  handover. 280–330 KB per partition on average (max 716 KB); the RocksDB checkpoint is mostly hard
+  links, so the size is the state, not extra copying.
+- Effect on the leader and the other replicas: none measurable. The other members' max latency was
+  lower with a snapshot than without (59–71 ms against 162–234 ms median).
+- Bounds:
+  - a snapshot already in progress makes it return null (`SKIPPED`, seen in early runs);
+  - it covers up to the lowest of the processed, exported and backup positions, so an exporter
+    lagging behind limits it;
+  - on a follower it can fail with `NoEntryAtSnapshotPosition` if the entry has not arrived.
+  - Taking it during the handover's leader-to-follower transition found no snapshot director, or a
+    snapshot that never completed when the director closed under it. It now waits for the
+    transition to complete.
+- Failure or timeout: the restart goes ahead from the existing snapshot (`PartitionRestartSnapshotsTest`).
+- Observed downside: with the snapshot, a third of the restarted replicas took ~2.5 s to be installed
+  (41 of 144 in runs A and B; non-snapshot handover variants: 15 of 216). The replica waits for its
+  leader's first append ("Found leader" 2.5 s after "Server join completed"), which looks like an
+  append that was in flight to the stopped member running into the request timeout. Cause not
+  established. It lengthens the rollout (6.3–9.1 s against 2.9–4.3 s), not the tenant's
+  interruption.
+
+### Recommended default
+
+`tenant-restart-handover: TRANSFER_BACK`, `tenant-restart-snapshot: false`.
+
+- Transfer back interrupts as little as transfer away (median 228–258 ms against 243–259 ms per
+  restart). It keeps the leader distribution, with no rebalance afterwards, and never uses an
+  election.
+- At the log lengths seen here the snapshot saves less replay than it costs: it saves ~17 ms per
+  1 000 positions, against ~200 ms plus the slow installs. Break-even is around 10 000–15 000
+  positions since the last snapshot. Turn it on where partitions write that much between snapshots
+  (high throughput with a long `snapshot-period`), where it shortens the rollout. It never shortens
+  the interruption.
+
+### What the readiness wait between members (`pt-poc-rollout-safety`) needs
+
+With `TRANSFER_BACK`, `replace` returns on a member only after the reclaim, so "the member applied the
+change" already means "its partitions are installed, caught up and led as before".
+
+- The readiness wait should treat the member's change as ready only once `replace` returned. Today
+  that means the executor's step completion.
+- It must not time out a member before `rebalance.leader-wait-timeout` (the reclaim's bound).
+- With `TRANSFER_AWAY` or `NONE`, ready should mean "every partition of the tenant on the member
+  caught up". `local.lastRestart` reports that per partition (`CAUGHT_UP after … ms`) once known.
 
 ## Not done, and why
 
-- **Lost requests during a restart.** A request in flight to the member whose module stops is never
-  answered and waits for the full client timeout, with or without the handover. Not investigated:
-  candidates are the stopping command API dropping requests instead of rejecting them, and gateways
-  routing to the old leader until gossip arrives. A short drain after the handover (until the local
-  topology shows the new leaders) might cut it; not tried.
-- **The residual 100–700 ms** is topology propagation to the gateways, not Raft; the handover
-  cannot shorten it on its own. A gateway that retried `Processing paused` on the new leader at
-  once would.
-- **Fallback paths are unit-tested only** (`PartitionLeadershipHandoverTest`): no IT with one
-  replica, a lagging follower or a timeout. RF 1 has no other replica and restarts as before.
-- **Order of preference assumes the current rollout order** (live members by id). If dynamic-config
-  changes the order, `handoverPreference` must follow.
-- **Leadership skews after a rollout**: the first members' partitions end up on the members that
-  restarted earlier (in the IT, member 0 leads all three after a rollout). Nothing rebalances
-  afterwards; a rebalance after the rollout would be the natural follow-up.
-- **The handover bypasses the rebalance coordinator.** The leader admits one transfer at a time, so a
-  running rebalance and a handover cannot both move a partition, but the coordinator does not know
-  about the handover and may report `TRANSFER_IN_PROGRESS` for that partition.
-- **Remove** gets no handover (the tenant is disabled first, see above).
+- **Lost requests.** 1–5 requests per variant and run wait the full 10 s client timeout, in every
+  variant including no handover. Not investigated. Candidates: requests in flight to a stopping
+  command API that are dropped, not rejected.
+- **The ~250 ms per handover** is gateways learning the new leader from topology gossip. CLT cannot
+  shorten it. A gateway that retried `Processing paused` on the new leader at once would.
+- **Slow installs after a restart** (~2.5 s, more often with the forced snapshot), see above.
+- **The 9.2 s gap after one transfer back** (one of 144 transfer-back restarts) is not explained.
+- **Fallbacks are unit-tested only**: no IT with a lagging follower, a refused reclaim or a
+  snapshot timeout. RF 1 has no other replica and restarts as before.
+- **The handover order of preference** assumes the current rollout order (live members by id).
+- **The handover and reclaim bypass the rebalance coordinator.** A leader admits one transfer at a
+  time, but the coordinator may report `TRANSFER_IN_PROGRESS` for a partition being handed over.
+- **Remove** gets no handover (the tenant is disabled first).
+- **Measured on one laptop, with one load shape** (`PublishMessage`, ~300 commands/s per
+  partition). Replay rates and snapshot costs depend on state size and hardware.
 
 ## How to run
 
@@ -336,8 +444,12 @@ Apple-silicon laptop shared with other builds, 2026-10-29, leader restarts only 
   -Dit.test='PhysicalTenantRestartHandoverIT,PhysicalTenantConfigRolloutIT,PhysicalTenantRuntimeLifecycleIT'
 ./mvnw verify -pl zeebe/atomix/cluster -Pinclude-slow-tests -Dquickly -DskipTests=false -DskipITs \
   -Dtest='RaftOwnInitiativeLeadershipTransferTest,LeadershipTransferAttemptTest,RaftLeadershipTransferInitiateTest,RaftCoordinatedLeadershipTransferTest,RaftLeadershipTransferConfigurationTest'
-./mvnw verify -pl zeebe/broker -Dquickly -DskipTests=false -DskipITs -Dtest=PartitionLeadershipHandoverTest
-./mvnw verify -pl dist -Dquickly -DskipTests=false -DskipITs -Dtest=PhysicalTenantConfigExecutorTest
+./mvnw verify -pl zeebe/broker -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='PartitionLeadershipHandoverTest,PartitionLeadershipReclaimTest,PartitionRestartSnapshotsTest'
+./mvnw verify -pl configuration -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='ClusterRaftTest,PhysicalTenantOverridablePropertiesGoldenTest'
 ```
 
-The IT logs a table per arm (`with handover: 12 member restarts`) in its output file.
+The IT logs a table per variant (`transfer back: 12 member restarts`), then `variant comparison`,
+the `replay |` rows (variant, log since snapshot, installed after, caught up after, outcome), and the
+`snapshot |` rows (variant, outcome, took, bytes, failure).
