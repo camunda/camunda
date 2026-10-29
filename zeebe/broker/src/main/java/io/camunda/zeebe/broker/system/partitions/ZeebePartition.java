@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -61,6 +63,8 @@ public final class ZeebePartition extends Actor
   private final ZeebePartitionHealth zeebePartitionHealth;
   private PartitionContext context;
   private PartitionStartupContext startupContext;
+  private @Nullable PartitionTransitionContext transitionContext;
+  private ActorFuture<Void> currentTransition = CompletableActorFuture.completed(null);
   private final PartitionAdminAccess adminAccess;
   private final PartitionTransition transition;
   private PartitionConfigurationManager partitionConfigurationManager;
@@ -151,6 +155,7 @@ public final class ZeebePartition extends Actor
               }
               startupContext = newStartupContext;
               final var transitionContext = startupContext.createTransitionContext();
+              this.transitionContext = transitionContext;
 
               transition.updateTransitionContext(transitionContext);
 
@@ -340,6 +345,7 @@ public final class ZeebePartition extends Actor
     final var latencyTimer = roleMetrics.startLeaderTransitionLatencyTimer();
     context.notifyListenersOfBecameRaftLeader(newTerm);
     final var leaderTransitionFuture = transition.toLeader(newTerm);
+    currentTransition = leaderTransitionFuture;
     leaderTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
@@ -365,6 +371,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> followerTransition(final long newTerm) {
     context.notifyListenersOfBecameRaftFollower(newTerm);
     final var followerTransitionFuture = transition.toFollower(newTerm);
+    currentTransition = followerTransitionFuture;
     followerTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
@@ -390,6 +397,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> transitionToInactive() {
     zeebePartitionHealth.setServicesInstalled(false);
     final var transitionFuture = transition.toInactive(context.getCurrentTerm());
+    currentTransition = transitionFuture;
     transitionFuture.onComplete(
         (success, error) -> {
           if (error != null) {
@@ -693,6 +701,74 @@ public final class ZeebePartition extends Actor
     return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
   }
 
+  /**
+   * Takes a snapshot of the partition's state once its current role transition completed, in either
+   * role.
+   *
+   * @return completes with the new snapshot, or with null if none was taken because one is already
+   *     being taken or nothing was processed since the last one
+   */
+  public ActorFuture<@Nullable PersistedSnapshot> forceSnapshot() {
+    final var result = new CompletableActorFuture<@Nullable PersistedSnapshot>();
+    actor.run(
+        () ->
+            currentTransition.onComplete(
+                (ignored, transitionError) -> {
+                  final var director =
+                      transitionContext == null ? null : transitionContext.getSnapshotDirector();
+                  if (director == null) {
+                    result.completeExceptionally(
+                        new IllegalStateException(
+                            "Partition %d has no snapshot director".formatted(getPartitionId())));
+                    return;
+                  }
+                  director.forceSnapshot().onComplete(result);
+                }));
+    return result;
+  }
+
+  /**
+   * How far the partition's state is behind the log it holds: the end of the log against the last
+   * event the stream processor wrote or, on a follower, replayed. A leader elected on this replica
+   * replays the difference before it processes new commands.
+   */
+  public ActorFuture<ReplayProgress> replayProgress() {
+    final var result = new CompletableActorFuture<ReplayProgress>();
+    actor.run(
+        () -> {
+          final var streamProcessor = context.getStreamProcessor();
+          final var logStream = context.getLogStream();
+          final var current = transitionContext;
+          if (streamProcessor == null || logStream == null || current == null) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Partition %d has no stream processor".formatted(getPartitionId())));
+            return;
+          }
+          final long logEnd;
+          try (final var reader = logStream.newLogStreamReader()) {
+            logEnd = reader.seekToEnd();
+          }
+          final var snapshotPosition =
+              current
+                  .getPersistedSnapshotStore()
+                  .getLatestSnapshot()
+                  .map(snapshot -> snapshot.getMetadata().processedPosition())
+                  .orElse(0L);
+          streamProcessor
+              .getLastWrittenPositionAsync()
+              .onComplete(
+                  (written, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      result.complete(new ReplayProgress(logEnd, written, snapshotPosition));
+                    }
+                  });
+        });
+    return result;
+  }
+
   @Override
   public void onSnapshotReplicationStarted() {
     // When a snapshot is received, the follower stream processor and exporter should
@@ -759,5 +835,18 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> partitionConfigurationManager.setExportingState(exportingState).onComplete(future));
     return future;
+  }
+
+  /**
+   * @param logEndPosition the position of the last record in the partition's log
+   * @param replayedPosition the position of the last event written or replayed, or -1 if none
+   * @param snapshotPosition the processed position of the latest snapshot, or 0 if none
+   */
+  public record ReplayProgress(long logEndPosition, long replayedPosition, long snapshotPosition) {
+
+    /** How many log positions the state is behind the end of the log. */
+    public long lag() {
+      return Math.max(0, logEndPosition - replayedPosition);
+    }
   }
 }
