@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -559,6 +560,37 @@ public class DecisionEvaluationHandlerTest {
             tuple("d2", 2, DecisionInstanceState.EVALUATED),
             tuple("d3", 3, DecisionInstanceState.FAILED));
     verify(value, times(1)).getEvaluatedDecisions();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"3 2 1", "3 1 2", "1 3 3 2"})
+  void shouldReleaseEvaluatedDecisionsOnceAllAreExportedInAnyOrder(final String exportOrder) {
+    // given - the batch writer may update the entities out of order or more than once on retry
+    final long recordKey = 123L;
+    final DecisionEvaluationRecordValue value =
+        mock(
+            DecisionEvaluationRecordValue.class,
+            delegatesTo(decisionEvaluationValue(recordKey, "d1", "d2", "d3")));
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(value)
+                    .withKey(recordKey));
+
+    // when
+    for (final String index : exportOrder.split(" ")) {
+      final var entity = underTest.createNewEntity(recordKey + "-" + index);
+      underTest.updateEntity(decisionRecord, entity);
+
+      assertThat(entity.getDecisionId()).isEqualTo("d" + index);
+    }
+
+    // then - the decisions were read once, and released after the last of them was exported
+    verify(value, times(1)).getEvaluatedDecisions();
+    underTest.updateEntity(decisionRecord, underTest.createNewEntity(recordKey + "-1"));
+    verify(value, times(2)).getEvaluatedDecisions();
   }
 
   @ParameterizedTest
