@@ -106,6 +106,50 @@ final class PhysicalTenantRuntimeLifecycleIT {
   }
 
   @Test
+  void shouldPushJobsToAnOpenStreamAfterTheTenantRestarted() {
+    // given
+    final var tenantId = uniqueTenantId();
+    final var client = grpcClient(tenantId);
+    final var jobType = "type-" + tenantId;
+    lifecycle().add(tenantId, tenantConfiguration("Streaming"));
+    final var stream =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(job -> client.newCompleteCommand(job).send())
+            .send();
+    closeables.add(() -> stream.cancel(true));
+    deployServiceTaskProcess(client, "process-" + tenantId, jobType);
+    createInstanceAwaitingResult(client, tenantId, Duration.ofSeconds(30));
+
+    // when
+    lifecycle().replace(tenantId, tenantConfiguration("Streaming, restarted"));
+    awaitHealth(tenantId, State.HEALTHY);
+
+    // then
+    assertThat(createInstanceAwaitingResult(client, tenantId, Duration.ofSeconds(10))).isPositive();
+  }
+
+  private static long createInstanceAwaitingResult(
+      final CamundaClient client, final String tenantId, final Duration timeout) {
+    return Awaitility.await("an instance of process-%s completes".formatted(tenantId))
+        .atMost(timeout)
+        .ignoreExceptions()
+        .until(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("process-" + tenantId)
+                    .latestVersion()
+                    .withResult()
+                    .requestTimeout(Duration.ofSeconds(3))
+                    .send()
+                    .join(5, TimeUnit.SECONDS)
+                    .getProcessInstanceKey(),
+            key -> key > 0);
+  }
+
+  @Test
   void shouldRestartOnlyTheReplacedTenantWhileAnotherServes() throws Exception {
     // given
     final var tenantId = uniqueTenantId();

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.atomix.cluster.ClusterMembershipEvent;
 import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
@@ -156,7 +157,17 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                                 streamer, clusterServices.getEventService(), physicalTenantId),
                             errorHandlerService,
                             metrics);
-                    clusterServices.getMembershipService().addListener(remoteStreamService);
+                    final var membership = clusterServices.getMembershipService();
+                    membership.addListener(remoteStreamService);
+                    // members that joined before this service listened, such as every gateway when
+                    // a tenant's module restarts at runtime, only send their streams when asked
+                    membership
+                        .getMembers()
+                        .forEach(
+                            member ->
+                                remoteStreamService.event(
+                                    new ClusterMembershipEvent(
+                                        ClusterMembershipEvent.Type.MEMBER_ADDED, member)));
                     brokerStartupContext.addJobStreamService(physicalTenantId, jobStreamService);
                     result.complete(jobStreamService);
                   });
