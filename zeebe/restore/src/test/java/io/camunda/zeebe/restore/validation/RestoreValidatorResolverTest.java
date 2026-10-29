@@ -364,6 +364,57 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void shouldResolveTimeRangeWithoutExportedPositions() {
+      // given - no secondary storage, so the configured partitions are restored from the backups
+      // in the time range alone
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      final var validator = new RestoreValidator(2, backupStore, null);
+      final var request =
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(
+                      List.of(),
+                      CHECKPOINT_TIMESTAMP.toString(),
+                      CHECKPOINT_TIMESTAMP.plusSeconds(3600).toString()),
+                  "none",
+                  true),
+              false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L), 2, toSingleCheckpoint(1L)), false);
+    }
+
+    @Test
+    void shouldRejectTimeRangeWithoutFromWhenNoExportedPositionsAreTracked() {
+      // given - without exported positions, nothing but `from` picks the range to restore from
+      final var validator = new RestoreValidator(1, backupStore, null);
+      final var request =
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(), null, CHECKPOINT_TIMESTAMP.toString()),
+                  "none",
+                  true),
+              false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              "Cannot resolve a restore point: from is required for a time range restore when no "
+                  + "exported-position data is available.");
+      verifyNoInteractions(backupStore);
+    }
+
+    @Test
     void shouldPropagateDryRunFlagToResolvedRequest() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
