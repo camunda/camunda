@@ -58,7 +58,8 @@ Copy it into your notes and tick each step.
    ```bash
    OUT_DIR=~/incidents/<id>/mat-out .agents/skills/heap-dump-analysis/scripts/run_mat.sh <dump>.hprof
    ```
-   `OUT_DIR` is required, outside any repo. If `DeployedDrg` or `DbDecisionState` dominates
+   `OUT_DIR` is required, outside any repo. Set `MAT_XMX` to about 4x the dump size
+   ([mat-headless.md](references/mat-headless.md)). If `DeployedDrg` or `DbDecisionState` dominates
    `histogram` or `top_dominators`, rerun with `queries/drg_cache_pack.xml` after the dump.
    A query without a CSV had zero rows, or its class name is wrong for this version.
 
