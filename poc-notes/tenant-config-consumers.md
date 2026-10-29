@@ -254,9 +254,9 @@ backup actuator and the cluster fan-outs (S each).
 
 Proven by tests:
 
-- **Meter cardinality grows with every removed tenant.** Each removed tenant leaves 8 meters tagged with
-  its id: `zeebe.cluster.partition.balanced`, `zeebe.gateway.topology.partition.roles` and six
-  `zeebe.gateway.job.stream.*` meters (`PhysicalTenantChurnIT#shouldKeepMetersOfTenantsRemovedAtRuntime`).
+- **Meter cardinality grows with every removed tenant.** Each removed tenant leaves up to 8 meters
+  tagged with its id, always `zeebe.cluster.partition.balanced`, and once its job streams or topology
+  were used also `zeebe.gateway.topology.partition.roles` and six `zeebe.gateway.job.stream.*` meters (`PhysicalTenantChurnIT#shouldKeepMetersOfTenantsRemovedAtRuntime`).
   Ids are never reused, so this grows for the life of the node.
 - **A removed tenant leaves the cross-tenant validations.** While it runs, a second tenant with the same
   filesystem backup location is rejected; after it is removed, the same configuration validates,
