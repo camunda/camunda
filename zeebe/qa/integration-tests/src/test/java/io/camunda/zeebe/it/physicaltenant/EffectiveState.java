@@ -173,7 +173,10 @@ final class EffectiveState {
       final var pending = queue.poll();
       final var object = pending.object();
       if (isLeaf(object)) {
-        visitor.visit(pending.node(), leafValue(object));
+        final var value = leafValue(object);
+        if (value != null) {
+          visitor.visit(pending.node(), value);
+        }
         continue;
       }
       if (!visited.add(object) || stop.test(object)) {

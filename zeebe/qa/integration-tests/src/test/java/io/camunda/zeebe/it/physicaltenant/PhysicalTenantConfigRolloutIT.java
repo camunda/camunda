@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -282,6 +283,70 @@ final class PhysicalTenantConfigRolloutIT {
     final var recreate = send("POST", broker(0), tenantId, tenantConfiguration("Again"));
     assertThat(recreate.statusCode()).isEqualTo(400);
     assertThat(recreate.body()).contains("stays reserved");
+  }
+
+  @Test
+  void shouldGiveTheEngineAndTheRestApiOfEveryBrokerTheChangedValues() {
+    // given
+    final var tenantId = uniqueTenantId();
+    final var created = tenantConfiguration("Created");
+    created.put("processing.max-commands-in-batch", "7311011");
+    created.put("monitoring.metrics.job-metrics.max-job-type-length", "7312011");
+    Awaitility.await("the cluster accepts the creation of " + tenantId)
+        .atMost(TIMEOUT)
+        .until(() -> send("POST", broker(0), tenantId, created).statusCode() == 202);
+    awaitRolledOut(tenantId, 1);
+    final var updated = tenantConfiguration("Updated");
+    updated.put("processing.max-commands-in-batch", "7311034");
+    updated.put("monitoring.metrics.job-metrics.max-job-type-length", "7312034");
+
+    // when
+    final var response = send("PUT", broker(2), tenantId, updated);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(202);
+    awaitRolledOut(tenantId, 2);
+    CLUSTER
+        .brokers()
+        .forEach(
+            (id, broker) -> {
+              final var rest = broker.bean(PhysicalTenantRestConfigProvider.class);
+              assertThat(rest.forPhysicalTenant(tenantId).getJobMetrics().getMaxJobTypeLength())
+                  .isEqualTo(7312034);
+              final var hits =
+                  EffectiveState.find(
+                      Map.of("@broker", broker.bean(Broker.class), "@rest", rest),
+                      Map.of(
+                          "n:7311011",
+                          "old",
+                          "n:7312011",
+                          "old",
+                          "n:7311034",
+                          "new",
+                          "n:7312034",
+                          "new"),
+                      Map.of(),
+                      object -> false);
+              assertThat(hits)
+                  .as("values held on broker %s", id)
+                  .noneMatch(hit -> hit.marked().equals("old") && !isBootSnapshot(hit.path()))
+                  .anyMatch(
+                      hit ->
+                          hit.marked().equals("new")
+                              && hit.consumer().startsWith("io.camunda.zeebe.engine."))
+                  .anyMatch(
+                      hit ->
+                          hit.marked().equals("new")
+                              && hit.consumer().startsWith("io.camunda.zeebe.stream."))
+                  .anyMatch(
+                      hit ->
+                          hit.marked().equals("new")
+                              && hit.consumer().startsWith("io.camunda.zeebe.gateway.rest."));
+            });
+  }
+
+  private static boolean isBootSnapshot(final String path) {
+    return path.startsWith("@broker.systemContext.physicalTenantContexts[");
   }
 
   private String createRolledOut(final String tenantId) {
