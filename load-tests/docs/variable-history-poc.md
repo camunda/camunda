@@ -27,6 +27,10 @@ Picked with `platform-helm-values`, from the files in `load-tests/setup/main/val
 
 The PostgreSQL files also shorten the history time to live to 10 minutes, for the baseline too, so the history cleanup runs inside the measured window.
 
+## Result list items only
+
+`camunda.data.audit-log.variable-history-collection-items: true` records only the item that each update of a multi-instance output collection adds, instead of the whole list. The engine tags each such update with the slot it fills. Pick it with `variable-history-100-items.yaml` (Elasticsearch) or `variable-history-100-items-rdbms.yaml` (PostgreSQL).
+
 ## More hardware
 
 The hardware runs record 100% and add storage capacity through `load-test-setup-helm-values`:

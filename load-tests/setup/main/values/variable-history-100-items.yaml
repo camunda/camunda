@@ -1,0 +1,4 @@
+# PoC for camunda/pdp-3517-variable-trace#53: record 100% of the variable changes in the variable history,
+# with only the added item for each update of a multi-instance output collection.
+camunda.data.audit-log.variable-history-percent: 100
+camunda.data.audit-log.variable-history-collection-items: true
