@@ -27,8 +27,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Decides how a changed property of a physical tenant takes effect at runtime: by a restart of the
- * tenant's module, or not at all, in which case the change is rejected. A property that has no
- * classification is rejected too, so a property added later never changes silently.
+ * tenant's module, by that restart together with a change of the tenant's HTTP security, or not at
+ * all, in which case the change is rejected. A property that has no classification is rejected too,
+ * so a property added later never changes silently.
  *
  * <p>The classification of every overridable property is listed in {@code key-classification.txt}
  * next to this class. A changed name is classified by the longest listed property it equals or is
@@ -136,6 +137,11 @@ public final class PhysicalTenantKeyClassification implements PhysicalTenantConf
   public enum Kind {
     /** Applied by a restart of the tenant's module. */
     RESTART,
+    /**
+     * Applied by a restart of the tenant's module and a change of its HTTP security (its scoped
+     * chains in the security library and the host-side state built from them) on every member.
+     */
+    SECURITY,
     /** Rejected. */
     REJECT
   }

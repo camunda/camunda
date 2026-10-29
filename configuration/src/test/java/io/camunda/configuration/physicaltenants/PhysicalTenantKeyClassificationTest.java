@@ -124,6 +124,48 @@ final class PhysicalTenantKeyClassificationTest {
   }
 
   @Test
+  void shouldAcceptAChangeOfTheTenantsIdentityProvider() {
+    // given
+    final var proposed = with("security.authentication.oidc.issuer-uri", "https://idp/b");
+    proposed.put("security.authentication.oidc.client-id", "client-b");
+    proposed.put("security.authentication.oidc.audiences[0]", "api-b");
+    proposed.put("security.authentication.oidc.username-claim", "sub");
+    proposed.put("security.authentication.providers.oidc.extra.client-secret", "camunda.secrets.b");
+    proposed.put("security.authentication.oidc.assertion.keystore.path", "/keys/b.p12");
+
+    // when
+    final var violations = classification.validate(update(proposed));
+
+    // then
+    assertThat(violations).isEmpty();
+    assertThat(classification.classify("security.authentication.providers.oidc.extra.issuer-uri"))
+        .map(PhysicalTenantKeyClassification.Classification::kind)
+        .contains(Kind.SECURITY);
+  }
+
+  @Test
+  void shouldRejectASecurityPropertyThatOnlyTheRootConfigurationSets() {
+    // when
+    final var violations =
+        classification.validate(
+            update(with("security.authentication.authentication-refresh-interval", "PT1M")));
+
+    // then
+    assertThat(violations).singleElement().asString().contains("root-only");
+  }
+
+  @Test
+  void shouldRejectAChangeOfTheInitialIdentities() {
+    // when
+    final var violations =
+        classification.validate(
+            update(with("security.initialization.default-roles.admin.clients[0]", "client")));
+
+    // then
+    assertThat(violations).singleElement().asString().contains("initialization");
+  }
+
+  @Test
   void shouldAcceptAnyPropertyWhenATenantIsCreated() {
     // when
     final var violations =

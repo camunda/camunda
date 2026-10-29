@@ -1,11 +1,21 @@
 # How a change of each overridable physical-tenant property is applied at runtime, one line per
 # property of overridable-properties.golden.txt (configuration test resources):
 #   <property> RESTART                  applied by a restart of the tenant's module
+#   <property> SECURITY                 applied by a restart of the tenant's module and a change of
+#                                       its HTTP security on every member: its scoped chains in the
+#                                       security library and the host-side state built from them
+#                                       (claim converters, OIDC settings, groups claims). A change
+#                                       of only the client secret or keystore keeps the tenant's
+#                                       sessions; any other change ends them. A key that a tenant
+#                                       override does not affect at startup does not affect it at
+#                                       runtime either.
 #   <property> REJECT <reason>          rejected; reasons:
 #     storage-location  changing it splits the tenant's data
 #     exporter-ids      changing the exporters a tenant runs strands their positions
 #     outside-module    read by a component that a tenant module restart does not rebuild
-#     security-chain    the HTTP security chain of a tenant cannot be rebuilt at runtime yet
+#     root-only         read from the root configuration only, so a tenant override has no effect
+#     initialization    applied by the engine when the tenant's deployment partition recovers:
+#                       added entities are created then, removed ones are never deleted
 # A property that is not listed is rejected. PhysicalTenantKeyClassificationTest fails when an
 # overridable property is missing here.
 api.rest.cluster-variable.max-metadata-size REJECT outside-module
@@ -482,70 +492,70 @@ secrets.refresh-interval RESTART
 secrets.stores.aws REJECT outside-module
 secrets.stores.file REJECT outside-module
 secrets.stores.gcp REJECT outside-module
-security.authentication REJECT security-chain
-security.authentication.authentication-refresh-interval REJECT security-chain
-security.authentication.oidc.additional-jwk-set-uris REJECT security-chain
-security.authentication.oidc.assertion.keystore.key-alias REJECT security-chain
-security.authentication.oidc.assertion.keystore.key-password REJECT security-chain
-security.authentication.oidc.assertion.keystore.password REJECT security-chain
-security.authentication.oidc.assertion.keystore.path REJECT security-chain
-security.authentication.oidc.assertion.kid-case REJECT security-chain
-security.authentication.oidc.assertion.kid-digest-algorithm REJECT security-chain
-security.authentication.oidc.assertion.kid-encoding REJECT security-chain
-security.authentication.oidc.assertion.kid-source REJECT security-chain
-security.authentication.oidc.audiences REJECT security-chain
-security.authentication.oidc.authorization-uri REJECT security-chain
-security.authentication.oidc.authorize-request.additional-parameters REJECT security-chain
-security.authentication.oidc.client-authentication-method REJECT security-chain
-security.authentication.oidc.client-id REJECT security-chain
-security.authentication.oidc.client-id-claim REJECT security-chain
-security.authentication.oidc.client-name REJECT security-chain
-security.authentication.oidc.client-secret REJECT security-chain
-security.authentication.oidc.clock-skew REJECT security-chain
-security.authentication.oidc.diagnostics.enabled REJECT security-chain
-security.authentication.oidc.end-session-endpoint-uri REJECT security-chain
-security.authentication.oidc.grant-type REJECT security-chain
-security.authentication.oidc.groups-claim REJECT security-chain
-security.authentication.oidc.id-token-algorithm REJECT security-chain
-security.authentication.oidc.idp-logout-enabled REJECT security-chain
-security.authentication.oidc.issuer-uri REJECT security-chain
-security.authentication.oidc.jwk-set-uri REJECT security-chain
-security.authentication.oidc.organization-id REJECT security-chain
-security.authentication.oidc.post-logout-redirect-enabled REJECT security-chain
-security.authentication.oidc.post-logout-redirect-uri REJECT security-chain
-security.authentication.oidc.prefer-id-token-claims REJECT security-chain
-security.authentication.oidc.prefer-username-claim REJECT security-chain
-security.authentication.oidc.redirect-uri REJECT security-chain
-security.authentication.oidc.registration-id REJECT security-chain
-security.authentication.oidc.resource REJECT security-chain
-security.authentication.oidc.revocation-enabled REJECT security-chain
-security.authentication.oidc.revocation-endpoint-uri REJECT security-chain
-security.authentication.oidc.scope REJECT security-chain
-security.authentication.oidc.token-uri REJECT security-chain
-security.authentication.oidc.user-info-augmentation.cache-max-size REJECT security-chain
-security.authentication.oidc.user-info-augmentation.cache-ttl REJECT security-chain
-security.authentication.oidc.user-info-augmentation.enabled REJECT security-chain
-security.authentication.oidc.user-info-augmentation.negative-cache-ttl REJECT security-chain
-security.authentication.oidc.user-info-enabled REJECT security-chain
-security.authentication.oidc.user-info-required REJECT security-chain
-security.authentication.oidc.user-info-uri REJECT security-chain
-security.authentication.oidc.username-claim REJECT security-chain
-security.authentication.providers.assigned REJECT security-chain
-security.authentication.providers.oidc REJECT security-chain
-security.authorizations REJECT security-chain
-security.authorizations.enabled REJECT security-chain
-security.id-validation-pattern REJECT security-chain
-security.initialization REJECT security-chain
-security.initialization.authorizations REJECT security-chain
-security.initialization.default-roles REJECT security-chain
-security.initialization.groups REJECT security-chain
-security.initialization.mapping-rules REJECT security-chain
-security.initialization.roles REJECT security-chain
-security.initialization.tenants REJECT security-chain
-security.initialization.users REJECT security-chain
-security.saas REJECT security-chain
-security.saas.cluster-id REJECT security-chain
-security.saas.organization-id REJECT security-chain
+security.authentication SECURITY
+security.authentication.authentication-refresh-interval REJECT root-only
+security.authentication.oidc.additional-jwk-set-uris SECURITY
+security.authentication.oidc.assertion.keystore.key-alias SECURITY
+security.authentication.oidc.assertion.keystore.key-password SECURITY
+security.authentication.oidc.assertion.keystore.password SECURITY
+security.authentication.oidc.assertion.keystore.path SECURITY
+security.authentication.oidc.assertion.kid-case SECURITY
+security.authentication.oidc.assertion.kid-digest-algorithm SECURITY
+security.authentication.oidc.assertion.kid-encoding SECURITY
+security.authentication.oidc.assertion.kid-source SECURITY
+security.authentication.oidc.audiences SECURITY
+security.authentication.oidc.authorization-uri SECURITY
+security.authentication.oidc.authorize-request.additional-parameters SECURITY
+security.authentication.oidc.client-authentication-method SECURITY
+security.authentication.oidc.client-id SECURITY
+security.authentication.oidc.client-id-claim SECURITY
+security.authentication.oidc.client-name SECURITY
+security.authentication.oidc.client-secret SECURITY
+security.authentication.oidc.clock-skew SECURITY
+security.authentication.oidc.diagnostics.enabled SECURITY
+security.authentication.oidc.end-session-endpoint-uri SECURITY
+security.authentication.oidc.grant-type SECURITY
+security.authentication.oidc.groups-claim SECURITY
+security.authentication.oidc.id-token-algorithm SECURITY
+security.authentication.oidc.idp-logout-enabled SECURITY
+security.authentication.oidc.issuer-uri SECURITY
+security.authentication.oidc.jwk-set-uri SECURITY
+security.authentication.oidc.organization-id SECURITY
+security.authentication.oidc.post-logout-redirect-enabled SECURITY
+security.authentication.oidc.post-logout-redirect-uri SECURITY
+security.authentication.oidc.prefer-id-token-claims SECURITY
+security.authentication.oidc.prefer-username-claim SECURITY
+security.authentication.oidc.redirect-uri SECURITY
+security.authentication.oidc.registration-id SECURITY
+security.authentication.oidc.resource SECURITY
+security.authentication.oidc.revocation-enabled SECURITY
+security.authentication.oidc.revocation-endpoint-uri SECURITY
+security.authentication.oidc.scope SECURITY
+security.authentication.oidc.token-uri SECURITY
+security.authentication.oidc.user-info-augmentation.cache-max-size SECURITY
+security.authentication.oidc.user-info-augmentation.cache-ttl SECURITY
+security.authentication.oidc.user-info-augmentation.enabled SECURITY
+security.authentication.oidc.user-info-augmentation.negative-cache-ttl SECURITY
+security.authentication.oidc.user-info-enabled SECURITY
+security.authentication.oidc.user-info-required SECURITY
+security.authentication.oidc.user-info-uri SECURITY
+security.authentication.oidc.username-claim SECURITY
+security.authentication.providers.assigned SECURITY
+security.authentication.providers.oidc SECURITY
+security.authorizations REJECT outside-module
+security.authorizations.enabled REJECT outside-module
+security.id-validation-pattern REJECT outside-module
+security.initialization REJECT initialization
+security.initialization.authorizations REJECT initialization
+security.initialization.default-roles REJECT initialization
+security.initialization.groups REJECT initialization
+security.initialization.mapping-rules REJECT initialization
+security.initialization.roles REJECT initialization
+security.initialization.tenants REJECT initialization
+security.initialization.users REJECT initialization
+security.saas REJECT root-only
+security.saas.cluster-id REJECT root-only
+security.saas.organization-id REJECT root-only
 system.clock-controlled RESTART
 system.legacy-query-api.enabled REJECT outside-module
 webapps.identity.enabled REJECT outside-module
