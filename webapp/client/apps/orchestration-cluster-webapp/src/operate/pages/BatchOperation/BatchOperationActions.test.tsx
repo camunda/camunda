@@ -284,9 +284,7 @@ describe('<BatchOperationActions />', () => {
 			]);
 	});
 
-	it('should notify and redirect immediately when the action request itself finds it already gone', async ({
-		worker,
-	}) => {
+	it('should notify and stay on the page when the action request itself finds it already gone', async ({worker}) => {
 		worker.use(
 			mockResumeBatchOperationEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
@@ -296,15 +294,16 @@ describe('<BatchOperationActions />', () => {
 		const screen = await renderActions('SUSPENDED');
 		await userEvent.click(screen.getByRole('button', {name: 'Resume'}));
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations');
 		await expect
 			.poll(() => notificationsStore.notifications)
 			.toEqual([
 				expect.objectContaining({
 					kind: 'error',
-					title: `Couldn't find batch operation ${BATCH_OPERATION_KEY}`,
+					title: 'Operation cannot be resumed',
+					subtitle: 'Batch operation not found. It may have already completed or failed.',
 				}),
 			]);
+		expect(screen.router.state.location.pathname).toBe(`/operate/batch-operations/${BATCH_OPERATION_KEY}`);
 	});
 
 	it('should show a permission warning without waiting out the poll when the confirming read is forbidden', async ({
