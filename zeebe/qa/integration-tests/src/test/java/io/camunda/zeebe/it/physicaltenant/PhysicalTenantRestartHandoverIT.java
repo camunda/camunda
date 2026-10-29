@@ -21,11 +21,17 @@ import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
 import io.camunda.zeebe.broker.PhysicalTenantLifecycleService.TenantRestart;
 import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover.Outcome;
 import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover.PartitionReport;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.PartitionReclaim;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots.PartitionSnapshot;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -40,13 +46,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -54,9 +63,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Measures how long a physical tenant is interrupted while a configuration change restarts its
- * module on one member after the other, with the leadership of the member's partitions handed over
- * before the restart and without it. Three brokers, replication factor 3, a tenant with three
- * partitions, and continuous load on every partition through the gateway of every broker.
+ * module on one member after the other, for every way of dealing with the leadership of the
+ * member's partitions: handed over and taken back, handed over and left, handed over and rebalanced
+ * after the rollout, and not handed over; the first two with and without a snapshot before the
+ * restart. Three brokers, replication factor 3, a tenant with three partitions, and continuous load
+ * on every partition through the gateway of every broker.
  */
 final class PhysicalTenantRestartHandoverIT {
 
@@ -70,6 +81,8 @@ final class PhysicalTenantRestartHandoverIT {
   private static final Duration SETTLE = Duration.ofSeconds(2);
   private static final Duration LOAD_INTERVAL = Duration.ofMillis(10);
   private static final ObjectMapper JSON = new ObjectMapper();
+  private static final Duration ELECTION_TIMEOUT = Duration.ofMillis(2500);
+  private static final Map<String, Integer> ONE_EACH = Map.of("0", 1, "1", 1, "2", 1);
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
@@ -78,30 +91,153 @@ final class PhysicalTenantRestartHandoverIT {
           .build();
 
   @Test
-  void shouldInterruptARestartedTenantLessWhenItsLeadershipIsHandedOver() {
+  void shouldKeepARestartedTenantLedThroughEveryVariant() {
     // given
-    final var withHandover = new Arm("with handover", true);
-    final var withoutHandover = new Arm("without handover", false);
+    final var arms =
+        List.of(
+            new Arm(
+                "transfer back with snapshot", TenantRestartHandover.TRANSFER_BACK, true, false),
+            new Arm("transfer back", TenantRestartHandover.TRANSFER_BACK, false, false),
+            new Arm(
+                "transfer away with snapshot", TenantRestartHandover.TRANSFER_AWAY, true, false),
+            new Arm("transfer away", TenantRestartHandover.TRANSFER_AWAY, false, false),
+            new Arm(
+                "transfer away, rebalance after", TenantRestartHandover.TRANSFER_AWAY, false, true),
+            new Arm("no handover", TenantRestartHandover.NONE, false, false));
 
     // when
-    withHandover.run();
-    withoutHandover.run();
+    arms.forEach(Arm::run);
 
     // then
-    withHandover.log();
-    withoutHandover.log();
-    assertThat(withHandover.leaderRestarts()).hasSizeGreaterThanOrEqualTo(MEASURED_ROLLOUTS);
-    assertThat(withoutHandover.leaderRestarts()).hasSizeGreaterThanOrEqualTo(MEASURED_ROLLOUTS);
-    assertThat(median(withHandover.leaderRestarts(), Restart::unavailableMillis))
-        .isLessThan(median(withoutHandover.leaderRestarts(), Restart::unavailableMillis));
-    assertThat(withHandover.handovers())
-        .filteredOn(PartitionReport::led)
-        .isNotEmpty()
-        .allSatisfy(handover -> assertThat(handover.outcome()).isEqualTo(Outcome.TRANSFERRED));
-    assertThat(withHandover.leaderlessAfterRollouts).isEmpty();
-    assertThat(withoutHandover.leaderlessAfterRollouts).isEmpty();
-    assertThat(withHandover.otherTenantFailed).isZero();
-    assertThat(withoutHandover.otherTenantFailed).isZero();
+    arms.forEach(Arm::log);
+    logComparison(arms);
+    final var withoutHandover = arms.getLast();
+    for (final var arm : arms) {
+      assertThat(arm.leaderRestarts()).as(arm.name).hasSizeGreaterThanOrEqualTo(MEASURED_ROLLOUTS);
+      assertThat(arm.leaderlessAfterRollouts).as(arm.name).isEmpty();
+      assertThat(arm.otherTenantFailed).as(arm.name).isZero();
+      if (arm == withoutHandover) {
+        continue;
+      }
+      assertThat(median(arm.leaderRestarts(), Restart::unavailableMillis))
+          .as(arm.name)
+          .isLessThan(median(withoutHandover.leaderRestarts(), Restart::unavailableMillis));
+      assertThat(arm.handovers())
+          .as(arm.name)
+          .filteredOn(PartitionReport::led)
+          .isNotEmpty()
+          .allSatisfy(handover -> assertThat(handover.outcome()).isEqualTo(Outcome.TRANSFERRED));
+      assertThat(worst(arm.leaderRestarts(), Restart::leaderlessMillis))
+          .as("%s: longest time a partition had no leader", arm.name)
+          .isLessThan(ELECTION_TIMEOUT.toMillis());
+    }
+    for (final var arm : arms) {
+      if (arm.handover == TenantRestartHandover.TRANSFER_BACK) {
+        assertThat(arm.reclaims())
+            .as(arm.name)
+            .isNotEmpty()
+            .allSatisfy(
+                reclaim ->
+                    assertThat(reclaim.outcome())
+                        .isEqualTo(PartitionLeadershipReclaim.Outcome.RECLAIMED));
+        assertThat(arm.leadersAfterRollouts).as(arm.name).allMatch(ONE_EACH::equals);
+      }
+      if (arm.snapshot) {
+        assertThat(arm.snapshots())
+            .as(arm.name)
+            .extracting(PartitionSnapshot::outcome)
+            .contains(PartitionRestartSnapshots.Outcome.TAKEN);
+      }
+      if (arm.rebalanceAfter) {
+        assertThat(arm.leadersAfterRebalances).as(arm.name).allMatch(ONE_EACH::equals);
+      }
+    }
+  }
+
+  private static void logComparison(final List<Arm> arms) {
+    final var report = new StringBuilder(System.lineSeparator());
+    report.append("variant comparison").append(System.lineSeparator());
+    report
+        .append(
+            "variant | leader restart unavailable median/worst ms | max latency median/worst ms"
+                + " | failed per restart median/worst | timed out | leaderless worst ms"
+                + " | rollout unavailable (sum over restarts and rebalance) median/worst ms"
+                + " | rollout duration median ms | leaders per member after rollouts"
+                + " | rebalance unavailable worst ms")
+        .append(System.lineSeparator());
+    for (final var arm : arms) {
+      final var leaders = arm.leaderRestarts();
+      final var totals = arm.rolloutTotals();
+      report.append(
+          "%s | %d/%d | %d/%d | %d/%d | %d | %d | %d/%d | %d | %s | %s%n"
+              .formatted(
+                  arm.name,
+                  median(leaders, Restart::unavailableMillis),
+                  worst(leaders, Restart::unavailableMillis),
+                  median(leaders, Restart::maxLatencyMillis),
+                  worst(leaders, Restart::maxLatencyMillis),
+                  median(leaders, Restart::failed),
+                  worst(leaders, Restart::failed),
+                  leaders.stream().mapToLong(Restart::timedOut).sum(),
+                  worst(leaders, Restart::leaderlessMillis),
+                  medianOf(totals),
+                  totals.stream().mapToLong(Long::longValue).max().orElse(0),
+                  medianOf(arm.rolloutMillis),
+                  arm.leadersAfterRollouts,
+                  arm.rebalances.isEmpty()
+                      ? "-"
+                      : arm.rebalances.stream()
+                              .mapToLong(Rebalance::unavailableMillis)
+                              .max()
+                              .orElse(0)
+                          + " (leaders after: "
+                          + arm.leadersAfterRebalances
+                          + ")"));
+    }
+    report
+        .append(System.lineSeparator())
+        .append(
+            "replay after a restart, per partition: variant, log positions since the snapshot,"
+                + " installed after ms, caught up after ms, outcome")
+        .append(System.lineSeparator());
+    for (final var arm : arms) {
+      for (final var replay : arm.afterRestarts()) {
+        report.append(
+            "replay | %s | %d | %d | %d | %s%n"
+                .formatted(
+                    arm.name,
+                    replay.logSinceSnapshot(),
+                    replay.installedAfter().toMillis(),
+                    replay.caughtUpAfter().toMillis(),
+                    replay.outcome()));
+      }
+    }
+    report
+        .append(System.lineSeparator())
+        .append(
+            "snapshots before a restart, per partition: variant, outcome, took ms, bytes, failure")
+        .append(System.lineSeparator());
+    for (final var arm : arms) {
+      for (final var snapshot : arm.snapshots()) {
+        report.append(
+            "snapshot | %s | %s | %d | %d | %s%n"
+                .formatted(
+                    arm.name,
+                    snapshot.outcome(),
+                    snapshot.took().toMillis(),
+                    snapshot.snapshot() == null ? -1 : snapshot.snapshot().sizeInBytes(),
+                    snapshot.failure()));
+      }
+    }
+    LOG.info("{}", report);
+  }
+
+  private static long medianOf(final List<Long> values) {
+    if (values.isEmpty()) {
+      return 0;
+    }
+    final var sorted = values.stream().mapToLong(Long::longValue).sorted().toArray();
+    return sorted[sorted.length / 2];
   }
 
   private static long median(final List<Restart> restarts, final ToLongFunction<Restart> metric) {
@@ -198,6 +334,9 @@ final class PhysicalTenantRestartHandoverIT {
   /**
    * The interruption one member restart caused, as seen through the gateways of the other members
    * (the restarting member's own gateway stops serving the tenant during its restart either way).
+   * Unavailable is the longest time a partition accepted no request through any of them; away and
+   * back split it at the moment the member's module started again, so back holds the transfer back.
+   * Timed out counts the requests that waited for the client's whole timeout.
    */
   private record Restart(
       int rollout,
@@ -210,7 +349,15 @@ final class PhysicalTenantRestartHandoverIT {
       long timedOut,
       long leaderlessMillis,
       long ownGatewayUnavailableMillis,
-      long ownGatewayFailed) {}
+      long ownGatewayFailed,
+      long awayUnavailableMillis,
+      long backUnavailableMillis,
+      List<PartitionSnapshot> snapshots,
+      List<PartitionReclaim> afterRestart) {}
+
+  /** The interruption a rebalance after a rollout caused. */
+  private record Rebalance(
+      int rollout, long tookMillis, long unavailableMillis, long maxLatencyMillis, long failed) {}
 
   /**
    * Publishes messages to one partition of a tenant through one gateway: one request at a time, a
@@ -368,8 +515,15 @@ final class PhysicalTenantRestartHandoverIT {
   /** One cluster, with the handover turned on or off, through several rolling restarts. */
   private static final class Arm {
     private final String name;
-    private final boolean handover;
+    private final TenantRestartHandover handover;
+    private final boolean snapshot;
+    private final boolean rebalanceAfter;
     private final List<Restart> restarts = new ArrayList<>();
+    private final List<Rebalance> rebalances = new ArrayList<>();
+    private final List<Map<String, Integer>> leadersAfterRollouts = new ArrayList<>();
+    private final List<Map<String, Integer>> leadersAfterRebalances = new ArrayList<>();
+    private final List<Long> rolloutMillis = new ArrayList<>();
+    private final List<long[]> rebalanceWindows = new ArrayList<>();
     private final List<String> leaderlessAfterRollouts = new ArrayList<>();
     private final List<long[]> rolloutWindows = new ArrayList<>();
     private long otherTenantFailed;
@@ -378,9 +532,15 @@ final class PhysicalTenantRestartHandoverIT {
     private long otherTenantRequests;
     private final Map<String, Long> failureReasons = new HashMap<>();
 
-    private Arm(final String name, final boolean handover) {
+    private Arm(
+        final String name,
+        final TenantRestartHandover handover,
+        final boolean snapshot,
+        final boolean rebalanceAfter) {
       this.name = name;
       this.handover = handover;
+      this.snapshot = snapshot;
+      this.rebalanceAfter = rebalanceAfter;
     }
 
     private void run() {
@@ -398,16 +558,17 @@ final class PhysicalTenantRestartHandoverIT {
               .withBrokersCount(3)
               .withReplicationFactor(3)
               .withPartitionsCount(1)
+              .useRecordingExporter(false)
               .withBrokerConfig(
                   broker ->
                       TENANTS
                           .configure(broker.withUnauthenticatedAccess())
                           .withClusterConfig(
-                              config ->
-                                  config
-                                      .getRaft()
-                                      .getRebalance()
-                                      .setHandOverBeforeTenantRestart(handover)))
+                              config -> {
+                                final var rebalance = config.getRaft().getRebalance();
+                                rebalance.setTenantRestartHandover(handover);
+                                rebalance.setTenantRestartSnapshot(snapshot);
+                              }))
               .build()) {
         cluster.start().awaitCompleteTopology();
         final var coordinator = broker(cluster, 0);
@@ -469,9 +630,26 @@ final class PhysicalTenantRestartHandoverIT {
           final var rolledOut = System.nanoTime();
           checkEveryPartitionLeads(cluster, tenantId, rollout);
           awaitServing(loads.values().stream().flatMap(List::stream).toList());
+          awaitCaughtUp(cluster, tenantId);
+          final var restartsOfRollout = memberRestarts(cluster, tenantId);
+          final var leadersAfterRollout = leadersPerMember(cluster, tenantId);
+          long[] rebalanceWindow = null;
+          if (rebalanceAfter) {
+            final var rebalanceStarted = System.nanoTime();
+            rebalance(coordinator);
+            awaitServing(loads.values().stream().flatMap(List::stream).toList());
+            rebalanceWindow = new long[] {rebalanceStarted, System.nanoTime() + SETTLE.toNanos()};
+          }
           if (rollout > 0) {
             rolloutWindows.add(new long[] {started, rolledOut + SETTLE.toNanos()});
-            rollouts.add(new Rollout(rollout, memberRestarts(cluster, tenantId), rolledOut));
+            rollouts.add(new Rollout(rollout, restartsOfRollout, rolledOut));
+            rolloutMillis.add(TimeUnit.NANOSECONDS.toMillis(rolledOut - started));
+            leadersAfterRollouts.add(leadersAfterRollout);
+            if (rebalanceWindow != null) {
+              rolloutWindows.add(rebalanceWindow);
+              rebalanceWindows.add(rebalanceWindow);
+              leadersAfterRebalances.add(leadersPerMember(cluster, tenantId));
+            }
           }
         }
         running.set(false);
@@ -483,6 +661,9 @@ final class PhysicalTenantRestartHandoverIT {
         assertThat(sampling.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
         for (final var rollout : rollouts) {
           collectRestarts(rollout, loads, sampler);
+        }
+        for (int index = 0; index < rebalanceWindows.size(); index++) {
+          collectRebalance(index + 1, rebalanceWindows.get(index), loads);
         }
         collectOtherTenant(otherTenantLoads);
       } catch (final InterruptedException e) {
@@ -527,6 +708,77 @@ final class PhysicalTenantRestartHandoverIT {
         }
       }
       return keys;
+    }
+
+    /**
+     * Waits until every member followed the catch-up of its restarted partitions to the end, so
+     * that its last restart reports it; gives up after a while, the report then says so.
+     */
+    private static void awaitCaughtUp(final TestCluster cluster, final String tenantId) {
+      try {
+        Awaitility.await("every restarted partition of %s caught up".formatted(tenantId))
+            .atMost(Duration.ofSeconds(30))
+            .pollInterval(Duration.ofMillis(50))
+            .until(
+                () ->
+                    cluster.brokers().values().stream()
+                        .allMatch(
+                            broker ->
+                                broker
+                                    .bean(PhysicalTenantLifecycleService.class)
+                                    .lastRestart(tenantId)
+                                    .map(restart -> restart.afterRestart().size() >= PARTITIONS)
+                                    .orElse(false)));
+      } catch (final org.awaitility.core.ConditionTimeoutException e) {
+        LOG.warn("Not every restarted partition of {} reported its catch-up", tenantId);
+      }
+    }
+
+    private static Map<String, Integer> leadersPerMember(
+        final TestCluster cluster, final String tenantId) {
+      final Map<String, Integer> leaders = new TreeMap<>();
+      for (final var broker : cluster.brokers().entrySet()) {
+        leaders.put(
+            broker.getKey().id(),
+            (int)
+                raftPartitions(broker.getValue(), tenantId).stream()
+                    .filter(partition -> partition.getRole() == Role.LEADER)
+                    .count());
+      }
+      return leaders;
+    }
+
+    /** Rebalances the cluster's leadership through the rebalance coordinator and waits for it. */
+    private static void rebalance(final TestStandaloneBroker coordinator) {
+      final var client = ClusterRebalanceRestClient.of(coordinator.restAddress());
+      final var rebalanceId = new AtomicLong();
+      Awaitility.await("a rebalance is accepted")
+          .atMost(TIMEOUT)
+          .pollInterval(Duration.ofMillis(200))
+          .until(
+              () -> {
+                final var response = client.triggerRebalance();
+                if (response.status() != 202
+                    || response.body() == null
+                    || response.body().getRunningRebalance() == null) {
+                  return false;
+                }
+                rebalanceId.set(response.body().getRunningRebalance().getRebalanceId());
+                return true;
+              });
+      Awaitility.await("rebalance %d completed".formatted(rebalanceId.get()))
+          .atMost(TIMEOUT)
+          .pollInterval(Duration.ofMillis(100))
+          .untilAsserted(
+              () -> {
+                final var status = client.getRebalance();
+                assertThat(status.status()).isEqualTo(200);
+                assertThat(status.body()).isNotNull();
+                assertThat(status.body().getLastCompletedRebalance()).isNotNull();
+                assertThat(status.body().getLastCompletedRebalance().getRebalanceId())
+                    .isEqualTo(rebalanceId.get());
+              });
+      LOG.info("Rebalance after the rollout: {}", client.getRebalance().body());
     }
 
     /**
@@ -621,6 +873,35 @@ final class PhysicalTenantRestartHandoverIT {
       return memberRestarts;
     }
 
+    /**
+     * The longest time any partition went without an accepted request through the given loads
+     * together, counted as {@link Load#longestGapNanos} counts it: a request that one gateway's
+     * client waits on does not interrupt the partition while another gateway serves it.
+     */
+    private static long longestPartitionGapNanos(
+        final List<Load> loads, final long fromNanos, final long toNanos) {
+      final var byPartition =
+          loads.stream().collect(Collectors.groupingBy(load -> load.correlationKey));
+      long longest = 0;
+      for (final var partitionLoads : byPartition.values()) {
+        final var accepted =
+            partitionLoads.stream()
+                .flatMap(load -> load.sorted().stream())
+                .filter(Sample::ok)
+                .mapToLong(Sample::endNanos)
+                .sorted()
+                .toArray();
+        final var slack = 10 * LOAD_INTERVAL.toNanos();
+        for (int index = 1; index < accepted.length; index++) {
+          final var previous = accepted[index - 1];
+          if (previous >= fromNanos - slack && previous < toNanos - slack) {
+            longest = Math.max(longest, accepted[index] - previous);
+          }
+        }
+      }
+      return longest;
+    }
+
     private void collectRestarts(
         final Rollout measured,
         final Map<MemberId, List<Load>> loads,
@@ -642,6 +923,17 @@ final class PhysicalTenantRestartHandoverIT {
         long timedOut = 0;
         long ownUnavailable = 0;
         long ownFailed = 0;
+        long away = 0;
+        long back = 0;
+        final var restartedAt = Math.min(Math.max(restart.startedAgainNanos(), from), to);
+        final var otherGateways =
+            loads.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(member))
+                .flatMap(entry -> entry.getValue().stream())
+                .toList();
+        unavailable = longestPartitionGapNanos(otherGateways, from, to);
+        away = longestPartitionGapNanos(otherGateways, from, restartedAt);
+        back = longestPartitionGapNanos(otherGateways, restartedAt, to);
         for (final var entry : loads.entrySet()) {
           for (final var load : entry.getValue()) {
             final var started = load.startedIn(from, to);
@@ -654,7 +946,6 @@ final class PhysicalTenantRestartHandoverIT {
               ownUnavailable = Math.max(ownUnavailable, gap);
               ownFailed += failures;
             } else {
-              unavailable = Math.max(unavailable, gap);
               failed += failures;
               timedOut +=
                   started.stream()
@@ -685,8 +976,63 @@ final class PhysicalTenantRestartHandoverIT {
                 timedOut,
                 TimeUnit.NANOSECONDS.toMillis(sampler.longestLeaderlessNanos(from, to)),
                 TimeUnit.NANOSECONDS.toMillis(ownUnavailable),
-                ownFailed));
+                ownFailed,
+                TimeUnit.NANOSECONDS.toMillis(away),
+                TimeUnit.NANOSECONDS.toMillis(back),
+                restart.snapshots(),
+                restart.afterRestart()));
       }
+    }
+
+    private void collectRebalance(
+        final int rollout, final long[] window, final Map<MemberId, List<Load>> loads) {
+      long unavailable = 0;
+      long maxLatency = 0;
+      long failed = 0;
+      final var allLoads = loads.values().stream().flatMap(List::stream).toList();
+      unavailable = longestPartitionGapNanos(allLoads, window[0], window[1]);
+      for (final var load : allLoads) {
+        final var started = load.startedIn(window[0], window[1]);
+        failed += started.stream().filter(sample -> !sample.ok()).count();
+        maxLatency =
+            Math.max(
+                maxLatency,
+                started.stream()
+                    .mapToLong(sample -> sample.endNanos() - sample.startNanos())
+                    .max()
+                    .orElse(0));
+      }
+      rebalances.add(
+          new Rebalance(
+              rollout,
+              TimeUnit.NANOSECONDS.toMillis(window[1] - window[0] - SETTLE.toNanos()),
+              TimeUnit.NANOSECONDS.toMillis(unavailable),
+              TimeUnit.NANOSECONDS.toMillis(maxLatency),
+              failed));
+    }
+
+    /** Per measured rollout, the interruption of every member restart and of the rebalance. */
+    private List<Long> rolloutTotals() {
+      final Map<Integer, Long> totals = new TreeMap<>();
+      restarts.forEach(
+          restart -> totals.merge(restart.rollout(), restart.unavailableMillis(), Long::sum));
+      rebalances.forEach(
+          rebalance -> totals.merge(rebalance.rollout(), rebalance.unavailableMillis(), Long::sum));
+      return List.copyOf(totals.values());
+    }
+
+    private List<PartitionReclaim> reclaims() {
+      return afterRestarts().stream()
+          .filter(reclaim -> reclaim.outcome() != PartitionLeadershipReclaim.Outcome.CAUGHT_UP)
+          .toList();
+    }
+
+    private List<PartitionReclaim> afterRestarts() {
+      return restarts.stream().flatMap(restart -> restart.afterRestart().stream()).toList();
+    }
+
+    private List<PartitionSnapshot> snapshots() {
+      return restarts.stream().flatMap(restart -> restart.snapshots().stream()).toList();
     }
 
     private void collectOtherTenant(final List<Load> otherTenantLoads) {
@@ -727,11 +1073,11 @@ final class PhysicalTenantRestartHandoverIT {
           "%n%s: %d member restarts, %d of a leader%n"
               .formatted(name, restarts.size(), leaderRestarts().size()));
       report.append(
-          "rollout member led unavailable-ms max-latency-ms failed timed-out leaderless-ms own-gateway-unavailable-ms own-gateway-failed handover%n"
+          "rollout member led unavailable-ms max-latency-ms failed timed-out leaderless-ms own-gateway-unavailable-ms own-gateway-failed away-ms back-ms handover reclaim%n"
               .formatted());
       for (final var restart : restarts) {
         report.append(
-            "%d %s %s %d %d %d %d %d %d %d %s%n"
+            "%d %s %s %d %d %d %d %d %d %d %d %d %s %s%n"
                 .formatted(
                     restart.rollout(),
                     restart.member().id(),
@@ -743,6 +1089,8 @@ final class PhysicalTenantRestartHandoverIT {
                     restart.leaderlessMillis(),
                     restart.ownGatewayUnavailableMillis(),
                     restart.ownGatewayFailed(),
+                    restart.awayUnavailableMillis(),
+                    restart.backUnavailableMillis(),
                     restart.handover().stream()
                         .filter(PartitionReport::led)
                         .map(
@@ -755,7 +1103,21 @@ final class PhysicalTenantRestartHandoverIT {
                                     + "/"
                                     + partition.took().toMillis()
                                     + "ms")
-                        .toList()));
+                        .toList(),
+                    restart.afterRestart().stream()
+                        .filter(
+                            reclaim ->
+                                reclaim.outcome() != PartitionLeadershipReclaim.Outcome.CAUGHT_UP)
+                        .map(
+                            reclaim ->
+                                reclaim.partition()
+                                    + ":"
+                                    + reclaim.outcome()
+                                    + "/"
+                                    + reclaim.took().toMillis()
+                                    + "ms"
+                                    + reclaim.answers())
+                        .collect(Collectors.joining(", ", "[", "]"))));
       }
       final var leaders = leaderRestarts();
       report.append(
