@@ -2082,14 +2082,15 @@ final class ReconfigurationTest {
               () ->
                   assertThat(m2.getContext().getCommitIndex())
                       .isEqualTo(m2.getContext().getCurrentConfigurationIndex()));
-      // The members to remove are gone. The initiator can neither win an election nor receive
-      // entries, so the force-leaving configuration entry can neither be appended to its log nor
-      // commit; only the persisted configuration can tell it about the force.
+      // The members to remove are gone. No member can win an election and the initiator receives
+      // no entries, so neither the force-leaving configuration entry nor a configure request from
+      // a new leader can reach it; only the persisted configuration can tell it about the force.
       m3.shutdown().join();
       m4.shutdown().join();
       final var dropEntryAppends = new AtomicBoolean(true);
       dropEntryAppendsTo(m1, id2, dropEntryAppends);
       final var dropPolls = new AtomicBoolean(true);
+      dropPollsFrom(m1, dropPolls);
       dropPollsFrom(m2, dropPolls);
       assertThat(m2.forceConfigure(newMembers())).succeedsWithin(Duration.ofSeconds(10));
 
