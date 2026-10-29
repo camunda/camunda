@@ -216,6 +216,31 @@ describe('<ProcessInstanceVariables />', () => {
 			.toEqual([[JSON.stringify({amount: 100, customer: {name: 'Jane'}, password: '[REDACTED]'})]]);
 	});
 
+	it('should keep copying enabled when a redacted variable is reported as truncated', async ({worker}) => {
+		const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+		onTestFinished(() => writeText.mockRestore());
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse([
+					createVariable({
+						name: 'password',
+						value: '"irrel',
+						isTruncated: true,
+						variableKey: '1',
+						metadata: {protectionModes: ['REDACT']},
+					}),
+				]),
+			}),
+		);
+		const screen = await renderVariables();
+		const copy = screen.getByRole('button', {name: 'Copy variables'});
+
+		await expect.element(copy).toBeEnabled();
+		await userEvent.click(copy);
+
+		await expect.poll(() => writeText.mock.calls).toEqual([[JSON.stringify({password: '[REDACTED]'})]]);
+	});
+
 	it('should show an empty message when the scope has no variables', async ({worker}) => {
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
 		const screen = await renderVariables();

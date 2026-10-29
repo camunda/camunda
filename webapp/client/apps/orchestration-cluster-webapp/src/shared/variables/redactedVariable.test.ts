@@ -27,7 +27,7 @@ describe('isRedactedVariable', () => {
 
 describe('redactValue', () => {
 	it('should replace the value of a redacted variable with a JSON-parseable redacted label', () => {
-		const variable = {name: 'password', value: 'stored', metadata: {protectionModes: ['REDACT']}};
+		const variable = {name: 'password', value: 'stored', isTruncated: false, metadata: {protectionModes: ['REDACT']}};
 
 		const redacted = redactValue(variable);
 
@@ -35,8 +35,14 @@ describe('redactValue', () => {
 		expect(JSON.parse(redacted.value)).toBe('[REDACTED]');
 	});
 
+	it('should mark a truncated redacted variable as not truncated', () => {
+		const variable = {name: 'password', value: '"stor', isTruncated: true, metadata: {protectionModes: ['REDACT']}};
+
+		expect(redactValue(variable).isTruncated).toBe(false);
+	});
+
 	it('should keep the value of an unprotected variable', () => {
-		const variable = {name: 'amount', value: '100', metadata: {protectionModes: []}};
+		const variable = {name: 'amount', value: '100', isTruncated: false, metadata: {protectionModes: []}};
 
 		expect(redactValue(variable)).toBe(variable);
 	});
@@ -46,16 +52,16 @@ describe('redactValues', () => {
 	it('should redact the protected items of a search result and keep the rest of it', () => {
 		const result = {
 			items: [
-				{name: 'password', value: 'stored', metadata: {protectionModes: ['REDACT']}},
-				{name: 'amount', value: '100', metadata: {protectionModes: []}},
+				{name: 'password', value: 'stored', isTruncated: false, metadata: {protectionModes: ['REDACT']}},
+				{name: 'amount', value: '100', isTruncated: false, metadata: {protectionModes: []}},
 			],
 			page: {totalItems: 2},
 		};
 
 		expect(redactValues(result)).toEqual({
 			items: [
-				{name: 'password', value: '"[REDACTED]"', metadata: {protectionModes: ['REDACT']}},
-				{name: 'amount', value: '100', metadata: {protectionModes: []}},
+				{name: 'password', value: '"[REDACTED]"', isTruncated: false, metadata: {protectionModes: ['REDACT']}},
+				{name: 'amount', value: '100', isTruncated: false, metadata: {protectionModes: []}},
 			],
 			page: {totalItems: 2},
 		});
