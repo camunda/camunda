@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
  * Takes back the leadership of partitions that a member handed over before it restarted them. A
  * partition is asked for once its replica on this member has replayed the log it holds, so the new
  * leader does not replay before it processes, and through a coordinated leadership transfer, so it
- * keeps a leader throughout. A partition that cannot be taken back within the bound stays led by
- * the replica that took it over.
+ * keeps a leader throughout. A partition that cannot be taken back within the bound, or whose
+ * replica is paused because it is out of disk space, stays led by the replica that took it over.
  */
 @NullMarked
 public final class PartitionLeadershipReclaim {
@@ -125,6 +125,10 @@ public final class PartitionLeadershipReclaim {
                 return;
               }
               progress.installed(lag);
+              if (lag.pausedForDiskSpace()) {
+                result.complete(progress.report(Outcome.PAUSED));
+                return;
+              }
               if (lag.lag() > caughtUpLag) {
                 again(progress, result);
                 return;
@@ -200,8 +204,15 @@ public final class PartitionLeadershipReclaim {
   /**
    * @param lag how many log positions the replica's state is behind its log
    * @param logSinceSnapshot how many log positions follow the replica's latest snapshot
+   * @param pausedForDiskSpace whether the replica's processing is paused because it is out of disk
+   *     space; it does not catch up until space is freed or its limit is raised
    */
-  public record ReplayLag(long lag, long logSinceSnapshot) {}
+  public record ReplayLag(long lag, long logSinceSnapshot, boolean pausedForDiskSpace) {
+
+    public ReplayLag(final long lag, final long logSinceSnapshot) {
+      this(lag, logSinceSnapshot, false);
+    }
+  }
 
   /** How taking back the leadership of one partition went. */
   public enum Outcome {
@@ -209,6 +220,11 @@ public final class PartitionLeadershipReclaim {
     RECLAIMED,
     /** The replica caught up with its log; its leadership was not asked for. */
     CAUGHT_UP,
+    /**
+     * The replica is paused because it is out of disk space, so it would not catch up; its
+     * leadership was not asked for.
+     */
+    PAUSED,
     /** The leader refused the transfer for a reason that asking again would not change. */
     REFUSED,
     /** The bound passed before this member led the partition, or before it caught up. */

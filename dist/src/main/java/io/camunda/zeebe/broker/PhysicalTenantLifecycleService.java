@@ -669,7 +669,9 @@ public final class PhysicalTenantLifecycleService {
             .thenApply(
                 progress ->
                     new ReplayLag(
-                        progress.lag(), progress.logEndPosition() - progress.snapshotPosition()));
+                        progress.lag(),
+                        progress.logEndPosition() - progress.snapshotPosition(),
+                        !partition.isDiskSpaceAvailable()));
       }
 
       @Override

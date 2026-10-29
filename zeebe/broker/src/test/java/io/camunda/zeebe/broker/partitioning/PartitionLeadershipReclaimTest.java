@@ -109,6 +109,23 @@ final class PartitionLeadershipReclaimTest {
   }
 
   @Test
+  void shouldLeaveTheLeadershipWhereItIsWhileTheReplicaIsOutOfDiskSpace() {
+    // given
+    final var partition =
+        new FakePartition(
+            List.of(new ReplayLag(5000, 5000, true)),
+            List.of(LeadershipTransferResult.TRANSFERRED));
+
+    // when
+    final var report = reclaimed(partition);
+
+    // then
+    assertThat(report.outcome()).isEqualTo(Outcome.PAUSED);
+    assertThat(report.answers()).isEmpty();
+    assertThat(report.took()).isLessThan(Duration.ofSeconds(1));
+  }
+
+  @Test
   void shouldNotAskForTheLeadershipWhenOnlyAwaitingTheCatchUp() {
     // given
     final var partition =
