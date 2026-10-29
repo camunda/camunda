@@ -36,6 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -276,6 +277,14 @@ public final class RaftPartition implements Partition, HealthMonitorable {
 
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
+  }
+
+  /** The member this replica knows as the partition's leader, if any. */
+  public Optional<MemberId> leader() {
+    if (server == null) {
+      return Optional.empty();
+    }
+    return server.getLeader();
   }
 
   /**

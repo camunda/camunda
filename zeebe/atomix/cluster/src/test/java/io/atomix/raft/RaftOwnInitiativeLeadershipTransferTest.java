@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,6 +109,75 @@ public class RaftOwnInitiativeLeadershipTransferTest {
     // then
     assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(LeadershipTransferResult.UNREACHABLE);
     assertThat(leader.isLeader()).isTrue();
+  }
+
+  @Test
+  public void shouldHandLeadershipToAReplicaThatAsksForItself() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    leader
+        .getContext()
+        .setLeadershipTransferCoordinatorCheck(
+            (coordinator, version) -> Optional.of(LeadershipTransferResult.NOT_COORDINATOR))
+        .join();
+
+    // when
+    final var response =
+        target
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader),
+                LeadershipTransferInitiateRequest.builder()
+                    .withDesiredLeader(memberId(target))
+                    .withCoordinator(memberId(target))
+                    .withCoordinatorConfigVersion(0)
+                    .withCorrelationId(-1)
+                    .build())
+            .get(10, TimeUnit.SECONDS);
+
+    // then
+    assertThat(response.accepted()).isTrue();
+    Awaitility.await("the target leads").atMost(TIMEOUT).until(() -> target.isLeader());
+  }
+
+  @Test
+  public void shouldStillAskTheCoordinatorForAnotherReplica() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    leader
+        .getContext()
+        .setLeadershipTransferCoordinatorCheck(
+            (coordinator, version) -> Optional.of(LeadershipTransferResult.NOT_COORDINATOR))
+        .join();
+    final var requester =
+        raftRule.getServers().stream()
+            .filter(server -> server != leader && server != target)
+            .findFirst()
+            .orElseThrow();
+
+    // when
+    final var response =
+        requester
+            .getContext()
+            .getProtocol()
+            .leadershipTransferInitiate(
+                memberId(leader),
+                LeadershipTransferInitiateRequest.builder()
+                    .withDesiredLeader(memberId(target))
+                    .withCoordinator(memberId(requester))
+                    .withCoordinatorConfigVersion(0)
+                    .withCorrelationId(-1)
+                    .build())
+            .get(10, TimeUnit.SECONDS);
+
+    // then
+    assertThat(response.accepted()).isFalse();
+    assertThat(response.rejectionReason()).isEqualTo(LeadershipTransferResult.NOT_COORDINATOR);
   }
 
   private static MemberId memberId(final RaftServer server) {

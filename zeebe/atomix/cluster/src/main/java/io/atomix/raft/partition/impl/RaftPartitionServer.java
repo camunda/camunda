@@ -423,6 +423,12 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().transferLeadership(desiredLeader);
   }
 
+  /** The member this replica knows as the partition's leader, if any. */
+  public Optional<MemberId> getLeader() {
+    final var leader = server.getContext().getLeader();
+    return leader == null ? Optional.empty() : Optional.of(leader.memberId());
+  }
+
   public CompletableFuture<RaftServer> anoint() {
     return server.anoint();
   }

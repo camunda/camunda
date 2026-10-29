@@ -64,6 +64,11 @@ final class LeadershipTransferAdmission {
       final MemberId coordinator,
       final long coordinatorConfigVersion,
       final RebalanceConfiguration configuration) {
+    // A replica asking for the leadership for itself needs no coordinator's authority: it could as
+    // well campaign, and the transfer still holds it to the same catch-up rules.
+    if (coordinator.equals(desiredLeader)) {
+      return precheckOwnInitiative(desiredLeader, configuration);
+    }
     return precheck(
         desiredLeader,
         () ->
