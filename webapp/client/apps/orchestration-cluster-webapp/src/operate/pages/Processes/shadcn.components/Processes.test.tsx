@@ -99,6 +99,16 @@ describe('<Processes /> (design system)', () => {
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({completed: true, canceled: true});
 	});
 
+	it('should add an optional filter from the menu and serialize it to the URL', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Error Message'}));
+		await userEvent.fill(screen.getByLabelText('Error Message'), 'timeout');
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({errorMessage: 'timeout'});
+	});
+
 	it('should reset all filters', async () => {
 		const screen = await renderWithRouter(Harness, {
 			path: PATH,
@@ -159,5 +169,38 @@ describe('<Processes /> (design system)', () => {
 		});
 
 		await expect.element(screen.getByLabelText('Element')).toHaveTextContent('removedTask');
+	});
+
+	it('should move focus to the date range group when it is added from the menu', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Start Date Range'}));
+
+		await expect.element(screen.getByRole('group', {name: 'Start Date Range'})).toHaveFocus();
+	});
+
+	it('should keep an unrelated invalid draft when an active optional filter is removed', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `${PATH}?errorMessage=timeout`});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key(s)'}));
+		await userEvent.fill(screen.getByLabelText('Process Instance Key(s)'), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Error Message Filter'}));
+
+		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('errorMessage');
+		await expect.element(screen.getByLabelText('Process Instance Key(s)')).toHaveValue('abc');
+	});
+
+	it('should discard an invalid draft when the filters are reset', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `${PATH}?errorMessage=timeout`});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key(s)'}));
+		await userEvent.fill(screen.getByLabelText('Process Instance Key(s)'), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Error Message Filter'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
+
+		await expect.element(screen.getByLabelText('Process Instance Key(s)')).not.toBeInTheDocument();
 	});
 });
