@@ -40,6 +40,9 @@ public class CircularBufferInputStream extends InputStream {
   /** The largest array the JVM can reliably allocate; {@code ArrayList} uses the same limit. */
   private static final int MAX_BUFFER_LENGTH = Integer.MAX_VALUE - 8;
 
+  /** About two pieces of the data the I/O layer hands over at once. */
+  private static final int MIN_GROWTH = 64 * 1024;
+
   private final int capacity;
   private final IntFunction<byte[]> arrayAllocator;
   private byte[] buffer;
@@ -223,19 +226,8 @@ public class CircularBufferInputStream extends InputStream {
 
   /** Moves the unread data to the start of a larger array. */
   private void grow(final long minLength) throws IOException {
-    final int length = grownLength(buffer.length, minLength);
-    final byte[] grown;
-    try {
-      grown = arrayAllocator.apply(length);
-    } catch (final OutOfMemoryError e) {
-      // This runs on the I/O thread. Thrown from there, the error would stop the thread and close
-      // the connections of every other request it serves, so only this download fails instead.
-      throw new IOException(
-          String.format(
-              "Not enough memory to buffer %d bytes of the document that have not been read yet",
-              minLength),
-          e);
-    }
+    final int length = grownLength(capacity, buffer.length, minLength);
+    final byte[] grown = allocate(length, (int) minLength);
     final int firstCopyLength = Math.min(availableData, buffer.length - readPos);
     System.arraycopy(buffer, readPos, grown, 0, firstCopyLength);
     System.arraycopy(buffer, 0, grown, firstCopyLength, availableData - firstCopyLength);
@@ -245,18 +237,52 @@ public class CircularBufferInputStream extends InputStream {
   }
 
   /**
-   * Grows by at least half, as the I/O layer can keep handing over data in many small pieces while
-   * the reader is behind, up to the largest array the JVM can allocate.
+   * Allocates the array, falling back to the required length if there is not enough memory for the
+   * preferred one: the extra room only saves later copies.
+   *
+   * <p>This runs on the I/O thread. Thrown from there, an {@link OutOfMemoryError} would stop the
+   * thread and close the connections of every other request it serves, so only this download fails
+   * instead.
    */
-  static int grownLength(final int currentLength, final long minLength) throws IOException {
+  private byte[] allocate(final int preferredLength, final int requiredLength) throws IOException {
+    try {
+      return arrayAllocator.apply(preferredLength);
+    } catch (final OutOfMemoryError e) {
+      if (preferredLength == requiredLength) {
+        throw notEnoughMemory(requiredLength, e);
+      }
+    }
+    try {
+      return arrayAllocator.apply(requiredLength);
+    } catch (final OutOfMemoryError e) {
+      throw notEnoughMemory(requiredLength, e);
+    }
+  }
+
+  private static IOException notEnoughMemory(final int length, final OutOfMemoryError cause) {
+    return new IOException(
+        String.format(
+            "Not enough memory to buffer %d bytes of the document that have not been read yet",
+            length),
+        cause);
+  }
+
+  /**
+   * Doubles the part of the buffer beyond its capacity, by at least {@link #MIN_GROWTH}. An overrun
+   * by a read or two costs little memory, and when the I/O layer keeps handing over data while the
+   * reader is behind, the unread data is copied only a few times. The length stays within the
+   * largest array the JVM can allocate.
+   */
+  static int grownLength(final int capacity, final int currentLength, final long minLength)
+      throws IOException {
     if (minLength > MAX_BUFFER_LENGTH) {
       throw new IOException(
           String.format(
               "Cannot buffer %d bytes of the document that have not been read yet, the limit is %d",
               minLength, MAX_BUFFER_LENGTH));
     }
-    final long preferredLength = currentLength + currentLength / 2L;
-    return (int) Math.min(Math.max(minLength, preferredLength), MAX_BUFFER_LENGTH);
+    final long growth = Math.max((long) currentLength - capacity, MIN_GROWTH);
+    return (int) Math.min(Math.max(minLength, currentLength + growth), MAX_BUFFER_LENGTH);
   }
 
   public interface CapacityCallback {
