@@ -529,6 +529,136 @@ public final class CallActivityTest {
   }
 
   @Test
+  public void shouldPropagateLocalVariablesFromStartListenerWithoutInputMappings() {
+    // given: propagateAllParentVariables=false and no input mappings, so the only local
+    // variables on the call activity come from the start execution listener
+    final var startListenerType = "start-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllParentVariables(false)
+                        .zeebeStartExecutionListener(startListenerType)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(startListenerType)
+        .withVariable("z", 1)
+        .complete();
+
+    // then: only the local variable reaches the child, not the parent's process variable "x"
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+    final var childJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= childJob.getPosition())
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .containsExactly(tuple("z", "1"));
+  }
+
+  @Test
+  public void shouldPropagateLocalVariablesSetViaApiWithoutInputMappings() {
+    // given: a call activity waiting on its start execution listener, with no input mappings
+    final var startListenerType = "start-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllParentVariables(false)
+                        .zeebeStartExecutionListener(startListenerType)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+    final var callActivityInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .getFirst()
+            .getKey();
+
+    // when: a local variable is set on the call activity scope before the listener completes
+    ENGINE
+        .variables()
+        .ofScope(callActivityInstanceKey)
+        .withDocument(Map.of("z", 1))
+        .withLocalSemantic()
+        .update();
+    ENGINE.job().ofInstance(processInstanceKey).withType(startListenerType).complete();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+    final var childJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= childJob.getPosition())
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .containsExactly(tuple("z", "1"));
+  }
+
+  @Test
+  public void shouldPropagateMultiInstanceLoopVariablesWithoutInputMappings() {
+    // given: the multi-instance loop variables are local to the call activity scope and are copied
+    // to the child just like any other local variable
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllParentVariables(false)
+                        .multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("[\"a\"]")
+                                    .zeebeInputElement("item"))))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+    final var childJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= childJob.getPosition())
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .containsExactlyInAnyOrder(tuple("item", "\"a\""), tuple("loopCounter", "1"));
+  }
+
+  @Test
   public void shouldApplyOutputMappings() {
     // given
     ENGINE
