@@ -251,16 +251,14 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnOrderedProcessHierarchyWhenSearchReturnsDuplicateInstance() {
     // given
-    final var childProcess =
-        Instancio.of(ProcessInstanceEntity.class)
-            .set(field(ProcessInstanceEntity::processInstanceKey), 789L)
-            .set(field(ProcessInstanceEntity::treePath), "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
-            .create();
+    final var childProcess = mock(ProcessInstanceEntity.class);
+    when(childProcess.processInstanceKey()).thenReturn(789L);
+    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
+    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
 
-    final var parentProcess =
-        Instancio.of(ProcessInstanceEntity.class)
-            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
-            .create();
+    final var parentProcess = mock(ProcessInstanceEntity.class);
+    when(parentProcess.processInstanceKey()).thenReturn(123L);
+    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
 
     when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
     when(processInstanceSearchClient.searchProcessInstances(any()))
@@ -269,7 +267,7 @@ public final class ProcessInstanceServiceTest {
                 1, false, List.of(childProcess, parentProcess, parentProcess), null, null));
 
     // when
-    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+    final var result = services.callHierarchy(childProcess.processInstanceKey());
 
     // then
     assertThat(result).hasSize(2);
