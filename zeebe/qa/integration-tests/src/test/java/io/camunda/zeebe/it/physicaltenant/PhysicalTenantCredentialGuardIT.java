@@ -43,6 +43,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Sends a physical tenant configuration that holds a literal password through the management API
@@ -57,14 +59,18 @@ final class PhysicalTenantCredentialGuardIT {
   private static final String PASSWORD_KEY = "data.secondary-storage.rdbms.password";
   private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
+  private static final String CLIENT_SECRET_KEY = "security.authentication.oidc.client-secret";
   private static final String FILE_TENANT = "filelit";
+  private static final String FILE_CLIENT_SECRET_TENANT = "filesecret";
   private static final String LAST_FILE_TENANT = "zzclean";
   private static final String FILE_PASSWORD = "file-" + UUID.randomUUID();
+  private static final String FILE_CLIENT_SECRET = "file-secret-" + UUID.randomUUID();
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
           .withTenant(FILE_TENANT, Storage.none())
+          .withTenant(FILE_CLIENT_SECRET_TENANT, Storage.none())
           .withTenant(LAST_FILE_TENANT, Storage.none())
           .build();
 
@@ -73,7 +79,10 @@ final class PhysicalTenantCredentialGuardIT {
       TENANTS
           .configure(new TestStandaloneBroker().withUnauthenticatedAccess())
           .withProperty(
-              "camunda.physical-tenants." + FILE_TENANT + "." + PASSWORD_KEY, FILE_PASSWORD);
+              "camunda.physical-tenants." + FILE_TENANT + "." + PASSWORD_KEY, FILE_PASSWORD)
+          .withProperty(
+              "camunda.physical-tenants." + FILE_CLIENT_SECRET_TENANT + "." + CLIENT_SECRET_KEY,
+              FILE_CLIENT_SECRET);
 
   private final ListAppender logs = new ListAppender("credential-guard-" + UUID.randomUUID());
 
@@ -104,41 +113,50 @@ final class PhysicalTenantCredentialGuardIT {
     logs.stop();
   }
 
-  @Test
-  void shouldRejectALiteralPasswordOnCreateBeforeAnythingIsStored() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        PASSWORD_KEY,
+        CLIENT_SECRET_KEY,
+        "security.authentication.providers.oidc.idp.client-secret",
+        "security.authentication.oidc.assertion.keystore.password",
+        "security.authentication.oidc.assertion.keystore.key-password"
+      })
+  void shouldRejectALiteralCredentialOnCreateBeforeAnythingIsStored(final String credentialKey) {
     // given
     final var tenantId = uniqueTenantId();
     final var password = "api-" + UUID.randomUUID();
     final var configuration = tenantConfiguration();
-    configuration.put(PASSWORD_KEY, password);
+    configuration.put(credentialKey, password);
 
     // when
     final var response = send("POST", tenantId, configuration);
 
     // then
     assertThat(response.statusCode()).isEqualTo(400);
-    assertThat(response.body()).contains(PASSWORD_KEY).doesNotContain(password);
+    assertThat(response.body()).contains(credentialKey).doesNotContain(password);
     assertThat(send("GET", tenantId, null).statusCode()).isEqualTo(404);
     assertThat(tenantConfigDirectory().resolve(tenantId)).doesNotExist();
     assertNowhere(password);
   }
 
-  @Test
-  void shouldRejectALiteralPasswordOnUpdateBeforeAnythingIsStored() {
+  @ParameterizedTest
+  @ValueSource(strings = {PASSWORD_KEY, CLIENT_SECRET_KEY})
+  void shouldRejectALiteralCredentialOnUpdateBeforeAnythingIsStored(final String credentialKey) {
     // given
     final var tenantId = uniqueTenantId();
     assertThat(send("POST", tenantId, tenantConfiguration()).statusCode()).isEqualTo(202);
     awaitRolledOut(tenantId);
     final var password = "api-" + UUID.randomUUID();
     final var configuration = tenantConfiguration();
-    configuration.put(PASSWORD_KEY, password);
+    configuration.put(credentialKey, password);
 
     // when
     final var response = send("PUT", tenantId, configuration);
 
     // then
     assertThat(response.statusCode()).isEqualTo(400);
-    assertThat(response.body()).contains(PASSWORD_KEY).doesNotContain(password);
+    assertThat(response.body()).contains(credentialKey).doesNotContain(password);
     assertThat(versionOf(tenantId)).isEqualTo(1);
     assertNowhere(password);
   }
@@ -165,6 +183,30 @@ final class PhysicalTenantCredentialGuardIT {
         .asString()
         .contains(PASSWORD_KEY);
     assertNowhere(FILE_PASSWORD);
+  }
+
+  @Test
+  void shouldNotRegisterAFileTenantWithALiteralClientSecret() {
+    // given
+    Awaitility.await("the last file tenant is registered")
+        .atMost(TIMEOUT)
+        .until(() -> send("GET", LAST_FILE_TENANT, null).statusCode() == 200);
+
+    // when
+    final var response = send("GET", FILE_CLIENT_SECRET_TENANT, null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(tenantConfigDirectory().resolve(FILE_CLIENT_SECRET_TENANT)).doesNotExist();
+    assertThat(
+            logs.getEvents().stream()
+                .map(event -> event.getMessage().getFormattedMessage())
+                .filter(message -> message.contains(FILE_CLIENT_SECRET_TENANT))
+                .filter(message -> message.contains("was rejected")))
+        .singleElement()
+        .asString()
+        .contains(CLIENT_SECRET_KEY);
+    assertNowhere(FILE_CLIENT_SECRET);
   }
 
   private void assertNowhere(final String password) {
