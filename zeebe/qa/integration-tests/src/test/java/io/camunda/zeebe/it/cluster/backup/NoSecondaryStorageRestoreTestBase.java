@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -387,14 +386,13 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
    * What a restore is asked for: either the backups to restore from, or a time range whose bounds
    * may each be left out.
    */
-  protected record RestoreRequest(
-      List<Long> backupIds, @Nullable Instant from, @Nullable Instant to) {
+  protected record RestoreRequest(List<Long> backupIds, Instant from, Instant to) {
 
     static RestoreRequest latest() {
       return new RestoreRequest(List.of(), null, null);
     }
 
-    static RestoreRequest timeRange(final @Nullable Instant from, final @Nullable Instant to) {
+    static RestoreRequest timeRange(final Instant from, final Instant to) {
       return new RestoreRequest(List.of(), from, to);
     }
 
