@@ -324,6 +324,7 @@ runs:
           - 'zeebe/gateway-protocol/src/main/proto/internal/generation-spec.yaml'
           - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
           - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
+          - '.github/scripts/oas-breaking-change-check/**'
 
         rdbms-change:
         - 'db/rdbms/**'
