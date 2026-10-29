@@ -94,7 +94,12 @@ public class SecretStoreConfiguration {
                       tenantId,
                       buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
     } catch (final Throwable e) {
-      resources.close();
+      try {
+        resources.close();
+      } catch (final Throwable closeFailure) {
+        // keeps the startup failure as the root cause an operator sees
+        e.addSuppressed(closeFailure);
+      }
       throw e;
     }
     return new SecretStoreRegistries(registries, resources);
