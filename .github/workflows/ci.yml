@@ -2193,7 +2193,7 @@ jobs:
     env:
       CHECK_DIR: .github/scripts/oas-breaking-change-check
       # renovate: datasource=github-releases depName=oasdiff/oasdiff
-      OASDIFF_VERSION: '1.34.0'
+      OASDIFF_VERSION: '1.34.1'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
