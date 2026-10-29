@@ -11,6 +11,7 @@ import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PAT
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.List;
 import java.util.Map;
@@ -307,6 +308,77 @@ class PhysicalTenantScopeProviderTest {
             PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env).keySet().stream()
                 .map(id -> PHYSICAL_TENANTS_PATH_SEGMENT + id)
                 .toList());
+  }
+
+  @Test
+  void shouldReturnATenantAddedAfterStartup() {
+    // given
+    final var provider =
+        new PhysicalTenantScopeProvider(
+            env(Map.of("camunda.security.authentication.method", "basic")));
+    final var authentication = new AuthenticationConfiguration();
+
+    // when
+    provider.put("added", authentication);
+
+    // then
+    assertThat(provider.get())
+        .extracting(ScopedSecurityDescriptor::basePath)
+        .containsExactly("/physical-tenants/default", "/physical-tenants/added");
+    assertThat(provider.descriptor("added"))
+        .get()
+        .extracting(ScopedSecurityDescriptor::authentication)
+        .isSameAs(authentication);
+  }
+
+  @Test
+  void shouldReturnTheConfigurationATenantWasReplacedWith() {
+    // given
+    final var provider =
+        new PhysicalTenantScopeProvider(
+            env(
+                Map.of(
+                    "camunda.security.authentication.method", "oidc",
+                    "camunda.physical-tenants.tenanta.security.authentication.oidc.client-id",
+                        "before")));
+    final var before = provider.get();
+    final var replaced = new AuthenticationConfiguration();
+
+    // when
+    provider.put("tenanta", replaced);
+
+    // then
+    assertThat(provider.get())
+        .filteredOn(descriptor -> descriptor.basePath().equals("/physical-tenants/tenanta"))
+        .singleElement()
+        .extracting(ScopedSecurityDescriptor::authentication)
+        .isSameAs(replaced);
+    assertThat(before)
+        .filteredOn(descriptor -> descriptor.basePath().equals("/physical-tenants/tenanta"))
+        .singleElement()
+        .extracting(descriptor -> descriptor.authentication().getOidc().getClientId())
+        .isEqualTo("before");
+  }
+
+  @Test
+  void shouldNotReturnARemovedTenant() {
+    // given
+    final var provider =
+        new PhysicalTenantScopeProvider(
+            env(
+                Map.of(
+                    "camunda.security.authentication.method", "oidc",
+                    "camunda.physical-tenants.tenanta.security.authentication.oidc.client-id",
+                        "client")));
+
+    // when
+    provider.remove("tenanta");
+
+    // then
+    assertThat(provider.get())
+        .extracting(ScopedSecurityDescriptor::basePath)
+        .containsExactly("/physical-tenants/default");
+    assertThat(provider.descriptor("tenanta")).isEmpty();
   }
 
   private static MockEnvironment env(final Map<String, String> properties) {

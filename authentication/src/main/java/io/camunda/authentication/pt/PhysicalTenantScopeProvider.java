@@ -14,7 +14,11 @@ import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +46,20 @@ import org.springframework.core.env.Environment;
  * at {@code /physical-tenants/default}, built from {@code forPhysicalTenant("default")}, so the
  * root tenant is addressable both unprefixed ({@code /v2/...}) and through the alias, and the
  * descriptor list is never empty.
+ *
+ * <p><b>Live set:</b> the descriptors start as the tenants of the startup configuration and follow
+ * the tenant lifecycle through {@link #put} and {@link #remove}, so {@link #get()} always returns
+ * the current tenant set: what a tenant should be served with, whether or not its chains have taken
+ * it yet. Each change publishes a new immutable descriptor list; a descriptor and its configuration
+ * are never changed once handed out.
  */
 public final class PhysicalTenantScopeProvider implements CamundaSecurityScopeProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantScopeProvider.class);
 
   private final Environment environment;
-  private final List<ScopedSecurityDescriptor> descriptors;
+  private final Object changeLock = new Object();
+  private volatile Map<String, ScopedSecurityDescriptor> descriptors;
 
   public PhysicalTenantScopeProvider(final Environment environment) {
     this.environment = environment;
@@ -57,7 +68,44 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
 
   @Override
   public List<ScopedSecurityDescriptor> get() {
-    return descriptors;
+    return List.copyOf(descriptors.values());
+  }
+
+  /** The descriptor a tenant should be served with, if it is part of the tenant set. */
+  public Optional<ScopedSecurityDescriptor> descriptor(final String physicalTenantId) {
+    return Optional.ofNullable(descriptors.get(physicalTenantId));
+  }
+
+  /**
+   * Makes a tenant part of the set, or replaces what it should be served with.
+   *
+   * @param authentication a configuration built for this change alone; it must not be changed
+   *     afterwards
+   * @return the descriptor now emitted for the tenant
+   */
+  public ScopedSecurityDescriptor put(
+      final String physicalTenantId, final AuthenticationConfiguration authentication) {
+    final var descriptor = new ScopedSecurityDescriptor(basePath(physicalTenantId), authentication);
+    synchronized (changeLock) {
+      final var next = new LinkedHashMap<>(descriptors);
+      next.put(physicalTenantId, descriptor);
+      descriptors = Collections.unmodifiableMap(next);
+    }
+    return descriptor;
+  }
+
+  /** Takes a removed tenant out of the set. */
+  public void remove(final String physicalTenantId) {
+    synchronized (changeLock) {
+      final var next = new LinkedHashMap<>(descriptors);
+      next.remove(physicalTenantId);
+      descriptors = Collections.unmodifiableMap(next);
+    }
+  }
+
+  /** The base path of a tenant's scoped chains, {@code /physical-tenants/<id>}. */
+  public static String basePath(final String physicalTenantId) {
+    return PHYSICAL_TENANTS_PATH_SEGMENT + physicalTenantId;
   }
 
   /**
@@ -74,13 +122,13 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
     return !discoverExplicitTenantIds(environment).isEmpty();
   }
 
-  private List<ScopedSecurityDescriptor> buildDescriptors() {
+  private Map<String, ScopedSecurityDescriptor> buildDescriptors() {
     final Set<String> tenantIds = descriptorTenantIds();
-    final List<ScopedSecurityDescriptor> result = new ArrayList<>();
+    final Map<String, ScopedSecurityDescriptor> result = new LinkedHashMap<>();
     for (final String tenantId : tenantIds) {
       addDescriptor(result, tenantId);
     }
-    return List.copyOf(result);
+    return Collections.unmodifiableMap(result);
   }
 
   /**
@@ -95,12 +143,13 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
     return tenantIds;
   }
 
-  private void addDescriptor(final List<ScopedSecurityDescriptor> result, final String tenantId) {
+  private void addDescriptor(
+      final Map<String, ScopedSecurityDescriptor> result, final String tenantId) {
     try {
       final var authConfig =
           PhysicalTenantAuthConfigurations.forPhysicalTenant(tenantId, environment);
-      final String basePath = PHYSICAL_TENANTS_PATH_SEGMENT + tenantId;
-      result.add(new ScopedSecurityDescriptor(basePath, authConfig));
+      final String basePath = basePath(tenantId);
+      result.put(tenantId, new ScopedSecurityDescriptor(basePath, authConfig));
       LOG.debug(
           "Registered scoped security descriptor for physical tenant '{}' at {} (providers: [{}])",
           tenantId,
