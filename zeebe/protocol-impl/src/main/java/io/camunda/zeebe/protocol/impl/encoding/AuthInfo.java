@@ -62,6 +62,19 @@ public final class AuthInfo implements BufferWriter {
   private static final String FORMAT_KEY = "format";
   private static final String CLAIMS_KEY = "claims";
 
+  private static final DirectBuffer FORMAT_KEY_BUFFER = BufferUtil.wrapString(FORMAT_KEY);
+  private static final DirectBuffer CLAIMS_KEY_BUFFER = BufferUtil.wrapString(CLAIMS_KEY);
+  private static final DirectBuffer ANONYMOUS_KEY_BUFFER =
+      BufferUtil.wrapString(AUTHORIZED_ANONYMOUS_USER);
+  private static final DirectBuffer USERNAME_KEY_BUFFER =
+      BufferUtil.wrapString(AUTHORIZED_USERNAME);
+  private static final DirectBuffer CLIENT_ID_KEY_BUFFER =
+      BufferUtil.wrapString(AUTHORIZED_CLIENT_ID);
+  private static final DirectBuffer TENANTS_KEY_BUFFER = BufferUtil.wrapString(AUTHORIZED_TENANTS);
+  private static final DirectBuffer GROUPS_KEY_BUFFER = BufferUtil.wrapString(USER_GROUPS_CLAIMS);
+  private static final DirectBuffer TOKEN_CLAIMS_KEY_BUFFER =
+      BufferUtil.wrapString(USER_TOKEN_CLAIMS);
+
   private final AuthDataFormat format;
   private final @Nullable Boolean anonymous;
   private final @Nullable String username;
@@ -279,15 +292,15 @@ public final class AuthInfo implements BufferWriter {
     writer.wrap(claimsBuffer, 0);
     writer.writeMapHeader(presentClaims());
     if (anonymous != null) {
-      writeString(writer, AUTHORIZED_ANONYMOUS_USER);
+      writer.writeString(ANONYMOUS_KEY_BUFFER);
       writer.writeBoolean(anonymous);
     }
-    writeStringClaim(writer, AUTHORIZED_USERNAME, username);
-    writeStringClaim(writer, AUTHORIZED_CLIENT_ID, clientId);
-    writeStringsClaim(writer, AUTHORIZED_TENANTS, tenants);
-    writeStringsClaim(writer, USER_GROUPS_CLAIMS, groups);
+    writeStringClaim(writer, USERNAME_KEY_BUFFER, username);
+    writeStringClaim(writer, CLIENT_ID_KEY_BUFFER, clientId);
+    writeStringsClaim(writer, TENANTS_KEY_BUFFER, tenants);
+    writeStringsClaim(writer, GROUPS_KEY_BUFFER, groups);
     if (tokenClaims != null) {
-      writeString(writer, USER_TOKEN_CLAIMS);
+      writer.writeString(TOKEN_CLAIMS_KEY_BUFFER);
       writer.writeRaw(tokenClaims);
     }
     final int claimsLength = writer.getOffset();
@@ -295,25 +308,25 @@ public final class AuthInfo implements BufferWriter {
     final var buffer = new ExpandableArrayBuffer();
     writer.wrap(buffer, 0);
     writer.writeMapHeader(2);
-    writeString(writer, FORMAT_KEY);
-    writeString(writer, format.name());
-    writeString(writer, CLAIMS_KEY);
+    writer.writeString(FORMAT_KEY_BUFFER);
+    writer.writeString(format.encodedName);
+    writer.writeString(CLAIMS_KEY_BUFFER);
     writer.writeBinary(claimsBuffer, 0, claimsLength);
     return new UnsafeBuffer(Arrays.copyOf(buffer.byteArray(), writer.getOffset()));
   }
 
   private static void writeStringClaim(
-      final MsgPackWriter writer, final String key, final @Nullable String value) {
+      final MsgPackWriter writer, final DirectBuffer key, final @Nullable String value) {
     if (value != null) {
-      writeString(writer, key);
+      writer.writeString(key);
       writeString(writer, value);
     }
   }
 
   private static void writeStringsClaim(
-      final MsgPackWriter writer, final String key, final @Nullable List<String> values) {
+      final MsgPackWriter writer, final DirectBuffer key, final @Nullable List<String> values) {
     if (values != null) {
-      writeString(writer, key);
+      writer.writeString(key);
       writer.writeArrayHeader(values.size());
       values.forEach(value -> writeString(writer, value));
     }
@@ -468,9 +481,11 @@ public final class AuthInfo implements BufferWriter {
     PRE_AUTHORIZED((short) 2);
 
     public final short id;
+    private final DirectBuffer encodedName;
 
     AuthDataFormat(final short id) {
       this.id = id;
+      encodedName = BufferUtil.wrapString(name());
     }
 
     private static AuthDataFormat ofName(final String name) {
