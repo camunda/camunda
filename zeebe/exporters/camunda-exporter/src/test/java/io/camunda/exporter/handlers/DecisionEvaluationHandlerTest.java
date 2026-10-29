@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,8 +42,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 public class DecisionEvaluationHandlerTest {
@@ -523,17 +526,18 @@ public class DecisionEvaluationHandlerTest {
     verify(value, times(1)).getEvaluatedDecisions();
   }
 
-  @Test
-  void shouldNotReuseEvaluatedDecisionsOfPreviousRecord() {
-    // given
-    final long recordKey = 123L;
+  @ParameterizedTest
+  @CsvSource({"2, 10, 123", "1, 11, 123", "1, 10, 124"})
+  void shouldNotReuseEvaluatedDecisionsOfPreviousRecord(
+      final int partitionId, final long position, final long recordKey) {
+    // given - the first record keeps its decisions cached because only one of two is exported
     final Record<DecisionEvaluationRecordValue> firstRecord =
         factory.generateRecord(
             ValueType.DECISION_EVALUATION,
             r ->
                 r.withIntent(DecisionEvaluationIntent.EVALUATED)
-                    .withValue(decisionEvaluationValue(recordKey, "first"))
-                    .withKey(recordKey)
+                    .withValue(decisionEvaluationValue(123L, "first", "other"))
+                    .withKey(123L)
                     .withPartitionId(1)
                     .withPosition(10L));
     final Record<DecisionEvaluationRecordValue> secondRecord =
@@ -541,11 +545,11 @@ public class DecisionEvaluationHandlerTest {
             ValueType.DECISION_EVALUATION,
             r ->
                 r.withIntent(DecisionEvaluationIntent.EVALUATED)
-                    .withValue(decisionEvaluationValue(recordKey, "second"))
+                    .withValue(decisionEvaluationValue(recordKey, "second", "other"))
                     .withKey(recordKey)
-                    .withPartitionId(1)
-                    .withPosition(11L));
-    underTest.updateEntity(firstRecord, new DecisionInstanceEntity().setId(recordKey + "-1"));
+                    .withPartitionId(partitionId)
+                    .withPosition(position));
+    underTest.updateEntity(firstRecord, new DecisionInstanceEntity().setId("123-1"));
 
     // when
     final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(recordKey + "-1");
@@ -553,11 +557,67 @@ public class DecisionEvaluationHandlerTest {
 
     // then
     assertThat(entity.getDecisionId()).isEqualTo("second");
-    assertThat(entity.getPosition()).isEqualTo(11L);
+  }
+
+  @Test
+  void shouldGenerateLegacyIdsWhenDecisionEvaluationInstanceKeyIsMissing() {
+    // given - records written by older Zeebe versions have no decisionEvaluationInstanceKey
+    final long recordKey = 123L;
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(legacyDecisionEvaluationValue("d1", "d2"))
+                    .withKey(recordKey));
+
+    // when
+    final List<DecisionInstanceEntity> entities =
+        underTest.generateIds(decisionRecord).stream()
+            .map(
+                id -> {
+                  final var entity = underTest.createNewEntity(id);
+                  underTest.updateEntity(decisionRecord, entity);
+                  return entity;
+                })
+            .toList();
+
+    // then
+    assertThat(entities)
+        .extracting(DecisionInstanceEntity::getId, DecisionInstanceEntity::getDecisionId)
+        .containsExactly(tuple("123-1", "d1"), tuple("123-2", "d2"));
+  }
+
+  @Test
+  void shouldRejectIdNotMatchingAnyEvaluatedDecision() {
+    // given
+    final long recordKey = 123L;
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionEvaluationValue(recordKey, "d1"))
+                    .withKey(recordKey));
+    final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(recordKey + "-01");
+
+    // when - then
+    assertThatThrownBy(() -> underTest.updateEntity(decisionRecord, entity))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("123-01");
+  }
+
+  private DecisionEvaluationRecordValue legacyDecisionEvaluationValue(final String... decisionIds) {
+    return decisionEvaluationValue(index -> "", decisionIds);
   }
 
   private DecisionEvaluationRecordValue decisionEvaluationValue(
       final long recordKey, final String... decisionIds) {
+    return decisionEvaluationValue(index -> recordKey + "-" + index, decisionIds);
+  }
+
+  private DecisionEvaluationRecordValue decisionEvaluationValue(
+      final IntFunction<String> instanceKeyOfIndex, final String... decisionIds) {
     final var decisions = new ArrayList<EvaluatedDecisionValue>();
     for (int i = 0; i < decisionIds.length; i++) {
       decisions.add(
@@ -565,7 +625,7 @@ public class DecisionEvaluationHandlerTest {
               .from(factory.generateObject(EvaluatedDecisionValue.class))
               .withDecisionId(decisionIds[i])
               .withDecisionType(DecisionType.DECISION_TABLE.name())
-              .withDecisionEvaluationInstanceKey(recordKey + "-" + (i + 1))
+              .withDecisionEvaluationInstanceKey(instanceKeyOfIndex.apply(i + 1))
               .build());
     }
     return ImmutableDecisionEvaluationRecordValue.builder()
