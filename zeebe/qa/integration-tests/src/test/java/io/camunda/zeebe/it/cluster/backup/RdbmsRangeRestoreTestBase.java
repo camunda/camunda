@@ -28,6 +28,7 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -35,11 +36,13 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -207,6 +210,85 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
   }
 
+  @Test
+  void shouldRestoreTheLatestCheckpointWhenOnlyFromIsGiven() throws Exception {
+    // given - instances backed up before and after `from`, and some created after the last backup
+    final List<Long> backedUp = new ArrayList<>();
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      takeAndAwaitBackup();
+
+      disableRdbmsExporter();
+      awaitBackupCoversExportedPositionsOnEveryPartition();
+      createInstancesOnEveryPartition(client);
+    }
+
+    // when
+    restore(RestoreTarget.timeRange(from, null));
+
+    // then - every partition ends at the latest backup, without what was created after it
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
+  void shouldRestoreFromMultipleBackups() throws Exception {
+    // given - the RDBMS holds an exported position for every partition
+    final List<Long> backedUp = new ArrayList<>();
+    final long firstBackup;
+    final long secondBackup;
+    final long thirdBackup;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      disableRdbmsExporter();
+
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      firstBackup = takeAndAwaitBackup().getBackupId();
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      secondBackup = takeAndAwaitBackup().getBackupId();
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      thirdBackup = takeAndAwaitBackup().getBackupId();
+      createInstancesOnEveryPartition(client);
+    }
+
+    // when
+    restore(RestoreTarget.backups(firstBackup, secondBackup, thirdBackup));
+
+    // then - every partition ends at the last backup, without what was created after it
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
+  void shouldNotRestoreOverAGapBetweenBackups() throws Exception {
+    // given - three backups spanning multiple segments, with snapshots compacting the log between
+    final long firstBackup;
+    final long thirdBackup;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      disableRdbmsExporter();
+
+      createLargeInstances(client);
+      firstBackup = takeAndAwaitBackup().getBackupId();
+
+      PartitionsActuator.of(broker).takeSnapshot();
+      createLargeInstances(client);
+      takeAndAwaitBackup();
+
+      PartitionsActuator.of(broker).takeSnapshot();
+      createLargeInstances(client);
+      thirdBackup = takeAndAwaitBackup().getBackupId();
+    }
+
+    // when / then - skipping the second backup leaves a gap in the restored log
+    assertRestoreNotApplied(
+        RestoreTarget.backups(firstBackup, thirdBackup),
+        "Cannot find a record at checkpoint position");
+  }
+
   /**
    * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
@@ -218,6 +300,14 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * Attempts a restore to {@code target} and asserts that it fails with {@code expectedMessage}.
    */
   abstract void assertRestoreFails(RestoreTarget target, String expectedMessage) throws Exception;
+
+  /**
+   * Asserts that {@code target} passes validation but the resolved backups cannot be restored. The
+   * standalone path fails with {@code expectedMessage}; the in-process path keeps retrying, so its
+   * partitions never leave {@code RESTORING}.
+   */
+  abstract void assertRestoreNotApplied(RestoreTarget target, String expectedMessage)
+      throws Exception;
 
   /**
    * The backup store's base directory. Declared as a {@code static @TempDir} field on each concrete
@@ -305,6 +395,35 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
   }
 
+  private void assertOnlyInstancesRestored(final List<Long> expectedInstances) {
+    try (final var client = broker.newClientBuilder().build()) {
+      final var activatedInstances =
+          InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+              client, JOB_TYPE, expectedInstances);
+      assertThat(activatedInstances)
+          .describedAs("only the instances up to the restore point survive the restore")
+          .containsExactlyInAnyOrderElementsOf(expectedInstances);
+    }
+  }
+
+  private static List<Long> createInstancesOnEveryPartition(final CamundaClient client) {
+    return InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+        client, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  /** Creates enough data to span multiple log segments, so a snapshot can compact some away. */
+  private static void createLargeInstances(final CamundaClient client) {
+    for (int i = 0; i < 100; i++) {
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(PROCESS_ID)
+          .latestVersion()
+          .variables(Map.of("test", RandomStringUtils.insecure().nextAlphabetic(100_000)))
+          .send()
+          .join();
+    }
+  }
+
   protected static final long deployTestProcess(final CamundaClient client) {
     return client
         .newDeployResourceCommand()
@@ -346,7 +465,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     // Record "to" after second backup
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
-    return new RestoreTarget(from, to);
+    return RestoreTarget.timeRange(from, to);
   }
 
   /**
@@ -439,17 +558,26 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   }
 
   /**
-   * The time range a restore is asked for. Either bound may be {@code null} to leave it out;
-   * without {@code to}, the restore resolves the latest common checkpoint.
+   * What a restore is asked for: either the backups to restore from, or a time range whose bounds
+   * may each be {@code null} to leave it out; without {@code to}, the restore resolves the latest
+   * common checkpoint.
    */
-  protected record RestoreTarget(Instant from, Instant to) {
+  protected record RestoreTarget(List<Long> backupIds, Instant from, Instant to) {
 
     static RestoreTarget latest() {
-      return new RestoreTarget(null, null);
+      return timeRange(null, null);
     }
 
     static RestoreTarget closestTo(final Instant to) {
-      return new RestoreTarget(null, to);
+      return timeRange(null, to);
+    }
+
+    static RestoreTarget timeRange(final Instant from, final Instant to) {
+      return new RestoreTarget(List.of(), from, to);
+    }
+
+    static RestoreTarget backups(final Long... backupIds) {
+      return new RestoreTarget(List.of(backupIds), null, null);
     }
   }
 }
