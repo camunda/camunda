@@ -1222,9 +1222,17 @@ jobs:
         # core dump to the runner's default core_pattern (/core.%e.%p.%t in INC-8919), which is not
         # writable, so no core is produced. Point both at the workspace. Core dumps are best effort:
         # if the runner does not allow changing core_pattern we still collect hs_err.
+        #
+        # Only the test forks may dump core, not Maven itself, whose memory holds the Nexus credentials
+        # configured by setup-build. The Maven step therefore starts with a zero core limit, and forks
+        # raise it in the wrapper below, which surefire runs instead of java (-Djvm). Surefire requires
+        # the wrapper's file name to be "java".
         shell: bash
         run: |
-          mkdir -p "${GITHUB_WORKSPACE}/jvm-crash" "${GITHUB_WORKSPACE}/jvm-crash-cores"
+          mkdir -p "${GITHUB_WORKSPACE}/jvm-crash" "${GITHUB_WORKSPACE}/jvm-crash-cores" "${RUNNER_TEMP}/core-dump-java/bin"
+          test -x "${JAVA_HOME}/bin/java"
+          printf '#!/bin/bash\nulimit -S -c 8388608 2>/dev/null || true\nexec "%s/bin/java" "$@"\n' "${JAVA_HOME}" > "${RUNNER_TEMP}/core-dump-java/bin/java"
+          chmod +x "${RUNNER_TEMP}/core-dump-java/bin/java"
           sudo sysctl -w kernel.core_pattern="${GITHUB_WORKSPACE}/jvm-crash-cores/core.%e.%p.%t" \
             || echo "::warning::Cannot set kernel.core_pattern, core dumps of crashed test JVMs will not be collected"
       - name: Maven Run Test (Zeebe)
@@ -1233,14 +1241,17 @@ jobs:
         # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
         # on the runner.
         shell: bash
-        # ulimit caps the size of a core dump (KiB, 8 GiB) of a crashed fork. -XX:ErrorFile writes the
-        # hs_err log to a fixed directory, where the "**/*.log" glob of "Upload test artifacts" finds it.
+        # Maven itself must not dump core (see "Prepare JVM crash diagnostics"), so its soft core limit is
+        # set to 0; test forks started through the -Djvm wrapper raise it again to cap cores at 8 GiB.
+        # -XX:ErrorFile writes the hs_err log to a fixed directory, where the "**/*.log" glob of
+        # "Upload test artifacts" finds it.
         run: >
-          ulimit -c 8388608 || echo "::warning::Cannot set core dump size limit";
+          ulimit -S -c 0;
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
+          -D jvm="${RUNNER_TEMP}/core-dump-java/bin/java"
           -D jvm.test.extra.args="-Xmx4g -XX:ErrorFile=${GITHUB_WORKSPACE}/jvm-crash/hs_err_pid%p.log"
           -P include-slow-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
