@@ -50,6 +50,7 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
@@ -98,6 +99,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -1133,6 +1135,80 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           } else {
             result.complete(LeadershipTransferResult.LEADER_CHANGED);
           }
+        });
+    return result;
+  }
+
+  /**
+   * Asks the partition's leader to hand its leadership to this replica, through a coordinated
+   * leadership transfer that this replica requests for itself. The leader admits and runs it as any
+   * coordinated transfer, so this replica must be caught up.
+   *
+   * @param bound how long to wait for this replica to lead
+   * @return completes with {@link LeadershipTransferResult#TRANSFERRED} once this replica leads,
+   *     {@link LeadershipTransferResult#ALREADY_LEADER} if it already did, the leader's reason if
+   *     it refused, {@link LeadershipTransferResult#LEADER_CHANGED} if no leader is known or
+   *     another replica took over; exceptionally if the leader could not be asked or the bound
+   *     passed
+   */
+  public CompletableFuture<LeadershipTransferResult> requestLeadership(final Duration bound) {
+    final var result = new CompletableFuture<LeadershipTransferResult>();
+    threadContext.execute(
+        () -> {
+          if (getRole() == Role.LEADER) {
+            result.complete(LeadershipTransferResult.ALREADY_LEADER);
+            return;
+          }
+          final var currentLeader = leader;
+          if (currentLeader == null) {
+            result.complete(LeadershipTransferResult.LEADER_CHANGED);
+            return;
+          }
+          final var localMember = cluster.getLocalMember().memberId();
+          final RaftRoleChangeListener leads =
+              (newRole, newTerm) -> {
+                if (newRole == Role.LEADER) {
+                  result.complete(LeadershipTransferResult.TRANSFERRED);
+                }
+              };
+          addRoleChangeListener(leads);
+          final var timeout =
+              threadContext.schedule(
+                  bound,
+                  () -> {
+                    if (currentLeader.equals(leader)) {
+                      result.completeExceptionally(
+                          new TimeoutException(
+                              "Did not take over the leadership from %s within %s"
+                                  .formatted(currentLeader, bound)));
+                    } else {
+                      result.complete(LeadershipTransferResult.LEADER_CHANGED);
+                    }
+                  });
+          result.whenComplete(
+              (ignored, error) -> {
+                removeRoleChangeListener(leads);
+                timeout.cancel();
+              });
+          getProtocol()
+              .leadershipTransferInitiate(
+                  currentLeader,
+                  LeadershipTransferInitiateRequest.builder()
+                      .withDesiredLeader(localMember)
+                      .withCoordinator(localMember)
+                      .withCoordinatorConfigVersion(0)
+                      .withCorrelationId(-1)
+                      .build())
+              .whenComplete(
+                  (response, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else if (response.rejectionReason() != null) {
+                      result.complete(response.rejectionReason());
+                    } else if (!response.accepted()) {
+                      result.complete(LeadershipTransferResult.LEADER_CHANGED);
+                    }
+                  });
         });
     return result;
   }

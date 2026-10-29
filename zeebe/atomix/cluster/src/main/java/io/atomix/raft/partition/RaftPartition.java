@@ -34,9 +34,9 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -279,12 +279,19 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server.stepDown();
   }
 
-  /** The member this replica knows as the partition's leader, if any. */
-  public Optional<MemberId> leader() {
+  /**
+   * Asks the partition's leader to hand its leadership to this member, through a coordinated
+   * leadership transfer that this member requests for itself.
+   *
+   * @param bound how long to wait for this member to lead
+   * @return completes with the outcome, see {@link
+   *     io.atomix.raft.impl.RaftContext#requestLeadership(Duration)}
+   */
+  public CompletableFuture<LeadershipTransferResult> requestLeadership(final Duration bound) {
     if (server == null) {
-      return Optional.empty();
+      return CompletableFuture.completedFuture(LeadershipTransferResult.LEADER_CHANGED);
     }
-    return server.getLeader();
+    return server.requestLeadership(bound);
   }
 
   /**

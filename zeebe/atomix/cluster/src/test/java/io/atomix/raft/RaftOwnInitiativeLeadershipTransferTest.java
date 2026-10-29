@@ -144,6 +144,37 @@ public class RaftOwnInitiativeLeadershipTransferTest {
   }
 
   @Test
+  public void shouldLeadOnceTheLeaderGrantsTheRequest() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+
+    // when
+    final var result = target.getContext().requestLeadership(TIMEOUT);
+
+    // then
+    assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(target.isLeader()).isTrue();
+    Awaitility.await("the old leader steps down")
+        .atMost(TIMEOUT)
+        .until(() -> leader.getRole() != Role.LEADER);
+  }
+
+  @Test
+  public void shouldAnswerAlreadyLeaderWhenTheLeaderRequestsItsOwnLeadership() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+
+    // when
+    final var result = leader.getContext().requestLeadership(TIMEOUT);
+
+    // then
+    assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(LeadershipTransferResult.ALREADY_LEADER);
+  }
+
+  @Test
   public void shouldStillAskTheCoordinatorForAnotherReplica() throws Exception {
     // given
     raftRule.appendEntries(10);
