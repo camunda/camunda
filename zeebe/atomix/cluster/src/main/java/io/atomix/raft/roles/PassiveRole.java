@@ -322,7 +322,6 @@ public class PassiveRole extends InactiveRole {
                   request.newMembers(),
                   List.of(), // Skip joint consensus
                   true));
-      raft.getCluster().commitCurrentConfiguration();
     } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
       // with the same state. If this is not the case, it is likely that there are two force
