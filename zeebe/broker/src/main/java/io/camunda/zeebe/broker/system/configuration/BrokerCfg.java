@@ -148,8 +148,16 @@ public class BrokerCfg {
     return processingCfg;
   }
 
-  public void setProcessingCfg(final ProcessingCfg cfg) {
+  public void setProcessing(final ProcessingCfg cfg) {
     processingCfg = cfg;
+  }
+
+  /**
+   * @deprecated use {@link #setProcessing(ProcessingCfg)} instead
+   */
+  @Deprecated
+  public void setProcessingCfg(final ProcessingCfg cfg) {
+    setProcessing(cfg);
   }
 
   public ExperimentalCfg getExperimental() {
