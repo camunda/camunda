@@ -266,7 +266,15 @@ tasks
     )
   }
 
-tasks.named<Tar>("distTar") { reproducibleArchive() }
+// distTar and distZip are created by the distribution plugin from the main distribution above.
+tasks.named<Tar>("distTar") {
+  reproducibleArchive()
+  // The plugin's tar is uncompressed; -Pdist.tar.gzip=true makes it a .tar.gz.
+  if (providers.gradleProperty("dist.tar.gzip").map(String::toBoolean).getOrElse(false)) {
+    compression = Compression.GZIP
+    archiveExtension.set("tar.gz")
+  }
+}
 
 tasks.named<Zip>("distZip") { reproducibleArchive() }
 
