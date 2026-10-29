@@ -257,8 +257,11 @@ public final class MsgPackConverter {
 
   // We serialize the CamundaAuthentication as JSON for batch operations.
   // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
+  // Conditional role memberships are not persisted: OC has none (its MembershipPort keeps the CSL
+  // default), and leaving the field out keeps the wire format readable by older nodes during a
+  // rolling upgrade. A batch operation therefore never carries conditional memberships.
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-  @JsonIgnoreProperties({"anonymous"})
+  @JsonIgnoreProperties({"anonymous", "conditionalRoleMemberships"})
   private abstract static class CamundaAuthenticationMixin {
     @JsonProperty("authenticated_username")
     abstract String authenticatedUsername();

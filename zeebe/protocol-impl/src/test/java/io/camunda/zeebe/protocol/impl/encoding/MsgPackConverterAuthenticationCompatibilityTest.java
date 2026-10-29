@@ -9,8 +9,16 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.ConditionalMembership;
+import io.camunda.security.api.model.authz.MembershipCondition;
+import io.camunda.security.api.model.authz.Operand;
+import io.camunda.security.api.model.authz.PrincipalAttribute;
+import io.camunda.security.api.model.authz.ResourceAttribute;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -111,5 +119,77 @@ class MsgPackConverterAuthenticationCompatibilityTest {
     assertThat(deserialized.authenticatedRoleIds()).containsExactly("r1");
     assertThat(deserialized.authenticatedTenantIds()).containsExactly("t1");
     assertThat(deserialized.authenticatedMappingRuleIds()).containsExactly("mr1");
+  }
+
+  @Test
+  void shouldNotPersistConditionalRoleMemberships() throws Exception {
+    // given an authentication with conditional memberships of both operand variants
+    final var lookups = new AtomicInteger();
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("demo-user")
+                    .role("viewer")
+                    .conditionalRoleMembershipsSupplier(
+                        () -> {
+                          lookups.incrementAndGet();
+                          return List.of(
+                              new ConditionalMembership(
+                                  "reviewer",
+                                  List.of(
+                                      new MembershipCondition(
+                                          ResourceAttribute.WORKSPACE,
+                                          new Operand.Values(Set.of("payments"))),
+                                      new MembershipCondition(
+                                          ResourceAttribute.ASSIGNEE,
+                                          new Operand.Principal(PrincipalAttribute.USERNAME)))));
+                        }));
+
+    // when
+    final var serialized = MsgPackConverter.convertToMsgPack(authentication);
+    final var json = MsgPackConverter.convertToJson(serialized);
+    final var deserialized =
+        MsgPackConverter.convertToObject(new UnsafeBuffer(serialized), CamundaAuthentication.class);
+
+    // then the payload keeps exactly the properties older nodes know, so they can still read it
+    final var propertyNames = new ArrayList<String>();
+    new ObjectMapper().readTree(json).fieldNames().forEachRemaining(propertyNames::add);
+    assertThat(propertyNames)
+        .containsExactlyInAnyOrder(
+            "authenticated_username",
+            "authenticated_client_id",
+            "anonymous_user",
+            "authenticated_group_ids",
+            "authenticated_role_ids",
+            "authenticated_tenant_ids",
+            "authenticated_mapping_rule_ids",
+            "claims");
+    // and the conditional memberships are neither looked up nor carried
+    assertThat(lookups.get()).isZero();
+    assertThat(deserialized.authenticatedRoleIds()).containsExactly("viewer");
+    assertThat(deserialized.conditionalRoleMemberships()).isEmpty();
+  }
+
+  @Test
+  void shouldReadABatchOperationAuthenticationPersistedBeforeConditionalMemberships() {
+    // given a payload written by a node without conditional memberships
+    final var persistedByOldNode =
+        """
+        {
+          "authenticated_username": "demo-user",
+          "anonymous_user": false,
+          "authenticated_role_ids": ["viewer"]
+        }
+        """;
+
+    // when
+    final var authentication =
+        MsgPackConverter.convertToObject(
+            new UnsafeBuffer(MsgPackConverter.convertToMsgPack(persistedByOldNode)),
+            CamundaAuthentication.class);
+
+    // then
+    assertThat(authentication.authenticatedRoleIds()).containsExactly("viewer");
+    assertThat(authentication.conditionalRoleMemberships()).isEmpty();
   }
 }
