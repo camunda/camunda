@@ -1113,6 +1113,8 @@ public class ProtoBufSerializer
                   Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE;
               case DELETE ->
                   Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_DELETE;
+              case CANCEL ->
+                  Requests.PhysicalTenantConfigChange.PHYSICAL_TENANT_CONFIG_CHANGE_CANCEL;
             })
         .setOwner(encodeOwner(request.owner()))
         .setConfiguration(ByteString.copyFrom(request.configuration()))
@@ -1538,6 +1540,7 @@ public class ProtoBufSerializer
             case PHYSICAL_TENANT_CONFIG_CHANGE_CREATE -> PhysicalTenantConfigRequest.Change.CREATE;
             case PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE -> PhysicalTenantConfigRequest.Change.UPDATE;
             case PHYSICAL_TENANT_CONFIG_CHANGE_DELETE -> PhysicalTenantConfigRequest.Change.DELETE;
+            case PHYSICAL_TENANT_CONFIG_CHANGE_CANCEL -> PhysicalTenantConfigRequest.Change.CANCEL;
             default ->
                 throw new DecodingFailed(
                     "Unknown physical tenant config change " + request.getChange());

@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest.Change;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -43,6 +45,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Turns a {@link PhysicalTenantConfigRequest} into the change of the cluster configuration that the
@@ -66,6 +69,10 @@ import org.jspecify.annotations.NullMarked;
  * request for a tenant whose change still runs is rejected, not queued, while changes of different
  * tenants roll out at the same time. A change that conflicts with a pending cluster change of the
  * tenant's group, or of the whole cluster, is rejected too.
+ *
+ * <p>The rollout of an update can be cancelled. The configuration goes back to the one before the
+ * update, as the next version: a member that applied the cancelled version restarts the tenant on
+ * the previous configuration, and a member that did not runs it already and restarts nothing.
  */
 @NullMarked
 public final class PhysicalTenantConfigChanges {
@@ -79,20 +86,77 @@ public final class PhysicalTenantConfigChanges {
     this.incarnationIds = incarnationIds;
   }
 
+  /**
+   * @param sha256 the hash of the requested configuration; for a cancel, the hash of the
+   *     configuration before the cancelled update
+   */
   public Either<Exception, CurrentClusterConfiguration> apply(
       final CurrentClusterConfiguration configuration,
       final PhysicalTenantConfigRequest request,
       final String sha256) {
     final var tenantId = request.physicalTenantId();
     final var inProgress = changeInProgress(configuration, tenantId);
-    if (inProgress.isPresent()) {
+    if (request.change() != Change.CANCEL && inProgress.isPresent()) {
       return Either.left(new ConcurrentModificationException(inProgress.get()));
     }
     return switch (request.change()) {
       case CREATE -> create(configuration, request, sha256);
       case UPDATE -> update(configuration, request, sha256);
       case DELETE -> delete(configuration, request);
+      case CANCEL -> cancel(configuration, request, sha256);
     };
+  }
+
+  /**
+   * Cancels the rollout of an update and rolls the tenant back to the configuration it had before.
+   *
+   * @param previousSha256 the hash of the configuration before the update, as stored on the
+   *     coordinator, or {@code null} if the coordinator does not hold it
+   */
+  public Either<Exception, CurrentClusterConfiguration> cancel(
+      final CurrentClusterConfiguration configuration,
+      final PhysicalTenantConfigRequest request,
+      final @Nullable String previousSha256) {
+    final var tenantId = request.physicalTenantId();
+    final var current = changeableReference(configuration, request);
+    if (current.isLeft()) {
+      return Either.left(current.getLeft());
+    }
+    final var reference = current.get();
+    final var group = Objects.requireNonNull(configuration.partitionGroup(tenantId));
+    if (!group.hasPendingChanges()) {
+      return Either.left(
+          new InvalidRequest(
+              "No change of physical tenant '%s' is in progress".formatted(tenantId)));
+    }
+    final var updating =
+        group.pendingChanges().orElseThrow().pendingOperations().stream()
+            .allMatch(
+                operation ->
+                    operation instanceof final ApplyPhysicalTenantConfigOperation apply
+                        && apply.version() == reference.version());
+    if (!updating || reference.version() <= PhysicalTenantConfigReference.INITIAL_VERSION) {
+      return Either.left(
+          new InvalidRequest(
+              "Only the rollout of an update can be cancelled, but physical tenant '%s' is being"
+                      .formatted(tenantId)
+                  + " created or removed"));
+    }
+    if (previousSha256 == null) {
+      return Either.left(
+          new InvalidRequest(
+              "Cannot cancel the change of physical tenant '%s': the coordinator does not hold"
+                      .formatted(tenantId)
+                  + " version %d of its configuration".formatted(reference.version() - 1)));
+    }
+    final var reverted = reference.next(previousSha256);
+    return Either.right(
+        startChange(
+            configuration.updatePartitionGroupConfig(
+                tenantId, PartitionGroupConfiguration::cancelPendingChanges),
+            tenantId,
+            g -> g.setTenantConfig(reverted),
+            applyOperations(configuration, reverted.version())));
   }
 
   private Either<Exception, CurrentClusterConfiguration> create(

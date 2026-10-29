@@ -42,12 +42,14 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -211,6 +213,42 @@ final class PhysicalTenantConfigRolloutTest {
         .isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
     members.get(1).executor().gate.complete(null);
     awaitRolledOut(tenantId, 2);
+  }
+
+  @Test
+  void shouldRollACancelledUpdateBackOnEveryMember() {
+    // given
+    final var tenantId = uniqueTenantId();
+    members.get(0).sender().changePhysicalTenantConfig(create(tenantId, bytes("a=1"))).join();
+    awaitRolledOut(tenantId, 1);
+    members.get(1).executor().failing =
+        (id, configuration) -> id.equals(tenantId) && Arrays.equals(configuration, bytes("a=2"));
+    members
+        .get(0)
+        .sender()
+        .changePhysicalTenantConfig(
+            PhysicalTenantConfigRequest.update(tenantId, Owner.API, bytes("a=2"), 1))
+        .join();
+    Awaitility.await("the first member applies the update")
+        .atMost(TIMEOUT)
+        .until(() -> appliedBy(0, tenantId) == 2);
+
+    // when
+    final var response =
+        members
+            .get(2)
+            .sender()
+            .changePhysicalTenantConfig(PhysicalTenantConfigRequest.cancel(tenantId, Owner.API))
+            .join();
+
+    // then
+    assertThat(response.isRight()).isTrue();
+    awaitRolledOut(tenantId, 3);
+    assertThat(members.values())
+        .allSatisfy(
+            member -> assertThat(member.executor().running.get(tenantId)).isEqualTo(bytes("a=1")));
+    assertThat(members.get(0).executor().applied.get(tenantId)).containsExactly(1L, 2L, 3L);
+    assertThat(members.get(2).executor().applied.get(tenantId)).containsExactly(1L, 3L);
   }
 
   @Test
@@ -395,6 +433,7 @@ final class PhysicalTenantConfigRolloutTest {
 
     private final ClusterConfigurationManagerServiceImpl service;
     private final Map<String, byte[]> running = new ConcurrentHashMap<>();
+    private final Map<String, List<Long>> applied = new ConcurrentHashMap<>();
     private volatile CompletableFuture<Void> gate = CompletableFuture.completedFuture(null);
     private volatile BiPredicate<String, byte[]> failing = (tenantId, configuration) -> false;
 
@@ -415,6 +454,9 @@ final class PhysicalTenantConfigRolloutTest {
           () -> {
             registerGroupExecutors(service, physicalTenantId);
             running.put(physicalTenantId, configuration);
+            applied
+                .computeIfAbsent(physicalTenantId, id -> new CopyOnWriteArrayList<>())
+                .add(reference.version());
           });
     }
 

@@ -240,6 +240,87 @@ final class PhysicalTenantConfigChangesTest {
   }
 
   @Test
+  void shouldRollACancelledUpdateBackToThePreviousConfigurationOnEveryMember() {
+    // given
+    final var updating = updated(completed(created("tenant", Owner.API), "tenant"), "a=2");
+
+    // when
+    final var result =
+        changes
+            .cancel(updating, PhysicalTenantConfigRequest.cancel("tenant", Owner.API), SHA)
+            .get()
+            .partitionGroup("tenant");
+
+    // then
+    assertThat(result.tenantConfig().orElseThrow().version()).isEqualTo(3);
+    assertThat(result.tenantConfig().orElseThrow().sha256()).isEqualTo(SHA);
+    assertThat(result.lastChange().orElseThrow().status().name()).isEqualTo("CANCELLED");
+    assertThat(result.pendingChanges().orElseThrow().pendingOperations())
+        .containsExactly(
+            new ApplyPhysicalTenantConfigOperation(MEMBER_0, 3),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_1, 3),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_2, 3));
+  }
+
+  @Test
+  void shouldRejectCancellingWhenNoChangeRollsOut() {
+    // given
+    final var created = completed(created("tenant", Owner.API), "tenant");
+
+    // when
+    final var result =
+        changes.cancel(created, PhysicalTenantConfigRequest.cancel("tenant", Owner.API), SHA);
+
+    // then
+    assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("No change");
+  }
+
+  @Test
+  void shouldRejectCancellingTheCreationOfATenant() {
+    // given
+    final var creating = created("tenant", Owner.API);
+
+    // when
+    final var result =
+        changes.cancel(creating, PhysicalTenantConfigRequest.cancel("tenant", Owner.API), SHA);
+
+    // then
+    assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("Only the rollout of an update");
+  }
+
+  @Test
+  void shouldRejectCancellingWithoutThePreviousConfiguration() {
+    // given
+    final var updating = updated(completed(created("tenant", Owner.API), "tenant"), "a=2");
+
+    // when
+    final var result =
+        changes.cancel(updating, PhysicalTenantConfigRequest.cancel("tenant", Owner.API), null);
+
+    // then
+    assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("does not hold version 1");
+  }
+
+  @Test
+  void shouldRejectCancellingThroughAnInputThatDoesNotOwnTheTenant() {
+    // given
+    final var updating = updated(completed(created("tenant", Owner.API), "tenant"), "a=2");
+
+    // when
+    final var result =
+        changes.cancel(updating, PhysicalTenantConfigRequest.cancel("tenant", Owner.FILE), SHA);
+
+    // then
+    assertThat(result.getLeft()).isInstanceOf(OperationNotAllowed.class);
+  }
+
+  @Test
   void shouldDisableAndStopADeletedTenantOnEveryMemberBeforeRemovingIt() {
     // given
     final var created = completed(created("tenant", Owner.API), "tenant");

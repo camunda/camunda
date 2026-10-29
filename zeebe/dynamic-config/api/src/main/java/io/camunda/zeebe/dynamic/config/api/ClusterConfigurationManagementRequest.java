@@ -301,6 +301,13 @@ public sealed interface ClusterConfigurationManagementRequest {
           physicalTenantId, Change.DELETE, owner, new byte[0], 0, 0, Set.of(), false);
     }
 
+    /** Cancels the rollout of the tenant's update and rolls it back to the version before. */
+    public static PhysicalTenantConfigRequest cancel(
+        final String physicalTenantId, final PhysicalTenantConfigReference.Owner owner) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId, Change.CANCEL, owner, new byte[0], 0, 0, Set.of(), false);
+    }
+
     @Override
     public boolean equals(final Object o) {
       return o instanceof final PhysicalTenantConfigRequest other
@@ -330,7 +337,8 @@ public sealed interface ClusterConfigurationManagementRequest {
     public enum Change {
       CREATE,
       UPDATE,
-      DELETE
+      DELETE,
+      CANCEL
     }
   }
 

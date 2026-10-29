@@ -67,6 +67,7 @@ import io.camunda.zeebe.dynamic.config.impl.transformers.UpdateZonePrioritiesTra
 import io.camunda.zeebe.dynamic.config.impl.transformers.ZoneMigrationRequestTransformer;
 import io.camunda.zeebe.dynamic.config.impl.util.RequestValidatorRegistry;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -250,6 +251,9 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<CurrentClusterConfiguration> changePhysicalTenantConfig(
       final PhysicalTenantConfigRequest request) {
+    if (request.change() == Change.CANCEL) {
+      return cancelPhysicalTenantConfigChange(request);
+    }
     final var sha256 = PhysicalTenantConfigStore.sha256(request.configuration());
     return coordinator.updateConfiguration(
         current ->
@@ -272,6 +276,38 @@ public final class ClusterConfigurationManagementRequestsHandler
                       }
                       return updated;
                     }));
+  }
+
+  /**
+   * Rolls the tenant back to the configuration before its update, read from the coordinator's
+   * store, and stores it again as the next version.
+   */
+  private ActorFuture<CurrentClusterConfiguration> cancelPhysicalTenantConfigChange(
+      final PhysicalTenantConfigRequest request) {
+    final var tenantId = request.physicalTenantId();
+    return coordinator.updateConfiguration(
+        current -> {
+          final var previous =
+              Optional.ofNullable(current.partitionGroup(tenantId))
+                  .flatMap(PartitionGroupConfiguration::tenantConfig)
+                  .flatMap(
+                      reference ->
+                          physicalTenantConfigStore.get(tenantId, reference.version() - 1));
+          return physicalTenantConfigChanges
+              .cancel(
+                  current, request, previous.map(PhysicalTenantConfigStore::sha256).orElse(null))
+              .map(
+                  updated -> {
+                    if (request.dryRun()) {
+                      return current;
+                    }
+                    physicalTenantConfigStore.put(
+                        tenantId,
+                        updated.partitionGroup(tenantId).tenantConfig().orElseThrow().version(),
+                        previous.orElseThrow());
+                    return updated;
+                  });
+        });
   }
 
   @Override
