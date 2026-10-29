@@ -294,7 +294,7 @@ public final class DbMessageSubscriptionState
       final String messageName,
       final String tenantId,
       final long timestampMs) {
-    transientState.update(
+    transientState.refresh(
         new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
   }
 
