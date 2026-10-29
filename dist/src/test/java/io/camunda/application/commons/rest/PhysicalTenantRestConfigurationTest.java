@@ -16,8 +16,10 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.monitoring.metrics.JobMetricsConfig;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -36,6 +39,9 @@ class PhysicalTenantRestConfigurationTest {
       new PhysicalTenantRestConfiguration();
 
   @Mock private PhysicalTenantResolver physicalTenantResolver;
+  @Mock private ObjectProvider<PhysicalTenantLifecycleService> noLifecycle;
+  @Mock private ObjectProvider<PhysicalTenantLifecycleService> withLifecycle;
+  @Mock private PhysicalTenantLifecycleService lifecycle;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private Camunda tenantA;
@@ -62,7 +68,8 @@ class PhysicalTenantRestConfigurationTest {
     stubMapValues(Map.of("tenant-es", tenantA));
 
     // when
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // then
     assertThat(provider.forPhysicalTenant("tenant-es").getMaxNameFieldLength())
@@ -78,7 +85,8 @@ class PhysicalTenantRestConfigurationTest {
     stubMapValues(Map.of("tenant-rdbms", tenantA));
 
     // when
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // then
     assertThat(provider.forPhysicalTenant("tenant-rdbms").getMaxNameFieldLength()).isEqualTo(4000);
@@ -98,7 +106,8 @@ class PhysicalTenantRestConfigurationTest {
     stubMapValues(Map.of("tenant-1", tenantA));
 
     // when
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // then
     final var jm = provider.forPhysicalTenant("tenant-1").getJobMetrics();
@@ -116,7 +125,8 @@ class PhysicalTenantRestConfigurationTest {
     when(tenantA.getData().getSecondaryStorage().getType())
         .thenReturn(SecondaryStorageType.elasticsearch);
     stubMapValues(Map.of("known-tenant", tenantA));
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // when / then
     assertThatThrownBy(() -> provider.forPhysicalTenant("unknown-tenant"))
@@ -135,7 +145,8 @@ class PhysicalTenantRestConfigurationTest {
     stubMapValues(Map.of("es-tenant", tenantA, "rdbms-tenant", tenantB));
 
     // when
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // then
     assertThat(provider.forPhysicalTenant("es-tenant").getMaxNameFieldLength())
@@ -149,12 +160,56 @@ class PhysicalTenantRestConfigurationTest {
     when(tenantA.getData().getSecondaryStorage().getType())
         .thenReturn(SecondaryStorageType.elasticsearch);
     stubMapValues(Map.of("tenant-a", tenantA));
-    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, noLifecycle);
 
     // when / then
     assertThat(provider.forPhysicalTenant("tenant-a")).isNotNull();
     assertThatThrownBy(() -> provider.forPhysicalTenant("tenant-b"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldServeTheConfigurationTheLifecycleAppliedLast() {
+    // given
+    when(tenantA.getData().getSecondaryStorage().getType())
+        .thenReturn(SecondaryStorageType.elasticsearch);
+    when(tenantB.getData().getSecondaryStorage().getType())
+        .thenReturn(SecondaryStorageType.elasticsearch);
+    when(jobMetricsConfigB.isEnabled()).thenReturn(false);
+    stubMapValues(Map.of("tenant", tenantA));
+    when(withLifecycle.getIfAvailable()).thenReturn(lifecycle);
+    when(lifecycle.configuration("tenant")).thenReturn(Optional.of(tenantA));
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, withLifecycle);
+    assertThat(provider.forPhysicalTenant("tenant").getJobMetrics().isEnabled()).isTrue();
+
+    // when
+    when(lifecycle.configuration("tenant")).thenReturn(Optional.of(tenantB));
+
+    // then
+    assertThat(provider.forPhysicalTenant("tenant").getJobMetrics().isEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldServeATenantAddedAtRuntimeAndForgetARemovedOne() {
+    // given
+    when(tenantA.getData().getSecondaryStorage().getType())
+        .thenReturn(SecondaryStorageType.elasticsearch);
+    stubMapValues(Map.of());
+    when(withLifecycle.getIfAvailable()).thenReturn(lifecycle);
+    when(lifecycle.configuration("added")).thenReturn(Optional.of(tenantA));
+    final var provider =
+        configuration.physicalTenantRestConfigProvider(physicalTenantResolver, withLifecycle);
+    assertThat(provider.forPhysicalTenant("added")).isNotNull();
+
+    // when
+    when(lifecycle.configuration("added")).thenReturn(Optional.empty());
+
+    // then
+    assertThatThrownBy(() -> provider.forPhysicalTenant("added"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("added");
   }
 
   private void stubMapValues(final Map<String, Camunda> tenants) {
