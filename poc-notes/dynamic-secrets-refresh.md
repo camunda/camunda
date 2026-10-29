@@ -11,17 +11,17 @@ restart. The tenant's readers and its RDBMS exporter both move, because both rea
 through one data source. Other tenants are not touched. Jobs cannot read these secrets. A
 literal credential in a tenant configuration can be rejected before it is applied.
 
-| Capability | Where | Proven by |
-| --- | --- | --- |
-| `internal-config` block in a store entry builds a second store per tenant, `default` included | `Secrets`, `SecretStoreConfiguration#internalConfigSecrets` | `InternalConfigSecretsTest` |
-| Jobs cannot resolve from it; configuration references resolve only from it | `InternalConfigSecrets` is a separate bean, never handed to the job path | `InternalConfigSecretsTest` |
-| Startup fails when jobs can reach the internal-config scope, naming both keys and values | `InternalConfigScopes` | `InternalConfigScopesTest`, `InternalConfigSecretsTest` |
-| Literal-credential guard for a tenant config blob | `PhysicalTenantCredentialGuard`, `@Credential` | `PhysicalTenantCredentialGuardTest` |
-| CI fails on an unmarked credential-named field | | `CredentialFieldMarkingTest` |
-| Per-tenant refresher, authoritative reads, push on change | `InternalConfigRefresher(s)` | `InternalConfigRefresherTest` |
-| Build, verify, swap, drain, close; failed refresh keeps the old client | `RefreshableClient` | `RefreshableClientTest` |
-| Degraded tenant reported, not in any probe group | `SecretRefreshHealthIndicator` (`physicalTenantSecretRefresh`) | `InternalConfigRefresherTest` |
-| RDBMS: password rotation in place, URL swap with a new pool, wrong password keeps the pool | `RdbmsDataSources`, `RefreshableDataSource` | `RdbmsDataSourcesRefreshTest` (H2), `PhysicalTenantRdbmsSecretRotationIT` (PostgreSQL, 4 tenants) |
+|                                          Capability                                           |                                  Where                                   |                                             Proven by                                             |
+|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `internal-config` block in a store entry builds a second store per tenant, `default` included | `Secrets`, `SecretStoreConfiguration#internalConfigSecrets`              | `InternalConfigSecretsTest`                                                                       |
+| Jobs cannot resolve from it; configuration references resolve only from it                    | `InternalConfigSecrets` is a separate bean, never handed to the job path | `InternalConfigSecretsTest`                                                                       |
+| Startup fails when jobs can reach the internal-config scope, naming both keys and values      | `InternalConfigScopes`                                                   | `InternalConfigScopesTest`, `InternalConfigSecretsTest`                                           |
+| Literal-credential guard for a tenant config blob                                             | `PhysicalTenantCredentialGuard`, `@Credential`                           | `PhysicalTenantCredentialGuardTest`                                                               |
+| CI fails on an unmarked credential-named field                                                |                                                                          | `CredentialFieldMarkingTest`                                                                      |
+| Per-tenant refresher, authoritative reads, push on change                                     | `InternalConfigRefresher(s)`                                             | `InternalConfigRefresherTest`                                                                     |
+| Build, verify, swap, drain, close; failed refresh keeps the old client                        | `RefreshableClient`                                                      | `RefreshableClientTest`                                                                           |
+| Degraded tenant reported, not in any probe group                                              | `SecretRefreshHealthIndicator` (`physicalTenantSecretRefresh`)           | `InternalConfigRefresherTest`                                                                     |
+| RDBMS: password rotation in place, URL swap with a new pool, wrong password keeps the pool    | `RdbmsDataSources`, `RefreshableDataSource`                              | `RdbmsDataSourcesRefreshTest` (H2), `PhysicalTenantRdbmsSecretRotationIT` (PostgreSQL, 4 tenants) |
 
 ## Configuration
 
@@ -117,3 +117,4 @@ old role remains, the old role is set to `NOLOGIN`. That gives the overlap the s
 5. Drain timeout of 30 s: enough for long exporter flushes?
 6. Should the guard also flag `username` and URLs as credentials, or only scan them?
 7. Is a pool name suffix acceptable for dashboards keyed on the pool name?
+
