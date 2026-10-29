@@ -961,6 +961,9 @@ var distrustedCACommonNames = []string{
 
 const cacertsStorePass = "changeit"
 
+// keytoolCommand is a variable so tests can substitute a fake keytool.
+var keytoolCommand = "keytool"
+
 func removeDistrustedCACerts(cacertsPath string) error {
 	listing, err := listKeystore(cacertsPath)
 	if err != nil {
@@ -968,7 +971,7 @@ func removeDistrustedCACerts(cacertsPath string) error {
 	}
 
 	for _, alias := range findDistrustedAliases(listing) {
-		cmd := exec.Command("keytool", "-J-Duser.language=en", "-delete", "-noprompt",
+		cmd := exec.Command(keytoolCommand, "-J-Duser.language=en", "-delete", "-noprompt",
 			"-keystore", cacertsPath, "-storepass", cacertsStorePass, "-alias", alias)
 		var stderr strings.Builder
 		cmd.Stdout = &stderr
@@ -990,7 +993,7 @@ func removeDistrustedCACerts(cacertsPath string) error {
 }
 
 func listKeystore(path string) (string, error) {
-	cmd := exec.Command("keytool", "-J-Duser.language=en", "-list", "-v",
+	cmd := exec.Command(keytoolCommand, "-J-Duser.language=en", "-list", "-v",
 		"-keystore", path, "-storepass", cacertsStorePass)
 	var out strings.Builder
 	var stderr strings.Builder
