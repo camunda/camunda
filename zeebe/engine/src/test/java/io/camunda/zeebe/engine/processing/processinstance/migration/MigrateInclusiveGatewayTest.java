@@ -788,6 +788,94 @@ public class MigrateInclusiveGatewayTest {
   }
 
   @Test
+  public void shouldRejectMigrationIfTakenSequenceFlowToJoiningInclusiveGatewayIsNotMapped() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .inclusiveGateway("join1")
+                    .endEvent("end")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .inclusiveGateway("join2")
+                    .endEvent("end")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("flow1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to take the sequence flow to the joining gateway")
+        .isNotNull();
+
+    // when
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("join1", "join2")
+            // taken sequence flow "flow1" not mapped
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' \
+            but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
+            Taken sequence flows must be mapped to a sequence flow in the target process definition."""
+                .formatted(processInstanceKey, "join1", "flow1"))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
   public void shouldRejectJoiningInclusiveGatewayMigrationIfMappedGatewayHasDifferentType() {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_v2";
