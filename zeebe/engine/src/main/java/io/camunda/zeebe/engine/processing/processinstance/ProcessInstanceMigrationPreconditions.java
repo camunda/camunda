@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
@@ -157,6 +158,13 @@ public final class ProcessInstanceMigrationPreconditions {
       but the agent instance element with id '%s' has agent definition type '%s' \
       while the mapped target element with id '%s' has a different agent definition type '%s'. \
       An agent instance's type must not change on migration.""";
+  private static final String ERROR_CONSENT_DECLARATION_CHANGED =
+      """
+      Expected to migrate process instance '%s' \
+      but the element with id '%s' declares consent as '%s' \
+      while the mapped target element with id '%s' declares it as '%s'. \
+      A job keeps the consent declaration it was created with, so the declaration must not \
+      change on migration.""";
   private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
       """
       Expected to migrate process instance '%s' \
@@ -660,6 +668,67 @@ public final class ProcessInstanceMigrationPreconditions {
     }
     throw new ProcessInstanceMigrationPreconditionFailedException(
         reason, RejectionType.INVALID_STATE);
+  }
+
+  /**
+   * Checks that a job worker element keeps its consent declaration. A job carries the declaration
+   * it was created with, so after a migration that adds, removes or changes it, the job would be
+   * handed out under rules its element no longer declares: a job created without the gate would sit
+   * in a task that declares one, and pass it unasked.
+   *
+   * @param sourceProcessDefinition source process definition to resolve the source declaration
+   * @param targetProcessDefinition target process definition to resolve the target declaration
+   * @param sourceElementId the element instance's source element id
+   * @param targetElementId the mapped target element id
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireUnchangedConsentDeclaration(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final String source = consentDeclarationOf(sourceProcessDefinition, sourceElementId);
+    final String target = consentDeclarationOf(targetProcessDefinition, targetElementId);
+    if (source.equals(target)) {
+      return;
+    }
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        String.format(
+            ERROR_CONSENT_DECLARATION_CHANGED,
+            processInstanceKey,
+            sourceElementId,
+            source,
+            targetElementId,
+            target),
+        RejectionType.INVALID_STATE);
+  }
+
+  /** The element's consent declaration as text, comparable across deployments. */
+  private static String consentDeclarationOf(
+      final DeployedProcess processDefinition, final String elementId) {
+    final AbstractFlowElement element = processDefinition.getProcess().getElementById(elementId);
+    final ExecutableFlowElement activity =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+    if (!(activity instanceof final ExecutableJobWorkerElement jobWorkerElement)
+        || jobWorkerElement.getConsentDefinition() == null) {
+      return "none";
+    }
+    final var consent = jobWorkerElement.getConsentDefinition();
+    return "%s %s/%s subject=%s target=%s change=%s"
+        .formatted(
+            consent.ground(),
+            consent.connection(),
+            consent.operation(),
+            sourceOf(consent.subject()),
+            sourceOf(consent.target()),
+            sourceOf(consent.change()));
+  }
+
+  private static String sourceOf(final Expression expression) {
+    return expression == null ? "" : expression.getExpression();
   }
 
   private static AgentDefinitionType resolveAgentDefinitionType(
