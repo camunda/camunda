@@ -50,7 +50,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  // decoded lazily from the wrapped buffer: most readers (e.g. replay) never access it
+  // null: wrapped from a buffer and not decoded yet, as most readers (e.g. replay) never access it;
+  // it is written as the encoded bytes. EMPTY: the default if built, or wrapped without
+  // authorization; it is written as EMPTY's encoding (a non-empty msgpack map) as in previous
+  // versions, not as a zero-length field.
   private final DirectBuffer encodedAuthorization = new UnsafeBuffer(0, 0);
   private @Nullable AuthInfo authorization = AuthInfo.EMPTY;
   private RejectionType rejectionType;
