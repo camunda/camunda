@@ -34,7 +34,9 @@ import org.jspecify.annotations.Nullable;
  *       keep a quorum of healthy replicas on the other members, as the cluster's topology shows
  *       them.
  *   <li>After the restart, every local partition of the tenant must be installed again, be leader
- *       or follower of a partition with a known leader, and report itself healthy.
+ *       or follower of a partition with a known leader, and report itself healthy. A partition
+ *       paused because the tenant is out of disk space counts as ready: it only resumes once space
+ *       is freed or the tenant's limit is raised, which may be the next change to roll out.
  * </ul>
  *
  * <p>Both waits are bounded; a wait that runs out fails the member's step of the rollout, which
@@ -133,7 +135,7 @@ final class PhysicalTenantRolloutReadiness {
     }
     for (final var partition : partitions.getZeebePartitions()) {
       final var health = partition.getHealthReport();
-      if (health.getStatus() != HealthStatus.HEALTHY) {
+      if (health.getStatus() != HealthStatus.HEALTHY && partition.isDiskSpaceAvailable()) {
         return Optional.of(
             "partition %d is %s: %s"
                 .formatted(partition.getPartitionId(), health.getStatus(), health.getIssue()));

@@ -270,6 +270,11 @@ public final class ZeebePartition extends Actor
     return context.getComponentHealthMonitor().getHealthReport();
   }
 
+  /** Whether the partition has the disk space to process, or is paused until it has. */
+  public boolean isDiskSpaceAvailable() {
+    return zeebePartitionHealth.isDiskSpaceAvailable();
+  }
+
   @Override
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(

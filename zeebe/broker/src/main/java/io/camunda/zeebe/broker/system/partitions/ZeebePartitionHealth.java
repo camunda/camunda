@@ -33,7 +33,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   */
   private boolean servicesInstalled;
   // We assume disk space is available until otherwise notified
-  private boolean diskSpaceAvailable = true;
+  private volatile boolean diskSpaceAvailable = true;
 
   public ZeebePartitionHealth(
       final int partitionId, final PartitionTransition partitionTransition) {
@@ -68,6 +68,10 @@ class ZeebePartitionHealth implements HealthMonitorable {
   void setServicesInstalled(final boolean servicesInstalled) {
     this.servicesInstalled = servicesInstalled;
     updateHealthStatus();
+  }
+
+  boolean isDiskSpaceAvailable() {
+    return diskSpaceAvailable;
   }
 
   void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
