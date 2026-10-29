@@ -7,9 +7,15 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.agentrun;
 
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_HUMAN_WAIT;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_MODEL_CALLS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_TOOL_CALLS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS;
 
@@ -52,7 +58,13 @@ public class ProcessViewAgentRunMetricInterpreterES
         PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS,
         PROCESS_VIEW_AGENT_RUN_MODEL_CALLS,
         PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS,
-        PROCESS_VIEW_AGENT_RUN_TOOL_CALLS);
+        PROCESS_VIEW_AGENT_RUN_TOOL_CALLS,
+        PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS,
+        PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS,
+        PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS,
+        PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS,
+        PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS,
+        PROCESS_VIEW_AGENT_RUN_HUMAN_WAIT);
   }
 
   @Override
@@ -84,9 +96,17 @@ public class ProcessViewAgentRunMetricInterpreterES
   static String fieldFor(final ProcessExecutionPlan plan) {
     final ProcessGroupBy groupBy = plan.getGroupBy();
     return switch (plan.getView()) {
-      case PROCESS_VIEW_AGENT_RUN_DURATION -> AgentRunIndex.DURATION_MS;
+      // Sum of the agent's element instance durations without user-task tool time (D1, Q2).
+      case PROCESS_VIEW_AGENT_RUN_DURATION -> AgentRunIndex.ACTIVE_DURATION_MS;
+      case PROCESS_VIEW_AGENT_RUN_HUMAN_WAIT -> AgentRunIndex.HUMAN_WAIT_DURATION_MS;
       case PROCESS_VIEW_AGENT_RUN_MODEL_CALLS -> AgentRunIndex.MODEL_CALLS;
-      case PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS -> AgentRunIndex.PROCESS_USER_TASK_COUNT;
+      // User-task tools of the run only, not every user task of the process instance (Q5).
+      case PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS -> AgentRunIndex.HUMAN_STEP_COUNT;
+      case PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS -> AgentRunIndex.INPUT_TOKENS;
+      case PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS -> AgentRunIndex.OUTPUT_TOKENS;
+      case PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS -> AgentRunIndex.CACHE_CREATION_TOKENS;
+      case PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS -> AgentRunIndex.CACHE_READ_TOKENS;
+      case PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS -> AgentRunIndex.REASONING_TOKENS;
       case PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS ->
           groupBy == ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_MODEL
               ? AgentRunIndex.TOKENS_BY_MODEL + "." + AgentRunDto.ModelTokensDto.Fields.totalTokens

@@ -23,11 +23,11 @@ class AgentRunViewInterpretersTest {
   @Test
   void shouldAggregateFlatRunFieldsForUngroupedMetrics() {
     assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_DURATION_GROUP_BY_NONE))
-        .isEqualTo("durationMs");
+        .isEqualTo("activeDurationMs");
     assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_MODEL_CALLS_GROUP_BY_NONE))
         .isEqualTo("modelCalls");
     assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_HUMAN_STEPS_GROUP_BY_NONE))
-        .isEqualTo("processUserTaskCount");
+        .isEqualTo("humanStepCount");
     assertThat(
             ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE))
         .isEqualTo("totalTokens");

@@ -36,6 +36,11 @@ public final class ReportConstants {
   public static final String VIEW_INCIDENT_RATE_PROPERTY = "incidentRate";
   public static final String VIEW_LIMIT_HIT_RATE_PROPERTY = "limitHitRate";
   public static final String VIEW_ADOPTION_RATE_PROPERTY = "adoptionRate";
+  public static final String VIEW_SUCCESS_RATE_PROPERTY = "successRate";
+  public static final String VIEW_CACHE_WRITE_TOKENS_PROPERTY = "cacheWriteTokens";
+  public static final String VIEW_CACHE_READ_TOKENS_PROPERTY = "cacheReadTokens";
+  public static final String VIEW_REASONING_TOKENS_PROPERTY = "reasoningTokens";
+  public static final String VIEW_HUMAN_WAIT_PROPERTY = "humanWait";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";
@@ -96,6 +101,7 @@ public final class ReportConstants {
   public static final String DISTRIBUTED_BY_START_DATE = "startDate";
   public static final String DISTRIBUTED_BY_END_DATE = "endDate";
   public static final String DISTRIBUTED_BY_PROCESS = "process";
+  public static final String DISTRIBUTED_BY_AGENT_MODEL = "agentModel";
 
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";

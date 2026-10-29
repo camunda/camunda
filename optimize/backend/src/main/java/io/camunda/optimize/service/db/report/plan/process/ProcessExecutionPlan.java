@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.report.plan.ReportResultType.HYPER_
 import static io.camunda.optimize.service.db.report.plan.ReportResultType.MAP;
 import static io.camunda.optimize.service.db.report.plan.ReportResultType.NUMBER;
 import static io.camunda.optimize.service.db.report.plan.ReportResultType.RAW_DATA;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_AGENT_MODEL;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_ASSIGNEE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_FLOW_NODE;
@@ -785,7 +786,52 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       ProcessView.PROCESS_VIEW_AGENT_RUN_ADOPTION_RATE,
       ProcessGroupBy.PROCESS_GROUP_BY_NONE,
       PROCESS_DISTRIBUTED_BY_NONE,
-      NUMBER);
+      NUMBER),
+  AGENT_RUN_SUCCESS_RATE_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_SUCCESS_RATE,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_INPUT_TOKENS_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_OUTPUT_TOKENS_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_CACHE_WRITE_TOKENS_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_CACHE_READ_TOKENS_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_REASONING_TOKENS_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_HUMAN_WAIT_GROUP_BY_NONE(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_HUMAN_WAIT,
+      ProcessGroupBy.PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_TOTAL_TOKENS_GROUP_BY_AGENT(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_AGENT,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  AGENT_RUN_TOTAL_TOKENS_GROUP_BY_START_DATE_BY_MODEL(
+      ProcessView.PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS,
+      ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_START_DATE,
+      PROCESS_DISTRIBUTED_BY_AGENT_MODEL,
+      HYPER_MAP);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;

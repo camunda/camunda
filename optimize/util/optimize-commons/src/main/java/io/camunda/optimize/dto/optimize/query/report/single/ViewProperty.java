@@ -9,9 +9,12 @@ package io.camunda.optimize.dto.optimize.query.report.single;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_ADOPTION_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_AUTOMATION_RATE_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_CACHE_READ_TOKENS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_CACHE_WRITE_TOKENS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_HUMAN_STEPS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_HUMAN_WAIT_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INCIDENT_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INPUT_TOKENS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_LIMIT_HIT_RATE_PROPERTY;
@@ -19,6 +22,8 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_MODEL_CALLS_
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_OUTPUT_TOKENS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_PERCENTAGE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_REASONING_TOKENS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_SUCCESS_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOOL_CALLS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOTAL_TOKENS_PROPERTY;
 
@@ -51,6 +56,14 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty INCIDENT_RATE = new ViewProperty(VIEW_INCIDENT_RATE_PROPERTY);
   public static final ViewProperty LIMIT_HIT_RATE = new ViewProperty(VIEW_LIMIT_HIT_RATE_PROPERTY);
   public static final ViewProperty ADOPTION_RATE = new ViewProperty(VIEW_ADOPTION_RATE_PROPERTY);
+  public static final ViewProperty SUCCESS_RATE = new ViewProperty(VIEW_SUCCESS_RATE_PROPERTY);
+  public static final ViewProperty CACHE_WRITE_TOKENS =
+      new ViewProperty(VIEW_CACHE_WRITE_TOKENS_PROPERTY);
+  public static final ViewProperty CACHE_READ_TOKENS =
+      new ViewProperty(VIEW_CACHE_READ_TOKENS_PROPERTY);
+  public static final ViewProperty REASONING_TOKENS =
+      new ViewProperty(VIEW_REASONING_TOKENS_PROPERTY);
+  public static final ViewProperty HUMAN_WAIT = new ViewProperty(VIEW_HUMAN_WAIT_PROPERTY);
   private final TypedViewPropertyDto viewPropertyDto;
 
   @JsonCreator
@@ -100,7 +113,11 @@ public class ViewProperty implements Combinable {
         || TOOL_CALLS.equals(this)
         || TOTAL_TOKENS.equals(this)
         || MODEL_CALLS.equals(this)
-        || HUMAN_STEPS.equals(this);
+        || HUMAN_STEPS.equals(this)
+        || CACHE_WRITE_TOKENS.equals(this)
+        || CACHE_READ_TOKENS.equals(this)
+        || REASONING_TOKENS.equals(this)
+        || HUMAN_WAIT.equals(this);
   }
 
   protected boolean canEqual(final Object other) {
