@@ -77,6 +77,7 @@ final class BulkIndexRequest {
   private static final String WITH_LEASE_PROPERTY = "withLease";
   private static final String METADATA_PROPERTY = "metadata";
   private static final String KIND_PROPERTY = "kind";
+  private static final String CASE_DATA_PROPERTY = "caseData";
   private static final String STORAGE_ORDINAL_PROPERTY = "storageOrdinal";
   private static final String RESUME_FROM_JOB_KEY_PROPERTY = "resumeFromJobKey";
   private static final String RESUME_FROM_USER_TASK_KEY_PROPERTY = "resumeFromUserTaskKey";
@@ -241,9 +242,10 @@ final class BulkIndexRequest {
   /**
    * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS
    * commands to drive the resume; they must not be stored in the exported document.
-   * Process-instance values also carry {@code kind}, which is not stored either: the strict
-   * process-instance mapping does not map it, and secondary storage reads it from the record, not
-   * from this index. This mix-in is the most specific one for a process-instance value, so it
+   * Process-instance values also carry {@code kind} and {@code caseData}, which are not stored
+   * either: the strict process-instance mapping does not map them, and secondary storage reads them
+   * from the record, not from this index. This also keeps the user-provided case title out of the
+   * raw record index. This mix-in is the most specific one for a process-instance value, so it
    * shadows {@link StorageOrdinalMixin} and must also repeat the {@code storageOrdinal} ignoral it
    * would otherwise inherit.
    */
@@ -251,7 +253,8 @@ final class BulkIndexRequest {
     STORAGE_ORDINAL_PROPERTY,
     RESUME_FROM_JOB_KEY_PROPERTY,
     RESUME_FROM_USER_TASK_KEY_PROPERTY,
-    KIND_PROPERTY
+    KIND_PROPERTY,
+    CASE_DATA_PROPERTY
   })
   private static final class ProcessInstanceMixin {}
 }

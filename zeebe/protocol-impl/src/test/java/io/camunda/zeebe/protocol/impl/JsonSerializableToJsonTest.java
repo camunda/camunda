@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.CaseDataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
@@ -2141,7 +2142,8 @@ final class JsonSerializableToJsonTest {
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
                   .setBusinessId(businessId)
-                  .setKind(ProcessInstanceKind.CASE_INSTANCE);
+                  .setKind(ProcessInstanceKind.CASE_INSTANCE)
+                  .setCaseData(new CaseDataRecord().setTitle("Loan LA-42"));
             },
         """
                 {
@@ -2166,6 +2168,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
                   "kind": "CASE_INSTANCE",
+                  "caseData": {"title": "Loan LA-42"},
                   "elementInstanceKey": -1
                 }
                 """
@@ -2202,6 +2205,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
                   "kind": "PROCESS_INSTANCE",
+                  "caseData": {"title": ""},
                   "elementInstanceKey": -1
                 }
                 """
@@ -3046,6 +3050,7 @@ final class JsonSerializableToJsonTest {
                     "resumeFromJobKey": -1,
                     "resumeFromUserTaskKey": -1,
                     "kind": "PROCESS_INSTANCE",
+                    "caseData": {"title": ""},
                     "elementInstanceKey": -1
                   }
                 }

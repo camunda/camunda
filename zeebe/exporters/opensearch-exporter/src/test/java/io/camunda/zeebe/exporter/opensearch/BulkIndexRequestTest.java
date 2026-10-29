@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRe
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.CaseDataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
@@ -489,6 +490,62 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("kind"))
           .describedAs(
               "Expect that process instance records are NOT serialized with kind on current version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldNotIndexCaseDataOfProcessInstanceRecordOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ProcessInstanceRecord()
+                              .setCaseData(new CaseDataRecord().setTitle("Loan LA-42"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("caseData"))
+          .describedAs(
+              "Expect that process instance records are NOT serialized with case data on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldNotIndexCaseDataOfProcessInstanceRecordOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ProcessInstanceRecord()
+                              .setCaseData(new CaseDataRecord().setTitle("Loan LA-42"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("caseData"))
+          .describedAs(
+              "Expect that process instance records are NOT serialized with case data on current version")
           .containsExactly(new Object[] {null});
     }
 

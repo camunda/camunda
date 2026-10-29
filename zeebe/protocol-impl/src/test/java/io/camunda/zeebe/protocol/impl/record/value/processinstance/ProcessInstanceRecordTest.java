@@ -70,4 +70,50 @@ final class ProcessInstanceRecordTest {
     // then
     assertThat(read.getKind()).isEqualTo(ProcessInstanceKind.CASE_INSTANCE);
   }
+
+  @Test
+  void shouldDefaultCaseDataToEmptyTitleWhenAbsent() {
+    // given - a record written by a version that did not know the caseData property
+    final byte[] msgPack =
+        MsgPackConverter.convertToMsgPack(
+            "{\"bpmnProcessId\":\"process\",\"processInstanceKey\":1}");
+    final var record = new ProcessInstanceRecord();
+
+    // when
+    record.wrap(new UnsafeBuffer(msgPack), 0, msgPack.length);
+
+    // then
+    assertThat(record.getCaseData()).isNotNull();
+    assertThat(record.getCaseData().getTitle()).isEmpty();
+  }
+
+  @Test
+  void shouldNotCopyCaseDataOnWrap() {
+    // given
+    final var source =
+        new ProcessInstanceRecord().setCaseData(new CaseDataRecord().setTitle("Loan LA-42"));
+
+    // when
+    final var copy = new ProcessInstanceRecord();
+    copy.wrap(source);
+
+    // then
+    assertThat(copy.getCaseData().getTitle()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripCaseDataThroughMsgPack() {
+    // given
+    final var source =
+        new ProcessInstanceRecord().setCaseData(new CaseDataRecord().setTitle("Loan LA-42"));
+    final var buffer = new UnsafeBuffer(new byte[source.getLength()]);
+    source.write(buffer, 0);
+
+    // when
+    final var read = new ProcessInstanceRecord();
+    read.wrap(buffer, 0, buffer.capacity());
+
+    // then
+    assertThat(read.getCaseData().getTitle()).isEqualTo("Loan LA-42");
+  }
 }

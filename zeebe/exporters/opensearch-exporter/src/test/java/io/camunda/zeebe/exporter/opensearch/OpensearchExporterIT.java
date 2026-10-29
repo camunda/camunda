@@ -77,8 +77,8 @@ final class OpensearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations, agent, requestChannelType, requestToolName and the kind of process
-  // instances since they are removed from the records during serialization
+  // omit authorizations, agent, requestChannelType, requestToolName and the kind and case data of
+  // process instances since they are removed from the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -89,7 +89,7 @@ final class OpensearchExporterIT {
               random -> null)
           .registerRandomizer(
               field ->
-                  "kind".equals(field.getName())
+                  ("kind".equals(field.getName()) || "caseData".equals(field.getName()))
                       && ProcessInstanceRecordValue.class.isAssignableFrom(
                           field.getDeclaringClass()),
               random -> null);
