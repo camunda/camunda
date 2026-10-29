@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -193,6 +194,8 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Invalid Filter', async ({request}) => {
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(isForwardCompat, 'Error message format changed in newer server');
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
@@ -211,6 +214,8 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Invalid Sort Field', async ({request}) => {
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(isForwardCompat, 'Error title/message changed in newer server');
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),

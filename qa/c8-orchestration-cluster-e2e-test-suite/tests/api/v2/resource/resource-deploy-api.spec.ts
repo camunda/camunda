@@ -12,6 +12,7 @@ import {
   buildUrl,
   defaultHeaders,
   assertUnauthorizedRequest,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -81,6 +82,8 @@ test.describe.parallel('Resource Deploy API', () => {
   });
 
   test('Deploy Resource - Decision Definition Success', async ({request}) => {
+    // In 8.9, the deploy response structure for decisions changed (decisionRequirements may be absent)
+    test.skip(isForwardCompat, 'Deploy response structure changed in newer versions');
     const decisionResourceName = 'simpleDecisionTable1.dmn';
     const formData = createResourceFormData(decisionResourceName);
 
@@ -140,6 +143,8 @@ test.describe.parallel('Resource Deploy API', () => {
   test('Deploy Multiple Resources - Process Definition and Form Success', async ({
     request,
   }) => {
+    // In 8.9, the deploy response structure for forms changed (form deployment may be absent)
+    test.skip(isForwardCompat, 'Deploy response structure changed in newer versions');
     const processResourceName = 'process_with_linked_start_form.bpmn';
     const formResourceName = 'sign_up_form.form';
 
@@ -176,6 +181,8 @@ test.describe.parallel('Resource Deploy API', () => {
   test('Deploy Multiple Resources - All Resource Types Success', async ({
     request,
   }) => {
+    // In 8.9, deploy response only returns processDefinition types for multi-resource deployments
+    test.skip(isForwardCompat, 'Deploy response structure changed in newer versions');
     const processResourceName = 'process_with_linked_start_form.bpmn';
     const formResourceName = 'sign_up_form.form';
     const decisionResourceName = 'simpleDecisionTable1.dmn';

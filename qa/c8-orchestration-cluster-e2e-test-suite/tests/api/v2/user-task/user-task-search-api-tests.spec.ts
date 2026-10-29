@@ -12,6 +12,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {setupProcessInstanceForTests} from '@requestHelpers';
@@ -59,6 +60,8 @@ test.describe.parallel('Search User Task Tests', () => {
   test('Search user tasks - bad request - invalid payload', async ({
     request,
   }) => {
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(isForwardCompat, 'Error message format changed in newer server');
     const res = await request.post(buildUrl('/user-tasks/search'), {
       headers: jsonHeaders(),
       data: {
