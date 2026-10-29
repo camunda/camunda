@@ -8,6 +8,9 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
+import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
@@ -22,12 +25,23 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover;
 import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover.Report;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.PartitionReclaim;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.ReclaimPartition;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.ReplayLag;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots.PartitionSnapshot;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots.SnapshotPartition;
+import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots.TakenSnapshot;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
@@ -64,9 +78,14 @@ import org.springframework.core.env.ConfigurableEnvironment;
  *
  * <p>Before a replaced tenant's module stops, the member hands the leadership of the tenant's
  * partitions it leads to other replicas (see {@link PartitionLeadershipHandover}), so the
- * partitions keep serving through the restart. A partition no replica takes over is restarted as it
- * is, and {@link #lastRestart} says why. {@code
- * camunda.cluster.raft.rebalance.hand-over-before-tenant-restart} turns this off.
+ * partitions keep serving through the restart, and, if configured, takes a snapshot of every
+ * partition of the tenant (see {@link PartitionRestartSnapshots}), so the restarted replicas replay
+ * less. Once the module started again, it takes back the leadership of the partitions it handed
+ * over as soon as their replicas caught up (see {@link PartitionLeadershipReclaim}), so the leader
+ * distribution is the same after the restart; the change completes after that. A partition no
+ * replica takes over is restarted as it is, and {@link #lastRestart} says why. {@code
+ * camunda.cluster.raft.rebalance.tenant-restart-handover} and {@code
+ * camunda.cluster.raft.rebalance.tenant-restart-snapshot} choose what is done.
  *
  * <p>Only one change is applied at a time; a concurrent change is rejected, not queued.
  */
@@ -75,6 +94,9 @@ public final class PhysicalTenantLifecycleService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final Duration HANDOVER_SLACK = Duration.ofSeconds(5);
+  // a follower's replayed position trails the end of its log by the commands whose events the
+  // leader has not written yet; under load that is a few dozen positions
+  private static final long CAUGHT_UP_LAG = 100;
 
   private final Broker broker;
   private final SystemContextLoader systemContextLoader;
@@ -192,6 +214,7 @@ public final class PhysicalTenantLifecycleService {
           final var startedNanos = System.nanoTime();
           final var startedAt = Instant.now();
           final var handover = handOverLeadership(physicalTenantId, handoverPreference);
+          final var snapshots = snapshotBeforeRestart(physicalTenantId);
           gateway()
               .ifPresent(
                   gateway ->
@@ -210,14 +233,23 @@ public final class PhysicalTenantLifecycleService {
           final var replaced = current.withName(candidate.name());
           registry.replace(replaced);
           commit(physicalTenantId, candidate);
+          final TenantRestart restart;
           try {
             startModule(replaced, candidate.context());
           } finally {
-            lastRestarts.put(
-                physicalTenantId,
+            restart =
                 new TenantRestart(
-                    startedAt, startedNanos, handover, stoppedNanos, System.nanoTime()));
+                    startedAt,
+                    startedNanos,
+                    handover,
+                    snapshots,
+                    stoppedNanos,
+                    System.nanoTime(),
+                    List.of(),
+                    0);
+            lastRestarts.put(physicalTenantId, restart);
           }
+          afterRestart(physicalTenantId, restart);
           return replaced;
         });
   }
@@ -433,7 +465,7 @@ public final class PhysicalTenantLifecycleService {
     if (partitionManager == null) {
       return Report.skipped();
     }
-    if (!raft.isHandOverBeforeTenantRestart()) {
+    if (raft.getTenantRestartHandover() == TenantRestartHandover.NONE) {
       return PartitionLeadershipHandover.withoutHandover(partitionManager.getRaftPartitions());
     }
     final var bound = raft.getRebalanceReplicationTimeout().plus(HANDOVER_SLACK);
@@ -463,6 +495,175 @@ public final class PhysicalTenantLifecycleService {
           e);
       return Report.skipped();
     }
+  }
+
+  /**
+   * Takes a snapshot of every partition of the tenant on this member, within the configured bound.
+   * Never fails the change: a partition without a new snapshot restarts from the one it has.
+   */
+  private List<PartitionSnapshot> snapshotBeforeRestart(final String physicalTenantId) {
+    final var raft = broker.getSystemContext().getBrokerConfiguration().getCluster().getRaft();
+    final var partitionManager = partitionManager(physicalTenantId);
+    if (!raft.isTenantRestartSnapshot() || partitionManager == null) {
+      return List.of();
+    }
+    final var bound = raft.getTenantRestartSnapshotTimeout();
+    final var partitions =
+        partitionManager.getZeebePartitions().stream()
+            .<SnapshotPartition>map(
+                partition ->
+                    new SnapshotPartition() {
+                      @Override
+                      public int partition() {
+                        return partition.getPartitionId();
+                      }
+
+                      @Override
+                      public CompletableFuture<@Nullable TakenSnapshot> forceSnapshot() {
+                        return partition
+                            .forceSnapshot()
+                            .toCompletableFuture()
+                            .thenApply(
+                                snapshot ->
+                                    snapshot == null
+                                        ? null
+                                        : new TakenSnapshot(
+                                            snapshot.getMetadata().processedPosition(),
+                                            snapshot.getTotalSizeInBytes()));
+                      }
+                    })
+            .toList();
+    try {
+      return new PartitionRestartSnapshots(bound)
+          .take(partitions)
+          .get(bound.plus(HANDOVER_SLACK).toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return List.of();
+    } catch (final ExecutionException | TimeoutException e) {
+      LOG.warn(
+          "Failed to take snapshots of physical tenant '{}' before its restart",
+          physicalTenantId,
+          e);
+      return List.of();
+    }
+  }
+
+  /**
+   * Takes back the leadership of the partitions handed over before the restart, once their replicas
+   * caught up, and waits for that; or, if the leadership stays where it went, follows their
+   * catch-up for {@link #lastRestart} without waiting.
+   */
+  private void afterRestart(final String physicalTenantId, final TenantRestart restart) {
+    final var raft = broker.getSystemContext().getBrokerConfiguration().getCluster().getRaft();
+    final var reclaim =
+        new PartitionLeadershipReclaim(
+            raft.getRebalanceLeaderWaitTimeout(),
+            CAUGHT_UP_LAG,
+            raft.getRebalanceReplicationTimeout().plus(HANDOVER_SLACK));
+    final var partitions =
+        restart.handover().partitions().stream()
+            .map(partition -> reclaimPartition(physicalTenantId, partition.partition().number()))
+            .toList();
+    final var takeBack =
+        raft.getTenantRestartHandover() == TenantRestartHandover.TRANSFER_BACK
+            ? restart.handover().partitions().stream()
+                .filter(
+                    partition ->
+                        partition.outcome() == PartitionLeadershipHandover.Outcome.TRANSFERRED)
+                .map(
+                    partition -> reclaimPartition(physicalTenantId, partition.partition().number()))
+                .toList()
+            : List.<ReclaimPartition>of();
+    final var others =
+        partitions.stream()
+            .filter(
+                partition ->
+                    takeBack.stream()
+                        .noneMatch(taken -> taken.partition() == partition.partition()))
+            .toList();
+    final var caughtUp = reclaim.awaitCaughtUp(others);
+    List<PartitionReclaim> reclaimed = List.of();
+    if (!takeBack.isEmpty()) {
+      try {
+        reclaimed =
+            reclaim
+                .reclaim(takeBack)
+                .get(
+                    raft.getRebalanceLeaderWaitTimeout().plus(HANDOVER_SLACK).toMillis(),
+                    TimeUnit.MILLISECONDS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (final ExecutionException | TimeoutException e) {
+        LOG.warn(
+            "Failed to take back the leadership of physical tenant '{}' after its restart",
+            physicalTenantId,
+            e);
+      }
+    }
+    final var completed = restart.after(reclaimed, System.nanoTime());
+    lastRestarts.put(physicalTenantId, completed);
+    caughtUp.thenAccept(
+        watched ->
+            lastRestarts.computeIfPresent(
+                physicalTenantId,
+                (id, current) -> current == completed ? current.after(watched) : current));
+  }
+
+  private ReclaimPartition reclaimPartition(final String physicalTenantId, final int partitionId) {
+    return new ReclaimPartition() {
+      @Override
+      public int partition() {
+        return partitionId;
+      }
+
+      @Override
+      public boolean leads() {
+        final var raftPartition = raftPartition();
+        return raftPartition != null && raftPartition.getRole() == Role.LEADER;
+      }
+
+      @Override
+      public CompletableFuture<ReplayLag> replayLag() {
+        final var partitionManager = partitionManager(physicalTenantId);
+        final var partition =
+            partitionManager == null
+                ? null
+                : partitionManager.getZeebePartitions().stream()
+                    .filter(candidate -> candidate.getPartitionId() == partitionId)
+                    .findFirst()
+                    .orElse(null);
+        if (partition == null) {
+          return CompletableFuture.failedFuture(
+              new IllegalStateException("Partition %d is not installed".formatted(partitionId)));
+        }
+        return partition
+            .replayProgress()
+            .toCompletableFuture()
+            .thenApply(
+                progress ->
+                    new ReplayLag(
+                        progress.lag(), progress.logEndPosition() - progress.snapshotPosition()));
+      }
+
+      @Override
+      public CompletableFuture<LeadershipTransferResult> requestLeadership(final Duration bound) {
+        final var raftPartition = raftPartition();
+        return raftPartition == null
+            ? CompletableFuture.completedFuture(LeadershipTransferResult.LEADER_CHANGED)
+            : raftPartition.requestLeadership(bound);
+      }
+
+      private @Nullable RaftPartition raftPartition() {
+        final var partitionManager = partitionManager(physicalTenantId);
+        return partitionManager == null ? null : partitionManager.getRaftPartition(partitionId);
+      }
+    };
+  }
+
+  private @Nullable PartitionManager partitionManager(final String physicalTenantId) {
+    final var context = broker.getBrokerContext();
+    return context == null ? null : context.getPartitionManagers().get(physicalTenantId);
   }
 
   private void stopModule(final String physicalTenantId) {
@@ -589,16 +790,42 @@ public final class PhysicalTenantLifecycleService {
    *     its checks
    * @param handover how the leadership of the tenant's partitions was handed over; no partitions if
    *     the handover is turned off
+   * @param snapshots the snapshots taken before the module stopped; none if turned off
    * @param stoppedNanos {@link System#nanoTime()} once the module stopped
    * @param startedAgainNanos {@link System#nanoTime()} once the module started again, before its
    *     partitions were installed
+   * @param afterRestart per partition, how its replica caught up after the restart and whether its
+   *     leadership was taken back; filled in once known
+   * @param completedNanos {@link System#nanoTime()} once the change completed, after the leadership
+   *     was taken back; 0 until then
    */
   public record TenantRestart(
       Instant startedAt,
       long startedNanos,
       Report handover,
+      List<PartitionSnapshot> snapshots,
       long stoppedNanos,
-      long startedAgainNanos) {
+      long startedAgainNanos,
+      List<PartitionReclaim> afterRestart,
+      long completedNanos) {
+
+    TenantRestart after(final List<PartitionReclaim> reclaimed, final long completedNanos) {
+      return new TenantRestart(
+          startedAt,
+          startedNanos,
+          handover,
+          snapshots,
+          stoppedNanos,
+          startedAgainNanos,
+          reclaimed,
+          completedNanos);
+    }
+
+    TenantRestart after(final List<PartitionReclaim> caughtUp) {
+      final var all = new ArrayList<>(afterRestart);
+      all.addAll(caughtUp);
+      return after(List.copyOf(all), completedNanos);
+    }
 
     /** Whether this member led any partition of the tenant when the restart began. */
     public boolean led() {
@@ -620,11 +847,35 @@ public final class PhysicalTenantLifecycleService {
                           + partition.took().toMillis()
                           + " ms")
               .toList();
-      return "at %s, handover %s, module down %d ms"
+      final var taken =
+          snapshots.stream()
+              .map(
+                  snapshot ->
+                      snapshot.partition()
+                          + ": "
+                          + snapshot.outcome()
+                          + " in "
+                          + snapshot.took().toMillis()
+                          + " ms")
+              .toList();
+      final var after =
+          afterRestart.stream()
+              .map(
+                  partition ->
+                      partition.partition()
+                          + ": "
+                          + partition.outcome()
+                          + " after "
+                          + partition.took().toMillis()
+                          + " ms")
+              .toList();
+      return "at %s, handover %s, snapshots %s, module down %d ms, after the restart %s"
           .formatted(
               startedAt,
               partitions.isEmpty() ? "of no partition" : String.join(", ", partitions),
-              Duration.ofNanos(startedAgainNanos - stoppedNanos).toMillis());
+              taken.isEmpty() ? "none" : String.join(", ", taken),
+              Duration.ofNanos(startedAgainNanos - stoppedNanos).toMillis(),
+              after.isEmpty() ? "nothing yet" : String.join(", ", after));
     }
   }
 

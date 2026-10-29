@@ -16,6 +16,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,9 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.rebalance.replication-timeout=30s",
         "camunda.cluster.raft.rebalance.max-transfer-attempts=5",
         "camunda.cluster.raft.rebalance.leader-wait-timeout=2m",
-        "camunda.cluster.raft.rebalance.hand-over-before-tenant-restart=false"
+        "camunda.cluster.raft.rebalance.tenant-restart-handover=transfer-away",
+        "camunda.cluster.raft.rebalance.tenant-restart-snapshot=true",
+        "camunda.cluster.raft.rebalance.tenant-restart-snapshot-timeout=3s"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -122,7 +125,9 @@ public class ClusterRaftTest {
           .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout)
           .returns(5, RaftCfg::getRebalanceMaxTransferAttempts)
           .returns(Duration.ofMinutes(2), RaftCfg::getRebalanceLeaderWaitTimeout)
-          .returns(false, RaftCfg::isHandOverBeforeTenantRestart);
+          .returns(TenantRestartHandover.TRANSFER_AWAY, RaftCfg::getTenantRestartHandover)
+          .returns(true, RaftCfg::isTenantRestartSnapshot)
+          .returns(Duration.ofSeconds(3), RaftCfg::getTenantRestartSnapshotTimeout);
     }
   }
 

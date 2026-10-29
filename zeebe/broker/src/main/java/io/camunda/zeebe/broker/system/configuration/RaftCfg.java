@@ -17,7 +17,10 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   public static final Duration DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT = Duration.ofMinutes(1);
-  public static final boolean DEFAULT_HAND_OVER_BEFORE_TENANT_RESTART = true;
+  public static final TenantRestartHandover DEFAULT_TENANT_RESTART_HANDOVER =
+      TenantRestartHandover.TRANSFER_BACK;
+  public static final boolean DEFAULT_TENANT_RESTART_SNAPSHOT = false;
+  public static final Duration DEFAULT_TENANT_RESTART_SNAPSHOT_TIMEOUT = Duration.ofSeconds(10);
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
@@ -27,7 +30,9 @@ public final class RaftCfg implements ConfigurationEntry {
   private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
   private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private Duration rebalanceLeaderWaitTimeout = DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT;
-  private boolean handOverBeforeTenantRestart = DEFAULT_HAND_OVER_BEFORE_TENANT_RESTART;
+  private TenantRestartHandover tenantRestartHandover = DEFAULT_TENANT_RESTART_HANDOVER;
+  private boolean tenantRestartSnapshot = DEFAULT_TENANT_RESTART_SNAPSHOT;
+  private Duration tenantRestartSnapshotTimeout = DEFAULT_TENANT_RESTART_SNAPSHOT_TIMEOUT;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -77,12 +82,28 @@ public final class RaftCfg implements ConfigurationEntry {
     this.rebalanceLeaderWaitTimeout = rebalanceLeaderWaitTimeout;
   }
 
-  public boolean isHandOverBeforeTenantRestart() {
-    return handOverBeforeTenantRestart;
+  public TenantRestartHandover getTenantRestartHandover() {
+    return tenantRestartHandover;
   }
 
-  public void setHandOverBeforeTenantRestart(final boolean handOverBeforeTenantRestart) {
-    this.handOverBeforeTenantRestart = handOverBeforeTenantRestart;
+  public void setTenantRestartHandover(final TenantRestartHandover tenantRestartHandover) {
+    this.tenantRestartHandover = tenantRestartHandover;
+  }
+
+  public boolean isTenantRestartSnapshot() {
+    return tenantRestartSnapshot;
+  }
+
+  public void setTenantRestartSnapshot(final boolean tenantRestartSnapshot) {
+    this.tenantRestartSnapshot = tenantRestartSnapshot;
+  }
+
+  public Duration getTenantRestartSnapshotTimeout() {
+    return tenantRestartSnapshotTimeout;
+  }
+
+  public void setTenantRestartSnapshotTimeout(final Duration tenantRestartSnapshotTimeout) {
+    this.tenantRestartSnapshotTimeout = tenantRestartSnapshotTimeout;
   }
 
   @Override
@@ -100,8 +121,12 @@ public final class RaftCfg implements ConfigurationEntry {
         + rebalanceMaxTransferAttempts
         + ", rebalanceLeaderWaitTimeout="
         + rebalanceLeaderWaitTimeout
-        + ", handOverBeforeTenantRestart="
-        + handOverBeforeTenantRestart
+        + ", tenantRestartHandover="
+        + tenantRestartHandover
+        + ", tenantRestartSnapshot="
+        + tenantRestartSnapshot
+        + ", tenantRestartSnapshotTimeout="
+        + tenantRestartSnapshotTimeout
         + '}';
   }
 
@@ -110,5 +135,18 @@ public final class RaftCfg implements ConfigurationEntry {
       this.enabled = enabled;
       this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
     }
+  }
+
+  /** What a member does with the leadership of a physical tenant's partitions it restarts. */
+  public enum TenantRestartHandover {
+    /** Restart the partitions as they are; the other replicas elect a leader for those it led. */
+    NONE,
+    /** Transfer the leadership to another replica before the restart, and leave it there. */
+    TRANSFER_AWAY,
+    /**
+     * Transfer the leadership to another replica before the restart, and ask for it back once the
+     * restarted partition caught up.
+     */
+    TRANSFER_BACK
   }
 }

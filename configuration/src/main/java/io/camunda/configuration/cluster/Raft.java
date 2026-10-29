@@ -18,6 +18,7 @@ import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.D
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.util.unit.DataSize;
@@ -495,12 +496,26 @@ public class Raft {
     private Duration leaderWaitTimeout = Duration.ofMinutes(1);
 
     /**
-     * Whether a member that restarts the module of a physical tenant first transfers the leadership
-     * of the tenant's partitions it leads to other replicas, so that the partitions keep a leader
-     * during the restart. A partition that no replica takes over within the replication timeout is
-     * restarted as without it.
+     * What a member that restarts the module of a physical tenant does with the leadership of the
+     * tenant's partitions it leads: {@code NONE} restarts them as they are, and the other replicas
+     * elect a leader; {@code TRANSFER_AWAY} first transfers the leadership to another replica and
+     * leaves it there; {@code TRANSFER_BACK} also asks for it back once the restarted partition
+     * caught up, so that the leader distribution is the same after the restart. A partition that no
+     * replica takes over within the replication timeout is restarted as with {@code NONE}.
      */
-    private boolean handOverBeforeTenantRestart = true;
+    private TenantRestartHandover tenantRestartHandover = TenantRestartHandover.TRANSFER_BACK;
+
+    /**
+     * Whether a member takes a snapshot of every partition of a physical tenant before it restarts
+     * the tenant's module, so that the restarted partitions replay less of the log.
+     */
+    private boolean tenantRestartSnapshot = false;
+
+    /**
+     * How long a member waits for the snapshots before a tenant restart; the restart goes ahead
+     * without them after it.
+     */
+    private Duration tenantRestartSnapshotTimeout = Duration.ofSeconds(10);
 
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
@@ -538,12 +553,31 @@ public class Raft {
       this.maxTransferAttempts = maxTransferAttempts;
     }
 
-    public boolean isHandOverBeforeTenantRestart() {
-      return handOverBeforeTenantRestart;
+    public TenantRestartHandover getTenantRestartHandover() {
+      return tenantRestartHandover;
     }
 
-    public void setHandOverBeforeTenantRestart(final boolean handOverBeforeTenantRestart) {
-      this.handOverBeforeTenantRestart = handOverBeforeTenantRestart;
+    public void setTenantRestartHandover(final TenantRestartHandover tenantRestartHandover) {
+      this.tenantRestartHandover = tenantRestartHandover;
+    }
+
+    public boolean isTenantRestartSnapshot() {
+      return tenantRestartSnapshot;
+    }
+
+    public void setTenantRestartSnapshot(final boolean tenantRestartSnapshot) {
+      this.tenantRestartSnapshot = tenantRestartSnapshot;
+    }
+
+    public Duration getTenantRestartSnapshotTimeout() {
+      return tenantRestartSnapshotTimeout;
+    }
+
+    public void setTenantRestartSnapshotTimeout(final Duration tenantRestartSnapshotTimeout) {
+      if (tenantRestartSnapshotTimeout == null || tenantRestartSnapshotTimeout.isNegative()) {
+        throw new IllegalArgumentException("tenantRestartSnapshotTimeout must be non-negative");
+      }
+      this.tenantRestartSnapshotTimeout = tenantRestartSnapshotTimeout;
     }
 
     public Duration getLeaderWaitTimeout() {

@@ -707,7 +707,15 @@ public class BrokerBasedPropertiesOverride {
     override
         .getCluster()
         .getRaft()
-        .setHandOverBeforeTenantRestart(raft.getRebalance().isHandOverBeforeTenantRestart());
+        .setTenantRestartHandover(raft.getRebalance().getTenantRestartHandover());
+    override
+        .getCluster()
+        .getRaft()
+        .setTenantRestartSnapshot(raft.getRebalance().isTenantRestartSnapshot());
+    override
+        .getCluster()
+        .getRaft()
+        .setTenantRestartSnapshotTimeout(raft.getRebalance().getTenantRestartSnapshotTimeout());
     override
         .getExperimental()
         .getRaft()
