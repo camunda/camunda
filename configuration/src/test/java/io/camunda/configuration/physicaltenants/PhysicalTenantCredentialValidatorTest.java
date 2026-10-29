@@ -84,6 +84,43 @@ final class PhysicalTenantCredentialValidatorTest {
   }
 
   @Test
+  void shouldLeaveAConfigurationThatDoesNotResolveToTheBootValidations() {
+    // given
+    final var validator =
+        new PhysicalTenantCredentialValidator(
+            (id, subtree) -> {
+              throw new IllegalStateException("security.authentication.method may not be set");
+            });
+
+    // when
+    final var violations =
+        validator.validate(
+            PhysicalTenantConfigChange.create(
+                "tenantf", Map.of(PASSWORD, "camunda.secrets.tenantf-password")));
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  void shouldRejectALiteralCredentialOfAConfigurationThatDoesNotResolve() {
+    // given
+    final var validator =
+        new PhysicalTenantCredentialValidator(
+            (id, subtree) -> {
+              throw new IllegalStateException("security.authentication.method may not be set");
+            });
+
+    // when
+    final var violations =
+        validator.validate(
+            PhysicalTenantConfigChange.create("tenantg", Map.of(PASSWORD, "s3cr3t")));
+
+    // then
+    assertThat(violations).singleElement().asString().contains(PASSWORD).doesNotContain("s3cr3t");
+  }
+
+  @Test
   void shouldAcceptAConfigurationWithoutCredentials() {
     // given
     final var validator = new PhysicalTenantCredentialValidator((id, subtree) -> new Camunda());

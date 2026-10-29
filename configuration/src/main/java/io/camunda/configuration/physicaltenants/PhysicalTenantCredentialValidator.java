@@ -54,15 +54,14 @@ public final class PhysicalTenantCredentialValidator implements PhysicalTenantCo
     }
     try {
       PhysicalTenantCredentialGuard.validate(
-          change.physicalTenantId(), proposed, hasInternalConfigStore(change, proposed));
+          change.physicalTenantId(), proposed, hasInternalConfigStore(change));
       return List.of();
     } catch (final UnifiedConfigurationException e) {
       return List.of(String.valueOf(e.getMessage()));
     }
   }
 
-  private boolean hasInternalConfigStore(
-      final PhysicalTenantConfigChange change, final Camunda proposed) {
+  private boolean hasInternalConfigStore(final PhysicalTenantConfigChange change) {
     try {
       return effectiveConfiguration
           .apply(change.physicalTenantId(), change.proposed())
@@ -70,8 +69,9 @@ public final class PhysicalTenantCredentialValidator implements PhysicalTenantCo
           .getStores()
           .hasInternalConfig();
     } catch (final RuntimeException e) {
-      // the boot validations that follow report why the configuration does not resolve
-      return proposed.getSecrets().getStores().hasInternalConfig();
+      // the boot validations that follow reject the change and report why it does not resolve; a
+      // literal is still reported here, but a reference is not blamed on a store that may exist
+      return true;
     }
   }
 
