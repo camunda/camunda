@@ -35,7 +35,7 @@ function listenersQuery({
 						processInstanceKey,
 						elementId: elementId ?? undefined,
 						elementInstanceKey: elementInstanceKey ?? undefined,
-						kind: kind ?? {$in: ['EXECUTION_LISTENER', 'TASK_LISTENER']},
+						kind: kind ?? {$in: ['BPMN_ELEMENT', 'EXECUTION_LISTENER', 'TASK_LISTENER']},
 					},
 					page: {limit: LISTENERS_PAGE_SIZE, from: pageParam},
 				}),
