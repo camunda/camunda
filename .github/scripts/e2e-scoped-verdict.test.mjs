@@ -165,6 +165,74 @@ test('a case skipped in one project of two fails', () => {
   assert.strictEqual(r.status, 1);
 });
 
+// The third door into the hole above. test.fail() inverts the expectation, so
+// a test that fails reports status 'expected' -- green to anything reading
+// status alone, and the test IS in the report, so the "selected nothing"
+// check does not fire either. A coverage plan has no way to say "this is
+// expected to be broken", so an inverted expectation on a generated case is
+// never the plan's intent.
+// A real test.skip() also carries expectedStatus 'skipped', so the
+// expectedStatus guard in e2e-scoped-verdict.mjs must leave this one to the
+// skip check below it. The older skip fixtures omit expectedStatus, which is
+// why they do not pin this.
+test('a skipped case is reported as skipped, not as expected to fail', () => {
+  const r = runVerdict(
+    {
+      suites: [
+        {
+          specs: [
+            {
+              title: 'AL-UI-01: skipped',
+              ok: true,
+              tests: [{status: 'skipped', expectedStatus: 'skipped'}],
+            },
+          ],
+        },
+      ],
+    },
+    'AL-UI-01',
+  );
+  assert.strictEqual(r.status, 1);
+  assert.match(r.stderr, /skipped/);
+  assert.doesNotMatch(r.stderr, /expected to fail/);
+});
+
+test('a case marked test.fail() is not a pass', () => {
+  const r = runVerdict(
+    {
+      suites: [
+        {
+          specs: [
+            {
+              title: 'AL-UI-01: inverted',
+              ok: true,
+              tests: [{status: 'expected', expectedStatus: 'failed'}],
+            },
+          ],
+        },
+      ],
+    },
+    'AL-UI-01',
+  );
+  assert.strictEqual(r.status, 1);
+  assert.match(r.stderr, /expected to fail/);
+});
+
+// expectedStatus is absent from older reports and present as 'passed' in
+// current ones; neither may be read as an inverted expectation.
+test('an ordinary pass is unaffected by the expectedStatus check', () => {
+  for (const tests of [
+    [{status: 'expected'}],
+    [{status: 'expected', expectedStatus: 'passed'}],
+  ]) {
+    const r = runVerdict(
+      {suites: [{specs: [{title: 'AL-UI-01: fine', ok: true, tests}]}]},
+      'AL-UI-01',
+    );
+    assert.strictEqual(r.status, 0, JSON.stringify(tests));
+  }
+});
+
 test('a malformed report is an error, not a verdict', () => {
   const r = runVerdict('{ not json', 'AL-UI-01');
   assert.strictEqual(r.status, 2);
