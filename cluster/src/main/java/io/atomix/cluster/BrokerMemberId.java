@@ -7,7 +7,6 @@
  */
 package io.atomix.cluster;
 
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -34,7 +33,6 @@ public record BrokerMemberId(MemberId memberId) {
     return new BrokerMemberId(memberId);
   }
 
-  @VisibleForTesting
   public static BrokerMemberId from(final int nodeIdx) {
     return from(null, nodeIdx);
   }

@@ -23,6 +23,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
@@ -51,5 +56,18 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <!-- Keep the original ONF/Apache headers of the classes moved over from atomix. -->
+          <skipExistingHeaders>true</skipExistingHeaders>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

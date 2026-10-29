@@ -13,6 +13,7 @@ dependencies {
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-test-util"))
   implementation(libs.org.springframework.spring.context)
   implementation(libs.org.springframework.spring.core)
