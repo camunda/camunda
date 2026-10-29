@@ -33,7 +33,9 @@ import {processInstanceSearchSchema} from './processInstanceSearch';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const ELEMENT_INSTANCE_KEY = '2251799813685299';
-const BOTH_KINDS = z.object({$in: z.tuple([z.literal('EXECUTION_LISTENER'), z.literal('TASK_LISTENER')])});
+const ALL_KINDS = z.object({
+	$in: z.tuple([z.literal('BPMN_ELEMENT'), z.literal('EXECUTION_LISTENER'), z.literal('TASK_LISTENER')]),
+});
 
 afterEach(async () => {
 	await cleanup();
@@ -85,7 +87,7 @@ describe('<ListenersTab />', () => {
 					filter: z.strictObject({
 						processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
 						elementInstanceKey: z.literal(PROCESS_INSTANCE_ID),
-						kind: BOTH_KINDS,
+						kind: ALL_KINDS,
 					}),
 					page: z.strictObject({limit: z.literal(50), from: z.literal(0)}),
 				}),
@@ -144,7 +146,7 @@ describe('<ListenersTab />', () => {
 					filter: z.strictObject({
 						processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
 						elementId: z.literal('task'),
-						kind: BOTH_KINDS,
+						kind: ALL_KINDS,
 					}),
 				}),
 				successResponse: jobsResponse([createListenerJob({jobKey: '102'})]),
@@ -289,7 +291,7 @@ describe('<ListenersTab />', () => {
 		worker.use(
 			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(serviceTask)}),
 			mockQueryJobsEndpoint({
-				schema: z.object({filter: z.object({kind: BOTH_KINDS})}),
+				schema: z.object({filter: z.object({kind: ALL_KINDS})}),
 				successResponse: jobsResponse([createListenerJob({jobKey: '402'})]),
 				failureResponse: jobsResponse([]),
 			}),
