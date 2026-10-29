@@ -27,13 +27,14 @@ test.describe('Cluster API Tests', () => {
     expect(res.status()).toBe(200);
     const result = await res.json();
     assertRequiredFields(result, clusterTopologyResponseFields);
-    expect(result.brokers).toHaveLength(1);
-    assertRequiredFields(result.brokers[0], brokerResponseFields);
-    expect(result.brokers[0].partitions).toHaveLength(1);
-    assertRequiredFields(
-      result.brokers[0].partitions[0],
-      partitionsResponseFields,
-    );
+    expect(result.brokers.length).toBeGreaterThan(0);
+    for (const broker of result.brokers) {
+      assertRequiredFields(broker, brokerResponseFields);
+      expect(broker.partitions.length).toBeGreaterThan(0);
+      for (const partition of broker.partitions) {
+        assertRequiredFields(partition, partitionsResponseFields);
+      }
+    }
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {
