@@ -199,7 +199,9 @@ public final class AuthInfo implements BufferWriter {
    * i.e. {@link io.camunda.zeebe.protocol.record.Record#getAuthorizations()} and the security
    * library; use the typed accessors otherwise.
    *
-   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly.
+   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. Only if
+   * the token claims contain binary values, which decode to mutable arrays, every call returns a
+   * fresh map instead.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {

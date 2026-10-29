@@ -38,7 +38,7 @@ Some commands are triggered internally by the engine, for example follow-up comm
 
 ## Anonymous Users
 
-If the request claims indicate an anonymous user (`AUTHORIZED_ANONYMOUS_USER`), authorization checks are skipped (see `CslTenantCheck#isAnonymousCommand`). This is used for operations that don't require authentication.
+If the command's auth info indicates an anonymous user (`AUTHORIZED_ANONYMOUS_USER`), authorization checks are skipped (see `AuthInfo#isAnonymous()`). This is used for operations that don't require authentication.
 
 ## Disjunctive (OR) Authorization
 
