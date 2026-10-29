@@ -64,6 +64,8 @@
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.51.0</version.error-prone>
+    <!-- Error Prone checks beyond NullAway; the errorProne profile switches on the default error-level ones -->
+    <errorprone.checks>-XepDisableAllChecks</errorprone.checks>
     <version.nullaway>0.14.3</version.nullaway>
     <version.grpc>1.85.1</version.grpc>
     <version.gson>2.14.0</version.gson>
@@ -2415,10 +2417,10 @@
                   <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                   <!--
                     - exclude generated-sources (e.g. openapi) from nullaway checks
-                    - disable the warning-level error prone checks, keep the default error-level ones
+                    - exclude all other checks from error prone except nullaway, unless the errorProne profile is active
                     - enable nullaway only on classes/packages marked as @NullMarked
                   -->
-                  <arg>-Xplugin:ErrorProne -XepDisableAllWarnings -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
+                  <arg>-Xplugin:ErrorProne ${errorprone.checks} -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
                 </compilerArgs>
               </configuration>
             </execution>
@@ -3254,6 +3256,14 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <!-- Runs Error Prone's default error-level checks on top of NullAway; kept out of the default build to save compile time -->
+      <id>errorProne</id>
+      <properties>
+        <errorprone.checks>-XepDisableAllWarnings</errorprone.checks>
+      </properties>
     </profile>
 
     <profile>

@@ -105,8 +105,10 @@ tasks.named<JavaCompile>("compileJava") {
       "-XDaddTypeAnnotationsToSymbol=true",
     )
   )
-  options.errorprone.disableAllWarnings.set(true)
-  options.errorprone.allErrorsAsWarnings.set(true) // TEMP
+  // -PerrorProne runs the default error-level checks on top of NullAway; off by default to save compile time
+  val errorProneChecks = providers.gradleProperty("errorProne").isPresent
+  options.errorprone.disableAllChecks.set(!errorProneChecks)
+  options.errorprone.disableAllWarnings.set(errorProneChecks)
   options.errorprone.error("NullAway")
   options.errorprone.excludedPaths.set(
     ".*/build/(generated|generated-sources|generated-test-sources|tmp|classes)/.*"
