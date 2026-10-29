@@ -67,12 +67,15 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
   private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
+  static final String API_UPDATES_FILE_TENANTS =
+      "physical-tenant-rollout.api-updates-file-owned-tenants";
 
   private final PhysicalTenantLifecycleService lifecycle;
   private final PhysicalTenantConfigExecutor executor;
   private final ClusterConfigurationManagementRequestSender sender;
   private final List<PhysicalTenantConfigValidator> validators;
   private final MemberId localMemberId;
+  private final boolean apiUpdatesFileTenants;
   private final Supplier<ClusterConfigurationService> clusterConfigurationService;
   private final ScheduledExecutorService background =
       Executors.newSingleThreadScheduledExecutor(
@@ -92,6 +95,8 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     this.sender = sender;
     this.validators = List.copyOf(validators);
     this.localMemberId = localMemberId;
+    apiUpdatesFileTenants =
+        bootEnvironment.getProperty(API_UPDATES_FILE_TENANTS, Boolean.class, false);
     clusterConfigurationService = () -> broker.getBrokerContext().getClusterConfigurationService();
     final Map<String, Map<String, String>> fileSubtrees = new TreeMap<>();
     bootTenants.forEach(
@@ -144,10 +149,18 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     return get(physicalTenantId).orElseThrow();
   }
 
-  /** Replaces the whole subtree of a tenant owned by the management API. */
+  /**
+   * Replaces the whole subtree of a tenant owned by the management API. With {@value
+   * #API_UPDATES_FILE_TENANTS} set, a tenant owned by the configuration file is replaced the same
+   * way, on behalf of the file; the file sends its own version again when the coordinator restarts.
+   * A proof-of-concept knob, so that a benchmark can roll out changes of a file-owned tenant.
+   */
   public PhysicalTenantStatus update(
       final String physicalTenantId, final Map<String, String> subtree) {
-    return update(physicalTenantId, subtree, Owner.API);
+    final var fileOwned =
+        apiUpdatesFileTenants
+            && get(physicalTenantId).map(status -> status.owner() == Owner.FILE).orElse(false);
+    return update(physicalTenantId, subtree, fileOwned ? Owner.FILE : Owner.API);
   }
 
   /** Removes a tenant owned by the management API; its data stays and its id stays reserved. */
