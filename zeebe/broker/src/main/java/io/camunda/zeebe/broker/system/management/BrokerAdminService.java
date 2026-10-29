@@ -45,6 +45,13 @@ public interface BrokerAdminService {
   void takeSnapshot();
 
   /**
+   * Hands the leadership of every partition this broker leads to another replica, through a
+   * coordinated leadership transfer that the broker starts itself, without stopping anything. A
+   * rebalance moves the leadership back.
+   */
+  void handOverLeadership();
+
+  /**
    * Returns {@link PartitionStatus} of all partitions running on this broker.
    *
    * @return a map of partition id and partition status

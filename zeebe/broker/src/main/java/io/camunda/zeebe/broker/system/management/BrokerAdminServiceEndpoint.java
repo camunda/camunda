@@ -36,6 +36,7 @@ public class BrokerAdminServiceEndpoint {
     operations.put("pauseProcessing", BrokerAdminService::pauseStreamProcessing);
     operations.put("resumeProcessing", BrokerAdminService::resumeStreamProcessing);
     operations.put("takeSnapshot", BrokerAdminService::takeSnapshot);
+    operations.put("handOverLeadership", BrokerAdminService::handOverLeadership);
     operations.put("pauseExporting", BrokerAdminService::pauseExporting);
     operations.put("softPauseExporting", BrokerAdminService::softPauseExporting);
     operations.put("resumeExporting", BrokerAdminService::resumeExporting);

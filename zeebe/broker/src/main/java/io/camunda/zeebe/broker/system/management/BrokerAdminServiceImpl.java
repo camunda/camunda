@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionLeadershipHandover;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,7 @@ import org.slf4j.Logger;
 public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final Duration HANDOVER_BOUND = Duration.ofSeconds(15);
   private final Supplier<PartitionManager> partitionManager;
 
   public BrokerAdminServiceImpl(final Supplier<PartitionManager> partitionManager) {
@@ -83,6 +87,36 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   @Override
   public void takeSnapshot() {
     actor.call(this::takeSnapshotOnAllPartitions);
+  }
+
+  @Override
+  public void handOverLeadership() {
+    actor.call(this::handOverLeadershipOfAllPartitions);
+  }
+
+  private void handOverLeadershipOfAllPartitions() {
+    final var currentPartitionManager = partitionManager.get();
+    if (currentPartitionManager == null) {
+      return;
+    }
+    final var led =
+        currentPartitionManager.getRaftPartitions().stream()
+            .filter(partition -> partition.getRole() == Role.LEADER)
+            .toList();
+    if (led.isEmpty()) {
+      return;
+    }
+    final var localMember = led.getFirst().getServer().getMemberId();
+    new PartitionLeadershipHandover(localMember, HANDOVER_BOUND)
+        .handOverRaftPartitions(led, MemberId.ID_COMPARATOR)
+        .whenComplete(
+            (report, error) -> {
+              if (error != null) {
+                LOG.warn("Failed to hand over the leadership of {}", led, error);
+              } else {
+                LOG.info("Handed over the leadership on request: {}", report);
+              }
+            });
   }
 
   @Override
