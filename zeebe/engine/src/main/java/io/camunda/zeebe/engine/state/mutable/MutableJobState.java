@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 
 public interface MutableJobState extends JobState {
@@ -96,7 +97,13 @@ public interface MutableJobState extends JobState {
 
   void migrate(long key, JobRecord record);
 
-  void restoreBackoff();
+  /**
+   * Removes the {@code JOB_BACKOFF} entries that runtime could not have created: entries of missing
+   * jobs, of jobs that are not {@code FAILED} or have no retries or retry backoff, and entries
+   * whose time differs from the job's recurring time. Also removes the entries of jobs for which
+   * {@code canBackOff} returns false.
+   */
+  void removeInvalidBackoffs(LongPredicate canBackOff);
 
   /**
    * Inserts a new job record and marks it {@code ACTIVATABLE}. Callers must follow up with {@link
