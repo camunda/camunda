@@ -76,5 +76,4 @@ const translationResources: Resource = Object.entries(localeDefinitions).reduce<
 
 const getCurrentDateLocale = () => localeDefinitions[i18n.language]?.dateLocale ?? dateLocaleEnUS;
 
-export type {SelectionOption};
 export {languageItems, translationResources, getCurrentDateLocale};
