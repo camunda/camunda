@@ -18,6 +18,7 @@ import {
   jsonHeaders,
   encode,
   assertEqualsForKeys,
+  isForwardCompat,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -93,6 +94,8 @@ test.describe.serial('Get usage metrics API Tests', () => {
   });
 
   test('Get Usage Metrics Invalid Argument', async ({request}) => {
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(isForwardCompat, 'Error detail message changed in newer server');
     const invalidStartDate = 'meow';
     const invalidEndDate = 'meow';
     const expectedDetail =
