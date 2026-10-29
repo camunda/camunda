@@ -8,6 +8,7 @@
 package io.camunda.application.commons.secrets;
 
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantRegistry;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
@@ -159,17 +160,12 @@ public class SecretStoreConfiguration {
     return stores.isEmpty() ? null : new SecretStoreRegistry(Map.copyOf(stores));
   }
 
-  @Bean
-  public SecretRefreshHealthIndicator physicalTenantSecretRefreshHealthIndicator() {
-    return new SecretRefreshHealthIndicator();
-  }
-
   /** Refreshes the configuration references of each physical tenant at its refresh interval. */
   @Bean
   public InternalConfigRefreshers internalConfigRefreshers(
       final PhysicalTenantResolver resolver,
       final InternalConfigSecrets internalConfigSecrets,
-      final SecretRefreshHealth health) {
+      final PhysicalTenantRegistry registry) {
     final Map<String, Duration> intervals = new LinkedHashMap<>();
     resolver
         .mapValues(Camunda::getSecrets)
@@ -182,7 +178,7 @@ public class SecretStoreConfiguration {
                     "Physical tenant '" + tenantId + "' has an invalid " + e.getMessage(), e);
               }
             });
-    return InternalConfigRefreshers.of(internalConfigSecrets, intervals, health);
+    return InternalConfigRefreshers.of(internalConfigSecrets, intervals, registry);
   }
 
   static SecretStoreRegistry buildRegistry(

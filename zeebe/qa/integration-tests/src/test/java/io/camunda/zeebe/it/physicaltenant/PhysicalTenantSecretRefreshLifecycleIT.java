@@ -9,6 +9,8 @@ package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.secrets.InternalConfigRefresher;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
@@ -18,6 +20,10 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -26,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +47,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class PhysicalTenantSecretRefreshLifecycleIT {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  private static final ObjectMapper JSON = new ObjectMapper();
   private static final String SECRET = "db-password";
   private static final Map<String, String> CONFIGURED =
       Map.of("password", "camunda.secrets." + SECRET);
@@ -130,6 +138,55 @@ final class PhysicalTenantSecretRefreshLifecycleIT {
         .until(() -> consumer.applied.isEmpty());
   }
 
+  @Test
+  void shouldReportAFailedRefreshOnlyInTheTenantsOwnHealth() throws Exception {
+    // given
+    final var tenantId = uniqueTenantId();
+    lifecycle().add(tenantId, tenantConfiguration(Duration.ofMillis(50)));
+    awaitTenantHealth(tenantId, "UP");
+    final var consumer = new RecordingConsumer();
+    consumer.fail = true;
+    refresherOf(tenantId).register(consumer, Map.of("password", "initial"));
+
+    // when
+    writeSecret("rotated-but-rejected");
+
+    // then
+    final var degraded = awaitTenantHealth(tenantId, "DEGRADED");
+    assertThat(degraded.at("/details/detail").asText())
+        .contains("recording", "cannot connect")
+        .doesNotContain("rotated-but-rejected");
+    assertThat(get("health", "liveness").statusCode()).isEqualTo(200);
+    assertThat(get("health", "readiness").statusCode()).isEqualTo(200);
+    assertThat(JSON.readTree(get("health", "readiness").body()).path("status").asText())
+        .isEqualTo("UP");
+
+    // when
+    consumer.fail = false;
+
+    // then
+    awaitTenantHealth(tenantId, "UP");
+  }
+
+  private JsonNode awaitTenantHealth(final String tenantId, final String status) {
+    final var health = new AtomicReference<JsonNode>();
+    Awaitility.await("physical tenant '%s' reports %s".formatted(tenantId, status))
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () -> {
+              health.set(JSON.readTree(get("health", "physicalTenants", tenantId).body()));
+              assertThat(health.get().path("status").asText()).isEqualTo(status);
+            });
+    return health.get();
+  }
+
+  private HttpResponse<String> get(final String... path) throws Exception {
+    try (final var http = HttpClient.newHttpClient()) {
+      return http.send(
+          HttpRequest.newBuilder(broker.actuatorUri(path)).GET().build(), BodyHandlers.ofString());
+    }
+  }
+
   private InternalConfigRefresher refresherOf(final String tenantId) {
     return refreshers().forPhysicalTenant(tenantId).orElseThrow();
   }
@@ -169,6 +226,7 @@ final class PhysicalTenantSecretRefreshLifecycleIT {
 
     private final List<Map<String, String>> applied = new CopyOnWriteArrayList<>();
     private volatile boolean closed;
+    private volatile boolean fail;
 
     @Override
     public String name() {
@@ -182,6 +240,9 @@ final class PhysicalTenantSecretRefreshLifecycleIT {
 
     @Override
     public void apply(final Map<String, String> resolved) {
+      if (fail) {
+        throw new IllegalStateException("cannot connect");
+      }
       applied.add(resolved);
     }
 

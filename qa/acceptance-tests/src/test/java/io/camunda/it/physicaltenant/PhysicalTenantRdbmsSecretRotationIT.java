@@ -180,13 +180,17 @@ final class PhysicalTenantRdbmsSecretRotationIT {
           .atMost(AWAIT)
           .untilAsserted(
               () -> {
-                final var health = secretRefreshHealth();
-                assertThat(health.path("status").asText()).isEqualTo("DEGRADED");
-                assertThat(health.at("/details/" + WRONG + "/status").asText())
+                final var health = physicalTenantsHealth();
+                assertThat(health.at("/components/" + WRONG + "/status").asText())
                     .isEqualTo("DEGRADED");
-                assertThat(health.at("/details/" + DEFAULT + "/status").asText()).isEqualTo("UP");
+                assertThat(health.at("/components/" + WRONG + "/details/detail").asText())
+                    .contains("rdbms");
+                assertThat(health.at("/components/" + DEFAULT + "/status").asText())
+                    .isEqualTo("UP");
                 assertThat(health.toString()).doesNotContain("not-the-password");
               });
+      assertThat(probe("liveness")).isEqualTo(200);
+      assertThat(probe("readiness")).isEqualTo(200);
       assertThat(pool(WRONG)).isSameAs(poolBefore);
       assertThat(poolBefore.getUsername()).isEqualTo(roleOf(WRONG));
       awaitExported(
@@ -340,15 +344,19 @@ final class PhysicalTenantRdbmsSecretRotationIT {
     return BROKER.bean(RdbmsDataSources.class).dataSourceFor(tenant).unwrap(HikariDataSource.class);
   }
 
-  private JsonNode secretRefreshHealth() throws IOException, InterruptedException {
+  private JsonNode physicalTenantsHealth() throws IOException, InterruptedException {
     final var response =
         HTTP.send(
-            HttpRequest.newBuilder(BROKER.actuatorUri("health")).GET().build(),
+            HttpRequest.newBuilder(BROKER.actuatorUri("health", "physicalTenants")).GET().build(),
             BodyHandlers.ofString());
-    return OBJECT_MAPPER
-        .readTree(response.body())
-        .path("components")
-        .path("physicalTenantSecretRefresh");
+    return OBJECT_MAPPER.readTree(response.body());
+  }
+
+  private int probe(final String group) throws IOException, InterruptedException {
+    return HTTP.send(
+            HttpRequest.newBuilder(BROKER.actuatorUri("health", group)).GET().build(),
+            BodyHandlers.ofString())
+        .statusCode();
   }
 
   private static int sessionCount(final String user) {

@@ -8,7 +8,10 @@
 package io.camunda.application.commons.secrets;
 
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
+import io.camunda.cluster.PhysicalTenantRegistry;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -36,20 +39,20 @@ public final class InternalConfigRefreshers implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(InternalConfigRefreshers.class);
 
   private final Map<String, Tenant> byPhysicalTenant = new ConcurrentHashMap<>();
-  private final SecretRefreshHealth health;
+  private final PhysicalTenantRegistry registry;
   private final ScheduledExecutorService scheduler =
       Executors.newSingleThreadScheduledExecutor(
           Thread.ofPlatform().name("internal-config-refresh").daemon().factory());
 
-  private InternalConfigRefreshers(final SecretRefreshHealth health) {
-    this.health = health;
+  private InternalConfigRefreshers(final PhysicalTenantRegistry registry) {
+    this.registry = registry;
   }
 
   public static InternalConfigRefreshers of(
       final InternalConfigSecrets secrets,
       final Map<String, Duration> intervals,
-      final SecretRefreshHealth health) {
-    final var refreshers = new InternalConfigRefreshers(health);
+      final PhysicalTenantRegistry registry) {
+    final var refreshers = new InternalConfigRefreshers(registry);
     intervals.forEach(
         (tenantId, interval) ->
             refreshers.start(
@@ -59,7 +62,7 @@ public final class InternalConfigRefreshers implements AutoCloseable {
 
   /** No tenant refreshes, for an application that does not build the internal-config stores. */
   public static InternalConfigRefreshers none() {
-    return new InternalConfigRefreshers(SecretRefreshHealth.IGNORED);
+    return new InternalConfigRefreshers(new DefaultPhysicalTenantRegistry(List.of()));
   }
 
   public Optional<InternalConfigRefresher> forPhysicalTenant(final String physicalTenantId) {
@@ -81,7 +84,7 @@ public final class InternalConfigRefreshers implements AutoCloseable {
           final var previous = byPhysicalTenant.get(physicalTenantId);
           final InternalConfigRefresher refresher;
           if (previous == null) {
-            refresher = new InternalConfigRefresher(store.value(), health);
+            refresher = new InternalConfigRefresher(store.value(), registry);
           } else {
             previous.schedule().cancel(false);
             refresher = previous.refresher();

@@ -10,6 +10,10 @@ package io.camunda.application.commons.secrets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores.Owned;
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
+import io.camunda.cluster.PhysicalTenant;
+import io.camunda.cluster.PhysicalTenantHealth;
+import io.camunda.cluster.PhysicalTenantHealth.State;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -30,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.health.contributor.Status;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -44,7 +47,7 @@ final class InternalConfigRefresherTest {
   @AutoClose private InternalConfigSecrets secrets;
 
   private Path internal;
-  private SecretRefreshHealthIndicator health;
+  private DefaultPhysicalTenantRegistry registry;
   private InternalConfigRefresher refresher;
 
   @BeforeEach
@@ -60,8 +63,10 @@ final class InternalConfigRefresherTest {
                         "camunda.secrets.stores.file.default.path", jobs.toString(),
                         "camunda.secrets.stores.file.default.internal-config.path",
                             internal.toString())));
-    health = new SecretRefreshHealthIndicator();
-    refresher = new InternalConfigRefresher(secrets.forPhysicalTenant(DEFAULT), health);
+    registry =
+        new DefaultPhysicalTenantRegistry(List.of(PhysicalTenant.newIncarnation(DEFAULT, null)));
+    registry.reportHealth(DEFAULT, PhysicalTenantHealth.of(State.HEALTHY));
+    refresher = new InternalConfigRefresher(secrets.forPhysicalTenant(DEFAULT), registry);
   }
 
   @Test
@@ -76,7 +81,7 @@ final class InternalConfigRefresherTest {
 
     // then
     assertThat(consumer.applied).containsExactly(Map.of("password", "new"));
-    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.HEALTHY);
   }
 
   @Test
@@ -104,9 +109,9 @@ final class InternalConfigRefresherTest {
     refresher.refresh();
 
     // then
-    assertThat(health.health().getStatus().getCode()).isEqualTo("DEGRADED");
-    assertThat(health.health().getDetails()).containsKey(DEFAULT);
-    assertThat(health.health().getDetails().toString()).doesNotContain("new");
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.DEGRADED);
+    assertThat(healthOf(DEFAULT).detail()).contains("recording", "cannot connect");
+    assertThat(healthOf(DEFAULT).detail()).doesNotContain("new");
 
     // when
     consumer.fail = false;
@@ -114,7 +119,39 @@ final class InternalConfigRefresherTest {
 
     // then
     assertThat(consumer.applied).hasSize(2).last().isEqualTo(Map.of("password", "new"));
-    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.HEALTHY);
+  }
+
+  @Test
+  void shouldLeaveATenantThatIsNotServingToItsLifecycle() throws IOException {
+    // given
+    final var consumer = new RecordingConsumer();
+    consumer.fail = true;
+    refresher.register(consumer, Map.of("password", "old"));
+    Files.writeString(internal.resolve("db-password"), "new");
+    final var restarting = new PhysicalTenantHealth(State.RESTARTING, "applying a change");
+    registry.reportHealth(DEFAULT, restarting);
+
+    // when
+    refresher.refresh();
+
+    // then
+    assertThat(healthOf(DEFAULT)).isEqualTo(restarting);
+  }
+
+  @Test
+  void shouldNotClearADegradedHealthThatAnotherComponentReported() throws IOException {
+    // given
+    final var consumer = new RecordingConsumer();
+    refresher.register(consumer, Map.of("password", "old"));
+    final var degraded = new PhysicalTenantHealth(State.DEGRADED, "config version 3 not applied");
+    registry.reportHealth(DEFAULT, degraded);
+
+    // when
+    refresher.refresh();
+
+    // then
+    assertThat(healthOf(DEFAULT)).isEqualTo(degraded);
   }
 
   @Test
@@ -129,7 +166,7 @@ final class InternalConfigRefresherTest {
 
     // then
     assertThat(consumer.applied).isEmpty();
-    assertThat(health.health().getStatus().getCode()).isEqualTo("DEGRADED");
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.DEGRADED);
   }
 
   @Test
@@ -143,7 +180,7 @@ final class InternalConfigRefresherTest {
 
     // then
     assertThat(consumer.applied).isEmpty();
-    assertThat(health.health().getDetails()).isEmpty();
+    assertThat(healthOf(DEFAULT)).isEqualTo(PhysicalTenantHealth.of(State.HEALTHY));
   }
 
   @Test
@@ -151,7 +188,7 @@ final class InternalConfigRefresherTest {
     // given
     final var consumer = new RecordingConsumer();
     try (final var refreshers =
-        InternalConfigRefreshers.of(secrets, Map.of(DEFAULT, Duration.ofMillis(50)), health)) {
+        InternalConfigRefreshers.of(secrets, Map.of(DEFAULT, Duration.ofMillis(50)), registry)) {
       refreshers
           .forPhysicalTenant(DEFAULT)
           .orElseThrow()
@@ -172,7 +209,7 @@ final class InternalConfigRefresherTest {
     final var addedStore = Files.createDirectory(root.resolve("added"));
     Files.writeString(addedStore.resolve("db-password"), "old");
     final var consumer = new RecordingConsumer();
-    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), registry)) {
 
       // when
       refreshers.start("added", internalConfigStore("added", addedStore), Duration.ofMillis(50));
@@ -197,7 +234,7 @@ final class InternalConfigRefresherTest {
     Files.writeString(secondStore.resolve("db-password"), "old");
     final var consumer = new RecordingConsumer();
     final var released = new AtomicBoolean();
-    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), registry)) {
       final var first = internalConfigStore("replaced", firstStore);
       refreshers.start(
           "replaced", new Owned<>(first.value(), () -> released.set(true)), Duration.ofHours(1));
@@ -224,7 +261,7 @@ final class InternalConfigRefresherTest {
     Files.writeString(removedStore.resolve("db-password"), "old");
     final var consumer = new RecordingConsumer();
     final var released = new AtomicBoolean();
-    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), health)) {
+    try (final var refreshers = InternalConfigRefreshers.of(secrets, Map.of(), registry)) {
       final var store = internalConfigStore("removed", removedStore);
       refreshers.start(
           "removed", new Owned<>(store.value(), () -> released.set(true)), Duration.ofMillis(20));
@@ -307,5 +344,9 @@ final class InternalConfigRefresherTest {
     public void close() {
       closed = true;
     }
+  }
+
+  private PhysicalTenantHealth healthOf(final String physicalTenantId) {
+    return registry.health(physicalTenantId).orElseThrow();
   }
 }

@@ -11,11 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.zaxxer.hikari.HikariDataSource;
-import io.camunda.application.commons.pt.LazyPhysicalTenantResource.State;
+import io.camunda.application.commons.pt.LazyPhysicalTenantResource;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.application.commons.secrets.InternalConfigSecrets;
-import io.camunda.application.commons.secrets.SecretRefreshHealthIndicator;
 import io.camunda.application.commons.secrets.SecretStoreConfiguration;
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
+import io.camunda.cluster.PhysicalTenant;
+import io.camunda.cluster.PhysicalTenantHealth;
+import io.camunda.cluster.PhysicalTenantHealth.State;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.data.secondarystorage.Rdbms;
@@ -27,6 +30,7 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -36,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.health.contributor.Status;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -56,7 +59,7 @@ final class RdbmsDataSourcesRefreshTest {
   private String firstUrl;
   private String secondUrl;
   private InternalConfigSecrets secrets;
-  private SecretRefreshHealthIndicator health;
+  private DefaultPhysicalTenantRegistry registry;
   private InternalConfigRefreshers refreshers;
   private RdbmsDataSources dataSources;
 
@@ -78,8 +81,11 @@ final class RdbmsDataSourcesRefreshTest {
                         "camunda.secrets.stores.file.default.path", jobs.toString(),
                         "camunda.secrets.stores.file.default.internal-config.path",
                             internal.toString())));
-    health = new SecretRefreshHealthIndicator();
-    refreshers = InternalConfigRefreshers.of(secrets, Map.of(DEFAULT, Duration.ofHours(1)), health);
+    registry =
+        new DefaultPhysicalTenantRegistry(List.of(PhysicalTenant.newIncarnation(DEFAULT, null)));
+    registry.reportHealth(DEFAULT, PhysicalTenantHealth.of(State.HEALTHY));
+    refreshers =
+        InternalConfigRefreshers.of(secrets, Map.of(DEFAULT, Duration.ofHours(1)), registry);
 
     final var rdbms = new Rdbms();
     rdbms.setUrl("camunda.secrets.db-url");
@@ -124,7 +130,7 @@ final class RdbmsDataSourcesRefreshTest {
     assertThat(databaseNameOf(dataSource)).isEqualTo("FIRST");
     assertThat(held.isValid(1)).isTrue();
     held.close();
-    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.HEALTHY);
   }
 
   @Test
@@ -138,8 +144,8 @@ final class RdbmsDataSourcesRefreshTest {
     refresh();
 
     // then
-    assertThat(health.health().getStatus().getCode()).isEqualTo("DEGRADED");
-    assertThat(health.health().getDetails().toString()).doesNotContain("wrong");
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.DEGRADED);
+    assertThat(healthOf(DEFAULT).detail()).doesNotContain("wrong");
     assertThat(dataSource.unwrap(HikariDataSource.class)).isSameAs(pool);
     assertThat(databaseNameOf(dataSource)).isEqualTo("FIRST");
   }
@@ -160,7 +166,7 @@ final class RdbmsDataSourcesRefreshTest {
     assertThat(newPool.getPoolName()).isEqualTo("camunda-rdbms-default-1");
     assertThat(oldPool.isClosed()).isTrue();
     assertThat(databaseNameOf(dataSource)).isEqualTo("SECOND");
-    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.HEALTHY);
   }
 
   @Test
@@ -177,7 +183,7 @@ final class RdbmsDataSourcesRefreshTest {
     assertThat(dataSource.unwrap(HikariDataSource.class)).isSameAs(oldPool);
     assertThat(oldPool.isClosed()).isFalse();
     assertThat(databaseNameOf(dataSource)).isEqualTo("FIRST");
-    assertThat(health.health().getStatus().getCode()).isEqualTo("DEGRADED");
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.DEGRADED);
   }
 
   @Test
@@ -192,7 +198,7 @@ final class RdbmsDataSourcesRefreshTest {
 
     // then
     assertThat(dataSource.unwrap(HikariDataSource.class)).isSameAs(oldPool);
-    assertThat(health.health().getDetails().toString()).contains("from a h2 database");
+    assertThat(healthOf(DEFAULT).detail()).contains("from a h2 database");
   }
 
   @Test
@@ -204,9 +210,10 @@ final class RdbmsDataSourcesRefreshTest {
     refresh();
 
     // then
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+    assertThat(dataSources.poolState(DEFAULT))
+        .isEqualTo(LazyPhysicalTenantResource.State.NOT_CREATED);
     assertThat(dataSources.isPoolStarted(DEFAULT)).isFalse();
-    assertThat(health.health().getStatus()).isEqualTo(Status.UP);
+    assertThat(healthOf(DEFAULT).state()).isEqualTo(State.HEALTHY);
     final var dataSource = dataSources.dataSourceFor(DEFAULT);
     assertThat(databaseNameOf(dataSource)).isEqualTo("SECOND");
     assertThat(dataSource.unwrap(HikariDataSource.class).getPoolName())
@@ -223,7 +230,8 @@ final class RdbmsDataSourcesRefreshTest {
     refresh();
 
     // then
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+    assertThat(dataSources.poolState(DEFAULT))
+        .isEqualTo(LazyPhysicalTenantResource.State.NOT_CREATED);
     assertThat(databaseNameOf(dataSources.dataSourceFor(DEFAULT))).isEqualTo("FIRST");
   }
 
@@ -238,7 +246,8 @@ final class RdbmsDataSourcesRefreshTest {
 
     // then
     assertThat(database).isEqualTo("SECOND");
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.NOT_CREATED);
+    assertThat(dataSources.poolState(DEFAULT))
+        .isEqualTo(LazyPhysicalTenantResource.State.NOT_CREATED);
   }
 
   @Test
@@ -251,7 +260,7 @@ final class RdbmsDataSourcesRefreshTest {
     dataSources.close();
 
     // then
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(LazyPhysicalTenantResource.State.CLOSED);
     assertThatThrownBy(() -> dataSources.dataSourceFor(DEFAULT).getConnection())
         .isInstanceOf(IllegalStateException.class);
   }
@@ -267,7 +276,7 @@ final class RdbmsDataSourcesRefreshTest {
 
     // then
     assertThat(pool.isClosed()).isTrue();
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(LazyPhysicalTenantResource.State.CLOSED);
   }
 
   @Test
@@ -298,7 +307,7 @@ final class RdbmsDataSourcesRefreshTest {
 
     // then
     assertThat(pool.isClosed()).isTrue();
-    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(State.CLOSED);
+    assertThat(dataSources.poolState(DEFAULT)).isEqualTo(LazyPhysicalTenantResource.State.CLOSED);
     assertThat(refreshers.forPhysicalTenant(DEFAULT)).isEmpty();
   }
 
@@ -351,5 +360,9 @@ final class RdbmsDataSourcesRefreshTest {
     final var camunda = new Camunda();
     Binder.get(env).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
     return PhysicalTenantResolver.of(env, camunda);
+  }
+
+  private PhysicalTenantHealth healthOf(final String physicalTenantId) {
+    return registry.health(physicalTenantId).orElseThrow();
   }
 }
