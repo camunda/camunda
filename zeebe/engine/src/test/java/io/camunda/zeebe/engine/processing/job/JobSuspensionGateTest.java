@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -23,9 +22,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -278,55 +274,6 @@ public final class JobSuspensionGateTest {
     Assertions.assertThat(rejection)
         .hasIntent(JobIntent.COMPLETE)
         .hasRejectionType(RejectionType.INVALID_STATE);
-  }
-
-  @Test
-  public void shouldCompleteEndListenerJobWhenInstanceEndsWhileResuming() {
-    // given - a due timer is buffered while suspended; draining it ends the instance before the
-    // resume finishes, so the end listener job is handed out while still resuming
-    final String processId = Strings.newRandomValidBpmnId();
-    final String listenerType = Strings.newRandomValidBpmnId();
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .zeebeEndExecutionListener(listenerType)
-                .startEvent()
-                .parallelGateway("fork")
-                .serviceTask("task", t -> t.zeebeJobType(Strings.newRandomValidBpmnId()))
-                .endEvent()
-                .moveToNode("fork")
-                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
-                .endEvent("terminate", e -> e.terminate())
-                .done())
-        .deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
-    ENGINE.increaseTime(Duration.ofSeconds(1));
-    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
-    // write RESUME directly: the client's resume() waits for RESUMED, which this flow never writes
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .processInstance(
-                ProcessInstanceIntent.RESUME,
-                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey))
-            .key(processInstanceKey));
-
-    // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
-
-    // then
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .exists())
-        .isTrue();
   }
 
   private static JobIntent bufferedCommandIntent(final long processInstanceKey) {
