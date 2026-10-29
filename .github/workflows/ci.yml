@@ -2852,6 +2852,7 @@ jobs:
           !github.event.pull_request.head.repo.fork &&
           (failure() || steps.check.outputs.status == 'breaking')
         id: slack-secrets
+        continue-on-error: true
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -2865,7 +2866,9 @@ jobs:
       - name: Notify Slack on breaking changes or failure
         if: >-
           !github.event.pull_request.head.repo.fork &&
-          (failure() || steps.check.outputs.status == 'breaking')
+          (failure() || steps.check.outputs.status == 'breaking') &&
+          steps.slack-secrets.outcome == 'success'
+        continue-on-error: true
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
