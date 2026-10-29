@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Reads DRG ids, which are customer data. Never read its output: hash it with
+     scripts/hash_ids.sh (references/privacy.md). Run it after the starter pack.
+     It reads the id through the parent's outbound references, so a truncated dump gives an
+     empty value instead of killing the report (references/queries.md). -->
+<section name="Raw DRG ids" xmlns="http://www.eclipse.org/mat/report.xsd">
+  <param key="filename_suffix" value="raw_ids" />
+  <param key="format" value="csv" />
+  <param key="limit" value="10000000" />
+
+  <query name="raw_drg_ids">
+    <command>oql "SELECT eval((SELECT toString(s) AS v FROM OBJECTS (SELECT OBJECTS o FROM OBJECTS (SELECT OBJECTS outbounds(r) FROM OBJECTS (d.parsedDecisionRequirements) r) o) s WHERE s.@objectAddress = d.parsedDecisionRequirements.getField(\"decisionRequirementsId\").getValue().getObjectAddress()))[0].v AS drgId FROM io.camunda.zeebe.engine.state.deployment.DeployedDrg d"</command>
+  </query>
+</section>

@@ -51,6 +51,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
 | `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
+| `heap-dump-analysis`           | Analyze broker heap dumps (.hprof) with headless MAT: heap fill, owners per component and partition, no PII   |
 | `new-k6-load-test`             | Add or extend a k6 load test in the `load-test-setup` chart (`load-tests/setup/charts/load-test-setup/k6/`)     |
 | `github-permalink`             | Build a stable GitHub permalink to repo code lines for issues, PR descriptions, and review comments            |
 | `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps)                  |
