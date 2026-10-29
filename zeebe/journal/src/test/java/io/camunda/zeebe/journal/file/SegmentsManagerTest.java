@@ -17,9 +17,13 @@ import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -319,6 +323,42 @@ class SegmentsManagerTest {
       // hold records appended after the flush already flushed the previous segment
       assertThat(tailSegments.keySet()).containsExactly(1L);
       assertThat(segmentsManager.getTailSegments(1).keySet()).containsExactly(1L, 2L);
+    }
+  }
+
+  @Test
+  void shouldNotReturnSegmentsStartingAfterIndexWhileRollingOver() {
+    // given - two records per segment, so the current segment has an index after its first one
+    final var factory = new TestJournalFactory("test", 2);
+    segments = factory.segmentsManager(directory);
+    try (final var journal = factory.journal(segments)) {
+      journal.append(factory.entry());
+      final var done = new AtomicBoolean();
+      final var violation = new AtomicReference<String>();
+      final var lookups =
+          CompletableFuture.runAsync(
+              () -> {
+                while (!done.get() && violation.get() == null) {
+                  final long index =
+                      Objects.requireNonNull(segments.getCurrentSegment()).index() + 1;
+                  final var tailSegments = segments.getTailSegments(index);
+                  if (tailSegments.firstKey() > index) {
+                    violation.set(
+                        "Tail segments for index %d start at %d"
+                            .formatted(index, tailSegments.firstKey()));
+                  }
+                }
+              });
+
+      // when - rolling over while another thread looks up the segments to flush, as flushers do
+      for (int i = 0; i < 2_000 && violation.get() == null; i++) {
+        journal.append(factory.entry());
+      }
+      done.set(true);
+
+      // then - a flush starting at a later segment would skip records which were never forced
+      assertThat(lookups).succeedsWithin(Duration.ofSeconds(30));
+      assertThat(violation).hasNullValue();
     }
   }
 

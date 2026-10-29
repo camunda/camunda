@@ -128,23 +128,27 @@ final class SegmentsManager implements AutoCloseable {
             .withIndex(nextSegmentIndex)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
+    Segment segment;
     if (nextSegment != null) {
       try {
-        currentSegment =
+        segment =
             nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         nextSegment = null;
-        currentSegment = createSegment(descriptor, lastWrittenAsqn);
+        segment = createSegment(descriptor, lastWrittenAsqn);
       }
     } else {
-      currentSegment = createSegment(descriptor, lastWrittenAsqn);
+      segment = createSegment(descriptor, lastWrittenAsqn);
     }
-    prepareNextSegment();
 
-    segments.put(descriptor.index(), currentSegment);
+    // Add the segment before it becomes the current one: a concurrent flush which finds the current
+    // segment must also find it in the segments, see #getTailSegments(long)
+    segments.put(descriptor.index(), segment);
+    currentSegment = segment;
+    prepareNextSegment();
     journalMetrics.incSegmentCount();
-    return currentSegment;
+    return segment;
   }
 
   @Nullable Segment getNextSegment(final long index) {
@@ -154,9 +158,11 @@ final class SegmentsManager implements AutoCloseable {
 
   @Nullable Segment getSegment(final long index) {
     // Check if the current segment contains the given index first in order to prevent an
-    // unnecessary map lookup.
-    if (currentSegment != null && index > currentSegment.index()) {
-      return currentSegment;
+    // unnecessary map lookup. Read it once, as it may change concurrently: checking one segment and
+    // returning the next would skip the records before its first index, e.g. when flushing.
+    final var current = currentSegment;
+    if (current != null && index > current.index()) {
+      return current;
     }
 
     // If the index is in another segment, get the entry with the next lowest first index.
