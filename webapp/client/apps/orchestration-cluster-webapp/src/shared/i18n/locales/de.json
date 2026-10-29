@@ -487,7 +487,9 @@
 				"changeNotConfirmed": "Es konnte nicht bestätigt werden, dass die Änderung wirksam wurde",
 				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
 				"resourceSingular": "Autorisierung",
-				"resourcePlural": "Autorisierungen"
+				"resourcePlural": "Autorisierungen",
+				"noAuthorizationsYet": "Für diesen Ressourcentyp gibt es noch keine Autorisierungen",
+				"noAuthorizationsYetDescription": "Autorisierungen legen Zugriffsberechtigungen für verschiedene Ressourcen fest. Erstellen Sie eine Autorisierung, indem Sie einen Eigentümer, eine Ressource und mindestens eine Berechtigung auswählen."
 			},
 			"roles": {
 				"guideBody": "Weitere Informationen finden Sie im ",

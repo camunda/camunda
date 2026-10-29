@@ -487,7 +487,9 @@
 				"changeNotConfirmed": "No se pudo confirmar que el cambio surtiera efecto",
 				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
 				"resourceSingular": "autorización",
-				"resourcePlural": "autorizaciones"
+				"resourcePlural": "autorizaciones",
+				"noAuthorizationsYet": "Aún no tiene autorizaciones para este tipo de recurso",
+				"noAuthorizationsYetDescription": "Las autorizaciones definen los permisos de acceso a distintos recursos. Cree una autorización seleccionando un propietario, un recurso y al menos un permiso."
 			},
 			"roles": {
 				"guideBody": "Para obtener más información, consulte la ",

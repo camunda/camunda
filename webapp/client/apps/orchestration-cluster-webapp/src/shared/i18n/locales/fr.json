@@ -487,7 +487,9 @@
 				"changeNotConfirmed": "Impossible de confirmer que la modification a pris effet",
 				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
 				"resourceSingular": "autorisation",
-				"resourcePlural": "autorisations"
+				"resourcePlural": "autorisations",
+				"noAuthorizationsYet": "Vous n'avez pas encore d'autorisations pour ce type de ressource",
+				"noAuthorizationsYetDescription": "Les autorisations définissent les droits d'accès à différentes ressources. Créez une autorisation en sélectionnant un propriétaire, une ressource et au moins une permission."
 			},
 			"roles": {
 				"guideBody": "Pour plus d'informations, consultez le ",

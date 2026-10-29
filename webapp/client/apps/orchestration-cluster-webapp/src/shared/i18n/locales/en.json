@@ -487,7 +487,9 @@
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
 				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
 				"resourceSingular": "authorization",
-				"resourcePlural": "authorizations"
+				"resourcePlural": "authorizations",
+				"noAuthorizationsYet": "You don't have any authorizations for this resource type yet",
+				"noAuthorizationsYetDescription": "Authorizations define access permissions for different resources. Create an authorization by selecting an owner, resource, and at least one permission."
 			},
 			"roles": {
 				"guideBody": "For more information, see the ",

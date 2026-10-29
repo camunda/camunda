@@ -125,6 +125,7 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 						clientConfig={clientConfig}
 						onSearchChange={onSearchChange}
 						onDelete={openDeleteModal}
+						onCreate={() => setModalState({type: 'create'})}
 					/>
 				</div>
 			</div>
