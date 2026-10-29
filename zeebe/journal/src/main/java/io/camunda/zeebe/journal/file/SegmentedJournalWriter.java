@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalMetaStore;
@@ -164,10 +165,7 @@ final class SegmentedJournalWriter {
         // unmapped once the last reader let go of it.
         currentSegment = segments.resetSegments(index + 1);
       } else {
-        // Recovery finds the end of a segment's records by the invalidated frame that truncating
-        // left behind. Flush it before the next segment exists, or a restart can find records after
-        // it and resurrect the records deleted here.
-        currentWriter.flushEndOfRecords();
+        // flushes the truncation before the next segment exists, see #createNewSegment
         journalMetrics.observeSegmentCreation(this::createNewSegment);
       }
       currentWriter = currentSegment.writer();
@@ -237,6 +235,20 @@ final class SegmentedJournalWriter {
 
   private void createNewSegment() {
     currentSegment.updateDescriptor();
+
+    // Recovery finds the end of a segment's records by the invalidated frame that truncating left
+    // behind. Flush a truncated segment before the next segment exists, or a restart can find the
+    // deleted records after it, and discard the next segment as overlapping, although its records
+    // may be acknowledged. Flushes do not cover it otherwise: they start from the segment after the
+    // flushed index, which is the next segment once its records are appended.
+    if (currentSegment.hasUnforcedTruncation()) {
+      try {
+        currentSegment.flush();
+      } catch (final FlushException e) {
+        throw new JournalException("Failed to flush truncated segment before rolling over", e);
+      }
+    }
+
     currentSegment = segments.getNextSegment();
     currentWriter = currentSegment.writer();
   }

@@ -207,9 +207,10 @@ public final class RaftLog implements Closeable {
     lastAppendedEntry = null;
 
     // we have to flush here to ensure the truncated log is represented properly; flushers which
-    // skip
-    // flushes of already flushed indexes skip this too, as the flush of the next appended records
-    // also covers the truncation, and nothing is acknowledged based on the truncation before that
+    // skip flushes of already flushed indexes skip this too: nothing is acknowledged based on the
+    // truncation before the next appended records are flushed, and that flush covers the truncated
+    // segment, unless those records rolled over into a new segment, in which case the journal
+    // flushed the truncated segment before creating the new one
     flushSync(index);
   }
 

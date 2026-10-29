@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -98,6 +99,28 @@ final class SegmentedJournalWriterTest {
     // then - deleting records flushes nothing, so record 3 must not be reported as flushed
     assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldForceTruncatedSegmentBeforeRollingOver() throws FlushException {
+    // given - a flushed segment, truncated without flushing, as flushers which skip flushes of
+    // already flushed indexes do
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.flush();
+    writer.deleteAfter(1, false);
+    final var truncatedSegment = segments.getLastSegment();
+
+    // when - the replacement record does not fit into the truncated segment, and rolls over
+    writer.append(-1, new DirectBufferWriter(BufferUtil.wrapString("larger data")));
+
+    // then - the truncation was forced before the next segment existed; otherwise, a restart may
+    // find the deleted records in the truncated segment, and discard the next one as overlapping
+    assertThat(segments.getLastSegment()).isNotSameAs(truncatedSegment);
+    assertThat(truncatedSegment.hasUnforcedTruncation()).isFalse();
+    writer.flush();
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(segments.firstSegmentNotForcedUpTo(2L)).isNull();
   }
 
   @Test
