@@ -33,7 +33,9 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -41,6 +43,8 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -594,6 +598,91 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(ConcurrentModificationException.class);
+  }
+
+  @Test
+  void shouldRejectAClusterWideRequestWhileAPhysicalTenantRollsOut() {
+    // given
+    wire(MEMBER_0, twoMemberClusterWithSecondGroup());
+    rollOutPhysicalTenantConfig("tenanta");
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(List.of(new MemberLeaveOperation(MEMBER_1))));
+
+    // when
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(ConcurrentModificationException.class)
+        .withMessageContaining("physical tenant 'tenanta'");
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectARequestForTheGroupOfAPhysicalTenantThatRollsOut() {
+    // given
+    wire(MEMBER_0, twoMemberClusterWithSecondGroup());
+    rollOutPhysicalTenantConfig("tenanta");
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                List.of(
+                    PartitionGroupPhase.sequential(
+                        Map.of("tenanta", List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1))))));
+
+    // when
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(ConcurrentModificationException.class)
+        .withMessageContaining("physical tenant 'tenanta'");
+  }
+
+  @Test
+  void shouldAdmitARequestForAnotherGroupWhileAPhysicalTenantRollsOut() {
+    // given
+    wire(MEMBER_0, twoMemberClusterWithSecondGroup());
+    rollOutPhysicalTenantConfig("tenanta");
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    coordinator.applyOperations(request).join();
+
+    // then
+    final var config = configuration();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).hasPendingChanges())
+        .isFalse();
+    assertThat(config.partitionGroup("tenanta").isChangingPhysicalTenantConfig()).isTrue();
+  }
+
+  private void rollOutPhysicalTenantConfig(final String tenantId) {
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.updatePartitionGroupConfig(
+                    tenantId,
+                    group ->
+                        group
+                            .setTenantConfig(
+                                PhysicalTenantConfigReference.initial("sha", Owner.API, "id")
+                                    .next("sha2"))
+                            .startGraphConfigurationChange(
+                                OperationGraph.sequential(
+                                    List.of(
+                                        new ApplyPhysicalTenantConfigOperation(MEMBER_0, 2),
+                                        new ApplyPhysicalTenantConfigOperation(MEMBER_1, 2))))))
+        .join();
   }
 
   /**

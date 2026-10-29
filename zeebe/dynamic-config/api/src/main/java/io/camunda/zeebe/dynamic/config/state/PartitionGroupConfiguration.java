@@ -11,6 +11,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ApplyPhysicalTenantConfigOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.StopPhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -444,6 +446,22 @@ public record PartitionGroupConfiguration(
 
   public boolean hasPendingChanges() {
     return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
+  }
+
+  /**
+   * Whether the group's pending change still runs or stops its physical tenant's configuration on a
+   * member, that is, whether a rollout of the tenant's configuration is in progress.
+   */
+  public boolean isChangingPhysicalTenantConfig() {
+    return pendingChanges
+        .map(
+            plan ->
+                plan.pendingOperations().stream()
+                    .anyMatch(
+                        operation ->
+                            operation instanceof ApplyPhysicalTenantConfigOperation
+                                || operation instanceof StopPhysicalTenantOperation))
+        .orElse(false);
   }
 
   /**

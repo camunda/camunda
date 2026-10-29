@@ -33,7 +33,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -364,6 +366,10 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                 existing.id()));
       }
     }
+    final var changingTenant = physicalTenantChangingIn(latestConfig, scope);
+    if (changingTenant.isPresent()) {
+      throw physicalTenantChangeInProgress(changingTenant.get());
+    }
 
     // simple equality check on the whole configuration is not enough, because we allow concurrent
     // changes to different partition groups.
@@ -385,6 +391,32 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                 groupPhase.groupGraphs().keySet(), latestConfig, configUsedForGeneratingOperations);
       }
     }
+  }
+
+  /**
+   * The physical tenant whose configuration rolls out in a partition group the scope covers. Such a
+   * rollout is a change of the group itself, so a plan that touches the group or the whole cluster
+   * waits until it completed.
+   */
+  private static Optional<String> physicalTenantChangingIn(
+      final CurrentClusterConfiguration configuration, final PhasedChangePlan.Scope scope) {
+    return configuration.partitionGroups().entrySet().stream()
+        .filter(entry -> entry.getValue().isChangingPhysicalTenantConfig())
+        .map(Map.Entry::getKey)
+        .filter(
+            groupId ->
+                !(scope instanceof final PhasedChangePlan.Groups groups)
+                    || groups.groupIds().contains(groupId))
+        .sorted()
+        .findFirst();
+  }
+
+  private static ConcurrentModificationException physicalTenantChangeInProgress(
+      final String physicalTenantId) {
+    return new ConcurrentModificationException(
+        "Cannot apply configuration change. The configuration of physical tenant '%s' is being"
+                .formatted(physicalTenantId)
+            + " rolled out; retry once it completed.");
   }
 
   private void checkGroupsUnchanged(
@@ -438,6 +470,11 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                     existing.id())));
         return validationFuture;
       }
+    }
+    final var changingTenant = physicalTenantChangingIn(currentConfiguration, scope);
+    if (changingTenant.isPresent()) {
+      failFuture(validationFuture, physicalTenantChangeInProgress(changingTenant.get()));
+      return validationFuture;
     }
 
     final var globalSimulator =
