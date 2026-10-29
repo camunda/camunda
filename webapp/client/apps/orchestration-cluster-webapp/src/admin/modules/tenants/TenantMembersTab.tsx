@@ -18,6 +18,7 @@ import {
 } from '@camunda/design-system';
 import {AssignMembersModal} from './AssignMembersModal';
 import {UnassignMemberModal} from './UnassignMemberModal';
+import {getMemberKind} from './getMemberKind';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from './searchSchema';
 import type {TenantDetailSearch, TenantDetailSearchChange, TenantTab} from './detailSearchSchema';
 
@@ -49,6 +50,7 @@ function TenantMembersTab<T>({
 	onSearchChange,
 }: Props<T>) {
 	const {t} = useTranslation();
+	const kind = getMemberKind(tab);
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [unassigningId, setUnassigningId] = useState<string | null>(null);
 
@@ -70,13 +72,13 @@ function TenantMembersTab<T>({
 		() => [
 			{
 				id: 'unassign',
-				label: t('admin.tenants.unassignButton'),
+				label: t(`admin.tenants.members.${kind}.remove`),
 				icon: <Trash2 aria-hidden />,
 				variant: 'destructive',
 				onClick: (row) => setUnassigningId(getMemberId(row)),
 			},
 		],
-		[getMemberId, t],
+		[getMemberId, kind, t],
 	);
 
 	return (
@@ -84,11 +86,11 @@ function TenantMembersTab<T>({
 			<div className="flex justify-end">
 				<Button onClick={() => setIsAssigning(true)}>
 					<Plus aria-hidden />
-					{t(`admin.tenants.assignButton_${tab}`)}
+					{t(`admin.tenants.members.${kind}.assign`)}
 				</Button>
 			</div>
 			<DataTable
-				aria-label={t(`admin.tenants.tab_${tab}`)}
+				aria-label={t(`admin.tenants.members.${kind}.tab`)}
 				className="**:data-[slot=data-table-actions-trigger]:ms-auto"
 				columns={columns}
 				data={rows}
@@ -115,16 +117,17 @@ function TenantMembersTab<T>({
 						});
 					},
 				}}
-				emptyState={t(`admin.tenants.empty_${tab}`)}
+				emptyState={t(`admin.tenants.members.${kind}.empty`)}
 			/>
-			<AssignMembersModal
-				tab={tab}
-				tenantId={tenantId}
-				isOpen={isAssigning}
-				isFreeText={isFreeText}
-				assignedIds={rows.map(getMemberId)}
-				onClose={() => setIsAssigning(false)}
-			/>
+			{isAssigning && (
+				<AssignMembersModal
+					tab={tab}
+					tenantId={tenantId}
+					isOpen
+					isFreeText={isFreeText}
+					onClose={() => setIsAssigning(false)}
+				/>
+			)}
 			<UnassignMemberModal
 				tab={tab}
 				tenantId={tenantId}

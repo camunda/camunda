@@ -6,177 +6,64 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
-import {useTranslation} from 'react-i18next';
-import {
-	Button,
-	Dialog,
-	DialogBody,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	Input,
-	Label,
-	MultiSelect,
-	type MultiSelectOption,
-} from '@camunda/design-system';
-import {queries} from '#/shared/http/queries';
-import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
+import {useEffect, useRef} from 'react';
+import {AssignMembersModal as SharedAssignMembersModal} from '../shared/AssignMembersModal';
+import {useAssignCandidates} from '../shared/useAssignCandidates';
 import type {TenantTab} from './detailSearchSchema';
-import {createMember, getMemberId, useTenantMemberMutations, type TenantMember} from './useTenantMemberMutations';
+import {getMemberKind} from './getMemberKind';
+import {
+	createMember,
+	getMemberId,
+	membersQuery,
+	useTenantMemberMutations,
+	type TenantMember,
+} from './useTenantMemberMutations';
 
-const OPTIONS_LIMIT = 50;
-const LOOKUP_DEBOUNCE = 300;
+const CANDIDATE_LIMIT = 50;
 
 type Props = {
 	tab: TenantTab;
 	tenantId: string;
 	isOpen: boolean;
 	isFreeText: boolean;
-	assignedIds: string[];
 	onClose: () => void;
 };
 
-const AssignMembersModal: React.FC<Props> = ({tab, tenantId, isOpen, isFreeText, assignedIds, onClose}) => {
-	const {t} = useTranslation();
+const AssignMembersModal: React.FC<Props> = ({tab, tenantId, isOpen, isFreeText, onClose}) => {
+	const kind = getMemberKind(tab);
 	const {assign} = useTenantMemberMutations(tab, tenantId);
-	const [selected, setSelected] = useState<string[]>([]);
-	const [knownMembers, setKnownMembers] = useState<Map<string, TenantMember>>(new Map());
-	const [freeText, setFreeText] = useState('');
-	const [term, setTerm] = useState('');
 
-	const lookupTerm = useDebouncedValue(term.trim(), LOOKUP_DEBOUNCE);
-	// Only members on the current page are excluded, so assigning one from another page fails with a 409.
-	const idFilter = {
-		...(lookupTerm === '' ? {} : {$like: `*${lookupTerm}*`}),
-		...(assignedIds.length === 0 ? {} : {$notIn: assignedIds}),
-	};
-	const hasIdFilter = Object.keys(idFilter).length > 0;
-	const page = {limit: OPTIONS_LIMIT};
-	const isPicker = isOpen && !isFreeText;
-
-	const users = useQuery({
-		...queries.queryUsers({filter: hasIdFilter ? {username: idFilter} : {}, page}),
-		enabled: isPicker && tab === 'users',
-	});
-	const groups = useQuery({
-		...queries.queryGroups({filter: hasIdFilter ? {groupId: idFilter} : {}, page}),
-		enabled: isPicker && tab === 'groups',
-	});
-	const roles = useQuery({
-		...queries.queryRoles({filter: hasIdFilter ? {roleId: idFilter} : {}, page}),
-		enabled: isPicker && tab === 'roles',
-	});
-	const mappingRules = useQuery({
-		...queries.queryMappingRules({filter: hasIdFilter ? {mappingRuleId: idFilter} : {}, page}),
-		enabled: isPicker && tab === 'mapping-rules',
+	const candidates = useAssignCandidates({
+		kind,
+		enabled: !isFreeText,
+		getAssignedMembersQuery: (page) => membersQuery(tab, tenantId, {page}),
+		getMemberId: (member) => getMemberId(tab, member),
+		limit: CANDIDATE_LIMIT,
 	});
 
-	const candidatesByTab: Record<TenantTab, TenantMember[] | undefined> = {
-		users: users.data?.items,
-		groups: groups.data?.items,
-		roles: roles.data?.items,
-		'mapping-rules': mappingRules.data?.items,
-		clients: undefined,
-	};
-	const candidates = candidatesByTab[tab] ?? [];
-	const candidateIds = candidates.map((candidate) => getMemberId(tab, candidate));
-
-	const options: MultiSelectOption[] = [...new Set([...selected, ...candidateIds])]
-		.sort((a, b) => a.localeCompare(b))
-		.map((id) => ({value: id, label: id}));
-
-	const ids = isFreeText ? [freeText.trim()].filter((id) => id !== '') : selected;
-
-	const select = (next: string[]) => {
-		setSelected(next);
-		setKnownMembers(
-			(known) =>
-				new Map([
-					...known,
-					...candidates
-						.map((candidate) => [getMemberId(tab, candidate), candidate] as const)
-						.filter(([id]) => next.includes(id)),
-				]),
-		);
-	};
-
-	const close = () => {
-		setSelected([]);
-		setKnownMembers(new Map());
-		setFreeText('');
-		setTerm('');
-		onClose();
-	};
+	const listedMembersById = useRef(new Map<string, TenantMember>());
+	useEffect(() => {
+		for (const item of candidates.items) {
+			listedMembersById.current.set(getMemberId(tab, item), item);
+		}
+	}, [candidates.items, tab]);
 
 	return (
-		<Dialog
-			open={isOpen}
-			onOpenChange={(open) => {
-				if (!open) {
-					close();
-				}
-			}}
-		>
-			<DialogContent
-				size="sm"
-				showCloseButton={false}
-				aria-label={t(`admin.tenants.assignModalTitle_${tab}`)}
-				aria-describedby={undefined}
-				onInteractOutside={(event) => event.preventDefault()}
-			>
-				<form
-					onSubmit={(event) => {
-						event.preventDefault();
-						assign.mutate(
-							ids.map((id) => knownMembers.get(id) ?? createMember(tab, id)),
-							{onSuccess: close},
-						);
-					}}
-				>
-					<DialogHeader>
-						<DialogTitle>{t(`admin.tenants.assignModalTitle_${tab}`)}</DialogTitle>
-					</DialogHeader>
-					<DialogBody>
-						<div className="flex flex-col gap-1.5">
-							<Label htmlFor="tenant-member-field" id="tenant-member-label">
-								{t(`admin.tenants.assignFieldLabel_${tab}`)}
-							</Label>
-							{isFreeText ? (
-								<Input
-									id="tenant-member-field"
-									value={freeText}
-									onChange={(event) => setFreeText(event.target.value)}
-								/>
-							) : (
-								<MultiSelect
-									id="tenant-member-field"
-									aria-labelledby="tenant-member-label"
-									placeholder={t(`admin.tenants.assignFieldPlaceholder_${tab}`)}
-									options={options}
-									value={selected}
-									onValueChange={select}
-									onInputChange={setTerm}
-									externalFiltering
-									hideSelectAll
-									maxCount={OPTIONS_LIMIT}
-								/>
-							)}
-						</div>
-					</DialogBody>
-					<DialogFooter>
-						<Button type="button" variant="secondary" onClick={close} disabled={assign.isPending}>
-							{t('admin.tenants.cancelButton')}
-						</Button>
-						<Button type="submit" disabled={ids.length === 0 || assign.isPending}>
-							{t('admin.tenants.assignButton')}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
+		<SharedAssignMembersModal
+			isOpen={isOpen}
+			owner="tenants"
+			kind={kind}
+			entersIdAsText={isFreeText}
+			candidates={candidates}
+			isPending={assign.isPending}
+			onAssign={(ids) =>
+				assign
+					.mutateAsync(ids.map((id) => listedMembersById.current.get(id) ?? createMember(tab, id)))
+					.then(() => ({failed: []}))
+					.catch(() => ({failed: ids.map((id) => ({id}))}))
+			}
+			onClose={onClose}
+		/>
 	);
 };
 

@@ -6,19 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Trans, useTranslation} from 'react-i18next';
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	buttonVariants,
-} from '@camunda/design-system';
+import {RemoveMemberModal} from '../shared/RemoveMemberModal';
 import type {TenantTab} from './detailSearchSchema';
+import {getMemberKind} from './getMemberKind';
 import {useTenantMemberMutations} from './useTenantMemberMutations';
 
 type Props = {
@@ -29,47 +19,22 @@ type Props = {
 };
 
 const UnassignMemberModal: React.FC<Props> = ({tab, tenantId, memberId, onClose}) => {
-	const {t} = useTranslation();
 	const {unassign} = useTenantMemberMutations(tab, tenantId);
-	const isOpen = memberId !== null;
 
 	return (
-		<AlertDialog
-			open={isOpen}
-			onOpenChange={(open) => {
-				if (!open) {
-					onClose();
+		<RemoveMemberModal
+			isOpen={memberId !== null}
+			owner="tenants"
+			kind={getMemberKind(tab)}
+			memberId={memberId ?? ''}
+			isPending={unassign.isPending}
+			onRemove={() => {
+				if (memberId !== null) {
+					unassign.mutate(memberId, {onSuccess: onClose});
 				}
 			}}
-		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>{isOpen ? t('admin.tenants.unassignModalTitle') : undefined}</AlertDialogTitle>
-				</AlertDialogHeader>
-				<AlertDialogDescription>
-					<Trans
-						i18nKey="admin.tenants.unassignConfirmation"
-						values={{id: memberId, tenantId}}
-						components={{strong: <strong />}}
-					/>
-				</AlertDialogDescription>
-				<AlertDialogFooter>
-					<AlertDialogCancel disabled={unassign.isPending}>{t('admin.tenants.cancelButton')}</AlertDialogCancel>
-					<AlertDialogAction
-						className={buttonVariants({variant: 'destructive'})}
-						disabled={unassign.isPending}
-						onClick={(event) => {
-							event.preventDefault();
-							if (memberId !== null) {
-								unassign.mutate(memberId, {onSuccess: onClose});
-							}
-						}}
-					>
-						{t('admin.tenants.unassignButton')}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+			onClose={onClose}
+		/>
 	);
 };
 

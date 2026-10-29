@@ -104,20 +104,24 @@ function getCachedTotalItems(queryClient: QueryClient, tab: TenantTab, tenantId:
 	return (freshest?.state.data as {page: {totalItems: number}} | undefined)?.page.totalItems;
 }
 
-function countQuery(tab: TenantTab, tenantId: string) {
-	const body = {page: {limit: 1}};
-	switch (tab) {
-		case 'users':
-			return queries.queryUsersByTenant(tenantId, body);
-		case 'groups':
-			return queries.queryGroupsByTenant(tenantId, body);
-		case 'roles':
-			return queries.queryRolesByTenant(tenantId, body);
-		case 'mapping-rules':
-			return queries.queryMappingRulesByTenant(tenantId, body);
-		case 'clients':
-			return queries.queryClientsByTenant(tenantId, body);
-	}
+type MembersPage = {items: TenantMember[]; page: {totalItems: number}};
+
+function membersQuery(tab: TenantTab, tenantId: string, body: {page: {from?: number; limit: number}}) {
+	const query = (() => {
+		switch (tab) {
+			case 'users':
+				return queries.queryUsersByTenant(tenantId, body);
+			case 'groups':
+				return queries.queryGroupsByTenant(tenantId, body);
+			case 'roles':
+				return queries.queryRolesByTenant(tenantId, body);
+			case 'mapping-rules':
+				return queries.queryMappingRulesByTenant(tenantId, body);
+			case 'clients':
+				return queries.queryClientsByTenant(tenantId, body);
+		}
+	})();
+	return {queryKey: query.queryKey, queryFn: query.queryFn as unknown as QueryFunction<MembersPage, QueryKey, never>};
 }
 
 function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
@@ -134,15 +138,9 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 			return;
 		}
 
-		const query = countQuery(tab, tenantId);
-		const ready = await waitUntilReady(
-			queryClient,
-			{
-				queryKey: query.queryKey,
-				queryFn: query.queryFn as unknown as QueryFunction<{page: {totalItems: number}}, QueryKey, never>,
-			},
-			{isReady: ({page}) => isReady(page.totalItems)},
-		);
+		const ready = await waitUntilReady(queryClient, membersQuery(tab, tenantId, {page: {limit: 1}}), {
+			isReady: ({page}) => isReady(page.totalItems),
+		});
 
 		if (ready !== undefined) {
 			void invalidateMembers();
@@ -226,5 +224,5 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 	return {assign, unassign};
 }
 
-export {QUERY_KEY_BY_TAB, createMember, getMemberId, useTenantMemberMutations};
+export {QUERY_KEY_BY_TAB, createMember, getMemberId, membersQuery, useTenantMemberMutations};
 export type {TenantMember};
