@@ -63,6 +63,12 @@ const config = defineConfig(({mode}) => ({
 
 	optimizeDeps: {
 		include: [
+			'@monaco-editor/react',
+			'monaco-editor',
+			'monaco-editor/language/json/monaco.contribution.js',
+			'monaco-editor/editor/browser/coreCommands.js',
+			'monaco-editor/editor/contrib/find/browser/findController.js',
+			'monaco-editor/editor/contrib/gotoError/browser/gotoError.js',
 			'@tanstack/react-devtools',
 			'@tanstack/react-query-devtools',
 			'@tanstack/react-router-devtools',
