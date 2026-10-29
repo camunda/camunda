@@ -244,6 +244,7 @@ public final class AuthInfo implements BufferWriter {
     return writer.writeRaw(encoded());
   }
 
+  /** Token claims are compared by their msgpack encoding, not by their decoded values. */
   @Override
   public boolean equals(final Object other) {
     return other instanceof final AuthInfo that
@@ -253,12 +254,12 @@ public final class AuthInfo implements BufferWriter {
         && Objects.equals(clientId, that.clientId)
         && Objects.equals(tenants, that.tenants)
         && Objects.equals(groups, that.groups)
-        && Objects.equals(getTokenClaims(), that.getTokenClaims());
+        && Objects.equals(tokenClaims, that.tokenClaims);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(format, anonymous, username, clientId, tenants, groups, getTokenClaims());
+    return Objects.hash(format, anonymous, username, clientId, tenants, groups, tokenClaims);
   }
 
   /** Masks the claims, as they may contain sensitive data. */

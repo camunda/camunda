@@ -378,6 +378,88 @@ final class AuthInfoTest {
   }
 
   @Nested
+  final class Equality {
+
+    @Test
+    void shouldEqualItselfWithBinaryTokenClaim() {
+      // given
+      final var authInfo =
+          AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("blob", new byte[] {1, 2, 3})));
+
+      // when
+      final int hashCode = authInfo.hashCode();
+
+      // then
+      assertThat(authInfo).isEqualTo(authInfo);
+      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
+    }
+
+    @Test
+    void shouldEqualItselfWithBinaryTokenClaimNestedInMap() {
+      // given
+      final var authInfo =
+          AuthInfo.ofClaims(
+              Map.of(USER_TOKEN_CLAIMS, Map.of("nested", Map.of("blob", new byte[] {1, 2, 3}))));
+
+      // when
+      final int hashCode = authInfo.hashCode();
+
+      // then
+      assertThat(authInfo).isEqualTo(authInfo);
+      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
+    }
+
+    @Test
+    void shouldEqualItselfWithBinaryTokenClaimNestedInList() {
+      // given
+      final var authInfo =
+          AuthInfo.ofClaims(
+              Map.of(USER_TOKEN_CLAIMS, Map.of("list", List.of(new byte[] {1, 2, 3}))));
+
+      // when
+      final int hashCode = authInfo.hashCode();
+
+      // then
+      assertThat(authInfo).isEqualTo(authInfo);
+      assertThat(authInfo.hashCode()).isEqualTo(hashCode);
+    }
+
+    @Test
+    void shouldEqualDecodedAuthInfoWithBinaryTokenClaims() {
+      // given
+      final var authInfo =
+          AuthInfo.ofClaims(
+              Map.of(
+                  AUTHORIZED_USERNAME,
+                  "user",
+                  USER_TOKEN_CLAIMS,
+                  Map.of("blob", new byte[] {1, 2, 3}, "list", List.of(new byte[] {4}))));
+
+      // when
+      final var decoded = decode(encode(authInfo));
+
+      // then
+      assertThat(decoded).isEqualTo(authInfo);
+      assertThat(authInfo).isEqualTo(decoded);
+      assertThat(decoded.hashCode()).isEqualTo(authInfo.hashCode());
+    }
+
+    @Test
+    void shouldNotEqualAuthInfoWithDifferentTokenClaims() {
+      // given
+      final var authInfo =
+          AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("blob", new byte[] {1, 2, 3})));
+      final var other =
+          AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("blob", new byte[] {1, 2, 4})));
+      final var withoutTokenClaims = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user"));
+
+      // when - then
+      assertThat(authInfo).isNotEqualTo(other).isNotEqualTo(withoutTokenClaims);
+      assertThat(withoutTokenClaims).isNotEqualTo(authInfo);
+    }
+  }
+
+  @Nested
   final class Compatibility {
 
     @ParameterizedTest
