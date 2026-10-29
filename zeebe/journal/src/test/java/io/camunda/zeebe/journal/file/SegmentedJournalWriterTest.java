@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -94,6 +96,32 @@ final class SegmentedJournalWriterTest {
     writer.deleteAfter(3, false);
 
     // then - deleting records flushes nothing, so record 3 must not be reported as flushed
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldNotAdvanceLastFlushedIndexIfStoringItFails() throws FlushException {
+    // given
+    writer.append(1, journalFactory.entry());
+    writer.flush();
+    writer.append(2, journalFactory.entry());
+    final var failStore = new AtomicBoolean(true);
+    journalFactory
+        .metaStore()
+        .setOnStoreFlushedIndex(
+            () -> {
+              if (failStore.getAndSet(false)) {
+                throw new UncheckedIOException(new IOException("Failed to write meta store"));
+              }
+            });
+
+    // when
+    assertThatThrownBy(writer::flush).isInstanceOf(UncheckedIOException.class);
+
+    // then - the index is only published once stored, so a retry stores it
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(1L);
+    writer.flush();
     assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
   }

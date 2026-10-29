@@ -215,7 +215,8 @@ final class SegmentedJournalWriter {
    * Stores whatever we managed to flush to avoid doing it again. Concurrent flushes may race here,
    * so the index is only ever advanced, and stored together with the in-memory index. As this is
    * called while holding the journal's read lock, it cannot overtake a truncation, which lowers the
-   * index while holding the write lock.
+   * index while holding the write lock. The index is stored before it is published in memory: if
+   * storing fails, the next flush stores it again, instead of skipping it as already flushed.
    */
   private synchronized void advanceLastFlushedIndex(
       final long flushedIndex, final int segmentsCount) {
@@ -229,8 +230,8 @@ final class SegmentedJournalWriter {
           segmentsCount,
           lastFlushedIndex,
           flushedIndex);
-      lastFlushedIndex = flushedIndex;
       metaStore.storeLastFlushedIndex(flushedIndex);
+      lastFlushedIndex = flushedIndex;
     }
   }
 
