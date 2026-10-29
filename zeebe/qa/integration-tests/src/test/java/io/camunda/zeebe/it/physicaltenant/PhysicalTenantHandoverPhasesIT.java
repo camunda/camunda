@@ -100,6 +100,7 @@ final class PhysicalTenantHandoverPhasesIT {
       List.of(System.getProperty("handoverPhases.debugLoggers", "").split(",")).stream()
           .filter(logger -> !logger.isBlank())
           .toList();
+  private static final boolean DIAGNOSE = Boolean.getBoolean("handoverPhases.diagnose");
   private static final boolean STREAMING_WORKERS =
       Boolean.parseBoolean(System.getProperty("handoverPhases.streamingWorkers", "true"));
   private static final Duration TIMEOUT = Duration.ofMinutes(2);
@@ -217,6 +218,12 @@ final class PhysicalTenantHandoverPhasesIT {
           pause(SETTLE);
           marks.add(new Mark("tenant-restart", System.currentTimeMillis()));
           assertThat(send(coordinator, "PUT", tenantId, configuration(rollout + 2))).isEqualTo(202);
+          if (DIAGNOSE) {
+            for (final var at : List.of(2, 5, 9)) {
+              pause(Duration.ofSeconds(at == 2 ? 2 : at == 5 ? 3 : 4));
+              diagnose(cluster, tenantId, "rollout%d-%ds".formatted(rollout, at));
+            }
+          }
           awaitRolledOut(coordinator, tenantId, rollout + 2L);
           pause(SETTLE);
         }
@@ -378,6 +385,40 @@ final class PhysicalTenantHandoverPhasesIT {
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException(e);
+    }
+  }
+
+  /** Writes every broker's job streams and a thread dump of this JVM to the output directory. */
+  private static void diagnose(
+      final TestCluster cluster, final String tenantId, final String label) {
+    try (final var http = HttpClient.newHttpClient()) {
+      Files.createDirectories(OUTPUT);
+      for (final var broker : cluster.brokers().entrySet()) {
+        final var body =
+            http.send(
+                    HttpRequest.newBuilder(broker.getValue().actuatorUri("jobstreams"))
+                        .GET()
+                        .build(),
+                    BodyHandlers.ofString())
+                .body();
+        Files.writeString(
+            OUTPUT.resolve("jobstreams-%s-broker%s.json".formatted(label, broker.getKey().id())),
+            body);
+      }
+      final var dump = new StringBuilder();
+      for (final var info :
+          java.lang.management.ManagementFactory.getThreadMXBean().dumpAllThreads(true, true)) {
+        dump.append(info.toString());
+        for (final var frame : info.getStackTrace()) {
+          dump.append("\tat ").append(frame).append('\n');
+        }
+        dump.append('\n');
+      }
+      Files.writeString(OUTPUT.resolve("threads-%s.txt".formatted(label)), dump);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
