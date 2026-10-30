@@ -265,8 +265,14 @@
 		cursor: not-allowed;
 	}
 
-	.op-non-selectable.djs-shape .djs-visual > :nth-child(1) {
+	/* The sunken fill carries the state beyond a stroke shade that is too close to a selectable one. Highlight wins. */
+	.op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
 		stroke: color-mix(in srgb, var(--neutral-foreground-subtle) 75%, transparent) !important;
+		fill: var(--neutral-background-medium) !important;
+	}
+
+	.dark & .op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
+		fill: var(--neutral-background-subtle) !important;
 	}
 
 	.op-drilldown {
@@ -289,7 +295,7 @@
 
 	.djs-minimap {
 		top: auto !important;
-		bottom: 5.5rem !important;
+		bottom: 4.5rem !important;
 		right: 1rem !important;
 		z-index: 10;
 		background-color: var(--viewer-layer) !important;
