@@ -302,7 +302,7 @@ class RepositoryNodeIdProviderIT {
 
     // when
     final var expectedMappings = Map.of(1, Version.of(2), 2, Version.of(2), 3, Version.of(1));
-    nodeIdProvider.setMemberVersions(memberVersions(expectedMappings));
+    nodeIdProvider.setMemberVersions(collectMemberVersions(expectedMappings));
     // move the clock forward
     clock.setInstant(clock.instant().plusSeconds(2));
 
@@ -344,7 +344,7 @@ class RepositoryNodeIdProviderIT {
         .containsExactlyInAnyOrderEntriesOf(Map.of(0, Version.of(2), 1, Version.of(3)));
   }
 
-  private Map<MemberId, Version> memberVersions(final Map<Integer, Version> nodeIdVersions) {
+  private Map<MemberId, Version> collectMemberVersions(final Map<Integer, Version> nodeIdVersions) {
     return nodeIdVersions.entrySet().stream()
         .collect(Collectors.toMap(e -> MemberId.from(e.getKey()), Map.Entry::getValue));
   }
@@ -492,8 +492,8 @@ class RepositoryNodeIdProviderIT {
       final NodeInstance nodeInstance = nodeIdProvider.currentNodeInstance();
       // Only the version of this node is updated in all other nodes for this node to be ready
       final var expectedMappings = Map.of(nodeInstance.id(), nodeInstance.version());
-      nodeIdProviderOtherOne.setMemberVersions(memberVersions(expectedMappings));
-      nodeIdProviderOtherTwo.setMemberVersions(memberVersions(expectedMappings));
+      nodeIdProviderOtherOne.setMemberVersions(collectMemberVersions(expectedMappings));
+      nodeIdProviderOtherTwo.setMemberVersions(collectMemberVersions(expectedMappings));
 
       // then
       assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION).isEqualTo(true);

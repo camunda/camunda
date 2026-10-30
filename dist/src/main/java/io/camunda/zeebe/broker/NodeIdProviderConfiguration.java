@@ -136,7 +136,8 @@ public class NodeIdProviderConfiguration {
         l -> {
           switch (l.type()) {
             case MEMBER_ADDED, MEMBER_REMOVED ->
-                nodeIdProvider.setMemberVersions(memberVersions(membershipService.getMembers()));
+                nodeIdProvider.setMemberVersions(
+                    collectMemberVersions(membershipService.getMembers()));
             default -> {
               // noop
             }
@@ -144,13 +145,13 @@ public class NodeIdProviderConfiguration {
         });
 
     // initialize current members
-    nodeIdProvider.setMemberVersions(memberVersions(membershipService.getMembers()));
+    nodeIdProvider.setMemberVersions(collectMemberVersions(membershipService.getMembers()));
 
     final var isReady = nodeIdProvider.awaitReadiness().join();
     return new NodeIdProviderReadinessAwaiter(isReady);
   }
 
-  private static Map<MemberId, Version> memberVersions(final Set<Member> members) {
+  private static Map<MemberId, Version> collectMemberVersions(final Set<Member> members) {
     return members.stream().collect(Collectors.toMap(Member::id, m -> Version.of(m.nodeVersion())));
   }
 
