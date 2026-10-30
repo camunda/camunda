@@ -1097,9 +1097,6 @@
 						"searchByElement": "Nach Prozesselement suchen"
 					}
 				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich"
-				},
 				"migration": {
 					"migrate": "Migrieren",
 					"selectSource": "Um die Migration zu starten, wählen Sie zuerst einen Prozess und eine Version aus.",
@@ -1349,7 +1346,9 @@
 					"title": "Prozess",
 					"processName": "Prozessname",
 					"processId": "Prozess-ID",
-					"versionTag": "Versions-Tag"
+					"versionTag": "Versions-Tag",
+					"copyButtonDescription": "Prozess-ID / Klicken zum Kopieren",
+					"copyButtonTitle": "Prozess-ID kopieren: {{id}}"
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Prozessdefinition \"{{name}} - Version {{version}}\" löschen",
@@ -1371,7 +1370,8 @@
 					"details": "Prozessdetails",
 					"definition": "Prozessdefinition",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Vorgang erstellt"
+					"successTitle": "Vorgang erstellt",
+					"loadingMessage": "Prozessdefinition wird gelöscht"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
@@ -1380,7 +1380,8 @@
 					"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
 					"noProcessSelected": "Es ist kein Prozess ausgewählt",
 					"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus",
-					"processNotFoundTitle": "Prozess konnte nicht gefunden werden"
+					"processNotFoundTitle": "Prozess konnte nicht gefunden werden",
+					"ariaLabel": "Diagrammbereich"
 				}
 			},
 			"decisions": {

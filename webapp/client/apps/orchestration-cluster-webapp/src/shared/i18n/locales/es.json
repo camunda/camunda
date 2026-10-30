@@ -1097,9 +1097,6 @@
 						"searchByElement": "Buscar por elemento de proceso"
 					}
 				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama"
-				},
 				"migration": {
 					"migrate": "Migrar",
 					"selectSource": "Para iniciar la migración, elija primero un proceso y una versión.",
@@ -1349,7 +1346,9 @@
 					"title": "Proceso",
 					"processName": "Nombre del proceso",
 					"processId": "ID del proceso",
-					"versionTag": "Etiqueta de versión"
+					"versionTag": "Etiqueta de versión",
+					"copyButtonDescription": "ID del proceso / Clic para copiar",
+					"copyButtonTitle": "Copiar ID del proceso: {{id}}"
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Eliminar definición de proceso \"{{name}} - Versión {{version}}\"",
@@ -1371,7 +1370,8 @@
 					"details": "Detalles del proceso",
 					"definition": "Definición de proceso",
 					"definitionVersion": "{{name}} - Versión {{version}}",
-					"successTitle": "Operación creada"
+					"successTitle": "Operación creada",
+					"loadingMessage": "Eliminando la definición de proceso"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
@@ -1380,7 +1380,8 @@
 					"selectSingleTenant": "Para ver un diagrama, seleccione un solo inquilino",
 					"noProcessSelected": "No hay ningún proceso seleccionado",
 					"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros",
-					"processNotFoundTitle": "No se pudo encontrar el proceso"
+					"processNotFoundTitle": "No se pudo encontrar el proceso",
+					"ariaLabel": "Panel del diagrama"
 				}
 			},
 			"decisions": {
