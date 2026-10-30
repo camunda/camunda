@@ -61,7 +61,7 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
       command: ./mvnw -f operate/qa/integration-tests verify -P operateCoreFeaturesIT -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Admin ITs
+      test-type: Operate ITs
       runner-type: gcp-core-32-default
       test-owner: '@camunda/operate-admin-pod'
 
