@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
+import io.camunda.zeebe.log.records.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;

@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertT
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.msgpack.property.StringProperty;

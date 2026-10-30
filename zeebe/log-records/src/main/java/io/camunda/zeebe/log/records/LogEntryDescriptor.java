@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.log.records;
 
-import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.alignedLength;
-import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.lengthOffset;
-import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.log.records.DataFrameDescriptor.alignedLength;
+import static io.camunda.zeebe.log.records.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.log.records.DataFrameDescriptor.messageOffset;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;

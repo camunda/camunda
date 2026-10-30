@@ -3,6 +3,7 @@ import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  api(project(":zeebe-log-records"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))

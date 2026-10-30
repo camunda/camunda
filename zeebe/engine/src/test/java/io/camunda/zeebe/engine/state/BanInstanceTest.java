@@ -14,7 +14,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 
 /**
  * A listener for the {@link StreamProcessor}. Allows retrieving insides of the processing and
