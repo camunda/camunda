@@ -1,7 +1,7 @@
 # description: Runs integration CI tests
 # test location: operate/qa/integration-tests
 # type: CI
-# owner: @camunda/core-features, @camunda/data-layer
+# owner: @camunda/operate-admin-pod, @camunda/data-layer
 name: "Operate Integration Tests"
 on:
   workflow_dispatch:
@@ -63,7 +63,7 @@ jobs:
       command: ./mvnw -f operate/qa/integration-tests verify -P operateCoreFeaturesIT -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Core Features ITs
       runner-type: gcp-core-32-default
-      test-owner: '@camunda/core-features'
+      test-owner: '@camunda/operate-admin-pod'
 
   run-data-layer-opensearch-tests:
     name: "Integration"
