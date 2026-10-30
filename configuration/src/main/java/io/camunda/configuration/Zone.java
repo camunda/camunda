@@ -7,8 +7,8 @@
  */
 package io.camunda.configuration;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
-import io.camunda.zeebe.util.MemberIdUtil;
 
 /**
  * Per-region configuration for the {@link Partitioning.Scheme#ZONE_AWARE} partitioning scheme.
@@ -26,7 +26,7 @@ public record Zone(String name, int numberOfBrokers, int numberOfReplicas, int p
       if (name == null) {
         throw new IllegalArgumentException("name is null");
       }
-      MemberIdUtil.validateZone(name);
+      MemberId.validateZone(name);
     } catch (final IllegalArgumentException e) {
       throw new UnifiedConfigurationException(e);
     }

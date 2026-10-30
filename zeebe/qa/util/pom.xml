@@ -171,11 +171,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-api</artifactId>
     </dependency>
 

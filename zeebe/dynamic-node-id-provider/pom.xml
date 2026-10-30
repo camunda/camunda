@@ -131,6 +131,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
   </dependencies>
 
 </project>
