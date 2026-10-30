@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,10 +57,18 @@ class DocumentContentEarlyCloseTest {
   private static final int CHUNK_SIZE = 8 * 1024;
 
   /**
-   * Far more than the socket buffers on both sides hold, so the server is still sending when the
-   * stream is closed.
+   * Far more than the socket buffers on both sides hold, so the server cannot finish the document
+   * before the client drops the connection.
    */
   private static final long DOCUMENT_SIZE = 64L * 1024 * 1024;
+
+  /**
+   * Where the server waits until the stream is closed. It is past the client's capacity, so reading
+   * a few bytes grants the server nothing. Without the pause, the server could send the whole
+   * document before the stream is closed, as httpcore5 reads a chunked body beyond the space the
+   * client granted for as long as data keeps arriving.
+   */
+  private static final long PAUSE_AT = MAX_MESSAGE_SIZE + 2 * CHUNK_SIZE;
 
   /** Long enough that a timeout cannot be what ends the download within the test. */
   private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(5);
@@ -69,6 +78,7 @@ class DocumentContentEarlyCloseTest {
   private final byte[] chunk = new byte[CHUNK_SIZE];
   private final AtomicLong bodyBytesSent = new AtomicLong();
   private final AtomicBoolean connectionDropped = new AtomicBoolean();
+  private final CountDownLatch streamClosed = new CountDownLatch(1);
   private ServerSocket serverSocket;
   private CamundaClient client;
 
@@ -112,6 +122,8 @@ class DocumentContentEarlyCloseTest {
 
   @AfterEach
   void tearDown() throws IOException {
+    // lets the server go on if the test failed before closing the stream
+    streamClosed.countDown();
     if (client != null) {
       client.close();
     }
@@ -133,14 +145,12 @@ class DocumentContentEarlyCloseTest {
             .requestTimeout(REQUEST_TIMEOUT)
             .send()
             .get(20, TimeUnit.SECONDS);
-    // the client buffers more than its capacity, so reading a few bytes grants the server nothing
-    await()
-        .atMost(Duration.ofSeconds(20))
-        .until(() -> bodyBytesSent.get() >= MAX_MESSAGE_SIZE + 2 * CHUNK_SIZE);
+    await().atMost(Duration.ofSeconds(20)).until(() -> bodyBytesSent.get() >= PAUSE_AT);
     assertThat(content.read(new byte[16])).isPositive();
 
     // when
     content.close();
+    streamClosed.countDown();
 
     // then
     await("the client drops the connection")
@@ -149,7 +159,10 @@ class DocumentContentEarlyCloseTest {
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
   }
 
-  /** Sends the document as fast as the client accepts it, until the client drops the connection. */
+  /**
+   * Sends the document as fast as the client accepts it, pausing once at {@link #PAUSE_AT} until
+   * the stream is closed, and goes on until the client drops the connection.
+   */
   private void serveDocument(final BodyFraming framing) {
     try (final Socket socket = serverSocket.accept()) {
       final InputStream request = socket.getInputStream();
@@ -167,13 +180,18 @@ class DocumentContentEarlyCloseTest {
         out.write(framing.responseHead().getBytes(StandardCharsets.ISO_8859_1));
         while (bodyBytesSent.get() < DOCUMENT_SIZE) {
           framing.writeChunk(out, chunk);
-          bodyBytesSent.addAndGet(CHUNK_SIZE);
+          if (bodyBytesSent.addAndGet(CHUNK_SIZE) == PAUSE_AT) {
+            out.flush();
+            streamClosed.await();
+          }
         }
         framing.writeEnd(out);
         out.flush();
       } catch (final IOException e) {
         connectionDropped.set(true);
       }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
     } catch (final IOException e) {
       // the server socket is closed when the test finishes
     }
