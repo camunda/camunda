@@ -39,6 +39,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK_LOOKUP;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 import static io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent.INPUT_COLLECTION_EVALUATED;
@@ -146,6 +147,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -309,6 +311,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
+    valueLoggers.put(USER_TASK_LOOKUP, this::summarizeUserTaskLookup);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
@@ -1111,6 +1114,11 @@ public class CompactRecordLogger {
         + shortenKey(value.getParentKey())
         + " idx:"
         + shortenKey(value.getIndex());
+  }
+
+  String summarizeUserTaskLookup(final Record<?> record) {
+    final var value = (UserTaskLookupRecordValue) record.getValue();
+    return "fetchVariables:" + value.getFetchVariables() + formatTenant(value);
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {

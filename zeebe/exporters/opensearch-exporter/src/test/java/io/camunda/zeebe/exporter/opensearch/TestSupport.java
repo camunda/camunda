@@ -155,7 +155,9 @@ final class TestSupport {
             ValueType.ELEMENT_INSTANCE_WALK,
             ValueType.PROCESS_DEFINITION_RESTORE,
             // internal engine-to-engine record, never exported by design
-            ValueType.AGENT_HISTORY_BATCH);
+            ValueType.AGENT_HISTORY_BATCH,
+            // a read of the engine state that changes nothing, never exported by design
+            ValueType.USER_TASK_LOOKUP);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

@@ -103,6 +103,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
@@ -3131,6 +3132,34 @@ final class JsonSerializableToJsonTest {
                   "parentKey": -1,
                   "index": -1,
                   "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// UserTaskLookupRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new UserTaskLookupRecord()
+                    .setFetchVariables(List.of("foo", "bar"))
+                    .setTenantId("tenant-1"),
+        """
+                {
+                  "fetchVariables": ["foo", "bar"],
+                  "tenantId": "tenant-1"
+                }
+                """
+      },
+      {
+        "Empty UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
+        """
+                {
+                  "fetchVariables": [],
+                  "tenantId": "<default>"
                 }
                 """
       },
