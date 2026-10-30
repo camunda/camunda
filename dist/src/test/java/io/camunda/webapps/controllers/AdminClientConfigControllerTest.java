@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -300,6 +301,60 @@ public class AdminClientConfigControllerTest {
 
     // then
     assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldEnableCamundaGroupsWhenANamedProviderHasNoGroupsClaim() throws Exception {
+    // given: one named provider reads groups from a claim, the other gets them from Camunda
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    cslProperties
+        .getAuthentication()
+        .getProviders()
+        .getOidc()
+        .putAll(Map.of("keycloak", namedProvider("groups"), "partner", namedProvider(null)));
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(new AdminClientConfigController(cslProperties, null))
+            .build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then: the partner's users need Camunda's group management
+    assertThat(config).containsEntry("isCamundaGroupsEnabled", "true");
+  }
+
+  @Test
+  void shouldDisableCamundaGroupsWhenTheOnlyNamedProviderHasAGroupsClaim() throws Exception {
+    // given
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
+            AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
+    cslProperties
+        .getAuthentication()
+        .getProviders()
+        .getOidc()
+        .put("keycloak", namedProvider("groups"));
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(new AdminClientConfigController(cslProperties, null))
+            .build();
+
+    // when
+    final var config = extractConfigFromResponse(performGetConfig());
+
+    // then
+    assertThat(config).containsEntry("isCamundaGroupsEnabled", "false");
+  }
+
+  private static OidcConfiguration namedProvider(final String groupsClaim) {
+    final var provider = new OidcConfiguration();
+    provider.setClientId("client");
+    provider.setIssuerUri("https://" + UUID.randomUUID() + ".example.com");
+    if (groupsClaim != null) {
+      provider.setGroupsClaim(groupsClaim);
+    }
+    return provider;
   }
 
   private String performGetConfig() throws Exception {

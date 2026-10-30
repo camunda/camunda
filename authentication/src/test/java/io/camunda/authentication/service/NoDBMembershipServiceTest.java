@@ -10,6 +10,7 @@ package io.camunda.authentication.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -29,6 +30,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class NoDBMembershipServiceTest {
 
   private static final String TENANT_A = "tenanta";
+  private static final String KEYCLOAK = "https://keycloak.example.com";
+  private static final String PARTNER = "https://partner.example.com";
   private static final String ROOT_ISSUER = "https://root.example.com/realms/camunda";
   private static final String OKTA_ISSUER = "https://okta.example.com/oauth2/default";
   private static final String ROOT = "camunda.security.authentication";
@@ -192,7 +195,7 @@ class NoDBMembershipServiceTest {
   }
 
   @Test
-  void shouldIgnoreProviderClaimWhenTenantUsesCamundaGroups() {
+  void shouldReadProviderClaimWhenTenantOidcBlockHasNone() {
     // given
     final var service =
         service(
@@ -205,8 +208,9 @@ class NoDBMembershipServiceTest {
     // when
     final var groups = inPhysicalTenant(TENANT_A, () -> service.groupIds(query(oktaToken())));
 
-    // then
-    assertThat(groups).isEmpty();
+    // then - the groups mode is per provider (#44274): okta has a groups claim, so its users get
+    // their groups from the token even though the tenant's oidc block has none
+    assertThat(groups).containsExactly("okta-role");
   }
 
   @Test
@@ -286,6 +290,7 @@ class NoDBMembershipServiceTest {
    */
   private static NoDBMembershipService service(final Map<String, String> properties) {
     final var environment = new MockEnvironment();
+    environment.setProperty(ROOT + ".method", "oidc");
     properties.forEach(environment::setProperty);
     final var config = new CamundaSecurityLibraryProperties();
     config.setAuthentication(
@@ -293,8 +298,28 @@ class NoDBMembershipServiceTest {
     return new NoDBMembershipService(config, environment);
   }
 
+  @Test
+  void shouldReadOnlyTheGroupsClaimOfAProviderThatHasOne() {
+    // given - one provider with a groups claim and one without
+    final var service =
+        service(
+            Map.of(
+                ROOT + ".providers.oidc.keycloak.issuer-uri", KEYCLOAK,
+                ROOT + ".providers.oidc.keycloak.client-id", "keycloak",
+                ROOT + ".providers.oidc.keycloak.groups-claim", "groups",
+                ROOT + ".providers.oidc.partner.issuer-uri", PARTNER,
+                ROOT + ".providers.oidc.partner.client-id", "partner"));
+    final var groups = List.of("engineering");
+
+    // when/then - the partner's users get their groups from Camunda
+    assertThat(service.groupIds(query(Map.of("iss", KEYCLOAK, "groups", groups))))
+        .containsExactly("engineering");
+    assertThat(service.groupIds(query(Map.of("iss", PARTNER, "groups", groups)))).isEmpty();
+  }
+
   private static NoDBMembershipService serviceWithGroupsClaim(final String claim) {
     final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().setMethod(AuthenticationMethod.OIDC);
     config.getAuthentication().getOidc().setGroupsClaim(claim);
     return new NoDBMembershipService(config, new MockEnvironment());
   }
