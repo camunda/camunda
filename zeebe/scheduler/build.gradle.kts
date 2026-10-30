@@ -11,6 +11,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.jetbrains.annotations)
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)

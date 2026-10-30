@@ -16,6 +16,7 @@ dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-protocol"))
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.io.micrometer.micrometer.commons)

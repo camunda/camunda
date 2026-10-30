@@ -15,6 +15,7 @@ dependencies {
   api(libs.org.springframework.security.spring.security.crypto)
   api(libs.org.springframework.security.spring.security.oauth2.jose)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))

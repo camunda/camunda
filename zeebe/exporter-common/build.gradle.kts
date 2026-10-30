@@ -4,6 +4,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":camunda-search-domain"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-auth"))
   implementation(project(":zeebe-protocol"))

@@ -14,6 +14,7 @@ dependencies {
   implementation(project(":zeebe-atomix-utils"))
   implementation(libs.com.google.protobuf.protobuf.java)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.jspecify.jspecify)
   implementation(libs.io.micrometer.micrometer.core)

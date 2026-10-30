@@ -10,6 +10,7 @@ dependencies {
   implementation(project(":zeebe-backup"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-protocol"))
   api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-msgpack-core"))

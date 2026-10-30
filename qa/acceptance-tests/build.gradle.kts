@@ -11,6 +11,7 @@ plugins {
 }
 
 dependencies {
+  testImplementation(project(":zeebe-micrometer"))
   testImplementation(project(":camunda-cluster"))
   testImplementation(libs.org.jspecify.jspecify)
   testImplementation(project(":camunda-authentication"))

@@ -4,6 +4,7 @@ dependencies {
   implementation(project(":zeebe-exporter-api"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.org.apache.httpcomponents.httpclient)
   api(libs.org.apache.httpcomponents.httpcore)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
