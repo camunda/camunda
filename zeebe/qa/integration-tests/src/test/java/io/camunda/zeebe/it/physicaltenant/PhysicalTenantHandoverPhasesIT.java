@@ -17,6 +17,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -225,6 +226,17 @@ final class PhysicalTenantHandoverPhasesIT {
             }
           }
           awaitRolledOut(coordinator, tenantId, rollout + 2L);
+          assertThat(cluster.brokers().values())
+              .as("every member's restarted replicas caught up before the rollout moved on")
+              .allSatisfy(
+                  broker ->
+                      assertThat(
+                              broker
+                                  .bean(PhysicalTenantLifecycleService.class)
+                                  .lastRestart(tenantId)
+                                  .orElseThrow()
+                                  .afterRestart())
+                          .hasSize(PARTITIONS));
           pause(SETTLE);
         }
       }

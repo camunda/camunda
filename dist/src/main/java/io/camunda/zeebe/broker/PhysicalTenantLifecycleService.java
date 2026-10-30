@@ -37,6 +37,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionRestartSnapshots.TakenSnaps
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.TenantRestartHandover;
 import io.camunda.zeebe.gateway.GatewayPhysicalTenants;
 import java.time.Duration;
@@ -573,8 +574,8 @@ public final class PhysicalTenantLifecycleService {
 
   /**
    * Takes back the leadership of the partitions handed over before the restart, once their replicas
-   * caught up, and waits for that; or, if the leadership stays where it went, follows their
-   * catch-up for {@link #lastRestart} without waiting.
+   * caught up, and waits until every other restarted replica caught up too, so that the next member
+   * of a rollout hands its leadership only to replicas that do not have to replay first.
    */
   private void afterRestart(final String physicalTenantId, final TenantRestart restart) {
     final var raft = broker.getSystemContext().getBrokerConfiguration().getCluster().getRaft();
@@ -609,11 +610,7 @@ public final class PhysicalTenantLifecycleService {
     if (!takeBack.isEmpty()) {
       try {
         reclaimed =
-            reclaim
-                .reclaim(takeBack)
-                .get(
-                    raft.getRebalanceLeaderWaitTimeout().plus(HANDOVER_SLACK).toMillis(),
-                    TimeUnit.MILLISECONDS);
+            reclaim.reclaim(takeBack).get(reclaimBound(raft).toMillis(), TimeUnit.MILLISECONDS);
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (final ExecutionException | TimeoutException e) {
@@ -623,14 +620,24 @@ public final class PhysicalTenantLifecycleService {
             e);
       }
     }
-    final var completed = restart.after(reclaimed, System.nanoTime());
+    List<PartitionReclaim> watched = List.of();
+    try {
+      watched = caughtUp.get(reclaimBound(raft).toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (final ExecutionException | TimeoutException e) {
+      LOG.warn(
+          "Physical tenant '{}' moves on before every restarted replica caught up",
+          physicalTenantId,
+          e);
+    }
+    final var completed = restart.after(reclaimed, System.nanoTime()).after(watched);
     lastRestarts.computeIfPresent(
         physicalTenantId, (id, current) -> current == restart ? completed : current);
-    caughtUp.thenAccept(
-        watched ->
-            lastRestarts.computeIfPresent(
-                physicalTenantId,
-                (id, current) -> current == completed ? current.after(watched) : current));
+  }
+
+  private static Duration reclaimBound(final RaftCfg raft) {
+    return raft.getRebalanceLeaderWaitTimeout().plus(HANDOVER_SLACK);
   }
 
   private ReclaimPartition reclaimPartition(final String physicalTenantId, final int partitionId) {
