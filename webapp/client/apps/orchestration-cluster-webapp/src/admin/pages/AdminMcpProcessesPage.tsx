@@ -144,7 +144,7 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 					</Label>
 					<SearchInput
 						id="mcp-processes-search"
-						className="max-w-sm min-w-48"
+						className="w-full sm:max-w-sm sm:min-w-48"
 						placeholder={t('admin.mcpProcesses.searchByToolName')}
 						value={searchDraft}
 						onChange={(event) => setSearchDraft(event.target.value)}

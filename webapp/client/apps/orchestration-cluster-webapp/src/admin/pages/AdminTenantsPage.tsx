@@ -132,14 +132,14 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({
 					</p>
 				</div>
 				<div className="flex flex-col gap-4">
-					<div className="flex items-end justify-between gap-4">
-						<div className="flex flex-1 flex-col gap-2">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+						<div className="flex flex-col gap-2 sm:flex-1">
 							<Label htmlFor="tenants-search" className="sr-only">
 								{t('admin.tenants.searchByTenantId')}
 							</Label>
 							<SearchInput
 								id="tenants-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.tenants.searchByTenantId')}
 								value={searchDraft}
 								onChange={(event) => setSearchDraft(event.target.value)}

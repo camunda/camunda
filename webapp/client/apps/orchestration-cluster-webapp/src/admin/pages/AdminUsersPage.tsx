@@ -130,14 +130,14 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 				</div>
 
 				<div className="flex flex-col gap-4">
-					<div className="flex items-center gap-4">
-						<div className="flex-1">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+						<div className="sm:flex-1">
 							<Label htmlFor="users-search" className="sr-only">
 								{t('admin.users.searchByUsername')}
 							</Label>
 							<SearchInput
 								id="users-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.users.searchByUsername')}
 								value={searchDraft}
 								onChange={(event) => setSearchDraft(event.target.value)}
