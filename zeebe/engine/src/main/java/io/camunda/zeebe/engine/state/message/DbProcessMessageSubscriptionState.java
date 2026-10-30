@@ -215,7 +215,7 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void onSent(final ProcessMessageSubscriptionRecord record, final long timestampMs) {
-    transientState.update(
+    transientState.refresh(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         timestampMs);
