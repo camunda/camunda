@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -17,12 +18,16 @@ import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupS
 import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +43,7 @@ import org.springframework.util.unit.DataSize;
 /**
  * Shared fixture and test cases for restoring without a secondary storage. Without exported
  * positions to keep consistent with, the restore point is resolved from the backups alone, over the
- * configured partitions.
+ * partitions of the last backup to restore.
  *
  * <p>Every test case here is exercised by two concrete subclasses, one per restore execution path:
  * {@link NoSecondaryStorageRestoreIT} (a separate, standalone restore application) and {@link
@@ -52,6 +57,7 @@ import org.springframework.util.unit.DataSize;
 abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
 
   protected static final int PARTITION_COUNT = 2;
+  private static final int SCALED_PARTITION_COUNT = PARTITION_COUNT + 1;
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
   private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
@@ -61,6 +67,12 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.none)
           .withUnifiedConfig(this::configureBroker);
+
+  /**
+   * The partition count the restore is configured with, which a scale up raises above the backups'
+   * partitions.
+   */
+  protected int configuredPartitionCount = PARTITION_COUNT;
 
   private BackupActuator backupActuator;
 
@@ -251,6 +263,52 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
         "No usable range found");
   }
 
+  @Test
+  void shouldRestoreTheBackupsPartitionsOfATimeRangeAfterAScaleUp() throws Exception {
+    // given - backups of the 2 partitions within the time range
+    final List<Long> createdUntilTo = new ArrayList<>();
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createdUntilTo.addAll(createInstances(client));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      createdUntilTo.addAll(createInstances(client));
+      takeAndAwaitBackup();
+      to = currentTime(broker);
+    }
+
+    // and - the cluster is scaled up to 3 partitions, with a later backup holding all 3
+    final var clusterActuator = ClusterActuator.of(broker);
+    scaleUp(clusterActuator, SCALED_PARTITION_COUNT);
+    // messages keep being correlated over the partitions from before the scale up
+    InProcessRestoreTestUtil.assertRoutesOverPartitions(
+        clusterActuator, SCALED_PARTITION_COUNT, PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+    }
+    takeAndAwaitBackup();
+
+    // when - the time range ends before the scale up, so its last backup holds only 2 partitions
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.timeRange(from, to));
+
+    // then - only the backup's partitions are restored, up to `to`
+    assertOnlyInstancesRestored(createdUntilTo);
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+
+    // and - the group routes over them again
+    InProcessRestoreTestUtil.assertRoutesOverPartitions(
+        ClusterActuator.of(broker), PARTITION_COUNT);
+  }
+
   /**
    * Restores as requested and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
@@ -285,6 +343,32 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
     backup.setStore(BackupStoreType.FILESYSTEM);
     backup.getFilesystem().setBasePath(backupDir().toAbsolutePath().toString());
     backup.setContinuous(true);
+  }
+
+  /**
+   * Scales the cluster up. The broker's clock is pinned, so the configuration change only makes
+   * progress, e.g. through a retry backoff, when the clock is moved on, which every poll here does.
+   */
+  private void scaleUp(final ClusterActuator clusterActuator, final int partitionCount) {
+    final var scaleUp =
+        clusterActuator.patchCluster(
+            new ClusterConfigPatchRequest()
+                .partitions(
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(partitionCount)
+                        .replicationFactor(1)),
+            false,
+            false);
+    await("cluster is scaled up to %d partitions".formatted(partitionCount))
+        .timeout(Duration.ofSeconds(90))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 3000);
+              ClusterActuatorAssert.assertThat(clusterActuator)
+                  .hasCompletedChanges(scaleUp.getChangeId())
+                  .doesNotHavePendingChanges();
+            });
   }
 
   private void assertOnlyInstancesRestored(final List<Long> expectedInstances) {
