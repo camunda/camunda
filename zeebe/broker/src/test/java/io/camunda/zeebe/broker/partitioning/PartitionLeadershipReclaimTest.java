@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.ReclaimPa
 import io.camunda.zeebe.broker.partitioning.PartitionLeadershipReclaim.ReplayLag;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,8 +28,10 @@ final class PartitionLeadershipReclaimTest {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private static final long CAUGHT_UP = 100;
 
+  private static final Duration BOUND = Duration.ofSeconds(2);
+
   private final PartitionLeadershipReclaim reclaim =
-      new PartitionLeadershipReclaim(Duration.ofSeconds(2), CAUGHT_UP, Duration.ofSeconds(1));
+      new PartitionLeadershipReclaim(BOUND, CAUGHT_UP, Duration.ofSeconds(1));
 
   @Test
   void shouldAskForTheLeadershipOnlyOnceCaughtUp() {
@@ -106,6 +109,24 @@ final class PartitionLeadershipReclaimTest {
     // then
     assertThat(report.outcome()).isEqualTo(Outcome.TIMED_OUT);
     assertThat(report.answers()).isEmpty();
+  }
+
+  @Test
+  void shouldKeepWaitingWhileTheReplicaCatchesUpForLongerThanTheBound() {
+    // given
+    final var lags = new ArrayList<ReplayLag>();
+    for (long lag = 300_000; lag > CAUGHT_UP; lag -= 1000) {
+      lags.add(lag(lag));
+    }
+    lags.add(lag(40));
+    final var partition = new FakePartition(lags, List.of(LeadershipTransferResult.TRANSFERRED));
+
+    // when
+    final var report = reclaimed(partition);
+
+    // then
+    assertThat(report.outcome()).isEqualTo(Outcome.RECLAIMED);
+    assertThat(report.caughtUpAfter()).isGreaterThan(BOUND);
   }
 
   @Test

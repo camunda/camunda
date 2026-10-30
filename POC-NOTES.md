@@ -253,7 +253,7 @@ after it.
 | `PartitionLeadershipHandover`                                  | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on a refusal another replica may not give; bounded; a report per partition                                                                                    |
 | `ZeebePartition#forceSnapshot`, `#replayProgress`              | zeebe/broker  | A snapshot on demand in either role, once the current role transition completed; the log end (from the log stream, as a follower's snapshot director does not follow commits), last replayed event, snapshot position                   |
 | `PartitionRestartSnapshots`                                    | zeebe/broker  | Snapshots every partition within one bound; a skipped, failed or timed-out snapshot never fails the restart                                                                                                                             |
-| `PartitionLeadershipReclaim`                                   | zeebe/broker  | Per partition: wait until installed and within 100 positions of its log end, then `requestLeadership`; asks again on `LAG_TOO_HIGH`, `TRANSFER_IN_PROGRESS`, …; bounded by `rebalance.leader-wait-timeout`; or only follow the catch-up |
+| `PartitionLeadershipReclaim`                                   | zeebe/broker  | Per partition: wait until installed and within 100 positions of its log end, then `requestLeadership`; asks again on `LAG_TOO_HIGH`, `TRANSFER_IN_PROGRESS`, …; gives up once the replica has not caught up further for `rebalance.leader-wait-timeout`; or only follow the catch-up |
 | `PhysicalTenantLifecycleService#replace`                       | dist          | snapshot (if on) → handover → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                        |
 | `camunda.cluster.raft.rebalance.tenant-restart-handover`       | configuration | `NONE`, `TRANSFER_AWAY`, `TRANSFER_BACK` (default); cluster-wide                                                                                                                                                                        |
 | `…tenant-restart-snapshot`, `…tenant-restart-snapshot-timeout` | configuration | `false` by default; 10 s                                                                                                                                                                                                                |
@@ -418,7 +418,8 @@ change" already means "its partitions are installed, caught up and led as before
 
 - The readiness wait should treat the member's change as ready only once `replace` returned. Today
   that means the executor's step completion.
-- It must not time out a member before `rebalance.leader-wait-timeout` (the reclaim's bound).
+- It must not time out a member while its restarted replicas still catch up: the reclaim lasts as
+  long as the replay, and gives up only after `rebalance.leader-wait-timeout` without progress.
 - With `TRANSFER_AWAY` or `NONE`, ready should mean "every partition of the tenant on the member
   caught up". `local.lastRestart` reports that per partition (`CAUGHT_UP after … ms`) once known.
 

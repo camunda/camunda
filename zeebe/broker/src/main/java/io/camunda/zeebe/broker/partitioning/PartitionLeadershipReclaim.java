@@ -26,8 +26,9 @@ import org.slf4j.LoggerFactory;
  * Takes back the leadership of partitions that a member handed over before it restarted them. A
  * partition is asked for once its replica on this member has replayed the log it holds, so the new
  * leader does not replay before it processes, and through a coordinated leadership transfer, so it
- * keeps a leader throughout. A partition that cannot be taken back within the bound, or whose
- * replica is paused because it is out of disk space, stays led by the replica that took it over.
+ * keeps a leader throughout. The wait lasts as long as the replica keeps catching up, however long
+ * its replay takes. A partition whose replica stops catching up for the bound, or is paused because
+ * it is out of disk space, stays led by the replica that took it over.
  */
 @NullMarked
 public final class PartitionLeadershipReclaim {
@@ -54,7 +55,8 @@ public final class PartitionLeadershipReclaim {
   private final Executor poll;
 
   /**
-   * @param bound how long each partition may take to be installed, catch up and be taken back
+   * @param bound how long each partition may go without catching up further, from its restart or
+   *     from the lowest lag its replica reached, before it is given up
    * @param caughtUpLag how many log positions the replica's state may be behind its log to count as
    *     caught up
    * @param transferBound how long one request for the leadership may take
@@ -101,10 +103,25 @@ public final class PartitionLeadershipReclaim {
       final ReclaimPartition partition, final boolean takeBack, final long started) {
     final var progress = new Progress(partition, takeBack, started);
     final var result = new CompletableFuture<PartitionReclaim>();
-    CompletableFuture.delayedExecutor(bound.toNanos(), TimeUnit.NANOSECONDS)
-        .execute(() -> result.complete(progress.report(Outcome.TIMED_OUT)));
+    expireWithoutProgress(progress, result);
     step(progress, result);
     return result.whenComplete((report, error) -> log(report));
+  }
+
+  private void expireWithoutProgress(
+      final Progress progress, final CompletableFuture<PartitionReclaim> result) {
+    final var left = progress.lastProgress() + bound.toNanos() - System.nanoTime();
+    if (left <= 0) {
+      result.complete(progress.report(Outcome.TIMED_OUT));
+      return;
+    }
+    CompletableFuture.delayedExecutor(left, TimeUnit.NANOSECONDS)
+        .execute(
+            () -> {
+              if (!result.isDone()) {
+                expireWithoutProgress(progress, result);
+              }
+            });
   }
 
   private void step(final Progress progress, final CompletableFuture<PartitionReclaim> result) {
@@ -125,6 +142,7 @@ public final class PartitionLeadershipReclaim {
                 return;
               }
               progress.installed(lag);
+              progress.replayed(lag);
               if (lag.pausedForDiskSpace()) {
                 result.complete(progress.report(Outcome.PAUSED));
                 return;
@@ -227,7 +245,10 @@ public final class PartitionLeadershipReclaim {
     PAUSED,
     /** The leader refused the transfer for a reason that asking again would not change. */
     REFUSED,
-    /** The bound passed before this member led the partition, or before it caught up. */
+    /**
+     * The replica did not catch up any further for the bound, before this member led the partition
+     * or before it caught up.
+     */
     TIMED_OUT
   }
 
@@ -256,12 +277,26 @@ public final class PartitionLeadershipReclaim {
     private long installedNanos = -1;
     private long logSinceSnapshot = -1;
     private long caughtUpNanos = -1;
+    private long lowestLag = Long.MAX_VALUE;
+    private long progressNanos;
     private final List<String> answers = new ArrayList<>();
 
     private Progress(final ReclaimPartition partition, final boolean takeBack, final long started) {
       this.partition = partition;
       this.takeBack = takeBack;
       this.started = started;
+      progressNanos = started;
+    }
+
+    private synchronized long lastProgress() {
+      return progressNanos;
+    }
+
+    private synchronized void replayed(final ReplayLag lag) {
+      if (lag.lag() < lowestLag) {
+        lowestLag = lag.lag();
+        progressNanos = System.nanoTime();
+      }
     }
 
     private synchronized void installed(final ReplayLag lag) {
