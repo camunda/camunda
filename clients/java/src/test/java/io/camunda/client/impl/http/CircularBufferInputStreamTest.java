@@ -18,10 +18,15 @@ package io.camunda.client.impl.http;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.hc.core5.http.HttpStreamResetException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -54,6 +59,99 @@ class CircularBufferInputStreamTest {
 
     // when - then
     assertThatThrownBy(() -> stream.write(ByteBuffer.wrap(new byte[] {1}))).isSameAs(error);
+  }
+
+  @Test
+  void shouldFailEveryReadAfterClose() throws IOException {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(16);
+    stream.write(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+
+    // when
+    stream.close();
+
+    // then, the buffered data is dropped
+    assertThatThrownBy(stream::read).isInstanceOf(IOException.class).hasMessage("Stream closed");
+    assertThatThrownBy(() -> stream.read(new byte[4], 0, 4))
+        .isInstanceOf(IOException.class)
+        .hasMessage("Stream closed");
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldWakeBlockedReaderWhenClosed() {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(16);
+    final CompletableFuture<Throwable> readFailure = new CompletableFuture<>();
+    final Thread reader =
+        new Thread(
+            () -> {
+              try {
+                readFailure.completeExceptionally(
+                    new AssertionError("read returned " + stream.read()));
+              } catch (final IOException e) {
+                readFailure.complete(e);
+              }
+            },
+            "blocked-reader");
+    reader.setDaemon(true);
+    reader.start();
+    try {
+      await().until(() -> reader.getState() == Thread.State.WAITING);
+
+      // when
+      stream.close();
+
+      // then
+      assertThat(readFailure).succeedsWithin(Duration.ofSeconds(5)).isInstanceOf(IOException.class);
+    } finally {
+      reader.interrupt();
+    }
+  }
+
+  @Test
+  void shouldRejectWritesAfterClose() {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(16);
+    stream.close();
+
+    // when - then, so that httpcore5 cancels the download instead of filling a closed stream
+    assertThatThrownBy(() -> stream.write(ByteBuffer.wrap(new byte[] {1})))
+        .isInstanceOf(HttpStreamResetException.class);
+  }
+
+  @Test
+  void shouldReportDroppedDataAsFreeSpaceWhenClosed() throws IOException {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(4);
+    final AtomicInteger reportedSpace = new AtomicInteger();
+    stream.reportAvailableSpace(reportedSpace::addAndGet);
+    stream.write(ByteBuffer.wrap(new byte[6]));
+    stream.read();
+    // the buffer still holds more than its capacity, so the read byte is held back
+    assertThat(reportedSpace.get()).isEqualTo(4);
+
+    // when
+    stream.close();
+
+    // then, the I/O layer is given space again, so it reads and hits the failing write
+    assertThat(reportedSpace.get()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldNotReportFreeSpaceWhenClosedAfterEndOfStream() throws IOException {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(4);
+    final AtomicInteger reportedSpace = new AtomicInteger();
+    stream.reportAvailableSpace(reportedSpace::addAndGet);
+    stream.write(ByteBuffer.wrap(new byte[4]));
+    stream.endOfStream();
+
+    // when
+    stream.close();
+
+    // then, the download is already over
+    assertThat(reportedSpace.get()).isEqualTo(4);
   }
 
   @Test
