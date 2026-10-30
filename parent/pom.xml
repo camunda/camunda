@@ -78,8 +78,8 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.19.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
-    <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
-    <version.opentelemetry>1.62.0</version.opentelemetry>
+    <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 and CVE-2026-118259 -->
+    <version.opentelemetry>1.67.0</version.opentelemetry>
     <version.opensearch>2.17.1</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>4.0.1</version.opensearch.testcontainers>
@@ -1145,7 +1145,7 @@
         <scope>import</scope>
       </dependency>
 
-      <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+      <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 and CVE-2026-118259 -->
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-bom</artifactId>
