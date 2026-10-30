@@ -25,6 +25,7 @@ import {AddGlobalTaskListenerModal} from '#/admin/modules/global-task-listeners/
 import {EditGlobalTaskListenerModal} from '#/admin/modules/global-task-listeners/EditGlobalTaskListenerModal';
 import {DeleteGlobalTaskListenerModal} from '#/admin/modules/global-task-listeners/DeleteGlobalTaskListenerModal';
 import {getEventTypeLabels} from '#/admin/modules/global-task-listeners/eventTypes';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 import {
 	DEFAULT_PAGE_SIZE,
 	PAGE_SIZES,
@@ -145,6 +146,7 @@ const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> 
 	);
 
 	const title = t('admin.headerNavItemGlobalTaskListeners');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -160,45 +162,54 @@ const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> 
 						</Button>
 					</p>
 				</div>
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-						<div className="flex flex-col gap-2 sm:flex-1">
-							<Label htmlFor="global-task-listeners-search" className="sr-only">
-								{t('admin.globalTaskListeners.searchByListenerId')}
-							</Label>
-							<SearchInput
-								id="global-task-listeners-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.globalTaskListeners.searchByListenerId')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button onClick={() => setModal({type: 'add'})}>
-							<Plus aria-hidden />
-							{t('admin.globalTaskListeners.addGlobalTaskListener')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						columns={columns}
-						data={globalTaskListeners}
-						getRowId={(globalTaskListener) => globalTaskListener.id}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.globalTaskListeners.noGlobalTaskListeners')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.globalTaskListeners.resourceSingular')}
+						resources={t('admin.globalTaskListeners.resourcePlural')}
+						guideUrl={GLOBAL_TASK_LISTENERS_GUIDE_URL}
+						onCreate={() => setModal({type: 'add'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+							<div className="flex flex-col gap-2 sm:flex-1">
+								<Label htmlFor="global-task-listeners-search" className="sr-only">
+									{t('admin.globalTaskListeners.searchByListenerId')}
+								</Label>
+								<SearchInput
+									id="global-task-listeners-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.globalTaskListeners.searchByListenerId')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button onClick={() => setModal({type: 'add'})}>
+								<Plus aria-hidden />
+								{t('admin.globalTaskListeners.addGlobalTaskListener')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							columns={columns}
+							data={globalTaskListeners}
+							getRowId={(globalTaskListener) => globalTaskListener.id}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.globalTaskListeners.noGlobalTaskListeners')}
+						/>
+					</div>
+				)}
 			</div>
 			<AddGlobalTaskListenerModal isOpen={modal?.type === 'add'} onClose={() => setModal(null)} />
 			<EditGlobalTaskListenerModal

@@ -57,7 +57,9 @@ test.describe('Admin global task listeners', () => {
 	test('should create a global task listener', async ({adminGlobalTaskListenersPage, network, page}) => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
-				successResponse: HttpResponse.json(createQueryGlobalTaskListenersResponse()),
+				successResponse: HttpResponse.json(
+					createQueryGlobalTaskListenersResponse({items: [createGlobalTaskListener()]}),
+				),
 			}),
 		);
 
@@ -175,7 +177,9 @@ test.describe('Admin global task listeners', () => {
 	test('should search global task listeners by ID', async ({adminGlobalTaskListenersPage, network}) => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
-				successResponse: HttpResponse.json(createQueryGlobalTaskListenersResponse()),
+				successResponse: HttpResponse.json(
+					createQueryGlobalTaskListenersResponse({items: [createGlobalTaskListener()]}),
+				),
 			}),
 		);
 

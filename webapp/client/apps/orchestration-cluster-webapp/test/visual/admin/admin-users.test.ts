@@ -88,7 +88,7 @@ test('should match the empty users page snapshot', async ({adminUsersPage, page,
 	network.use(mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse({items: []}))}));
 
 	await adminUsersPage.goto();
-	await expect(adminUsersPage.table.getByText('No users found.')).toBeVisible();
+	await expect(page.getByText('No users created yet')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Zuordnungsregel gelöscht",
 				"createMappingRuleError": "Zuordnungsregel konnte nicht erstellt werden",
 				"updateMappingRuleError": "Zuordnungsregel konnte nicht aktualisiert werden",
-				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden"
+				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden",
+				"resourceSingular": "Zuordnungsregel",
+				"resourcePlural": "Zuordnungsregeln"
 			},
 			"users": {
 				"username": "Benutzername",
@@ -212,7 +214,9 @@
 				"userDeleted": "Benutzer {{username}} gelöscht",
 				"deleteUserFailed": "Benutzer konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Benutzer",
+				"resourcePlural": "Benutzer"
 			},
 			"groups": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -311,7 +315,9 @@
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Gruppe",
+				"resourcePlural": "Gruppen"
 			},
 			"clusterVariables": {
 				"closeButton": "Schließen",
@@ -363,7 +369,9 @@
 				"deleteClusterVariableSuccess": "Cluster-Variable gelöscht",
 				"createClusterVariableError": "Cluster-Variable konnte nicht erstellt werden",
 				"updateClusterVariableError": "Cluster-Variable konnte nicht aktualisiert werden",
-				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden"
+				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden",
+				"resourceSingular": "Cluster-Variable",
+				"resourcePlural": "Cluster-Variablen"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -421,7 +429,9 @@
 				"updateGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht aktualisiert werden",
 				"deleteGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "globalen Aufgaben-Listener",
+				"resourcePlural": "globale Aufgaben-Listener"
 			},
 			"authorizations": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -475,7 +485,9 @@
 				"deleteAuthorizationSuccess": "Autorisierung gelöscht",
 				"deleteAuthorizationError": "Autorisierung konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Es konnte nicht bestätigt werden, dass die Änderung wirksam wurde",
-				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen."
+				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
+				"resourceSingular": "Autorisierung",
+				"resourcePlural": "Autorisierungen"
 			},
 			"roles": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -575,7 +587,9 @@
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Rolle",
+				"resourcePlural": "Rollen"
 			},
 			"tenants": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -678,7 +692,15 @@
 				"unassignSuccess": "Aus Mandant entfernt",
 				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Mandant",
+				"resourcePlural": "Mandanten"
+			},
+			"emptyState": {
+				"title": "Noch keine {{resources}} erstellt",
+				"description": "Legen Sie zunächst Folgendes an: {{resource}}.",
+				"createAction": "{{resource}} erstellen",
+				"learnMore": "Mehr über {{resources}} erfahren"
 			}
 		},
 		"tasklist": {

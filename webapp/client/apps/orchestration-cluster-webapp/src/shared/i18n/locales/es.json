@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Regla de mapeo eliminada",
 				"createMappingRuleError": "No se pudo crear la regla de mapeo",
 				"updateMappingRuleError": "No se pudo actualizar la regla de mapeo",
-				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo"
+				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo",
+				"resourceSingular": "regla de mapeo",
+				"resourcePlural": "reglas de mapeo"
 			},
 			"users": {
 				"username": "Nombre de usuario",
@@ -212,7 +214,9 @@
 				"userDeleted": "Usuario {{username}} eliminado",
 				"deleteUserFailed": "No se pudo eliminar el usuario",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "usuario",
+				"resourcePlural": "usuarios"
 			},
 			"groups": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -311,7 +315,9 @@
 						"assigned": "Cliente {{id}} asignado",
 						"removed": "Cliente {{id}} quitado"
 					}
-				}
+				},
+				"resourceSingular": "grupo",
+				"resourcePlural": "grupos"
 			},
 			"clusterVariables": {
 				"closeButton": "Cerrar",
@@ -363,7 +369,9 @@
 				"deleteClusterVariableSuccess": "Variable de clúster eliminada",
 				"createClusterVariableError": "No se pudo crear la variable de clúster",
 				"updateClusterVariableError": "No se pudo actualizar la variable de clúster",
-				"deleteClusterVariableError": "No se pudo eliminar la variable de clúster"
+				"deleteClusterVariableError": "No se pudo eliminar la variable de clúster",
+				"resourceSingular": "variable de clúster",
+				"resourcePlural": "variables de clúster"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -421,7 +429,9 @@
 				"updateGlobalTaskListenerError": "No se pudo actualizar el listener global de tarea",
 				"deleteGlobalTaskListenerError": "No se pudo eliminar el listener global de tarea",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "listener global de tareas",
+				"resourcePlural": "listeners globales de tareas"
 			},
 			"authorizations": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -475,7 +485,9 @@
 				"deleteAuthorizationSuccess": "Autorización eliminada",
 				"deleteAuthorizationError": "No se pudo eliminar la autorización",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio surtiera efecto",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "autorización",
+				"resourcePlural": "autorizaciones"
 			},
 			"roles": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -575,7 +587,9 @@
 						"assigned": "Cliente {{id}} asignado",
 						"removed": "Cliente {{id}} quitado"
 					}
-				}
+				},
+				"resourceSingular": "rol",
+				"resourcePlural": "roles"
 			},
 			"tenants": {
 				"guideBody": "Para más información, consulte la ",
@@ -678,7 +692,15 @@
 				"unassignSuccess": "Quitado del inquilino",
 				"unassignError": "No se pudo quitar del inquilino",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "inquilino",
+				"resourcePlural": "inquilinos"
+			},
+			"emptyState": {
+				"title": "Aún no se han creado {{resources}}",
+				"description": "Empiece creando uno nuevo: {{resource}}.",
+				"createAction": "Crear {{resource}}",
+				"learnMore": "Más información sobre {{resources}}"
 			}
 		},
 		"tasklist": {

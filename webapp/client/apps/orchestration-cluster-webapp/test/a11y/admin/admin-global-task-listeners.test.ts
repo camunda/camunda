@@ -71,7 +71,7 @@ test('should have no accessibility violations in the empty state', async ({
 	);
 
 	await adminGlobalTaskListenersPage.goto();
-	await expect(page.getByText('No global task listeners found.')).toBeVisible();
+	await expect(page.getByText('No global task listeners created yet')).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().disableRules([DS_ACTIONS_COLUMN_HEADER_RULE]).analyze();
 

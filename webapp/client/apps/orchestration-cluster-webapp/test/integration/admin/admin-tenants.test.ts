@@ -212,7 +212,11 @@ test.describe('Admin tenants list', () => {
 	});
 
 	test('should search tenants by exact ID', async ({adminTenantsPage, network}) => {
-		network.use(mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}));
+		network.use(
+			mockQueryTenantsEndpoint({
+				successResponse: HttpResponse.json(createQueryTenantsResponse([createTenant()])),
+			}),
+		);
 
 		await adminTenantsPage.goto();
 		await expect(adminTenantsPage.searchInput).toBeVisible();

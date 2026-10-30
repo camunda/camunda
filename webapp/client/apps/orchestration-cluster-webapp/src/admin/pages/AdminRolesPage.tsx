@@ -26,6 +26,7 @@ import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {AddRoleModal} from '#/admin/modules/roles/AddRoleModal';
 import {EditRoleModal} from '#/admin/modules/roles/EditRoleModal';
 import {DeleteRoleModal} from '#/admin/modules/roles/DeleteRoleModal';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type RolesSearch} from '#/admin/modules/roles/searchSchema';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
@@ -133,6 +134,7 @@ const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defau
 	);
 
 	const title = t('admin.headerNavItemRoles');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -149,47 +151,56 @@ const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defau
 					</p>
 				</div>
 
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-						<div className="sm:flex-1">
-							<Label htmlFor="roles-search" className="sr-only">
-								{t('admin.roles.searchByRoleId')}
-							</Label>
-							<SearchInput
-								id="roles-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.roles.searchByRoleId')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button type="button" onClick={() => setModalState({type: 'create'})}>
-							{t('admin.roles.createRole')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
-						columns={columns}
-						data={roles}
-						getRowId={(role) => role.roleId}
-						rowHref={(role) => detailPath.role(role.roleId)}
-						linkComponent={RouterRowLink}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.roles.noRolesFound')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.roles.resourceSingular')}
+						resources={t('admin.roles.resourcePlural')}
+						guideUrl={ROLES_GUIDE_URL}
+						onCreate={() => setModalState({type: 'create'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+							<div className="sm:flex-1">
+								<Label htmlFor="roles-search" className="sr-only">
+									{t('admin.roles.searchByRoleId')}
+								</Label>
+								<SearchInput
+									id="roles-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.roles.searchByRoleId')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button type="button" onClick={() => setModalState({type: 'create'})}>
+								{t('admin.roles.createRole')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+							columns={columns}
+							data={roles}
+							getRowId={(role) => role.roleId}
+							rowHref={(role) => detailPath.role(role.roleId)}
+							linkComponent={RouterRowLink}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.roles.noRolesFound')}
+						/>
+					</div>
+				)}
 			</div>
 
 			{modalState?.type === 'create' && <AddRoleModal isOpen onClose={closeModal} />}
