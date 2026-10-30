@@ -304,9 +304,17 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
         PARTITION_COUNT,
         SCALED_PARTITION_COUNT);
 
-    // and - the group routes over them again
-    InProcessRestoreTestUtil.assertRoutesOverPartitions(
-        ClusterActuator.of(broker), PARTITION_COUNT);
+    // and - the group routes over them again. After the standalone restore the broker takes the
+    // routing state from the restored data once it is up, so it settles shortly after.
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
   }
 
   /**
