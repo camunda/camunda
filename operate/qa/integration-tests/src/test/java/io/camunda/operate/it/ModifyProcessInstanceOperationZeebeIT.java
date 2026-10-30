@@ -7,11 +7,16 @@
  */
 package io.camunda.operate.it;
 
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -26,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Override
   @Before
@@ -876,6 +882,179 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getFlowNodeStateFor("filterMapSubProcess"))
         .isEqualTo(FlowNodeStateDto.TERMINATED);
+  }
+
+  @Test
+  public void shouldRejectTokenModificationOfOtherProcessInstance() throws Exception {
+    // given
+    final long instanceA =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final long instanceB =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final long taskAOfB =
+        tester.getAllFlowNodeInstances(instanceB).stream()
+            .filter(f -> "taskA".equals(f.getFlowNodeId()))
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+    final ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto()
+            .setProcessInstanceKey(String.valueOf(instanceA))
+            .setModifications(
+                List.of(
+                    new Modification()
+                        .setModification(Modification.Type.CANCEL_TOKEN)
+                        .setFromFlowNodeInstanceKey(String.valueOf(taskAOfB))));
+
+    // when the request is made for instance A with a token of instance B
+    mockMvc
+        .perform(
+            post(PROCESS_INSTANCE_URL + "/" + instanceA + "/modify")
+                .content(mockMvcTestRule.json(request))
+                .contentType(mockMvcTestRule.getContentType()))
+        .andExpect(status().isBadRequest());
+    searchTestRule.refreshSerchIndexes();
+
+    // then no operation is created for instance A
+    assertThat(
+            processInstanceReader.getProcessInstanceWithOperationsByKey(instanceA).getOperations())
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldRejectModificationWithAncestorOfOtherProcessInstance() throws Exception {
+    // given
+    final long instanceA =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final long instanceB =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto()
+            .setProcessInstanceKey(String.valueOf(instanceA))
+            .setModifications(
+                List.of(
+                    new Modification()
+                        .setModification(Modification.Type.ADD_TOKEN)
+                        .setToFlowNodeId("taskD")
+                        .setNewTokensCount(1)
+                        .setAncestorElementInstanceKey(instanceB)));
+
+    // when the request is made for instance A with an ancestor in instance B
+    mockMvc
+        .perform(
+            post(PROCESS_INSTANCE_URL + "/" + instanceA + "/modify")
+                .content(mockMvcTestRule.json(request))
+                .contentType(mockMvcTestRule.getContentType()))
+        .andExpect(status().isBadRequest());
+    searchTestRule.refreshSerchIndexes();
+
+    // then no operation is created for instance A
+    assertThat(
+            processInstanceReader.getProcessInstanceWithOperationsByKey(instanceA).getOperations())
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldRejectAllWhenOneModificationTargetsOtherProcessInstance() throws Exception {
+    // given
+    final long instanceA =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final long instanceB =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto()
+            .setProcessInstanceKey(String.valueOf(instanceA))
+            .setModifications(
+                List.of(
+                    new Modification()
+                        .setModification(Modification.Type.ADD_VARIABLE)
+                        .setScopeKey(instanceA)
+                        .setVariables(Map.of("own", "1")),
+                    new Modification()
+                        .setModification(Modification.Type.ADD_VARIABLE)
+                        .setScopeKey(instanceB)
+                        .setVariables(Map.of("foreign", "1"))));
+
+    // when one of the modifications targets the scope of instance B
+    mockMvc
+        .perform(
+            post(PROCESS_INSTANCE_URL + "/" + instanceA + "/modify")
+                .content(mockMvcTestRule.json(request))
+                .contentType(mockMvcTestRule.getContentType()))
+        .andExpect(status().isBadRequest());
+    searchTestRule.refreshSerchIndexes();
+
+    // then no operation is created for instance A, so the valid modification is not applied either
+    assertThat(
+            processInstanceReader.getProcessInstanceWithOperationsByKey(instanceA).getOperations())
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldAcceptModificationWithKeysOfOwnProcessInstance() throws Exception {
+    // given
+    final long instanceA =
+        tester
+            .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+            .waitUntil()
+            .flowNodeIsActive("taskA")
+            .getProcessInstanceKey();
+    final long taskAOfA =
+        tester.getAllFlowNodeInstances(instanceA).stream()
+            .filter(f -> "taskA".equals(f.getFlowNodeId()))
+            .findFirst()
+            .orElseThrow()
+            .getKey();
+    final ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto()
+            .setProcessInstanceKey(String.valueOf(instanceA))
+            .setModifications(
+                List.of(
+                    new Modification()
+                        .setModification(Modification.Type.ADD_VARIABLE)
+                        .setScopeKey(taskAOfA)
+                        .setVariables(Map.of("own", "1")),
+                    new Modification()
+                        .setModification(Modification.Type.CANCEL_TOKEN)
+                        .setFromFlowNodeInstanceKey(String.valueOf(taskAOfA))));
+
+    // when the request is made for instance A with keys of instance A
+    mockMvc
+        .perform(
+            post(PROCESS_INSTANCE_URL + "/" + instanceA + "/modify")
+                .content(mockMvcTestRule.json(request))
+                .contentType(mockMvcTestRule.getContentType()))
+        .andExpect(status().isOk());
+    searchTestRule.refreshSerchIndexes();
+
+    // then an operation is created for instance A
+    assertThat(
+            processInstanceReader.getProcessInstanceWithOperationsByKey(instanceA).getOperations())
+        .hasSize(1);
   }
 
   private List<String> varsToStrings(final List<Long> flowNodeKeys) {
