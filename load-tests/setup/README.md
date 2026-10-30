@@ -103,7 +103,7 @@ Running `newLoadTest.sh` without arguments shows the `main` help:
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace          Namespace name. Uppercase letters are lowercased; "c8-" is added if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
@@ -117,6 +117,8 @@ Examples:
 ```
 
 As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
+
+Namespace names are normalized to lowercase and receive the `c8-` prefix when missing. For example, `./newLoadTest.sh INC-5337` creates the `c8-inc-5337` folder and namespace, while `C8-foo` normalizes to `c8-foo`. Names must still satisfy Kubernetes DNS-1123 rules; invalid characters such as `_` are rejected.
 
 Example:
 
@@ -632,7 +634,7 @@ _You need a Kubernetes Cluster at your disposal to run the load test itself, whi
 ./newCloudLoadTest.sh <namespace>
 ```
 
-Similar to the `newLoadTest.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
+Similar to `newLoadTest.sh`, it creates a Kubernetes namespace and folder using the same normalization: uppercase letters are lowercased and the `c8-` prefix is added when missing. Invalid Kubernetes names are rejected.
 Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)).
 
 Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudLoadTest.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
