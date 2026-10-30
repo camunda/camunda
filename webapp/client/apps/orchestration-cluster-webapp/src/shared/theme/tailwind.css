@@ -199,6 +199,12 @@
 	}
 }
 
+@keyframes op-drilldown-pulse {
+	50% {
+		opacity: 0.3;
+	}
+}
+
 /* Pending state pills emit a ring in their own colour (--pulse) instead of changing opacity. */
 @keyframes state-overlay-ring {
 	0% {
@@ -289,6 +295,20 @@
 	.op-drilldown-loading,
 	.op-drilldown-loading * {
 		cursor: wait;
+	}
+
+	.op-drilldown-icon {
+		fill: none;
+		stroke: var(--neutral-foreground-subtle);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.op-drilldown-loading .op-drilldown-icon {
+			animation: op-drilldown-pulse 1s ease-in-out infinite;
+		}
 	}
 
 	/* The renderer sets the shape fill inline, which only `!important` can override. */
