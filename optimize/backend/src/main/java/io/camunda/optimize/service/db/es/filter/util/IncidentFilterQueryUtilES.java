@@ -34,7 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
@@ -43,8 +43,7 @@ public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
       new NestedDefinitionQueryBuilderES(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
-  private static final Map<
-          Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
+  private static final Map<Class<? extends ProcessFilterDto<?>>, Consumer<BoolQuery.Builder>>
       INCIDENT_VIEW_FILTER_INSTANCE_QUERIES =
           ImmutableMap.of(
               OpenIncidentFilterDto.class,
@@ -101,12 +100,10 @@ public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       final BoolQuery.Builder viewFilterInstanceQuery = new BoolQuery.Builder();
       viewLevelFiltersForInstanceMatch.forEach(
-          filter -> {
-            final var unused =
-                INCIDENT_VIEW_FILTER_INSTANCE_QUERIES
-                    .get(filter.getClass())
-                    .apply(viewFilterInstanceQuery);
-          });
+          filter ->
+              INCIDENT_VIEW_FILTER_INSTANCE_QUERIES
+                  .get(filter.getClass())
+                  .accept(viewFilterInstanceQuery));
       final NestedQuery.Builder builder = new NestedQuery.Builder();
       builder
           .path(INCIDENTS)
