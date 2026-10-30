@@ -8,7 +8,9 @@
 package io.camunda.zeebe.backup.azure;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPathPattern;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
 
 import com.azure.core.http.rest.Response;
 import com.azure.core.util.BinaryData;
@@ -28,15 +30,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.ListOptions;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.BackupStorePaths;
-import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
@@ -51,8 +50,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,21 +72,6 @@ public final class ManifestManager {
           .setSerializationInclusion(Include.NON_ABSENT);
 
   private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
-
-  /**
-   * The path format consists of the following elements:
-   *
-   * <ul>
-   *   <li>{@code "manifests"}
-   *   <li>{@code partitionId}
-   *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
-   *   <li>{@code "manifest.json"}
-   * </ul>
-   *
-   * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
-   */
-  private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
 
   private static final int LIST_PAGE_SIZE = 1000;
 
@@ -281,9 +263,13 @@ public final class ManifestManager {
         if (!matcher.matches()) {
           continue;
         }
-        parseIdentifier(matcher, blob.getName())
-            .filter(wildcard::matches)
-            .ifPresent(id -> manifestBlobs.add(new ManifestBlob(id, blob.getName())));
+        final var id = parseManifestPath(matcher);
+        if (id.isEmpty()) {
+          LOG.warn("Tried interpreting blob {} as a backup manifest but failed", blob.getName());
+          continue;
+        }
+        id.filter(wildcard::matches)
+            .ifPresent(it -> manifestBlobs.add(new ManifestBlob(it, blob.getName())));
       }
     }
     return PagedReads.readPageAsync(manifestBlobs, ManifestBlob::id, options, this::readManifest)
@@ -304,37 +290,6 @@ public final class ManifestManager {
 
   public static String manifestPath(final Manifest manifest) {
     return BackupStorePaths.manifestPath(manifest.id());
-  }
-
-  /** Matches the manifest paths of the wildcard and captures the identifier's path segments. */
-  private static Pattern manifestPathPattern(final BackupIdentifierWildcard wildcard) {
-    return Pattern.compile(
-        MANIFEST_PATH_FORMAT.formatted(
-            "(?<partitionId>%s)"
-                .formatted(wildcard.partitionId().map(Number::toString).orElse("\\d+")),
-            "(?<checkpointId>%s)".formatted(wildcard.checkpointPattern().asRegex()),
-            "(?<memberId>%s)".formatted(BackupIdentifierWildcard.memberIdRegex(wildcard))));
-  }
-
-  /**
-   * Parses the identifier captured by {@link #manifestPathPattern}. Empty if the checkpoint id
-   * segment is a digit run too long to fit a {@code long} — a foreign or corrupted blob rather than
-   * one this store wrote, skipped instead of failing the whole listing.
-   */
-  private static Optional<BackupIdentifier> parseIdentifier(
-      final Matcher manifestPath, final String blobName) {
-    final var checkpointId = CheckpointIds.tryParse(manifestPath.group("checkpointId"));
-    if (checkpointId.isEmpty()) {
-      LOG.warn("Tried interpreting blob {} as a backup manifest but failed", blobName);
-      return Optional.empty();
-    }
-    final var memberId = BrokerMemberId.from(manifestPath.group("memberId"));
-    return Optional.of(
-        new BackupIdentifierImpl(
-            memberId.nodeIdx(),
-            memberId.zone(),
-            Integer.parseInt(manifestPath.group("partitionId")),
-            checkpointId.getAsLong()));
   }
 
   /**

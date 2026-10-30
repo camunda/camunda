@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,8 @@ class BackupStorePathsTest {
   private static final BackupIdentifierImpl ID = new BackupIdentifierImpl(2, 1, 100L);
   private static final BackupIdentifierImpl ZONED_ID =
       new BackupIdentifierImpl(2, "eu-west", 1, 100L);
+  private static final BackupIdentifierWildcard ANY =
+      new BackupIdentifierWildcardImpl(Optional.empty(), Optional.empty(), CheckpointPattern.any());
 
   @Test
   void shouldBuildMetadataPath() {
@@ -186,5 +190,131 @@ class BackupStorePathsTest {
     assertThatThrownBy(() -> BackupStorePaths.sanitizeBasePath("//"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("basePath");
+  }
+
+  @Test
+  void shouldParseManifestPath() {
+    // when
+    final var id = parse("", ANY, "manifests/1/99/0/manifest.json");
+
+    // then
+    assertThat(id).contains(new BackupIdentifierImpl(0, 1, 99L));
+  }
+
+  @Test
+  void shouldParseManifestPathUnderBasePath() {
+    // when
+    final var id = parse("base/", ANY, "base/manifests/4/1000/2/manifest.json");
+
+    // then
+    assertThat(id).contains(new BackupIdentifierImpl(2, 4, 1000L));
+  }
+
+  @Test
+  void shouldParseManifestPathWithZone() {
+    // when
+    final var id = parse("", ANY, "manifests/1/100/eu-west_2/manifest.json");
+
+    // then
+    assertThat(id).contains(ZONED_ID);
+  }
+
+  @Test
+  void shouldParseManifestPathWithLargeValues() {
+    // when
+    final var id = parse("", ANY, "manifests/100/9999999999/50/manifest.json");
+
+    // then
+    assertThat(id).contains(new BackupIdentifierImpl(50, 100, 9999999999L));
+  }
+
+  @Test
+  void shouldParseManifestPathItBuilt() {
+    // when
+    final var id = parse("base/", ANY, BackupStorePaths.manifestPath("base/", ID));
+
+    // then
+    assertThat(id).contains(ID);
+  }
+
+  @Test
+  void shouldParseRelativeManifestPath() {
+    // given
+    final var matcher =
+        BackupStorePaths.relativeManifestPathPattern(ANY).matcher("1/100/2/manifest.json");
+
+    // when
+    final var matches = matcher.matches();
+
+    // then
+    assertThat(matches).isTrue();
+    assertThat(BackupStorePaths.parseManifestPath(matcher)).contains(ID);
+  }
+
+  @Test
+  void shouldNotParseCheckpointIdTooLargeForLong() {
+    // when
+    final var id = parse("", ANY, "manifests/1/99999999999999999999/2/manifest.json");
+
+    // then
+    assertThat(id).isEmpty();
+  }
+
+  @Test
+  void shouldNotParsePartitionIdTooLargeForInt() {
+    // when
+    final var id = parse("", ANY, "manifests/99999999999/100/2/manifest.json");
+
+    // then
+    assertThat(id).isEmpty();
+  }
+
+  @Test
+  void shouldNotMatchManifestOutsideWildcard() {
+    // given
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(2), CheckpointPattern.any());
+
+    // when
+    final var matches =
+        BackupStorePaths.manifestPathPattern(wildcard)
+            .matcher("manifests/1/100/2/manifest.json")
+            .matches();
+
+    // then
+    assertThat(matches).isFalse();
+  }
+
+  @Test
+  void shouldMatchBasePathLiterally() {
+    // when
+    final var matches =
+        BackupStorePaths.manifestPathPattern("a.b/", ANY)
+            .matcher("aXb/manifests/1/100/2/manifest.json")
+            .matches();
+
+    // then
+    assertThat(matches).isFalse();
+  }
+
+  @Test
+  void shouldNotMatchOtherObjectsUnderManifest() {
+    // when
+    final var matches =
+        BackupStorePaths.manifestPathPattern(ANY)
+            .matcher("manifests/1/100/2/manifest.json.tmp")
+            .matches();
+
+    // then
+    assertThat(matches).isFalse();
+  }
+
+  private static Optional<BackupIdentifier> parse(
+      final String basePath, final BackupIdentifierWildcard wildcard, final String key) {
+    final var matcher = BackupStorePaths.manifestPathPattern(basePath, wildcard).matcher(key);
+    assertThat(matcher.matches())
+        .describedAs("'%s' matches the manifest path pattern", key)
+        .isTrue();
+    return BackupStorePaths.parseManifestPath(matcher);
   }
 }

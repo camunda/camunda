@@ -9,20 +9,19 @@ package io.camunda.zeebe.backup.filesystem;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.relativeManifestPathPattern;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.ListOptions;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
-import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
@@ -190,27 +189,6 @@ public final class ManifestManager {
         manifestFile -> Optional.ofNullable(getManifestWithPath(manifestFile.path())));
   }
 
-  /**
-   * Parses the identifier from a manifest path: partitionId/checkpointId/memberId/manifest.json.
-   * Empty if the checkpoint id segment is a digit run too long to fit a {@code long} — a foreign or
-   * corrupted file rather than one this store wrote, skipped instead of failing the whole walk.
-   */
-  private Optional<BackupIdentifier> parseIdentifier(final Path manifestFile) {
-    final var relativePath = manifestsPath.relativize(manifestFile);
-    final var checkpointId = CheckpointIds.tryParse(relativePath.getName(1).toString());
-    if (checkpointId.isEmpty()) {
-      LOGGER.warn("Tried interpreting file {} as a backup manifest but failed", manifestFile);
-      return Optional.empty();
-    }
-    final var memberId = BrokerMemberId.from(relativePath.getName(2).toString());
-    return Optional.of(
-        new BackupIdentifierImpl(
-            memberId.nodeIdx(),
-            memberId.zone(),
-            Integer.parseInt(relativePath.getName(0).toString()),
-            checkpointId.getAsLong()));
-  }
-
   private @Nullable Manifest getManifestWithPath(final Path path) {
     if (!Files.exists(path)) {
       return null;
@@ -231,29 +209,10 @@ public final class ManifestManager {
   }
 
   private Path getManifestPath(final BackupIdentifier id) {
-    return getManifestPath(
-        String.valueOf(id.partitionId()), String.valueOf(id.checkpointId()), id.brokerId().id());
-  }
-
-  private boolean filterBlobsByWildcard(
-      final BackupIdentifierWildcard wildcard, final String path) {
-    final var pattern =
-        Pattern.compile(
-                getManifestPath(
-                        wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                        wildcard.checkpointPattern().asRegex(),
-                        BackupIdentifierWildcard.memberIdRegex(wildcard))
-                    .toString())
-            .asMatchPredicate();
-    return pattern.test(path);
-  }
-
-  private Path getManifestPath(
-      final String partitionId, final String checkpointId, final String nodeId) {
     return manifestsPath
-        .resolve(partitionId)
-        .resolve(checkpointId)
-        .resolve(nodeId)
+        .resolve(String.valueOf(id.partitionId()))
+        .resolve(String.valueOf(id.checkpointId()))
+        .resolve(id.brokerId().id())
         .resolve(MANIFEST_OBJECT_NAME);
   }
 
@@ -271,21 +230,31 @@ public final class ManifestManager {
   final class ManifestCollector extends SimpleFileVisitor<Path> {
 
     private final BackupIdentifierWildcard wildcard;
+    private final Pattern pathPattern;
     private final List<ManifestFile> manifestFiles = new ArrayList<>();
 
     @VisibleForTesting
     ManifestCollector(final BackupIdentifierWildcard wildcard) {
       this.wildcard = wildcard;
+      pathPattern = relativeManifestPathPattern(wildcard);
     }
 
     @Override
     public @NonNull FileVisitResult visitFile(
         final Path file, final @NonNull BasicFileAttributes attributes) {
-      if (filterBlobsByWildcard(wildcard, file.toString())) {
-        parseIdentifier(file)
-            .filter(wildcard::matches)
-            .ifPresent(id -> manifestFiles.add(new ManifestFile(id, file)));
+      final var relativePath = manifestsPath.relativize(file);
+      final var matcher =
+          pathPattern.matcher(
+              relativePath.toString().replace(relativePath.getFileSystem().getSeparator(), "/"));
+      if (!matcher.matches()) {
+        return FileVisitResult.CONTINUE;
       }
+      final var id = parseManifestPath(matcher);
+      if (id.isEmpty()) {
+        LOGGER.warn("Tried interpreting file {} as a backup manifest but failed", file);
+        return FileVisitResult.CONTINUE;
+      }
+      id.filter(wildcard::matches).ifPresent(it -> manifestFiles.add(new ManifestFile(it, file)));
       return FileVisitResult.CONTINUE;
     }
 
