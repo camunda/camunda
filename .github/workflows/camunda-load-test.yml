@@ -90,6 +90,11 @@ on:
         type: number
         required: false
         default: 0
+      dual-region:
+        description: 'Deploy a dual region cluster: two namespaces, <name>-region-a and <name>-region-b, forming one zone-aware cluster. With elasticsearch, each region also exports to the Elasticsearch of the other. Needs secondary storage elasticsearch or none; Optimize is not deployed.'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -205,6 +210,11 @@ on:
         type: number
         required: false
         default: 0
+      dual-region:
+        description: 'Deploy a dual region cluster: two namespaces, <name>-region-a and <name>-region-b, forming one zone-aware cluster. With elasticsearch, each region also exports to the Elasticsearch of the other. Needs secondary storage elasticsearch or none; Optimize is not deployed.'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -259,7 +269,9 @@ env:
   BUILD_FRONTEND: ${{ inputs.build-frontend }}
   CONNECTORS_TAG: ${{ inputs.connectors-tag }}
   ENABLE_CHAOS: ${{ inputs.enable-chaos }}
-  ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+  DUAL_REGION: ${{ inputs.dual-region }}
+  # Optimize would need its own Elasticsearch handling per region, so a dual region cluster has none
+  ENABLE_OPTIMIZE: ${{ inputs.enable-optimize && !inputs.dual-region }}
   ENABLE_OPTIMIZE_METRICS: ${{ inputs.enable-optimize-report-metrics }}
   HELM_CHART: camunda-platform-8.10
   IDENTITY_TAG: ${{ inputs.identity-tag }}
@@ -317,6 +329,7 @@ jobs:
           | Enable Optimize report metrics | \`${ENABLE_OPTIMIZE_METRICS}\` |
           | Enable chaos | \`${ENABLE_CHAOS}\` |
           | Physical tenant count | \`${PHYSICAL_TENANT_COUNT}\` |
+          | Dual region | \`${DUAL_REGION}\` |
           | Build frontend | \`${BUILD_FRONTEND}\` |
           | Perform read benchmarks | \`${PERFORM_READ_BENCHMARKS}\` |
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
@@ -337,6 +350,22 @@ jobs:
         run: |
           echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
           exit 1
+      - name: Validate dual region inputs
+        if: ${{ inputs.dual-region }}
+        run: |
+          if [[ "${SECONDARY_STORAGE_TYPE}" != "elasticsearch" && "${SECONDARY_STORAGE_TYPE}" != "none" ]]; then
+            echo "::error::Invalid input combination: 'dual-region' requires secondary-storage-type 'elasticsearch' or 'none', got '${SECONDARY_STORAGE_TYPE}'."
+            exit 1
+          fi
+          if [[ "${PHYSICAL_TENANT_COUNT}" != "0" ]]; then
+            echo "::error::Invalid input combination: 'dual-region' cannot be combined with physical-tenant-count."
+            exit 1
+          fi
+          # Kubernetes namespaces are limited to 63 characters; "-region-a" adds 9
+          if (( ${#NAMESPACE} + 9 > 63 )); then
+            echo "::error::Namespace '${NAMESPACE}-region-a' is longer than 63 characters; use a shorter name."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
@@ -588,7 +617,19 @@ jobs:
       - name: Print tool versions
         run: .github/scripts/load-test-print-tool-versions.sh
 
+      # A dual region cluster is two namespaces, each scaffolded and installed like a single one.
+      - name: Resolve load test namespaces
+        id: namespaces
+        run: |
+          if [[ "${DUAL_REGION}" == "true" ]]; then
+            echo "list=${NAMESPACE}-region-a ${NAMESPACE}-region-b" >> "$GITHUB_OUTPUT"
+          else
+            echo "list=${NAMESPACE}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Scaffold load-test folder
+        env:
+          NAMESPACES: ${{ steps.namespaces.outputs.list }}
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered
@@ -596,7 +637,9 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+          for namespace in ${NAMESPACES}; do
+            ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${namespace}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+          done
 
       - name: Install latest Camunda Platform
         shell: bash --noprofile --norc -exo pipefail {0}
@@ -608,39 +651,72 @@ jobs:
           OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
-          .github/scripts/load-test-install-camunda-platform.sh \
-            "${NAMESPACE}" \
-            "${INSTALL_TARGET}" \
-            "${CALCULATED_IMAGE_TAG}" \
-            "${IMAGE_REPOSITORY}" \
-            "${RESOLVED_IMAGE_REGISTRY}" \
-            "${CAMUNDA_REPO}" \
-            "${OPTIMIZE_REPO}" \
-            "${PERFORM_READ_BENCHMARKS}" \
-            "${ENABLE_OPTIMIZE}" \
-            "${ENABLE_OPTIMIZE_METRICS}" \
-            "${METRICS_EXPORTER_BUILT}" \
-            "${ENABLE_CHAOS}" \
-            "${PHYSICAL_TENANT_COUNT}" \
-            --optimize-tag "${OPTIMIZE_TAG}" \
-            --orchestration-tag "${ORCHESTRATION_TAG}" \
-            --identity-tag "${IDENTITY_TAG}" \
-            --connectors-tag "${CONNECTORS_TAG}" \
+          install_namespace() {
+            local namespace="$1"
+            shift
+            .github/scripts/load-test-install-camunda-platform.sh \
+              "${namespace}" \
+              "${INSTALL_TARGET}" \
+              "${CALCULATED_IMAGE_TAG}" \
+              "${IMAGE_REPOSITORY}" \
+              "${RESOLVED_IMAGE_REGISTRY}" \
+              "${CAMUNDA_REPO}" \
+              "${OPTIMIZE_REPO}" \
+              "${PERFORM_READ_BENCHMARKS}" \
+              "${ENABLE_OPTIMIZE}" \
+              "${ENABLE_OPTIMIZE_METRICS}" \
+              "${METRICS_EXPORTER_BUILT}" \
+              "${ENABLE_CHAOS}" \
+              "${PHYSICAL_TENANT_COUNT}" \
+              --optimize-tag "${OPTIMIZE_TAG}" \
+              --orchestration-tag "${ORCHESTRATION_TAG}" \
+              --identity-tag "${IDENTITY_TAG}" \
+              --connectors-tag "${CONNECTORS_TAG}" \
+              --platform-helm-values "${PLATFORM_HELM_VALUES}" \
+              --load-test-setup-helm-values "${LOAD_TEST_SETUP_HELM_VALUES}" \
+              --scenario "${SCENARIO}" \
+              "$@"
+          }
+
+          if [[ "${DUAL_REGION}" != "true" ]]; then
+            install_namespace "${NAMESPACE}" --load-test-load "${LOAD_TEST_LOAD}"
+            exit 0
+          fi
+
+          # The helm installs do not wait for the brokers, which only become ready once both regions
+          # run, so the regions can be installed one after the other. With Elasticsearch, each region
+          # also exports to the one of the other; B goes first so that A's exporter finds B's. The
+          # load generators run in region A only; both regions' brokers serve the same cluster.
+          install_namespace "${NAMESPACE}-region-b" \
+            --load-test-load "--set load-tester.enabled=false ${LOAD_TEST_LOAD}" \
+            --dual-region-zone region-b \
+            --dual-region-peer-namespace "${NAMESPACE}-region-a" \
+            --dual-region-cluster-name "${NAMESPACE}"
+          install_namespace "${NAMESPACE}-region-a" \
             --load-test-load "${LOAD_TEST_LOAD}" \
-            --platform-helm-values "${PLATFORM_HELM_VALUES}" \
-            --load-test-setup-helm-values "${LOAD_TEST_SETUP_HELM_VALUES}" \
-            --scenario "${SCENARIO}"
+            --dual-region-zone region-a \
+            --dual-region-peer-namespace "${NAMESPACE}-region-b" \
+            --dual-region-cluster-name "${NAMESPACE}"
 
       - name: Annotate namespace with workflow run URL
+        env:
+          NAMESPACES: ${{ steps.namespaces.outputs.list }}
         run: |
           # Traceability annotation, applied after `make install` has created the namespace.
-          kubectl annotate namespace "${NAMESPACE}" \
-            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --overwrite
+          for namespace in ${NAMESPACES}; do
+            kubectl annotate namespace "${namespace}" \
+              "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --overwrite
+          done
 
       - name: Summarize load test deployment
         if: success()
-        run: .github/scripts/load-test-summary.sh "${NAMESPACE}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          NAMESPACES: ${{ steps.namespaces.outputs.list }}
+        run: |
+          for namespace in ${NAMESPACES}; do
+            .github/scripts/load-test-summary.sh "${namespace}" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Observe build status
         if: always()
