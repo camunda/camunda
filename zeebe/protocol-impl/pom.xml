@@ -55,9 +55,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-api</artifactId>
     </dependency>
+    <!-- only for the batch operation code that writes and reads RequiredAuthorization; see
+         MsgPackConverter -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-core</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
