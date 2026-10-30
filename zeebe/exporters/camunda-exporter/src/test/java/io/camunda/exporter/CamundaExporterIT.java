@@ -39,16 +39,15 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
-import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
-import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -610,9 +609,14 @@ final class CamundaExporterIT {
 
     // when
     final var largeString = RandomStringUtils.randomAlphanumeric(250_000);
-    final var varEntity = new VariableEntity();
-    varEntity.setFullValue(largeString);
-    final var variableSize = EntitySizeEstimator.estimateEntitySize(varEntity);
+    final var variableSize =
+        RecordSizes.of(
+            factory.generateRecord(
+                ValueType.VARIABLE,
+                r ->
+                    r.withValue(
+                            ImmutableVariableRecordValue.builder().withValue(largeString).build())
+                        .withBrokerVersion("8.8.0")));
 
     final var requiredVariableRecordsForFlush =
         Math.ceil((double) (memoryLimit * 1024 * 1024) / variableSize);
