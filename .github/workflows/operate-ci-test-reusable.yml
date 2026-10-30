@@ -17,7 +17,7 @@
 # called by: operate-ci-data-layer.yml, operate-ci-core-features.yml
 # test location: operate
 # type: CI
-# owner: @camunda/data-layer, @camunda/core-features
+# owner: @camunda/data-layer, @camunda/operate-admin-pod
 ---
 name: Operate CI IT test reusable
 
