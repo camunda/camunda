@@ -254,7 +254,7 @@ after it.
 | `ZeebePartition#forceSnapshot`, `#replayProgress`              | zeebe/broker  | A snapshot on demand in either role, once the current role transition completed; the log end (from the log stream, as a follower's snapshot director does not follow commits), last replayed event, snapshot position                   |
 | `PartitionRestartSnapshots`                                    | zeebe/broker  | Snapshots every partition within one bound; a skipped, failed or timed-out snapshot never fails the restart                                                                                                                             |
 | `PartitionLeadershipReclaim`                                   | zeebe/broker  | Per partition: wait until installed and within 100 positions of its log end, then `requestLeadership`; asks again on `LAG_TOO_HIGH`, `TRANSFER_IN_PROGRESS`, …; bounded by `rebalance.leader-wait-timeout`; or only follow the catch-up |
-| `PhysicalTenantLifecycleService#replace`                       | dist          | handover → snapshot (if on) → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                        |
+| `PhysicalTenantLifecycleService#replace`                       | dist          | snapshot (if on) → handover → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                        |
 | `camunda.cluster.raft.rebalance.tenant-restart-handover`       | configuration | `NONE`, `TRANSFER_AWAY`, `TRANSFER_BACK` (default); cluster-wide                                                                                                                                                                        |
 | `…tenant-restart-snapshot`, `…tenant-restart-snapshot-timeout` | configuration | `false` by default; 10 s                                                                                                                                                                                                                |
 
@@ -405,6 +405,11 @@ restarted replica replays, and transfer back asks only once it caught up.
   positions since the last snapshot. Turn it on where partitions write that much between snapshots
   (high throughput with a long `snapshot-period`), where it shortens the rollout. It never shortens
   the interruption.
+- These figures were measured with the snapshot taken after the handover. A replica that stops
+  leading reloads its state from its latest snapshot, so the partitions the member had led were
+  snapshotted at what they had replayed since, and replayed as much after the restart as without a
+  snapshot (3–11k positions against 5–14k; followed partitions 0.2–2.5k). The snapshot is now
+  taken before the handover.
 
 ### What the readiness wait between members (`pt-poc-rollout-safety`) needs
 

@@ -77,14 +77,14 @@ import org.springframework.core.env.ConfigurableEnvironment;
  * security chains of the Camunda Security Library are built once at startup, so the REST API only
  * serves the incarnation of a tenant that existed at startup.
  *
- * <p>Before a replaced tenant's module stops, the member hands the leadership of the tenant's
- * partitions it leads to other replicas (see {@link PartitionLeadershipHandover}), so the
- * partitions keep serving through the restart, and, if configured, takes a snapshot of every
+ * <p>Before a replaced tenant's module stops, the member takes, if configured, a snapshot of every
  * partition of the tenant (see {@link PartitionRestartSnapshots}), so the restarted replicas replay
- * less. Once the module started again, it takes back the leadership of the partitions it handed
- * over as soon as their replicas caught up (see {@link PartitionLeadershipReclaim}), so the leader
- * distribution is the same after the restart; the change completes after that. A partition no
- * replica takes over is restarted as it is, and {@link #lastRestart} says why. {@code
+ * less, and then hands the leadership of the tenant's partitions it leads to other replicas (see
+ * {@link PartitionLeadershipHandover}), so the partitions keep serving through the restart. Once
+ * the module started again, it takes back the leadership of the partitions it handed over as soon
+ * as their replicas caught up (see {@link PartitionLeadershipReclaim}), so the leader distribution
+ * is the same after the restart; the change completes after that. A partition no replica takes over
+ * is restarted as it is, and {@link #lastRestart} says why. {@code
  * camunda.cluster.raft.rebalance.tenant-restart-handover} and {@code
  * camunda.cluster.raft.rebalance.tenant-restart-snapshot} choose what is done.
  *
@@ -231,8 +231,11 @@ public final class PhysicalTenantLifecycleService {
               new PhysicalTenantHealth(State.RESTARTING, "applying a configuration change"));
           final var startedNanos = System.nanoTime();
           final var startedAt = Instant.now();
-          final var handover = handOverLeadership(physicalTenantId, handoverPreference);
+          // a replica that stops leading reloads its state from its latest snapshot, so the
+          // snapshot is taken while it still leads; taken after the handover, it would hold only
+          // what the replica replayed since
           final var snapshots = snapshotBeforeRestart(physicalTenantId);
+          final var handover = handOverLeadership(physicalTenantId, handoverPreference);
           // the gateway keeps routing the tenant's requests to its leaders elsewhere while the
           // module restarts; it takes the new configuration once the module started again
           try {

@@ -147,6 +147,15 @@ final class PhysicalTenantRestartHandoverIT {
             .as(arm.name)
             .extracting(PartitionSnapshot::outcome)
             .contains(PartitionRestartSnapshots.Outcome.TAKEN);
+        final var withoutSnapshot =
+            arms.stream()
+                .filter(other -> other.handover == arm.handover && !other.snapshot)
+                .filter(other -> !other.rebalanceAfter)
+                .findFirst()
+                .orElseThrow();
+        assertThat(medianOf(arm.handedOverReplays()))
+            .as("%s: log a replica that led replays after its restart", arm.name)
+            .isLessThan(medianOf(withoutSnapshot.handedOverReplays()) / 2);
       }
       if (arm.rebalanceAfter) {
         assertThat(arm.leadersAfterRebalances).as(arm.name).allMatch(ONE_EACH::equals);
@@ -1024,6 +1033,22 @@ final class PhysicalTenantRestartHandoverIT {
     private List<PartitionReclaim> reclaims() {
       return afterRestarts().stream()
           .filter(reclaim -> reclaim.outcome() != PartitionLeadershipReclaim.Outcome.CAUGHT_UP)
+          .toList();
+    }
+
+    private List<Long> handedOverReplays() {
+      return restarts.stream()
+          .flatMap(
+              restart -> {
+                final var handedOver =
+                    restart.handover().stream()
+                        .filter(partition -> partition.outcome() == Outcome.TRANSFERRED)
+                        .map(partition -> partition.partition().number())
+                        .toList();
+                return restart.afterRestart().stream()
+                    .filter(replay -> handedOver.contains(replay.partition()))
+                    .map(PartitionReclaim::logSinceSnapshot);
+              })
           .toList();
     }
 
