@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.shared.ConfigSanitizingFunction.ConfigSanitizingProperties;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.actuate.endpoint.SanitizableData;
 
 final class ConfigSanitizingFunctionTest {
@@ -25,7 +27,8 @@ final class ConfigSanitizingFunctionTest {
           "accessKey",
           "accountKey",
           "token",
-          "connectionString");
+          "connectionString",
+          "ssec");
 
   private final ConfigSanitizingFunction function =
       new ConfigSanitizingFunction(new ConfigSanitizingProperties(PRODUCTION_KEYWORDS));
@@ -40,6 +43,37 @@ final class ConfigSanitizingFunctionTest {
 
     // then
     assertThat(result.getValue()).isEqualTo(SanitizableData.SANITIZED_VALUE);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "camunda.data.primary-storage.backup.s3.ssec-key",
+        "camunda.data.primaryStorage.backup.s3.ssecKey",
+        "zeebe.broker.data.backup.s3.ssecKey",
+        "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_SSECKEY"
+      })
+  void shouldSanitizeS3SsecKey(final String key) {
+    // given
+    final var data = new SanitizableData(null, key, "my-ssec-key");
+
+    // when
+    final var result = function.apply(data);
+
+    // then
+    assertThat(result.getValue()).isEqualTo(SanitizableData.SANITIZED_VALUE);
+  }
+
+  @Test
+  void shouldNotSanitizeUnrelatedKeyProperty() {
+    // given
+    final var data = new SanitizableData(null, "camunda.security.key-alias", "my-alias");
+
+    // when
+    final var result = function.apply(data);
+
+    // then
+    assertThat(result.getValue()).isEqualTo("my-alias");
   }
 
   @Test
