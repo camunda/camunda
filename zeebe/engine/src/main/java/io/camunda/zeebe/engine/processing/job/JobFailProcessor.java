@@ -245,6 +245,6 @@ public final class JobFailProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    return SuspensionAction.PROCESS;
   }
 }

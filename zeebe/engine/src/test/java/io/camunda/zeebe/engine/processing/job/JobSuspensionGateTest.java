@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -241,6 +242,40 @@ public final class JobSuspensionGateTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldRejectTaskListenerJobCompleteWhileResuming() {
+    // given - the listener's follow-up user task command would be rejected while resuming
+    final String listenerType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.creating().type(listenerType)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType)
+            .getFirst();
+    seedResuming(processInstanceKey);
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
   private static JobIntent bufferedCommandIntent(final long processInstanceKey) {
     return (JobIntent)
         ((BufferedCommandRecordValue) bufferedCommand(processInstanceKey).getValue()).getIntent();
@@ -262,5 +297,12 @@ public final class JobSuspensionGateTest {
     ((MutableProcessingState) ENGINE.getProcessingState())
         .getSuspensionState()
         .setSuspensionState(processInstanceKey, State.SUSPENDING);
+  }
+
+  private static void seedResuming(final long processInstanceKey) {
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(processInstanceKey, State.RESUMING);
   }
 }
