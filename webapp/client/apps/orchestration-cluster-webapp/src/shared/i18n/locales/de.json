@@ -2410,7 +2410,8 @@
 					"canceled": "Abgebrochen",
 					"completed": "Abgeschlossen",
 					"evaluated": "Ausgewertet",
-					"failed": "Fehlgeschlagen"
+					"failed": "Fehlgeschlagen",
+					"pending": "Änderung ausstehend"
 				},
 				"modificationBadge": {
 					"added": "{{count}} hinzugefügt",

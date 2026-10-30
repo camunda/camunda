@@ -2422,7 +2422,8 @@
 					"canceled": "Canceled",
 					"completed": "Completed",
 					"evaluated": "Evaluated",
-					"failed": "Failed"
+					"failed": "Failed",
+					"pending": "pending modification"
 				},
 				"modificationBadge": {
 					"added": "{{count}} added",
