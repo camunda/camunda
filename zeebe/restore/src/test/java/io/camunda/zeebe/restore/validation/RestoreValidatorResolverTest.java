@@ -816,6 +816,7 @@ final class RestoreValidatorResolverTest {
       // after it, both taken with the 2 partitions of the backups
       stubMetadata(1, markerBetweenBackups(1, 20));
       stubMetadata(2, markerBetweenBackups(2, 25));
+      stubBackupPartitionCount(10L, 2);
       stubBackupPartitionCount(20L, 2);
       stubBackupPartitionCount(25L, 2);
       final var validator = new RestoreValidator(3, backupStore, null);
@@ -840,6 +841,7 @@ final class RestoreValidatorResolverTest {
       // partition 1's last backup, which decides the partitions to restore, holds 2
       stubMetadata(1, markerBetweenBackups(1, 20));
       stubMetadata(2, markerBetweenBackups(2, 25));
+      stubBackupPartitionCount(10L, 2);
       stubBackupPartitionCount(20L, 2);
       stubBackupPartitionCount(25L, 3);
       final var validator = new RestoreValidator(3, backupStore, null);
@@ -857,14 +859,40 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void
+        shouldRestoreATimeRangeBeforeABackupThatFailedOnAnotherPartitionWithoutExportedPositions() {
+      // given - backup 30 was taken after a scale up to 3 partitions but failed on partition 2, so
+      // partitions 1 and 2 can only be restored together up to backup 20, which holds 2 partitions
+      stubMetadata(
+          1,
+          RdbmsBackupResolution.metadataOf(
+              1, List.of(backupEntry(10), backupEntry(20), backupEntry(30))));
+      stubMetadata(
+          2, RdbmsBackupResolution.metadataOf(2, List.of(backupEntry(10), backupEntry(20))));
+      stubBackupPartitionCount(10L, 2);
+      stubBackupPartitionCount(20L, 2);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result =
+          validator.validate(
+              noSecondaryStorageTimeRangeRequest(CHECKPOINT_TIMESTAMP.plusSeconds(10)));
+
+      // then
+      final var restore =
+          new PartitionRestore(new TreeSet<>(List.of(10L, 20L)), OptionalLong.of(200L));
+      assertValid(result, Map.of(1, restore, 2, restore), false);
+    }
+
+    @Test
     void shouldRejectATimeRangeSpanningAScaleUpWithoutExportedPositions() {
-      // given - backup 20 was taken after a scale up to 3 partitions, so it decides to restore 3,
-      // but partition 3 holds no backup as early as the requested start
+      // given - the range starts at backup 10, taken with 2 partitions, and ends at backup 20,
+      // taken after a scale up to 3
       stubMetadata(
           1, RdbmsBackupResolution.metadataOf(1, List.of(backupEntry(10), backupEntry(20))));
       stubMetadata(
           2, RdbmsBackupResolution.metadataOf(2, List.of(backupEntry(10), backupEntry(20))));
-      stubMetadata(3, RdbmsBackupResolution.metadataOf(3, List.of(backupEntry(20))));
+      stubBackupPartitionCount(10L, 2);
       stubBackupPartitionCount(20L, 3);
       final var validator = new RestoreValidator(3, backupStore, null);
 
@@ -876,7 +904,8 @@ final class RestoreValidatorResolverTest {
       // then
       assertThat(assertInvalid(result))
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageStartingWith("No usable range found for partition 3");
+          .hasMessage(
+              "Cannot restore: backup 20 was taken with 3 partitions, but 2 partitions are expected");
     }
 
     @Test

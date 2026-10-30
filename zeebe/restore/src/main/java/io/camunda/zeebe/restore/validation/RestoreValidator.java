@@ -235,8 +235,12 @@ public final class RestoreValidator
   }
 
   /**
-   * The partition count of the last backup the time range resolves to. Every backup holds partition
-   * 1, so resolving the range on it alone finds that backup.
+   * The partition count of the backups the time range resolves to, read from the first backup
+   * partition 1 restores from, as every backup holds partition 1. Partition 1 alone can resolve to
+   * a later restore point than all partitions together, when a backup failed on another partition,
+   * so its last backup may be one the restore does not reach. A range spanning a scale up cannot be
+   * restored, as the added partitions hold no backup as early as its start, so all backups of the
+   * range share the count of the first one.
    */
   private int timeRangePartitionCount(final @Nullable Instant from, final @Nullable Instant to) {
     final var store =
@@ -245,9 +249,9 @@ public final class RestoreValidator
         RestorePointResolver.resolve(loadMetadataForAllPartitions(1), from, to, null)
             .partitions()
             .get(1);
-    final var lastBackup =
-        requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().last();
-    return backupPartitionCount(store, lastBackup);
+    final var firstBackup =
+        requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().first();
+    return backupPartitionCount(store, firstBackup);
   }
 
   @VisibleForTesting
