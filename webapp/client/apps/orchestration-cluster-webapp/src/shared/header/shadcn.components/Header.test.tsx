@@ -213,6 +213,25 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
 	});
 
+	it('should mark Processes as active on the Processes preview route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview/processes'},
+		);
+
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
+	});
+
 	it('should mark Decisions as active on the Decisions preview route', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
