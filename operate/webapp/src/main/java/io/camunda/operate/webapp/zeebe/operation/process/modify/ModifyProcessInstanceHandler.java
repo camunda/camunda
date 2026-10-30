@@ -9,11 +9,13 @@ package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type.*;
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.findViolation;
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
@@ -42,6 +44,7 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
 
   @Autowired private OperationsManager operationsManager;
   @Autowired private OperateServicesAdapter operateServicesAdapter;
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -52,6 +55,21 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
     final Long processInstanceKey =
         Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
     final List<Modification> modifications = modifyProcessInstanceRequest.getModifications();
+
+    if (!processInstanceKey.equals(operation.getProcessInstanceKey())) {
+      failOperation(
+          operation,
+          String.format(
+              "The modifications are for process instance %s, but the operation is for process instance %s.",
+              processInstanceKey, operation.getProcessInstanceKey()));
+      return;
+    }
+    final var keyViolation =
+        findViolation(flowNodeInstanceReader, processInstanceKey, modifications);
+    if (keyViolation.isPresent()) {
+      failOperation(operation, keyViolation.get());
+      return;
+    }
 
     // Process variable modifications
     modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
