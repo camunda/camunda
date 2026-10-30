@@ -82,7 +82,16 @@ jobs:
             echo "$TOP5_FAILINGTESTS" | jq -c '.[]' | while read -r top_failingtest; do
               NUMBER_OF_FAILS=$(echo "$top_failingtest" | jq -r '.number_of_fails')
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_failingtest" | jq -r '.test_class_name')
-              TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
+              if [[ "${FULLY_QUALIFIED_TEST_CLASS_NAME}" == *.ts || "${FULLY_QUALIFIED_TEST_CLASS_NAME}" == *.tsx ]]; then
+                # Spec path (e.g. src/foo/Bar.test.tsx) -> Bar, as flaky-test issue titles name it
+                TEST_FILE_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*/}"
+                TEST_CLASS_NAME="${TEST_FILE_NAME%%.*}"
+                # Spec names like Processes or login are too generic to match on their own
+                FALLBACK_SEARCH="in:title flaky \"$TEST_CLASS_NAME\""
+              else
+                TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
+                FALLBACK_SEARCH="in:title $TEST_CLASS_NAME"
+              fi
               TEST_NAME=$(echo "$top_failingtest" | jq -r '.test_name')
 
               # Resolve medic of owning team via .codeowners by mapping test class to test source file
@@ -100,10 +109,10 @@ jobs:
 
               # Try to find GH issues about related (failing) tests:
               # First, search specifically by test class name + test name
-              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME" --json number --jq '.[].number' | head -n 1)
+              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME" --limit 1 --json number --jq '.[0].number // empty') || GH_ISSUE_ID=""
               if [ -z "$GH_ISSUE_ID" ]; then
                 # If nothing found, search by test class name
-                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME" --json number --jq '.[].number' | head -n 1)
+                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "$FALLBACK_SEARCH" --limit 1 --json number --jq '.[0].number // empty') || GH_ISSUE_ID=""
               fi
               if [ -n "$GH_ISSUE_ID" ]; then
                 SUFFIX=" (<https://github.com/camunda/camunda/issues/$GH_ISSUE_ID|GH issue>)"
@@ -127,8 +136,10 @@ jobs:
       - name: Debug notification
         if: github.event_name == 'pull_request'
         shell: bash
+        env:
+          MESSAGE: ${{ steps.message.outputs.MESSAGE }}
         run: |
-          echo '${{ steps.message.outputs.MESSAGE }}'
+          echo "$MESSAGE"
 
       - name: Send notification
         if: github.event_name != 'pull_request'
