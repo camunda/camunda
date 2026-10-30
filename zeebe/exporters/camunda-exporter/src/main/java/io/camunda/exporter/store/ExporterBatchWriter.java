@@ -15,13 +15,11 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.WrittenRecord;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +35,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
   private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
-  private boolean warnAboutMessageSizeEstimation = false;
   private final TargetIndexLocator indexLocator;
   private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
   private final Map<EntityIdTypeIndexAndHandler, ExporterEntity> cachedEntitiesToFlush =
@@ -62,7 +59,7 @@ public final class ExporterBatchWriter {
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
 
-    final var serializedSize = recordSize(record);
+    final var serializedSize = RecordSizes.of(record);
 
     handlers
         .getOrDefault(valueType, Collections.emptyList())
@@ -176,22 +173,6 @@ public final class ExporterBatchWriter {
     cachedEntities.clear();
     cachedEntitiesToFlush.clear();
     totalMemoryEstimate = 0L;
-  }
-
-  private long recordSize(final Record<?> record) {
-    if (record instanceof final WrittenRecord writtenRecord) {
-      return writtenRecord.getRawLength();
-    } else if (record instanceof final BufferWriter writer) {
-      return writer.getLength();
-    } else {
-      if (!warnAboutMessageSizeEstimation) {
-        LOG.debug(
-            "Message size estimation is not supported for record type: {}, using ObjectSizeEstimator",
-            record.getClass().getSimpleName());
-        warnAboutMessageSizeEstimation = true;
-      }
-      return ObjectSizeEstimator.estimateSize(record);
-    }
   }
 
   public static final class Builder {
