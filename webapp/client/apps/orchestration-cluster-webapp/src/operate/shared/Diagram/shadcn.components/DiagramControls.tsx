@@ -53,7 +53,7 @@ function DiagramControls({
 	};
 
 	return (
-		<div className="absolute right-4 bottom-10 z-[11] flex items-center gap-2">
+		<div className="absolute right-4 bottom-4 z-[11] flex items-center gap-2">
 			<div className={GROUP_CLASS_NAME}>
 				<IconButton
 					variant="ghost"
