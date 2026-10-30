@@ -11,6 +11,7 @@ import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** A successfully evaluated decision */
 public final class EvaluationResult implements DecisionEvaluationResult {
@@ -30,12 +31,12 @@ public final class EvaluationResult implements DecisionEvaluationResult {
   }
 
   @Override
-  public String getFailureMessage() {
+  public @Nullable String getFailureMessage() {
     return null;
   }
 
   @Override
-  public String getFailedDecisionId() {
+  public @Nullable String getFailedDecisionId() {
     return null;
   }
 

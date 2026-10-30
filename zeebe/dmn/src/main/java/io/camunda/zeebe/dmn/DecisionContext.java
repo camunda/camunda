@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link ParsedDecision Decisions} can only be made within in a specific context. The context must
@@ -21,5 +22,5 @@ public interface DecisionContext {
   /**
    * @return the Context as map
    */
-  Map<String, Object> toMap();
+  Map<String, @Nullable Object> toMap();
 }

@@ -19,18 +19,19 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Definitions;
 import org.camunda.dmn.parser.ParsedDecisionTable;
 import org.camunda.dmn.parser.ParsedDmn;
+import org.jspecify.annotations.Nullable;
 
 public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph {
 
   private final ParsedDmn parsedDmn;
-  private final String decisionRequirementsId;
+  private final @Nullable String decisionRequirementsId;
   private final String decisionRequirementsName;
   private final String decisionRequirementsNamespace;
   private final List<ParsedDecision> decisions;
 
   private ParsedDmnScalaDrg(
       final ParsedDmn parsedDmn,
-      final String decisionRequirementsId,
+      final @Nullable String decisionRequirementsId,
       final String decisionRequirementsName,
       final String decisionRequirementsNamespace,
       final List<ParsedDecision> decisions) {
@@ -42,7 +43,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   }
 
   @Override
-  public String getId() {
+  public @Nullable String getId() {
     return decisionRequirementsId;
   }
 
@@ -67,7 +68,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   }
 
   @Override
-  public String getFailureMessage() {
+  public @Nullable String getFailureMessage() {
     return null;
   }
 
@@ -79,7 +80,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
 
     final DmnModelInstance modelInstance = parsedDmn.model();
     final Definitions definitions = modelInstance.getDefinitions();
-    final String id = definitions.getId();
+    final @Nullable String id = definitions.getId();
     final String name = definitions.getName();
     final String namespace = definitions.getNamespace();
     final List<ParsedDecision> parsedDecisions = getParsedDecisions(parsedDmn);
@@ -103,7 +104,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
     return decisions;
   }
 
-  private static ParsedDmnScalaDecisionTable getParsedDecisionTable(
+  private static @Nullable ParsedDmnScalaDecisionTable getParsedDecisionTable(
       final org.camunda.dmn.parser.ParsedDecision parsedDecision) {
     if (!(parsedDecision.logic() instanceof final ParsedDecisionTable table)) {
       return null;
