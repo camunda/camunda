@@ -282,7 +282,7 @@ tasks.named<Tar>("distTar") {
 
 tasks.named<Zip>("distZip") { reproducibleArchive() }
 
-val buildDockerImage = registerBuildDockerImage(distTar.flatMap { it.archiveFile })
+val buildDockerImage = registerBuildDockerImage(tasks.distTar.flatMap { it.archiveFile })
 
 tasks.register<Test>("dockerIt") {
   group = "verification"
