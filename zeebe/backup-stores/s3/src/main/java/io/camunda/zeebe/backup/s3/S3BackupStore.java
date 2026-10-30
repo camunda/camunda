@@ -8,6 +8,12 @@
 package io.camunda.zeebe.backup.s3;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -106,9 +112,8 @@ public final class S3BackupStore implements BackupStore {
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS);
-  static final String SNAPSHOT_PREFIX = "snapshot/";
-  static final String SEGMENTS_PREFIX = "segments/";
-  static final String MANIFEST_OBJECT_KEY = "manifest.json";
+  static final String SNAPSHOT_PREFIX = SNAPSHOT_FILESET_NAME + "/";
+  static final String SEGMENTS_PREFIX = SEGMENTS_FILESET_NAME + "/";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private static final int LIST_PAGE_SIZE = 1000;
@@ -189,10 +194,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + Directory.MANIFESTS.name
-        + "/"
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(config.basePath().map(base -> base + "/").orElse(""), wildcard);
   }
 
   /** Backwards compatible object path for backups generated prior to 8.9 */
@@ -550,7 +552,7 @@ public final class S3BackupStore implements BackupStore {
       final Set<BackupIdentifier> identifiers) {
     page.contents().stream()
         .map(S3Object::key)
-        .filter(key -> key.endsWith(MANIFEST_OBJECT_KEY))
+        .filter(key -> key.endsWith(MANIFEST_OBJECT_NAME))
         .map(this::tryParseKeyAsId)
         .flatMap(Optional::stream)
         .filter(wildcard::matches)
@@ -719,7 +721,7 @@ public final class S3BackupStore implements BackupStore {
         .getObject(
             req ->
                 req.bucket(config.bucketName())
-                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
+                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_NAME),
             AsyncResponseTransformer.toBytes())
         .exceptionallyCompose(
             throwable -> {
@@ -728,7 +730,7 @@ public final class S3BackupStore implements BackupStore {
                 return client.getObject(
                     req ->
                         req.bucket(config.bucketName())
-                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_KEY),
+                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_NAME),
                     AsyncResponseTransformer.toBytes());
               }
               return CompletableFuture.failedFuture(throwable);
@@ -816,7 +818,7 @@ public final class S3BackupStore implements BackupStore {
                                     descriptor ->
                                         derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
                                 .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
-                            + MANIFEST_OBJECT_KEY)
+                            + MANIFEST_OBJECT_NAME)
                     .build(),
             body)
         .thenApply(resp -> manifest);
@@ -910,8 +912,8 @@ public final class S3BackupStore implements BackupStore {
   }
 
   public enum Directory {
-    MANIFESTS("manifests"),
-    CONTENTS("contents");
+    MANIFESTS(MANIFESTS_DIRECTORY_NAME),
+    CONTENTS(CONTENTS_DIRECTORY_NAME);
 
     private final String name;
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_DIRECTORY_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_OBJECT_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
@@ -54,8 +56,6 @@ public final class FilesystemBackupStore implements BackupStore {
       "Expected to restore from backup with id '%s', but does not exist.";
   private static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  private static final String CONTENTS_PATH = "contents";
-  private static final String MANIFESTS_PATH = "manifests";
   private static final String RANGES_PATH = "ranges";
 
   private final ExecutorService executor;
@@ -74,8 +74,8 @@ public final class FilesystemBackupStore implements BackupStore {
     this.config = config;
     this.executor = executor;
 
-    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
-    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_DIRECTORY_NAME);
+    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_DIRECTORY_NAME);
     rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
     metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_DIRECTORY_NAME);
     try {
