@@ -1180,7 +1180,8 @@ final class PhysicalTenantHandoverPhasesIT {
                     })
                 .maxJobsActive(64)
                 .streamEnabled(STREAMING_WORKERS)
-                .pollInterval(Duration.ofMillis(10))
+                .pollInterval(Duration.ofMillis(Long.getLong("handoverPhases.pollIntervalMs", 10)))
+                .timeout(Duration.ofMillis(Long.getLong("handoverPhases.jobTimeoutMs", 300_000)))
                 .open());
       }
       schedule.scheduleAtFixedRate(
