@@ -485,20 +485,20 @@ class DefaultExecutionQueueTest {
     executionQueue =
         new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics, TransactionRunner.noop());
 
-    // Create items with large parameters to exceed 1 MB memory limit
-    // Each large param is ~600KB, so 2 items should exceed 1 MB
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
+    // Each item comes from a record of ~600 KB, so 2 items exceed 1 MB
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "param1");
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", "param2");
 
     executionQueue.executeInQueue(item1);
+    executionQueue.addEstimatedBytes(600_000);
     verifyNoInteractions(sqlSessionFactory);
 
     executionQueue.executeInQueue(item2);
+    executionQueue.addEstimatedBytes(600_000);
     verifyNoInteractions(sqlSessionFactory);
 
     // Check should trigger flush due to memory limit
@@ -507,8 +507,8 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
-    verify(session).update("statement1", largeParam);
-    verify(session).update("statement2", largeParam);
+    verify(session).update("statement1", "param1");
+    verify(session).update("statement2", "param2");
     verify(session).flushStatements();
     verify(session).commit();
   }
@@ -586,17 +586,18 @@ class DefaultExecutionQueueTest {
     executionQueue =
         new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 1, metrics, TransactionRunner.noop());
 
-    // Create items with large parameters to exceed 1 MB memory limit
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
+    // Each item comes from a record of ~600 KB, so 2 items exceed 1 MB
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "param1");
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", "param2");
 
     executionQueue.executeInQueue(item1);
+    executionQueue.addEstimatedBytes(600_000);
     executionQueue.executeInQueue(item2);
+    executionQueue.addEstimatedBytes(600_000);
 
     final var result = executionQueue.checkQueueForFlush();
     assertThat(result).isTrue();
