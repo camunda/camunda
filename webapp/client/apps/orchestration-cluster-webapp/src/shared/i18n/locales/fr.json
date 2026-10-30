@@ -2416,6 +2416,7 @@
 						"inclusiveGateway": "passerelle inclusive",
 						"eventBasedGateway": "passerelle basée sur les événements"
 					},
+					"drillDownHint": "Appuyez sur Maj+Entrée pour explorer en détail.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Utilisez les flèches pour passer d’un élément à l’autre et Entrée pour sélectionner."
 				},

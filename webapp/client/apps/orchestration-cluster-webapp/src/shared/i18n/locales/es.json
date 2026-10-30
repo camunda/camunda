@@ -2413,6 +2413,7 @@
 						"inclusiveGateway": "pasarela inclusiva",
 						"eventBasedGateway": "pasarela basada en eventos"
 					},
+					"drillDownHint": "Pulsa Mayús+Intro para profundizar.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Usa las teclas de flecha para moverte entre elementos y Intro para seleccionar."
 				},
