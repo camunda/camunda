@@ -215,10 +215,13 @@ public final class RestoreValidator
     if (exportedPositionSupplier == null) {
       // No secondary storage to keep consistent with: restore the partitions of the backup the
       // time range resolves to.
-      final var restoredPartitionCount = timeRangePartitionCount(instantFrom, instantTo);
+      final var from =
+          requireNonNull(
+              instantFrom, "from is required to restore a time range without exported positions");
+      final var restoredPartitionCount = timeRangePartitionCount(from, instantTo);
       final var restorableBackups =
           RestorePointResolver.resolve(
-              loadMetadataForAllPartitions(restoredPartitionCount), instantFrom, instantTo, null);
+              loadMetadataForAllPartitions(restoredPartitionCount), from, instantTo, null);
       verifyLastBackupsHoldThePartitions(restorableBackups, restoredPartitionCount);
       return restorableBackups;
     }
@@ -238,10 +241,10 @@ public final class RestoreValidator
    * partition 1 restores from, as every backup holds partition 1. Partition 1 alone can resolve to
    * a later restore point than all partitions together, when a backup failed on another partition,
    * so its last backup may be one the restore does not reach. A range spanning a scale up cannot be
-   * restored, as the added partitions hold no backup as early as its start, so all backups of the
-   * range share the count of the first one.
+   * restored, as the added partitions hold no backup as early as {@code from}, so all backups of
+   * the range share the count of the first one.
    */
-  private int timeRangePartitionCount(final @Nullable Instant from, final @Nullable Instant to) {
+  private int timeRangePartitionCount(final Instant from, final @Nullable Instant to) {
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var firstPartition =
@@ -270,8 +273,8 @@ public final class RestoreValidator
 
   /**
    * The partitions to restore are those of the last backup, which have to be the expected ones:
-   * those the RDBMS holds exported positions for, or without a secondary storage those of the
-   * backup partition 1 resolved to.
+   * those the RDBMS holds exported positions for, or without a secondary storage those of the first
+   * backup partition 1 restores from.
    */
   private static void verifyPartitionCountsAgree(
       final long backupId, final int backupPartitionCount, final int expectedPartitionCount) {
