@@ -141,23 +141,14 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   }
 
   /**
-   * Returns the current monotonic time, to pass to {@link #startSuspendDuration} once the SUSPEND
-   * command was processed. Taking it before processing includes the command's own work in the
-   * duration, while a command that is rejected or fails never starts a measurement.
+   * Starts measuring the suspension of the given process instance. An already running measurement
+   * is kept, so a restarted suspension is timed from its first start.
    */
-  public long takeSuspendStartTime() {
-    return now();
-  }
-
-  /**
-   * Starts measuring the suspension of the given process instance from {@code startTime}. An
-   * already running measurement is kept, so a restarted suspension is timed from its first start.
-   */
-  public void startSuspendDuration(final long processInstanceKey, final long startTime) {
+  public void startSuspendDuration(final long processInstanceKey) {
     if (suspendStartTimes.size() >= MAX_IN_FLIGHT_DURATIONS) {
       return;
     }
-    suspendStartTimes.putIfAbsent(processInstanceKey, startTime);
+    suspendStartTimes.putIfAbsent(processInstanceKey, now());
   }
 
   public void stopSuspendDuration(final long processInstanceKey) {

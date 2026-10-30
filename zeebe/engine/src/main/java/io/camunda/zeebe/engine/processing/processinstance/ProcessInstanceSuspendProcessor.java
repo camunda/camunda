@@ -84,8 +84,6 @@ public final class ProcessInstanceSuspendProcessor
       return;
     }
 
-    final long suspendStartTime = suspensionMetrics.takeSuspendStartTime();
-
     final ProcessInstanceRecord value = processInstance.getValue();
     // restarting a SUSPENDING instance skips the event (the marker is already there) and walks the
     // tree again; the walk skips jobs and user tasks that were already handled, and subscriptions
@@ -101,7 +99,7 @@ public final class ProcessInstanceSuspendProcessor
     startElementInstanceWalk(processInstance.getKey(), value);
     responseWriter.writeAcceptedResponseOnCommand(
         processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
-    suspensionMetrics.startSuspendDuration(processInstance.getKey(), suspendStartTime);
+    suspensionMetrics.startSuspendDuration(processInstance.getKey());
   }
 
   /**
