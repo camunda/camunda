@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.metrics.usage;
 
+import static io.camunda.zeebe.engine.state.metrics.HashUtil.getStringHashValue;
 import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
-import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

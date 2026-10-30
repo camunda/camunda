@@ -25,6 +25,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-snapshots"))

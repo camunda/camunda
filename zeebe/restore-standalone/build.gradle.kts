@@ -15,6 +15,7 @@ dependencies {
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":camunda-db-rdbms"))
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.slf4j.slf4j.api)

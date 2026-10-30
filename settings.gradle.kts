@@ -247,6 +247,8 @@ registerProject(":camunda-zeebe", "dist")
 
 registerProject(":zeebe-util", "zeebe/util")
 
+registerProject(":zeebe-micrometer", "zeebe/micrometer")
+
 registerProject(":camunda-qa-compatibility-test", "qa/compatibility-test")
 
 include(":webapps-common")

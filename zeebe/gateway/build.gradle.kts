@@ -12,6 +12,7 @@ dependencies {
   implementation(project(":zeebe-auth"))
   implementation(project(":zeebe-gateway-protocol-impl"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))

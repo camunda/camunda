@@ -28,6 +28,7 @@
     <module>engine</module>
     <module>transport</module>
     <module>util</module>
+    <module>micrometer</module>
     <module>test-util</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>

@@ -8,6 +8,7 @@ dependencies {
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.springframework.spring.beans)
   implementation(libs.org.springframework.spring.context)
   implementation(libs.org.apache.commons.commons.lang3)

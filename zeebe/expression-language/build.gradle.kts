@@ -2,6 +2,7 @@ plugins { id("buildlogic.server-conventions") }
 
 dependencies {
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-feel-integration"))
   api(libs.org.camunda.feel.feel.engine)
   api(libs.org.scala.lang.scala.library)
