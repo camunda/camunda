@@ -23,13 +23,13 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
  * <p>Terminating element instances are skipped: their user task is about to be canceled. Already
  * suspended user tasks are skipped too, so overlapping walks suspend each task once.
  */
-final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
+public final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
 
   private final StateWriter stateWriter;
   private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
 
-  UserTaskSuspensionVisitor(
+  public UserTaskSuspensionVisitor(
       final StateWriter stateWriter,
       final UserTaskState userTaskState,
       final SuspensionMetrics suspensionMetrics) {

@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -18,18 +17,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.time.InstantSource;
 import java.util.List;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
@@ -90,12 +84,7 @@ public final class ElementInstanceWalkSuspendProcessor
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
-      final UserTaskState userTaskState,
-      final JobState jobState,
-      final ProcessMessageSubscriptionState processMessageSubscriptionState,
-      final SubscriptionCommandSender subscriptionCommandSender,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final InstantSource clock,
+      final List<ElementInstanceVisitor> visitors,
       final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -103,17 +92,7 @@ public final class ElementInstanceWalkSuspendProcessor
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
-    visitors =
-        List.of(
-            new UserTaskSuspensionVisitor(stateWriter, userTaskState, suspensionMetrics),
-            new JobSuspensionVisitor(stateWriter, jobState, suspensionMetrics),
-            new MessageSubscriptionSuspensionVisitor(
-                stateWriter,
-                writers.sideEffect(),
-                processMessageSubscriptionState,
-                subscriptionCommandSender,
-                transientProcessMessageSubscriptionState,
-                clock));
+    this.visitors = visitors;
   }
 
   @Override
@@ -271,7 +250,7 @@ public final class ElementInstanceWalkSuspendProcessor
     LOG.warn(
         "Expected to continue suspending process instance '{}' after element instance '{}', but "
             + "its parent element instance '{}' no longer exists. Restarting the suspension walk "
-            + "from the process instance, which may emit duplicate user task events.",
+            + "from the process instance.",
         processInstanceKey,
         suspendedChildKey,
         parentKey);

@@ -24,7 +24,10 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCrea
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.BufferedCommandDrainProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ElementInstanceVisitor;
 import io.camunda.zeebe.engine.processing.processinstance.ElementInstanceWalkSuspendProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.JobSuspensionVisitor;
+import io.camunda.zeebe.engine.processing.processinstance.MessageSubscriptionSuspensionVisitor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
@@ -39,6 +42,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJ
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeUserTasksProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.UserTaskSuspensionVisitor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -73,6 +77,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 
 public final class BpmnProcessors {
@@ -231,6 +236,19 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
         new ProcessInstanceSuspendProcessor(processingState, writers, cslCheck, suspensionMetrics));
+    final List<ElementInstanceVisitor> suspensionVisitors =
+        List.of(
+            new UserTaskSuspensionVisitor(
+                writers.state(), processingState.getUserTaskState(), suspensionMetrics),
+            new JobSuspensionVisitor(
+                writers.state(), processingState.getJobState(), suspensionMetrics),
+            new MessageSubscriptionSuspensionVisitor(
+                writers.state(),
+                writers.sideEffect(),
+                processingState.getProcessMessageSubscriptionState(),
+                subscriptionCommandSender,
+                transientProcessMessageSubscriptionState,
+                clock));
     typedRecordProcessors.onCommand(
         ValueType.ELEMENT_INSTANCE_WALK,
         ElementInstanceWalkIntent.SUSPEND,
@@ -238,12 +256,7 @@ public final class BpmnProcessors {
             writers,
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
-            processingState.getUserTaskState(),
-            processingState.getJobState(),
-            processingState.getProcessMessageSubscriptionState(),
-            subscriptionCommandSender,
-            transientProcessMessageSubscriptionState,
-            clock,
+            suspensionVisitors,
             suspensionMetrics));
   }
 

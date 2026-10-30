@@ -48,7 +48,7 @@ import org.jspecify.annotations.NullMarked;
  * a close for suspend would restore them as a resume manifest for an element that no longer exists.
  */
 @NullMarked
-final class MessageSubscriptionSuspensionVisitor implements ElementInstanceVisitor {
+public final class MessageSubscriptionSuspensionVisitor implements ElementInstanceVisitor {
 
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -57,7 +57,7 @@ final class MessageSubscriptionSuspensionVisitor implements ElementInstanceVisit
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final InstantSource clock;
 
-  MessageSubscriptionSuspensionVisitor(
+  public MessageSubscriptionSuspensionVisitor(
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final ProcessMessageSubscriptionState processMessageSubscriptionState,
