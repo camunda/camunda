@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -22,9 +23,7 @@ final class AuthInfoTest {
   void shouldSanitizeOnToString() {
     // given
     final AuthInfo authInfo = new AuthInfo();
-    final String token = "token";
-    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
-    authInfo.setAuthData(token);
+    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
     authInfo.setClaims(Map.of("key", "value"));
 
     // when
@@ -34,7 +33,32 @@ final class AuthInfoTest {
     assertThat(authInfoString)
         .isEqualTo(
             """
-        {"format":"JWT","authData":"***","claims":"***"}""");
+        {"format":"PRE_AUTHORIZED","claims":"***"}""");
+  }
+
+  @Test
+  void shouldReadAuthInfoOfPreviousVersionsRepeatedly() {
+    // given - previous versions also wrote the removed authData property
+    final Map<String, Object> claims = Map.of("authorized_username", "user");
+    final var previousVersion =
+        new UnsafeBuffer(
+            MsgPackConverter.convertToMsgPack(
+                Map.of(
+                    "format",
+                    "PRE_AUTHORIZED",
+                    "authData",
+                    "",
+                    "claims",
+                    MsgPackConverter.convertToMsgPack(claims))));
+    final var authInfo = new AuthInfo();
+
+    // when - the same instance is reused for every record, e.g. by the record metadata
+    authInfo.wrap(previousVersion);
+    authInfo.wrap(previousVersion);
+
+    // then
+    assertThat(authInfo.getLength()).isEqualTo(previousVersion.capacity());
+    assertThat(AuthInfo.of(authInfo).getClaims()).isEqualTo(claims);
   }
 
   @Nested
@@ -43,18 +67,15 @@ final class AuthInfoTest {
     void shouldEncodeDecodeAuthInfo() {
       // given
       final AuthInfo authInfo = new AuthInfo();
-      final String token = "token";
       final Map<String, Object> authInfoMap = Map.of("key", "value");
-      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
-      authInfo.setAuthData(token);
+      authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
       authInfo.setClaims(authInfoMap);
 
       // when
       encodeDecode(authInfo);
 
       // then
-      assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
-      assertThat(authInfo.getAuthData()).isEqualTo(token);
+      assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
       assertThat(authInfo.getClaims()).isEqualTo(authInfoMap);
     }
 
@@ -68,7 +89,6 @@ final class AuthInfoTest {
 
       // then
       assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
-      assertThat(authInfo.getAuthData()).isEqualTo("");
       assertThat(authInfo.getClaims()).isEqualTo(Map.of());
     }
 
@@ -85,28 +105,6 @@ final class AuthInfoTest {
 
   @Nested
   class HasAnyClaimsTests {
-
-    @Test
-    void shouldReturnTrueWhenJwtFormatHasAuthData() {
-      // given
-      final AuthInfo authInfo = new AuthInfo();
-      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
-      authInfo.setAuthData("valid-token");
-
-      // when / then
-      assertThat(authInfo.hasAnyClaims()).isTrue();
-    }
-
-    @Test
-    void shouldReturnFalseWhenJwtFormatHasEmptyAuthData() {
-      // given
-      final AuthInfo authInfo = new AuthInfo();
-      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
-      authInfo.setAuthData("");
-
-      // when / then
-      assertThat(authInfo.hasAnyClaims()).isFalse();
-    }
 
     @Test
     void shouldReturnTrueWhenPreAuthorizedFormatHasClaims() {
@@ -168,8 +166,7 @@ final class AuthInfoTest {
     void shouldCopyAuthInfoWhenOfCalledWithNonNull() {
       // given
       final AuthInfo original = new AuthInfo();
-      original.setFormat(AuthInfo.AuthDataFormat.JWT);
-      original.setAuthData("test-token");
+      original.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
       original.setClaims(Map.of("claim1", "value1", "claim2", "value2"));
 
       // when
@@ -179,7 +176,6 @@ final class AuthInfoTest {
       assertThat(copy).isNotNull();
       assertThat(copy).isNotSameAs(original);
       assertThat(copy.getFormat()).isEqualTo(original.getFormat());
-      assertThat(copy.getAuthData()).isEqualTo(original.getAuthData());
       assertThat(copy.getClaims()).isEqualTo(original.getClaims());
     }
   }

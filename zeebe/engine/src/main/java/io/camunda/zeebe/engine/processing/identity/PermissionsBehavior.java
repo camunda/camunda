@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
@@ -115,23 +114,6 @@ public class PermissionsBehavior {
             b ->
                 b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
         command.getValue(),
-        AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
-  }
-
-  @SuppressWarnings("NullAway")
-  public Either<Rejection, Void> isAuthorized(
-      final Map<String, Object> claims,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String resourceId) {
-    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
-    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
-    return cslCheck.checkWithClaims(
-        claims,
-        RequiredAuthorization.of(
-            b ->
-                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
-        null,
         AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
   }
 

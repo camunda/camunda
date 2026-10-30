@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
@@ -83,8 +84,8 @@ class BufferedProcessingResultBuilderTest {
     final Consumer<RecordMetadata> authorizationDecorator =
         metadata -> {
           final var authInfo = new AuthInfo();
-          authInfo.setFormat(AuthDataFormat.JWT);
-          authInfo.setAuthData("secret-token");
+          authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+          authInfo.setClaims(Map.of("authorized_username", "user"));
           metadata.authorization(authInfo);
         };
     final var builder =
@@ -109,6 +110,6 @@ class BufferedProcessingResultBuilderTest {
     final var responseEntry = response.responseValue();
     final var authorization = responseEntry.recordMetadata().getAuthorization();
     assertThat(authorization.getFormat()).isEqualTo(AuthDataFormat.UNKNOWN);
-    assertThat(authorization.getAuthData()).isEmpty();
+    assertThat(authorization.getClaims()).isEmpty();
   }
 }

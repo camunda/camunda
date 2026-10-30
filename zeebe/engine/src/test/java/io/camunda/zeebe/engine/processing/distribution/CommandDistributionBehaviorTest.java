@@ -87,10 +87,7 @@ class CommandDistributionBehaviorTest {
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+        new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED).setClaims(Map.of("a", "b", "c", 3));
 
     command =
         new MockTypedRecord<>(
@@ -216,10 +213,7 @@ class CommandDistributionBehaviorTest {
 
     // given command with auth info
     final var authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+        new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED).setClaims(Map.of("a", "b", "c", 3));
 
     final var key = keyGenerator.nextKey();
     final var command =
