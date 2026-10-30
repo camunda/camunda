@@ -1420,9 +1420,7 @@
 					"selectRow": "Zeile {{key}} auswählen",
 					"stateEvaluated": "Ausgewertet",
 					"stateFailed": "Fehlgeschlagen",
-					"tableLabel": "Entscheidungsinstanzen",
-					"loadingPreviousPage": "Vorherige Entscheidungsinstanzen werden geladen",
-					"loadingNextPage": "Nächste Entscheidungsinstanzen werden geladen"
+					"tableLabel": "Entscheidungsinstanzen"
 				},
 				"toolbar": {
 					"delete": "Löschen",

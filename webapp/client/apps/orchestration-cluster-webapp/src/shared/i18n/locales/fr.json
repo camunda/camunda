@@ -1423,9 +1423,7 @@
 					"selectRow": "Sélectionner la ligne {{key}}",
 					"stateEvaluated": "Évaluée",
 					"stateFailed": "Échouée",
-					"tableLabel": "Instances de décision",
-					"loadingPreviousPage": "Chargement des instances de décision précédentes",
-					"loadingNextPage": "Chargement des instances de décision suivantes"
+					"tableLabel": "Instances de décision"
 				},
 				"toolbar": {
 					"delete": "Supprimer",

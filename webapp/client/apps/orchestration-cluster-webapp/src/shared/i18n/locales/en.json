@@ -1432,9 +1432,7 @@
 					"selectRow": "Select row {{key}}",
 					"stateEvaluated": "Evaluated",
 					"stateFailed": "Failed",
-					"tableLabel": "Decision instances",
-					"loadingPreviousPage": "Loading previous decision instances",
-					"loadingNextPage": "Loading next decision instances"
+					"tableLabel": "Decision instances"
 				},
 				"toolbar": {
 					"delete": "Delete",
