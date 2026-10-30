@@ -79,6 +79,7 @@ public class NodeIdProviderConfigurationUtils {
                 config.getReadinessCheckTimeout(),
                 config.getExpiredLeaseThreshold(),
                 taskId,
+                cluster.getZone(),
                 () -> {
                   log.warn("NodeIdProvider terminating the process");
                   shutdownHelper.run();

@@ -50,6 +50,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final Duration renewalDelay;
   private @Nullable ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
+  private final @Nullable String zone;
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
@@ -64,6 +65,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration readinessCheckTimeout,
       final Duration expiredLeaseThreshold,
       final String taskId,
+      final @Nullable String zone,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
@@ -74,6 +76,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     this.expiredLeaseThreshold =
         Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
+    this.zone = zone;
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
@@ -336,7 +339,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private void updateVersionMappings(final Set<Member> currentMembers) {
     final var nodeInstances =
         currentMembers.stream()
-            .filter(m -> isBroker(m.id()))
+            // leases are per zone, but members of different zones share the same nodeIdx
+            .filter(m -> isBroker(m.id()) && m.id().isInZone(zone))
             .map(m -> Map.entry(m.id().nodeIdx(), Version.of(m.nodeVersion())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
