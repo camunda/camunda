@@ -1092,8 +1092,7 @@
 					}
 				},
 				"scaffold": {
-					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
-					"instancesTablePlaceholder": "Platzhalter für die Instanztabelle"
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich"
 				},
 				"migration": {
 					"migrate": "Migrieren",
@@ -1334,7 +1333,10 @@
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
 					"none": "Keine",
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
-					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
+					"tableLabel": "Prozessinstanzen",
+					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
+					"loadingNextPage": "Nächste Prozessinstanzen werden geladen"
 				},
 				"diagramHeader": {
 					"title": "Prozess",

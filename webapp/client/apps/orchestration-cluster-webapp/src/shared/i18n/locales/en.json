@@ -1104,8 +1104,7 @@
 					}
 				},
 				"scaffold": {
-					"diagramPanelPlaceholder": "Diagram panel placeholder",
-					"instancesTablePlaceholder": "Instances table placeholder"
+					"diagramPanelPlaceholder": "Diagram panel placeholder"
 				},
 				"migration": {
 					"migrate": "Migrate",
@@ -1346,7 +1345,10 @@
 					"viewParentInstance": "View parent instance {{key}}",
 					"none": "None",
 					"emptyMessage": "There are no Instances matching this filter set",
-					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
+					"tableLabel": "Process instances",
+					"loadingPreviousPage": "Loading previous process instances",
+					"loadingNextPage": "Loading next process instances"
 				},
 				"diagramHeader": {
 					"title": "Process",

@@ -1095,8 +1095,7 @@
 					}
 				},
 				"scaffold": {
-					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme",
-					"instancesTablePlaceholder": "Espace réservé pour le tableau des instances"
+					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme"
 				},
 				"migration": {
 					"migrate": "Migrer",
@@ -1337,7 +1336,10 @@
 					"viewParentInstance": "Afficher l'instance parente {{key}}",
 					"none": "Aucune",
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
-					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+					"tableLabel": "Instances de processus",
+					"loadingPreviousPage": "Chargement des instances de processus précédentes",
+					"loadingNextPage": "Chargement des instances de processus suivantes"
 				},
 				"diagramHeader": {
 					"title": "Processus",
