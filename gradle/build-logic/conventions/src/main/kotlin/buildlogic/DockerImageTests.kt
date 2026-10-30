@@ -15,8 +15,9 @@ fun Test.useDockerImage(image: Provider<String>, imageIdFile: FileCollection) {
     .withPropertyName("dockerImageId")
     .withPathSensitivity(PathSensitivity.NONE)
   // Docker defaults an absent tag to latest; a colon before the last slash is a registry port.
-  val name =
-    image.map { raw -> if (raw.substringAfterLast('/').contains(':')) raw else "$raw:latest" }
+  val name = image.map { raw ->
+    if (raw.substringAfterLast('/').contains(':')) raw else "$raw:latest"
+  }
   inputs.property("dockerImage", name)
   // environment() takes Any and would stringify a provider, so resolve it when the task runs.
   doFirst {
