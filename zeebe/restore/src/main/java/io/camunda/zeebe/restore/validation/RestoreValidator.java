@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
+import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,39 +156,82 @@ public final class RestoreValidator
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var restoredPartitionCount = backupPartitionCount(store, lastBackupId);
-    if (exportedPositionSupplier != null) {
-      // A database that already holds exported positions has to belong to the partitions of the
-      // backup. One without any is restored from scratch, so the backup alone decides.
-      final var exportedPartitionCount = availableExportedPositions(exportedPositionSupplier);
-      if (!exportedPartitionCount.isEmpty()) {
-        verifyPartitionCountsAgree(
-            lastBackupId, restoredPartitionCount, exportedPartitionCount.size());
-      }
+
+    // A database that already holds exported positions has to belong to the partitions of the
+    // backup. One without any is restored from scratch, so the backup alone decides.
+    final var exportedPositions =
+        exportedPositionSupplier == null
+            ? Map.<Integer, Long>of()
+            : availableExportedPositions(exportedPositionSupplier);
+
+    if (!exportedPositions.isEmpty()) {
+      verifyPartitionCountsAgree(lastBackupId, restoredPartitionCount, exportedPositions.size());
     }
+
     final var partitions = IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList();
+
     awaitResult(
         FuturesUtil.parTraverse(
-            partitions, partition -> verifyBackupsExist(store, partition, restore)));
+            partitions,
+            partition ->
+                verifyBackupsExist(store, partition, restore, exportedPositions.get(partition))));
+
     return partitions.stream()
         .collect(Collectors.toMap(partition -> partition, partition -> restore));
   }
 
   private CompletableFuture<@Nullable Void> verifyBackupsExist(
-      final BackupStore store, final int partitionId, final PartitionRestore restore) {
-    return FuturesUtil.traverseIgnoring(
-        restore.backupIds(),
-        backupId -> verifyBackupExists(store, partitionId, backupId),
-        Runnable::run);
+      final BackupStore store,
+      final int partitionId,
+      final PartitionRestore restore,
+      final @Nullable Long exportedPosition) {
+
+    return FuturesUtil.parTraverse(
+            restore.backupIds(),
+            backupId ->
+                verifyBackupExists(store, partitionId, backupId)
+                    .thenApply(status -> Map.entry(backupId, status)))
+        .thenApply(
+            backups -> {
+              final var orderedEntries =
+                  backups.stream()
+                      .map(
+                          entry -> {
+                            final var backupId = entry.getKey();
+                            final var descriptor =
+                                entry
+                                    .getValue()
+                                    .descriptor()
+                                    .orElseThrow(
+                                        () ->
+                                            new IllegalStateException(
+                                                ("Cannot restore: backup %d for partition %d has no "
+                                                        + "descriptor, so its coverage cannot be verified.")
+                                                    .formatted(backupId, partitionId)));
+                            return new CheckpointEntry(
+                                backupId,
+                                descriptor.checkpointPosition(),
+                                descriptor.checkpointTimestamp(),
+                                descriptor.checkpointType(),
+                                descriptor.firstLogPosition());
+                          })
+                      .sorted(Comparator.comparingLong(CheckpointEntry::checkpointId))
+                      .toList();
+
+              RestorePointResolver.validateBackupChain(
+                  partitionId, orderedEntries, exportedPosition);
+              return null;
+            });
   }
 
-  private CompletableFuture<Void> verifyBackupExists(
+  private CompletableFuture<BackupStatus> verifyBackupExists(
       final BackupStore store, final int partitionId, final long backupId) {
     final var searchPattern =
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
     return store
         .list(searchPattern)
-        .thenAccept(
+        .thenApply(
             statuses ->
                 statuses.stream()
                     .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)

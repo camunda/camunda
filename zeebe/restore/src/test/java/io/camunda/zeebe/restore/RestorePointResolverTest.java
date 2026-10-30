@@ -1169,6 +1169,100 @@ final class RestorePointResolverTest {
         .hasMessageContaining("the exporter position 150 is not covered by the first remaining");
   }
 
+  @Test
+  void shouldAcceptContiguousBackupChainCoveringExportedPosition() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+
+    // when - then
+    RestorePointResolver.validateBackupChain(1, List.of(cp1, cp2), 150L);
+  }
+
+  @Test
+  void shouldRejectGapBetweenBackupsWhenExportedPositionFallsInsideSpan() {
+    // given - backup 1 has first log position 1 and checkpoint 100; backup 2 has first log
+    // position 120 and checkpoint 200; exported position is 110
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(120));
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.validateBackupChain(1, List.of(cp1, cp2), 110L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Unexpected data gaps on partition 1 between backup 2 with first log position 120 and backup 1 with checkpoint position 100");
+  }
+
+  @Test
+  void shouldRejectWhenFirstBackupStartsAfterExportedPosition() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.validateBackupChain(1, List.of(cp1, cp2), 30L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Cannot restore: backup 1 for partition 1 starts at log position 50, after the RDBMS exported position 30.");
+  }
+
+  @Test
+  void shouldRejectWhenLastBackupCheckpointIsBelowExportedPosition() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.validateBackupChain(1, List.of(cp1, cp2), 250L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Cannot restore: backup 2 for partition 1 has checkpoint position 200, below the RDBMS exported position 250.");
+  }
+
+  @Test
+  void shouldNormalizeExportedPositionNegativeOneToOne() {
+    // given - exported position -1 is normalized to 1
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var validCp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var invalidCp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(2));
+
+    // when - then
+    RestorePointResolver.validateBackupChain(1, List.of(validCp), -1L);
+    assertThatThrownBy(() -> RestorePointResolver.validateBackupChain(1, List.of(invalidCp), -1L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Cannot restore: backup 1 for partition 1 starts at log position 2, after the RDBMS exported position 1.");
+  }
+
+  @Test
+  void shouldAcceptContiguousChainWhenExportedPositionIsUnavailable() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+
+    // when - then
+    RestorePointResolver.validateBackupChain(1, List.of(cp1, cp2), null);
+  }
+
+  @Test
+  void shouldRejectGapBetweenBackupsWhenExportedPositionIsUnavailable() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var cp2 = entry(2, 200, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(120));
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.validateBackupChain(2, List.of(cp1, cp2), null))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Unexpected data gaps on partition 2 between backup 2 with first log position 120 and backup 1 with checkpoint position 100");
+  }
+
   private static CheckpointEntry entry(
       final long id,
       final long position,
