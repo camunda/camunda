@@ -42,12 +42,13 @@ fun Project.registerBuildDockerImage(
 /**
  * Registers `buildDockerImageRelease`, which builds the same image as `buildDockerImage` from a
  * distribution that includes the frontend assets. Requesting it turns the frontend build on, see
- * `buildlogic.frontend-webjar-conventions`; it fails if -Pskip.fe.build=true says otherwise.
+ * `buildlogic.frontend-webjar-conventions`; it fails if the frontend build is skipped anyway, e.g.
+ * by -Pskip.fe.build, -Pquickly or an abbreviated task name that is not detected as the release.
  */
 fun Project.registerBuildDockerImageRelease(
   distball: Provider<RegularFile>,
 ): TaskProvider<BuildDockerImage> {
-  val skipFrontend = providers.gradleProperty("skip.fe.build")
+  val skipFrontend = frontendBuildSkipped()
   return registerImageTask(
     "buildDockerImageRelease",
     "Builds the Camunda container image with frontend assets, for releases " +
@@ -55,8 +56,9 @@ fun Project.registerBuildDockerImageRelease(
     distball,
   ) {
     doFirst {
-      check(skipFrontend.orNull != "true") {
-        "buildDockerImageRelease needs the frontend; remove -Pskip.fe.build=true"
+      check(!skipFrontend.get()) {
+        "buildDockerImageRelease needs the frontend, but the frontend build is skipped; " +
+          "spell the task name in full and remove -Pskip.fe.build and -Pquickly"
       }
     }
   }
