@@ -150,14 +150,14 @@ const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defau
 				</div>
 
 				<div className="flex flex-col gap-4">
-					<div className="flex items-center gap-4">
-						<div className="flex-1">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+						<div className="sm:flex-1">
 							<Label htmlFor="roles-search" className="sr-only">
 								{t('admin.roles.searchByRoleId')}
 							</Label>
 							<SearchInput
 								id="roles-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.roles.searchByRoleId')}
 								value={searchDraft}
 								onChange={(event) => setSearchDraft(event.target.value)}

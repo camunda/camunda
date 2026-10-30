@@ -127,14 +127,14 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 					</p>
 				</div>
 				<div className="flex flex-col gap-4">
-					<div className="flex items-end justify-between gap-4">
-						<div className="flex flex-1 flex-col gap-2">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+						<div className="flex flex-col gap-2 sm:flex-1">
 							<Label htmlFor="mapping-rules-search" className="sr-only">
 								{t('admin.mappingRules.searchByMappingRuleId')}
 							</Label>
 							<SearchInput
 								id="mapping-rules-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.mappingRules.searchByMappingRuleId')}
 								value={searchDraft}
 								onChange={(event) => setSearchDraft(event.target.value)}
