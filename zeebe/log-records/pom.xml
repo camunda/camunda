@@ -82,6 +82,59 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-broker-dependencies</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.camunda:zeebe-logstreams:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-logstreams:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-stream-platform:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-stream-platform:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-journal:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-journal:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-atomix-cluster:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-atomix-cluster:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-scheduler:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-scheduler:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-db:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-db:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-bpmn-model:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-bpmn-model:*:*:runtime</exclude>
+                    <exclude>org.rocksdb:rocksdbjni:*:*:compile</exclude>
+                    <exclude>org.rocksdb:rocksdbjni:*:*:runtime</exclude>
+                    <exclude>io.micrometer:*:*:*:compile</exclude>
+                    <exclude>io.micrometer:*:*:*:runtime</exclude>
+                    <exclude>com.google.guava:guava:*:*:compile</exclude>
+                    <exclude>com.google.guava:guava:*:*:runtime</exclude>
+                    <exclude>com.github.ben-manes.caffeine:caffeine:*:*:compile</exclude>
+                    <exclude>com.github.ben-manes.caffeine:caffeine:*:*:runtime</exclude>
+                    <exclude>com.esotericsoftware:kryo:*:*:compile</exclude>
+                    <exclude>com.esotericsoftware:kryo:*:*:runtime</exclude>
+                    <exclude>org.apache.commons:commons-lang3:*:*:compile</exclude>
+                    <exclude>org.apache.commons:commons-lang3:*:*:runtime</exclude>
+                    <exclude>org.camunda.bpm.model:camunda-xml-model:*:*:compile</exclude>
+                    <exclude>org.camunda.bpm.model:camunda-xml-model:*:*:runtime</exclude>
+                    <exclude>com.jayway.jsonpath:json-path:*:*:compile</exclude>
+                    <exclude>com.jayway.jsonpath:json-path:*:*:runtime</exclude>
+                  </excludes>
+                  <message>zeebe-log-records is for reading records outside the broker, so it must not
+                    depend on the broker's storage, stream processing, networking or their libraries.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
