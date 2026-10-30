@@ -51,10 +51,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -87,10 +84,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -132,10 +126,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -160,10 +151,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -188,10 +176,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -225,10 +210,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -262,10 +244,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -307,10 +286,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -354,10 +330,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(0, "not an I/O failure"));
     final var wildcard =
@@ -377,10 +350,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(0, "cyclic cause", new CyclicCauseException()));
     final var wildcard =
@@ -404,10 +374,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
         .thenThrow(new StorageException(400, "bad request"));
     final var wildcard =
@@ -427,10 +394,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var wildcard =
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
@@ -461,10 +425,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var blobs =
         List.of(
             manifestBlobWithoutMetadata(1),
@@ -512,10 +473,7 @@ final class ManifestManagerTest {
     final var client = Mockito.mock(Storage.class);
     final var manager =
         new ManifestManager(
-            client,
-            BucketInfo.of("bucket"),
-            Optional.of("basePath"),
-            Executors.newSingleThreadExecutor());
+            client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
     final var blobs = List.of(manifestBlobWithoutMetadata(4), manifestBlobWithoutMetadata(5));
     final var page = mockBlobPage(blobs);
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any(BlobListOption[].class)))
@@ -590,10 +548,7 @@ final class ManifestManagerTest {
       final var client = Mockito.mock(Storage.class);
       final var manager =
           new ManifestManager(
-              client,
-              BucketInfo.of("bucket"),
-              Optional.of("basePath"),
-              Executors.newSingleThreadExecutor());
+              client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
       final var backup =
           new BackupImpl(
               new BackupIdentifierImpl(1, 2, 3),
@@ -627,10 +582,7 @@ final class ManifestManagerTest {
       final var client = Mockito.mock(Storage.class);
       final var manager =
           new ManifestManager(
-              client,
-              BucketInfo.of("bucket"),
-              Optional.of("basePath"),
-              Executors.newSingleThreadExecutor());
+              client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
       final var backup =
           new BackupImpl(
               new BackupIdentifierImpl(1, 2, 3),
@@ -664,10 +616,7 @@ final class ManifestManagerTest {
       final var client = Mockito.mock(Storage.class);
       final var manager =
           new ManifestManager(
-              client,
-              BucketInfo.of("bucket"),
-              Optional.of("basePath"),
-              Executors.newSingleThreadExecutor());
+              client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
       final var backup =
           new BackupImpl(
               new BackupIdentifierImpl(1, 2, 3),
@@ -701,10 +650,7 @@ final class ManifestManagerTest {
       final var client = Mockito.mock(Storage.class);
       final var manager =
           new ManifestManager(
-              client,
-              BucketInfo.of("bucket"),
-              Optional.of("basePath"),
-              Executors.newSingleThreadExecutor());
+              client, BucketInfo.of("bucket"), "basePath/", Executors.newSingleThreadExecutor());
       final var backup =
           new BackupImpl(
               new BackupIdentifierImpl(1, 2, 3),

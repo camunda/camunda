@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.gcs;
 
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
 
 import com.google.api.client.http.HttpRequestInitializer;
@@ -72,7 +73,7 @@ public final class GcsBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final Storage client;
   private final BucketInfo bucketInfo;
-  private final Optional<String> basePath;
+  private final String basePath;
   private final GcsBackupConfig config;
 
   GcsBackupStore(final GcsBackupConfig config) {
@@ -82,7 +83,7 @@ public final class GcsBackupStore implements BackupStore {
   GcsBackupStore(final GcsBackupConfig config, final Storage client) {
     this.config = config;
     bucketInfo = BucketInfo.of(config.bucketName());
-    basePath = Optional.ofNullable(config.basePath());
+    basePath = formatBasePath(Optional.ofNullable(config.basePath()));
     this.client = client;
     executor =
         Executors.newThreadPerTaskExecutor(

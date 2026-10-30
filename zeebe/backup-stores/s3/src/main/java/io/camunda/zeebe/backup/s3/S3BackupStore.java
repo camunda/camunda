@@ -13,6 +13,7 @@ import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTOR
 import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
 
@@ -123,6 +124,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final String basePath;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -132,14 +134,14 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    final var basePath = config.basePath();
-    final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
+    basePath = formatBasePath(config.basePath());
+    final var quotedBasePath = Pattern.quote(basePath);
     final var identifierSuffix =
         "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
             .formatted(MemberId.regexPattern());
-    backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
+    backupIdentifierPattern = Pattern.compile("^" + quotedBasePath + identifierSuffix);
     legacyCheckpointPrefixPattern =
-        Pattern.compile("^" + basePrefix + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
+        Pattern.compile("^" + quotedBasePath + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -179,8 +181,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String legacyWildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return basePath + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   /**
@@ -194,7 +195,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return manifestsPrefix(config.basePath(), wildcard);
+    return manifestsPrefix(basePath, wildcard);
   }
 
   /** Backwards compatible object path for backups generated prior to 8.9 */
@@ -405,7 +406,7 @@ public final class S3BackupStore implements BackupStore {
     return client
         .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
         .whenCompleteAsync(
-            (HeadBucketResponse ignore, @Nullable Throwable err) -> {
+            (final HeadBucketResponse ignore, @Nullable final Throwable err) -> {
               if (err != null) {
                 throw new ConfigurationException("Failed to connect to S3", err);
               }
@@ -414,7 +415,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return metadataPath(config.basePath(), partitionId);
+    return metadataPath(basePath, partitionId);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
@@ -633,8 +634,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<Set<BackupIdentifier>> listLegacyMembers(
       final BackupIdentifierWildcard wildcard, final long checkpointId) {
-    final var prefix =
-        legacyBasePrefix() + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
+    final var prefix = basePath + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
     final Set<BackupIdentifier> members = ConcurrentHashMap.newKeySet();
     return forEachPage(
             prefix,
@@ -686,16 +686,12 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private String legacyBasePrefix() {
-    return config.basePath().map(base -> base + "/").orElse("");
-  }
-
   /**
    * Prefix under which a delimiter listing yields one common prefix per legacy checkpoint of the
    * wildcard's partition, narrowed by the checkpoint pattern where it has a prefix.
    */
   private String legacyCheckpointPrefix(final BackupIdentifierWildcard wildcard) {
-    return legacyBasePrefix()
+    return basePath
         + wildcard.partitionId().orElseThrow()
         + "/"
         + wildcard.checkpointPattern().prefix();

@@ -37,7 +37,7 @@ class BackupStorePathsTest {
   @Test
   void shouldBuildMetadataPathUnderBasePath() {
     // when
-    final var path = BackupStorePaths.metadataPath(Optional.of("base"), 1);
+    final var path = BackupStorePaths.metadataPath("base/", 1);
 
     // then
     assertThat(path).isEqualTo("base/metadata/1/metadata.json");
@@ -55,7 +55,7 @@ class BackupStorePathsTest {
   @Test
   void shouldBuildManifestPathUnderBasePath() {
     // when
-    final var path = BackupStorePaths.manifestPath(Optional.of("base"), ID);
+    final var path = BackupStorePaths.manifestPath("base/", ID);
 
     // then
     assertThat(path).isEqualTo("base/manifests/1/100/2/manifest.json");
@@ -83,8 +83,7 @@ class BackupStorePathsTest {
   void shouldBuildFileSetPathUnderBasePath() {
     // when
     final var path =
-        BackupStorePaths.fileSetPath(
-            Optional.of("base"), ID, BackupStorePaths.SEGMENTS_FILESET_NAME);
+        BackupStorePaths.fileSetPath("base/", ID, BackupStorePaths.SEGMENTS_FILESET_NAME);
 
     // then
     assertThat(path).isEqualTo("base/contents/1/100/2/segments/");
@@ -98,7 +97,7 @@ class BackupStorePathsTest {
             Optional.of(BrokerMemberId.from(2)), Optional.of(1), CheckpointPattern.of(100L));
 
     // when
-    final var prefix = BackupStorePaths.manifestsPrefix(Optional.of("base"), wildcard);
+    final var prefix = BackupStorePaths.manifestsPrefix("base/", wildcard);
 
     // then
     assertThat(prefix).isEqualTo("base/manifests/1/100/2");
@@ -116,6 +115,24 @@ class BackupStorePathsTest {
 
     // then
     assertThat(prefix).isEqualTo("manifests/");
+  }
+
+  @Test
+  void shouldFormatBasePathWithTrailingSlash() {
+    // when
+    final var basePath = BackupStorePaths.formatBasePath(Optional.of("tenants/abc"));
+
+    // then
+    assertThat(basePath).isEqualTo("tenants/abc/");
+  }
+
+  @Test
+  void shouldFormatMissingBasePathAsEmpty() {
+    // when
+    final var basePath = BackupStorePaths.formatBasePath(Optional.empty());
+
+    // then
+    assertThat(basePath).isEmpty();
   }
 
   @Test

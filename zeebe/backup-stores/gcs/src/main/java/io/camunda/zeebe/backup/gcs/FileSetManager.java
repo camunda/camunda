@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
@@ -45,7 +44,7 @@ final class FileSetManager {
 
   private final Storage client;
   private final BucketInfo bucketInfo;
-  private final Optional<String> basePath;
+  private final String basePath;
   private final ExecutorService executor;
   private final Semaphore concurrencyLimit;
   private final int bufferSize;
@@ -53,7 +52,7 @@ final class FileSetManager {
   FileSetManager(
       final Storage client,
       final BucketInfo bucketInfo,
-      final Optional<String> basePath,
+      final String basePath,
       final ExecutorService executor,
       final int maxConcurrentOperations,
       final int bufferSize) {

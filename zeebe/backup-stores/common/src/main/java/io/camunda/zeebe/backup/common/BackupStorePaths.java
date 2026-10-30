@@ -16,8 +16,9 @@ import org.jspecify.annotations.Nullable;
  * Names and paths shared by all backup store implementations. They are part of the persisted layout
  * of existing backups, so changing any of them breaks reading backups taken before.
  *
- * <p>Stores can place all keys under a configured base path, normalized with {@link
- * #sanitizeBasePath(String)}.
+ * <p>Stores can place all keys under a configured base path: normalized with {@link
+ * #sanitizeBasePath(String)} when the configuration is read, then formatted once with {@link
+ * #formatBasePath(Optional)} and passed to the path helpers as is.
  */
 public final class BackupStorePaths {
 
@@ -28,6 +29,8 @@ public final class BackupStorePaths {
   public static final String MANIFESTS_DIRECTORY_NAME = "manifests";
   public static final String MANIFEST_OBJECT_NAME = "manifest.json";
   public static final String CONTENTS_DIRECTORY_NAME = "contents";
+
+  private static final String NO_BASE_PATH = "";
 
   private BackupStorePaths() {}
 
@@ -63,30 +66,38 @@ public final class BackupStorePaths {
     return Optional.of(sanitized);
   }
 
+  /**
+   * Formats a base path normalized by {@link #sanitizeBasePath(String)} for the path helpers: the
+   * base path followed by a single {@code /}, or empty without a base path.
+   */
+  public static String formatBasePath(final Optional<String> sanitizedBasePath) {
+    return sanitizedBasePath.map(path -> path + "/").orElse(NO_BASE_PATH);
+  }
+
   /** Returns the key of the backup metadata object of the given partition. */
   public static String metadataPath(final int partitionId) {
-    return metadataPath(Optional.empty(), partitionId);
+    return metadataPath(NO_BASE_PATH, partitionId);
   }
 
   /**
    * Returns the key of the backup metadata object of the given partition, under the given base
    * path.
    */
-  public static String metadataPath(final Optional<String> basePath, final int partitionId) {
+  public static String metadataPath(final String basePath, final int partitionId) {
     return "%s%s/%d/%s"
-        .formatted(root(basePath), METADATA_DIRECTORY_NAME, partitionId, METADATA_OBJECT_NAME);
+        .formatted(basePath, METADATA_DIRECTORY_NAME, partitionId, METADATA_OBJECT_NAME);
   }
 
   /** Returns the key of the manifest object of the given backup. */
   public static String manifestPath(final BackupIdentifier id) {
-    return manifestPath(Optional.empty(), id);
+    return manifestPath(NO_BASE_PATH, id);
   }
 
   /** Returns the key of the manifest object of the given backup, under the given base path. */
-  public static String manifestPath(final Optional<String> basePath, final BackupIdentifier id) {
+  public static String manifestPath(final String basePath, final BackupIdentifier id) {
     return "%s%s/%s/%s/%s/%s"
         .formatted(
-            root(basePath),
+            basePath,
             MANIFESTS_DIRECTORY_NAME,
             id.partitionId(),
             id.checkpointId(),
@@ -99,7 +110,7 @@ public final class BackupStorePaths {
    * down listings. Keys starting with it do not necessarily match the wildcard.
    */
   public static String manifestsPrefix(final BackupIdentifierWildcard wildcard) {
-    return manifestsPrefix(Optional.empty(), wildcard);
+    return manifestsPrefix(NO_BASE_PATH, wildcard);
   }
 
   /**
@@ -108,11 +119,8 @@ public final class BackupStorePaths {
    * wildcard.
    */
   public static String manifestsPrefix(
-      final Optional<String> basePath, final BackupIdentifierWildcard wildcard) {
-    return root(basePath)
-        + MANIFESTS_DIRECTORY_NAME
-        + "/"
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+      final String basePath, final BackupIdentifierWildcard wildcard) {
+    return basePath + MANIFESTS_DIRECTORY_NAME + "/" + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   /**
@@ -120,7 +128,7 @@ public final class BackupStorePaths {
    * the given backup are stored.
    */
   public static String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return fileSetPath(Optional.empty(), id, fileSetName);
+    return fileSetPath(NO_BASE_PATH, id, fileSetName);
   }
 
   /**
@@ -128,18 +136,14 @@ public final class BackupStorePaths {
    * the given backup are stored, under the given base path.
    */
   public static String fileSetPath(
-      final Optional<String> basePath, final BackupIdentifier id, final String fileSetName) {
+      final String basePath, final BackupIdentifier id, final String fileSetName) {
     return "%s%s/%s/%s/%s/%s/"
         .formatted(
-            root(basePath),
+            basePath,
             CONTENTS_DIRECTORY_NAME,
             id.partitionId(),
             id.checkpointId(),
             id.brokerId().id(),
             fileSetName);
-  }
-
-  private static String root(final Optional<String> basePath) {
-    return basePath.map(path -> path + "/").orElse("");
   }
 }
