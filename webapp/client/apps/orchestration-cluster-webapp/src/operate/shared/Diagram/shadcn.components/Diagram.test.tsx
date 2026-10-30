@@ -612,4 +612,112 @@ describe('<Diagram />', () => {
 		await expect.poll(() => flowStroke('flow_2')).toBe(highlightedStroke);
 		expect(flowStroke('flow_1')).toBe(defaultStroke);
 	});
+
+	it('should announce the drill-down shortcut in the name of drill-down elements', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1', 'endEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+			/>,
+		);
+
+		await expect
+			.element(screen.getByRole('button', {name: 'start event, Press Shift+Enter to drill down.', exact: true}))
+			.toHaveAttribute('aria-keyshortcuts', 'Shift+Enter');
+		await expect.element(screen.getByRole('button', {name: 'end event', exact: true})).toBeInTheDocument();
+	});
+
+	it('should announce that a drill-down element is loading', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[
+					['startEvent_1', 'op-drilldown'],
+					['startEvent_1', 'op-drilldown-loading'],
+				]}
+			/>,
+		);
+
+		await expect
+			.element(
+				screen.getByRole('button', {name: 'start event, Loading, Press Shift+Enter to drill down.', exact: true}),
+			)
+			.toBeInTheDocument();
+	});
+
+	it('should drop the drill-down announcement when drill-down is no longer set', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+			/>,
+		);
+		await expect
+			.element(screen.getByRole('button', {name: 'start event, Press Shift+Enter to drill down.', exact: true}))
+			.toBeInTheDocument();
+
+		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} customElementClasses={[]} />);
+
+		const element = screen.getByRole('button', {name: 'start event', exact: true});
+		await expect.element(element).toBeInTheDocument();
+		await expect.element(element).not.toHaveAttribute('aria-keyshortcuts');
+	});
+
+	it('should drill down on Shift+Enter without selecting the element', async () => {
+		const onElementDoubleClick = vi.fn();
+		const onElementSelection = vi.fn();
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+				onElementDoubleClick={onElementDoubleClick}
+				onElementSelection={onElementSelection}
+			/>,
+		);
+		await expect.element(screen.getByRole('button', {name: /Press Shift\+Enter/})).toBeInTheDocument();
+
+		await userEvent.tab();
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+
+		expect(onElementDoubleClick).toHaveBeenCalledExactlyOnceWith('startEvent_1');
+		expect(onElementSelection).not.toHaveBeenCalled();
+	});
+
+	it('should select a drill-down element on Enter without drilling down', async () => {
+		const onElementDoubleClick = vi.fn();
+		const onElementSelection = vi.fn();
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+				onElementDoubleClick={onElementDoubleClick}
+				onElementSelection={onElementSelection}
+			/>,
+		);
+		await expect.element(screen.getByRole('button', {name: /Press Shift\+Enter/})).toBeInTheDocument();
+
+		await userEvent.tab();
+		await userEvent.keyboard('{Enter}');
+
+		expect(onElementSelection).toHaveBeenCalledOnce();
+		expect(onElementDoubleClick).not.toHaveBeenCalled();
+	});
+
+	it('should not drill down on Shift+Enter for elements without drill-down', async () => {
+		const onElementDoubleClick = vi.fn();
+		const screen = await render(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} onElementDoubleClick={onElementDoubleClick} />,
+		);
+		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).toBeInTheDocument();
+
+		await userEvent.tab();
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+
+		expect(onElementDoubleClick).not.toHaveBeenCalled();
+	});
 });

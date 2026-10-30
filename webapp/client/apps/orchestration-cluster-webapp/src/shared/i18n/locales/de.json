@@ -2501,6 +2501,8 @@
 						"inclusiveGateway": "Inklusives Gateway",
 						"eventBasedGateway": "Ereignisbasiertes Gateway"
 					},
+					"drillDownLoading": "Wird geladen",
+					"drillDownHint": "Mit Umschalt+Eingabetaste die Details öffnen.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Mit den Pfeiltasten zwischen Elementen wechseln und mit der Eingabetaste auswählen."
 				},
