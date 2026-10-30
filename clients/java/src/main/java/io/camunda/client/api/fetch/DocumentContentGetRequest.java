@@ -21,7 +21,8 @@ import java.io.InputStream;
 /**
  * Command to get the content of a document from the document store.
  *
- * <p>The document content is returned as an {@link InputStream}.
+ * <p>The document content is returned as an {@link InputStream}. Close the stream when you are done
+ * with it. Closing it before reaching the end of the document stops the download.
  */
 public interface DocumentContentGetRequest extends FinalCommandStep<InputStream> {
 
