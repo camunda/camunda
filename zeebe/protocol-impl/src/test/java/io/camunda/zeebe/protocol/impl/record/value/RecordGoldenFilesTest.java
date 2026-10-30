@@ -8,9 +8,12 @@
 package io.camunda.zeebe.protocol.impl.record.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,8 +22,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -63,6 +69,21 @@ public class RecordGoldenFilesTest {
           "\\s*(?:\"(?:\\\\.|[^\"])*\"|'(?:\\\\.|[^'])*'|<[^<>]*>|\\([^()]*\\)|[^,'\"()<>]+)\\s*(?:,|$)",
           Pattern.DOTALL);
 
+  // Templates and patterns to resolve the serialized key of a property, which may be given as
+  //     "name"
+  //     new StringValue("name")
+  //     NAME_KEY, declared in the same class or statically imported from another one, where
+  //     NAME_KEY itself is again one of the above
+  private static final String KEY_CONSTANT_TEMPLATE = "static\\s+final\\s+\\w+\\s+%s\\s*=([^;]+);";
+  private static final String KEY_STATIC_IMPORT_TEMPLATE =
+      "import\\s+static\\s+(?:\\w+\\.)*(\\w+)\\.%s\\s*;";
+  private static final Pattern STRING_LITERAL_PATTERN =
+      Pattern.compile("\"((?:\\\\.|[^\"\\\\])*)\"");
+  private static final Pattern STRING_VALUE_PATTERN =
+      Pattern.compile("new\\s+StringValue\\s*\\((.*)\\)", Pattern.DOTALL);
+  private static final Pattern CONSTANT_REFERENCE_PATTERN =
+      Pattern.compile("(?:(\\w+)\\.)?([A-Za-z_]\\w*)");
+
   // --------------------------------------------------------------------------
   // Parameterized Test
   // --------------------------------------------------------------------------
@@ -77,8 +98,10 @@ public class RecordGoldenFilesTest {
     final String goldenContent = Files.readString(goldenFile);
 
     final String sourceContent = Files.readString(record.sourcePath());
-    final Map<String, Property> goldenProps = extractProperties(goldenContent, record.simpleName());
-    final Map<String, Property> sourceProps = extractProperties(sourceContent, record.simpleName());
+    final Map<String, Property> goldenProps =
+        extractProperties(goldenContent, record.simpleName(), RecordGoldenFilesTest::readGolden);
+    final Map<String, Property> sourceProps =
+        extractProperties(sourceContent, record.simpleName(), RecordGoldenFilesTest::readSource);
 
     validateGoldenProperties(goldenProps, sourceProps);
     validateNewProperties(record, goldenProps, sourceProps, goldenFile);
@@ -134,6 +157,12 @@ public class RecordGoldenFilesTest {
             "Property %s type changed (golden: %s, source: %s)",
             golden.name(), golden.type(), source.type());
       }
+      if (golden.key() != null && !Objects.equals(golden.key(), source.key())) {
+        warnAboutGoldenFileChanges();
+        fail(
+            "Serialized key of %s changed from %s to %s",
+            golden.name(), golden.key(), source.key());
+      }
     }
   }
 
@@ -165,11 +194,17 @@ public class RecordGoldenFilesTest {
   // Property Extraction
   // --------------------------------------------------------------------------
 
+  /**
+   * @param classSources looks up the content of another record class by its simple name, to resolve
+   *     key constants imported from it; returns null if unknown
+   */
   private static Map<String, Property> extractProperties(
-      final String javaSource, final String recordName) {
+      final String javaSource,
+      final String recordName,
+      final Function<String, String> classSources) {
     final var properties = new LinkedHashMap<String, Property>();
     properties.putAll(parseRecordComponents(javaSource, recordName));
-    properties.putAll(parseFieldDeclarations(javaSource, properties));
+    properties.putAll(parseFieldDeclarations(javaSource, properties, classSources));
     return Collections.unmodifiableMap(properties);
   }
 
@@ -188,7 +223,7 @@ public class RecordGoldenFilesTest {
           final var fieldType = String.join(" ", Arrays.copyOf(tokens, tokens.length - 1));
           final var hasDefault =
               hasDefaultFor(src, fieldName) || containsFieldInitializer(src, fieldName);
-          props.put(fieldName, new Property(fieldName, fieldType, hasDefault));
+          props.put(fieldName, new Property(fieldName, fieldType, hasDefault, null));
         }
       }
     }
@@ -196,7 +231,9 @@ public class RecordGoldenFilesTest {
   }
 
   private static Map<String, Property> parseFieldDeclarations(
-      final String src, final Map<String, Property> existing) {
+      final String src,
+      final Map<String, Property> existing,
+      final Function<String, String> classSources) {
 
     final var props = new LinkedHashMap<String, Property>();
     final var matcher = FIELD_DECLARATION_PATTERN.matcher(src);
@@ -215,9 +252,88 @@ public class RecordGoldenFilesTest {
           new Property(
               name,
               type.isEmpty() && existingProp != null ? existingProp.type() : type,
-              (existingProp != null && existingProp.hasDefault()) || hasDefault));
+              (existingProp != null && existingProp.hasDefault()) || hasDefault,
+              hasInit ? extractKey(initGroup, src, classSources) : null));
     }
     return props;
+  }
+
+  /** Returns the serialized key of a property initializer, or null if it is not a property. */
+  private static String extractKey(
+      final String initGroup, final String src, final Function<String, String> classSources) {
+    final var rhs = initGroup.replaceFirst("^=\\s*", "").trim();
+    final var matcher = PROPERTY_CTOR_PATTERN.matcher(rhs);
+    if (!matcher.matches() || matcher.group(2).isBlank()) {
+      return null;
+    }
+    return resolveKey(firstArgument(matcher.group(2)), src, classSources);
+  }
+
+  private static String firstArgument(final String args) {
+    var depth = 0;
+    var inString = false;
+    for (int i = 0; i < args.length(); i++) {
+      final char c = args.charAt(i);
+      if (inString) {
+        if (c == '\\') {
+          i++;
+        } else if (c == '"') {
+          inString = false;
+        }
+      } else if (c == '"') {
+        inString = true;
+      } else if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (c == ',' && depth == 0) {
+        return args.substring(0, i).trim();
+      }
+    }
+    return args.trim();
+  }
+
+  /**
+   * Resolves a key expression to the string it serializes to. An expression that cannot be
+   * resolved, e.g. a constant of a class without golden file, is returned as is, so that at least a
+   * change of the expression itself is detected.
+   */
+  private static String resolveKey(
+      final String expression, final String src, final Function<String, String> classSources) {
+    final var expr = expression.trim();
+
+    final var literal = STRING_LITERAL_PATTERN.matcher(expr);
+    if (literal.matches()) {
+      return literal.group(1);
+    }
+
+    final var stringValue = STRING_VALUE_PATTERN.matcher(expr);
+    if (stringValue.matches()) {
+      return resolveKey(stringValue.group(1), src, classSources);
+    }
+
+    final var reference = CONSTANT_REFERENCE_PATTERN.matcher(expr);
+    if (!reference.matches()) {
+      return expr;
+    }
+    final var owner = reference.group(1);
+    final var name = Pattern.quote(reference.group(2));
+    final var ownerSrc = owner == null ? src : classSources.apply(owner);
+    if (ownerSrc != null) {
+      final var constant =
+          Pattern.compile(KEY_CONSTANT_TEMPLATE.formatted(name), Pattern.DOTALL).matcher(ownerSrc);
+      if (constant.find()) {
+        return resolveKey(constant.group(1), ownerSrc, classSources);
+      }
+    }
+    if (owner == null) {
+      final var staticImport =
+          Pattern.compile(KEY_STATIC_IMPORT_TEMPLATE.formatted(name)).matcher(src);
+      if (staticImport.find()) {
+        return resolveKey(staticImport.group(1) + "." + reference.group(2), src, classSources);
+      }
+    }
+    return expr;
   }
 
   // --------------------------------------------------------------------------
@@ -322,11 +438,190 @@ public class RecordGoldenFilesTest {
     return filename.replaceAll("\\.java$", "");
   }
 
+  private static String readGolden(final String simpleName) {
+    return readIfExists(GOLDEN_FILES_FOLDER.resolve(simpleName + ".golden"));
+  }
+
+  private static String readSource(final String simpleName) {
+    try (final var files = Files.walk(RECORDS_FOLDER)) {
+      return files
+          .filter(path -> path.getFileName().toString().equals(simpleName + ".java"))
+          .findFirst()
+          .map(RecordGoldenFilesTest::readIfExists)
+          .orElse(null);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static String readIfExists(final Path path) {
+    try {
+      return Files.exists(path) ? Files.readString(path) : null;
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Internal Data Models
   // --------------------------------------------------------------------------
 
-  private record Property(String name, String type, boolean hasDefault) {}
+  /**
+   * @param key the serialized key, resolved to its string value; null if the field is not a
+   *     property
+   */
+  private record Property(String name, String type, boolean hasDefault, String key) {}
 
   private record RegisteredRecord(Path sourcePath, String simpleName) {}
+
+  // --------------------------------------------------------------------------
+  // Serialized Key Detection (ensures this class won't break in a future)
+  // --------------------------------------------------------------------------
+
+  @Test
+  void shouldDetectChangedKeyLiteral() {
+    // given
+    final var golden =
+        """
+        private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
+        """;
+    final var source =
+        """
+        private final LongProperty userTaskKeyProp = new LongProperty("taskKey", -1);
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of userTaskKeyProp changed from userTaskKey to taskKey");
+  }
+
+  @Test
+  void shouldDetectChangedKeyInStringValue() {
+    // given
+    final var golden =
+        """
+        private final EnumProperty<BpmnElementType> elementTypeProp =
+            new EnumProperty<>(
+                new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+        """;
+    final var source =
+        """
+        private final EnumProperty<BpmnElementType> elementTypeProp =
+            new EnumProperty<>(
+                new StringValue("type"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of elementTypeProp changed from elementType to type");
+  }
+
+  @Test
+  void shouldDetectChangedKeyConstant() {
+    // given
+    final var golden =
+        """
+        public static final String ASSIGNEE = "assignee";
+        private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, "");
+        """;
+    final var source =
+        """
+        public static final String ASSIGNEE = "assigneeId";
+        private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, "");
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of assigneeProp changed from assignee to assigneeId");
+  }
+
+  @Test
+  void shouldDetectChangedKeyBehindNestedConstants() {
+    // given
+    final var golden =
+        """
+        public static final String START_TIME = "timestamp";
+        private static final StringValue START_TIME_KEY = new StringValue(START_TIME);
+        private final LongProperty startTimeProp = new LongProperty(START_TIME_KEY, -1L);
+        """;
+    final var source =
+        """
+        public static final String START_TIME = "startTime";
+        private static final StringValue START_TIME_KEY = new StringValue(START_TIME);
+        private final LongProperty startTimeProp = new LongProperty(START_TIME_KEY, -1L);
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of startTimeProp changed from timestamp to startTime");
+  }
+
+  @Test
+  void shouldDetectChangedKeyConstantOfAnotherRecord() {
+    // given
+    final var record =
+        """
+        import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
+        private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+        """;
+    final Function<String, String> goldenRecords =
+        name ->
+            """
+            public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+            """;
+    final Function<String, String> sourceRecords =
+        name ->
+            """
+            public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("processId");
+            """;
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                validateGoldenProperties(
+                    extractProperties(record, "TestRecord", goldenRecords),
+                    extractProperties(record, "TestRecord", sourceRecords)))
+        .hasMessage("Serialized key of bpmnProcessIdProp changed from bpmnProcessId to processId");
+  }
+
+  @Test
+  void shouldAcceptKeyMovedIntoConstantWithSameValue() {
+    // given
+    final var golden =
+        """
+        private final StringProperty workerProp = new StringProperty("worker", "");
+        """;
+    final var source =
+        """
+        private static final StringValue WORKER_KEY = new StringValue("worker");
+        private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldIgnoreFieldsThatAreNotProperties() {
+    // given
+    final var golden =
+        """
+        private final List<String> names = new ArrayList<>(List.of("a"));
+        private final int count;
+        """;
+    final var source =
+        """
+        private final List<String> names = new ArrayList<>(List.of("b"));
+        private final int count;
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+  }
+
+  private static void validate(final String golden, final String source) {
+    validateGoldenProperties(
+        extractProperties(golden, "TestRecord", name -> null),
+        extractProperties(source, "TestRecord", name -> null));
+  }
 }
