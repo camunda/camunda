@@ -369,6 +369,7 @@ final class RestoreValidatorResolverTest {
       // in the time range alone
       stubMetadata(1, singleCheckpointMetadata(1));
       stubMetadata(2, singleCheckpointMetadata(2));
+      stubBackupPartitionCount(1L, 2);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
           new RestoreRequest(
@@ -752,6 +753,133 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void shouldRejectATimeRangeWhoseBackupHasMorePartitionsThanTheGroupWithoutExportedPositions() {
+      // given - no broker holds partition 3, so nothing could restore it
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubBackupPartitionCount(1L, 3);
+      final var validator = new RestoreValidator(2, backupStore, null);
+
+      // when
+      final var result = validator.validate(noSecondaryStorageTimeRangeRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("it has 3 partitions, but the partition group only has 2");
+    }
+
+    @Test
+    void shouldRestoreOnlyThePartitionsOfTheBackupForATimeRangeWithoutExportedPositions() {
+      // given - the group holds 3 partitions, but the backup was taken with 2, before a scale up.
+      // Partition 3's metadata is not stubbed, so the validator must not look it up.
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      stubBackupPartitionCount(1L, 2);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result = validator.validate(noSecondaryStorageTimeRangeRequest());
+
+      // then
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L), 2, toSingleCheckpoint(1L)), false);
+    }
+
+    @Test
+    void shouldRestoreThePartitionsOfTheLastBackupIdWithoutExportedPositions() {
+      // given - the group holds 3 partitions, but the last of the backups was taken with 2
+      stubBackupPartitionCount(7L, 2);
+      stubBackupExists(1, 5L);
+      stubBackupExists(1, 7L);
+      stubBackupExists(2, 5L);
+      stubBackupExists(2, 7L);
+      final var validator = new RestoreValidator(3, backupStore, null);
+      final var request =
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(5L, 7L), null, null), "none", false),
+              false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(5L, 7L), 2, PartitionRestore.ofBackups(5L, 7L)),
+          false);
+    }
+
+    @Test
+    void shouldRestoreATimeRangeWhosePartitionsEndOnDifferentBackupsWithoutExportedPositions() {
+      // given - marker 15 is the common checkpoint, so each partition ends on its own backup
+      // after it, both taken with the 2 partitions of the backups
+      stubMetadata(1, markerBetweenBackups(1, 20));
+      stubMetadata(2, markerBetweenBackups(2, 25));
+      stubBackupPartitionCount(20L, 2);
+      stubBackupPartitionCount(25L, 2);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result =
+          validator.validate(
+              noSecondaryStorageTimeRangeRequest(CHECKPOINT_TIMESTAMP.plusSeconds(10)));
+
+      // then
+      assertValid(
+          result,
+          Map.of(
+              1, new PartitionRestore(new TreeSet<>(List.of(10L, 20L)), OptionalLong.of(150L)),
+              2, new PartitionRestore(new TreeSet<>(List.of(10L, 25L)), OptionalLong.of(150L))),
+          false);
+    }
+
+    @Test
+    void shouldRejectATimeRangeWhosePartitionsLastBackupsDisagreeWithoutExportedPositions() {
+      // given - partition 2 ends on a backup taken after a scale up to 3 partitions, while
+      // partition 1's last backup, which decides the partitions to restore, holds 2
+      stubMetadata(1, markerBetweenBackups(1, 20));
+      stubMetadata(2, markerBetweenBackups(2, 25));
+      stubBackupPartitionCount(20L, 2);
+      stubBackupPartitionCount(25L, 3);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result =
+          validator.validate(
+              noSecondaryStorageTimeRangeRequest(CHECKPOINT_TIMESTAMP.plusSeconds(10)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 25 was taken with 3 partitions, but 2 partitions are expected");
+    }
+
+    @Test
+    void shouldRejectATimeRangeSpanningAScaleUpWithoutExportedPositions() {
+      // given - backup 20 was taken after a scale up to 3 partitions, so it decides to restore 3,
+      // but partition 3 holds no backup as early as the requested start
+      stubMetadata(
+          1, RdbmsBackupResolution.metadataOf(1, List.of(backupEntry(10), backupEntry(20))));
+      stubMetadata(
+          2, RdbmsBackupResolution.metadataOf(2, List.of(backupEntry(10), backupEntry(20))));
+      stubMetadata(3, RdbmsBackupResolution.metadataOf(3, List.of(backupEntry(20))));
+      stubBackupPartitionCount(20L, 3);
+      final var validator = new RestoreValidator(3, backupStore, null);
+
+      // when
+      final var result =
+          validator.validate(
+              noSecondaryStorageTimeRangeRequest(CHECKPOINT_TIMESTAMP.plusSeconds(10)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageStartingWith("No usable range found for partition 3");
+    }
+
+    @Test
     void shouldRejectBackupsWithAnotherPartitionCountThanTheExportedPositions() {
       // given - the RDBMS holds exported positions for 2 partitions, but the backups were taken
       // with 3: the database was not restored to the point of the backups
@@ -769,8 +897,7 @@ final class RestoreValidatorResolverTest {
       assertThat(assertInvalid(result))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage(
-              "Cannot restore: backup 1 was taken with 3 partitions, but the RDBMS holds exported "
-                  + "positions for 2");
+              "Cannot restore: backup 1 was taken with 3 partitions, but 2 partitions are expected");
     }
 
     @Test
@@ -788,8 +915,7 @@ final class RestoreValidatorResolverTest {
       assertThat(assertInvalid(result))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage(
-              "Cannot restore: backup 1 was taken with 2 partitions, but the RDBMS holds exported "
-                  + "positions for 3");
+              "Cannot restore: backup 1 was taken with 2 partitions, but 3 partitions are expected");
     }
 
     @Test
@@ -867,12 +993,41 @@ final class RestoreValidatorResolverTest {
       assertThatThrownBy(() -> validator.verifyLastBackupsHoldThePartitions(restorableBackups, 2))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage(
-              "Cannot restore: backup 6 was taken with 3 partitions, but the RDBMS holds exported "
-                  + "positions for 2");
+              "Cannot restore: backup 6 was taken with 3 partitions, but 2 partitions are expected");
     }
 
     private static PartitionRestore lastBackupAt(final long checkpointId) {
       return PartitionRestore.ofBackups(checkpointId);
+    }
+
+    /** Backup 10, marker 15 and the given backup, which holds the log up to the marker. */
+    private static BackupMetadata markerBetweenBackups(
+        final int partitionId, final long lastBackup) {
+      return RdbmsBackupResolution.metadataOf(
+          partitionId,
+          List.of(
+              RdbmsBackupResolution.backupEntry(10, 100, 1),
+              RdbmsBackupResolution.markerEntry(15, 150),
+              RdbmsBackupResolution.backupEntry(lastBackup, 200, 101)));
+    }
+
+    private static CheckpointEntry backupEntry(final long checkpointId) {
+      return RdbmsBackupResolution.backupEntry(checkpointId, checkpointId * 10, 1);
+    }
+
+    private static RestoreRequest noSecondaryStorageTimeRangeRequest() {
+      return noSecondaryStorageTimeRangeRequest(CHECKPOINT_TIMESTAMP);
+    }
+
+    private static RestoreRequest noSecondaryStorageTimeRangeRequest(final Instant from) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(
+                  List.of(), from.toString(), CHECKPOINT_TIMESTAMP.plusSeconds(3600).toString()),
+              "none",
+              true),
+          false);
     }
 
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {

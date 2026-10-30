@@ -214,10 +214,23 @@ public final class RestoreValidator
     final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
     if (exportedPositionSupplier == null) {
-      // No secondary storage to keep consistent with: restore the configured partitions from the
-      // backups in the time range alone.
-      return RestorePointResolver.resolve(
-          loadMetadataForAllPartitions(partitionCount), instantFrom, instantTo, null);
+      // No secondary storage to keep consistent with: restore the partitions of the backup the
+      // time range resolves to, read from partition 1 since every backup holds it.
+      final var store =
+          requireNonNull(backupStore, "Backup store must be configured to load backups");
+      final var firstPartition =
+          RestorePointResolver.resolve(
+                  loadMetadataForAllPartitions(1), instantFrom, instantTo, null)
+              .partitions()
+              .get(1);
+      final var lastBackupOfFirstPartition =
+          requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().last();
+      final var restoredPartitionCount = backupPartitionCount(store, lastBackupOfFirstPartition);
+      final var restorableBackups =
+          RestorePointResolver.resolve(
+              loadMetadataForAllPartitions(restoredPartitionCount), instantFrom, instantTo, null);
+      verifyLastBackupsHoldThePartitions(restorableBackups, restoredPartitionCount);
+      return restorableBackups;
     }
     final var exportedPositions =
         requireExportedPositions(exportedPositions(exportedPositionSupplier, partitionCount));
@@ -232,7 +245,7 @@ public final class RestoreValidator
 
   @VisibleForTesting
   void verifyLastBackupsHoldThePartitions(
-      final RestorableBackups restorableBackups, final int exportedPartitionCount) {
+      final RestorableBackups restorableBackups, final int expectedPartitionCount) {
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     restorableBackups.partitions().values().stream()
@@ -242,20 +255,20 @@ public final class RestoreValidator
         .forEach(
             lastBackup ->
                 verifyPartitionCountsAgree(
-                    lastBackup, backupPartitionCount(store, lastBackup), exportedPartitionCount));
+                    lastBackup, backupPartitionCount(store, lastBackup), expectedPartitionCount));
   }
 
   /**
-   * The partitions to restore are those of the last backup, which have to be the ones the RDBMS
-   * holds exported positions for.
+   * The partitions to restore are those of the last backup, which have to be the expected ones:
+   * those the RDBMS holds exported positions for, or without a secondary storage those of the
+   * backup partition 1 resolved to.
    */
   private static void verifyPartitionCountsAgree(
-      final long backupId, final int backupPartitionCount, final int exportedPartitionCount) {
-    if (backupPartitionCount != exportedPartitionCount) {
+      final long backupId, final int backupPartitionCount, final int expectedPartitionCount) {
+    if (backupPartitionCount != expectedPartitionCount) {
       throw new IllegalStateException(
-          ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
-                  + "positions for %d")
-              .formatted(backupId, backupPartitionCount, exportedPartitionCount));
+          "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
+              .formatted(backupId, backupPartitionCount, expectedPartitionCount));
     }
   }
 
