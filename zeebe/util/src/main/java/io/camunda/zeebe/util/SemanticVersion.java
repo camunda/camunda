@@ -8,7 +8,6 @@
 package io.camunda.zeebe.util;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.StringUtils.isNumeric;
 
 import java.util.Comparator;
 import java.util.Optional;
@@ -186,5 +185,10 @@ public record SemanticVersion(
       return version + "-" + preRelease;
     }
     return version;
+  }
+
+  /** Whether the identifier is non-empty and consists only of digits. */
+  static boolean isNumeric(final String identifier) {
+    return !identifier.isEmpty() && identifier.chars().allMatch(Character::isDigit);
   }
 }

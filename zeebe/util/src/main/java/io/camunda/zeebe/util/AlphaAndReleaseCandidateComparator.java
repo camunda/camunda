@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
-import static org.apache.commons.lang3.StringUtils.isNumeric;
+import static io.camunda.zeebe.util.SemanticVersion.isNumeric;
 
 import java.util.Arrays;
 import java.util.Comparator;

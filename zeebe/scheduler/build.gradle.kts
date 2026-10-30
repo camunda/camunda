@@ -17,7 +17,6 @@ dependencies {
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
-  testImplementation(libs.com.google.guava.guava)
   compileOnly(libs.com.github.spotbugs.spotbugs.annotations)
 }
 
