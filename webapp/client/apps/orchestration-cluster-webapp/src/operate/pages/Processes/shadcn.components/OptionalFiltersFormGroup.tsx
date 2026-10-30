@@ -7,6 +7,7 @@
  */
 
 import {useMemo} from 'react';
+import {useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {Heading} from '@camunda/design-system';
 import {
@@ -25,7 +26,9 @@ import {
 	validateBatchOperationKeyCharacters,
 	validateBatchOperationKeyComplete,
 } from '#/operate/shared/utils/validators';
+import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
 import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
+import {VariablesFilter} from './VariablesFilter/VariablesFilter';
 
 type Props = {
 	filters: OptionalFilterValues;
@@ -36,6 +39,8 @@ type Props = {
 
 const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onVisibleFilterChange, onFilterClear}) => {
 	const {t} = useTranslation();
+	const hasActiveVariableFilters = useVariableConditions().length > 0;
+	const isOnVariablesRoute = Boolean(useMatchRoute()({to: '/operate-preview/processes/filters/variables'}));
 
 	const definitions = useMemo<OptionalFilterDefinition<OptionalFilter>[]>(() => {
 		const dateRangeDefinition = (
@@ -114,6 +119,30 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 				label: t('operate.processes.filters.hasRetriesLeft'),
 				type: 'checkbox',
 			},
+			{
+				id: 'variable',
+				keys: ['variableName', 'variableValues'],
+				label: t('operate.processes.variableFilter.title'),
+				type: 'custom',
+				onRemove: () => setVariableConditions([]),
+				render: (removeButton) => (
+					<div
+						id="variable"
+						tabIndex={-1}
+						role="group"
+						aria-labelledby="optional-filter-variable-label"
+						className="flex flex-col gap-1.5"
+					>
+						<div className="flex items-center justify-between">
+							<Heading as="h3" variant="heading-xs" id="optional-filter-variable-label">
+								{t('operate.processes.variableFilter.title')}
+							</Heading>
+							{removeButton}
+						</div>
+						<VariablesFilter />
+					</div>
+				),
+			},
 			dateRangeDefinition(
 				'startDateRange',
 				t('operate.processes.filters.startDateRange'),
@@ -126,6 +155,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 
 	const activeFilters = useMemo<OptionalFilter[]>(
 		() => [
+			...(hasActiveVariableFilters || isOnVariablesRoute ? (['variable'] as const) : []),
 			...(
 				[
 					'processInstanceKey',
@@ -141,7 +171,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 				: []),
 			...(filters.endDateFrom !== undefined || filters.endDateTo !== undefined ? (['endDateRange'] as const) : []),
 		],
-		[filters],
+		[filters, hasActiveVariableFilters, isOnVariablesRoute],
 	);
 
 	return (
