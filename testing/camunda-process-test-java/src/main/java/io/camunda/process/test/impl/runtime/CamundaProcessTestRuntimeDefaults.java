@@ -76,6 +76,7 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsEnvVars();
   public static final Map<String, String> CONNECTORS_SECRETS =
       PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final Map<String, String> CLUSTER_SECRETS = PROPERTIES_UTIL.getClusterSecrets();
   public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
       PROPERTIES_UTIL.getConnectorsExposedPorts();
 

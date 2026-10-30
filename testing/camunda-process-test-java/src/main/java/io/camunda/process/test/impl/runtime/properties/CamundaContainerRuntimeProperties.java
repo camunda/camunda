@@ -34,6 +34,7 @@ public class CamundaContainerRuntimeProperties {
   public static final String PROPERTY_NAME_CAMUNDA_EXPOSED_PORTS_PREFIX = "camundaExposedPorts";
   public static final String PROPERTY_NAME_CAMUNDA_LOGGER_NAME = "camundaLoggerName";
   public static final String PROPERTY_NAME_CONNECTORS_LOGGER_NAME = "connectorsLoggerName";
+  public static final String PROPERTY_NAME_CLUSTER_SECRETS_PREFIX = "clusterSecrets";
 
   private final String camundaDockerImageName;
   private final String camundaDockerImageVersion;
@@ -42,6 +43,7 @@ public class CamundaContainerRuntimeProperties {
 
   private final String camundaLoggerName;
   private final String connectorsLoggerName;
+  private final Map<String, String> clusterSecrets;
 
   public CamundaContainerRuntimeProperties(
       final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
@@ -69,6 +71,7 @@ public class CamundaContainerRuntimeProperties {
             properties,
             PROPERTY_NAME_CONNECTORS_LOGGER_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME);
+    clusterSecrets = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CLUSTER_SECRETS_PREFIX);
   }
 
   public String getCamundaDockerImageName() {
@@ -93,5 +96,9 @@ public class CamundaContainerRuntimeProperties {
 
   public String getConnectorsLoggerName() {
     return connectorsLoggerName;
+  }
+
+  public Map<String, String> getClusterSecrets() {
+    return clusterSecrets;
   }
 }
