@@ -263,11 +263,7 @@ public class SecretStoreConfiguration {
     if (SecretStoreRegistry.DEFAULT_STORE_ID.equals(normalizeStoreId(storeId))) {
       return;
     }
-    final var storesProperty =
-        (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
-                ? "camunda.secrets.stores."
-                : "camunda.physical-tenants." + tenantId + ".secrets.stores.")
-            + storeTypeProperty;
+    final var storesProperty = storesProperty(tenantId, storeTypeProperty);
     throw new IllegalStateException(
         "Physical tenant '%s' configures secret store '%s', but the only supported store id is '%s'; rename %s.%s to %s.%s"
             .formatted(
@@ -278,6 +274,17 @@ public class SecretStoreConfiguration {
                 storeId,
                 storesProperty,
                 SecretStoreRegistry.DEFAULT_STORE_ID));
+  }
+
+  /**
+   * The property under which a physical tenant configures stores of the given type, so a startup
+   * failure names the property the operator has to change rather than one for another tenant.
+   */
+  private static String storesProperty(final String tenantId, final String storeTypeProperty) {
+    return (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+            ? "camunda.secrets.stores."
+            : "camunda.physical-tenants." + tenantId + ".secrets.stores.")
+        + storeTypeProperty;
   }
 
   private static SecretStore fileStore(
@@ -323,7 +330,19 @@ public class SecretStoreConfiguration {
 
   private static SecretStore envStore(
       final String storeId, final String tenantId, final EnvStore config) {
-    return EnvVarSecretStore.fromSystemEnvironment(config.getPrefix());
+    try {
+      return EnvVarSecretStore.fromSystemEnvironment(config.getPrefix());
+    } catch (final IllegalArgumentException invalidPrefix) {
+      throw new IllegalStateException(
+          "Environment variable store '%s' for physical tenant '%s' has an invalid %s.%s.prefix: %s"
+              .formatted(
+                  storeId,
+                  tenantId,
+                  storesProperty(tenantId, "env"),
+                  storeId,
+                  invalidPrefix.getMessage()),
+          invalidPrefix);
+    }
   }
 
   /**
