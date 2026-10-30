@@ -416,6 +416,8 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics);
+    // TODO: @yohanfernando >> needs looking, depends on CatchEventBehaviour and
+    //   StartEventSubscriptionManager
     addResourceDeletionProcessors(
         partitionId,
         typedRecordProcessors,
@@ -499,6 +501,7 @@ public final class EngineProcessors {
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/62849
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -533,6 +536,7 @@ public final class EngineProcessors {
         keyGenerator,
         tenantMetrics);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/65229
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState, cslCheck);
     GlobalListenersProcessors.addGlobalListenersProcessors(
@@ -544,6 +548,7 @@ public final class EngineProcessors {
         processingState,
         cslCheck);
 
+    // TODO: @yohanfernando >> implement https://github.com/camunda/camunda/issues/65258
     ExpressionProcessors.addProcessors(
         keyGenerator,
         typedRecordProcessors,
