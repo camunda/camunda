@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,6 +222,26 @@ final class JobStreamServiceStepTest {
       assertThat(immutable.withLease())
           .describedAs("decodes an omitted withLease key as false")
           .isFalse();
+    }
+
+    @Test
+    void shouldDecodeAuthorizationOnce() {
+      // given
+      final var properties =
+          new JobActivationPropertiesImpl()
+              .setClaims(
+                  Map.of("authorized_username", "user", "authorized_tenants", List.of("tenant1")));
+      final var buffer = BufferUtil.createCopy(properties);
+
+      // when
+      final var immutable = JobStreamServiceStep.readJobActivationProperties(buffer);
+
+      // then
+      assertThat(immutable.authInfo().getUsername()).isEqualTo("user");
+      assertThat(immutable.authInfo().getTenants()).containsExactly("tenant1");
+      assertThat(immutable.authInfo())
+          .describedAs("reuses the authorization for every job pushed to the stream")
+          .isSameAs(immutable.authInfo());
     }
   }
 }

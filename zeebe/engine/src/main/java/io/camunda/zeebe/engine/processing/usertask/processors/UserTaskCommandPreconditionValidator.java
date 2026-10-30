@@ -64,7 +64,7 @@ public class UserTaskCommandPreconditionValidator {
   public Either<Rejection, UserTaskRecord> checkUserTaskExists(
       final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
     final var persistedUserTask = userTaskState.getUserTask(userTaskKey, authorizedTenants);
 
     if (persistedUserTask == null) {

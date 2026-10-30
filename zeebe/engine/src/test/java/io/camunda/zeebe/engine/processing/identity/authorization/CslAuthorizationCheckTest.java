@@ -19,6 +19,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
@@ -40,7 +41,7 @@ final class CslAuthorizationCheckTest {
     // given — authorizations enabled and a command carrying neither a username nor a clientId claim
     final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, false);
     when(command.isInternalCommand()).thenReturn(false);
-    when(command.getAuthorizations()).thenReturn(Map.of());
+    when(command.getAuthInfo()).thenReturn(AuthInfo.ofClaims(Map.of()));
 
     // when
     final var result =
@@ -60,7 +61,7 @@ final class CslAuthorizationCheckTest {
     // given — authorizations disabled (multi-tenancy enabled) and no username/clientId claim
     final var cslCheck = cslCheck(/* authorizationsEnabled= */ false, true);
     when(command.isInternalCommand()).thenReturn(false);
-    when(command.getAuthorizations()).thenReturn(Map.of());
+    when(command.getAuthInfo()).thenReturn(AuthInfo.ofClaims(Map.of()));
 
     // when
     final var result =
@@ -77,8 +78,8 @@ final class CslAuthorizationCheckTest {
     // given
     final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, false);
     when(command.isInternalCommand()).thenReturn(false);
-    when(command.getAuthorizations())
-        .thenReturn(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
 
     // when
     final var result =

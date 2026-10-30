@@ -73,6 +73,9 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
+  /** The claims map, once built, unless it holds mutable values. See {@link #toClaimsMap()}. */
+  private volatile @Nullable Map<String, Object> claimsMap;
+
   private AuthInfo(
       final AuthDataFormat format,
       final @Nullable Boolean anonymous,
@@ -180,7 +183,8 @@ public final class AuthInfo implements BufferWriter {
   /**
    * Returns the claims of the principal's token, or null if not provided. They're decoded from
    * their msgpack encoding on every call, so values have the decoded types, e.g. {@code Integer}
-   * for a small {@code Long} and {@code List} for an array.
+   * for a small {@code Long} and {@code List} for an array. Each call returns a new copy; prefer
+   * {@link #toClaimsMap()} if the claims are only read.
    */
   @SuppressWarnings("unchecked")
   public @Nullable Map<String, Object> getTokenClaims() {
@@ -194,17 +198,35 @@ public final class AuthInfo implements BufferWriter {
    * io.camunda.zeebe.auth.Authorization}. Only meant for consumers that require claims as a map,
    * i.e. {@link io.camunda.zeebe.protocol.record.Record#getAuthorizations()} and the security
    * library; use the typed accessors otherwise.
+   *
+   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. Only if
+   * the token claims contain binary values, which decode to mutable arrays, every call returns a
+   * fresh map instead.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
+    final var cached = claimsMap;
+    if (cached != null) {
+      return cached;
+    }
+
+    final var tokenClaims = getTokenClaims();
     final var claims = new LinkedHashMap<String, Object>();
     putIfPresent(claims, AUTHORIZED_ANONYMOUS_USER, anonymous);
     putIfPresent(claims, AUTHORIZED_USERNAME, username);
     putIfPresent(claims, AUTHORIZED_CLIENT_ID, clientId);
     putIfPresent(claims, AUTHORIZED_TENANTS, tenants);
     putIfPresent(claims, USER_GROUPS_CLAIMS, groups);
-    putIfPresent(claims, USER_TOKEN_CLAIMS, getTokenClaims());
-    return Collections.unmodifiableMap(claims);
+    putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims);
+    final var result = Collections.unmodifiableMap(claims);
+
+    // binary values decode to mutable arrays, so a shared map would let callers change this
+    // instance
+    if (isImmutableValue(tokenClaims)) {
+      // racing threads build equal maps, so it doesn't matter which one wins
+      claimsMap = result;
+    }
+    return result;
   }
 
   public boolean hasAnyClaims() {
@@ -325,6 +347,21 @@ public final class AuthInfo implements BufferWriter {
       return Collections.unmodifiableList(list);
     }
     return value;
+  }
+
+  private static boolean isImmutableValue(final @Nullable Object value) {
+    if (value == null
+        || value instanceof String
+        || value instanceof Boolean
+        || value instanceof Number) {
+      return true;
+    } else if (value instanceof final Map<?, ?> map) {
+      return map.entrySet().stream()
+          .allMatch(e -> isImmutableValue(e.getKey()) && isImmutableValue(e.getValue()));
+    } else if (value instanceof final List<?> list) {
+      return list.stream().allMatch(AuthInfo::isImmutableValue);
+    }
+    return false;
   }
 
   public enum AuthDataFormat {

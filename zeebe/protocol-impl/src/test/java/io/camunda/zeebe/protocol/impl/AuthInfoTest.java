@@ -300,6 +300,40 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldReuseClaimsMapWithoutBinaryTokenClaims() {
+      // given
+      final var authInfo =
+          decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
+
+      // when
+      final var first = authInfo.toClaimsMap();
+      final var second = authInfo.toClaimsMap();
+
+      // then
+      assertThat(second).isSameAs(first);
+      assertThatThrownBy(() -> first.put(AUTHORIZED_USERNAME, "other"))
+          .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldNotReflectChangesToReturnedBinaryTokenClaimValuesInClaimsMap() {
+      // given
+      final var authInfo =
+          decode(
+              encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
+
+      // when
+      final var first = authInfo.toClaimsMap();
+      ((byte[]) ((Map<?, ?>) first.get(USER_TOKEN_CLAIMS)).get("key"))[0] = 2;
+
+      // then
+      assertThat(authInfo.toClaimsMap()).isNotSameAs(first);
+      assertThat((Map<String, Object>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS))
+          .containsEntry("key", new byte[] {1});
+    }
+
+    @Test
     void shouldNotAllowChangingClaims() {
       // given
       final var authInfo = AuthInfo.ofClaims(ALL_CLAIMS);

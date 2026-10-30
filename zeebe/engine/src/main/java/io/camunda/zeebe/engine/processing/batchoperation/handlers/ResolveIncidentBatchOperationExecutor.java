@@ -11,6 +11,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -71,12 +72,13 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
       final RecordValue recordValue,
       final PersistedBatchOperation batchOperation) {
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     commandWriter.appendFollowUpCommand(
         key,
         intent,
         recordValue,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

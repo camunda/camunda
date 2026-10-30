@@ -10,13 +10,12 @@ package io.camunda.zeebe.engine.processing.identity.authorization;
 import io.camunda.security.api.context.TokenClaimsAuthenticationResolver;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.TenantAccess;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
@@ -56,30 +55,25 @@ public final class CslTenantCheck {
    * tenant); otherwise the authorized tenant IDs come from the resolved {@link
    * io.camunda.security.api.model.CamundaAuthentication}.
    */
-  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    if (isAnonymousCommand(authorizations)) {
+  public TenantAccess resolveAuthorizedTenants(final AuthInfo authInfo) {
+    if (authInfo.isAnonymous()) {
       return TenantAccess.wildcard(List.of());
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
       return TenantAccess.allowed(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+    if (!hasPrincipal(authInfo)) {
       return TenantAccess.allowed(List.of());
     }
-    final var authentication = claimsConverter.resolve(authorizations);
+    final var authentication = claimsConverter.resolve(authInfo.toClaimsMap());
     final var tenantIds =
         Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
     return TenantAccess.allowed(tenantIds);
   }
 
-  /**
-   * True when the raw claims/authorizations map marks the caller as an anonymous user. Checked on
-   * the raw map because some write-path call sites run before (or without) building a {@link
-   * io.camunda.security.api.model.CamundaAuthentication}.
-   */
-  static boolean isAnonymousCommand(final Map<String, Object> authorizations) {
-    return Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
+  /** True when the auth info identifies a principal, i.e. a user or a client. */
+  static boolean hasPrincipal(final AuthInfo authInfo) {
+    return authInfo.getUsername() != null || authInfo.getClientId() != null;
   }
 
   public boolean isMultiTenancyChecksEnabled() {
@@ -125,12 +119,11 @@ public final class CslTenantCheck {
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(value);
     }
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+    final var authInfo = command.getAuthInfo();
+    if (!hasPrincipal(authInfo)) {
       return Either.right(value);
     }
-    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
+    if (resolveAuthorizedTenants(authInfo).isAuthorizedForTenantId(tenantId)) {
       return Either.right(value);
     }
     return Either.left(notAssignedRejection);
