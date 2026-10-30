@@ -64,7 +64,7 @@ public final class VariableRedactionTest {
     // then
     Awaitility.await("variable is exported")
         .untilAsserted(() -> assertThat(exportedValues).hasSize(1));
-    assertThat(exportedValues).containsExactly("null");
+    assertThat(exportedValues).containsExactly((String) null);
   }
 
   @Test

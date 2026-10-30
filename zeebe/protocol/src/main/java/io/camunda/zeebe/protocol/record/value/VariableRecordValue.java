@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import org.immutables.value.Value;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a variable related event.
@@ -36,9 +37,10 @@ public interface VariableRecordValue
   String getName();
 
   /**
-   * @return the value of the variable as JSON string.
+   * @return the value of the variable as JSON string, or {@code null} if the value was redacted
+   *     because the variable is protected with {@code REDACT}.
    */
-  String getValue();
+  @Nullable String getValue();
 
   /**
    * @return the key of the scope the variable belongs to.

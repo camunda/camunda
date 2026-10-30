@@ -73,12 +73,13 @@ public class VariableHandler
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPosition(record.getPosition());
 
-    if (recordValue.getValue().length() > variableSizeThreshold) {
-      entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(recordValue.getValue());
+    final var value = recordValue.getValue();
+    if (value != null && value.length() > variableSizeThreshold) {
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setFullValue(value);
       entity.setIsPreview(true);
     } else {
-      entity.setValue(recordValue.getValue());
+      entity.setValue(value);
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
