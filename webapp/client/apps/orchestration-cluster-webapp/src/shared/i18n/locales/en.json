@@ -1202,6 +1202,7 @@
 					"suspend": "Suspend",
 					"resume": "Resume",
 					"discard": "Discard",
+					"bulkActionsLabel": "Bulk actions",
 					"selectAll": "Select all items",
 					"selectRow": "Select instance {{key}}",
 					"selected": "{{total}} items selected",

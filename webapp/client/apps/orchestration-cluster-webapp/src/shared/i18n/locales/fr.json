@@ -1193,6 +1193,7 @@
 					"suspend": "Suspendre",
 					"resume": "Reprendre",
 					"discard": "Abandonner",
+					"bulkActionsLabel": "Actions groupées",
 					"selectAll": "Sélectionner tous les éléments",
 					"selectRow": "Sélectionner l’instance {{key}}",
 					"selected": "{{total}} éléments sélectionnés",

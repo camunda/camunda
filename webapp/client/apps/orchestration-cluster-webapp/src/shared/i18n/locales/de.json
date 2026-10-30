@@ -1190,6 +1190,7 @@
 					"suspend": "Aussetzen",
 					"resume": "Fortsetzen",
 					"discard": "Verwerfen",
+					"bulkActionsLabel": "Massenaktionen",
 					"selectAll": "Alle Elemente auswählen",
 					"selectRow": "Instanz {{key}} auswählen",
 					"selected": "{{total}} Elemente ausgewählt",
