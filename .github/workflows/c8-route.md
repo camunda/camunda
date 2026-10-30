@@ -9,7 +9,10 @@ on:
   slash_command:
     name: c8-route
     events: [issues, issue_comment]
-engine: claude
+engine:
+  id: claude
+  model: claude-sonnet-5
+  max-turns: 30
 timeout-minutes: 15
 permissions:
   contents: read
