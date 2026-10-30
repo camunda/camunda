@@ -254,6 +254,37 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 
+  @Override
+  public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
+      final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+    final var keysAggName = "flowNodeInstanceKeys";
+    final var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        and(
+                            term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+                            longTerms(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys)))))
+            // A key is one bucket however many documents carry it, so as many buckets as keys
+            // return every match.
+            .aggregations(
+                keysAggName,
+                termAggregation(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys.size())
+                    .toAggregation());
+
+    return richOpenSearchClient
+        .doc()
+        .searchAggregations(searchRequestBuilder)
+        .get(keysAggName)
+        .lterms()
+        .buckets()
+        .array()
+        .stream()
+        .map(bucket -> bucket.key().signed())
+        .collect(Collectors.toSet());
+  }
+
   private FlowNodeInstanceResponseDto getFlowNodeInstances(final FlowNodeInstanceQueryDto request) {
     final FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
