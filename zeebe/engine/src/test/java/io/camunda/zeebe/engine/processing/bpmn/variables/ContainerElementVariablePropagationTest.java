@@ -753,6 +753,88 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
+  public void shouldNotPropagateChildVariablesWithSameValueIfNoOutputMappingOnSubProcess() {
+    // given
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                sp ->
+                    sp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId(childProcessId)
+                                    .zeebePropagateAllParentVariables(true)
+                                    .zeebePropagateAllChildVariables(true))
+                        .endEvent())
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void shouldNotPropagateChildVariablesIfNoOutputMappingOnSubProcess() {
+    // given
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                sp ->
+                    sp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId(childProcessId)
+                                    .zeebePropagateAllParentVariables(true)
+                                    .zeebePropagateAllChildVariables(true))
+                        .endEvent())
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .endEvent()
+            .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
   public void shouldMakeChildVariablesAvailableLocallyOnCallActivityWithoutOutputMapping() {
     // given: propagateAllChildVariables=false and no output mapping - per the issue, child
     // variables should still become local to the call activity scope instead of being discarded
