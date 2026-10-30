@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useLayoutEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
 import {Badge} from '@camunda/design-system';
-import {CircleAlert, CircleCheck, CircleDot, CircleX} from '@camunda/design-system/icons';
+import {CircleAlert, CircleCheck, CircleX, Disc, TriangleAlert} from '@camunda/design-system/icons';
 import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
 
@@ -36,6 +37,45 @@ const STATE_VARIANTS: Partial<Record<OverlayState, 'success' | 'danger' | 'neutr
 	canceled: 'neutral',
 };
 
+// Pill backgrounds must stay solid: the default Badge variants are too faint against the diagram canvas.
+const VARIANT_CLASS_NAMES = {
+	success:
+		'border-transparent bg-[var(--success-foreground-subtle)] text-[var(--background)] [--pulse:var(--success-foreground-subtle)]',
+	danger:
+		'border-transparent bg-[var(--danger-foreground-subtle)] text-[var(--background)] [--pulse:var(--danger-foreground-subtle)]',
+	neutral:
+		'border-transparent bg-[var(--neutral-foreground-subtle)] text-[var(--background)] [--pulse:var(--neutral-foreground-subtle)]',
+};
+
+// bpmn-js places the overlay with pixel offsets tuned for the larger legacy pill. Statistic pills anchored to a plain
+// element corner are re-centred on that corner using their own size. Pills with a deliberate horizontal offset
+// (such as completed end events) keep their position. The centred flag is set on the container instead of
+// React state, so a re-created overlay never paints (or animates) an uncentred frame.
+const centreOnCorner = (container: HTMLElement): void => {
+	const overlay = container.parentElement;
+	const elementId = overlay?.parentElement?.getAttribute('data-container-id');
+	if (!overlay || !elementId) {
+		return;
+	}
+	const visual = container.ownerDocument.querySelector<SVGGraphicsElement>(
+		`[data-element-id="${elementId}"] .djs-visual`,
+	);
+	if (!visual) {
+		return;
+	}
+	const {x, y, width, height} = visual.getBBox();
+	const left = parseFloat(overlay.style.left);
+	const top = parseFloat(overlay.style.top);
+	const isLeftEdge = left === x;
+	const isRightEdge = left === x + width;
+	if (Number.isNaN(top) || (!isLeftEdge && !isRightEdge)) {
+		return;
+	}
+	overlay.style.left = `${isLeftEdge ? x : x + width}px`;
+	overlay.style.top = `${top > y + height / 2 ? y + height : y}px`;
+	container.dataset.centred = 'true';
+};
+
 type Props = {
 	state: OverlayState;
 	container: HTMLElement;
@@ -43,6 +83,7 @@ type Props = {
 	isFaded?: boolean;
 	testId?: string;
 	title?: string;
+	elementName?: string;
 };
 
 const StateOverlay: React.FC<Props> = ({
@@ -52,26 +93,49 @@ const StateOverlay: React.FC<Props> = ({
 	isFaded = false,
 	testId = `state-overlay-${state}`,
 	title,
+	elementName,
 }) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
+	useLayoutEffect(() => {
+		if (count !== undefined) {
+			centreOnCorner(container);
+		}
+	}, [container, count]);
 	const showStatistic = count !== undefined;
 	const labelKey = STATE_LABEL_KEYS[state];
 	const label = title ?? (labelKey === undefined ? state : t(labelKey));
+	const fullCount = showStatistic ? new Intl.NumberFormat(i18n.resolvedLanguage).format(count) : undefined;
+	const compactCount = showStatistic
+		? new Intl.NumberFormat(i18n.resolvedLanguage, {notation: 'compact', maximumFractionDigits: 1}).format(count)
+		: undefined;
+	const baseLabel = showStatistic ? `${label}: ${fullCount}` : label;
+	const statisticLabel = isFaded ? `${baseLabel}, ${t('operate.shared.stateOverlay.pending')}` : baseLabel;
+	const variant = STATE_VARIANTS[state] ?? 'neutral';
+	const accessibleLabel = elementName === undefined ? statisticLabel : `${elementName}, ${statisticLabel}`;
 
 	return createPortal(
 		<Badge
 			data-testid={testId}
-			title={title}
+			title={accessibleLabel}
 			role="img"
-			aria-label={showStatistic ? `${label}: ${count}` : label}
-			variant={STATE_VARIANTS[state] ?? 'neutral'}
-			className={cn(showStatistic && '-translate-x-1/2', isFaded && 'opacity-60')}
+			variant={variant}
+			className={cn(
+				'align-top',
+				VARIANT_CLASS_NAMES[variant],
+				showStatistic ? 'gap-1.5 pl-1 pr-2 -translate-x-1/2 in-data-[centred]:-translate-y-1/2' : 'px-1',
+				isFaded && 'state-overlay-pending-ring overflow-visible',
+			)}
 		>
-			{(state === 'FAILED' || state === 'incidents') && <CircleAlert aria-hidden />}
-			{state === 'active' && <CircleDot aria-hidden />}
-			{(state === 'EVALUATED' || state === 'completedEndEvents') && <CircleCheck aria-hidden />}
+			{state === 'FAILED' && <TriangleAlert aria-hidden />}
+			{state === 'incidents' && (
+				<CircleAlert aria-hidden className="fill-[var(--background)] stroke-[var(--danger-foreground-subtle)]" />
+			)}
+			{state === 'active' && <Disc aria-hidden className="[&_circle:last-child]:fill-current" />}
+			{(state === 'EVALUATED' || state === 'completed' || state === 'completedEndEvents') && (
+				<CircleCheck aria-hidden />
+			)}
 			{state === 'canceled' && <CircleX aria-hidden />}
-			{showStatistic && <span>{count}</span>}
+			{showStatistic && <span>{compactCount}</span>}
 		</Badge>,
 		container,
 	);

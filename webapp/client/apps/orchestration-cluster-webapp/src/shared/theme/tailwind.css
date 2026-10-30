@@ -199,6 +199,26 @@
 	}
 }
 
+/* Pending state pills emit a ring in their own colour (--pulse) instead of changing opacity. */
+@keyframes state-overlay-ring {
+	0% {
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse) 55%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 6px transparent;
+	}
+}
+
+.state-overlay-pending-ring {
+	animation: state-overlay-ring 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.state-overlay-pending-ring {
+		animation: none;
+	}
+}
+
 /*
  * The shared BpmnJS renderer emits Carbon variable names, so they are mapped to DS tokens here.
  * Same approach as .dmn-viewer-theme for the BPMN diagram: plain unlayered rules
