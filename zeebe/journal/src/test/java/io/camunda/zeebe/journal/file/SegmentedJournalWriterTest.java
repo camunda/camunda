@@ -15,9 +15,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -77,6 +80,71 @@ final class SegmentedJournalWriterTest {
     writer.deleteAfter(2, false);
 
     // then
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldNotRaiseLastFlushedIndexOnDeleteAfter() throws FlushException {
+    // given - records up to index 2 are flushed, but not those after
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.flush();
+    writer.append(3, journalFactory.entry());
+    writer.append(4, journalFactory.entry());
+
+    // when
+    writer.deleteAfter(3, false);
+
+    // then - deleting records flushes nothing, so record 3 must not be reported as flushed
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldForceTruncatedSegmentBeforeRollingOver() throws FlushException {
+    // given - a flushed segment, truncated without flushing, as flushers which skip flushes of
+    // already flushed indexes do
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.flush();
+    writer.deleteAfter(1, false);
+    final var truncatedSegment = segments.getLastSegment();
+
+    // when - the replacement record does not fit into the truncated segment, and rolls over
+    writer.append(-1, new DirectBufferWriter(BufferUtil.wrapString("larger data")));
+
+    // then - the truncation was forced before the next segment existed; otherwise, a restart may
+    // find the deleted records in the truncated segment, and discard the next one as overlapping
+    assertThat(segments.getLastSegment()).isNotSameAs(truncatedSegment);
+    assertThat(truncatedSegment.hasUnforcedTruncation()).isFalse();
+    writer.flush();
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
+    assertThat(segments.firstSegmentNotForcedUpTo(2L)).isNull();
+  }
+
+  @Test
+  void shouldNotAdvanceLastFlushedIndexIfStoringItFails() throws FlushException {
+    // given
+    writer.append(1, journalFactory.entry());
+    writer.flush();
+    writer.append(2, journalFactory.entry());
+    final var failStore = new AtomicBoolean(true);
+    journalFactory
+        .metaStore()
+        .setOnStoreFlushedIndex(
+            () -> {
+              if (failStore.getAndSet(false)) {
+                throw new UncheckedIOException(new IOException("Failed to write meta store"));
+              }
+            });
+
+    // when
+    assertThatThrownBy(writer::flush).isInstanceOf(UncheckedIOException.class);
+
+    // then - the index is only published once stored, so a retry stores it
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(1L);
+    writer.flush();
     assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
   }

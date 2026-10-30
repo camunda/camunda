@@ -128,23 +128,27 @@ final class SegmentsManager implements AutoCloseable {
             .withIndex(nextSegmentIndex)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
+    Segment segment;
     if (nextSegment != null) {
       try {
-        currentSegment =
+        segment =
             nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         nextSegment = null;
-        currentSegment = createSegment(descriptor, lastWrittenAsqn);
+        segment = createSegment(descriptor, lastWrittenAsqn);
       }
     } else {
-      currentSegment = createSegment(descriptor, lastWrittenAsqn);
+      segment = createSegment(descriptor, lastWrittenAsqn);
     }
-    prepareNextSegment();
 
-    segments.put(descriptor.index(), currentSegment);
+    // Add the segment before it becomes the current one: a concurrent flush which finds the current
+    // segment must also find it in the segments, see #getTailSegments(long)
+    segments.put(descriptor.index(), segment);
+    currentSegment = segment;
+    prepareNextSegment();
     journalMetrics.incSegmentCount();
-    return currentSegment;
+    return segment;
   }
 
   @Nullable Segment getNextSegment(final long index) {
@@ -154,9 +158,11 @@ final class SegmentsManager implements AutoCloseable {
 
   @Nullable Segment getSegment(final long index) {
     // Check if the current segment contains the given index first in order to prevent an
-    // unnecessary map lookup.
-    if (currentSegment != null && index > currentSegment.index()) {
-      return currentSegment;
+    // unnecessary map lookup. Read it once, as it may change concurrently: checking one segment and
+    // returning the next would skip the records before its first index, e.g. when flushing.
+    final var current = currentSegment;
+    if (current != null && index > current.index()) {
+      return current;
     }
 
     // If the index is in another segment, get the entry with the next lowest first index.
@@ -325,6 +331,12 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
+  /**
+   * Returns the segments from the one containing the given index up to the last segment at the time
+   * of the call. Segments created afterwards are not included, even while the returned map is
+   * iterated. A flush relies on this: a segment created while flushing may hold records which were
+   * appended after the flush already flushed the previous segment.
+   */
   SortedMap<Long, Segment> getTailSegments(final long index) {
     // First look for a segment that contains the index
     final var segment = getSegment(index);
@@ -333,7 +345,23 @@ final class SegmentsManager implements AutoCloseable {
     }
     // Then use its first index to get the tail map. We can't get the tail map directly using the
     // given index, because it may be in the middle of a segment.
-    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
+    return Collections.unmodifiableSortedMap(
+        segments.subMap(segment.index(), true, segments.lastKey(), true)); // inclusive
+  }
+
+  /**
+   * Returns the first segment which holds records up to the given index that were not forced, or
+   * which was truncated since it was last forced; null if there is none. A flushed index must never
+   * cover such a segment, which tests verify, see {@link
+   * SegmentedJournalWriter#advanceLastFlushedIndex(long, int)}.
+   */
+  @Nullable Segment firstSegmentNotForcedUpTo(final long index) {
+    for (final Segment segment : segments.headMap(index, true).values()) {
+      if (!segment.isForcedUpTo(index)) {
+        return segment;
+      }
+    }
+    return null;
   }
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
