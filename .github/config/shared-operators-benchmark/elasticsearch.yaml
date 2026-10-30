@@ -1,0 +1,37 @@
+# Elasticsearch CR for the shared-operators showcase on camunda-benchmark.
+# Proves the cluster-wide ECK operator reconciles a team-owned Elasticsearch in
+# a c8-* namespace. No image pin is needed: the benchmark ECK operator runs with
+# --container-registry=europe-west1-docker.pkg.dev/camunda-benchmark/docker-elastic-co,
+# so it rewrites the node image to the GAR pull-through cache automatically.
+# Only spec.version is set. See infra-core docs/shared-operators.md.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: c8-shared-operators-test
+  namespace: c8-shared-operators-test
+  annotations:
+    janitor/ttl: 1h # backstop: the workflow trap-deletes on exit; this catches leaked runs
+spec:
+  version: 8.17.3
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 2Gi
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
