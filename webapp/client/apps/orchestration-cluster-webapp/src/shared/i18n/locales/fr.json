@@ -2394,7 +2394,30 @@
 					"resetZoom": "Réinitialiser le zoom du diagramme",
 					"zoomOut": "Dézoomer le diagramme",
 					"zoomIn": "Zoomer sur le diagramme",
-					"label": "Diagramme"
+					"label": "Diagramme",
+					"elementTypes": {
+						"startEvent": "événement de début",
+						"endEvent": "événement de fin",
+						"intermediateCatchEvent": "événement intermédiaire de réception",
+						"intermediateThrowEvent": "événement intermédiaire d’émission",
+						"boundaryEvent": "événement limite",
+						"task": "tâche",
+						"serviceTask": "tâche de service",
+						"userTask": "tâche utilisateur",
+						"scriptTask": "tâche de script",
+						"sendTask": "tâche d’envoi",
+						"receiveTask": "tâche de réception",
+						"manualTask": "tâche manuelle",
+						"businessRuleTask": "tâche de règle métier",
+						"callActivity": "activité d’appel",
+						"subProcess": "sous-processus",
+						"exclusiveGateway": "passerelle exclusive",
+						"parallelGateway": "passerelle parallèle",
+						"inclusiveGateway": "passerelle inclusive",
+						"eventBasedGateway": "passerelle basée sur les événements"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Utilisez les flèches pour passer d’un élément à l’autre et Entrée pour sélectionner."
 				},
 				"stateIcon": {
 					"active": "État actif",

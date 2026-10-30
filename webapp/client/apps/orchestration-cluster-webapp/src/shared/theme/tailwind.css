@@ -265,6 +265,10 @@
 		cursor: not-allowed;
 	}
 
+	.op-non-selectable.djs-shape .djs-visual > :nth-child(1) {
+		stroke: color-mix(in srgb, var(--neutral-foreground-subtle) 75%, transparent) !important;
+	}
+
 	.op-drilldown {
 		user-select: none;
 	}
@@ -285,16 +289,28 @@
 
 	.djs-minimap {
 		top: auto !important;
-		bottom: 4.5rem !important;
+		bottom: 5.5rem !important;
 		right: 1rem !important;
 		z-index: 10;
 		background-color: var(--viewer-layer) !important;
 		border-color: var(--neutral-border-subtle) !important;
 	}
 
+	.djs-minimap.open {
+		width: auto !important;
+		height: auto !important;
+	}
+
 	.djs-minimap .map {
-		width: 240px !important;
-		height: 135px !important;
+		width: min(240px, 45vw) !important;
+		height: auto !important;
+		aspect-ratio: 16 / 9;
+	}
+
+	@media (max-width: 640px) {
+		.djs-minimap {
+			display: none !important;
+		}
 	}
 
 	.djs-minimap .toggle:before {
