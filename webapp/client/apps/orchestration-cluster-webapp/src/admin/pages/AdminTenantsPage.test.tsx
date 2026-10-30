@@ -6,46 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {TooltipProvider, Toaster, toast} from '@camunda/design-system';
+import {toast} from '@camunda/design-system';
 import {cleanup, render} from 'vitest-browser-react';
 import {describe, expect, vi, afterEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {userEvent} from 'vitest/browser';
 import {createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {AdminTenantsPage, type AdminTenantsPageProps} from './AdminTenantsPage';
 
 const DEBOUNCED = {timeout: 3000};
 
-function getWrapper() {
-	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-
-	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>{children}</TooltipProvider>
-			<Toaster />
-		</QueryClientProvider>
-	);
-
-	return Wrapper;
-}
-
 async function renderPage(overrides: Partial<AdminTenantsPageProps> = {}) {
 	const onSearchChange = vi.fn();
-	const onOpenTenant = vi.fn();
 	const screen = await render(
 		<AdminTenantsPage
 			tenants={[createTenant()]}
 			totalItems={1}
 			search={{}}
 			onSearchChange={onSearchChange}
-			onOpenTenant={onOpenTenant}
 			{...overrides}
 		/>,
-		{wrapper: getWrapper()},
+		{wrapper: createAdminPageWrapper()},
 	);
 
-	return {screen, onSearchChange, onOpenTenant};
+	return {screen, onSearchChange};
 }
 
 describe('<AdminTenantsPage />', () => {
@@ -63,13 +48,10 @@ describe('<AdminTenantsPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'Tenant A'})).toBeVisible();
 	});
 
-	it('should open a tenant when the reader clicks its row', async () => {
-		const tenant = createTenant({tenantId: 'tenant-a', name: 'Tenant A'});
-		const {screen, onOpenTenant} = await renderPage({tenants: [tenant]});
+	it('should link each row to its tenant', async () => {
+		const {screen} = await renderPage({tenants: [createTenant({tenantId: 'ops/1'})]});
 
-		await userEvent.click(screen.getByRole('cell', {name: 'tenant-a'}));
-
-		expect(onOpenTenant).toHaveBeenCalledWith(tenant);
+		await expect.element(screen.getByRole('link', {name: 'ops/1'})).toHaveAttribute('href', '/admin/tenants/ops%2F1');
 	});
 
 	it('should search by tenant ID once the reader stops typing', async () => {
@@ -92,13 +74,7 @@ describe('<AdminTenantsPage />', () => {
 		await userEvent.fill(searchBox, 'ab');
 
 		await screen.rerender(
-			<AdminTenantsPage
-				tenants={[createTenant()]}
-				totalItems={1}
-				search={{search: 'a'}}
-				onSearchChange={() => {}}
-				onOpenTenant={() => {}}
-			/>,
+			<AdminTenantsPage tenants={[createTenant()]} totalItems={1} search={{search: 'a'}} onSearchChange={() => {}} />,
 		);
 
 		await expect.element(searchBox).toHaveValue('ab');
