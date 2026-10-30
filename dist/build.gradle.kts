@@ -336,7 +336,7 @@ dependencies {
   )
 }
 
-val buildDockerImage = registerBuildDockerImage(distTar.flatMap { it.archiveFile })
+val buildDockerImage = registerBuildDockerImage(tasks.distTar.flatMap { it.archiveFile })
 
 tasks.register<Test>("dockerIt") {
   group = "verification"
