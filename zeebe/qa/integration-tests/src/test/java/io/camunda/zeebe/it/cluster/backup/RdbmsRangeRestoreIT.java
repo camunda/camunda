@@ -48,6 +48,9 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     try (final var restoreApp = testRestoreApp(target)) {
       restoreApp.start();
     }
+    // the broker restarts configured like the restore, so only the restored topology can bring
+    // the partitions back to the backup's
+    broker.unifiedConfig().getCluster().setPartitionCount(configuredPartitionCount);
     broker.start();
   }
 
@@ -86,7 +89,7 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   private void configureRestoreApp(final Camunda cfg) {
-    cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+    cfg.getCluster().setPartitionCount(configuredPartitionCount);
     configureRdbms(cfg);
     // Filesystem backup store (same as broker)
     final var fsConfig = new Filesystem();
