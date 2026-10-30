@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -1263,20 +1264,23 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the target sequence flow id is not null. If it is null, it throws an exception.
-   * This is used to ensure that the taken sequence flow id is mapped when migrating a process
-   * instance.
+   * Checks whether the target sequence flow id of the given sequence flow is not null. If it is
+   * null, it throws an exception. This is used to ensure that the taken sequence flow ids are
+   * mapped when migrating a process instance.
    *
-   * @param targetSequenceFlowId target sequence flow id to check
-   * @param sourceSequenceFlowId source sequence flow id to be logged
-   * @param sourceGatewayElementId source gateway element id to be logged
+   * @param sequenceFlow the sequence flow to check
+   * @param sourceElementIdToTargetElementId the mapping instructions
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireNonNullTargetSequenceFlowId(
-      final String targetSequenceFlowId,
-      final String sourceSequenceFlowId,
-      final String sourceGatewayElementId,
+      final ExecutableSequenceFlow sequenceFlow,
+      final Map<String, String> sourceElementIdToTargetElementId,
       final long processInstanceKey) {
+    final var sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+    final var targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
+    final String sourceGatewayElementId =
+        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
+
     if (targetSequenceFlowId == null) {
       final String reason =
           String.format(
