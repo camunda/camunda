@@ -195,6 +195,7 @@ dependencies {
   api(libs.org.apache.httpcomponents.core5.httpcore5)
   implementation(project(":zeebe-gateway-protocol-impl"))
   implementation(libs.org.slf4j.slf4j.api)
+  implementation(libs.org.bouncycastle.bcpkix.jdk18on)
   api(libs.org.apache.httpcomponents.client5.httpclient5)
   api(libs.io.grpc.grpc.stub)
   api(libs.io.grpc.grpc.core)

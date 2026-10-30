@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.unit.DataSize;
 
@@ -1440,6 +1441,72 @@ public class CamundaClientPropertiesPostProcessorTest {
               .isEqualTo("https://api.example.com");
         }
       }
+    }
+  }
+
+  @Nested
+  class CrossSdkMtlsEnvironmentVariablesTest {
+
+    @Test
+    void shouldBindCrossSdkMtlsEnvironmentVariables() {
+      // given - the cross-SDK CAMUNDA_MTLS_* environment names (no 'client' segment), exposed
+      // through a system-environment property source exactly as the OS would
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new SystemEnvironmentPropertySource(
+                  "test-env",
+                  Map.of(
+                      "CAMUNDA_MTLS_CERT_PATH", "/certs/client.crt",
+                      "CAMUNDA_MTLS_KEY_PATH", "/certs/client.key",
+                      "CAMUNDA_MTLS_KEY_PASSPHRASE", "key-secret",
+                      "CAMUNDA_MTLS_CA_PATH", "/certs/ca.crt",
+                      "CAMUNDA_MTLS_KEYSTORE_PASSWORD", "store-secret",
+                      "CAMUNDA_MTLS_TRUSTSTORE_PASSWORD", "trust-secret")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.mtls.cert-path"))
+          .isEqualTo("/certs/client.crt");
+      assertThat(environment.getProperty("camunda.client.mtls.key-path"))
+          .isEqualTo("/certs/client.key");
+      assertThat(environment.getProperty("camunda.client.mtls.key-passphrase"))
+          .isEqualTo("key-secret");
+      assertThat(environment.getProperty("camunda.client.mtls.ca-path")).isEqualTo("/certs/ca.crt");
+      assertThat(environment.getProperty("camunda.client.mtls.keystore-password"))
+          .isEqualTo("store-secret");
+      assertThat(environment.getProperty("camunda.client.mtls.truststore-password"))
+          .isEqualTo("trust-secret");
+    }
+
+    @Test
+    void shouldPreferExplicitSpringPropertyOverCrossSdkAlias() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new SystemEnvironmentPropertySource(
+                  "test-env", Map.of("CAMUNDA_MTLS_CERT_PATH", "/certs/aliased.crt")));
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test-props", Map.of("camunda.client.mtls.cert-path", "/certs/explicit.crt")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.mtls.cert-path"))
+          .isEqualTo("/certs/explicit.crt");
     }
   }
 }
