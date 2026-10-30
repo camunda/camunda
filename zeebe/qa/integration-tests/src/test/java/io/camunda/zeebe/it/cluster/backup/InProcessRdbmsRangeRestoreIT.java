@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -101,15 +102,26 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
   }
 
+  /**
+   * The validation's exceptions map to REST problems: an invalid argument to a 400, a missing
+   * backup to a 404, an invalid state, e.g. backups that cannot satisfy the request, to a 409.
+   */
   @Override
-  void assertRestoreFails(final RestoreTarget target, final String expectedMessage) {
+  void assertRestoreRejected(
+      final RestoreTarget target,
+      final Class<? extends RuntimeException> expectedType,
+      final String message) {
+    final var expectedStatus =
+        expectedType == IllegalArgumentException.class
+            ? 400
+            : expectedType == NoSuchElementException.class ? 404 : 409;
     enterRecovering();
     try (final var client = broker.newClientBuilder().build()) {
       final var response = InProcessRestoreTestUtil.sendRestoreRequest(client, requestBody(target));
       assertThat(response.statusCode())
           .describedAs("restore REST response: %s".formatted(response.body()))
-          .isEqualTo(409);
-      assertThat(response.body()).contains(expectedMessage);
+          .isEqualTo(expectedStatus);
+      assertThat(response.body()).contains(message);
     }
   }
 
