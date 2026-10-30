@@ -230,14 +230,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
-        new ProcessInstanceSuspendProcessor(
-            processingState,
-            writers,
-            cslCheck,
-            subscriptionCommandSender,
-            transientProcessMessageSubscriptionState,
-            clock,
-            suspensionMetrics));
+        new ProcessInstanceSuspendProcessor(processingState, writers, cslCheck, suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.ELEMENT_INSTANCE_WALK,
         ElementInstanceWalkIntent.SUSPEND,
@@ -247,6 +240,10 @@ public final class BpmnProcessors {
             processingState.getSuspensionState(),
             processingState.getUserTaskState(),
             processingState.getJobState(),
+            processingState.getProcessMessageSubscriptionState(),
+            subscriptionCommandSender,
+            transientProcessMessageSubscriptionState,
+            clock,
             suspensionMetrics));
   }
 

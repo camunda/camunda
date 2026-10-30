@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -36,7 +34,6 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.time.InstantSource;
 
 public final class ProcessInstanceSuspendProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
@@ -61,16 +58,12 @@ public final class ProcessInstanceSuspendProcessor
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
-  private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
   private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
-      final SubscriptionCommandSender subscriptionCommandSender,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final InstantSource clock,
       final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
@@ -80,15 +73,6 @@ public final class ProcessInstanceSuspendProcessor
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
     suspensionState = processingState.getSuspensionState();
-    suspensionSubscriptionBehavior =
-        new ProcessInstanceSuspensionMessageSubscriptionBehavior(
-            elementInstanceState,
-            processingState.getProcessMessageSubscriptionState(),
-            stateWriter,
-            writers.sideEffect(),
-            subscriptionCommandSender,
-            transientProcessMessageSubscriptionState,
-            clock);
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -103,9 +87,10 @@ public final class ProcessInstanceSuspendProcessor
     final long suspendStartTime = suspensionMetrics.takeSuspendStartTime();
 
     final ProcessInstanceRecord value = processInstance.getValue();
-    // restarting a SUSPENDING instance skips the event (the marker is already there) and runs the
-    // suspension steps again; they skip subscriptions, jobs and user tasks that were already
-    // handled
+    // restarting a SUSPENDING instance skips the event (the marker is already there) and walks the
+    // tree again; the walk skips jobs and user tasks that were already handled, and subscriptions
+    // whose close is still in flight. A subscription whose close was already acked is closed again
+    // (see ADR 0008, D6).
     final boolean isRestart =
         suspensionState.getSuspensionState(processInstance.getKey())
             == SuspensionState.State.SUSPENDING;
@@ -113,7 +98,6 @@ public final class ProcessInstanceSuspendProcessor
       stateWriter.appendFollowUpEvent(
           processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value);
     }
-    suspensionSubscriptionBehavior.closeSubscriptions(processInstance.getKey());
     startElementInstanceWalk(processInstance.getKey(), value);
     responseWriter.writeAcceptedResponseOnCommand(
         processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
@@ -122,8 +106,8 @@ public final class ProcessInstanceSuspendProcessor
 
   /**
    * Starts the walk of the element instance tree; {@link ElementInstanceWalkSuspendProcessor}
-   * suspends jobs and user tasks one element instance at a time and writes {@link
-   * ProcessInstanceIntent#SUSPENDED} once it is done.
+   * suspends jobs and user tasks and closes message subscriptions one element instance at a time
+   * and writes {@link ProcessInstanceIntent#SUSPENDED} once it is done.
    */
   private void startElementInstanceWalk(
       final long processInstanceKey, final ProcessInstanceRecord value) {
