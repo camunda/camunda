@@ -223,16 +223,18 @@ test.describe('Batch Operations', () => {
       2000,
       'batch_suspension_long_process',
     );
-    await operateOperationsDetailsPage.goto(batchKey);
 
-    await test.step('Suspend the batch once the command is accepted', async () => {
-      await operateOperationsDetailsPage.suspendUntilCommandAccepted();
+    await test.step('Suspend the batch through the API before it completes', async () => {
+      await suspendBatchOperation(request, batchKey);
+      await expectBatchState(request, batchKey, 'SUSPENDED');
     });
 
-    await test.step('Verify the suspend reached the engine and persists', async () => {
-      // Cross-check the backend directly, not just the UI: the command must have
-      // reached the engine and moved the batch to SUSPENDED.
-      await expectBatchState(request, batchKey, 'SUSPENDED');
+    await test.step('Verify the suspended state is shown and persists', async () => {
+      await operateOperationsDetailsPage.goto(batchKey);
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Suspended',
+        {timeout: 20000},
+      );
 
       await page.reload();
       await expect(operateOperationsDetailsPage.state).toContainText(

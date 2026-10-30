@@ -63,7 +63,15 @@ class OperateDecisionsPage {
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
     this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
     this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
-    this.decisionInstancesList = page.getByTestId('data-list');
+    this.decisionInstancesList = page
+      .getByRole('table')
+      .filter({
+        has: page.getByRole('columnheader', {
+          name: /^(Sort by )?Decision Instance Key$/,
+        }),
+      })
+      .getByRole('rowgroup')
+      .filter({hasNot: page.getByRole('columnheader')});
     this.businessIdFilter = page.getByRole('textbox', {
       name: 'Business ID',
       exact: true,

@@ -73,7 +73,7 @@ async function expectRowsForBusinessId(
 ) {
   const rows = businessIdRows(operateDecisionsPage, businessId);
   await expect(rows.first()).toBeVisible();
-  const cells = rows.getByTestId('cell-businessId');
+  const cells = rows.getByRole('cell', {name: businessId, exact: true});
   const cellCount = await cells.count();
   expect(cellCount).toBeGreaterThan(0);
   for (let i = 0; i < cellCount; i++) {

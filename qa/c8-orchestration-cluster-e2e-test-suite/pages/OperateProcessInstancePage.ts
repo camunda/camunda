@@ -115,6 +115,7 @@ class OperateProcessInstancePage {
   readonly openButtonLast: Locator;
   readonly openButtonFirst: Locator;
   readonly applyVariableButton: Locator;
+  private variableRow: (name: string) => Locator;
   private variableValueCellLocator: (name: string) => Locator;
   private variableButtonsCellLocator: (name: string) => Locator;
   readonly existingVariableByName: (name: string) => {
@@ -148,14 +149,14 @@ class OperateProcessInstancePage {
     this.drilldownButton = this.diagram.locator('.bjs-drilldown').first();
     this.completedIcon = page
       .getByTestId('instance-header')
-      .getByTestId('COMPLETED-icon');
+      .getByRole('img', {name: 'completed state', exact: true});
     this.terminatedIcon = page
       .getByTestId('instance-header')
-      .getByTestId('TERMINATED-icon');
+      .getByRole('img', {name: 'terminated state', exact: true});
     this.diagramSpinner = page.getByTestId('diagram-spinner');
     this.activeIcon = page
       .getByTestId('instance-header')
-      .getByTestId('ACTIVE-icon');
+      .getByRole('img', {name: 'active state', exact: true});
     this.variablesList = page.getByTestId('variables-list');
     this.messageVariable = page.getByTestId('variable-message');
     this.statusVariable = page.getByTestId('variable-status');
@@ -166,12 +167,22 @@ class OperateProcessInstancePage {
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
     this.drainingTag = this.instanceHeader.getByTestId('draining-tag');
-    this.suspendedStateIcon = this.instanceHeader.getByTestId('SUSPENDED-icon');
-    this.instanceHistory = page.getByTestId('instance-history');
+    this.suspendedStateIcon = this.instanceHeader.getByRole('img', {
+      name: 'suspended state',
+      exact: true,
+    });
+    this.instanceHistory = page.getByRole('tree', {
+      name: /instance history$/i,
+    });
     this.rootProcessNode = this.instanceHistory
       .locator('[data-testid^="node-details-"]')
       .first();
-    this.incidentsTable = page.getByTestId('data-list');
+    this.incidentsTable = page.getByRole('table').filter({
+      has: page.getByRole('columnheader', {
+        name: 'Failing Element',
+        exact: true,
+      }),
+    });
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
@@ -180,8 +191,8 @@ class OperateProcessInstancePage {
       .getByRole('button', {name: 'Retry Incident'})
       .first();
     this.incidentsTab = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
-      .getByRole('link', {name: /^Incidents$/i});
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
+      .getByRole('link', {name: /^Incidents(?:\s*\d+)?$/i});
     this.incidentIconsInHistory = this.instanceHistory
       .getByRole('treeitem')
       .getByTestId('INCIDENT-icon');
@@ -202,23 +213,25 @@ class OperateProcessInstancePage {
       'hide execution count',
     );
     this.listenersTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Listeners$/i});
     this.detailsTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Details$/i});
     this.jobPriorityValue = page.getByTestId('job-priority');
     this.openTasklistLink = page.getByRole('link', {name: 'Open Tasklist'});
     this.waitingStatus = page.getByTestId('waiting-status');
     this.variablesTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Variables$/i});
     this.operationsLogTabButton = page.getByRole('link', {
       name: /^Operations Log$/i,
     });
-    this.operationsLogTable = page
-      .getByTestId('data-table-container')
-      .getByRole('table');
+    this.operationsLogTable = page.getByRole('table').filter({
+      has: page.getByRole('columnheader', {
+        name: /^(Sort by )?Operation type$/i,
+      }),
+    });
     this.operationsLogTableRow = this.operationsLogTable.getByRole('row');
     this.operationsLogTableOperationTypeHeader =
       this.operationsLogTable.getByRole('columnheader', {
@@ -280,10 +293,12 @@ class OperateProcessInstancePage {
     });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');
-    this.stateOverlayActive = page.getByTestId('state-overlay-active');
-    this.stateOverlayCompletedEndEvents = page.getByTestId(
-      'state-overlay-completedEndEvents',
-    );
+    this.stateOverlayActive = this.diagram.getByRole('img', {
+      name: /^Active(: \d+)?$/,
+    });
+    this.stateOverlayCompletedEndEvents = this.diagram.getByRole('img', {
+      name: /^Completed(: \d+)?$/,
+    });
     this.cancelInstanceButton = (instanceId: string) =>
       page.getByRole('button', {name: `Cancel Instance ${instanceId}`});
     this.incidentTypeFilter = page.getByRole('combobox', {
@@ -324,35 +339,39 @@ class OperateProcessInstancePage {
       .getByLabel('Breadcrumb')
       .locator('.cds--breadcrumb-item:not(.cds--breadcrumb-item--current)')
       .getByRole('link');
-    this.executionCountToggle = this.page.locator('#toggle-execution-count');
+    this.executionCountToggle = page.getByRole('switch', {
+      name: 'Execution count',
+      exact: true,
+    });
     this.executionCountToggleLabel = this.page.locator(
       '#toggle-execution-count_label',
     );
+    this.variableRow = (name: string) => {
+      const newVariableIndex = name.match(/^newVariables\[(\d+)\]$/)?.[1];
+      const rows = this.variablesList.getByRole('row');
+      return newVariableIndex === undefined
+        ? rows.filter({has: page.getByTitle(name, {exact: true})})
+        : rows
+            .filter({
+              has: page.getByRole('textbox', {name: 'Name', exact: true}),
+            })
+            .nth(Number(newVariableIndex));
+    };
     this.variableValueCellLocator = (name: string) =>
-      this.variablesList
-        .getByTestId(`variable-${name}`)
-        .getByRole('cell')
-        .nth(1);
+      this.variableRow(name).getByRole('cell').nth(1);
     this.variableButtonsCellLocator = (name: string) =>
-      this.variablesList
-        .getByTestId(`variable-${name}`)
-        .getByRole('cell')
-        .nth(2);
+      this.variableRow(name).getByRole('cell').nth(2);
 
     this.existingVariableByName = (name: string) => ({
-      name: this.variablesList
-        .getByTestId(`variable-${name}`)
-        .getByRole('cell')
-        .nth(0),
+      name: this.variableRow(name).getByRole('cell').nth(0),
       value: this.variableValueCellLocator(name),
-      readModeValue: this.variableValueCellLocator(name).getByTestId(
-        'edit-variable-value-readonly',
-      ),
-      // See the comment on `this.editor` below: the inline variable editor is
-      // CodeMirror now (#62782), not Monaco, so it no longer exposes
-      // `role="code"`.
-      editor:
-        this.variableValueCellLocator(name).getByTestId('code-mirror-editor'),
+      readModeValue: this.variableValueCellLocator(name).getByRole('button', {
+        name: `Copy ${name}`,
+        exact: true,
+      }),
+      editor: this.variableValueCellLocator(name)
+        .getByRole('group')
+        .filter({has: page.getByRole('textbox')}),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
           name: 'Edit',
@@ -397,12 +416,9 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    // Operate's inline variable-value editor (InlineJsonEditor) migrated
-    // from Monaco to CodeMirror in #62782. Monaco's container exposed
-    // `role="code"`; CodeMirror's `.cm-content` is `role="textbox"` instead
-    // and isn't uniquely named, so target the CodeMirror instance by the
-    // data-testid it sets explicitly rather than by role.
-    this.editor = page.getByTestId('code-mirror-editor');
+    this.editor = page
+      .getByRole('group')
+      .filter({has: page.getByRole('textbox')});
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name: 'Edit'});
@@ -454,33 +470,24 @@ class OperateProcessInstancePage {
     await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
-    // After the inline editor migrated to CodeMirror (#62782), the
-    // `edit-variable-value` group also contains a visually-hidden accessibility
-    // region (e.g. the "Selection deleted" live announcement emitted when the
-    // value is cleared) alongside the actual value, so reading the group's text
-    // returns noise like "fooSelection deleted3". Target the CodeMirror content
-    // textbox instead, which holds just the value -- clicking it also focuses
-    // the editor exactly as clicking the group did.
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value')
-      .getByRole('textbox');
+    return this.variableRow(variableName)
+      .getByRole('group', {name: variableName, exact: true})
+      .getByRole('textbox', {name: variableName, exact: true});
   }
 
   getNewVariableNameFieldSelector = (variableName: string) => {
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('new-variable-name');
+    return this.variableRow(variableName).getByTestId('new-variable-name');
   };
 
   getNewVariableValueFieldSelector = (variableName: string) => {
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('new-variable-value');
+    return this.variableRow(variableName).getByRole('group', {
+      name: 'Value',
+      exact: true,
+    });
   };
 
   getVariableTestId(variableName: string) {
-    return this.page.getByTestId(`variable-${variableName}`);
+    return this.variableRow(variableName);
   }
 
   getListenerTypeFilterOption = (
@@ -587,7 +594,9 @@ class OperateProcessInstancePage {
   }
 
   async navigateToRootScope() {
-    await this.rootProcessNode.click();
+    const rootNode = this.instanceHistory.getByRole('treeitem').first();
+    const rootNodeName = await rootNode.getAttribute('aria-label');
+    await rootNode.getByText(rootNodeName!, {exact: true}).first().click();
   }
 
   async addNewVariableModificationMode(
@@ -596,9 +605,7 @@ class OperateProcessInstancePage {
     value: string,
   ) {
     await this.addVariableModificationButton.click();
-    await expect(
-      this.page.getByTestId(`variable-${variableIndex}`),
-    ).toBeVisible();
+    await expect(this.variableRow(variableIndex)).toBeVisible();
 
     await this.getNewVariableNameFieldSelector(variableIndex).clear();
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
@@ -613,7 +620,7 @@ class OperateProcessInstancePage {
 
   async editVariableValueModificationMode(variableName: string, value: string) {
     const scope = this.getVariableTestId(variableName);
-    await this.getEditVariableFieldSelector(variableName).click();
+    await this.getEditVariableFieldSelector(variableName).focus();
     await this.clearVariableValueInput(scope);
     await this.fillVariableValueInput(value, scope);
     await this.page.keyboard.press('Tab');
@@ -623,19 +630,21 @@ class OperateProcessInstancePage {
     await this.getVariableTestId(variableName).getByLabel('Edit').click();
   }
 
-  async clickVariableValueInput(): Promise<void> {
-    await this.variableValueInput.click();
+  async clickVariableValueInput(variableName: string): Promise<void> {
+    await this.variableRow(variableName)
+      .getByRole('group', {name: variableName, exact: true})
+      .filter({has: this.page.getByRole('textbox')})
+      .click();
   }
 
   async fillVariableValueInput(value: string, scope?: Locator) {
-    // In modification mode every variable row renders its own inline
-    // CodeMirror value cell, so the page-wide `this.editor` (all
-    // `code-mirror-editor` testids) matches several elements and trips
+    // In modification mode every variable row renders its own inline value
+    // editor, so the page-wide `this.editor` matches several elements and trips
     // Playwright's strict mode. When a caller knows which variable row is being
     // edited, scope the visibility guard to that row's editor; keyboard input
     // still goes to the focused field either way.
     const editor = scope
-      ? scope.getByTestId('code-mirror-editor')
+      ? scope.getByRole('group').filter({has: this.page.getByRole('textbox')})
       : this.editor;
     await expect(editor).toBeVisible();
     await this.page.keyboard.insertText(value);
@@ -643,7 +652,7 @@ class OperateProcessInstancePage {
 
   async clearVariableValueInput(scope?: Locator) {
     const editor = scope
-      ? scope.getByTestId('code-mirror-editor')
+      ? scope.getByRole('group').filter({has: this.page.getByRole('textbox')})
       : this.editor;
     await expect(editor).toBeVisible();
     // ControlOrMeta: on macOS, Control+A moves the cursor instead of selecting.
@@ -994,7 +1003,7 @@ class OperateProcessInstancePage {
     if (
       (await this.executionCountToggle.getAttribute('aria-checked')) !== 'true'
     ) {
-      await this.executionCountToggleLabel.click();
+      await this.executionCountToggle.press('Space');
       await expect(this.executionCountToggle).toHaveAttribute(
         'aria-checked',
         'true',
@@ -1047,30 +1056,8 @@ class OperateProcessInstancePage {
   }
 
   async getIncidentRowByErrorType(errorType: string) {
-    const parentRows = this.incidentsTable.locator(
-      'tr[data-parent-row="true"]',
-    );
-
-    const exactParentRow = parentRows.filter({
-      has: this.page
-        .getByTestId('cell-errorType')
-        .filter({hasText: new RegExp(`^${errorType}$`, 'i')}),
-    });
-
-    if ((await exactParentRow.count()) > 0) {
-      return exactParentRow.first();
-    }
-
-    const partialParentRow = parentRows.filter({
-      has: this.page.getByTestId('cell-errorType').filter({hasText: errorType}),
-    });
-
-    if ((await partialParentRow.count()) > 0) {
-      return partialParentRow.first();
-    }
-
     return this.incidentsTable.getByRole('row').filter({
-      has: this.page.getByTestId('cell-errorType').filter({hasText: errorType}),
+      has: this.page.getByRole('cell', {name: errorType, exact: true}),
     });
   }
 
@@ -1181,16 +1168,22 @@ class OperateProcessInstancePage {
     itemName: string,
     expectedStatus: string[],
   ): Promise<void> {
-    const filteredElementsData =
-      await this.getHistoryElementsDataByName(itemName);
-    expect(filteredElementsData.length).toBeGreaterThan(0);
-    if (filteredElementsData.length !== expectedStatus.length) {
-      throw new Error(`Number does not match expected count.`);
-    }
-    expect(filteredElementsData).toHaveLength(expectedStatus.length);
-    for (let i = 0; i < filteredElementsData.length; i++) {
-      expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
-    }
+    const historyItems = this.instanceHistory.getByRole('treeitem', {
+      name: itemName,
+      exact: true,
+    });
+    await expect(historyItems).toHaveCount(expectedStatus.length);
+    const states = await Promise.all(
+      (await historyItems.all()).map((historyItem) =>
+        historyItem
+          .getByRole('img', {name: / state$/})
+          .first()
+          .getAttribute('aria-label'),
+      ),
+    );
+    expect(states).toEqual(
+      expectedStatus.map((status) => `${status.toLowerCase()} state`),
+    );
   }
 
   async countIncidentErrorIndicators(): Promise<number> {
