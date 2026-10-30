@@ -121,8 +121,7 @@ public final class RestoreValidator
         Preconditions.test(
             !hasBackupIds && !hasTimeRange && exportedPositionSupplier == null,
             "Cannot resolve a restore point: no backupId was specified and no exported-position "
-                + "data is available. Configure RDBMS as the secondary storage to enable "
-                + "time-range restores, or specify a backupId.");
+                + "data is available. Specify a backupId, or a time range with from.");
         // Without exported positions, only `from` tells which range of backups to restore from.
         Preconditions.test(
             hasTimeRange && instantFrom == null && exportedPositionSupplier == null,

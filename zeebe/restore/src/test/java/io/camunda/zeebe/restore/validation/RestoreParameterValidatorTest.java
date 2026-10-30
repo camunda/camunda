@@ -149,8 +149,8 @@ final class RestoreParameterValidatorTest {
                       request(NO_BACKUP_IDS, null, null, DB, false)))
           .withMessage(
               "Cannot resolve a restore point: no backupId was specified and no "
-                  + "exported-position data is available. Configure RDBMS as the secondary "
-                  + "storage to enable time-range restores, or specify a backupId.");
+                  + "exported-position data is available. Specify a backupId, or a time range "
+                  + "with from.");
     }
   }
 
