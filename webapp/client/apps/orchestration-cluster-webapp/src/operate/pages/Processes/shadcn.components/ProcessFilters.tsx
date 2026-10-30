@@ -24,14 +24,16 @@ import {ForbiddenError} from '#/shared/errors';
 import {TenantField} from '#/operate/shared/TenantField/shadcn.components/TenantField';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 import type {ProcessesSearch} from '../processesFilter';
-import {useProcessFilterOptions} from './useProcessFilterOptions';
+import type {ProcessFilterOptions} from './useProcessFilterOptions';
 
 const ALL_VERSIONS = 'all';
 
 type Props = Pick<
 	ProcessesSearch,
 	'process' | 'version' | 'elementId' | 'tenantId' | 'active' | 'incidents' | 'suspended' | 'completed' | 'canceled'
->;
+> & {
+	options: ProcessFilterOptions;
+};
 
 const toCheckedState = (all: boolean, some: boolean) => (all ? true : some ? 'indeterminate' : false);
 
@@ -40,6 +42,7 @@ const ProcessFilters: React.FC<Props> = ({
 	version,
 	elementId,
 	tenantId,
+	options,
 	active,
 	incidents,
 	suspended,
@@ -65,7 +68,7 @@ const ProcessFilters: React.FC<Props> = ({
 		xmlError,
 		refetchDiagramXml,
 		isMultiTenancyEnabled,
-	} = useProcessFilterOptions({process, version, elementId, tenantId});
+	} = options;
 	const selectedVersion = process ? String(version ?? ALL_VERSIONS) : '';
 	const isRunningAll = active && incidents && suspended;
 	const isFinishedAll = completed && canceled;
