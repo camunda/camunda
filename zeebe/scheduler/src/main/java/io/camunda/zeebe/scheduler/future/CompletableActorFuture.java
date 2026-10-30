@@ -11,32 +11,36 @@ import static io.camunda.zeebe.util.Nulls.uncheckedCastToNonNull;
 import static io.camunda.zeebe.util.Unit.unit;
 import static java.util.Objects.requireNonNull;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.UnsafeApi;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
   private static final long STATE_OFFSET;
+
+  private static final VarHandle CALLBACKS;
+  private static final VarHandle COMPLETION_LATCH;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -51,18 +55,38 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
+
+    try {
+      final var lookup = MethodHandles.lookup();
+      CALLBACKS = lookup.findVarHandle(CompletableActorFuture.class, "callbacks", Object.class);
+      COMPLETION_LATCH =
+          lookup.findVarHandle(
+              CompletableActorFuture.class, "completionLatch", CountDownLatch.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
+    }
   }
 
   private long completedAt;
   private @Nullable V value;
   private @Nullable String failure;
   private @Nullable Throwable failureCause;
-  private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, @Nullable Throwable>>
-      blockedCallbacks = new ManyToOneConcurrentLinkedQueue<>();
 
-  private final ReentrantLock completionLock = new ReentrantLock();
+  // Futures are almost always awaited by at most one callback (andThen, thenApply,
+  // runOnCompletion), so this is null for none, the callback itself for one, and only for two or
+  // more a Callbacks value. Nothing is allocated until a second callback is added. See
+  // #addBlockedCallback and #notifyAllBlocked for the concurrency contract.
+  @SuppressFBWarnings(
+      value = {"UWF_UNWRITTEN_FIELD", "NP_UNWRITTEN_FIELD"},
+      justification = "Written using CALLBACKS")
+  private volatile @Nullable Object callbacks;
+
+  @SuppressFBWarnings(
+      value = "UWF_UNWRITTEN_FIELD",
+      justification = "Written using COMPLETION_LATCH")
+  private volatile @Nullable CountDownLatch completionLatch;
+
   private volatile int state = CLOSED;
-  private @Nullable Condition isDoneCondition;
 
   public CompletableActorFuture() {
     setAwaitingResult();
@@ -90,7 +114,6 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   public void setAwaitingResult() {
     state = AWAITING_RESULT;
-    isDoneCondition = completionLock.newCondition();
   }
 
   public static CompletableActorFuture<Void> completed() {
@@ -180,18 +203,18 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
       }
     } else {
       // blocking get for non-actor threads
-      completionLock.lock();
-      try {
-        long remaining = unit.toNanos(timeout);
+      final long deadline = System.nanoTime() + unit.toNanos(timeout);
 
-        while (!isDone()) {
-          if (remaining <= 0) {
-            throw new TimeoutException("Timeout after: " + timeout + " " + unit);
-          }
-          remaining = requireNonNull(isDoneCondition).awaitNanos(unit.toNanos(timeout));
+      while (!isDone()) {
+        final long remaining = deadline - System.nanoTime();
+        if (remaining <= 0) {
+          throw new TimeoutException("Timeout after: " + timeout + " " + unit);
         }
-      } finally {
-        completionLock.unlock();
+
+        final var latch = completionLatch();
+        if (!isDone() && !latch.await(remaining, TimeUnit.NANOSECONDS) && !isDone()) {
+          throw new TimeoutException("Timeout after: " + timeout + " " + unit);
+        }
       }
     }
 
@@ -264,7 +287,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   @Override
   public void block(final ActorTask onCompletion) {
-    blockedCallbacks.add((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
+    addBlockedCallback((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
   }
 
   @Override
@@ -309,7 +332,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     if (!isDone()) {
       // If future is already completed, blockedCallbacks are not notified again. So there is no
       // need to add the consumer.
-      blockedCallbacks.add(checkedConsumer);
+      addBlockedCallback(checkedConsumer);
     }
 
     // Do not replace the following if(isDone()) with an else. The future might be completed after
@@ -425,26 +448,83 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     }
   }
 
-  private void notifyAllBlocked() {
-    notifyBlockedCallBacks();
-
-    try {
-      completionLock.lock();
-      if (isDoneCondition != null) {
-        // condition is null if the future was created with `completed` or `completedExceptionally`,
-        // i.e. the future was never waiting for a result.
-        isDoneCondition.signalAll();
+  /**
+   * Returns a latch that is counted down the next time the future completes or is closed. The latch
+   * is shared by all blocking waiters, so abandoned waits (timeouts, interrupts) do not retain
+   * anything on a future that stays pending.
+   *
+   * <p>Invariant: the thread that installed a latch registers the callback that counts it down, or
+   * counts it down itself if the future is already done.
+   */
+  private CountDownLatch completionLatch() {
+    var current = completionLatch;
+    while (current == null || current.getCount() == 0) {
+      final var fresh = new CountDownLatch(1);
+      // Only the thread that installs the latch registers its callback, so a lost race leaves
+      // nothing behind on the future. Waiters that pick up the latch before the callback is
+      // registered are released by the isDone() check below or by the callback itself.
+      if (COMPLETION_LATCH.compareAndSet(this, current, fresh)) {
+        addBlockedCallback((ignoredValue, ignoredError) -> fresh.countDown());
+        // the future may have been completed before the callback was added, in which case the
+        // callback will not be notified anymore
+        if (isDone()) {
+          fresh.countDown();
+        }
+        return fresh;
       }
-    } finally {
-      completionLock.unlock();
+      current = completionLatch;
     }
+    return current;
   }
 
-  private void notifyBlockedCallBacks() {
-    while (!blockedCallbacks.isEmpty()) {
-      final var callBack = blockedCallbacks.poll();
-      if (callBack != null) {
-        callBack.accept(value, failureCause);
+  /** Visible for testing: the number of callbacks waiting for this future to complete. */
+  int pendingCallbackCount() {
+    return switch (callbacks) {
+      case null -> 0;
+      case Callbacks<?> several -> several.size();
+      default -> 1;
+    };
+  }
+
+  /**
+   * Registers a callback to be run by the next {@link #notifyAllBlocked()}.
+   *
+   * <p>The CAS is the point where the callback becomes visible to a notifier, and it always targets
+   * the field of this future, never a value that a notifier has already detached. A concurrent
+   * notifier therefore either detaches the callback together with the ones already registered, or
+   * it stays registered for the notifier's next pass. A lost CAS discards the new value and starts
+   * over from the current one, as the published values are never modified.
+   *
+   * <p>A callback registered after the last pass of a notifier is never run by it. Callers that
+   * register on a future which may complete concurrently must check {@link #isDone()} after
+   * registering, as {@link #onComplete(BiConsumer, Executor)} and {@link #completionLatch()} do.
+   */
+  @SuppressWarnings("unchecked")
+  private void addBlockedCallback(final BiConsumer<V, @Nullable Throwable> callback) {
+    Object current;
+    Object next;
+    do {
+      current = callbacks;
+      next =
+          switch (current) {
+            case null -> callback;
+            case Callbacks<?> several -> ((Callbacks<V>) several).add(callback);
+            default -> Callbacks.of((BiConsumer<V, @Nullable Throwable>) current, callback);
+          };
+    } while (!CALLBACKS.compareAndSet(this, current, next));
+  }
+
+  @SuppressWarnings("unchecked")
+  private void notifyAllBlocked() {
+    // The callbacks are detached atomically, so they are only reachable from this thread. Callbacks
+    // added by other callbacks, or concurrently by other threads, start a new value that is picked
+    // up by the next iteration. A plain read decides whether the atomic swap is needed at all.
+    while (callbacks != null) {
+      switch (CALLBACKS.getAndSet(this, null)) {
+        case null -> {}
+        case Callbacks<?> several -> ((Callbacks<V>) several).run(value, failureCause);
+        case Object single ->
+            ((BiConsumer<V, @Nullable Throwable>) single).accept(value, failureCause);
       }
     }
   }
