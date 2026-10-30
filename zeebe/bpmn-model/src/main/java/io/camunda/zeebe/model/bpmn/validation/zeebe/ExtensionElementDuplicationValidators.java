@@ -30,6 +30,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCase;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
@@ -56,6 +57,8 @@ public class ExtensionElementDuplicationValidators {
           ExtensionElementsDuplicationValidator.verifyThat(Process.class)
               .hasSingleExtensionElement(
                   ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
+          ExtensionElementsDuplicationValidator.verifyThat(Process.class)
+              .hasSingleExtensionElement(ZeebeCase.class, ZeebeConstants.ELEMENT_CASE),
 
           // flow node
           ExtensionElementsDuplicationValidator.verifyThat(FlowNode.class)

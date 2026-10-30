@@ -24,6 +24,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_KEY = "key";
   public static final String ATTRIBUTE_NAME = "name";
   public static final String ATTRIBUTE_VALUE = "value";
+  public static final String ATTRIBUTE_TITLE = "title";
 
   public static final String ATTRIBUTE_SOURCE = "source";
   public static final String ATTRIBUTE_TARGET = "target";
@@ -114,6 +115,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_TASK_LISTENER = "taskListener";
 
   public static final String ELEMENT_VERSION_TAG = "versionTag";
+
+  public static final String ELEMENT_CASE = "case";
 
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
