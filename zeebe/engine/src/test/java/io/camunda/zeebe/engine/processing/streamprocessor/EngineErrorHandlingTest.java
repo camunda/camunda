@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.TestStreams;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;

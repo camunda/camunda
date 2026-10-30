@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.storage;
 
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -28,7 +28,7 @@ public interface LogStorageReader extends Iterator<DirectBuffer>, Closeable {
 
   /**
    * Positions the reader such that the next call to {@link #next()} would return a block which
-   * contains a {@link io.camunda.zeebe.logstreams.log.LoggedEvent} with {@link
+   * contains a {@link io.camunda.zeebe.log.records.LoggedEvent} with {@link
    * LoggedEvent#getPosition()} equal to the given {@code position}, or the highest one which is
    * less than the given {@code position}.
    *

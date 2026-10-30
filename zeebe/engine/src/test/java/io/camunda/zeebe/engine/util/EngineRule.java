@@ -62,7 +62,7 @@ import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.UserTaskLookupClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;

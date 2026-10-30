@@ -21,7 +21,7 @@ import static org.mockito.Mockito.withSettings;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
-import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.log.records.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;

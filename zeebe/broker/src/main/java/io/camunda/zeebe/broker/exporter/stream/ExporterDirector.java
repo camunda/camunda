@@ -14,10 +14,10 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterM
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;

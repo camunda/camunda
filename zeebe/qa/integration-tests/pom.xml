@@ -754,6 +754,12 @@
       <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-log-records</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

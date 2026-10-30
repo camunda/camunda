@@ -6,6 +6,7 @@ plugins {
 }
 
 dependencies {
+  testImplementation(project(":zeebe-log-records"))
   testImplementation(project(":camunda-cluster"))
   testImplementation(project(":camunda-gateway-model"))
   testImplementation(project(":camunda-authentication"))

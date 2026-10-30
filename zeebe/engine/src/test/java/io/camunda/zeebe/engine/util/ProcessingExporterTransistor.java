@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.util;
 
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
