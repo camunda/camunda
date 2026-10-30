@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -264,6 +265,120 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRestoreFromABackup() throws Exception {
+    // given
+    final List<Long> backedUp;
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstances(client);
+      backupId = takeAndAwaitBackup();
+      createInstances(client);
+    }
+
+    // when
+    restore(RestoreRequest.backups(backupId));
+
+    // then - every partition ends at the backup, without what was created after it
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
+  void shouldRejectANonExistingBackup() throws Exception {
+    // given
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      takeAndAwaitBackup();
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreRequest.backups(1234L),
+        NoSuchElementException.class,
+        "No completed backup found with backup id 1234");
+  }
+
+  @Test
+  void shouldRejectABackupTogetherWithATimeRange() throws Exception {
+    // given
+    final long backupId;
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      from = currentTime(broker);
+      createInstances(client);
+      backupId = takeAndAwaitBackup();
+    }
+
+    // when / then - the restore app rejects it while parsing its arguments, in its own words
+    assertRestoreRejected(
+        new RestoreRequest(List.of(backupId), from, null), IllegalArgumentException.class, "both");
+  }
+
+  @Test
+  void shouldRejectATimeRangeEndingBeforeItStarts() throws Exception {
+    // given
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      to = currentTime(broker);
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreRequest.timeRange(from, to),
+        IllegalArgumentException.class,
+        "Invalid time range: from");
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsOfABackupAfterAScaleUp() throws Exception {
+    // given - a backup of the 2 partitions
+    final List<Long> backedUp;
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstances(client);
+      backupId = takeAndAwaitBackup();
+    }
+
+    // and - the cluster is scaled up to 3 partitions, with a later backup holding all 3
+    final var clusterActuator = ClusterActuator.of(broker);
+    scaleUp(clusterActuator, SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+    }
+    takeAndAwaitBackup();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.backups(backupId));
+
+    // then - only the backup's partitions are restored, and the group routes over them again
+    assertOnlyInstancesRestored(backedUp);
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  @Test
   void shouldRestoreTheBackupsPartitionsOfATimeRangeAfterAScaleUp() throws Exception {
     // given - backups of the 2 partitions within the time range
     final List<Long> createdUntilTo = new ArrayList<>();
@@ -304,9 +419,17 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
         PARTITION_COUNT,
         SCALED_PARTITION_COUNT);
 
-    // and - the group routes over them again
-    InProcessRestoreTestUtil.assertRoutesOverPartitions(
-        ClusterActuator.of(broker), PARTITION_COUNT);
+    // and - the group routes over them again. After the standalone restore the broker takes the
+    // routing state from the restored data once it is up, so it settles shortly after.
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
   }
 
   /**

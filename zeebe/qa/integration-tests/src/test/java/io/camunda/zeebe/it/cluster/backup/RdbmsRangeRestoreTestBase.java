@@ -25,13 +25,17 @@ import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -39,6 +43,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -70,6 +75,7 @@ import org.springframework.util.unit.DataSize;
 abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
   protected static final int PARTITION_COUNT = 2;
+  private static final int SCALED_PARTITION_COUNT = PARTITION_COUNT + 1;
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
   private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
@@ -85,6 +91,12 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
           .withUnifiedConfig(this::configureBroker);
+
+  /**
+   * The partition count the restore is configured with, which a scale up raises above the backups'
+   * partitions.
+   */
+  protected int configuredPartitionCount = PARTITION_COUNT;
 
   private BackupActuator backupActuator;
   private ExporterPositionMapper exporterPositionMapper;
@@ -131,7 +143,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
 
     // when/then - restoring from a range that ends before the backup covering it exists must fail
-    assertRestoreFails(timeRange, "No usable range found");
+    assertRestoreRejected(timeRange, IllegalStateException.class, "No usable range found");
   }
 
   @Test
@@ -289,6 +301,151 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         "Cannot find a record at checkpoint position");
   }
 
+  @Test
+  void shouldRestoreFromABackup() throws Exception {
+    // given - the RDBMS holds an exported position for every partition
+    final List<Long> backedUp;
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      disableRdbmsExporter();
+
+      backedUp = createInstancesOnEveryPartition(client);
+      backupId = takeAndAwaitBackup().getBackupId();
+      createInstancesOnEveryPartition(client);
+    }
+
+    // when
+    restore(RestoreTarget.backups(backupId));
+
+    // then - every partition ends at the backup, without what was created after it
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
+  void shouldRejectANonExistingBackup() throws Exception {
+    // given
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstancesOnEveryPartition(client);
+      takeAndAwaitBackup();
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreTarget.backups(1234L),
+        NoSuchElementException.class,
+        "No completed backup found with backup id 1234");
+  }
+
+  @Test
+  void shouldRejectABackupTogetherWithATimeRange() throws Exception {
+    // given
+    final long backupId;
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      from = currentTime(broker);
+      createInstancesOnEveryPartition(client);
+      backupId = takeAndAwaitBackup().getBackupId();
+    }
+
+    // when / then - the restore app rejects it while parsing its arguments, in its own words
+    assertRestoreRejected(
+        new RestoreTarget(List.of(backupId), from, null), IllegalArgumentException.class, "both");
+  }
+
+  @Test
+  void shouldRejectATimeRangeEndingBeforeItStarts() throws Exception {
+    // given
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstancesOnEveryPartition(client);
+      to = currentTime(broker);
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreTarget.timeRange(from, to),
+        IllegalArgumentException.class,
+        "Invalid time range: from");
+  }
+
+  @Test
+  void shouldRejectTimeRangeStartingBeforeTheBackups() throws Exception {
+    // given
+    final Instant beforeTheBackups = currentTime(broker).minus(MARKER_INTERVAL);
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      disableRdbmsExporter();
+      awaitBackupCoversExportedPositionsOnEveryPartition();
+      to = currentTime(broker);
+    }
+
+    // when / then - no range of backups starts at or before `from`
+    assertRestoreRejected(
+        RestoreTarget.timeRange(beforeTheBackups, to),
+        IllegalStateException.class,
+        "No usable range found");
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsOfABackupAfterAScaleUp() throws Exception {
+    // given - a backup covering the exported positions of the 2 partitions
+    final List<Long> backedUp;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstancesOnEveryPartition(client);
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+    final long backupId = takeAndAwaitBackup().getBackupId();
+
+    // and - the cluster is scaled up to 3 partitions, and the RDBMS restored to the backup's point
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    deleteExportedPositionsOfScaledUpPartitions();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.backups(backupId));
+
+    // then - only the backup's partitions are restored, and the group routes over them again
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredTheBackupsPartitions();
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsAfterAScaleUp() throws Exception {
+    // given - a backup covering the exported positions of the 2 partitions
+    final List<Long> backedUp;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstancesOnEveryPartition(client);
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+
+    // and - the cluster is scaled up to 3 partitions
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+
+    // and - the RDBMS is restored to the backup's point, so it only holds exported positions for
+    // the backup's 2 partitions, not for the one added by the scale up
+    deleteExportedPositionsOfScaledUpPartitions();
+
+    // when - restoring the latest common checkpoint of the partitions the RDBMS holds
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.latest());
+
+    // then - only the backup's partitions are restored, and the group routes over them again
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredTheBackupsPartitions();
+  }
+
   /**
    * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
@@ -297,9 +454,12 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   abstract void restore(RestoreTarget target) throws Exception;
 
   /**
-   * Attempts a restore to {@code target} and asserts that it fails with {@code expectedMessage}.
+   * Asserts that the restore to {@code target} is rejected before anything is restored, by the
+   * validation both paths share, with the given exception.
    */
-  abstract void assertRestoreFails(RestoreTarget target, String expectedMessage) throws Exception;
+  abstract void assertRestoreRejected(
+      RestoreTarget target, Class<? extends RuntimeException> expectedType, String message)
+      throws Exception;
 
   /**
    * Asserts that {@code target} passes validation but the resolved backups cannot be restored. The
@@ -371,6 +531,65 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
                         assertThat(details.getCheckpointPosition())
                             .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
                       });
+            });
+  }
+
+  private void deleteExportedPositionsOfScaledUpPartitions() throws SQLException {
+    final var dataSource =
+        broker.bean(RdbmsDataSources.class).dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement()) {
+      statement.executeUpdate(
+          "DELETE FROM EXPORTER_POSITION WHERE PARTITION_ID > " + PARTITION_COUNT);
+      connection.commit();
+    }
+  }
+
+  /**
+   * Asserts the broker holds and routes over the backup's partitions only. After the standalone
+   * restore the broker takes the routing state from the restored data once it is up, so it settles
+   * shortly after.
+   */
+  private void assertRestoredTheBackupsPartitions() {
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var clusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    clusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  /**
+   * Scales the cluster up. The broker's clock is pinned, so the configuration change only makes
+   * progress, e.g. through a retry backoff, when the clock is moved on, which every poll here does.
+   */
+  private void scaleUp(final ClusterActuator clusterActuator, final int partitionCount) {
+    final var scaleUp =
+        clusterActuator.patchCluster(
+            new ClusterConfigPatchRequest()
+                .partitions(
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(partitionCount)
+                        .replicationFactor(1)),
+            false,
+            false);
+    await("cluster is scaled up to %d partitions".formatted(partitionCount))
+        .timeout(Duration.ofSeconds(90))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 3000);
+              ClusterActuatorAssert.assertThat(clusterActuator)
+                  .hasCompletedChanges(scaleUp.getChangeId())
+                  .doesNotHavePendingChanges();
             });
   }
 

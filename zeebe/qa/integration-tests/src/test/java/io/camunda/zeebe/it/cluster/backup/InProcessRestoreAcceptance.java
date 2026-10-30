@@ -20,8 +20,11 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -105,6 +108,41 @@ public interface InProcessRestoreAcceptance {
       final var newInstance =
           client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
       assertThat(newInstance.getProcessInstanceKey()).isPositive();
+    }
+  }
+
+  @Test
+  default void shouldRejectANonExistingBackup() {
+    try (final var broker =
+            new TestStandaloneBroker()
+                .withUnifiedConfig(this::configureBackupStore)
+                .start()
+                .awaitCompleteTopology();
+        final var client = broker.newClientBuilder().build()) {
+      // given -- the broker is in RECOVERING mode
+      final var clusterActuator = ClusterActuator.of(broker);
+      final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+      Awaitility.await("broker transitions to RECOVERING")
+          .timeout(Duration.ofSeconds(60))
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(clusterActuator)
+                      .hasCompletedChanges(toRecovering)
+                      .doesNotHavePendingChanges());
+
+      // when -- a restore is requested from a backup that was never taken
+      final var response =
+          InProcessRestoreTestUtil.sendRestoreRequest(
+              client, Map.<String, Object>of("backupIds", List.of(1234L)));
+
+      // then -- it is rejected before anything is restored
+      assertThat(response.statusCode())
+          .describedAs("restore REST response: %s".formatted(response.body()))
+          .isEqualTo(404);
+      assertThat(response.body()).contains("No completed backup found with backup id 1234");
+      assertThat(clusterActuator.getTopology().getPendingChange())
+          .describedAs("no restore change is started")
+          .isNull();
     }
   }
 
