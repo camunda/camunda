@@ -53,6 +53,14 @@ public final class DmnDeploymentTest {
   private static final String DMN_MISSING_DECISION_NAME =
       "/dmn/decision-table-with-missing-decision-name.dmn";
 
+  private static final String DRG_MISSING_ID = "/dmn/drg-with-missing-id.dmn";
+  private static final String DMN_MISSING_DECISION_ID =
+      "/dmn/decision-table-with-missing-decision-id.dmn";
+  private static final String DMN_MISSING_INPUT_ID =
+      "/dmn/decision-table-with-missing-input-id.dmn";
+  private static final String DMN_MISSING_OUTPUT_ID =
+      "/dmn/decision-table-with-missing-output-id.dmn";
+
   private static final String DRG_ID_LENGTH_EXCEEDED = "/dmn/drg-id-length-exceeded.dmn";
   private static final String DRG_NAME_LENGTH_EXCEEDED = "/dmn/drg-name-length-exceeded.dmn";
 
@@ -195,6 +203,71 @@ public final class DmnDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
     assertThat(deploymentEvent.getRejectionReason()).contains("because \"value\" is null");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDrgId() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DRG_MISSING_ID).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a DRG must be set, but was missing in resource '%s'", DRG_MISSING_ID));
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDecisionId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_MISSING_DECISION_ID)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a decision must be set, but was missing in resource '%s'",
+                DMN_MISSING_DECISION_ID));
+  }
+
+  @Test
+  public void shouldDeployDmnResourceWithMissingInputId() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DMN_MISSING_INPUT_ID).deploy();
+
+    // then
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getDecisionId)
+        .containsExactly("jedi_or_sith");
+  }
+
+  @Test
+  public void shouldDeployDmnResourceWithMissingOutputId() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DMN_MISSING_OUTPUT_ID).deploy();
+
+    // then
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getDecisionId)
+        .containsExactly("jedi_or_sith");
   }
 
   @Test
