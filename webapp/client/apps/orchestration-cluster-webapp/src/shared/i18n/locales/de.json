@@ -2384,6 +2384,13 @@
 					"preparingPdfPreview": "PDF-Vorschau wird vorbereitet…"
 				},
 				"diagram": {
+					"enterFullscreen": "Vollbild öffnen",
+					"exitFullscreen": "Vollbild beenden",
+					"showMinimap": "Minikarte anzeigen",
+					"hideMinimap": "Minikarte ausblenden",
+					"resetZoom": "Diagrammzoom zurücksetzen",
+					"zoomOut": "Diagramm verkleinern",
+					"zoomIn": "Diagramm vergrößern",
 					"label": "Diagramm"
 				},
 				"stateIcon": {
