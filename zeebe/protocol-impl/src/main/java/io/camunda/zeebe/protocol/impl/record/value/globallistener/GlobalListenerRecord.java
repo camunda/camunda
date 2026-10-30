@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -24,9 +23,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class GlobalListenerRecord extends UnifiedRecordValue
@@ -46,9 +43,6 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
           .thenComparing(GlobalListenerRecord::getId);
 
   public static final String ALL_EVENT_TYPES = "all";
-  // Set of all possible task listener event types as strings, to be used while validating records
-  public static final Set<String> TASK_LISTENER_EVENT_TYPES =
-      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
 
   private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");

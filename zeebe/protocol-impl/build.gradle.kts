@@ -6,7 +6,6 @@ dependencies {
   api(project(":zeebe-protocol"))
   api(project(":zeebe-msgpack-core"))
   api(project(":zeebe-msgpack-value"))
-  api(project(":zeebe-bpmn-model"))
   api(project(":zeebe-util"))
   api(project(":camunda-security-protocol"))
   implementation(libs.io.camunda.security.library.api)
