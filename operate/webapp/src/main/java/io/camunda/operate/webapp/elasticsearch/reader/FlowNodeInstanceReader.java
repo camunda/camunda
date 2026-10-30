@@ -360,6 +360,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   @Override
   public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
       final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+    final var keysAggName = "flowNodeInstanceKeys";
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(
@@ -371,19 +372,18 @@ public class FlowNodeInstanceReader extends AbstractReader
                                     FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
                                     processInstanceKey),
                                 termsQuery(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys))))
-                    // A key identifies one flow node instance, so one hit per given key is expected
-                    // and the size is the number of given keys. No scrolling is needed. Only the
-                    // key is fetched.
-                    .size(flowNodeInstanceKeys.size())
-                    .fetchSource(FlowNodeInstanceTemplate.KEY, null));
+                    // A key is one bucket however many documents carry it, so as many buckets as
+                    // keys return every match. The hits are not needed.
+                    .aggregation(
+                        terms(keysAggName)
+                            .field(FlowNodeInstanceTemplate.KEY)
+                            .size(flowNodeInstanceKeys.size()))
+                    .size(0));
     try {
-      return Arrays.stream(
-              esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getHits())
-          .map(
-              hit ->
-                  ElasticsearchUtil.fromSearchHit(
-                          hit.getSourceAsString(), objectMapper, FlowNodeInstanceEntity.class)
-                      .getKey())
+      final Terms keysAgg =
+          esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations().get(keysAggName);
+      return keysAgg.getBuckets().stream()
+          .map(bucket -> bucket.getKeyAsNumber().longValue())
           .collect(Collectors.toSet());
     } catch (final IOException e) {
       throw new OperateRuntimeException(
