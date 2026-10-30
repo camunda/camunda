@@ -13,6 +13,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.starter.ProcessInstanceCreator;
+import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -30,7 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -90,6 +93,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   /** Starts the periodic checking for process instance availability. */
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
     scheduleCheck(availabilityCheckInterval.toMillis());
   }
@@ -149,6 +153,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     piCheckExecutorService.shutdownNow();
   }

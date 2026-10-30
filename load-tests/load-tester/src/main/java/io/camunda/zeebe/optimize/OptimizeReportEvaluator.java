@@ -15,6 +15,7 @@ import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
 import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeApiClient.PageEvaluationResult;
 import io.camunda.zeebe.optimize.OptimizeApiClient.ReportEvaluationResult;
+import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
@@ -32,7 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -121,6 +124,7 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     return new OptimizeApiClient(props, webClientBuilder, objectMapper, credentials);
   }
 
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
     LOG.info(
         "Scheduling Optimize dashboard and report evaluations every {} (initial delay {})",
@@ -278,6 +282,7 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     if (scheduledTask != null) {
       scheduledTask.cancel(true);
