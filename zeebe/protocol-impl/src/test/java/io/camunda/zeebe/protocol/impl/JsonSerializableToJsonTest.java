@@ -3727,6 +3727,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": 1,
+                  "policyVersion": 0,
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceMatcher": "ID",
@@ -3754,6 +3755,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": 2,
+                  "policyVersion": 0,
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceMatcher": "PROPERTY",
@@ -3780,6 +3782,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": -1,
+                  "policyVersion": 0,
                   "ownerId": "",
                   "ownerType": "UNSPECIFIED",
                   "resourceMatcher": "UNSPECIFIED",
@@ -3841,6 +3844,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "roleKey": 1,
+                  "policyVersion": 0,
                   "roleId": "id",
                   "name": "role",
                   "description": "description",
@@ -3860,6 +3864,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "roleKey": -1,
+                  "policyVersion": 0,
                   "roleId": "roleId",
                   "name": "",
                   "description": "",
@@ -3888,6 +3893,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "tenantKey": 123,
+                  "policyVersion": 0,
                   "tenantId": "tenant-abc",
                   "name": "Test Tenant",
                   "description": "Test Description",
@@ -3907,6 +3913,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "tenantKey": -1,
+                  "policyVersion": 0,
                   "tenantId": "tenantId",
                   "name": "",
                   "description": "",
@@ -3987,6 +3994,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "groupKey": 1,
+                  "policyVersion": 0,
                   "groupId": "groupId",
                   "name": "group",
                   "description": "description",
@@ -4006,6 +4014,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "groupKey": -1,
+                  "policyVersion": 0,
                   "groupId": "groupId",
                   "name": "",
                   "description": "",
@@ -4032,6 +4041,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "mappingRuleKey": 1,
+                  "policyVersion": 0,
                   "claimName": "claimName",
                   "claimValue": "claimValue",
                   "mappingRuleId": "id1",
@@ -4051,6 +4061,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "mappingRuleKey": -1,
+                  "policyVersion": 0,
                   "mappingRuleId": "mappingRuleId",
                   "claimName": "",
                   "claimValue": "",
@@ -4137,6 +4148,7 @@ final class JsonSerializableToJsonTest {
                   "roles": [
                     {
                       "roleKey": 1,
+                      "policyVersion": 0,
                       "roleId": "id",
                       "name": "roleName",
                       "description": "description",
@@ -4147,6 +4159,7 @@ final class JsonSerializableToJsonTest {
                   "roleMembers": [
                     {
                       "roleKey": -1,
+                      "policyVersion": 0,
                       "roleId": "id",
                       "name": "",
                       "description": "",
@@ -4172,6 +4185,7 @@ final class JsonSerializableToJsonTest {
                   ],
                   "defaultTenant": {
                     "tenantKey": 5,
+                    "policyVersion": 0,
                     "tenantId": "id",
                     "name": "name",
                     "description": "",
@@ -4181,6 +4195,7 @@ final class JsonSerializableToJsonTest {
                   "tenants": [
                     {
                       "tenantKey": 42,
+                      "policyVersion": 0,
                       "tenantId": "foo",
                       "name": "Foo",
                       "description": "",
@@ -4191,6 +4206,7 @@ final class JsonSerializableToJsonTest {
                   "tenantMembers": [
                     {
                       "tenantKey": -1,
+                      "policyVersion": 0,
                       "tenantId": "id",
                       "name": "",
                       "description": "",
@@ -4201,6 +4217,7 @@ final class JsonSerializableToJsonTest {
                   "mappingRules": [
                     {
                       "mappingRuleKey": 6,
+                      "policyVersion": 0,
                       "mappingRuleId": "id1",
                       "claimName": "claim1",
                       "claimValue": "value1",
@@ -4208,6 +4225,7 @@ final class JsonSerializableToJsonTest {
                     },
                     {
                       "mappingRuleKey": 7,
+                      "policyVersion": 0,
                       "mappingRuleId": "id2",
                       "claimName": "claim2",
                       "claimValue": "value2",
@@ -4217,6 +4235,7 @@ final class JsonSerializableToJsonTest {
                   "authorizations": [
                     {
                       "authorizationKey": -1,
+                      "policyVersion": 0,
                       "ownerId": "id2",
                       "ownerType": "MAPPING_RULE",
                       "resourceMatcher": "ID",
@@ -4229,6 +4248,7 @@ final class JsonSerializableToJsonTest {
                   "groups": [
                     {
                       "groupKey": -1,
+                      "policyVersion": 0,
                       "groupId": "group1",
                       "name": "Group 1",
                       "description": "",
@@ -4239,6 +4259,7 @@ final class JsonSerializableToJsonTest {
                   "groupMembers": [
                     {
                       "groupKey": -1,
+                      "policyVersion": 0,
                       "groupId": "group1",
                       "name": "",
                       "description": "",
@@ -4266,6 +4287,7 @@ final class JsonSerializableToJsonTest {
                     "users": [],
                     "defaultTenant": {
                         "tenantKey": -1,
+                        "policyVersion": 0,
                         "tenantId": "tenantId",
                         "name": "",
                         "description": "",

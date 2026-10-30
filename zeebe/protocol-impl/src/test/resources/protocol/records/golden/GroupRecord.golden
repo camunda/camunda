@@ -36,14 +36,17 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
 
+  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
+
   public GroupRecord() {
-    super(6);
+    super(7);
     declareProperty(groupKeyProp)
         .declareProperty(groupId)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
         .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
+    declareProperty(policyVersionProp);
   }
 
   @Override
@@ -114,5 +117,15 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
+  }
+
+  @Override
+  public long getPolicyVersion() {
+    return policyVersionProp.getValue();
+  }
+
+  public GroupRecord setPolicyVersion(final long policyVersion) {
+    policyVersionProp.setValue(policyVersion);
+    return this;
   }
 }

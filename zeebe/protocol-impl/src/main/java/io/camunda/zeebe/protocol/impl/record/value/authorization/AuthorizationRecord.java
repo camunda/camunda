@@ -56,8 +56,10 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> permissionTypesProp =
       new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
 
+  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
+
   public AuthorizationRecord() {
-    super(8);
+    super(9);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
@@ -66,6 +68,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
         .declareProperty(resourcePropertyNameProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
+    declareProperty(policyVersionProp);
   }
 
   @Override
@@ -152,6 +155,16 @@ public final class AuthorizationRecord extends UnifiedRecordValue
 
   public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
     ownerTypeProp.setValue(ownerType);
+    return this;
+  }
+
+  @Override
+  public long getPolicyVersion() {
+    return policyVersionProp.getValue();
+  }
+
+  public AuthorizationRecord setPolicyVersion(final long policyVersion) {
+    policyVersionProp.setValue(policyVersion);
     return this;
   }
 }
