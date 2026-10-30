@@ -2459,7 +2459,8 @@
 					"canceled": "Annulé",
 					"completed": "Terminé",
 					"evaluated": "Évalué",
-					"failed": "Échoué"
+					"failed": "Échoué",
+					"pending": "modification en attente"
 				},
 				"modificationBadge": {
 					"added": "{{count}} ajouté(s)",
