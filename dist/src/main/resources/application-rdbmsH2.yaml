@@ -10,4 +10,4 @@ camunda:
         password:
 logging:
   level:
-    io.camunda.db.rdbms: DEBUG
+    io.camunda.db.rdbms: TRACE
