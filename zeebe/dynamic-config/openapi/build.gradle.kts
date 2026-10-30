@@ -68,7 +68,7 @@ val syncOpenApiGeneratedSources =
 sourceSets { main { java { srcDir(syncOpenApiGeneratedSources) } } }
 
 dependencies {
-  api(project(":zeebe-atomix-cluster"))
+  api(project(":camunda-cluster"))
   implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)

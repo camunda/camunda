@@ -33,7 +33,6 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   api(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-util"))
-  implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
   implementation(libs.io.camunda.security.library.spring.boot.starter)

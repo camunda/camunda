@@ -9,12 +9,12 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static org.agrona.collections.ArrayUtil.EMPTY_BYTE_ARRAY;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
-import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.UnsupportedEncodingException;
@@ -80,7 +80,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     if (!hasBrokerId()) {
       return null;
     }
-    return MemberIdUtil.memberIdString(zone, brokerId);
+    return MemberId.memberIdString(zone, brokerId);
   }
 
   public BackupStatusResponse setBrokerId(final int brokerId, final @Nullable String zone) {

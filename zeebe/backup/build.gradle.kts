@@ -3,10 +3,9 @@ import buildlogic.ArtifactKind
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
-  implementation(project(":camunda-cluster"))
+  api(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-scheduler"))
-  api(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-db"))

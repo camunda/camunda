@@ -22,7 +22,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
   api(libs.org.reactivestreams.reactive.streams)
   implementation(project(":zeebe-util"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   testImplementation(project(":zeebe-backup-testkit"))
   testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))

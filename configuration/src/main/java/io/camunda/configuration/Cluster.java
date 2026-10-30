@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.cluster.Membership;
 import io.camunda.configuration.cluster.Metadata;
@@ -21,7 +22,6 @@ import io.camunda.configuration.cluster.Partitioning;
 import io.camunda.configuration.cluster.Raft;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.util.MemberIdUtil;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -352,7 +352,7 @@ public class Cluster implements Cloneable {
 
   public void setZone(final String zone) {
     try {
-      this.zone = MemberIdUtil.validateZone(zone);
+      this.zone = MemberId.validateZone(zone);
     } catch (final IllegalArgumentException e) {
       throw new UnifiedConfigurationException(e);
     }
