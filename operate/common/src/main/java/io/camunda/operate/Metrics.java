@@ -66,6 +66,7 @@ public class Metrics {
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
+  public static final String GAUGE_NAME_IMPORT_POSITION = OPERATE_NAMESPACE + "import.position";
   public static final String GAUGE_POST_IMPORTER_QUEUE_SIZE =
       OPERATE_NAMESPACE + "post.importer.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";

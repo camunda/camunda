@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,12 +46,17 @@ public class ImportPositionHolder {
   private final Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
   private final Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
 
+  // highest Zeebe log position imported per partition, over all record types (metric only)
+  private final Map<Integer, AtomicLong> importedPositionByPartition = new ConcurrentHashMap<>();
+
   private ScheduledFuture<?> scheduledImportPositionUpdateTask;
   private final ReentrantLock inflightImportPositionLock = new ReentrantLock();
 
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private ImportStore importStore;
+
+  @Autowired private Metrics metrics;
 
   @Autowired
   @Qualifier("importPositionUpdateThreadPoolExecutor")
@@ -92,6 +99,8 @@ public class ImportPositionHolder {
       final ImportPositionEntity latestLoadedPosition =
           getLatestLoadedPosition(aliasTemplate, partitionId);
       lastScheduledPositions.put(key, latestLoadedPosition);
+      // the persisted position was imported before a restart
+      updateImportedPositionMetric(latestLoadedPosition);
       return latestLoadedPosition;
     }
   }
@@ -126,6 +135,7 @@ public class ImportPositionHolder {
           }
           inflightImportPositions.put(key, importPosition);
         });
+    updateImportedPositionMetric(lastProcessedPosition);
   }
 
   public void recordLatestPostImportedPosition(
@@ -173,6 +183,7 @@ public class ImportPositionHolder {
   }
 
   public void clearCache() {
+    importedPositionByPartition.values().forEach(position -> position.set(0));
     lastScheduledPositions.clear();
     pendingImportPositionUpdates.clear();
     pendingPostImportPositionUpdates.clear();
@@ -182,6 +193,32 @@ public class ImportPositionHolder {
           inflightImportPositions.clear();
           inflightPostImportPositions.clear();
         });
+  }
+
+  /**
+   * Publishes, per partition, the highest Zeebe log position of all records imported so far (over
+   * all record types) as gauge {@code operate.import.position}. Same unit as Zeebe's {@code
+   * zeebe.exporter.last.exported.position}; the difference is how far the importer is behind.
+   */
+  private void updateImportedPositionMetric(final ImportPositionEntity importedPosition) {
+    if (importedPosition == null
+        || !operateProperties.getImporter().isImportPositionMetricEnabled()) {
+      return;
+    }
+    importedPositionByPartition
+        .computeIfAbsent(importedPosition.getPartitionId(), this::registerImportedPositionGauge)
+        .accumulateAndGet(importedPosition.getPosition(), Math::max);
+  }
+
+  private AtomicLong registerImportedPositionGauge(final int partitionId) {
+    final AtomicLong position = new AtomicLong();
+    metrics.registerGauge(
+        Metrics.GAUGE_NAME_IMPORT_POSITION,
+        position,
+        AtomicLong::get,
+        Metrics.TAG_KEY_PARTITION,
+        String.valueOf(partitionId));
+    return position;
   }
 
   private String getKey(final String aliasTemplate, final int partitionId) {
