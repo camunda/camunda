@@ -645,6 +645,47 @@ class SecretsTest {
   }
 
   @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.env.default.prefix=APP_SECRET_"})
+  class WithEnvStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEnvStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindEnvStorePrefix() {
+      // given the property camunda.secrets.stores.env.default.prefix is set (see
+      // @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named env store is present and its prefix is bound
+      assertThat(secrets.getStores().getEnv()).containsOnlyKeys("default");
+      assertThat(secrets.getStores().getEnv().get("default").getPrefix()).isEqualTo("APP_SECRET_");
+    }
+  }
+
+  @Nested
+  class WithoutEnvStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutEnvStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyEnvMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the env map is empty
+      assertThat(secrets.getStores().getEnv()).isEmpty();
+    }
+  }
+
+  @Nested
   class WithoutCacheConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
 

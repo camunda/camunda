@@ -366,6 +366,68 @@ class PhysicalTenantSecretsOverlayTest {
   }
 
   @Test
+  void shouldOverlayEnvStorePrefixPerTenant() {
+    // given a root env store and two tenants that each override its prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "ROOT_SECRET_",
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                    "TENANTA_SECRET_",
+                "camunda.physical-tenants.tenantb.secrets.stores.env.default.prefix",
+                    "TENANTB_SECRET_")),
+        "tenanta",
+        "tenantb");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then each tenant gets its own prefix and the synthesized default keeps the root one
+    assertThat(envPrefixOf(resolver, "tenanta")).isEqualTo("TENANTA_SECRET_");
+    assertThat(envPrefixOf(resolver, "tenantb")).isEqualTo("TENANTB_SECRET_");
+    assertThat(envPrefixOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo("ROOT_SECRET_");
+  }
+
+  @Test
+  void shouldInheritRootEnvStoreWhenTenantHasNoSecretsOverride() {
+    // given only a root env store; the tenant overrides no secrets field
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.env.default.prefix", "ROOT_SECRET_")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits the root store (non-overridden -> seeded from root bind)
+    assertThat(envPrefixOf(resolver, "tenanta")).isEqualTo("ROOT_SECRET_");
+  }
+
+  @Test
+  void shouldConfigureEnvStoreForOnlyTheTenantThatDeclaresIt() {
+    // given an env store declared only under tenanta, not at the root
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                "TENANTA_SECRET_")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then only tenanta has the env store; the synthesized default has none
+    assertThat(envPrefixOf(resolver, "tenanta")).isEqualTo("TENANTA_SECRET_");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getEnv())
+        .isEmpty();
+  }
+
+  @Test
   void shouldOverlayCacheTtlPerTenant() {
     // given a root cache ttl and a tenant that overrides it
     setProperties(
@@ -456,6 +518,16 @@ class PhysicalTenantSecretsOverlayTest {
       assertThat(cacheOf(resolver, tenantId).getTtl()).isEqualTo(Duration.ofMinutes(20));
       assertThat(cacheOf(resolver, tenantId).getMaxSize()).isEqualTo(1000);
     }
+  }
+
+  private static String envPrefixOf(final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver
+        .forPhysicalTenant(tenantId)
+        .getSecrets()
+        .getStores()
+        .getEnv()
+        .get("default")
+        .getPrefix();
   }
 
   private Secrets.Cache cacheOf(final PhysicalTenantResolver resolver, final String tenantId) {
