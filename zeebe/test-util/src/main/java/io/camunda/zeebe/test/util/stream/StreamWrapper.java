@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -66,13 +65,7 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
     // and the underlying record iterator blocks on hasNext()
 
     final var records = new ArrayList<T>();
-    final var index = new AtomicInteger();
-    final var unused =
-        wrappedStream
-            .peek(records::add)
-            .filter(record -> predicate.test(record) && index.getAndIncrement() < count)
-            .limit(count)
-            .count();
+    wrappedStream.peek(records::add).filter(predicate).limit(count).forEach(record -> {});
     return supply(records.stream());
   }
 
