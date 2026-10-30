@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.LocalDateTime;
@@ -61,6 +63,7 @@ import org.mockito.Mockito;
 class RdbmsExporterTest {
 
   private static final String PHYSICAL_TENANT_ID = "mytenant";
+  private static final int RECORD_LENGTH = 123;
   private Controller controller;
   private RdbmsWriters rdbmsWriters;
   private RdbmsExporter exporter;
@@ -107,6 +110,24 @@ class RdbmsExporterTest {
     verify(jobHandler).export(record);
     verify(otherJobHandler, never()).export(record);
     verify(piHandler, never()).export(record);
+  }
+
+  @Test
+  void shouldCountExportedRecordsTowardsTheQueueMemoryLimit() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var otherHandler = mockHandler(ValueType.PROCESS_INSTANCE);
+    createExporter(
+        b ->
+            b.withHandler(ValueType.JOB, jobHandler)
+                .withHandler(ValueType.PROCESS_INSTANCE, otherHandler));
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    exporter.export(mockRecord(ValueType.INCIDENT, 2));
+
+    // then
+    verify(executionQueue).addEstimatedBytes(RECORD_LENGTH);
   }
 
   @Test
@@ -828,9 +849,10 @@ class RdbmsExporterTest {
   }
 
   private Record mockRecord(final ValueType valueType, final long position) {
-    final var record = mock(Record.class);
+    final var record = mock(Record.class, withSettings().extraInterfaces(WrittenRecord.class));
     when(record.getValueType()).thenReturn(valueType);
     when(record.getPosition()).thenReturn(position);
+    when(((WrittenRecord) record).getRawLength()).thenReturn(RECORD_LENGTH);
 
     return record;
   }
@@ -973,6 +995,11 @@ class RdbmsExporterTest {
     @Override
     public boolean tryMergeWithExistingQueueItem(final QueueItemMerger combiners) {
       return false;
+    }
+
+    @Override
+    public void addEstimatedBytes(final long bytes) {
+      // no-op
     }
 
     @Override

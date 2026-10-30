@@ -65,6 +65,14 @@ public interface ExecutionQueue {
   boolean tryMergeWithExistingQueueItem(QueueItemMerger merger);
 
   /**
+   * Counts the given bytes towards the memory limit until the next flush. The exporter adds the
+   * size of each record it queued items for, as an estimate of the memory those items take.
+   *
+   * @param bytes the estimated size of what was queued
+   */
+  void addEstimatedBytes(long bytes);
+
+  /**
    * Checks if the queue has reached its flush limit and flushes if necessary. Does nothing if no
    * flush limit is configured (both queueFlushLimit <= 0 and queueMemoryLimit <= 0).
    *

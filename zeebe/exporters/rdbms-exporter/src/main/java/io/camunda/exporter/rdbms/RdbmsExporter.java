@@ -25,6 +25,7 @@ import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -281,6 +282,7 @@ public final class RdbmsExporter {
         if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
           oldestRecordTimestampInBatch = recordTimestamp;
         }
+        rdbmsWriters.getExecutionQueue().addEstimatedBytes(RecordSizes.of(record));
       }
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here. When a flush fails
