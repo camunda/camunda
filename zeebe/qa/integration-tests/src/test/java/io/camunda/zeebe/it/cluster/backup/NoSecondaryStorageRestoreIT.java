@@ -37,6 +37,9 @@ final class NoSecondaryStorageRestoreIT extends NoSecondaryStorageRestoreTestBas
     try (final var restoreApp = testRestoreApp(request)) {
       restoreApp.start();
     }
+    // the broker restarts configured like the restore, so only the restored topology can bring
+    // the partitions back to the backup's
+    broker.unifiedConfig().getCluster().setPartitionCount(configuredPartitionCount);
     broker.start();
   }
 
