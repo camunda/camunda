@@ -259,7 +259,17 @@ registerProject(":zeebe-expression-language", "zeebe/expression-language")
 
 registerProject(":zeebe-backup-testkit", "zeebe/backup-stores/testkit")
 
-registerProject(":zeebe-workflow-engine", "zeebe/engine")
+registerProject(":zeebe-workflow-engine-model", "zeebe/engine/model")
+registerProject(":zeebe-workflow-engine-state-api", "zeebe/engine/state-api")
+registerProject(":zeebe-workflow-engine-state-mutable-api", "zeebe/engine/state-mutable-api")
+registerProject(":zeebe-workflow-engine-state", "zeebe/engine/state")
+registerProject(":zeebe-workflow-engine-appliers", "zeebe/engine/appliers")
+registerProject(":zeebe-workflow-engine-processors", "zeebe/engine/processors")
+registerProject(":zeebe-workflow-engine", "zeebe/engine/engine")
+
+registerProject(":zeebe-workflow-engine-common", "zeebe/engine/common")
+
+registerProject(":zeebe-workflow-engine-api", "zeebe/engine/api")
 
 registerProject(":document-api", "document/api")
 
