@@ -25,13 +25,17 @@ import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -70,6 +74,7 @@ import org.springframework.util.unit.DataSize;
 abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
   protected static final int PARTITION_COUNT = 2;
+  private static final int SCALED_PARTITION_COUNT = PARTITION_COUNT + 1;
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
   private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
@@ -85,6 +90,12 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
           .withUnifiedConfig(this::configureBroker);
+
+  /**
+   * The partition count the restore is configured with, which a scale up raises above the backups'
+   * partitions.
+   */
+  protected int configuredPartitionCount = PARTITION_COUNT;
 
   private BackupActuator backupActuator;
   private ExporterPositionMapper exporterPositionMapper;
@@ -289,6 +300,56 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         "Cannot find a record at checkpoint position");
   }
 
+  @Test
+  void shouldRestoreTheBackupsPartitionsAfterAScaleUp() throws Exception {
+    // given - a backup covering the exported positions of the 2 partitions
+    final List<Long> backedUp;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstancesOnEveryPartition(client);
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+
+    // and - the cluster is scaled up to 3 partitions
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+
+    // and - the RDBMS is restored to the backup's point, so it only holds exported positions for
+    // the backup's 2 partitions, not for the one added by the scale up
+    final var dataSource =
+        broker.bean(RdbmsDataSources.class).dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement()) {
+      statement.executeUpdate(
+          "DELETE FROM EXPORTER_POSITION WHERE PARTITION_ID > " + PARTITION_COUNT);
+      connection.commit();
+    }
+
+    // when - restoring the latest common checkpoint of the partitions the RDBMS holds
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.latest());
+
+    // then - only the backup's partitions are restored
+    assertOnlyInstancesRestored(backedUp);
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+
+    // and - the group routes over them again. After the standalone restore the broker takes the
+    // routing state from the restored data once it is up, so it settles shortly after.
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
+  }
+
   /**
    * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
@@ -371,6 +432,32 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
                         assertThat(details.getCheckpointPosition())
                             .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
                       });
+            });
+  }
+
+  /**
+   * Scales the cluster up. The broker's clock is pinned, so the configuration change only makes
+   * progress, e.g. through a retry backoff, when the clock is moved on, which every poll here does.
+   */
+  private void scaleUp(final ClusterActuator clusterActuator, final int partitionCount) {
+    final var scaleUp =
+        clusterActuator.patchCluster(
+            new ClusterConfigPatchRequest()
+                .partitions(
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(partitionCount)
+                        .replicationFactor(1)),
+            false,
+            false);
+    await("cluster is scaled up to %d partitions".formatted(partitionCount))
+        .timeout(Duration.ofSeconds(90))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 3000);
+              ClusterActuatorAssert.assertThat(clusterActuator)
+                  .hasCompletedChanges(scaleUp.getChangeId())
+                  .doesNotHavePendingChanges();
             });
   }
 
