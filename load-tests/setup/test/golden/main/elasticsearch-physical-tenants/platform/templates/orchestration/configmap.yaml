@@ -192,6 +192,21 @@ data:
               - CREATE
               resourceId: '*'
               resourceType: MESSAGE
+            - ownerId: orchestration
+              ownerType: CLIENT
+              permissions:
+              - CREATE_DECISION_INSTANCE
+              - DELETE_DECISION_INSTANCE
+              - READ_DECISION_DEFINITION
+              - READ_DECISION_INSTANCE
+              resourceId: '*'
+              resourceType: DECISION_DEFINITION
+            - ownerId: orchestration
+              ownerType: CLIENT
+              permissions:
+              - EVALUATE
+              resourceId: '*'
+              resourceType: EXPRESSION
         multiTenancy:
           checksEnabled: false
           apiEnabled: true
