@@ -58,6 +58,7 @@ public final class DeployResourceCommandImpl
 
   private static final String RESOURCES_FIELD_NAME = "resources";
   private static final String TENANT_FIELD_NAME = "tenantId";
+  private static final String OPERATION_REFERENCE_FIELD_NAME = "operationReference";
 
   private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
@@ -68,6 +69,7 @@ public final class DeployResourceCommandImpl
   private boolean useRest;
   private final JsonMapper jsonMapper;
   private String tenantId;
+  private Long operationReference;
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
@@ -201,6 +203,13 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
+  public DeployResourceCommandStep2 operationReference(final long operationReference) {
+    this.operationReference = operationReference;
+    requestBuilder.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public DeployResourceCommandStep2 useRest() {
     useRest = true;
     return this;
@@ -223,6 +232,10 @@ public final class DeployResourceCommandImpl
           resource.getName());
     }
     multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
+    if (operationReference != null) {
+      multipartEntityBuilder.addTextBody(
+          OPERATION_REFERENCE_FIELD_NAME, String.valueOf(operationReference));
+    }
 
     final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
     httpClient.postMultipart(

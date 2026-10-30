@@ -54,6 +54,26 @@ public final class BroadcastSignalTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long key = 123;
+    gatewayService.onBroadcastSignalRequest(key);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newBroadcastSignalCommand()
+        .signalName("name")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final BroadcastSignalRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldBroadcastSignalWithStringVariables() {
     // when
     client

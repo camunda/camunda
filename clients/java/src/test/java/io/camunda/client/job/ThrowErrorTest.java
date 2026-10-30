@@ -86,6 +86,26 @@ public final class ThrowErrorTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final long operationReference = 456;
+
+    // when
+    client
+        .newThrowErrorCommand(jobKey)
+        .errorCode(errorCode)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldThrowErrorWithJobLeaseToken() {
     // given
     final long jobKey = 12;

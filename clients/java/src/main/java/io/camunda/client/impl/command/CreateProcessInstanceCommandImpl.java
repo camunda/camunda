@@ -172,6 +172,13 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     grpcRequestObjectBuilder.setBpmnProcessId(id);
     httpRequestObject.setProcessDefinitionId(id);

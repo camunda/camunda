@@ -65,6 +65,20 @@ class CompleteJobRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    // given
+    final long jobKey = 12;
+    final long operationReference = 456;
+
+    // when
+    client.newCompleteCommand(jobKey).operationReference(operationReference).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   void shouldCompleteJob() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);

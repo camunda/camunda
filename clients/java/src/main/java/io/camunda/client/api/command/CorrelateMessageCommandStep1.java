@@ -56,7 +56,8 @@ public interface CorrelateMessageCommandStep1 {
   interface CorrelateMessageCommandStep3
       extends CommandWithTenantStep<CorrelateMessageCommandStep3>,
           FinalCommandStep<CorrelateMessageResponse>,
-          CommandWithVariables<CorrelateMessageCommandStep3> {
+          CommandWithVariables<CorrelateMessageCommandStep3>,
+          CommandWithOperationReferenceStep<CorrelateMessageCommandStep3> {
 
     /**
      * Set the business id of the message.

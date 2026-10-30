@@ -36,7 +36,8 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
 
   interface FailJobCommandStep2
       extends JobCallbackFinalCommandStep<FailJobResponse>,
-          CommandWithVariables<FailJobCommandStep2> {
+          CommandWithVariables<FailJobCommandStep2>,
+          CommandWithOperationReferenceStep<FailJobCommandStep2> {
     // the place for new optional parameters
 
     /**

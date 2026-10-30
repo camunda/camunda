@@ -76,6 +76,25 @@ public final class DeployResourceTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final String path = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
+    final long operationReference = 456;
+
+    // when
+    client
+        .newDeployResourceCommand()
+        .addResourceFile(path)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final DeployResourceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldDeployRequestFromClasspath() {
     // given
     final String filename = BPMN_1_FILENAME.substring(1);

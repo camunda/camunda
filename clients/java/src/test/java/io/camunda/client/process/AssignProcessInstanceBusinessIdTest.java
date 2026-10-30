@@ -41,4 +41,23 @@ public class AssignProcessInstanceBusinessIdTest extends ClientTest {
     assertThat(request.getProcessInstanceKey()).isEqualTo(PI_KEY);
     assertThat(request.getBusinessId()).isEqualTo(BUSINESS_ID);
   }
+
+  @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client
+        .newAssignProcessInstanceBusinessIdCommand(PI_KEY)
+        .useGrpc()
+        .businessId(BUSINESS_ID)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final AssignProcessInstanceBusinessIdRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
 }

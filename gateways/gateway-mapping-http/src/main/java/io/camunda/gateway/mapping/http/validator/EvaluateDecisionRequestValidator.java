@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDecisionDefinitionId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
 import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
@@ -31,6 +32,7 @@ public class EvaluateDecisionRequestValidator {
             }
             validateKeyFormat(
                 byKey.getDecisionDefinitionKey(), "decisionDefinitionKey", violations);
+            validateOperationReference(byKey.getOperationReference(), violations);
           });
     }
     if (request instanceof final DecisionEvaluationById byId) {
@@ -42,6 +44,7 @@ public class EvaluateDecisionRequestValidator {
                       "[decisionDefinitionId, decisionDefinitionKey]"));
             }
             validateDecisionDefinitionId(byId.getDecisionDefinitionId(), violations);
+            validateOperationReference(byId.getOperationReference(), violations);
           });
     }
     return Optional.empty();

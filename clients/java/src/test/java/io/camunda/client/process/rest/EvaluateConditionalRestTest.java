@@ -59,6 +59,26 @@ public class EvaluateConditionalRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onEvaluateConditionalRequest(DUMMY_RESPONSE);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newEvaluateConditionalCommand()
+        .variables("{\"foo\":\"bar\"}")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final ConditionalEvaluationInstruction request =
+        gatewayService.getLastRequest(ConditionalEvaluationInstruction.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldEvaluateConditionalWithInputStreamVariables() {
     // given
     final String variables = "{\"foo\":\"bar\",\"baz\":42}";

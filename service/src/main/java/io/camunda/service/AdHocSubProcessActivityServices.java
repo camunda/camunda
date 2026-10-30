@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public class AdHocSubProcessActivityServices
     extends PhysicalTenantScopedApiServices<AdHocSubProcessActivityServices> {
@@ -49,6 +50,9 @@ public class AdHocSubProcessActivityServices
                     element.elementId(), getDocumentOrEmpty(element.variables())));
 
     brokerRequest.cancelRemainingInstances(request.cancelRemainingInstances());
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
 
     return sendBrokerRequest(brokerRequest, authentication);
   }
@@ -56,7 +60,8 @@ public class AdHocSubProcessActivityServices
   public record AdHocSubProcessActivateActivitiesRequest(
       long adHocSubProcessInstanceKey,
       List<AdHocSubProcessActivateActivityReference> elements,
-      boolean cancelRemainingInstances) {
+      boolean cancelRemainingInstances,
+      @Nullable Long operationReference) {
     public record AdHocSubProcessActivateActivityReference(
         String elementId, Map<String, Object> variables) {}
   }

@@ -93,6 +93,13 @@ public final class BroadcastSignalCommandImpl
   }
 
   @Override
+  public BroadcastSignalCommandStep2 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<BroadcastSignalResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);

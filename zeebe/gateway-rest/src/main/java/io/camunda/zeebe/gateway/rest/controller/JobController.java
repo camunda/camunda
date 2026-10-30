@@ -105,7 +105,10 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return failJob(physicalTenantId, RequestMapper.toJobFailRequest(failureRequest, jobKey));
+    return RequestMapper.toJobFailRequest(failureRequest, jobKey)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> failJob(physicalTenantId, request));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/error")
@@ -243,6 +246,7 @@ public class JobController {
                 failJobRequest.retryBackoff(),
                 failJobRequest.variables(),
                 failJobRequest.jobLeaseToken(),
+                failJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -257,6 +261,7 @@ public class JobController {
                 errorJobRequest.errorMessage(),
                 errorJobRequest.variables(),
                 errorJobRequest.jobLeaseToken(),
+                errorJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -271,6 +276,7 @@ public class JobController {
                 completeJobRequest.result(),
                 completeJobRequest.jobLeaseToken(),
                 completeJobRequest.businessId(),
+                completeJobRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 

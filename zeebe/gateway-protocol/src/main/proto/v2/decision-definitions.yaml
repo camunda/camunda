@@ -384,8 +384,13 @@ components:
           description: The tenant ID of the decision.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - decisionDefinitionId
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     DecisionEvaluationByKey:
       type: object
@@ -402,8 +407,13 @@ components:
           description: The tenant ID of the decision.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - decisionDefinitionKey
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     EvaluateDecisionResult:
       x-semantic-provider:

@@ -124,6 +124,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Long retryBackOff,
       final Map<String, Object> variables,
       final String jobLeaseToken,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
@@ -131,6 +132,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setErrorMessage(errorMessage);
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
+    }
+    if (operationReference != null) {
+      request.setOperationReference(operationReference);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -141,6 +145,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Map<String, Object> variables,
       final String jobLeaseToken,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
@@ -148,6 +153,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setVariables(getDocumentOrEmpty(variables));
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
+    }
+    if (operationReference != null) {
+      request.setOperationReference(operationReference);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -158,6 +166,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final JobResult result,
       final String jobLeaseToken,
       final String businessId,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerCompleteJobRequest(
@@ -167,6 +176,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     }
     if (businessId != null) {
       request.setBusinessId(businessId);
+    }
+    if (operationReference != null) {
+      request.setOperationReference(operationReference);
     }
     return sendBrokerRequest(request, authentication);
   }
