@@ -356,6 +356,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-log-records</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

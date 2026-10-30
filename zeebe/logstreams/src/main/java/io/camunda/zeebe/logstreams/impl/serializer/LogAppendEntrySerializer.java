@@ -7,18 +7,19 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setVersion;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.zeroReserved;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.metadataOffset;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setKey;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setMetadataLength;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setPosition;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setSourceEventPosition;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setTimestamp;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.setVersion;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.skipProcessing;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.valueOffset;
+import static io.camunda.zeebe.log.records.LogEntryDescriptor.zeroReserved;
 
-import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.log.records.DataFrameDescriptor;
+import io.camunda.zeebe.log.records.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;

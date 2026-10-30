@@ -5,10 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.log.records;
 
-import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;

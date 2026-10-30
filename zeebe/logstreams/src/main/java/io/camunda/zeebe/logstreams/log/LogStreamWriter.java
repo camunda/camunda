@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
-import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.log.records.LogEntryDescriptor;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;

@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import io.camunda.zeebe.log.records.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;

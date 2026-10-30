@@ -50,6 +50,7 @@
     <module>exporters/opensearch-exporter</module>
     <module>exporters/rdbms-exporter</module>
     <module>protocol-impl</module>
+    <module>log-records</module>
     <module>protocol-jackson</module>
     <module>zb-db</module>
     <module>expression-language</module>

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Iterator;

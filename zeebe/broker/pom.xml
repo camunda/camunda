@@ -494,6 +494,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-log-records</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

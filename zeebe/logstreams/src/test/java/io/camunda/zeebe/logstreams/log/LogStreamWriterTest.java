@@ -10,8 +10,9 @@ package io.camunda.zeebe.logstreams.log;
 import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertThatEntry;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
-import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.log.records.LogEntryDescriptor;
+import io.camunda.zeebe.log.records.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;

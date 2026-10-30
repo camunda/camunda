@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.logstreams.impl.serializer;
+package io.camunda.zeebe.log.records;
 
 import static org.agrona.BitUtil.align;
 
@@ -14,7 +14,7 @@ import org.agrona.MutableDirectBuffer;
 /**
  * Remnants of the dispatcher data framing. A 12 byte header starting with the frame length. The
  * rest of the 12 bytes are unused. This is kept for backwards-compatibility reasons because {@link
- * io.camunda.zeebe.logstreams.log.LoggedEvent} still expects this header.
+ * io.camunda.zeebe.log.records.LoggedEvent} still expects this header.
  */
 public final class DataFrameDescriptor {
   public static final int FRAME_LENGTH_OFFSET = 0;
