@@ -1,0 +1,365 @@
+# description: AI-assisted code quality pipeline. Runs CodeQL on hotspot modules,
+#              then (in later phases) feeds findings to an AI agent that classifies
+#              them and either opens a PR with a fix (PR track) or a GitHub issue
+#              for human triage (issue track). All AI-generated PRs require a
+#              human reviewer before merge.
+# type: CI / Quality
+# owner: @camunda/monorepo-devops-team
+
+name: Code Quality AI Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_tickets:
+        description: "Max issues / PRs to open (per run)"
+        type: number
+        default: 1
+      max_triage:
+        description: "Max findings to send through AI triage (per run)"
+        type: number
+        default: 20
+      dry_run:
+        description: "Dry run — don't actually open PRs / issues, just print what would be created"
+        type: boolean
+        default: false
+      static_scan:
+        description: "Static scan — skip hotspot / BigQuery analysis and scan static_scan_paths directly"
+        type: boolean
+        default: false
+      static_scan_paths:
+        description: "Comma-separated paths to scan when static_scan is true (e.g. zeebe/engine,zeebe/broker)"
+        type: string
+        default: "zeebe/engine"
+  #push:
+  #  branches:
+  #    - feat/ai-code-quality-pipeline
+  # Nightly schedule disabled while the pipeline is under team review.
+  # Re-enable by uncommenting the block below once the scaffold is approved.
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: code-quality-ai-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CODE_MAAT_VERSION: "1.0.4"
+  MAX_TICKETS: ${{ inputs.max_tickets || 1 }}
+  MAX_TRIAGE: ${{ inputs.max_triage || 20 }}
+  DRY_RUN: false
+
+jobs:
+  hotspots:
+    name: Stage 1 — hotspot identification (code-maat)
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      paths_count: ${{ steps.generate.outputs.paths_count }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: .github/scripts/code-quality-ai/package-lock.json
+
+      - name: Install hotspot dependencies
+        working-directory: .github/scripts/code-quality-ai
+        run: npm ci --no-audit --no-fund
+
+      - name: Download code-maat JAR
+        if: ${{ !inputs.static_scan }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p code-maat
+          gh release download "v${CODE_MAAT_VERSION}" \
+            --repo adamtornhill/code-maat \
+            --pattern "code-maat-${CODE_MAAT_VERSION}-standalone.jar" \
+            --dir code-maat
+          echo "CODE_MAAT_JAR=$GITHUB_WORKSPACE/code-maat/code-maat-${CODE_MAAT_VERSION}-standalone.jar" >> "$GITHUB_ENV"
+
+      - name: Run hotspot analysis
+        if: ${{ !inputs.static_scan }}
+        run: |
+          node .github/scripts/code-quality-ai/hotspots.js \
+            --jar "$CODE_MAAT_JAR" \
+            --since "90 days ago" \
+            --path-prefix "^zeebe/engine/" \
+            --top 50 \
+            --format tsv \
+            > hotspots.tsv
+          echo "Hotspot summary:"
+          cat hotspots.tsv
+
+      - name: Import Secrets
+        if: ${{ !inputs.static_scan }}
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        if: ${{ !inputs.static_scan }}
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        if: ${{ !inputs.static_scan }}
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Query top failing tests from BigQuery
+        if: ${{ !inputs.static_scan }}
+        run: |
+          set -euo pipefail
+
+          # shellcheck disable=SC2016
+          TOP10_FAILING=$(bq query --format=json --use_legacy_sql=false --quiet=true \
+            'SELECT test_class_name, COUNT(*) AS failure_count
+             FROM `ci-30-162810.prod_ci_analytics.test_status_v1`
+             WHERE report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+               AND ci_url = "https://github.com/camunda/camunda"
+               AND test_status = "flaky"
+             GROUP BY test_class_name
+             ORDER BY failure_count DESC
+             LIMIT 10')
+
+          SOURCE_FILES=()
+          while IFS= read -r row; do
+            FQCN=$(echo "$row" | jq -r '.test_class_name')
+            REL_PATH="${FQCN//./\/}.java"
+            SOURCE_FILE=$(git ls-files "**/src/test/java/${REL_PATH}" 2>/dev/null | head -n 1)
+            if [[ -z "$SOURCE_FILE" ]]; then
+              SOURCE_FILE=$(git ls-files "**/src/*Test/java/${REL_PATH}" 2>/dev/null | head -n 1)
+            fi
+            if [[ -n "$SOURCE_FILE" ]]; then
+              SOURCE_FILES+=("$SOURCE_FILE")
+            fi
+          done < <(echo "$TOP10_FAILING" | jq -c '.[]')
+
+          if [[ ${#SOURCE_FILES[@]} -gt 0 ]]; then
+            printf '%s\n' "${SOURCE_FILES[@]}" | sort -u | jq -R . | jq -s . > failing-test-paths.json
+          else
+            echo '[]' > failing-test-paths.json
+          fi
+
+          echo "Failing-test source files:"
+          cat failing-test-paths.json
+
+      - name: Generate dynamic CodeQL config
+        id: generate
+        run: |
+          if [[ "${{ inputs.static_scan }}" == "true" ]]; then
+            # Static mode: convert comma-separated input directly to JSON array
+            PATHS_JSON=$(echo "${{ inputs.static_scan_paths }}" \
+              | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' \
+              | jq -R . | jq -s .)
+          else
+            HOTSPOT_PATHS=$(tail -n +2 hotspots.tsv | awk -F'\t' '{print $4}' | jq -R . | jq -s .)
+            FAILING_TEST_PATHS=$(cat failing-test-paths.json)
+
+            # Merge hotspot paths with failing-test module paths, deduplicated
+            PATHS_JSON=$(jq -s '(.[0] + .[1]) | unique' \
+              <(echo "$HOTSPOT_PATHS") <(echo "$FAILING_TEST_PATHS"))
+          fi
+
+          if [ -z "$PATHS_JSON" ] || [ "$PATHS_JSON" = "[]" ]; then
+            echo "No paths produced; falling back to module path." >&2
+            PATHS_JSON='["zeebe/engine"]'
+          fi
+
+          # Splice the merged paths into the static codeql-config.yml.
+          # Everything else (queries, query-filters, paths-ignore) is
+          # owned by that file — edit it there, not here.
+          yq ".paths = $PATHS_JSON" .github/codeql/codeql-config.yml \
+            > codeql-config-dynamic.yml
+
+          echo "Generated config:"
+          cat codeql-config-dynamic.yml
+          echo "paths_count=$(echo "$PATHS_JSON" | yq 'length')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload hotspot artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: hotspots
+          path: |
+            hotspots.tsv
+            codeql-config-dynamic.yml
+          retention-days: 30
+
+  codeql-scan:
+    name: CodeQL scan (Java)
+    needs: hotspots
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download dynamic CodeQL config
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: hotspots
+          path: hotspots
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          languages: java-kotlin
+          build-mode: none
+          config-file: ./hotspots/codeql-config-dynamic.yml
+
+      - name: Perform CodeQL analysis
+        id: analyze
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          category: "/language:java-kotlin"
+          output: codeql-results
+          # Default upload to GitHub Security tab is on; we also keep a SARIF
+          # artifact for the AI triage stage to consume in later phases.
+          upload: always
+
+      - name: Upload SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-sarif
+          path: codeql-results/
+          retention-days: 30
+
+  ai-triage:
+    name: AI triage of CodeQL findings
+    needs: codeql-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: .github/scripts/code-quality-ai/package-lock.json
+
+      - name: Install triage dependencies
+        working-directory: .github/scripts/code-quality-ai
+        run: npm ci --no-audit --no-fund
+
+      - name: Download CodeQL SARIF
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codeql-sarif
+          path: codeql-results
+
+      - name: Locate SARIF file
+        id: locate
+        run: |
+          SARIF_PATH=$(find codeql-results -name '*.sarif' -print -quit)
+          if [ -z "$SARIF_PATH" ]; then
+            echo "No SARIF file found in codeql-results/" >&2
+            exit 1
+          fi
+          echo "sarif=$GITHUB_WORKSPACE/$SARIF_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Run AI triage
+        working-directory: .github/scripts/code-quality-ai
+        env:
+          ENABLE_AI_TRIAGE: "true"
+          AWS_REGION: eu-north-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
+          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
+        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-triage ${{ env.MAX_TRIAGE }} --repo-root "$GITHUB_WORKSPACE"
+
+      - name: Upload triage output
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: triaged-findings
+          path: .github/scripts/code-quality-ai/triaged.json
+          retention-days: 30
+
+  issue-track:
+    name: Open auto-triage issues
+    needs: ai-triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}  # Using GitHub App token instead of GITHUB_TOKEN
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Mint a short-lived token from a GitHub App so issue creation acts
+      # as the App, not as github-actions[bot]. Required for Copilot
+      # Coding Agent assignment to actually trigger pickup — assignments
+      # made by github-actions[bot] are silently dropped.
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RENOVATE_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RENOVATE_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: .github/scripts/code-quality-ai/package-lock.json
+
+      - name: Install runner dependencies
+        working-directory: .github/scripts/code-quality-ai
+        run: npm ci --no-audit --no-fund
+
+      - name: Download triaged findings
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: triaged-findings
+          path: .github/scripts/code-quality-ai
+
+      - name: Run issue-track runner
+        working-directory: .github/scripts/code-quality-ai
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --dry-run ${{ env.DRY_RUN }} --output issue-summary.json
+
+      - name: Upload issue-track summary
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: issue-track-summary
+          path: .github/scripts/code-quality-ai/issue-summary.json
+          retention-days: 30
