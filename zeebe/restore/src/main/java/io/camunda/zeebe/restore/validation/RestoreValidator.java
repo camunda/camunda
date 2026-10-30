@@ -215,17 +215,8 @@ public final class RestoreValidator
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
     if (exportedPositionSupplier == null) {
       // No secondary storage to keep consistent with: restore the partitions of the backup the
-      // time range resolves to, read from partition 1 since every backup holds it.
-      final var store =
-          requireNonNull(backupStore, "Backup store must be configured to load backups");
-      final var firstPartition =
-          RestorePointResolver.resolve(
-                  loadMetadataForAllPartitions(1), instantFrom, instantTo, null)
-              .partitions()
-              .get(1);
-      final var lastBackupOfFirstPartition =
-          requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().last();
-      final var restoredPartitionCount = backupPartitionCount(store, lastBackupOfFirstPartition);
+      // time range resolves to.
+      final var restoredPartitionCount = timeRangePartitionCount(instantFrom, instantTo);
       final var restorableBackups =
           RestorePointResolver.resolve(
               loadMetadataForAllPartitions(restoredPartitionCount), instantFrom, instantTo, null);
@@ -241,6 +232,22 @@ public final class RestoreValidator
             metadataByPartition, instantFrom, instantTo, exportedPositions);
     verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
     return restorableBackups;
+  }
+
+  /**
+   * The partition count of the last backup the time range resolves to. Every backup holds partition
+   * 1, so resolving the range on it alone finds that backup.
+   */
+  private int timeRangePartitionCount(final @Nullable Instant from, final @Nullable Instant to) {
+    final var store =
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
+    final var firstPartition =
+        RestorePointResolver.resolve(loadMetadataForAllPartitions(1), from, to, null)
+            .partitions()
+            .get(1);
+    final var lastBackup =
+        requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().last();
+    return backupPartitionCount(store, lastBackup);
   }
 
   @VisibleForTesting
