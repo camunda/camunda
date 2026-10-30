@@ -11,6 +11,19 @@
     <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
   </Properties>
 
+  <!--
+    By default, limit to 1000 log events per second. Opt-out by setting `CAMUNDA_LOG_UNLIMITED`.
+  -->
+  <Select>
+    <EnvironmentArbiter propertyName="CAMUNDA_LOG_LIMIT" propertyValue="false"/>
+    <DefaultArbiter>
+      <BurstFilter
+        level="${env:CAMUNDA_LOG_LIMIT_LEVEL:-ERROR}"
+        rate="${env:CAMUNDA_LOG_LIMIT_RATE:-1000}"
+        maxBurst="${env:CAMUNDA_LOG_LIMIT_BURST:-10}"/>
+    </DefaultArbiter>
+  </Select>
+
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout
