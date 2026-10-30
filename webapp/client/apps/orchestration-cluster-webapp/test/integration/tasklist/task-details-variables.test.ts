@@ -192,4 +192,33 @@ test.describe('Task details variables', () => {
 
 		await expect(taskDetailPage.variableValueInput('details')).toHaveValue('{"description":"Full value"}');
 	});
+
+	test('should show [REDACTED] instead of the value of a protected variable', async ({network, taskDetailPage}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(completedTask),
+			}),
+			mockQueryVariablesByUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryVariablesByUserTaskResponse({
+						items: [
+							amountVariable,
+							createVariable({
+								name: 'password',
+								value: '"s3cret"',
+								variableKey: '2251799813685284',
+								metadata: {protectionModes: ['REDACT']},
+							}),
+						],
+					}),
+				),
+			}),
+		);
+
+		await taskDetailPage.goto(USER_TASK_KEY);
+
+		await expect(taskDetailPage.variablesTable.getByText('100')).toBeVisible();
+		await expect(taskDetailPage.variablesTable.getByText('[REDACTED]')).toBeVisible();
+		await expect(taskDetailPage.variablesTable.getByText('s3cret')).not.toBeAttached();
+	});
 });
