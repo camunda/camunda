@@ -53,13 +53,12 @@ class StarterTest {
     // when
     new Starter(
         mock(CamundaClient.class),
-        mock(CamundaClient.class),
         properties,
         registry,
-        mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
         mock(WebClient.Builder.class),
         new ObjectMapper(),
+        mock(ProcessDeployer.class),
         mock(ProcessInstanceCreator.class),
         mock(ApplicationContext.class));
 
@@ -104,14 +103,14 @@ class StarterTest {
     final var livenessIndicator = mock(StarterLivenessIndicator.class);
     final var starter =
         new Starter(
-            loaderClient,
             queryClient,
             properties,
             registry,
-            mock(ConnectionMonitor.class),
             livenessIndicator,
             mock(WebClient.Builder.class),
             new ObjectMapper(),
+            new ProcessDeployer(
+                loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator),
             new ProcessInstanceCreator(
                 loaderClient, properties, registry, payloadReader, livenessIndicator),
             mock(ApplicationContext.class));
