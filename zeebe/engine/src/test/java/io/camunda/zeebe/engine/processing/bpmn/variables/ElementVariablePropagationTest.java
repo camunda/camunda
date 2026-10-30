@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -126,6 +127,123 @@ public class ElementVariablePropagationTest {
             VariableRecordValue::getValue)
         .containsExactlyInAnyOrder(
             tuple(taskScopeKey, "var1", "1.1"),
+            tuple(processInstanceKey, "var1", "1.1"),
+            tuple(processInstanceKey, "var2", "2"));
+  }
+
+  @Test
+  public void shouldPropagateVariablesWithoutOutputMappingsFromAdHocSubProcess() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                "adHocSubProcess",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeJobType("adHocSubProcess").zeebeInputExpression("1", "var1");
+
+                  adHocSubProcess.serviceTask("task", t -> t.zeebeJobType("test"));
+                })
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("adHocSubProcess")
+        .withVariables(ofEntries(entry("var1", 1), entry("var2", 2)))
+        .withResult(new JobResult().setCompletionConditionFulfilled(true))
+        .complete();
+
+    // then
+    final long adHocSubProcessScopeKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .toList())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getScopeKey,
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue)
+        .containsExactlyInAnyOrder(
+            tuple(
+                adHocSubProcessScopeKey,
+                "adHocSubProcessElements",
+                "[{\"elementId\":\"task\",\"elementName\":\"task\"}]"),
+            tuple(adHocSubProcessScopeKey, "var1", "1"),
+            tuple(processInstanceKey, "var1", "1"),
+            tuple(processInstanceKey, "var2", "2"));
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/67735")
+  public void shouldPropagateModifiedVariablesWithoutOutputMappingsFromAdHocSubProcess() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                "adHocSubProcess",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeJobType("adHocSubProcess").zeebeInputExpression("1", "var1");
+
+                  adHocSubProcess.serviceTask("task", t -> t.zeebeJobType("test"));
+                })
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("adHocSubProcess")
+        .withVariables(ofEntries(entry("var1", 1.1), entry("var2", 2)))
+        .withResult(new JobResult().setCompletionConditionFulfilled(true))
+        .complete();
+
+    // then
+    final long adHocSubProcessScopeKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .toList())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getScopeKey,
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue)
+        .containsExactlyInAnyOrder(
+            tuple(
+                adHocSubProcessScopeKey,
+                "adHocSubProcessElements",
+                "[{\"elementId\":\"task\",\"elementName\":\"task\"}]"),
+            tuple(adHocSubProcessScopeKey, "var1", "1.1"),
             tuple(processInstanceKey, "var1", "1.1"),
             tuple(processInstanceKey, "var2", "2"));
   }
