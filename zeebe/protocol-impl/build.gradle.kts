@@ -18,7 +18,10 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.org.msgpack.jackson.dataformat.msgpack)
   api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+  implementation(project(":zeebe-auth"))
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Protocol Implementation"

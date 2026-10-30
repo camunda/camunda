@@ -308,8 +308,7 @@ final class BulkIndexRequestTest {
                           new CommandDistributionRecord()
                               .setPartitionId(1)
                               .setAuthInfo(
-                                  new AuthInfo()
-                                      .setClaims(Map.of("authorized_username", "test-data")))));
+                                  AuthInfo.ofClaims(Map.of("authorized_username", "test-data")))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -337,8 +336,7 @@ final class BulkIndexRequestTest {
                           new CommandDistributionRecord()
                               .setPartitionId(1)
                               .setAuthInfo(
-                                  new AuthInfo()
-                                      .setClaims(Map.of("authorized_username", "test-data")))));
+                                  AuthInfo.ofClaims(Map.of("authorized_username", "test-data")))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 

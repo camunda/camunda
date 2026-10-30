@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -101,8 +102,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
-  private final ObjectProperty<AuthInfo> authInfoProperty =
-      new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
+  private final AuthInfoProperty authInfoProperty = new AuthInfoProperty(AUTH_INFO_KEY);
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
   private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
@@ -244,7 +244,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   }
 
   public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {
-    authInfoProperty.getValue().copyFrom(authInfo);
+    authInfoProperty.setValue(authInfo);
     return this;
   }
 }

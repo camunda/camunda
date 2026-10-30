@@ -262,7 +262,7 @@ final class ProtocolFactoryTest {
     final var authInfo = implValue.getAuthInfo();
     assertThat(authInfo).isNotNull();
     assertThat(authInfo.getFormat()).isNotNull();
-    assertThat(authInfo.getClaims()).isNotEmpty();
+    assertThat(authInfo.hasAnyClaims()).isTrue();
   }
 
   @Test

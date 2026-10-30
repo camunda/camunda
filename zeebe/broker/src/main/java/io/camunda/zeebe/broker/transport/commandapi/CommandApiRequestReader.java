@@ -25,7 +25,6 @@ public class CommandApiRequestReader implements RequestReader {
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final AuthInfo authInfo = new AuthInfo();
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
@@ -77,8 +76,8 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
-      metadata.authorization(authInfo);
+      metadata.authorization(
+          AuthInfo.decode(buffer, authOffset, commandRequestDecoder.authorizationLength()));
       commandRequestDecoder.skipAuthorization();
     }
 

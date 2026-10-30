@@ -147,8 +147,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (isAuthNeeded) {
       commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
     } else {
-      final var authInfo = new AuthInfo();
-      authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+      final var authInfo = AuthInfo.EMPTY.withFormat(AuthDataFormat.PRE_AUTHORIZED);
       commandDistributionBehavior
           .withKey(eventKey)
           .unordered()

@@ -79,7 +79,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
-            .authorization(new AuthInfo().setClaims(metadata.getClaims()))
+            .authorization(AuthInfo.ofClaims(metadata.getClaims()))
             .operationReference(metadata.getOperationReference())
             .batchOperationReference(metadata.getBatchOperationReference());
 

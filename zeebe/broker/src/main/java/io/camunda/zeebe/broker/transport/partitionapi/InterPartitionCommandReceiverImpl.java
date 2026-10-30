@@ -17,6 +17,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -287,7 +288,7 @@ final class InterPartitionCommandReceiverImpl {
         return;
       }
       final var offset = messageDecoder.limit() + InterPartitionMessageDecoder.authHeaderLength();
-      recordMetadata.getAuthorization().wrap(messageDecoder.buffer(), offset, length);
+      recordMetadata.authorization(AuthInfo.decode(messageDecoder.buffer(), offset, length));
       messageDecoder.skipAuth();
     }
   }
