@@ -28,7 +28,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
 
     <dependency>
