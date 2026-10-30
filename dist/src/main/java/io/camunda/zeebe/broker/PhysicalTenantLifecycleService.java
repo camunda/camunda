@@ -232,11 +232,8 @@ public final class PhysicalTenantLifecycleService {
           final var startedAt = Instant.now();
           final var handover = handOverLeadership(physicalTenantId, handoverPreference);
           final var snapshots = snapshotBeforeRestart(physicalTenantId);
-          gateway()
-              .ifPresent(
-                  gateway ->
-                      gateway.markUnavailable(
-                          physicalTenantId, "its configuration change is being applied"));
+          // the gateway keeps routing the tenant's requests to its leaders elsewhere while the
+          // module restarts; it takes the new configuration once the module started again
           try {
             stopModule(physicalTenantId);
           } catch (final RuntimeException e) {

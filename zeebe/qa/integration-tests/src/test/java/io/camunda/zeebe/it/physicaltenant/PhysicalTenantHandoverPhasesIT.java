@@ -247,6 +247,9 @@ final class PhysicalTenantHandoverPhasesIT {
     }
     if (KINDS.contains("restart")) {
       assertThat(handovers).extracting(Handover::label).contains("restart-away", "restart-back");
+      assertThat(samples)
+          .as("no request is turned away because the tenant restarts on the gateway's member")
+          .noneMatch(sample -> sample.failure().contains("is unavailable"));
     }
     assertThat(handovers)
         .allSatisfy(handover -> assertThat(handover.result()).isEqualTo("TRANSFERRED"));
