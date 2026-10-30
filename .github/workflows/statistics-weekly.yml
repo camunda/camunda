@@ -100,10 +100,10 @@ jobs:
 
               # Try to find GH issues about related (failing) tests:
               # First, search specifically by test class name + test name
-              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME" --json number --jq '.[].number' | head -n 1)
+              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME" --limit 1 --json number --jq '.[0].number // empty') || GH_ISSUE_ID=""
               if [ -z "$GH_ISSUE_ID" ]; then
                 # If nothing found, search by test class name
-                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME" --json number --jq '.[].number' | head -n 1)
+                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME" --limit 1 --json number --jq '.[0].number // empty') || GH_ISSUE_ID=""
               fi
               if [ -n "$GH_ISSUE_ID" ]; then
                 SUFFIX=" (<https://github.com/camunda/camunda/issues/$GH_ISSUE_ID|GH issue>)"
@@ -127,8 +127,10 @@ jobs:
       - name: Debug notification
         if: github.event_name == 'pull_request'
         shell: bash
+        env:
+          MESSAGE: ${{ steps.message.outputs.MESSAGE }}
         run: |
-          echo '${{ steps.message.outputs.MESSAGE }}'
+          echo "$MESSAGE"
 
       - name: Send notification
         if: github.event_name != 'pull_request'
