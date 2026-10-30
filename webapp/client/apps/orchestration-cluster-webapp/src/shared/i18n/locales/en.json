@@ -2431,6 +2431,13 @@
 					"preparingPdfPreview": "Preparing PDF preview…"
 				},
 				"diagram": {
+					"enterFullscreen": "Enter fullscreen",
+					"exitFullscreen": "Exit fullscreen",
+					"showMinimap": "Show minimap",
+					"hideMinimap": "Hide minimap",
+					"resetZoom": "Reset diagram zoom",
+					"zoomOut": "Zoom out diagram",
+					"zoomIn": "Zoom in diagram",
 					"label": "Diagram"
 				},
 				"stateIcon": {

@@ -2422,6 +2422,13 @@
 					"preparingPdfPreview": "Préparation de l’aperçu PDF…"
 				},
 				"diagram": {
+					"enterFullscreen": "Passer en plein écran",
+					"exitFullscreen": "Quitter le plein écran",
+					"showMinimap": "Afficher la mini-carte",
+					"hideMinimap": "Masquer la mini-carte",
+					"resetZoom": "Réinitialiser le zoom du diagramme",
+					"zoomOut": "Dézoomer le diagramme",
+					"zoomIn": "Zoomer sur le diagramme",
 					"label": "Diagramme"
 				},
 				"stateIcon": {

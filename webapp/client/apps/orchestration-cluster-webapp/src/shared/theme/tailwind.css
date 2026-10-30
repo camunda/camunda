@@ -199,6 +199,95 @@
 	}
 }
 
+/*
+ * The shared BpmnJS renderer emits Carbon variable names, so they are mapped to DS tokens here.
+ * Same approach as .dmn-viewer-theme for the BPMN diagram: plain unlayered rules
+ * beat the unlayered bpmn-js and diagram-js-minimap stylesheets by specificity.
+ */
+.bpmn-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+	--cds-layer-01: var(--viewer-layer);
+	--cds-highlight: var(--info-background-subtle);
+	--cds-icon-secondary: var(--neutral-foreground-subtle);
+	--cds-text-primary: var(--neutral-foreground-strong);
+	--cds-background-brand: var(--primary-action-default);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.bjs-powered-by {
+		display: none;
+	}
+
+	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
+		stroke: var(--primary-action-default) !important;
+	}
+
+	.op-selectable:hover {
+		cursor: pointer;
+	}
+
+	.op-selectable:hover .djs-outline,
+	.op-selected-frame .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--primary-action-default);
+	}
+
+	.op-non-selectable {
+		cursor: not-allowed;
+	}
+
+	.op-drilldown {
+		user-select: none;
+	}
+
+	.op-drilldown-loading,
+	.op-drilldown-loading * {
+		cursor: wait;
+	}
+
+	/* The renderer sets the shape fill inline, which only `!important` can override. */
+	.op-selected .djs-visual {
+		rect,
+		circle,
+		polygon {
+			fill: var(--info-background-subtle) !important;
+		}
+	}
+
+	.djs-minimap {
+		top: auto !important;
+		bottom: 4.5rem !important;
+		right: 1rem !important;
+		z-index: 10;
+		background-color: var(--viewer-layer) !important;
+		border-color: var(--neutral-border-subtle) !important;
+	}
+
+	.djs-minimap .map {
+		width: 240px !important;
+		height: 135px !important;
+	}
+
+	.djs-minimap .toggle:before {
+		content: '' !important;
+	}
+
+	.djs-minimap:not(.open) .toggle {
+		display: none;
+	}
+
+	.djs-minimap.open .overlay {
+		background: var(--neutral-background-strong) !important;
+		opacity: 0.2;
+	}
+
+	.djs-minimap .viewport-dom {
+		border-color: var(--primary-action-default) !important;
+	}
+}
+
 @media (forced-colors: active) {
 	[role='tab'][data-state='active'] {
 		border-bottom: 2px solid Highlight;
