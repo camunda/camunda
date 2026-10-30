@@ -18,9 +18,8 @@ import java.util.stream.Collectors;
  * PendingSubscription PendingSubscriptions} are added with a last sent time. The time can be
  * updated with {@link #update(PendingSubscription, long)}. Pending subscriptions are retrieved with
  * {@link #entriesBefore(long)}, ordered by the last sent time. <br>
- * This class is thread safe. It's intended use is that one thread is adding, removing and updating
- * entries while another thread is "observing" the entries by calling {@link #entriesBefore(long)}.
- * <br>
+ * This class is thread safe: processing adds, updates and removes entries, while the checkers read
+ * them with {@link #entriesBefore(long)} and {@link #refresh(PendingSubscription, long)} them. <br>
  * The iterable returned by {@link #entriesBefore(long)} may return outdated entries (i.e. entries
  * which last sent time was updated so that those entries should not have been returned) and already
  * removed entries. For the intended use, this is not a problem.
@@ -36,6 +35,11 @@ public final class TransientPendingSubscriptionState {
 
   public void update(final PendingSubscription pendingSubscription, final long lastSentTime) {
     pending.put(pendingSubscription, lastSentTime);
+  }
+
+  // Never re-adds: processing may have just removed the entry.
+  public void refresh(final PendingSubscription pendingSubscription, final long lastSentTime) {
+    pending.computeIfPresent(pendingSubscription, (ignored, previous) -> lastSentTime);
   }
 
   public void remove(final PendingSubscription pendingSubscription) {
