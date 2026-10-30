@@ -71,7 +71,7 @@ function DiagramControls({
 					tooltipSide="top"
 					icon={Map}
 					label={isMinimapOpen ? t('operate.shared.diagram.hideMinimap') : t('operate.shared.diagram.showMinimap')}
-					className={cn(isMinimapOpen && 'bg-neutral-background-strong')}
+					className={cn('max-[640px]:hidden', isMinimapOpen && 'bg-neutral-background-strong')}
 					onClick={handleMinimapToggle}
 				/>
 				<IconButton

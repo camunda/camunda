@@ -122,6 +122,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 		get(module: 'canvas'): {
 			getRootElement(): BpmnElement;
 			findRoot(elementId: BpmnElement['id']): BpmnElement | undefined;
+			scrollToElement(elementId: BpmnElement['id']): void;
 			setRootElement(element: BpmnElement): void;
 			removeMarker(elementId: BpmnElement['id'], className: string): void;
 			addMarker(elementId: BpmnElement['id'], className: string): void;
