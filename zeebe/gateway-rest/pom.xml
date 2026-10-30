@@ -433,7 +433,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
       <scope>test</scope>
     </dependency>
 

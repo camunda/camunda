@@ -35,6 +35,7 @@ dependencies {
   api(libs.io.grpc.grpc.services)
   api(libs.com.google.protobuf.protobuf.java)
   api(libs.com.google.api.grpc.proto.google.common.protos)
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   api(libs.io.micrometer.micrometer.core)
