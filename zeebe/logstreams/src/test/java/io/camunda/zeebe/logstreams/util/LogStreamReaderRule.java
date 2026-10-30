@@ -9,8 +9,8 @@ package io.camunda.zeebe.logstreams.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;

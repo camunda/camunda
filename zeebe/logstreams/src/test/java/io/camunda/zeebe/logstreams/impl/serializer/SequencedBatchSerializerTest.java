@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.serializer;
 import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertThatEntry;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import java.util.List;

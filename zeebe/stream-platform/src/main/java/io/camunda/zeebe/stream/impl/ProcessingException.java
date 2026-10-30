@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import org.jspecify.annotations.Nullable;
 

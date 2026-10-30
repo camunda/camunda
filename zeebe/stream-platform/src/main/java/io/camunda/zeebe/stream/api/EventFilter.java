@@ -9,7 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 
 /** Implement to control which events should be handled by a {@link StreamProcessor}. */

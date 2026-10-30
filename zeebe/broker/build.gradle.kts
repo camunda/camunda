@@ -13,6 +13,7 @@ sbe {
 }
 
 dependencies {
+  implementation(project(":zeebe-log-records"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":camunda-cluster"))
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
