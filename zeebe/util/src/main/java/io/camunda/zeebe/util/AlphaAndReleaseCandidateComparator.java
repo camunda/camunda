@@ -86,7 +86,7 @@ class AlphaAndReleaseCandidateComparator implements Comparator<SemanticVersion> 
 
     // prefer the shorter version as that will indicate we have a non-RC version
     // e.g. 8.9.1-alpha1 is a later version than 8.9.1-alpha1-rc1
-    return -Integer.compare(preReleaseParts.size(), otherPreReleaseParts.size());
+    return Integer.compare(otherPreReleaseParts.size(), preReleaseParts.size());
   }
 
   private static List<String> splitPreRelease(final String preRelease) {
