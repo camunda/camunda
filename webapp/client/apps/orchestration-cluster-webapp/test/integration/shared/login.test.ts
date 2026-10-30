@@ -81,7 +81,7 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 		}),
 	);
 
-	await page.goto('/operate');
+	await page.goto('/operate/processes?active=true');
 	await expect(loginPage.usernameInput).toBeVisible();
 
 	network.use(
@@ -108,7 +108,7 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/operate');
+	await expect(page).toHaveURL('/operate/processes?active=true');
 });
 
 test('should show an error for wrong credentials', async ({network, loginPage}) => {

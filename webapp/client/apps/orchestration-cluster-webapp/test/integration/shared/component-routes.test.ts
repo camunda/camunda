@@ -221,7 +221,7 @@ test.describe('component routes', () => {
 
 		await page.goto('/operate');
 
-		await expect(page).toHaveURL('/login?redirect=%2Foperate');
+		await expect(page).toHaveURL('/operate/login');
 		await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 	});
 

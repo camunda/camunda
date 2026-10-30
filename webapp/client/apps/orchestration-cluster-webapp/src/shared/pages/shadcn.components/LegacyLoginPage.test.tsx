@@ -16,7 +16,7 @@ const TestLoginPage: React.FC = () => <LegacyLoginPage title="Test App" />;
 
 describe('<LegacyLoginPage />', () => {
 	it('should render the given title as the page heading', async () => {
-		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/operate/login'});
 
 		await expect.element(screen.getByRole('heading', {name: 'Test App'})).toBeVisible();
 	});
@@ -26,7 +26,7 @@ describe('<LegacyLoginPage />', () => {
 		const mockYear = 1984;
 		vi.setSystemTime(new Date(mockYear, 0));
 
-		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/operate/login'});
 
 		await expect
 			.element(screen.getByText(`© Camunda Services GmbH ${mockYear}. All rights reserved. | 0.0.0`))
@@ -35,7 +35,7 @@ describe('<LegacyLoginPage />', () => {
 	});
 
 	it('should not allow the form to be submitted with empty fields', async () => {
-		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/operate/login'});
 
 		const usernameField = screen.getByLabelText(/username/i);
 		const passwordField = screen.getByLabelText(/password/i);

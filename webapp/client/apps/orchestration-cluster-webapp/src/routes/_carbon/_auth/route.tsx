@@ -38,10 +38,14 @@ const Route = createFileRoute('/_carbon/_auth')({
 			queryClient.clear();
 			const isTasklistIndex = location.href === '/tasklist';
 
-			throw redirect({
-				to: isTasklistPath(location.pathname) ? '/tasklist/login' : '/login',
-				search: location.href === '/' || isTasklistIndex ? {} : {redirect: location.href},
-			});
+			if (isTasklistPath(location.pathname)) {
+				throw redirect({
+					to: '/tasklist/login',
+					search: isTasklistIndex ? {} : {redirect: location.href},
+				});
+			}
+
+			throw redirect({to: '/operate/login', state: {operateLoginReferrer: location.href}});
 		}
 	},
 	loader: async () => {
