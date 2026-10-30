@@ -128,7 +128,7 @@ public interface Intent {
     map.put(ValueType.USAGE_METRIC, UsageMetricIntent.class);
     map.put(ValueType.USER, UserIntent.class);
     map.put(ValueType.USER_TASK, UserTaskIntent.class);
-    map.put(ValueType.USER_TASK_RUNTIME, UserTaskRuntimeIntent.class);
+    map.put(ValueType.USER_TASK_LOOKUP, UserTaskLookupIntent.class);
     map.put(ValueType.VARIABLE, VariableIntent.class);
     map.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.class);
     return map;

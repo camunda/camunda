@@ -39,7 +39,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
-import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK_RUNTIME;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK_LOOKUP;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 import static io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent.INPUT_COLLECTION_EVALUATED;
@@ -147,8 +147,8 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserTaskRuntimeRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -226,7 +226,6 @@ public class CompactRecordLogger {
           entry(SIGNAL_SUBSCRIPTION.name(), "SIG_SUB"),
           entry(SIGNAL.name(), "SIG"),
           entry(COMMAND_DISTRIBUTION.name(), "DSTR"),
-          entry(USER_TASK_RUNTIME.name(), "UT_RT"),
           entry(USER_TASK.name(), "UT"),
           entry(ROLE.name(), "RL"),
           entry(GROUP.name(), "GR"),
@@ -312,7 +311,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
-    valueLoggers.put(USER_TASK_RUNTIME, this::summarizeUserTaskRuntime);
+    valueLoggers.put(USER_TASK_LOOKUP, this::summarizeUserTaskLookup);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
@@ -1117,8 +1116,8 @@ public class CompactRecordLogger {
         + shortenKey(value.getIndex());
   }
 
-  String summarizeUserTaskRuntime(final Record<?> record) {
-    final var value = (UserTaskRuntimeRecordValue) record.getValue();
+  String summarizeUserTaskLookup(final Record<?> record) {
+    final var value = (UserTaskLookupRecordValue) record.getValue();
     final var result = new StringBuilder("task:").append(shortenKey(value.getUserTaskKey()));
     if (!value.getFetchVariables().isEmpty()) {
       result.append(" fetchVariables:").append(value.getFetchVariables());

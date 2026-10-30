@@ -165,7 +165,7 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
-    void shouldNeverAcceptUserTaskRuntime() {
+    void shouldNeverAcceptUserTaskLookup() {
       // given
       TestSupport.provideValueTypes()
           .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
@@ -174,8 +174,8 @@ final class ElasticsearchExporterTest {
       exporter.configure(context);
 
       // then
-      assertThat(context.getRecordFilter().acceptValue(ValueType.USER_TASK_RUNTIME))
-          .as("user task runtime reads change no state and are never exported")
+      assertThat(context.getRecordFilter().acceptValue(ValueType.USER_TASK_LOOKUP))
+          .as("user task lookups change no state and are never exported")
           .isFalse();
     }
 

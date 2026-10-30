@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 /** Reads an active user task and its variables from the engine state, without changing it. */
-public enum UserTaskRuntimeIntent implements Intent {
+public enum UserTaskLookupIntent implements Intent {
 
   /** Requests the user task and its variables. */
   FETCH(0),
@@ -26,7 +26,7 @@ public enum UserTaskRuntimeIntent implements Intent {
 
   private final short value;
 
-  UserTaskRuntimeIntent(final int value) {
+  UserTaskLookupIntent(final int value) {
     this.value = (short) value;
   }
 

@@ -157,7 +157,7 @@ final class TestSupport {
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH,
             // a read of the engine state that changes nothing, never exported by design
-            ValueType.USER_TASK_RUNTIME);
+            ValueType.USER_TASK_LOOKUP);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

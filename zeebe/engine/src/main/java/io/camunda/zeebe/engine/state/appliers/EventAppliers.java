@@ -84,7 +84,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskRuntimeIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
@@ -145,7 +145,7 @@ public final class EventAppliers implements EventApplier {
     registerResourceAppliers(state);
 
     registerUserTaskAppliers(state);
-    registerUserTaskRuntimeAppliers();
+    registerUserTaskLookupAppliers();
 
     registerSignalAppliers(state);
 
@@ -941,8 +941,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.RESUMED, new UserTaskResumedApplier(state));
   }
 
-  private void registerUserTaskRuntimeAppliers() {
-    register(UserTaskRuntimeIntent.FETCHED, NOOP_EVENT_APPLIER);
+  private void registerUserTaskLookupAppliers() {
+    register(UserTaskLookupIntent.FETCHED, NOOP_EVENT_APPLIER);
   }
 
   private void registerCompensationSubscriptionApplier(

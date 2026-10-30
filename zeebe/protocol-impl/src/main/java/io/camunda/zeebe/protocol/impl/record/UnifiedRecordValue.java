@@ -83,8 +83,8 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRuntimeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -199,7 +199,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
       case ValueType.FORM -> new FormRecord();
       case ValueType.USER_TASK -> new UserTaskRecord();
-      case ValueType.USER_TASK_RUNTIME -> new UserTaskRuntimeRecord();
+      case ValueType.USER_TASK_LOOKUP -> new UserTaskLookupRecord();
       case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
       case ValueType.BATCH_OPERATION_EXECUTION -> new BatchOperationExecutionRecord();
       case ValueType.BATCH_OPERATION_CHUNK -> new BatchOperationChunkRecord();

@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRuntimeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.util.Arrays;
@@ -94,13 +94,13 @@ class CompactRecordLoggerTest {
     }
 
     @Test
-    void shouldSummarizeUserTaskRuntimeRecord() {
+    void shouldSummarizeUserTaskLookupRecord() {
       // given
       final var record =
           ImmutableRecord.builder()
-              .withValueType(ValueType.USER_TASK_RUNTIME)
+              .withValueType(ValueType.USER_TASK_LOOKUP)
               .withValue(
-                  ImmutableUserTaskRuntimeRecordValue.builder()
+                  ImmutableUserTaskLookupRecordValue.builder()
                       .withUserTaskKey(123L)
                       .withFetchVariables(List.of("foo", "bar"))
                       .withTenantId("tenant-1")
@@ -108,7 +108,7 @@ class CompactRecordLoggerTest {
               .build();
 
       // when
-      final var summary = compactRecordLogger.summarizeUserTaskRuntime(record);
+      final var summary = compactRecordLogger.summarizeUserTaskLookup(record);
 
       // then
       assertThat(summary).isEqualTo("task:K123 fetchVariables:[foo, bar] (tenant: tenant-1)");

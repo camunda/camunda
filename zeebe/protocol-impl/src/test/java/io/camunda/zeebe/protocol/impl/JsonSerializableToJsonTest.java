@@ -102,8 +102,8 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRuntimeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -3136,13 +3136,13 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// UserTaskRuntimeRecord
+      //////////////////////////////// UserTaskLookupRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "UserTaskRuntimeRecord",
+        "UserTaskLookupRecord",
         (Supplier<UnifiedRecordValue>)
             () ->
-                new UserTaskRuntimeRecord()
+                new UserTaskLookupRecord()
                     .setUserTaskKey(123L)
                     .setFetchVariables(List.of("foo", "bar"))
                     .setTenantId("tenant-1"),
@@ -3155,8 +3155,8 @@ final class JsonSerializableToJsonTest {
                 """
       },
       {
-        "Empty UserTaskRuntimeRecord",
-        (Supplier<UnifiedRecordValue>) UserTaskRuntimeRecord::new,
+        "Empty UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
         """
                 {
                   "userTaskKey": -1,

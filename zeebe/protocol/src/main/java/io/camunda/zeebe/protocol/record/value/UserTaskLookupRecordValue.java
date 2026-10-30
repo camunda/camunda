@@ -27,8 +27,8 @@ import org.immutables.value.Value;
  * variable values.
  */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableUserTaskRuntimeRecordValue.Builder.class)
-public interface UserTaskRuntimeRecordValue extends RecordValue, TenantOwned {
+@ImmutableProtocol(builder = ImmutableUserTaskLookupRecordValue.Builder.class)
+public interface UserTaskLookupRecordValue extends RecordValue, TenantOwned {
 
   /**
    * @return the key of the user task to read
