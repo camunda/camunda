@@ -60,7 +60,8 @@ public class JobUpdateBehaviour {
                 State.ACTIVATED,
                 State.FAILED,
                 State.ERROR_THROWN,
-                State.WAITING_FOR_SECRET_RESOLUTION),
+                State.WAITING_FOR_SECRET_RESOLUTION,
+                State.WAITING_FOR_CONSENT),
             List.of(JobLeaseFencingCheck.forUpdateCommand()),
             tenantCheck);
     this.cslCheck = cslCheck;

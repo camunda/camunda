@@ -714,6 +714,11 @@ public final class BpmnStateTransitionBehavior {
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(businessId);
+    // the parent's requester asked for the called work too
+    final var parentInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (parentInstance != null) {
+      childInstanceRecord.setRequester(parentInstance.getValue().getRequesterBuffer());
+    }
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);

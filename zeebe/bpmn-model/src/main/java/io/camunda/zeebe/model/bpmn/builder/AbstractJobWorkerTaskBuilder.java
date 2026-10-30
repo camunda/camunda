@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConsent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeRelationship;
 
 /**
  * A builder for tasks that are based on jobs and should be processed by job workers. For example,
@@ -72,5 +74,50 @@ public abstract class AbstractJobWorkerTaskBuilder<
 
   public B zeebeJobPriorityExpression(final String expression) {
     return zeebeJobPriority(asZeebeExpression(expression));
+  }
+
+  /** Gates the task on the consent of whoever started the process instance. */
+  public B zeebeConsent(final String connection, final String operation) {
+    final ZeebeConsent consent = myself.getCreateSingleExtensionElement(ZeebeConsent.class);
+    consent.setConnection(connection);
+    consent.setOperation(operation);
+    return myself;
+  }
+
+  /** Names the person who must consent, by an expression that gives their username. */
+  public B zeebeConsentSubjectExpression(final String expression) {
+    myself
+        .getCreateSingleExtensionElement(ZeebeConsent.class)
+        .setSubject(asZeebeExpression(expression));
+    return myself;
+  }
+
+  /** Names the value an approval shows and binds. */
+  public B zeebeConsentChangeExpression(final String expression) {
+    myself
+        .getCreateSingleExtensionElement(ZeebeConsent.class)
+        .setChange(asZeebeExpression(expression));
+    return myself;
+  }
+
+  /**
+   * Gates the task on a relationship between whoever started the process instance and the person
+   * whose id in the target system the expression gives.
+   */
+  public B zeebeRelationship(
+      final String connection, final String operation, final String targetExpression) {
+    final ZeebeRelationship relationship =
+        myself.getCreateSingleExtensionElement(ZeebeRelationship.class);
+    relationship.setConnection(connection);
+    relationship.setOperation(operation);
+    relationship.setTarget(asZeebeExpression(targetExpression));
+    return myself;
+  }
+
+  public B zeebeRelationshipChangeExpression(final String expression) {
+    myself
+        .getCreateSingleExtensionElement(ZeebeRelationship.class)
+        .setChange(asZeebeExpression(expression));
+    return myself;
   }
 }

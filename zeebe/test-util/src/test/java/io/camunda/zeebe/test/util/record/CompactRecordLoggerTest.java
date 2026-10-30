@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.ConsentDecision;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableConsentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
@@ -90,6 +92,40 @@ class CompactRecordLoggerTest {
 
       // then
       assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");
+    }
+
+    @Test
+    void shouldSummarizeConsentRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.CONSENT)
+              .withValue(
+                  ImmutableConsentRecordValue.builder()
+                      .withConsentKey(-1L)
+                      .withSubject("dana")
+                      .withRequester("alice")
+                      .withConnection("hibob")
+                      .withOperation("region.update")
+                      .withDecision(ConsentDecision.APPROVE_ONCE)
+                      .withChange(Map.of("region", "DACH"))
+                      .withReason("")
+                      .withJobKey(123L)
+                      .withProcessInstanceKey(234L)
+                      .withElementInstanceKey(345L)
+                      .withBpmnProcessId("process")
+                      .withElementId("task")
+                      .withJobKeys(List.of())
+                      .withTenantId("<default>")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeConsent(record);
+
+      // then
+      assertThat(summary)
+          .isEqualTo("dana hibob.region.update APPROVE_ONCE requester:alice job:K123");
     }
 
     @Test

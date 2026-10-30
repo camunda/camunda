@@ -62,6 +62,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     return jobBehavior
         .evaluateJobExpressions(element.getJobWorkerProperties(), context)
+        .flatMap(j -> jobBehavior.evaluateConsent(element, context).map(j::consent))
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .thenDo(
             jobProperties -> {

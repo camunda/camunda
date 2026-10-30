@@ -66,6 +66,11 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_PRIORITY = "priority";
 
+  public static final String ATTRIBUTE_CONNECTION = "connection";
+  public static final String ATTRIBUTE_OPERATION = "operation";
+  public static final String ATTRIBUTE_SUBJECT = "subject";
+  public static final String ATTRIBUTE_CHANGE = "change";
+
   public static final String ATTRIBUTE_ACTIVE_ELEMENTS_COLLECTION = "activeElementsCollection";
 
   public static final String ATTRIBUTE_RESOURCE_ID = "resourceId";
@@ -125,6 +130,8 @@ public class ZeebeConstants {
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 
   public static final String ELEMENT_PRIORITY_DEFINITION = "priorityDefinition";
+  public static final String ELEMENT_CONSENT = "consent";
+  public static final String ELEMENT_RELATIONSHIP = "relationship";
   public static final String ELEMENT_JOB_PRIORITY_DEFINITION = "jobPriorityDefinition";
 
   public static final String ELEMENT_AD_HOC = "adHoc";

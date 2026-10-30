@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariab
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.consent.ConsentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -239,6 +240,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.AGENT_DEFINITION -> new AgentDefinitionRecord();
       case ValueType.AGENT_HISTORY_BATCH -> new AgentHistoryBatchRecord();
       case ValueType.SECRET_REFERENCE -> new SecretReferenceRecord();
+      case ValueType.CONSENT -> new ConsentRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

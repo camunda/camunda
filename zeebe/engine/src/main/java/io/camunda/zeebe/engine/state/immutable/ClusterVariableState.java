@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.clustervariable.ClusterVariableInstance;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
 
 public interface ClusterVariableState {
@@ -22,4 +23,7 @@ public interface ClusterVariableState {
   boolean existsAtTenantScope(final DirectBuffer variableNameBuffer, final String tenantId);
 
   boolean existsAtGlobalScope(final DirectBuffer variableNameBuffer);
+
+  /** Visits the globally scoped cluster variables, by name, while the visitor returns true. */
+  void visitGloballyScopedClusterVariables(BiPredicate<String, ClusterVariableInstance> visitor);
 }

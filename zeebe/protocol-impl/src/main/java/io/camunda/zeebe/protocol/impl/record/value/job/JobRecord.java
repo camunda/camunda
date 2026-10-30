@@ -105,6 +105,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
   private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
+  private static final StringValue CONSENT_KEY = new StringValue("consent");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -157,9 +158,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
   private final ArrayProperty<JobSecretReference> secretReferencesProp =
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
+  private final ObjectProperty<JobConsent> consentProp =
+      new ObjectProperty<>(CONSENT_KEY, new JobConsent());
 
   public JobRecord() {
-    super(31);
+    super(32);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -190,7 +193,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
         .declareProperty(jobLeaseTokenProp)
-        .declareProperty(secretReferencesProp);
+        .declareProperty(secretReferencesProp)
+        .declareProperty(consentProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -226,6 +230,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     businessIdProp.setValue(record.getBusinessIdBuffer());
     jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
     copySecretReferencesFrom(record);
+    consentProp.getValue().copyFrom(record.getConsent());
   }
 
   private void copySecretReferencesFrom(final JobRecord record) {
@@ -414,6 +419,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public JobResult getResult() {
     return resultProp.getValue();
+  }
+
+  /** What the job needs before it may be handed out; see {@link JobConsent}. */
+  @JsonIgnore
+  public JobConsent getConsent() {
+    return consentProp.getValue();
   }
 
   public JobRecord setResult(final JobResult result) {

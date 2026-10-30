@@ -510,6 +510,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
+    requireUnchangedConsentDeclaration(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId,
+        targetElementId,
+        processInstanceKey);
     requireSupportedUserTaskMigration(
         sourceProcessDefinition,
         targetProcessDefinition,

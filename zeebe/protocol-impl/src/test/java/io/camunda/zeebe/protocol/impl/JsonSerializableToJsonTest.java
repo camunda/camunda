@@ -2160,6 +2160,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
+                  "requester": "",
                   "elementInstanceKey": -1
                 }
                 """
@@ -2195,6 +2196,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "resumeFromJobKey": -1,
                   "resumeFromUserTaskKey": -1,
+                  "requester": "",
                   "elementInstanceKey": -1
                 }
                 """
@@ -3038,6 +3040,7 @@ final class JsonSerializableToJsonTest {
                     "businessId": "",
                     "resumeFromJobKey": -1,
                     "resumeFromUserTaskKey": -1,
+                    "requester": "",
                     "elementInstanceKey": -1
                   }
                 }

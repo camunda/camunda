@@ -60,6 +60,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  public static final StringValue REQUESTER_KEY = new StringValue("requester");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
   public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
       new StringValue("resumeFromUserTaskKey");
@@ -110,8 +111,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty resumeFromUserTaskKeyProp =
       new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
 
+  private final StringProperty requesterProp = new StringProperty(REQUESTER_KEY, "");
+
   public ProcessInstanceRecord() {
-    super(20);
+    super(21);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -131,7 +134,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(resumeFromUserTaskKeyProp);
+        .declareProperty(resumeFromUserTaskKeyProp)
+        .declareProperty(requesterProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -151,6 +155,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
     resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
+    requesterProp.setValue(record.getRequesterBuffer());
   }
 
   @JsonIgnore
@@ -316,6 +321,26 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getRequester() {
+    return bufferAsString(requesterProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRequesterBuffer() {
+    return requesterProp.getValue();
+  }
+
+  public ProcessInstanceRecord setRequester(final String requester) {
+    requesterProp.setValue(requester);
+    return this;
+  }
+
+  public ProcessInstanceRecord setRequester(final DirectBuffer requester) {
+    requesterProp.setValue(requester);
     return this;
   }
 

@@ -80,6 +80,19 @@ public interface MutableJobState extends JobState {
   void makeActivatableAfterSecretResolution(long key);
 
   /**
+   * Parks a job in {@link State#WAITING_FOR_CONSENT} and removes it from the activatable index, so
+   * it is handed out to no worker until its subject consents. Does nothing unless the job is up for
+   * activation.
+   */
+  void parkForConsent(long key, JobRecord record);
+
+  /**
+   * Makes a job activatable after a grant or an approval released it. Does nothing unless the job
+   * is in {@link State#WAITING_FOR_CONSENT}.
+   */
+  void makeActivatableAfterConsent(long key);
+
+  /**
    * @deprecated see {@link #create(long, JobRecord)}.
    */
   @Deprecated

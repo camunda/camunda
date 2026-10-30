@@ -186,7 +186,8 @@ public class ProcessInstanceCreationHelper {
       final DeployedProcess process,
       final long processInstanceKey,
       final Set<String> tags,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final String requester) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
@@ -199,7 +200,8 @@ public class ProcessInstanceCreationHelper {
         .setFlowScopeKey(-1)
         .setTenantId(process.getTenantId())
         .setTags(tags)
-        .setBusinessId(businessId);
+        .setBusinessId(businessId)
+        .setRequester(requester);
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

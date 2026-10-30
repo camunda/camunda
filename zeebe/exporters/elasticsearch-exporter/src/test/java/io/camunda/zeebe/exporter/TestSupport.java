@@ -154,7 +154,9 @@ final class TestSupport {
             ValueType.ELEMENT_INSTANCE_WALK,
             ValueType.PROCESS_DEFINITION_RESTORE,
             // internal engine-to-engine record, never exported by design
-            ValueType.AGENT_HISTORY_BATCH);
+            ValueType.AGENT_HISTORY_BATCH,
+            // the consent proof of concept does not export its records yet
+            ValueType.CONSENT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

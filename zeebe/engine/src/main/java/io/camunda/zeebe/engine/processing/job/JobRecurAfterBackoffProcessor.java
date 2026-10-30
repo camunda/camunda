@@ -78,6 +78,9 @@ public class JobRecurAfterBackoffProcessor
         case SUSPENDED:
           textState = "its process instance is suspended";
           break;
+        case WAITING_FOR_CONSENT:
+          textState = "it is waiting for consent";
+          break;
         case FAILED:
           textState = "its backoff has not ended yet";
           break;

@@ -311,6 +311,30 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public void parkForConsent(final long key, final JobRecord record) {
+    final State state = getState(key);
+    if (state != State.ACTIVATABLE && state != State.WAITING_FOR_CONSENT) {
+      return;
+    }
+    updateJobState(key, State.WAITING_FOR_CONSENT);
+    makeJobNotActivatable(key, record);
+  }
+
+  @Override
+  public void makeActivatableAfterConsent(final long key) {
+    if (!isInState(key, State.WAITING_FOR_CONSENT)) {
+      return;
+    }
+    final JobRecord record = getJob(key);
+    if (record == null) {
+      return;
+    }
+    updateJobState(key, State.ACTIVATABLE);
+    makeJobActivatableByPriority(
+        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+  }
+
+  @Override
   public void parkForSecretResolution(final long key, final JobRecord record) {
     final State state = getState(key);
     if (state != State.ACTIVATABLE && state != State.WAITING_FOR_SECRET_RESOLUTION) {

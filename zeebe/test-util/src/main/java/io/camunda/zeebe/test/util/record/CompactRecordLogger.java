@@ -95,6 +95,8 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConsentDecision;
+import io.camunda.zeebe.protocol.record.value.ConsentRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -357,6 +359,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
     valueLoggers.put(ValueType.AGENT_HISTORY_BATCH, this::summarizeAgentHistoryBatch);
     valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
+    valueLoggers.put(ValueType.CONSENT, this::summarizeConsent);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1294,6 +1297,27 @@ public class CompactRecordLogger {
     final var value = (ClusterVariableRecordValue) record.getValue();
     return "%s->%s%s"
         .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
+  }
+
+  String summarizeConsent(final Record<?> record) {
+    final var value = (ConsentRecordValue) record.getValue();
+    final var result =
+        new StringBuilder()
+            .append(value.getSubject())
+            .append(" ")
+            .append(value.getConnection())
+            .append(".")
+            .append(value.getOperation());
+    if (value.getDecision() != ConsentDecision.UNSPECIFIED) {
+      result.append(" ").append(value.getDecision());
+    }
+    if (!value.getRequester().isEmpty()) {
+      result.append(" requester:").append(value.getRequester());
+    }
+    if (value.getJobKey() > 0) {
+      result.append(" job:").append(shortenKey(value.getJobKey()));
+    }
+    return result.toString();
   }
 
   private String summarizeConditionalSubscription(final Record<?> record) {

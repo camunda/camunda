@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.conditional.DbConditionalSubscriptionState;
+import io.camunda.zeebe.engine.state.consent.DbConsentState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
@@ -70,6 +71,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableConsentState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
@@ -130,6 +132,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final MutableClusterVariableState clusterVariableState;
+  private final MutableConsentState consentState;
   private final MutableAgentHistoryState agentHistoryState;
   private final MutableAgentInstanceState agentInstanceState;
   private final MutableAgentDefinitionState agentDefinitionState;
@@ -190,6 +193,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
+    consentState = new DbConsentState(zeebeDb, transactionContext);
     agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
     agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
     agentDefinitionState = new DbAgentDefinitionState(zeebeDb, transactionContext);
@@ -339,6 +343,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClusterVariableState getClusterVariableState() {
     return clusterVariableState;
+  }
+
+  @Override
+  public MutableConsentState getConsentState() {
+    return consentState;
   }
 
   @Override

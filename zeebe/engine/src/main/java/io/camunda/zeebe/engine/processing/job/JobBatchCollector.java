@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.consent.ConsentGate;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -51,6 +53,8 @@ final class JobBatchCollector {
   private final InstantSource clock;
   private final JobProcessingMetrics jobMetrics;
   private final JobSecretInjector jobSecretInjector;
+  private final ConsentGate consentGate;
+  private final List<Long> jobsWaitingForConsent = new ArrayList<>();
 
   /**
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
@@ -74,6 +78,20 @@ final class JobBatchCollector {
     this.clock = clock;
     this.jobMetrics = jobMetrics;
     this.jobSecretInjector = jobSecretInjector;
+    consentGate = new ConsentGate(state.getConsentState(), state.getClusterVariableState());
+  }
+
+  /**
+   * Returns the keys of the gated jobs the last collection skipped because their subject has not
+   * consented, or revoked since. The processor parks them, so a long poll does not collect them
+   * again until the subject answers.
+   */
+  ConsentGate consentGate() {
+    return consentGate;
+  }
+
+  List<Long> jobsWaitingForConsent() {
+    return List.copyOf(jobsWaitingForConsent);
   }
 
   /**
@@ -106,6 +124,7 @@ final class JobBatchCollector {
     final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
 
     jobSecretInjector.reset();
+    jobsWaitingForConsent.clear();
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
@@ -119,6 +138,13 @@ final class JobBatchCollector {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
             jobMetrics.countJobEvent(
                 JobAction.SKIPPED_LEASED, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
+          final ConsentGate.Basis consentBasis = consentGate.basisFor(jobRecord);
+          if (consentBasis == ConsentGate.Basis.NONE) {
+            // skipped without consuming a batch slot, like a job that waits for a secret
+            jobsWaitingForConsent.add(key);
             return true;
           }
 
@@ -148,6 +174,7 @@ final class JobBatchCollector {
             jobRecord.setJobLeaseToken(LeaseTokens.generate());
           }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
+          consentGate.addProof(jobRecord, consentBasis);
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,

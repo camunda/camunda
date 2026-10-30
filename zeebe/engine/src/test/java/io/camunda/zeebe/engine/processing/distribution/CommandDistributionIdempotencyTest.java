@@ -28,6 +28,9 @@ import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableUpdateProcessor;
+import io.camunda.zeebe.engine.processing.consent.ConsentConnections;
+import io.camunda.zeebe.engine.processing.consent.ConsentGrantProcessor;
+import io.camunda.zeebe.engine.processing.consent.ConsentRevokeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerBatchConfigureProcessor;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerCreateProcessor;
@@ -74,12 +77,14 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
@@ -118,6 +123,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -780,6 +786,26 @@ public class CommandDistributionIdempotencyTest {
             UserUpdateProcessor.class
           },
           {
+            "Consent.GRANT is idempotent",
+            new Scenario(
+                ValueType.CONSENT,
+                ConsentIntent.GRANT,
+                () -> grantConsent(Strings.newRandomValidUsername())),
+            ConsentGrantProcessor.class
+          },
+          {
+            "Consent.REVOKE is idempotent",
+            new Scenario(
+                ValueType.CONSENT,
+                ConsentIntent.REVOKE,
+                () -> {
+                  final var subject = Strings.newRandomValidUsername();
+                  final var grant = grantConsent(subject);
+                  return ENGINE.consent().revoke(grant.getKey(), "", subject);
+                }),
+            ConsentRevokeProcessor.class
+          },
+          {
             "ClusterVariable.CREATE is idempotent",
             new Scenario(
                 ValueType.CLUSTER_VARIABLE,
@@ -1048,6 +1074,22 @@ public class CommandDistributionIdempotencyTest {
         .withClaimValue(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .create();
+  }
+
+  private static Record<RecordValue> grantConsent(final String subject) {
+    final var connection = Strings.newRandomValidIdentityId();
+    ENGINE
+        .clusterVariables()
+        .withName(ConsentConnections.VARIABLE_PREFIX + connection)
+        .setGlobalScope()
+        .withValue(
+            Map.of(
+                "id",
+                connection,
+                "operations",
+                List.of(Map.of("id", "region.update", "consent", "required", "scope", "either"))))
+        .create();
+    return ENGINE.consent().grant(connection, "region.update", subject);
   }
 
   private static Record<DeploymentRecordValue> deployProcess() {

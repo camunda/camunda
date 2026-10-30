@@ -44,6 +44,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   ClusterVariableState getClusterVariableState();
 
+  ConsentState getConsentState();
+
   AgentHistoryState getAgentHistoryState();
 
   AgentInstanceState getAgentInstanceState();

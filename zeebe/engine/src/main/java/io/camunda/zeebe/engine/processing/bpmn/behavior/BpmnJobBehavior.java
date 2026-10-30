@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ResultType;
@@ -18,6 +19,11 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.consent.ConsentConnections.Connection;
+import io.camunda.zeebe.engine.processing.consent.ConsentGate;
+import io.camunda.zeebe.engine.processing.consent.EvaluatedConsent;
+import io.camunda.zeebe.engine.processing.consent.Requester;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ConsentDefinition;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
@@ -35,6 +41,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
+import io.camunda.zeebe.engine.state.immutable.ConsentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -51,11 +58,13 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ConsentGround;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -120,7 +129,8 @@ public final class BpmnJobBehavior {
           State.FAILED,
           State.ERROR_THROWN,
           State.WAITING_FOR_SECRET_RESOLUTION,
-          State.SUSPENDED);
+          State.SUSPENDED,
+          State.WAITING_FOR_CONSENT);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
@@ -141,6 +151,7 @@ public final class BpmnJobBehavior {
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final int maxJobTypeLength;
   private final ClusterVariableJobSecretResolver clusterVariableJobSecretResolver;
+  private final ConsentGate consentGate;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -157,7 +168,8 @@ public final class BpmnJobBehavior {
       final JobProcessingMetrics jobMetrics,
       final BpmnUserTaskBehavior userTaskBehavior,
       final int maxJobTypeLength,
-      final ClusterVariableState clusterVariableState) {
+      final ClusterVariableState clusterVariableState,
+      final ConsentState consentState) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -174,6 +186,7 @@ public final class BpmnJobBehavior {
     this.userTaskBehavior = userTaskBehavior;
     this.maxJobTypeLength = maxJobTypeLength;
     clusterVariableJobSecretResolver = new ClusterVariableJobSecretResolver(clusterVariableState);
+    consentGate = new ConsentGate(consentState, clusterVariableState);
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -231,6 +244,131 @@ public final class BpmnJobBehavior {
                         tenantId)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
+  }
+
+  /**
+   * Evaluates the consent declaration of a task when its job is created, and refuses what the gate
+   * could never satisfy: a connection or operation that does not exist, a consent with nobody to
+   * ask, a relationship without a signed-in requester. It also refuses a task without a declaration
+   * that references a connection's credential: that secret reaches only a job that passed the gate.
+   */
+  public Either<Failure, EvaluatedConsent> evaluateConsent(
+      final ExecutableJobWorkerElement element, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
+    final ConsentDefinition definition = element.getConsentDefinition();
+    if (definition == null) {
+      final var secretNames =
+          element.getSecretReferences().values().stream()
+              .flatMap(Set::stream)
+              .map(SecretReference::name)
+              .toList();
+      if (secretNames.isEmpty()) {
+        return Either.right(EvaluatedConsent.NONE);
+      }
+      return consentGate
+          .credentialOwnerOfUngatedJob(secretNames)
+          .<Either<Failure, EvaluatedConsent>>map(
+              owner ->
+                  Either.left(
+                      new Failure(
+                          "Expected the task '%s' to declare zeebe:consent or zeebe:relationship for the connection '%s', because it references the connection's credential '%s'. A credential of a connection reaches only a job that passed the consent gate."
+                              .formatted(
+                                  BufferUtil.bufferAsString(context.getElementId()),
+                                  owner.id(),
+                                  owner.credential()),
+                          ErrorType.UNKNOWN,
+                          scopeKey)))
+          .orElse(Either.right(EvaluatedConsent.NONE));
+    }
+
+    final var connection = consentGate.connections().find(definition.connection());
+    final var operation =
+        consentGate.connections().findOperation(definition.connection(), definition.operation());
+    if (operation.isLeft()) {
+      return Either.left(new Failure(operation.getLeft(), ErrorType.UNKNOWN, scopeKey));
+    }
+    final String requester = getRequesterFromProcessInstance(context);
+    final String credential =
+        connection.map(Connection::credential).filter(name -> !name.isBlank()).orElse(null);
+
+    return evaluateChange(definition, context)
+        .flatMap(
+            change -> {
+              if (definition.ground() == ConsentGround.RELATIONSHIP) {
+                if (!Requester.isPerson(requester)) {
+                  return Either.left(
+                      new Failure(
+                          "Expected a signed-in person to have started the process instance, because the task '%s' rests on a relationship, but it was started by '%s'. A relationship compares a person with a person."
+                              .formatted(
+                                  BufferUtil.bufferAsString(context.getElementId()), requester),
+                          ErrorType.UNKNOWN,
+                          scopeKey));
+                }
+                return expressionBehavior
+                    .evaluateStringExpression(definition.target(), scopeKey, context.getTenantId())
+                    .map(
+                        target ->
+                            new EvaluatedConsent(
+                                ConsentGround.RELATIONSHIP,
+                                definition.connection(),
+                                definition.operation(),
+                                "",
+                                requester,
+                                target,
+                                change,
+                                credential));
+              }
+              final Either<Failure, String> subject =
+                  definition.subject() == null
+                      ? Either.right(requester)
+                      : expressionBehavior.evaluateStringExpression(
+                          definition.subject(), scopeKey, context.getTenantId());
+              return subject.flatMap(
+                  name ->
+                      Requester.isPerson(name)
+                          ? Either.right(
+                              new EvaluatedConsent(
+                                  ConsentGround.CONSENT,
+                                  definition.connection(),
+                                  definition.operation(),
+                                  name,
+                                  requester,
+                                  "",
+                                  change,
+                                  credential))
+                          : Either.left(
+                              new Failure(
+                                  "Expected the task '%s' to name a person to ask for consent, but the subject was '%s'"
+                                      .formatted(
+                                          BufferUtil.bufferAsString(context.getElementId()), name),
+                                  ErrorType.UNKNOWN,
+                                  scopeKey)));
+            });
+  }
+
+  private Either<Failure, DirectBuffer> evaluateChange(
+      final ConsentDefinition definition, final BpmnElementContext context) {
+    if (definition.change() == null) {
+      return Either.right(DocumentValue.EMPTY_DOCUMENT);
+    }
+    return expressionBehavior
+        .evaluateAnyExpression(
+            definition.change(), context.getElementInstanceKey(), context.getTenantId())
+        .flatMap(
+            result ->
+                result.getType() == ResultType.OBJECT
+                    ? Either.right(BufferUtil.cloneBuffer(result.toBuffer()))
+                    : Either.left(
+                        new Failure(
+                            "Expected the change expression '%s' to give a context, but it gave %s"
+                                .formatted(definition.change().getExpression(), result.getType()),
+                            ErrorType.EXTRACT_VALUE_ERROR,
+                            context.getElementInstanceKey())));
+  }
+
+  private String getRequesterFromProcessInstance(final BpmnElementContext context) {
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    return processInstance == null ? "" : processInstance.getValue().getRequester();
   }
 
   private Either<Failure, List<LinkedResourceProps>> evalLinkedResourceProps(
@@ -410,6 +548,7 @@ public final class BpmnJobBehavior {
       final ExecutableJobWorkerElement element,
       final JobProperties jobProperties) {
 
+    jobProperties.getConsent().applyTo(jobRecord.getConsent());
     writeJobCreatedEvent(
         context,
         jobProperties,
@@ -672,6 +811,15 @@ public final class BpmnJobBehavior {
         .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
     setJobSecretReferences(secretReferences);
+    if (jobKind != JobKind.BPMN_ELEMENT) {
+      jobRecord.getConsent().reset();
+    }
+    final String credential = props.getConsent().credential();
+    if (jobKind == JobKind.BPMN_ELEMENT && credential != null) {
+      // the connection's credential reaches only a job that passes the gate, at hand-out
+      jobRecord.addSecretReference(
+          SecretStoreRegistry.DEFAULT_STORE_ID, credential, ConsentGate.CREDENTIAL_PATH);
+    }
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
@@ -852,6 +1000,16 @@ public final class BpmnJobBehavior {
     private String formKey;
     private int priority;
     private List<LinkedResourceProps> linkedResources;
+    private EvaluatedConsent consent = EvaluatedConsent.NONE;
+
+    public JobProperties consent(final EvaluatedConsent consent) {
+      this.consent = consent;
+      return this;
+    }
+
+    public EvaluatedConsent getConsent() {
+      return consent;
+    }
 
     public JobProperties type(final String type) {
       this.type = type;

@@ -104,6 +104,7 @@
       <validValue name="AGENT_HISTORY_BATCH">78</validValue>
       <validValue name="ELEMENT_INSTANCE_WALK">79</validValue>
       <validValue name="PROCESS_DEFINITION_RESTORE">80</validValue>
+      <validValue name="CONSENT">81</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

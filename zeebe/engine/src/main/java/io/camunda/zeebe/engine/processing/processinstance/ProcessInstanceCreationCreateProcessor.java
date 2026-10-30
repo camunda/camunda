@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
+import io.camunda.zeebe.engine.processing.consent.Requester;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -111,7 +112,11 @@ public final class ProcessInstanceCreationCreateProcessor
 
     final var processInstance =
         helper.initProcessInstanceRecord(
-            process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
+            process,
+            processInstanceKey,
+            record.getTags(),
+            record.getBusinessIdBuffer(),
+            Requester.of(command.getAuthorizations()));
 
     helper.setVariablesFromDocument(
         processInstance,
