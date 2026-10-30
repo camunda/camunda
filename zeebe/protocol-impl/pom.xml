@@ -131,10 +131,6 @@
       <artifactId>zeebe-auth</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
-    </dependency>
   </dependencies>
 
 </project>

@@ -9,13 +9,18 @@ package io.camunda.zeebe.engine.processing.globallistener;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GlobalListenerValidator {
+  // All task listener event types as strings, to validate the event types of a record
+  private static final Set<String> TASK_LISTENER_EVENT_TYPES =
+      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
   private static final String LISTENER_NOT_EXISTS_ERROR_MESSAGE =
       "Expected a global %s listener with id '%s' to exist, but it was not found";
   private static final String LISTENER_EXISTS_ERROR_MESSAGE =
@@ -103,6 +108,6 @@ public class GlobalListenerValidator {
 
   public boolean isValidEventType(final GlobalListenerRecord record, final String eventType) {
     return GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
-        || GlobalListenerRecord.TASK_LISTENER_EVENT_TYPES.contains(eventType);
+        || TASK_LISTENER_EVENT_TYPES.contains(eventType);
   }
 }
