@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -532,7 +534,7 @@ public final class CallActivityTest {
   public void shouldPropagateLocalVariablesFromStartListenerWithoutInputMappings() {
     // given: propagateAllParentVariables=false and no input mappings, so the only local
     // variables on the call activity come from the start execution listener
-    final var startListenerType = "start-listener";
+    final var startListenerType = jobType + "-start-listener";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -574,7 +576,7 @@ public final class CallActivityTest {
   @Test
   public void shouldPropagateLocalVariablesSetViaApiWithoutInputMappings() {
     // given: a call activity waiting on its start execution listener, with no input mappings
-    final var startListenerType = "start-listener";
+    final var startListenerType = jobType + "-start-listener";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -634,7 +636,9 @@ public final class CallActivityTest {
                         .multiInstance(
                             m ->
                                 m.zeebeInputCollectionExpression("[\"a\"]")
-                                    .zeebeInputElement("item"))))
+                                    .zeebeInputElement("item")
+                                    .zeebeOutputCollection("results")
+                                    .zeebeOutputElementExpression("result"))))
         .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
@@ -653,6 +657,162 @@ public final class CallActivityTest {
                 .variableRecords()
                 .withIntent(VariableIntent.CREATED)
                 .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .containsExactlyInAnyOrder(
+            tuple("item", "\"a\""), tuple("loopCounter", "1"), tuple("result", "null"));
+  }
+
+  @Test
+  public void shouldPropagateLocalVariablesSetBeforeIncidentResolutionWithoutInputMappings() {
+    // given: the child is not deployed yet, so the call activity raises an incident
+    final var childProcessId = jobType + "-child";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c -> c.zeebeProcessId(childProcessId).zeebePropagateAllParentVariables(false)))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getElementInstanceKey())
+        .withDocument(Map.of("z", 1))
+        .withLocalSemantic()
+        .update();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask(CHILD_TASK, t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(childVariablesCreatedBeforeChildJob(processInstanceKey))
+        .containsExactly(tuple("z", "1"));
+  }
+
+  @Test
+  public void shouldPropagateLocalVariablesSetByModificationWithoutInputMappings() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
+            .startEvent()
+            .userTask("wait")
+            .callActivity(
+                "call",
+                c -> c.zeebeProcessId(PROCESS_ID_CHILD).zeebePropagateAllParentVariables(false))
+            .endEvent()
+            .done();
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", process)
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+
+    // when: the call activity is activated with a variable scoped to it
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("call")
+        .withVariables("call", Map.of("z", 1))
+        .modify();
+
+    // then
+    assertThat(childVariablesCreatedBeforeChildJob(processInstanceKey))
+        .containsExactly(tuple("z", "1"));
+  }
+
+  @Test
+  public void shouldReturnUnchangedCopiedLocalVariablesToParentOnCompletion() {
+    // given: a local variable that shadows a process variable of the same name
+    final var startListenerType = jobType + "-start-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllParentVariables(false)
+                        .zeebeStartExecutionListener(startListenerType)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable("z", "parent")
+            .create();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(startListenerType)
+        .withVariable("z", "local")
+        .complete();
+
+    // when
+    completeJobWith(Map.of());
+
+    // then: the unchanged copy overwrites the parent's value
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(processInstanceKey)
+                .withName("z")
+                .getFirst()
+                .getValue())
+        .hasValue("\"local\"");
+  }
+
+  @Test
+  public void shouldReturnMultiInstanceLoopVariablesToParentOnCompletion() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllParentVariables(false)
+                        .multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("[\"a\"]")
+                                    .zeebeInputElement("item"))))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // when
+    completeJobWith(Map.of());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(processInstanceKey)
+                .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .containsExactlyInAnyOrder(tuple("item", "\"a\""), tuple("loopCounter", "1"));
@@ -1631,6 +1791,21 @@ public final class CallActivityTest {
         .getValue()
         .getJobKeys()
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).withVariables(variables).complete());
+  }
+
+  private List<Tuple> childVariablesCreatedBeforeChildJob(final long processInstanceKey) {
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+    final var childJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst();
+
+    return RecordingExporter.records()
+        .limit(r -> r.getPosition() >= childJob.getPosition())
+        .variableRecords()
+        .withIntent(VariableIntent.CREATED)
+        .withProcessInstanceKey(childInstance.getProcessInstanceKey())
+        .map(Record::getValue)
+        .map(v -> tuple(v.getName(), v.getValue()))
+        .toList();
   }
 
   private ProcessInstanceRecordValue getChildInstanceOf(final long processInstanceKey) {

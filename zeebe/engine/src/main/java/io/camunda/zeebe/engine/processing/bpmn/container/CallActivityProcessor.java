@@ -130,9 +130,8 @@ public final class CallActivityProcessor
                     storageOrdinal,
                     process);
               } else {
-                // Local variables in the call activity scope can originate from input mappings,
-                // start execution listeners, the set-variables API or incident resolution.
-                // They are all propagated to the called child process instance.
+                // Copy every local variable of the call activity, whatever created it, and none
+                // of its ancestors' variables. Don't restrict this to input mappings.
                 stateBehavior.copyLocalVariablesToProcessInstance(
                     callActivityInstanceKey,
                     childProcessInstanceKey,
