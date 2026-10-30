@@ -195,7 +195,7 @@
 
 	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
 	.ope-selected .djs-visual rect {
-		fill: var(--info-background-subtle) !important;
+		fill: var(--info-background-strong) !important;
 	}
 }
 
@@ -230,7 +230,7 @@
 	--cds-highlight: var(--info-background-subtle);
 	--cds-icon-secondary: var(--neutral-foreground-subtle);
 	--cds-text-primary: var(--neutral-foreground-strong);
-	--cds-background-brand: var(--primary-action-default);
+	--cds-background-brand: var(--info-action-default);
 
 	.dark & {
 		--viewer-layer: var(--neutral-background-medium);
@@ -241,17 +241,31 @@
 	}
 
 	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
-		stroke: var(--primary-action-default) !important;
+		stroke: var(--info-action-default) !important;
 	}
 
 	.op-selectable:hover {
 		cursor: pointer;
 	}
 
-	.op-selectable:hover .djs-outline,
-	.op-selected-frame .djs-outline {
+	.op-selectable:focus {
+		outline: none;
+	}
+
+	.op-selectable:hover .djs-outline {
+		stroke-width: 1px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-selectable:focus-visible .djs-outline {
 		stroke-width: 2px;
-		stroke: var(--primary-action-default);
+		stroke: var(--info-action-default);
+	}
+
+	.op-selected-frame .djs-outline,
+	.op-selected-frame:focus-visible .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--info-action-default);
 	}
 
 	.op-non-selectable {
@@ -272,7 +286,7 @@
 		rect,
 		circle,
 		polygon {
-			fill: var(--info-background-subtle) !important;
+			fill: var(--info-background-strong) !important;
 		}
 	}
 
