@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
   api(project(":camunda-cluster"))
-  api(project(":zeebe-atomix-cluster"))
+  api(project(":zeebe-atomix-messaging-api"))
   api(project(":zeebe-util"))
   api(project(":zeebe-scheduler"))
   implementation(libs.com.google.guava.guava)

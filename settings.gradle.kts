@@ -293,6 +293,8 @@ registerProject(":camunda-search-client-elasticsearch", "search/search-client-el
 
 registerProject(":zeebe-atomix-cluster", "zeebe/atomix/cluster")
 
+registerProject(":zeebe-atomix-messaging-api", "zeebe/atomix/messaging-api")
+
 registerProject(":zeebe-msgpack-value", "zeebe/msgpack-value")
 
 registerProject(":zeebe-qa-util", "zeebe/qa/util")
