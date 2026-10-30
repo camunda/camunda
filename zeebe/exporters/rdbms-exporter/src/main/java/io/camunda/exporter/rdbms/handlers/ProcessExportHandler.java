@@ -14,13 +14,13 @@ import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader.StartFormLink;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.lang3.StringUtils;
 

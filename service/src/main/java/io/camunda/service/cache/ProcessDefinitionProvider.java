@@ -11,7 +11,7 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.core.auth.SecurityContext;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;

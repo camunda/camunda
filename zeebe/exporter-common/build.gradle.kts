@@ -1,11 +1,14 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
+  testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":camunda-search-domain"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-bpmn-model"))
+  implementation(libs.org.camunda.bpm.model.camunda.xml.model)
   implementation(project(":zeebe-auth"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":camunda-security-protocol"))

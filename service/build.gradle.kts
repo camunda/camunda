@@ -18,6 +18,7 @@ dependencies {
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-bpmn-model"))
+  implementation(project(":zeebe-exporter-common"))
   implementation(project(":document-api"))
   implementation(project(":document-store"))
   implementation(project(":camunda-secret-store-api"))

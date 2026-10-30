@@ -9,7 +9,7 @@ package io.camunda.it.rdbms.db.usagemetric;
 
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
-import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
+import static io.camunda.zeebe.engine.state.metrics.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

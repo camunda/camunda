@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static io.camunda.zeebe.engine.state.metrics.HashUtil.getStringHashValue;
 import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
-import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
