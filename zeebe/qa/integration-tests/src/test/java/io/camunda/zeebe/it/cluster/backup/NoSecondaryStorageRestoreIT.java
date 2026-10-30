@@ -79,7 +79,7 @@ final class NoSecondaryStorageRestoreIT extends NoSecondaryStorageRestoreTestBas
   }
 
   private void configureRestoreApp(final Camunda cfg) {
-    cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+    cfg.getCluster().setPartitionCount(configuredPartitionCount);
     configureBackupStore(cfg);
   }
 
