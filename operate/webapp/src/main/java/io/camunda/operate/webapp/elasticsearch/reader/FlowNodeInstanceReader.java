@@ -278,6 +278,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   @Override
   public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
       final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+    final var keysAggName = "flowNodeInstanceKeys";
     final var query =
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
@@ -288,15 +289,28 @@ public class FlowNodeInstanceReader extends AbstractReader
         new SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(query)
-            // A key identifies one flow node instance, so one hit per given key is expected and the
-            // size is the number of given keys. No scrolling is needed. Only the key is fetched.
-            .size(flowNodeInstanceKeys.size())
-            .source(s -> s.filter(f -> f.includes(FlowNodeInstanceTemplate.KEY)))
+            // A key is one bucket however many documents carry it, so as many buckets as keys
+            // return every match. The hits are not needed.
+            .aggregations(
+                keysAggName,
+                new Aggregation.Builder()
+                    .terms(
+                        t ->
+                            t.field(FlowNodeInstanceTemplate.KEY).size(flowNodeInstanceKeys.size()))
+                    .build())
+            .size(0)
             .build();
 
     try {
-      return esClient.search(searchRequest, FlowNodeInstanceEntity.class).hits().hits().stream()
-          .map(hit -> hit.source().getKey())
+      return esClient
+          .search(searchRequest, Void.class)
+          .aggregations()
+          .get(keysAggName)
+          .lterms()
+          .buckets()
+          .array()
+          .stream()
+          .map(LongTermsBucket::key)
           .collect(Collectors.toSet());
     } catch (final IOException e) {
       throw new OperateRuntimeException(

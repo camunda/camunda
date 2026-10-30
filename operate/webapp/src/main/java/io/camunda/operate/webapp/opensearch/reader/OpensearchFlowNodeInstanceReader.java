@@ -257,6 +257,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   @Override
   public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
       final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+    final var keysAggName = "flowNodeInstanceKeys";
     final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
@@ -265,15 +266,22 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                         and(
                             term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
                             longTerms(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys)))))
-            // A key identifies one flow node instance, so one hit per given key is expected and the
-            // size is the number of given keys. No scrolling is needed. Only the key is fetched.
-            .size(flowNodeInstanceKeys.size())
-            .source(sourceInclude(FlowNodeInstanceTemplate.KEY));
+            // A key is one bucket however many documents carry it, so as many buckets as keys
+            // return every match.
+            .aggregations(
+                keysAggName,
+                termAggregation(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys.size())
+                    .toAggregation());
 
-    record Result(Long key) {}
-
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
-        .map(Result::key)
+    return richOpenSearchClient
+        .doc()
+        .searchAggregations(searchRequestBuilder)
+        .get(keysAggName)
+        .lterms()
+        .buckets()
+        .array()
+        .stream()
+        .map(bucket -> bucket.key().signed())
         .collect(Collectors.toSet());
   }
 
