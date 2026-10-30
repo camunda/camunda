@@ -7,18 +7,21 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import type {FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Heading, PageLayout, Text} from '@camunda/design-system';
+import {Heading, PageLayout, Separator, Text} from '@camunda/design-system';
 import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
+import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
+import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
 
-type FilterFormValues = {tenantId?: string};
+type FilterFormValues = OptionalFilterValues & {tenantId?: string};
 
 type Props = {
 	search: ProcessesSearch;
@@ -27,7 +30,54 @@ type Props = {
 const Processes: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const filterFormValues = useMemo<FilterFormValues>(() => ({tenantId: search.tenantId}), [search.tenantId]);
+	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
+	const {
+		processInstanceKey,
+		parentProcessInstanceKey,
+		businessId,
+		batchOperationKey,
+		errorMessage,
+		hasRetriesLeft,
+		startDateFrom,
+		startDateTo,
+		endDateFrom,
+		endDateTo,
+	} = search;
+	const optionalFilterValues = useMemo<OptionalFilterValues>(
+		() => ({
+			processInstanceKey,
+			parentProcessInstanceKey,
+			businessId,
+			batchOperationKey,
+			errorMessage,
+			hasRetriesLeft,
+			startDateFrom,
+			startDateTo,
+			endDateFrom,
+			endDateTo,
+		}),
+		[
+			processInstanceKey,
+			parentProcessInstanceKey,
+			businessId,
+			batchOperationKey,
+			errorMessage,
+			hasRetriesLeft,
+			startDateFrom,
+			startDateTo,
+			endDateFrom,
+			endDateTo,
+		],
+	);
+	const filterFormValues = useMemo<FilterFormValues>(
+		() => ({tenantId: search.tenantId, ...optionalFilterValues}),
+		[search.tenantId, optionalFilterValues],
+	);
+	const hasOptionalFilters =
+		search.tenantId !== undefined ||
+		search.incidentErrorHashCode !== undefined ||
+		Object.values(optionalFilterValues).some((value) => value !== undefined);
 	const isResetDisabled =
 		search.active &&
 		search.incidents &&
@@ -37,7 +87,8 @@ const Processes: React.FC<Props> = ({search}) => {
 		!search.process &&
 		search.version === undefined &&
 		search.elementId === undefined &&
-		search.tenantId === undefined;
+		!hasOptionalFilters &&
+		visibleFilters.length === 0;
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -46,6 +97,11 @@ const Processes: React.FC<Props> = ({search}) => {
 	useEffect(() => {
 		setClientHeight(containerRef.current?.clientHeight ?? 0);
 	}, []);
+
+	useEffect(() => {
+		preservingFormRef.current?.setConfig('keepDirtyOnReinitialize', false);
+		preservingFormRef.current = null;
+	}, [optionalFilterValues]);
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -63,6 +119,18 @@ const Processes: React.FC<Props> = ({search}) => {
 									? {process: undefined, version: undefined, elementId: undefined}
 									: {}),
 								tenantId: values.tenantId || undefined,
+								processInstanceKey: values.processInstanceKey || undefined,
+								parentProcessInstanceKey: values.parentProcessInstanceKey || undefined,
+								businessId: values.businessId || undefined,
+								batchOperationKey: values.batchOperationKey || undefined,
+								errorMessage: values.errorMessage || undefined,
+								incidentErrorHashCode:
+									values.errorMessage === prev.errorMessage ? prev.incidentErrorHashCode : undefined,
+								hasRetriesLeft: values.hasRetriesLeft || undefined,
+								startDateFrom: values.startDateFrom || undefined,
+								startDateTo: values.startDateTo || undefined,
+								endDateFrom: values.endDateFrom || undefined,
+								endDateTo: values.endDateTo || undefined,
 							}),
 						});
 					}}
@@ -70,13 +138,14 @@ const Processes: React.FC<Props> = ({search}) => {
 				>
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
-							<AutoSubmit fieldsToSkipTimeout={['tenantId']} />
+							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
 							<FilterSidebar
 								hideCollapsedLabel
 								localStorageKey="isProcessesFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
 									form.reset();
+									setVisibleFilters([]);
 									void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
 								}}
 							>
@@ -91,6 +160,26 @@ const Processes: React.FC<Props> = ({search}) => {
 										suspended={search.suspended}
 										completed={search.completed}
 										canceled={search.canceled}
+									/>
+									<Separator />
+									<OptionalFiltersFormGroup
+										filters={optionalFilterValues}
+										visibleFilters={visibleFilters}
+										onVisibleFilterChange={setVisibleFilters}
+										onFilterClear={(keys) => {
+											if (
+												Object.entries(optionalFilterValues).some(
+													([key, value]) => keys.includes(key) && value !== undefined,
+												)
+											) {
+												form.setConfig('keepDirtyOnReinitialize', true);
+												preservingFormRef.current = form;
+											}
+											void navigate({
+												to: '.',
+												search: (prev) => ({...prev, ...Object.fromEntries(keys.map((key) => [key, undefined]))}),
+											});
+										}}
 									/>
 								</div>
 							</FilterSidebar>
