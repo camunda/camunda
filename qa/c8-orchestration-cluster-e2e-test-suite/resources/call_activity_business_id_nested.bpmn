@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_call_activity_business_id_nested"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!--
+    Nested call-activity chain for the grandchild propagation case: parent -> middle -> grandchild,
+    all three processes in one deployment. The parent's call activity OVERRIDES the child's
+    Business ID with a literal; the middle's call activity has NO businessId attribute, so the
+    grandchild INHERITS the middle's (overridden) Business ID rather than the parent's root value.
+    Process ids and the middle's literal Business ID are placeholders substituted per test case.
+  -->
+  <bpmn:process id="__NESTED_PARENT_ID__" isExecutable="true">
+    <bpmn:startEvent id="parent_start">
+      <bpmn:outgoing>p_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="p_flow_1" sourceRef="parent_start" targetRef="parent_call" />
+    <bpmn:callActivity id="parent_call" name="Call Middle">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="__NESTED_MIDDLE_ID__" businessId="__NESTED_MIDDLE_BUSINESS_ID__" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>p_flow_1</bpmn:incoming>
+      <bpmn:outgoing>p_flow_2</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="p_flow_2" sourceRef="parent_call" targetRef="parent_end" />
+    <bpmn:endEvent id="parent_end">
+      <bpmn:incoming>p_flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:process id="__NESTED_MIDDLE_ID__" isExecutable="true">
+    <bpmn:startEvent id="middle_start">
+      <bpmn:outgoing>m_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="m_flow_1" sourceRef="middle_start" targetRef="middle_call" />
+    <bpmn:callActivity id="middle_call" name="Call Grandchild">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="__NESTED_GRANDCHILD_ID__" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>m_flow_1</bpmn:incoming>
+      <bpmn:outgoing>m_flow_2</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="m_flow_2" sourceRef="middle_call" targetRef="middle_end" />
+    <bpmn:endEvent id="middle_end">
+      <bpmn:incoming>m_flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:process id="__NESTED_GRANDCHILD_ID__" isExecutable="true">
+    <bpmn:startEvent id="gc_start">
+      <bpmn:outgoing>gc_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="gc_flow_1" sourceRef="gc_start" targetRef="gc_wait" />
+    <bpmn:userTask id="gc_wait" name="Wait">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>gc_flow_1</bpmn:incoming>
+      <bpmn:outgoing>gc_flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="gc_flow_2" sourceRef="gc_wait" targetRef="gc_end" />
+    <bpmn:endEvent id="gc_end">
+      <bpmn:incoming>gc_flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
