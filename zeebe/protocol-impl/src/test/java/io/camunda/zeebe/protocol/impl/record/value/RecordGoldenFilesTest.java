@@ -75,6 +75,8 @@ public class RecordGoldenFilesTest {
   //     NAME_KEY, declared in the same class or statically imported from another one, where
   //     NAME_KEY itself is again one of the above
   private static final String KEY_CONSTANT_TEMPLATE = "static\\s+final\\s+\\w+\\s+%s\\s*=([^;]+);";
+  private static final String CONSTRUCTOR_ASSIGNMENT_TEMPLATE =
+      "(?<![\\w.])(?:this\\.)?%s\\s*(=\\s*new\\s+[\\w.]+Property[^;]*);";
   private static final String KEY_STATIC_IMPORT_TEMPLATE =
       "import\\s+static\\s+(?:\\w+\\.)*(\\w+)\\.%s\\s*;";
   private static final Pattern STRING_LITERAL_PATTERN =
@@ -247,15 +249,33 @@ public class RecordGoldenFilesTest {
           (hasInit && initializerImpliesDefault(initGroup)) || hasDefaultFor(src, name);
 
       final var existingProp = existing.get(name);
+      final var initializer = hasInit ? initGroup : constructorAssignment(src, name);
+      // a nested class may declare a field with the same name, e.g. versionProp in ProcessRecord
+      // and ProcessRecord.TransformerVersion; number the later ones so that both are compared
+      var id = name;
+      for (int i = 2; props.containsKey(id); i++) {
+        id = name + "#" + i;
+      }
       props.put(
-          name,
+          id,
           new Property(
-              name,
+              id,
               type.isEmpty() && existingProp != null ? existingProp.type() : type,
               (existingProp != null && existingProp.hasDefault()) || hasDefault,
-              hasInit ? extractKey(initGroup, src, classSources) : null));
+              initializer != null ? extractKey(initializer, src, classSources) : null));
     }
     return props;
+  }
+
+  /**
+   * Returns the initializer of a final field assigned in the constructor, or null if there is none.
+   */
+  private static String constructorAssignment(final String src, final String name) {
+    final var matcher =
+        Pattern.compile(
+                CONSTRUCTOR_ASSIGNMENT_TEMPLATE.formatted(Pattern.quote(name)), Pattern.DOTALL)
+            .matcher(src);
+    return matcher.find() ? matcher.group(1) : null;
   }
 
   /** Returns the serialized key of a property initializer, or null if it is not a property. */
@@ -285,6 +305,10 @@ public class RecordGoldenFilesTest {
       } else if (c == '(') {
         depth++;
       } else if (c == ')') {
+        if (depth == 0) {
+          // closing parenthesis of the constructor, followed by a chained call like .sanitized()
+          return args.substring(0, i).trim();
+        }
         depth--;
       } else if (c == ',' && depth == 0) {
         return args.substring(0, i).trim();
@@ -613,6 +637,87 @@ public class RecordGoldenFilesTest {
         """
         private final List<String> names = new ArrayList<>(List.of("b"));
         private final int count;
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptChainedCallOnPropertyWithSameKey() {
+    // given
+    final var golden =
+        """
+        private final StringProperty usernameProp = new StringProperty("username");
+        """;
+    final var source =
+        """
+        private final StringProperty usernameProp = new StringProperty("username").sanitized();
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldDetectChangedKeyOfFieldSharingItsNameWithNestedClassField() {
+    // given
+    final var golden =
+        """
+        private final IntegerProperty versionProp = new IntegerProperty("version");
+        public static final class TransformerVersion extends UnpackedObject {
+          private final IntegerProperty versionProp = new IntegerProperty("version");
+        }
+        """;
+    final var source =
+        """
+        private final IntegerProperty versionProp = new IntegerProperty("processVersion");
+        public static final class TransformerVersion extends UnpackedObject {
+          private final IntegerProperty versionProp = new IntegerProperty("version");
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of versionProp changed from version to processVersion");
+  }
+
+  @Test
+  void shouldDetectChangedKeyAssignedInConstructor() {
+    // given
+    final var golden =
+        """
+        private final LongProperty userTaskKeyProp;
+        public UserTaskRecord() {
+          userTaskKeyProp = new LongProperty("userTaskKey", -1);
+        }
+        """;
+    final var source =
+        """
+        private final LongProperty userTaskKeyProp;
+        public UserTaskRecord() {
+          this.userTaskKeyProp = new LongProperty("taskKey", -1);
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Serialized key of userTaskKeyProp changed from userTaskKey to taskKey");
+  }
+
+  @Test
+  void shouldAcceptPropertyInitializationMovedIntoConstructor() {
+    // given
+    final var golden =
+        """
+        private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
+        """;
+    final var source =
+        """
+        private final LongProperty userTaskKeyProp;
+        public UserTaskRecord() {
+          userTaskKeyProp = new LongProperty("userTaskKey", -1);
+        }
         """;
 
     // when - then
