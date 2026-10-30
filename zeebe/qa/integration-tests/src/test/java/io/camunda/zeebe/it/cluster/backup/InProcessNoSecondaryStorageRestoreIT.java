@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -58,15 +59,18 @@ final class InProcessNoSecondaryStorageRestoreIT extends NoSecondaryStorageResto
   }
 
   /**
-   * The validation's exceptions map to REST problems: an invalid argument to a 400, an invalid
-   * state, e.g. backups that cannot satisfy the request, to a 409.
+   * The validation's exceptions map to REST problems: an invalid argument to a 400, a missing
+   * backup to a 404, an invalid state, e.g. backups that cannot satisfy the request, to a 409.
    */
   @Override
   void assertRestoreRejected(
       final RestoreRequest request,
       final Class<? extends RuntimeException> expectedType,
       final String message) {
-    final var expectedStatus = expectedType == IllegalArgumentException.class ? 400 : 409;
+    final var expectedStatus =
+        expectedType == IllegalArgumentException.class
+            ? 400
+            : expectedType == NoSuchElementException.class ? 404 : 409;
     enterRecovering();
     try (final var client = broker.newClientBuilder().build()) {
       final var response =
