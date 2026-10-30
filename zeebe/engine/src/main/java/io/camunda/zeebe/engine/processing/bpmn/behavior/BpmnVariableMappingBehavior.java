@@ -101,7 +101,8 @@ public final class BpmnVariableMappingBehavior {
             context.getElementInstanceKey(),
             context.getProcessInstanceKey(),
             context.getProcessDefinitionKey(),
-            context.getTenantId());
+            context.getTenantId(),
+            context.getFlowScopeKey());
     final var result =
         inputMappingResolver.resolve(
             inputMappings.get(),
@@ -186,7 +187,8 @@ public final class BpmnVariableMappingBehavior {
               elementInstanceKey,
               processInstanceKey,
               processDefinitionKey,
-              tenantId);
+              tenantId,
+              context.getFlowScopeKey());
       final var resolveResult =
           outputMappingResolver.resolve(
               outputMappings.get(),

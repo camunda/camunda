@@ -25,7 +25,8 @@ public record MappingContext(
     long scopeKey,
     long processInstanceKey,
     long processDefinitionKey,
-    String tenantId) {
+    String tenantId,
+    long flowScopeKey) {
 
   @Override
   public String toString() {
