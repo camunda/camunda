@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockRele
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -487,6 +489,15 @@ public final class RecordingExporter implements Exporter {
   public static ElementInstanceWalkRecordStream elementInstanceWalkRecords(
       final ElementInstanceWalkIntent intent) {
     return elementInstanceWalkRecords().withIntent(intent);
+  }
+
+  public static PolicyUpdateRecordStream policyUpdateRecords() {
+    return new PolicyUpdateRecordStream(
+        records(ValueType.POLICY_UPDATE, PolicyUpdateRecordValue.class));
+  }
+
+  public static PolicyUpdateRecordStream policyUpdateRecords(final PolicyUpdateIntent intent) {
+    return policyUpdateRecords().withIntent(intent);
   }
 
   public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords() {

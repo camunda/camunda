@@ -153,6 +153,7 @@ final class TestSupport {
             ValueType.BUFFERED_COMMAND,
             ValueType.ELEMENT_INSTANCE_WALK,
             ValueType.PROCESS_DEFINITION_RESTORE,
+            ValueType.POLICY_UPDATE,
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();

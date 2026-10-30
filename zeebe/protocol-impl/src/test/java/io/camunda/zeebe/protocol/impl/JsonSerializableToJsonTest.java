@@ -79,6 +79,9 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -132,6 +135,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -3727,6 +3731,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": 1,
+                  "policyVersion": 0,
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceMatcher": "ID",
@@ -3754,6 +3759,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": 2,
+                  "policyVersion": 0,
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceMatcher": "PROPERTY",
@@ -3780,6 +3786,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "authorizationKey": -1,
+                  "policyVersion": 0,
                   "ownerId": "",
                   "ownerType": "UNSPECIFIED",
                   "resourceMatcher": "UNSPECIFIED",
@@ -3841,6 +3848,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "roleKey": 1,
+                  "policyVersion": 0,
                   "roleId": "id",
                   "name": "role",
                   "description": "description",
@@ -3860,6 +3868,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "roleKey": -1,
+                  "policyVersion": 0,
                   "roleId": "roleId",
                   "name": "",
                   "description": "",
@@ -3888,6 +3897,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "tenantKey": 123,
+                  "policyVersion": 0,
                   "tenantId": "tenant-abc",
                   "name": "Test Tenant",
                   "description": "Test Description",
@@ -3907,6 +3917,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "tenantKey": -1,
+                  "policyVersion": 0,
                   "tenantId": "tenantId",
                   "name": "",
                   "description": "",
@@ -3987,6 +3998,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "groupKey": 1,
+                  "policyVersion": 0,
                   "groupId": "groupId",
                   "name": "group",
                   "description": "description",
@@ -4006,6 +4018,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "groupKey": -1,
+                  "policyVersion": 0,
                   "groupId": "groupId",
                   "name": "",
                   "description": "",
@@ -4032,6 +4045,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "mappingRuleKey": 1,
+                  "policyVersion": 0,
                   "claimName": "claimName",
                   "claimValue": "claimValue",
                   "mappingRuleId": "id1",
@@ -4051,6 +4065,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "mappingRuleKey": -1,
+                  "policyVersion": 0,
                   "mappingRuleId": "mappingRuleId",
                   "claimName": "",
                   "claimValue": "",
@@ -4137,6 +4152,7 @@ final class JsonSerializableToJsonTest {
                   "roles": [
                     {
                       "roleKey": 1,
+                      "policyVersion": 0,
                       "roleId": "id",
                       "name": "roleName",
                       "description": "description",
@@ -4147,6 +4163,7 @@ final class JsonSerializableToJsonTest {
                   "roleMembers": [
                     {
                       "roleKey": -1,
+                      "policyVersion": 0,
                       "roleId": "id",
                       "name": "",
                       "description": "",
@@ -4172,6 +4189,7 @@ final class JsonSerializableToJsonTest {
                   ],
                   "defaultTenant": {
                     "tenantKey": 5,
+                    "policyVersion": 0,
                     "tenantId": "id",
                     "name": "name",
                     "description": "",
@@ -4181,6 +4199,7 @@ final class JsonSerializableToJsonTest {
                   "tenants": [
                     {
                       "tenantKey": 42,
+                      "policyVersion": 0,
                       "tenantId": "foo",
                       "name": "Foo",
                       "description": "",
@@ -4191,6 +4210,7 @@ final class JsonSerializableToJsonTest {
                   "tenantMembers": [
                     {
                       "tenantKey": -1,
+                      "policyVersion": 0,
                       "tenantId": "id",
                       "name": "",
                       "description": "",
@@ -4201,6 +4221,7 @@ final class JsonSerializableToJsonTest {
                   "mappingRules": [
                     {
                       "mappingRuleKey": 6,
+                      "policyVersion": 0,
                       "mappingRuleId": "id1",
                       "claimName": "claim1",
                       "claimValue": "value1",
@@ -4208,6 +4229,7 @@ final class JsonSerializableToJsonTest {
                     },
                     {
                       "mappingRuleKey": 7,
+                      "policyVersion": 0,
                       "mappingRuleId": "id2",
                       "claimName": "claim2",
                       "claimValue": "value2",
@@ -4217,6 +4239,7 @@ final class JsonSerializableToJsonTest {
                   "authorizations": [
                     {
                       "authorizationKey": -1,
+                      "policyVersion": 0,
                       "ownerId": "id2",
                       "ownerType": "MAPPING_RULE",
                       "resourceMatcher": "ID",
@@ -4229,6 +4252,7 @@ final class JsonSerializableToJsonTest {
                   "groups": [
                     {
                       "groupKey": -1,
+                      "policyVersion": 0,
                       "groupId": "group1",
                       "name": "Group 1",
                       "description": "",
@@ -4239,6 +4263,7 @@ final class JsonSerializableToJsonTest {
                   "groupMembers": [
                     {
                       "groupKey": -1,
+                      "policyVersion": 0,
                       "groupId": "group1",
                       "name": "",
                       "description": "",
@@ -4266,6 +4291,7 @@ final class JsonSerializableToJsonTest {
                     "users": [],
                     "defaultTenant": {
                         "tenantKey": -1,
+                        "policyVersion": 0,
                         "tenantId": "tenantId",
                         "name": "",
                         "description": "",
@@ -5246,6 +5272,208 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "tenantId": "",
           "restoredCount": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// PolicyUpdateRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "PolicyUpdateRecord",
+        (Supplier<PolicyUpdateRecord>)
+            () ->
+                new PolicyUpdateRecord()
+                    .setPolicyId("policy-1")
+                    .setPolicyVersion(3)
+                    .setUpdateId("update-1")
+                    .setChunkIndex(1)
+                    .setChunkCount(2)
+                    .setTenants(
+                        List.of(
+                            new TenantRecord()
+                                .setTenantId("tenant-1")
+                                .setName("Tenant 1")
+                                .setPolicyVersion(3)))
+                    .setRoles(
+                        List.of(
+                            new RoleRecord()
+                                .setRoleId("role-1")
+                                .setName("Role 1")
+                                .setPolicyVersion(3)))
+                    .setGroups(
+                        List.of(
+                            new GroupRecord()
+                                .setGroupId("group-1")
+                                .setName("Group 1")
+                                .setPolicyVersion(3)))
+                    .setMappingRules(
+                        List.of(
+                            new MappingRuleRecord()
+                                .setMappingRuleId("rule-1")
+                                .setName("Rule 1")
+                                .setClaimName("department")
+                                .setClaimValue("sales")
+                                .setPolicyVersion(3)))
+                    .setMemberships(
+                        List.of(
+                            new PolicyMembershipEntry()
+                                .setTargetType(PolicyUpdateEntityType.ROLE)
+                                .setTargetId("role-1")
+                                .setMemberType(EntityType.USER)
+                                .setMemberId("user-1")))
+                    .setAuthorizations(
+                        List.of(
+                            new AuthorizationRecord()
+                                .setOwnerType(AuthorizationOwnerType.ROLE)
+                                .setOwnerId("role-1")
+                                .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                                .setResourceId("process-1")
+                                .setPermissionTypes(Set.of(PermissionType.READ_PROCESS_DEFINITION))
+                                .setPolicyVersion(3)))
+                    .setDeletes(
+                        List.of(
+                            new PolicyDeleteEntry()
+                                .setEntityType(PolicyUpdateEntityType.GROUP)
+                                .setId("group-2")))
+                    .setMembershipDeletes(
+                        List.of(
+                            new PolicyMembershipEntry()
+                                .setTargetType(PolicyUpdateEntityType.GROUP)
+                                .setTargetId("group-1")
+                                .setMemberType(EntityType.USER)
+                                .setMemberId("user-2")))
+                    .setAuthorizationDeletes(
+                        List.of(
+                            new AuthorizationRecord()
+                                .setOwnerType(AuthorizationOwnerType.USER)
+                                .setOwnerId("user-2")
+                                .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .setResourceMatcher(AuthorizationResourceMatcher.ANY)
+                                .setResourceId("*")))
+                    .setErrorMessage("failed"),
+        """
+        {
+          "policyId": "policy-1",
+          "policyVersion": 3,
+          "updateId": "update-1",
+          "chunkIndex": 1,
+          "chunkCount": 2,
+          "tenants": [
+            {
+              "tenantKey": -1,
+              "tenantId": "tenant-1",
+              "name": "Tenant 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED",
+              "policyVersion": 3
+            }
+          ],
+          "roles": [
+            {
+              "roleKey": -1,
+              "roleId": "role-1",
+              "name": "Role 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED",
+              "policyVersion": 3
+            }
+          ],
+          "groups": [
+            {
+              "groupKey": -1,
+              "groupId": "group-1",
+              "name": "Group 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED",
+              "policyVersion": 3
+            }
+          ],
+          "mappingRules": [
+            {
+              "mappingRuleKey": -1,
+              "mappingRuleId": "rule-1",
+              "name": "Rule 1",
+              "claimName": "department",
+              "claimValue": "sales",
+              "policyVersion": 3
+            }
+          ],
+          "memberships": [
+            {
+              "targetType": "ROLE",
+              "targetId": "role-1",
+              "memberType": "USER",
+              "memberId": "user-1"
+            }
+          ],
+          "authorizations": [
+            {
+              "authorizationKey": -1,
+              "ownerId": "role-1",
+              "ownerType": "ROLE",
+              "resourceType": "PROCESS_DEFINITION",
+              "resourceMatcher": "ID",
+              "resourceId": "process-1",
+              "resourcePropertyName": "",
+              "permissionTypes": ["READ_PROCESS_DEFINITION"],
+              "policyVersion": 3
+            }
+          ],
+          "deletes": [
+            {
+              "entityType": "GROUP",
+              "id": "group-2"
+            }
+          ],
+          "membershipDeletes": [
+            {
+              "targetType": "GROUP",
+              "targetId": "group-1",
+              "memberType": "USER",
+              "memberId": "user-2"
+            }
+          ],
+          "authorizationDeletes": [
+            {
+              "authorizationKey": -1,
+              "ownerId": "user-2",
+              "ownerType": "USER",
+              "resourceType": "PROCESS_DEFINITION",
+              "resourceMatcher": "ANY",
+              "resourceId": "*",
+              "resourcePropertyName": "",
+              "permissionTypes": [],
+              "policyVersion": 0
+            }
+          ],
+          "errorMessage": "failed"
+        }
+        """
+      },
+      {
+        "Empty PolicyUpdateRecord",
+        (Supplier<PolicyUpdateRecord>) PolicyUpdateRecord::new,
+        """
+        {
+          "policyId": "",
+          "policyVersion": 0,
+          "updateId": "",
+          "chunkIndex": 0,
+          "chunkCount": 0,
+          "tenants": [],
+          "roles": [],
+          "groups": [],
+          "mappingRules": [],
+          "memberships": [],
+          "authorizations": [],
+          "deletes": [],
+          "membershipDeletes": [],
+          "authorizationDeletes": [],
+          "errorMessage": ""
         }
         """
       },

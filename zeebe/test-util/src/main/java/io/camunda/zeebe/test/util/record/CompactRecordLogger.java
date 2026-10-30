@@ -121,6 +121,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -352,6 +353,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
+    valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2269,6 +2271,25 @@ public class CompactRecordLogger {
 
     result.append("processDefinitionKey:").append(shortenKey(value.getProcessDefinitionKey()));
     result.append(" tenantId:").append(value.getTenantId());
+
+    return result.toString();
+  }
+
+  private String summarizePolicyUpdate(final Record<?> record) {
+    final var value = (PolicyUpdateRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("policy:").append(value.getPolicyId());
+    result.append(" version:").append(value.getPolicyVersion());
+    result.append(" update:").append(value.getUpdateId());
+    result
+        .append(" chunk:")
+        .append(value.getChunkIndex() + 1)
+        .append("/")
+        .append(value.getChunkCount());
+    if (!value.getErrorMessage().isEmpty()) {
+      result.append(" error:").append(value.getErrorMessage());
+    }
 
     return result.toString();
   }
