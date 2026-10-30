@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+
 import com.azure.core.http.HttpClient;
 import com.azure.core.util.BinaryData;
 import com.azure.core.util.HttpClientOptions;
@@ -58,9 +62,6 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to find backup with id '%s', but does not exist.";
   public static final String ERROR_MSG_BACKUP_NOT_COMPLETED =
       "Expected to find completed backup with id '%s', but was in state '%s'";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
-  public static final String METADATA_OBJECT_NAME = "metadata.json";
   static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
 
   /**
@@ -421,7 +422,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   private String backupMetadataPath(final int partitionId) {
-    return "metadata/%d/%s".formatted(partitionId, METADATA_OBJECT_NAME);
+    return metadataPath(partitionId);
   }
 
   private void assureContainerCreated() {

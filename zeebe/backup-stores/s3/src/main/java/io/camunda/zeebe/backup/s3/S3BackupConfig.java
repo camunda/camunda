@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
@@ -28,8 +29,8 @@ import org.jspecify.annotations.Nullable;
  * @param forcePathStyleAccess Forces the AWS SDK to always use paths for accessing the bucket. Off
  *     by default, which allows the AWS SDK to choose virtual-hosted-style bucket access.
  * @param compressionAlgorithm Algorithm to use (if any) for compressing backup contents.
- * @param basePath Prefix to use for all objects in this bucket. Must be non-empty and not start or
- *     end with '/'.
+ * @param basePath Prefix to use for all objects in this bucket. Leading and trailing '/' are
+ *     removed, and a blank value means no prefix.
  * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
  * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
  *     a connection pool to a remote service.
@@ -82,17 +83,7 @@ public record S3BackupConfig(
                 .formatted(compressionAlgorithm.get(), supported));
       }
     }
-    if (basePath.isPresent()) {
-      final var prefix = basePath.get();
-      if (prefix.isEmpty()) {
-        throw new IllegalArgumentException(
-            "basePath is set but empty. It must be either unset or not empty.");
-      }
-      if (prefix.startsWith("/") || prefix.endsWith("/")) {
-        throw new IllegalArgumentException(
-            "basePath must not start or end with '/' but was: %s".formatted(prefix));
-      }
-    }
+    basePath = BackupStorePaths.sanitizeBasePath(basePath.orElse(null));
     ssecKey.ifPresent(SseCKey::decodeAndValidate);
   }
 

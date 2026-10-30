@@ -466,8 +466,9 @@ camunda: # Type: io.camunda.configuration.Camunda
           # that no authentication is attempted which is only applicable for testing with emulated GCS.
           auth: "auto" # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$GcsBackupStoreAuth, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_AUTH
           # When set, all blobs in the bucket will use this prefix. Useful for using the same bucket for
-          # multiple Zeebe clusters. In this case, basePath must be unique. Should not start or end with '/'
-          # character. Must be non-empty and not consist of only '/' characters.
+          # multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/' characters
+          # are removed, and a blank value or a single '/' means no prefix. A value consisting only of '/'
+          # characters is rejected.
           base-path: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_BASEPATH
           # Name of the bucket where the backup will be stored. The bucket must already exist. The bucket must
           # not be shared with other Zeebe clusters unless basePath is also set.
@@ -497,9 +498,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           # https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurati
           # ons
           api-call-timeout: "180s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_APICALLTIMEOUT
-          # When set, all objects in the bucket will use this prefix. Must be non-empty and not start or end
-          # with '/'. Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must
-          # be unique.
+          # When set, all objects in the bucket will use this prefix. Useful for using the same bucket for
+          # multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/' characters
+          # are removed, and a blank value or a single '/' means no prefix. A value consisting only of '/'
+          # characters is rejected.
           base-path: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_BASEPATH
           # Name of the bucket where the backup will be stored. The bucket must be already created. The bucket
           # must not be shared with other zeebe clusters. bucketName must not be empty.
