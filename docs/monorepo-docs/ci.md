@@ -911,6 +911,7 @@ Follow the Monorepo CI medic routines and check out the available [CI runbooks](
 There can be many factors influencing that and it is sometimes hard to find the root caues. Below list should provide guidance:
 
 1. Try to rerun the failing CI check(s) at least to overcome transient problems.
+   * Only re-run recent runs (up to 2 days old). Older runs have lost their short-lived artifacts, so their snapshot deploy jobs fail by design. Start a new run instead (push or `workflow_dispatch`), see [this runbook entry](./ci-runbooks.md#re-run-of-an-old-workflow-run-fails-in-the-deploy-jobs).
 2. If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.
 3. Check if there is an [open issue](#issue-tracking) about that failing CI check, e.g. by searching for the error message.
 4. [Ask Copilot about the failure](https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/) using the `Explain error` button
