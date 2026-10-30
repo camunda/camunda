@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+/**
+ * Removes job backoff entries that the engine could not have created at runtime. It used to also
+ * re-add the entries lost to #14329, but guessing which jobs belong in backoff re-added jobs that
+ * were waiting on an incident (#15954, #27183). The name is kept from that time.
+ */
 public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
@@ -16,15 +21,12 @@ public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
   public boolean needsToRun(final MigrationTaskContext context) {
-    // The migration should run everytime, as there is no fast way to detect if a failed job need to
-    // be migrated.
-    // The only way to do it is retrieve the failed job twice, but this is too time-consuming
-    // The migration should restore only the missing failed jobs
+    // finding out whether an entry must be removed costs as much as removing it
     return true;
   }
 
   @Override
   public void runMigration(final MutableMigrationTaskContext context) {
-    context.processingState().getJobState().restoreBackoff();
+    context.processingState().getJobState().removeInvalidBackoffs(jobKey -> true);
   }
 }

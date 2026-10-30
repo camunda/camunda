@@ -9,6 +9,11 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+<<<<<<< HEAD
+=======
+import java.util.function.LongPredicate;
+import org.agrona.DirectBuffer;
+>>>>>>> 5f74e87d (refactor: let the job backoff cleanup take a job filter)
 
 public interface MutableJobState extends JobState {
 
@@ -46,5 +51,43 @@ public interface MutableJobState extends JobState {
 
   void migrate(long key, JobRecord record);
 
+<<<<<<< HEAD
   void restoreBackoff();
+=======
+  /**
+   * Removes the {@code JOB_BACKOFF} entries of missing jobs and of jobs without retries or retry
+   * backoff. Also removes the entries of jobs for which {@code canBackOff} returns false.
+   */
+  void removeInvalidBackoffs(LongPredicate canBackOff);
+
+  /**
+   * Inserts a new job record and marks it {@code ACTIVATABLE}. Callers must follow up with {@link
+   * #makeJobActivatableByPriority(DirectBuffer, long, String, int)}.
+   */
+  void insertJobRecordActivatable(long key, JobRecord record);
+
+  /** Updates the {@code JOB} column family */
+  void updateJobRecord(long key, JobRecord updatedValue);
+
+  /** Updates the {@code JOB_STATE} column family. */
+  void updateJobState(long key, State newState);
+
+  /** Removes from the {@code JOB_DEADLINES} column family. */
+  void removeJobDeadline(long key, long deadline);
+
+  /** Inserts into the {@code JOB_ACTIVATABLE_BY_PRIORITY} column family */
+  void makeJobActivatableByPriority(DirectBuffer type, long key, String tenantId, int priority);
+
+  /**
+   * Removes from both legacy {@code JOB_ACTIVATABLE} and {@code JOB_ACTIVATABLE_BY_PRIORITY} column
+   * families.
+   */
+  void makeJobNotActivatable(long key, JobRecord record);
+
+  /** Inserts into the {@code JOB_BACKOFF} column family. */
+  void addJobBackoff(long job, long backoff);
+
+  /** Removes from the {@code JOB_BACKOFF} column family. */
+  void removeJobBackoff(long job, long backoff);
+>>>>>>> 5f74e87d (refactor: let the job backoff cleanup take a job filter)
 }
