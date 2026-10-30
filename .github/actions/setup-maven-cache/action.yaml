@@ -38,14 +38,30 @@ runs:
       #      from downloading multiple artifacts at the same time.
       # `aether.dependencyCollector.impl=bf` uses a breadth first algorithm when resolving/downloading poms.
       #     The `bf` collector is suggested when the project contains many modules and dependencies.
+<<<<<<< HEAD
+=======
+      # `aether.connector.*` configures the HTTP transport of Maven 3.9 (resolver 1.x).
+      # `aether.connector.requestTimeout` is a socket read timeout (max silence between packets), not a total download time.
+      # `aether.connector.http.retryHandler.serviceUnavailable` lists the HTTP status codes Maven retries, up to
+      #     `retryHandler.count` times with a 5s, 10s, 15s, ... backoff. The default is 429,503, so a short Nexus
+      #     502 or 504 failed the build at once.
+>>>>>>> 8feca61d (ci: retry Maven downloads on Nexus 502 and 504)
       run: |
         tee .mvn/maven.config <<EOF
         --errors
         --batch-mode
         --update-snapshots
+<<<<<<< HEAD
         -D aether.transport.http.connectionMaxTtl=120
         -D aether.transport.http.reuseConnections=${{ inputs.maven-wagon-http-pool }}
         -D aether.transport.http.retryHandler.count=5
+=======
+        -D aether.connector.requestTimeout=60000
+        -D aether.connector.http.connectionMaxTtl=120
+        -D aether.connector.http.reuseConnections=${{ inputs.maven-wagon-http-pool }}
+        -D aether.connector.http.retryHandler.count=5
+        -D aether.connector.http.retryHandler.serviceUnavailable=429,502,503,504
+>>>>>>> 8feca61d (ci: retry Maven downloads on Nexus 502 and 504)
         -D aether.enhancedLocalRepository.split=true
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav
