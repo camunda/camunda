@@ -12,6 +12,8 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockLicenseEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
@@ -21,12 +23,30 @@ import {
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+
+const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="d" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="order" isExecutable="true">
+    <bpmn:startEvent id="start" name="Start" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="order">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -63,9 +83,35 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 
 		await expect(operatePreviewProcessesPage.heading).toBeAttached();
 		await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
-		await expect(operatePreviewProcessesPage.diagramPanelPlaceholder).toBeVisible();
+		await expect(operatePreviewProcessesPage.diagramPanel.getByText('There is no Process selected')).toBeVisible();
 		await expect(operatePreviewProcessesPage.instancesTable).toBeVisible();
 		await expect(operatePreviewProcessesPage.instancesTable.getByText('Order process')).toBeVisible();
+	});
+
+	test('should render the diagram panel header and diagram for a selected process version', async ({
+		network,
+		operatePreviewProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({processDefinitionId: 'order', name: 'Order process', version: 1})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+		await operatePreviewProcessesPage.goto('?active=true&process=order&version=1');
+
+		const panel = operatePreviewProcessesPage.diagramPanel;
+		await expect(panel.getByText('Order process')).toBeVisible();
+		await expect(panel.getByRole('button', {name: /Process ID/})).toBeVisible();
+		await expect(panel.getByTestId('diagram-canvas')).toBeVisible();
+		await expect(panel.getByText('There is no Process selected')).toBeHidden();
 	});
 
 	test('should keep the Carbon Processes route working', async ({network, operateProcessesPage, page}) => {
