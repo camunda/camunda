@@ -192,7 +192,10 @@ public final class ProcessInstanceServices
             .items()
             .stream()
             .collect(
-                Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
+                Collectors.toMap(
+                    ProcessInstanceEntity::processInstanceKey,
+                    Function.identity(),
+                    (first, second) -> first));
 
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
   }

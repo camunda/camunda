@@ -249,6 +249,33 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  public void shouldReturnOrderedProcessHierarchyWhenSearchReturnsDuplicateInstance() {
+    // given
+    final var childProcess = mock(ProcessInstanceEntity.class);
+    when(childProcess.processInstanceKey()).thenReturn(789L);
+    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
+    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
+
+    final var parentProcess = mock(ProcessInstanceEntity.class);
+    when(parentProcess.processInstanceKey()).thenReturn(123L);
+    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
+
+    when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1, false, List.of(childProcess, parentProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey());
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
   public void shouldReturnEmptyListForBlankTreePath() {
     // given
     final var rootInstance = mock(ProcessInstanceEntity.class);
