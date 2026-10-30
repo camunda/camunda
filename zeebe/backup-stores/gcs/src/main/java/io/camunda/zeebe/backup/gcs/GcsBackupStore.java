@@ -72,7 +72,7 @@ public final class GcsBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final Storage client;
   private final BucketInfo bucketInfo;
-  private final String basePath;
+  private final Optional<String> basePath;
   private final GcsBackupConfig config;
 
   GcsBackupStore(final GcsBackupConfig config) {
@@ -82,7 +82,7 @@ public final class GcsBackupStore implements BackupStore {
   GcsBackupStore(final GcsBackupConfig config, final Storage client) {
     this.config = config;
     bucketInfo = BucketInfo.of(config.bucketName());
-    basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
+    basePath = Optional.ofNullable(config.basePath());
     this.client = client;
     executor =
         Executors.newThreadPerTaskExecutor(

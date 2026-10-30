@@ -190,6 +190,6 @@ final class FileSetManager {
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return BackupStorePaths.fileSetPath("", id, fileSetName);
+    return BackupStorePaths.fileSetPath(id, fileSetName);
   }
 }

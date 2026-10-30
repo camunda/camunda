@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
@@ -57,7 +58,7 @@ final class FileSetManagerTest {
         new FileSetManager(
             storage,
             BucketInfo.of("bucket"),
-            "basePath",
+            Optional.of("basePath"),
             Executors.newVirtualThreadPerTaskExecutor(),
             50,
             1024 * 1024);

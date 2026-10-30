@@ -105,18 +105,20 @@ public final class ManifestManager {
 
   private final BucketInfo bucketInfo;
   private final Storage client;
-  private final String basePath;
+  private final Optional<String> basePath;
+  private final String basePrefix;
   private final ExecutorService executor;
   private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
 
   ManifestManager(
       final Storage client,
       final BucketInfo bucketInfo,
-      final String basePath,
+      final Optional<String> basePath,
       final ExecutorService executor) {
     this.bucketInfo = bucketInfo;
     this.client = client;
     this.basePath = basePath;
+    basePrefix = basePath.map(path -> path + "/").orElse("");
     this.executor = executor;
   }
 
@@ -228,7 +230,7 @@ public final class ManifestManager {
               continue;
             }
             final var id =
-                ManifestMetadata.parseIdentifier(blob.getName(), basePath, MANIFEST_OBJECT_NAME);
+                ManifestMetadata.parseIdentifier(blob.getName(), basePrefix, MANIFEST_OBJECT_NAME);
             if (id.isEmpty()) {
               LOG.warn(
                   "Tried interpreting blob {} as a backup manifest but failed", blob.getName());
@@ -253,7 +255,7 @@ public final class ManifestManager {
    * #getManifest} does.
    */
   private CompletableFuture<Optional<BackupStatus>> readStatus(final ManifestBlob manifestBlob) {
-    return ManifestMetadata.toBackupStatus(manifestBlob.blob(), basePath, MANIFEST_OBJECT_NAME)
+    return ManifestMetadata.toBackupStatus(manifestBlob.blob(), basePrefix, MANIFEST_OBJECT_NAME)
         .map(status -> CompletableFuture.completedFuture(Optional.of(status)))
         // Fallback: download the manifest for blobs without metadata
         .orElseGet(() -> downloadManifestStatus(manifestBlob.blob()));
@@ -414,7 +416,7 @@ public final class ManifestManager {
     final var pattern =
         Pattern.compile(
                 MANIFEST_PATH_FORMAT.formatted(
-                    Pattern.quote(basePath),
+                    Pattern.quote(basePrefix),
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                     wildcard.checkpointPattern().asRegex(),
                     BackupIdentifierWildcard.memberIdRegex(wildcard),

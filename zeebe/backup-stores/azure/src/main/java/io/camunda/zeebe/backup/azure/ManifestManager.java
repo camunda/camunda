@@ -181,7 +181,7 @@ public final class ManifestManager {
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
 
     final BlobClient blobClient =
-        blobContainerClient.getBlobClient(BackupStorePaths.manifestPath("", manifestId));
+        blobContainerClient.getBlobClient(BackupStorePaths.manifestPath(manifestId));
     final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
       upload(blobClient, Manifest.createFailed(manifestId, failureReason));
@@ -237,7 +237,7 @@ public final class ManifestManager {
 
   Manifest getManifest(final BackupIdentifier id) {
     assureContainerCreated();
-    return getManifestWithPath(BackupStorePaths.manifestPath("", id));
+    return getManifestWithPath(BackupStorePaths.manifestPath(id));
   }
 
   private Manifest getManifestWithPath(final String path) {
@@ -303,7 +303,7 @@ public final class ManifestManager {
   }
 
   public static String manifestPath(final Manifest manifest) {
-    return BackupStorePaths.manifestPath("", manifest.id());
+    return BackupStorePaths.manifestPath(manifest.id());
   }
 
   /** Matches the manifest paths of the wildcard and captures the identifier's path segments. */
@@ -343,7 +343,7 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return manifestsPrefix("", wildcard);
+    return manifestsPrefix(wildcard);
   }
 
   void assureContainerCreated() {

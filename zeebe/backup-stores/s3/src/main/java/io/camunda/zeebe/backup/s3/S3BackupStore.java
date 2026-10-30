@@ -194,7 +194,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return manifestsPrefix(config.basePath().map(base -> base + "/").orElse(""), wildcard);
+    return manifestsPrefix(config.basePath(), wildcard);
   }
 
   /** Backwards compatible object path for backups generated prior to 8.9 */
@@ -414,7 +414,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return metadataPath(config.basePath().map(base -> base + "/").orElse(""), partitionId);
+    return metadataPath(config.basePath(), partitionId);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(

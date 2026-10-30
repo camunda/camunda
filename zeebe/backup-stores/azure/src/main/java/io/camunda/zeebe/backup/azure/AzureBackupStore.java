@@ -422,7 +422,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   private String backupMetadataPath(final int partitionId) {
-    return metadataPath("", partitionId);
+    return metadataPath(partitionId);
   }
 
   private void assureContainerCreated() {
