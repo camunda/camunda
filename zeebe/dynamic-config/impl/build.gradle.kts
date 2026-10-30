@@ -10,6 +10,7 @@ dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.com.google.protobuf.protobuf.java)
   implementation(libs.org.slf4j.slf4j.api)

@@ -25,7 +25,7 @@ dependencies {
   implementation(project(":camunda-search-domain"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.org.springframework.spring.core)
   api(libs.io.micrometer.micrometer.commons)

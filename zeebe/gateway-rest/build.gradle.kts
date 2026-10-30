@@ -79,7 +79,7 @@ dependencies {
   testImplementation(libs.io.netty.netty.transport)
   testImplementation(libs.org.skyscreamer.jsonassert)
   testImplementation(libs.com.jayway.jsonpath.json.path)
-  testImplementation(project(":zeebe-atomix-cluster"))
+  testImplementation(project(":zeebe-atomix-messaging-api"))
   testImplementation(project(":zeebe-msgpack-core"))
   testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
   testImplementation(project(":zeebe-scheduler"))

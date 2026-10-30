@@ -43,6 +43,7 @@
 
   <modules>
     <module>utils</module>
+    <module>messaging-api</module>
     <module>cluster</module>
   </modules>
 

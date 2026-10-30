@@ -14,7 +14,7 @@ dependencies {
   api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-msgpack-core"))
   implementation(project(":zeebe-msgpack-value"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":document-api"))
