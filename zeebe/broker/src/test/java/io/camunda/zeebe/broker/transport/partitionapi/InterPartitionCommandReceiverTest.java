@@ -287,12 +287,8 @@ final class InterPartitionCommandReceiverTest {
         .tryWrite(
             eq(WriteContext.interPartition()),
             assertArg(
-                (final LogAppendEntry logEntry) -> {
-                  final var writtenAuth = logEntry.recordMetadata().getAuthorization();
-                  assertThat(writtenAuth.getFormat())
-                      .isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
-                  assertThat(writtenAuth.toClaimsMap()).isEqualTo(claims);
-                }));
+                (final LogAppendEntry logEntry) ->
+                    assertThat(logEntry.recordMetadata().getAuthorization()).isEqualTo(authInfo)));
   }
 
   @Test
