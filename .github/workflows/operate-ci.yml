@@ -1,7 +1,7 @@
 # description: Runs integration CI tests
 # test location: operate/qa/integration-tests
 # type: CI
-# owner: @camunda/core-features, @camunda/data-layer
+# owner: @camunda/operate-admin-pod, @camunda/data-layer
 name: "Operate Integration Tests"
 on:
   workflow_dispatch:
@@ -52,16 +52,16 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
   # over 10min run time
-  run-core-features-integration-tests:
+  run-operate-integration-tests:
     name: "Integration"
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
       command: ./mvnw -f operate/qa/integration-tests verify -P operateCoreFeaturesIT -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Core Features ITs
+      test-type: Operate ITs
       runner-type: gcp-core-32-default
-      test-owner: '@camunda/core-features'
+      test-owner: '@camunda/operate-admin-pod'
 
   run-data-layer-opensearch-tests:
     name: "Integration"
