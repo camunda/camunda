@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Regla de mapeo eliminada",
 				"createMappingRuleError": "No se pudo crear la regla de mapeo",
 				"updateMappingRuleError": "No se pudo actualizar la regla de mapeo",
-				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo"
+				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo",
+				"resourceSingular": "regla de mapeo",
+				"resourcePlural": "reglas de mapeo"
 			},
 			"users": {
 				"username": "Nombre de usuario",
@@ -212,7 +214,9 @@
 				"userDeleted": "Usuario {{username}} eliminado",
 				"deleteUserFailed": "No se pudo eliminar el usuario",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "usuario",
+				"resourcePlural": "usuarios"
 			},
 			"groups": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -260,7 +264,6 @@
 						"select": "Seleccione un usuario",
 						"search": "Buscar por nombre de usuario",
 						"enterId": "Introduzca el nombre de usuario",
-						"empty": "No hay usuarios asignados a este grupo.",
 						"remove": "Quitar usuario",
 						"confirmRemove": "¿Seguro que desea quitar a <strong>{{id}}</strong> de este grupo?",
 						"assigned": "Usuario {{id}} asignado",
@@ -275,7 +278,6 @@
 						"idLabel": "ID de rol",
 						"select": "Seleccione un rol",
 						"search": "Buscar por ID de rol",
-						"empty": "No hay roles asignados a este grupo.",
 						"remove": "Quitar rol",
 						"confirmRemove": "¿Seguro que desea quitar el rol <strong>{{id}}</strong> de este grupo?",
 						"assigned": "Rol {{id}} asignado",
@@ -292,7 +294,6 @@
 						"idLabel": "ID de regla de asignación",
 						"select": "Seleccione una regla de asignación",
 						"search": "Buscar por ID de regla de asignación",
-						"empty": "No hay reglas de asignación asignadas a este grupo.",
 						"remove": "Quitar regla de asignación",
 						"confirmRemove": "¿Seguro que desea quitar la regla de asignación <strong>{{id}}</strong> de este grupo?",
 						"assigned": "Regla de asignación {{id}} asignada",
@@ -305,13 +306,14 @@
 						"assign": "Asignar cliente",
 						"idLabel": "ID de cliente",
 						"enterId": "Introduzca el ID de cliente",
-						"empty": "No hay clientes asignados a este grupo.",
 						"remove": "Quitar cliente",
 						"confirmRemove": "¿Seguro que desea quitar el cliente <strong>{{id}}</strong> de este grupo?",
 						"assigned": "Cliente {{id}} asignado",
 						"removed": "Cliente {{id}} quitado"
 					}
-				}
+				},
+				"resourceSingular": "grupo",
+				"resourcePlural": "grupos"
 			},
 			"clusterVariables": {
 				"closeButton": "Cerrar",
@@ -363,7 +365,9 @@
 				"deleteClusterVariableSuccess": "Variable de clúster eliminada",
 				"createClusterVariableError": "No se pudo crear la variable de clúster",
 				"updateClusterVariableError": "No se pudo actualizar la variable de clúster",
-				"deleteClusterVariableError": "No se pudo eliminar la variable de clúster"
+				"deleteClusterVariableError": "No se pudo eliminar la variable de clúster",
+				"resourceSingular": "variable de clúster",
+				"resourcePlural": "variables de clúster"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -421,7 +425,9 @@
 				"updateGlobalTaskListenerError": "No se pudo actualizar el listener global de tarea",
 				"deleteGlobalTaskListenerError": "No se pudo eliminar el listener global de tarea",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "listener global de tareas",
+				"resourcePlural": "listeners globales de tareas"
 			},
 			"authorizations": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -475,7 +481,11 @@
 				"deleteAuthorizationSuccess": "Autorización eliminada",
 				"deleteAuthorizationError": "No se pudo eliminar la autorización",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio surtiera efecto",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "autorización",
+				"resourcePlural": "autorizaciones",
+				"noAuthorizationsYet": "Aún no tiene autorizaciones para este tipo de recurso",
+				"noAuthorizationsYetDescription": "Las autorizaciones definen los permisos de acceso a distintos recursos. Cree una autorización seleccionando un propietario, un recurso y al menos un permiso."
 			},
 			"roles": {
 				"guideBody": "Para obtener más información, consulte la ",
@@ -523,7 +533,6 @@
 						"select": "Seleccione un usuario",
 						"search": "Buscar por nombre de usuario",
 						"enterId": "Introduzca el nombre de usuario",
-						"empty": "No hay usuarios asignados a este rol.",
 						"remove": "Quitar usuario",
 						"confirmRemove": "¿Seguro que desea quitar a <strong>{{id}}</strong> de este rol?",
 						"assigned": "Usuario {{id}} asignado",
@@ -539,7 +548,6 @@
 						"enterId": "Introduzca el ID de grupo",
 						"select": "Seleccione un grupo",
 						"search": "Buscar por ID de grupo",
-						"empty": "No hay grupos asignados a este rol.",
 						"remove": "Quitar grupo",
 						"confirmRemove": "¿Seguro que desea quitar el grupo <strong>{{id}}</strong> de este rol?",
 						"assigned": "Grupo {{id}} asignado",
@@ -556,7 +564,6 @@
 						"idLabel": "ID de regla de asignación",
 						"select": "Seleccione una regla de asignación",
 						"search": "Buscar por ID de regla de asignación",
-						"empty": "No hay reglas de asignación asignadas a este rol.",
 						"remove": "Quitar regla de asignación",
 						"confirmRemove": "¿Seguro que desea quitar la regla de asignación <strong>{{id}}</strong> de este rol?",
 						"assigned": "Regla de asignación {{id}} asignada",
@@ -569,13 +576,14 @@
 						"assign": "Asignar cliente",
 						"idLabel": "ID de cliente",
 						"enterId": "Introduzca el ID de cliente",
-						"empty": "No hay clientes asignados a este rol.",
 						"remove": "Quitar cliente",
 						"confirmRemove": "¿Seguro que desea quitar el cliente <strong>{{id}}</strong> de este rol?",
 						"assigned": "Cliente {{id}} asignado",
 						"removed": "Cliente {{id}} quitado"
 					}
-				}
+				},
+				"resourceSingular": "rol",
+				"resourcePlural": "roles"
 			},
 			"tenants": {
 				"guideBody": "Para más información, consulte la ",
@@ -623,7 +631,6 @@
 					"candidatesLoadError": "No se pudieron cargar las opciones",
 					"users": {
 						"tab": "Usuarios",
-						"empty": "No hay usuarios asignados a este inquilino.",
 						"assign": "Asignar usuario",
 						"idLabel": "Usuarios",
 						"select": "Busca y selecciona usuarios",
@@ -634,7 +641,6 @@
 					},
 					"groups": {
 						"tab": "Grupos",
-						"empty": "No hay grupos asignados a este inquilino.",
 						"assign": "Asignar grupo",
 						"idLabel": "Grupos",
 						"select": "Busca y selecciona grupos",
@@ -645,7 +651,6 @@
 					},
 					"roles": {
 						"tab": "Roles",
-						"empty": "No hay roles asignados a este inquilino.",
 						"assign": "Asignar rol",
 						"idLabel": "Roles",
 						"select": "Busca y selecciona roles",
@@ -655,7 +660,6 @@
 					},
 					"mappingRules": {
 						"tab": "Reglas de mapeo",
-						"empty": "No hay reglas de mapeo asignadas a este inquilino.",
 						"assign": "Asignar regla de mapeo",
 						"idLabel": "Reglas de mapeo",
 						"select": "Busca y selecciona reglas de mapeo",
@@ -665,7 +669,6 @@
 					},
 					"clients": {
 						"tab": "Clientes",
-						"empty": "No hay clientes asignados a este inquilino.",
 						"assign": "Asignar cliente",
 						"idLabel": "ID de cliente",
 						"enterId": "Introduce un ID de cliente",
@@ -678,7 +681,30 @@
 				"unassignSuccess": "Quitado del inquilino",
 				"unassignError": "No se pudo quitar del inquilino",
 				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
-				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
+				"resourceSingular": "inquilino",
+				"resourcePlural": "inquilinos",
+				"emptyStateDisclaimer": "Los miembros de este inquilino tendrán acceso a los datos dentro del inquilino."
+			},
+			"emptyState": {
+				"title": "Aún no se han creado {{resources}}",
+				"description": "Empiece creando uno nuevo: {{resource}}.",
+				"createAction": "Crear {{resource}}",
+				"learnMore": "Más información sobre {{resources}}"
+			},
+			"members": {
+				"kinds": {
+					"users": "usuarios",
+					"groups": "grupos",
+					"roles": "roles",
+					"mappingRules": "reglas de mapeo",
+					"clients": "clientes"
+				},
+				"emptyState": {
+					"title": "Aún no hay {{resources}} asignados a este elemento ({{parent}})",
+					"description": "Empiece asignando uno.",
+					"learnMore": "Más información sobre {{resources}}"
+				}
 			}
 		},
 		"tasklist": {

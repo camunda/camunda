@@ -28,6 +28,7 @@ import {AddGroupModal} from '#/admin/modules/groups/AddGroupModal';
 import {EditGroupModal} from '#/admin/modules/groups/EditGroupModal';
 import {DeleteGroupModal} from '#/admin/modules/groups/DeleteGroupModal';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type GroupsSearch} from '#/admin/modules/groups/searchSchema';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
@@ -114,6 +115,7 @@ const AdminGroupsPage: React.FC<AdminGroupsPageProps> = ({groups, totalItems, se
 	);
 
 	const title = t('admin.headerNavItemGroups');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -130,47 +132,56 @@ const AdminGroupsPage: React.FC<AdminGroupsPageProps> = ({groups, totalItems, se
 					</p>
 				</div>
 
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-						<div className="sm:flex-1">
-							<Label htmlFor="groups-search" className="sr-only">
-								{t('admin.groups.searchByGroupId')}
-							</Label>
-							<SearchInput
-								id="groups-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.groups.searchByGroupId')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button type="button" onClick={() => setModalState({type: 'create'})}>
-							{t('admin.groups.createGroup')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
-						columns={columns}
-						data={groups}
-						getRowId={(group) => group.groupId}
-						rowHref={(group) => detailPath.group(group.groupId)}
-						linkComponent={RouterRowLink}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.groups.noGroupsFound')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.groups.resourceSingular')}
+						resources={t('admin.groups.resourcePlural')}
+						guideUrl={GROUPS_GUIDE_URL}
+						onCreate={() => setModalState({type: 'create'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+							<div className="sm:flex-1">
+								<Label htmlFor="groups-search" className="sr-only">
+									{t('admin.groups.searchByGroupId')}
+								</Label>
+								<SearchInput
+									id="groups-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.groups.searchByGroupId')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button type="button" onClick={() => setModalState({type: 'create'})}>
+								{t('admin.groups.createGroup')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+							columns={columns}
+							data={groups}
+							getRowId={(group) => group.groupId}
+							rowHref={(group) => detailPath.group(group.groupId)}
+							linkComponent={RouterRowLink}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.groups.noGroupsFound')}
+						/>
+					</div>
+				)}
 			</div>
 
 			{modalState?.type === 'create' && <AddGroupModal isOpen onClose={closeModal} />}

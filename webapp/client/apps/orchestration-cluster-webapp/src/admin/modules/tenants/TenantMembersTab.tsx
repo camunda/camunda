@@ -16,6 +16,7 @@ import {
 	type DataTableRowAction,
 	type SortingConfig,
 } from '@camunda/design-system';
+import {AssignEmptyState} from '#/admin/modules/shared/AssignEmptyState';
 import {AssignMembersModal} from './AssignMembersModal';
 import {UnassignMemberModal} from './UnassignMemberModal';
 import {getMemberKind} from './getMemberKind';
@@ -81,44 +82,56 @@ function TenantMembersTab<T>({
 		[getMemberId, kind, t],
 	);
 
+	const isEmpty = totalItems === 0;
+
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex justify-end">
-				<Button onClick={() => setIsAssigning(true)}>
-					<Plus aria-hidden />
-					{t(`admin.tenants.members.${kind}.assign`)}
-				</Button>
-			</div>
-			<DataTable
-				aria-label={t(`admin.tenants.members.${kind}.tab`)}
-				className="**:data-[slot=data-table-actions-trigger]:ms-auto"
-				columns={columns}
-				data={rows}
-				getRowId={getMemberId}
-				rowActions={rowActions}
-				sorting={{
-					manual: true,
-					sortState,
-					onSortingChange: ([sorted]) =>
-						onSearchChange({sortOrder: sorted?.desc ? 'DESC' : undefined, page: undefined}),
-				}}
-				pagination={{
-					manual: true,
-					pageSizes: [...PAGE_SIZES],
-					defaultPageSize: DEFAULT_PAGE_SIZE,
-					pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-					pageIndex: (search.page ?? 1) - 1,
-					rowCount: totalItems,
-					onPaginationChange: ({pageIndex, pageSize}) => {
-						const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
-						onSearchChange({
-							pageSize: pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as TenantDetailSearch['pageSize']),
-							page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
-						});
-					},
-				}}
-				emptyState={t(`admin.tenants.members.${kind}.empty`)}
-			/>
+			{isEmpty ? (
+				<AssignEmptyState
+					parent="tenants"
+					kind={kind}
+					description={t('admin.tenants.emptyStateDisclaimer')}
+					onAssign={() => setIsAssigning(true)}
+				/>
+			) : (
+				<>
+					<div className="flex justify-end">
+						<Button onClick={() => setIsAssigning(true)}>
+							<Plus aria-hidden />
+							{t(`admin.tenants.members.${kind}.assign`)}
+						</Button>
+					</div>
+					<DataTable
+						aria-label={t(`admin.tenants.members.${kind}.tab`)}
+						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+						columns={columns}
+						data={rows}
+						getRowId={getMemberId}
+						rowActions={rowActions}
+						sorting={{
+							manual: true,
+							sortState,
+							onSortingChange: ([sorted]) =>
+								onSearchChange({sortOrder: sorted?.desc ? 'DESC' : undefined, page: undefined}),
+						}}
+						pagination={{
+							manual: true,
+							pageSizes: [...PAGE_SIZES],
+							defaultPageSize: DEFAULT_PAGE_SIZE,
+							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+							pageIndex: (search.page ?? 1) - 1,
+							rowCount: totalItems,
+							onPaginationChange: ({pageIndex, pageSize}) => {
+								const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
+								onSearchChange({
+									pageSize: pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as TenantDetailSearch['pageSize']),
+									page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
+								});
+							},
+						}}
+					/>
+				</>
+			)}
 			{isAssigning && (
 				<AssignMembersModal
 					tab={tab}

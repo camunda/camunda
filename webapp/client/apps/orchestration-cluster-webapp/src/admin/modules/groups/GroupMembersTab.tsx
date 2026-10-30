@@ -11,6 +11,7 @@ import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Trash2} from '@camunda/design-system/icons';
 import {Button, DataTable, Skeleton, type DataTableColumn, type DataTableRowAction} from '@camunda/design-system';
+import {AssignEmptyState} from '#/admin/modules/shared/AssignEmptyState';
 import {queries} from '#/shared/http/queries';
 import {AssignMemberModal} from './AssignMemberModal';
 import {RemoveMemberModal} from './RemoveMemberModal';
@@ -110,37 +111,53 @@ const GroupMembersTab: React.FC<Props> = ({groupId, kind, isOidc}) => {
 		[pageSize],
 	);
 
+	const isEmpty = data !== undefined && !isPlaceholderData && data.page.totalItems === 0;
+
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex justify-end">
-				<Button type="button" disabled={data === undefined || isPlaceholderData} onClick={() => setIsAssignOpen(true)}>
-					{t(`admin.groups.members.${kind}.assign`)}
-				</Button>
-			</div>
-			{isError && data === undefined ? (
-				<p role="alert" className="text-sm text-danger-foreground-subtle">
-					{t('admin.groups.members.loadError')}
-				</p>
-			) : (
-				<DataTable
-					loading={isPending}
-					aria-label={t(`admin.groups.members.${kind}.title`)}
-					columns={columns}
-					data={rows}
-					getRowId={(row) => row.id}
-					rowActions={rowActions}
-					inlineActionsThreshold={2}
-					pagination={{
-						manual: true,
-						pageSizes: [...PAGE_SIZES],
-						defaultPageSize: DEFAULT_PAGE_SIZE,
-						pageSize,
-						pageIndex,
-						rowCount: data?.page.totalItems ?? 0,
-						onPaginationChange: handlePaginationChange,
-					}}
-					emptyState={t(`admin.groups.members.${kind}.empty`)}
+			{isEmpty ? (
+				<AssignEmptyState
+					parent="groups"
+					kind={kind}
+					description={t('admin.members.emptyState.description')}
+					onAssign={() => setIsAssignOpen(true)}
 				/>
+			) : (
+				<>
+					<div className="flex justify-end">
+						<Button
+							type="button"
+							disabled={data === undefined || isPlaceholderData}
+							onClick={() => setIsAssignOpen(true)}
+						>
+							{t(`admin.groups.members.${kind}.assign`)}
+						</Button>
+					</div>
+					{isError && data === undefined ? (
+						<p role="alert" className="text-sm text-danger-foreground-subtle">
+							{t('admin.groups.members.loadError')}
+						</p>
+					) : (
+						<DataTable
+							loading={isPending}
+							aria-label={t(`admin.groups.members.${kind}.title`)}
+							columns={columns}
+							data={rows}
+							getRowId={(row) => row.id}
+							rowActions={rowActions}
+							inlineActionsThreshold={2}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize,
+								pageIndex,
+								rowCount: data?.page.totalItems ?? 0,
+								onPaginationChange: handlePaginationChange,
+							}}
+						/>
+					)}
+				</>
 			)}
 
 			{isAssignOpen && (

@@ -236,11 +236,19 @@ describe('<AdminRoleDetailPage />', () => {
 	});
 
 	it('should show an empty state when the role has no members', async ({worker}) => {
-		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
+		worker.use(
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+		);
 
 		const {screen} = await renderPage();
 
-		await expect.element(screen.getByText('No users assigned to this role.')).toBeVisible();
+		await expect.element(screen.getByText('No users assigned to this role yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about users'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 	});
 
 	it('should assign a user to the role', async ({worker}) => {
@@ -767,7 +775,7 @@ describe('<AdminRoleDetailPage />', () => {
 
 		// then
 		await expect.element(screen.getByRole('alert')).toHaveTextContent('Members could not be loaded');
-		await expect.element(screen.getByText('No users assigned to this role.')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No users assigned to this role yet')).not.toBeInTheDocument();
 	});
 
 	it('should report a failed candidate lookup in the assign dialog', async ({worker}) => {

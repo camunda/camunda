@@ -116,7 +116,7 @@ test('should match the empty roles page snapshot', async ({adminRolesPage, page,
 	network.use(mockQueryRolesEndpoint({successResponse: HttpResponse.json(createQueryRolesResponse({items: []}))}));
 
 	await adminRolesPage.goto();
-	await expect(adminRolesPage.table.getByText('No roles found.')).toBeVisible();
+	await expect(page.getByText('No roles created yet')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

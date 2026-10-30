@@ -56,7 +56,11 @@ test.describe('Admin mapping rules', () => {
 	});
 
 	test('should create a mapping rule', async ({adminMappingRulesPage, network}) => {
-		network.use(mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}));
+		network.use(
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json(createQueryMappingRulesResponse({items: [createMappingRule()]})),
+			}),
+		);
 
 		await adminMappingRulesPage.goto();
 		await adminMappingRulesPage.addButton.click();
@@ -162,7 +166,11 @@ test.describe('Admin mapping rules', () => {
 	});
 
 	test('should search mapping rules by ID', async ({adminMappingRulesPage, network}) => {
-		network.use(mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}));
+		network.use(
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json(createQueryMappingRulesResponse({items: [createMappingRule()]})),
+			}),
+		);
 
 		await adminMappingRulesPage.goto();
 		await expect(adminMappingRulesPage.searchInput).toBeVisible();

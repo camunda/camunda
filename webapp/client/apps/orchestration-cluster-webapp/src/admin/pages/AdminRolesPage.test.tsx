@@ -55,10 +55,29 @@ describe('<AdminRolesPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'Operations'})).toBeVisible();
 	});
 
-	it('should show an empty state when there are no roles', async () => {
+	it('should offer to create the first role when there are no roles', async () => {
 		const {screen} = await renderPage({roles: [], totalItems: 0});
 
+		await expect.element(screen.getByText('No roles created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about roles'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a page past the last one has no roles but others exist', async () => {
+		const {screen} = await renderPage({roles: [], totalItems: 25, search: {page: 2}});
+
+		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no roles', async () => {
+		const {screen} = await renderPage({roles: [], totalItems: 0, search: {search: 'nothing'}});
+
 		await expect.element(screen.getByText('No roles found.')).toBeVisible();
+		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
 	});
 
 	it('should disable editing and deleting default roles', async () => {

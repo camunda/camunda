@@ -53,6 +53,24 @@ describe('<AdminGlobalTaskListenersPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first global task listener when there are no global task listeners', async () => {
+		const {screen} = await renderPage({globalTaskListeners: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No global task listeners created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about global task listeners'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create global task listener'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no global task listeners', async () => {
+		const {screen} = await renderPage({globalTaskListeners: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No global task listeners created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list the global task listeners', async () => {
 		const {screen} = await renderPage({
 			globalTaskListeners: [

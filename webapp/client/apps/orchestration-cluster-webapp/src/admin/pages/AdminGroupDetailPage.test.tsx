@@ -247,11 +247,20 @@ describe('<AdminGroupDetailPage />', () => {
 	});
 
 	it('should show an empty state when the group has no members', async ({worker}) => {
-		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}), mockEmptyRoles());
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockEmptyRoles(),
+		);
 
 		const {screen} = await renderPage();
 
-		await expect.element(screen.getByText('No users assigned to this group.')).toBeVisible();
+		await expect.element(screen.getByText('No users assigned to this group yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about users'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 	});
 
 	it('should assign a user to the group', async ({worker}) => {
@@ -584,7 +593,7 @@ describe('<AdminGroupDetailPage />', () => {
 
 		// then
 		await expect.element(screen.getByRole('alert')).toHaveTextContent('Members could not be loaded');
-		await expect.element(screen.getByText('No users assigned to this group.')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No users assigned to this group yet')).not.toBeInTheDocument();
 	});
 
 	it('should report a failed candidate lookup in the assign dialog', async ({worker}) => {

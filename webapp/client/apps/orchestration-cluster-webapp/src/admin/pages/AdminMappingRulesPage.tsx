@@ -25,6 +25,7 @@ import {AddMappingRuleModal} from '#/admin/modules/mapping-rules/AddMappingRuleM
 import {EditMappingRuleModal} from '#/admin/modules/mapping-rules/EditMappingRuleModal';
 import {DeleteMappingRuleModal} from '#/admin/modules/mapping-rules/DeleteMappingRuleModal';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type MappingRulesSearch} from '#/admin/modules/mapping-rules/searchSchema';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
@@ -111,6 +112,7 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	);
 
 	const title = t('admin.headerNavItemMappingRules');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -126,45 +128,54 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 						</Button>
 					</p>
 				</div>
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-						<div className="flex flex-col gap-2 sm:flex-1">
-							<Label htmlFor="mapping-rules-search" className="sr-only">
-								{t('admin.mappingRules.searchByMappingRuleId')}
-							</Label>
-							<SearchInput
-								id="mapping-rules-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.mappingRules.searchByMappingRuleId')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button onClick={() => setModal({type: 'add'})}>
-							<Plus aria-hidden />
-							{t('admin.mappingRules.addMappingRule')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						columns={columns}
-						data={mappingRules}
-						getRowId={(mappingRule) => mappingRule.mappingRuleId}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.mappingRules.noMappingRules')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.mappingRules.resourceSingular')}
+						resources={t('admin.mappingRules.resourcePlural')}
+						guideUrl={MAPPING_RULES_GUIDE_URL}
+						onCreate={() => setModal({type: 'add'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+							<div className="flex flex-col gap-2 sm:flex-1">
+								<Label htmlFor="mapping-rules-search" className="sr-only">
+									{t('admin.mappingRules.searchByMappingRuleId')}
+								</Label>
+								<SearchInput
+									id="mapping-rules-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.mappingRules.searchByMappingRuleId')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button onClick={() => setModal({type: 'add'})}>
+								<Plus aria-hidden />
+								{t('admin.mappingRules.addMappingRule')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							columns={columns}
+							data={mappingRules}
+							getRowId={(mappingRule) => mappingRule.mappingRuleId}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.mappingRules.noMappingRules')}
+						/>
+					</div>
+				)}
 			</div>
 			<AddMappingRuleModal isOpen={modal?.type === 'add'} onClose={() => setModal(null)} />
 			<EditMappingRuleModal
