@@ -487,18 +487,6 @@ public class RecordGoldenFilesTest {
   }
 
   // --------------------------------------------------------------------------
-  // Internal Data Models
-  // --------------------------------------------------------------------------
-
-  /**
-   * @param key the serialized key, resolved to its string value; null if the field is not a
-   *     property
-   */
-  private record Property(String name, String type, boolean hasDefault, String key) {}
-
-  private record RegisteredRecord(Path sourcePath, String simpleName) {}
-
-  // --------------------------------------------------------------------------
   // Serialized Key Detection (ensures this class won't break in a future)
   // --------------------------------------------------------------------------
 
@@ -729,4 +717,16 @@ public class RecordGoldenFilesTest {
         extractProperties(golden, "TestRecord", name -> null),
         extractProperties(source, "TestRecord", name -> null));
   }
+
+  // --------------------------------------------------------------------------
+  // Internal Data Models
+  // --------------------------------------------------------------------------
+
+  /**
+   * @param key the serialized key, resolved to its string value; null if the field is not a
+   *     property
+   */
+  private record Property(String name, String type, boolean hasDefault, String key) {}
+
+  private record RegisteredRecord(Path sourcePath, String simpleName) {}
 }
