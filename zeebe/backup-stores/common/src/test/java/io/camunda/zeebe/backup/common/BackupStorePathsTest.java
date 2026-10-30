@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
@@ -115,5 +116,58 @@ class BackupStorePathsTest {
 
     // then
     assertThat(prefix).isEqualTo("manifests/");
+  }
+
+  @Test
+  void shouldKeepBasePathWithoutSurroundingSlashes() {
+    // when
+    final var basePath = BackupStorePaths.sanitizeBasePath("tenants/abc");
+
+    // then
+    assertThat(basePath).contains("tenants/abc");
+  }
+
+  @Test
+  void shouldRemoveLeadingAndTrailingSlashesFromBasePath() {
+    // when
+    final var basePath = BackupStorePaths.sanitizeBasePath(" //tenants/abc/ ");
+
+    // then
+    assertThat(basePath).contains("tenants/abc");
+  }
+
+  @Test
+  void shouldTreatMissingBasePathAsNone() {
+    // when
+    final var basePath = BackupStorePaths.sanitizeBasePath(null);
+
+    // then
+    assertThat(basePath).isEmpty();
+  }
+
+  @Test
+  void shouldTreatBlankBasePathAsNone() {
+    // when
+    final var basePath = BackupStorePaths.sanitizeBasePath("  ");
+
+    // then
+    assertThat(basePath).isEmpty();
+  }
+
+  @Test
+  void shouldTreatSingleSlashAsNoBasePath() {
+    // when
+    final var basePath = BackupStorePaths.sanitizeBasePath("/");
+
+    // then
+    assertThat(basePath).isEmpty();
+  }
+
+  @Test
+  void shouldRejectBasePathConsistingOfOnlySlashes() {
+    // when - then
+    assertThatThrownBy(() -> BackupStorePaths.sanitizeBasePath("//"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("basePath");
   }
 }

@@ -10,13 +10,14 @@ package io.camunda.zeebe.backup.common;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Names and paths shared by all backup store implementations. They are part of the persisted layout
  * of existing backups, so changing any of them breaks reading backups taken before.
  *
- * <p>Stores can place all keys under a configured base path, given without leading or trailing
- * {@code /}.
+ * <p>Stores can place all keys under a configured base path, normalized with {@link
+ * #sanitizeBasePath(String)}.
  */
 public final class BackupStorePaths {
 
@@ -29,6 +30,38 @@ public final class BackupStorePaths {
   public static final String CONTENTS_DIRECTORY_NAME = "contents";
 
   private BackupStorePaths() {}
+
+  /**
+   * Normalizes a configured base path by trimming it and removing all leading and trailing {@code
+   * /}, so that keys can be joined to it with a single {@code /}. Empty if no base path is
+   * configured, or if it is blank or a single {@code /}.
+   *
+   * @throws IllegalArgumentException if nothing remains after removing the slashes
+   */
+  public static Optional<String> sanitizeBasePath(final @Nullable String basePath) {
+    if (basePath == null) {
+      return Optional.empty();
+    }
+
+    var sanitized = basePath.trim();
+    if (sanitized.isEmpty() || sanitized.equals("/")) {
+      return Optional.empty();
+    }
+
+    while (sanitized.startsWith("/")) {
+      sanitized = sanitized.substring(1);
+    }
+    while (sanitized.endsWith("/")) {
+      sanitized = sanitized.substring(0, sanitized.length() - 1);
+    }
+
+    if (sanitized.isBlank()) {
+      throw new IllegalArgumentException(
+          "After removing leading and trailing '/' characters from basePath '%s', the remainder is empty and not a valid base path"
+              .formatted(basePath));
+    }
+    return Optional.of(sanitized);
+  }
 
   /** Returns the key of the backup metadata object of the given partition. */
   public static String metadataPath(final int partitionId) {
