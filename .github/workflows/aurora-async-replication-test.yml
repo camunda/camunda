@@ -418,7 +418,8 @@ jobs:
           echo "exists=true" >> "$GITHUB_OUTPUT"
 
       - name: Initialize Terraform
-        if: steps.state.outputs.exists == 'true'
+        id: init
+        if: always() && steps.state.outputs.exists == 'true'
         working-directory: ${{ env.TF_DIR }}
         env:
           # Terraform requires this variable even though destroy does not change the password.
@@ -433,7 +434,7 @@ jobs:
 
       - name: Destroy Aurora infrastructure
         id: destroy
-        if: steps.state.outputs.exists == 'true'
+        if: always() && steps.init.outcome == 'success'
         working-directory: ${{ env.TF_DIR }}
         env:
           # Terraform requires this variable even though destroy does not change the password.
@@ -474,7 +475,12 @@ jobs:
           fi
 
       - name: Notify Slack on cleanup failure
-        if: ${{ always() && (failure() || cancelled()) }}
+        if: >-
+          ${{ always() && (
+            steps.state.outcome != 'success' ||
+            steps.init.outcome == 'failure' ||
+            steps.destroy.outcome == 'failure' ||
+            steps.delete-state.outcome == 'failure') }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
