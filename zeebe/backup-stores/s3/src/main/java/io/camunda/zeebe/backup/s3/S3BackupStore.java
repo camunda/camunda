@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,7 +109,6 @@ public final class S3BackupStore implements BackupStore {
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
-  static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private static final int LIST_PAGE_SIZE = 1000;
@@ -412,11 +412,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return "%smetadata/%d/%s"
-        .formatted(
-            config.basePath().map(base -> base + "/").orElse(""),
-            partitionId,
-            METADATA_OBJECT_NAME);
+    return metadataPath(config.basePath().map(base -> base + "/").orElse(""), partitionId);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(

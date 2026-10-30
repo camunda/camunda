@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.http.HttpTransportOptions;
@@ -61,7 +65,6 @@ public final class GcsBackupStore implements BackupStore {
   static final int DELETE_PARALLELISM = 16;
 
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
-  private static final String METADATA_OBJECT_NAME = "metadata.json";
 
   private final ExecutorService executor;
   private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
@@ -109,13 +112,13 @@ public final class GcsBackupStore implements BackupStore {
                   CompletableFuture.runAsync(
                       () ->
                           fileSetManager.save(
-                              backup.id(), FileSetManager.SNAPSHOT_FILESET_NAME, backup.snapshot()),
+                              backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
                       executor);
               final var segmentsFuture =
                   CompletableFuture.runAsync(
                       () ->
                           fileSetManager.save(
-                              backup.id(), FileSetManager.SEGMENTS_FILESET_NAME, backup.segments()),
+                              backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
                       executor);
 
               return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
@@ -176,10 +179,8 @@ public final class GcsBackupStore implements BackupStore {
                 "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          final var snapshotIds =
-              fileSetManager.collectBlobIds(id, FileSetManager.SNAPSHOT_FILESET_NAME);
-          final var segmentIds =
-              fileSetManager.collectBlobIds(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          final var snapshotIds = fileSetManager.collectBlobIds(id, SNAPSHOT_FILESET_NAME);
+          final var segmentIds = fileSetManager.collectBlobIds(id, SEGMENTS_FILESET_NAME);
           final List<BlobId> allIds = new ArrayList<>(snapshotIds);
           allIds.addAll(segmentIds);
           fileSetManager.deleteBlobs(allIds);
@@ -208,19 +209,13 @@ public final class GcsBackupStore implements BackupStore {
                   CompletableFuture.supplyAsync(
                       () ->
                           fileSetManager.restore(
-                              id,
-                              FileSetManager.SNAPSHOT_FILESET_NAME,
-                              completed.snapshot(),
-                              targetFolder),
+                              id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder),
                       executor);
               final var segmentsFuture =
                   CompletableFuture.supplyAsync(
                       () ->
                           fileSetManager.restore(
-                              id,
-                              FileSetManager.SEGMENTS_FILESET_NAME,
-                              completed.segments(),
-                              targetFolder),
+                              id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder),
                       executor);
 
               // Wait for both to complete
@@ -335,9 +330,7 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   private BlobInfo backupMetadataBlobInfo(final int partitionId) {
-    return BlobInfo.newBuilder(
-            bucketInfo, "%smetadata/%d/%s".formatted(basePath, partitionId, METADATA_OBJECT_NAME))
-        .build();
+    return BlobInfo.newBuilder(bucketInfo, metadataPath(basePath, partitionId)).build();
   }
 
   /**

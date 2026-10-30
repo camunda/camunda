@@ -39,8 +39,6 @@ import java.util.stream.Collectors;
 
 final class FileSetManager {
 
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   static final int MAX_DELETE_BATCH_SIZE = 100;
 
   /**
