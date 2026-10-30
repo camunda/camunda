@@ -33,7 +33,7 @@ public class ExecutableCallActivity extends ExecutableActivity {
   private int lexicographicIndex;
 
   private ZeebeBindingType bindingType;
-  private String versionTag;
+  private Expression versionTag;
 
   public ExecutableCallActivity(final String id) {
     super(id);
@@ -89,11 +89,11 @@ public class ExecutableCallActivity extends ExecutableActivity {
     this.bindingType = bindingType;
   }
 
-  public String getVersionTag() {
+  public Expression getVersionTag() {
     return versionTag;
   }
 
-  public void setVersionTag(final String versionTag) {
+  public void setVersionTag(final Expression versionTag) {
     this.versionTag = versionTag;
   }
 }

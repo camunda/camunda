@@ -533,6 +533,34 @@ public final class ZeebeRuntimeValidationTest {
             .done(),
         List.of()
       },
+      {
+        // invalid versionTag expression in call activity with versionTag binding
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("child")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag("=" + INVALID_EXPRESSION))
+            .endEvent()
+            .done(),
+        List.of(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        // valid versionTag expression in call activity with versionTag binding
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("child")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag("=versionTagVariable"))
+            .endEvent()
+            .done(),
+        List.of()
+      },
     };
   }
 
