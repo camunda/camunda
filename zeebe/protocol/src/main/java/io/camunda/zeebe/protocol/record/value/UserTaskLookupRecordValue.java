@@ -24,16 +24,11 @@ import org.immutables.value.Value;
  * A read of an active user task and its variables from the engine state.
  *
  * <p>Every read is written to the log, so the record only identifies what to read. It never carries
- * variable values.
+ * variable values. The user task to read is the record's key.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableUserTaskLookupRecordValue.Builder.class)
 public interface UserTaskLookupRecordValue extends RecordValue, TenantOwned {
-
-  /**
-   * @return the key of the user task to read
-   */
-  long getUserTaskKey();
 
   /**
    * @return the names of the variables to read; empty to read all variables visible to the user

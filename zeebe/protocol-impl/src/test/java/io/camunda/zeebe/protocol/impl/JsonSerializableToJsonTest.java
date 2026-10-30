@@ -3143,12 +3143,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>)
             () ->
                 new UserTaskLookupRecord()
-                    .setUserTaskKey(123L)
                     .setFetchVariables(List.of("foo", "bar"))
                     .setTenantId("tenant-1"),
         """
                 {
-                  "userTaskKey": 123,
                   "fetchVariables": ["foo", "bar"],
                   "tenantId": "tenant-1"
                 }
@@ -3159,7 +3157,6 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
         """
                 {
-                  "userTaskKey": -1,
                   "fetchVariables": [],
                   "tenantId": "<default>"
                 }

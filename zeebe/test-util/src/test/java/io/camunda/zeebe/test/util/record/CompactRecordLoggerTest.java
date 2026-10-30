@@ -101,7 +101,6 @@ class CompactRecordLoggerTest {
               .withValueType(ValueType.USER_TASK_LOOKUP)
               .withValue(
                   ImmutableUserTaskLookupRecordValue.builder()
-                      .withUserTaskKey(123L)
                       .withFetchVariables(List.of("foo", "bar"))
                       .withTenantId("tenant-1")
                       .build())
@@ -111,7 +110,7 @@ class CompactRecordLoggerTest {
       final var summary = compactRecordLogger.summarizeUserTaskLookup(record);
 
       // then
-      assertThat(summary).isEqualTo("task:K123 fetchVariables:[foo, bar] (tenant: tenant-1)");
+      assertThat(summary).isEqualTo("fetchVariables:[foo, bar] (tenant: tenant-1)");
     }
 
     @Test

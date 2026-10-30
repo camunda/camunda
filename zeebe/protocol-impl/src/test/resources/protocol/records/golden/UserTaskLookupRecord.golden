@@ -11,7 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -23,27 +22,14 @@ import java.util.stream.StreamSupport;
 public final class UserTaskLookupRecord extends UnifiedRecordValue
     implements UserTaskLookupRecordValue {
 
-  private final LongProperty userTaskKeyProperty = new LongProperty("userTaskKey", -1L);
   private final ArrayProperty<StringValue> fetchVariablesProperty =
       new ArrayProperty<>("fetchVariables", StringValue::new);
   private final StringProperty tenantIdProperty =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public UserTaskLookupRecord() {
-    super(3);
-    declareProperty(userTaskKeyProperty)
-        .declareProperty(fetchVariablesProperty)
-        .declareProperty(tenantIdProperty);
-  }
-
-  @Override
-  public long getUserTaskKey() {
-    return userTaskKeyProperty.getValue();
-  }
-
-  public UserTaskLookupRecord setUserTaskKey(final long userTaskKey) {
-    userTaskKeyProperty.setValue(userTaskKey);
-    return this;
+    super(2);
+    declareProperty(fetchVariablesProperty).declareProperty(tenantIdProperty);
   }
 
   @Override

@@ -1118,11 +1118,7 @@ public class CompactRecordLogger {
 
   String summarizeUserTaskLookup(final Record<?> record) {
     final var value = (UserTaskLookupRecordValue) record.getValue();
-    final var result = new StringBuilder("task:").append(shortenKey(value.getUserTaskKey()));
-    if (!value.getFetchVariables().isEmpty()) {
-      result.append(" fetchVariables:").append(value.getFetchVariables());
-    }
-    return result.append(formatTenant(value)).toString();
+    return "fetchVariables:" + value.getFetchVariables() + formatTenant(value);
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
