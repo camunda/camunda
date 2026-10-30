@@ -17,8 +17,15 @@ val dockerImageIdFiles =
 
 dependencies { add(dockerImageProviders.name, project(":camunda-zeebe")) }
 
+// A run that explicitly excludes the container tests must not need docker or podman.
+val excludesContainerTests =
+  providers
+    .gradleProperty("excludedGroups")
+    .map { groups -> groups.split(',').map(String::trim).contains("container") }
+    .getOrElse(false)
+
 tasks.withType<Test>().configureEach {
-  if (name == "it") {
+  if (name == "it" && !excludesContainerTests) {
     useDockerImage(dockerImageName(), dockerImageIdFiles.get())
   }
 }
