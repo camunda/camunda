@@ -13,15 +13,21 @@ type Props = {
 	icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 	isCollapsed?: boolean;
 	className?: string;
+	titleAttribute?: string;
 	children?: React.ReactNode;
 };
 
 // Carbon's headingCompact01 (14px/18px, font-weight 600) maps exactly to the
 // DS's heading-xs variant, so no weight override is needed here (unlike
 // EmptyMessage/MetricPanel, whose Carbon tokens have a different weight).
-const PanelTitle: React.FC<Props> = ({icon: Icon, isCollapsed = false, className, children}) => {
+const PanelTitle: React.FC<Props> = ({icon: Icon, isCollapsed = false, className, titleAttribute, children}) => {
 	return (
-		<Heading as="h2" variant="heading-xs" className={cn('m-0 flex items-center gap-2 text-foreground', className)}>
+		<Heading
+			as="h2"
+			variant="heading-xs"
+			title={titleAttribute}
+			className={cn('m-0 flex items-center gap-2 text-foreground', className)}
+		>
 			{Icon !== undefined && <Icon aria-hidden="true" focusable="false" className="size-4 shrink-0" />}
 			{isCollapsed ? <span className="sr-only">{children}</span> : children}
 		</Heading>

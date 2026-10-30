@@ -1092,10 +1092,11 @@
 						"searchByName": "Rechercher par nom de processus",
 						"selectVersion": "Sélectionner une version de processus",
 						"searchByElement": "Rechercher par élément de processus"
+					},
+					"diagramHeader": {
+						"copyButtonDescription": "ID du processus / Cliquer pour copier",
+						"copyButtonTitle": "Copier l'ID du processus : {{id}}"
 					}
-				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme"
 				},
 				"migration": {
 					"migrate": "Migrer",
@@ -1368,7 +1369,8 @@
 					"details": "Détails du processus",
 					"definition": "Définition du processus",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Opération créée"
+					"successTitle": "Opération créée",
+					"loadingMessage": "Suppression de la définition de processus en cours"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus \"{{name}}\"",
@@ -1377,7 +1379,8 @@
 					"selectSingleTenant": "Pour voir un diagramme, sélectionnez un seul locataire",
 					"noProcessSelected": "Aucun processus n'est sélectionné",
 					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres",
-					"processNotFoundTitle": "Le processus n'a pas pu être trouvé"
+					"processNotFoundTitle": "Le processus n'a pas pu être trouvé",
+					"ariaLabel": "Panneau du diagramme"
 				}
 			},
 			"decisions": {

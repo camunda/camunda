@@ -17,6 +17,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {latestDefinitionsQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import {useDiagramXml} from '../useDiagramXml';
+import type {ProcessDefinitionSelection} from './processDefinitionSelection';
 
 type Params = {
 	process?: string;
@@ -152,17 +153,38 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 		});
 	}, [isDefinitionsReady, isDefinitionsFetching, isDefinitionsPlaceholder, hasMatch, navigate, t]);
 
-	// Elements are only selectable once a single, unambiguous definition version is chosen.
-	const singleDefinition = useMemo(() => {
-		if (!isDefinitionsReady || version === undefined) {
-			return undefined;
+	const processDefinitionSelection = useMemo<ProcessDefinitionSelection>(() => {
+		const definition =
+			version === undefined
+				? matchingDefinitions[0]
+				: matchingDefinitions.find((candidate) => candidate.version === version);
+		if (definition === undefined) {
+			return {kind: 'no-match'};
 		}
-		const candidates = matchingDefinitions.filter((candidate) => candidate.version === version);
-		const [first] = candidates;
-		const isAmbiguous = !specificTenantId && candidates.some((candidate) => candidate.tenantId !== first?.tenantId);
-		return isAmbiguous ? undefined : first;
-	}, [isDefinitionsReady, matchingDefinitions, specificTenantId, version]);
-	const selectedDefinitionKey = singleDefinition?.processDefinitionKey;
+		const tenantCandidates =
+			version === undefined
+				? matchingDefinitions
+				: matchingDefinitions.filter((candidate) => candidate.version === version);
+		if (!specificTenantId && tenantCandidates.some((candidate) => candidate.tenantId !== definition.tenantId)) {
+			return {
+				kind: 'multiple-tenants',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
+		}
+		if (version === undefined) {
+			return {
+				kind: 'all-versions',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
+		}
+		return {kind: 'single-version', definition};
+	}, [matchingDefinitions, specificTenantId, version]);
+
+	// Elements are only selectable once a single, unambiguous definition version is chosen.
+	const selectedDefinitionKey =
+		processDefinitionSelection.kind === 'single-version'
+			? processDefinitionSelection.definition.processDefinitionKey
+			: undefined;
 	const {
 		data: diagramData,
 		error: xmlError,
@@ -191,7 +213,9 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 		processItems,
 		selectedProcess,
 		versionNumbers,
+		processDefinitionSelection,
 		isDefinitionsReady,
+		isDefinitionsLoading,
 		isDefinitionsError,
 		isDefinitionsFetching,
 		selectedDefinitionsError,
@@ -207,4 +231,7 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 	};
 }
 
+type ProcessFilterOptions = ReturnType<typeof useProcessFilterOptions>;
+
 export {useProcessFilterOptions};
+export type {ProcessFilterOptions};

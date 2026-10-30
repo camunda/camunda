@@ -11,9 +11,8 @@ import type {FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Heading, PageLayout, Separator, Text} from '@camunda/design-system';
+import {Heading, PageLayout, Separator} from '@camunda/design-system';
 import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
-import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
@@ -22,6 +21,8 @@ import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
 import {InstancesTable} from './InstancesTable';
+import {DiagramPanel} from './DiagramPanel';
+import {useProcessFilterOptions} from './useProcessFilterOptions';
 
 type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -43,6 +44,13 @@ const Processes: React.FC<Props> = ({search}) => {
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
 	const variable = useVariableConditions();
+	const filterOptions = useProcessFilterOptions({
+		process: search.process,
+		version: search.version,
+		elementId: search.elementId,
+		tenantId: search.tenantId,
+	});
+	const instancesSearch = useMemo<ProcessesSearch>(() => ({...search, variable}), [search, variable]);
 	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
 	const {
 		processInstanceKey,
@@ -174,6 +182,7 @@ const Processes: React.FC<Props> = ({search}) => {
 										process={search.process}
 										version={search.version}
 										elementId={search.elementId}
+										options={filterOptions}
 										tenantId={search.tenantId}
 										active={search.active}
 										incidents={search.incidents}
@@ -212,14 +221,17 @@ const Processes: React.FC<Props> = ({search}) => {
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
-						<section className="flex h-full flex-col">
-							<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
-							<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-								{t('operate.processes.scaffold.diagramPanelPlaceholder')}
-							</Text>
-						</section>
+						<DiagramPanel
+							processDefinitionSelection={filterOptions.processDefinitionSelection}
+							isDefinitionSelectionLoading={filterOptions.isDefinitionsLoading}
+							isDefinitionSelectionError={filterOptions.isDefinitionsError}
+							search={instancesSearch}
+							onElementSelection={(elementId) => {
+								void navigate({to: '.', search: (prev) => ({...prev, elementId: elementId || undefined})});
+							}}
+						/>
 						<div className="h-full overflow-hidden">
-							<InstancesTable search={search} />
+							<InstancesTable search={instancesSearch} />
 						</div>
 					</ResizablePanel>
 				</div>

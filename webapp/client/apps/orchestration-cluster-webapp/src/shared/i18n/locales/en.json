@@ -1101,10 +1101,11 @@
 						"searchByName": "Search by process name",
 						"selectVersion": "Select a process version",
 						"searchByElement": "Search by process element"
+					},
+					"diagramHeader": {
+						"copyButtonDescription": "Process ID / Click to copy",
+						"copyButtonTitle": "Copy Process ID: {{id}}"
 					}
-				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Diagram panel placeholder"
 				},
 				"migration": {
 					"migrate": "Migrate",
@@ -1377,7 +1378,8 @@
 					"details": "Process Details",
 					"definition": "Process Definition",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Operation created"
+					"successTitle": "Operation created",
+					"loadingMessage": "Deleting process definition"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Process \"{{name}}\"",
@@ -1386,7 +1388,8 @@
 					"selectSingleTenant": "To see a Diagram, select a single Tenant",
 					"noProcessSelected": "There is no Process selected",
 					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel",
-					"processNotFoundTitle": "Process could not be found"
+					"processNotFoundTitle": "Process could not be found",
+					"ariaLabel": "Diagram Panel"
 				}
 			},
 			"decisions": {
