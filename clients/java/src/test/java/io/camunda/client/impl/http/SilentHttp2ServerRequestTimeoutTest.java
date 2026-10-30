@@ -17,7 +17,6 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
@@ -27,17 +26,12 @@ import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -46,8 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.Message;
@@ -79,10 +71,8 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class SilentHttp2ServerRequestTimeoutTest {
 
-  private static final char[] PASSWORD = "changeit".toCharArray();
   // shortened from the 5s default so that the tests do not wait for the full margin
   private static final Duration RESPONSE_DEADLINE_MARGIN = Duration.ofSeconds(1);
-  private static final long KEYTOOL_TIMEOUT_SECONDS = 60;
 
   private static ProxySelector originalProxySelector;
 
@@ -120,13 +110,12 @@ class SilentHttp2ServerRequestTimeoutTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    final Path keyStorePath = tempDir.resolve("server.p12");
-    certificatePath = tempDir.resolve("server.pem");
-    generateSelfSignedCertificate(keyStorePath, certificatePath);
+    final SelfSignedCertificate certificate = SelfSignedCertificate.create(tempDir);
+    certificatePath = certificate.certificatePath();
 
     server =
         H2ServerBootstrap.bootstrap()
-            .setTlsStrategy(new H2ServerTlsStrategy(createSslContext(keyStorePath)))
+            .setTlsStrategy(new H2ServerTlsStrategy(certificate.serverSslContext()))
             .setIOSessionListener(new SessionCounter())
             .setRequestRouter(
                 (request, context) -> () -> new BasicServerExchangeHandler<>(new SilentHandler()))
@@ -239,78 +228,6 @@ class SilentHttp2ServerRequestTimeoutTest {
     } finally {
       worker.close();
     }
-  }
-
-  /** Creates a throwaway key pair for localhost with the JDK's keytool, so no key is committed. */
-  private void generateSelfSignedCertificate(final Path keyStore, final Path certificate)
-      throws Exception {
-    final Path binDirectory = Paths.get(System.getProperty("java.home"), "bin");
-    final Path keytool =
-        Files.exists(binDirectory.resolve("keytool.exe"))
-            ? binDirectory.resolve("keytool.exe")
-            : binDirectory.resolve("keytool");
-    if (!Files.exists(keytool)) {
-      fail("keytool is needed to create the test certificate but is not in %s", binDirectory);
-    }
-    run(
-        keytool.toString(),
-        "-genkeypair",
-        "-alias",
-        "server",
-        "-keyalg",
-        "RSA",
-        "-keysize",
-        "2048",
-        "-dname",
-        "CN=localhost",
-        "-ext",
-        "san=dns:localhost",
-        "-validity",
-        "1",
-        "-storetype",
-        "PKCS12",
-        "-keystore",
-        keyStore.toString(),
-        "-storepass",
-        new String(PASSWORD));
-    run(
-        keytool.toString(),
-        "-exportcert",
-        "-rfc",
-        "-alias",
-        "server",
-        "-keystore",
-        keyStore.toString(),
-        "-storepass",
-        new String(PASSWORD),
-        "-file",
-        certificate.toString());
-  }
-
-  private void run(final String... command) throws Exception {
-    final Path log = Files.createTempFile(tempDir, "keytool", ".log");
-    final Process process =
-        new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
-    if (!process.waitFor(KEYTOOL_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-      process.destroyForcibly();
-      fail("keytool did not finish within %d seconds", KEYTOOL_TIMEOUT_SECONDS);
-    }
-    assertThat(process.exitValue())
-        .describedAs(new String(Files.readAllBytes(log), StandardCharsets.UTF_8))
-        .isZero();
-  }
-
-  private SSLContext createSslContext(final Path keyStorePath) throws Exception {
-    final KeyStore keyStore = KeyStore.getInstance("PKCS12");
-    try (final InputStream in = Files.newInputStream(keyStorePath)) {
-      keyStore.load(in, PASSWORD);
-    }
-    final KeyManagerFactory factory =
-        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-    factory.init(keyStore, PASSWORD);
-    final SSLContext context = SSLContext.getInstance("TLS");
-    context.init(factory.getKeyManagers(), null, null);
-    return context;
   }
 
   /** Counts the connections the server accepted and saw closed. */
