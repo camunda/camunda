@@ -1571,6 +1571,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Header placeholder",
+					"diagramPanelPlaceholder": "Diagram panel placeholder",
+					"bottomPanelPlaceholder": "Bottom panel placeholder"
+				},
 				"history": {
 					"title": "Instance History",
 					"tabs": "Process instance tabs",

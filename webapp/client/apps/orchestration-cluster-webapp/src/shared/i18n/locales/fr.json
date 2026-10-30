@@ -1562,6 +1562,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Espace réservé de l’en-tête",
+					"diagramPanelPlaceholder": "Espace réservé du panneau de diagramme",
+					"bottomPanelPlaceholder": "Espace réservé du panneau inférieur"
+				},
 				"history": {
 					"title": "Historique de l’instance",
 					"tabs": "Onglets de l’instance de processus",
