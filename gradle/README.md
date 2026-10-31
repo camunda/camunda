@@ -53,10 +53,19 @@ work should be skipped and the active project graph should remain unchanged.
 
 # Backend-only archive: does not build fresh frontend assets
 ./gradlew -Pskip.fe.build=true :camunda-zeebe:distZip
+
+# Container image from the distribution tar (default tag camunda/camunda:current-test).
+# distTar is uncompressed.
+# Uses docker if installed, otherwise podman; force one with -Pcontainer.cli=podman.
+./gradlew buildDockerImage -Pdocker.image=camunda/camunda:my-tag
 ```
 
 Always qualify the task with its project: an unqualified `./gradlew distTar` also runs
 `:camunda-optimize:distTar` and builds Optimize.
+Container tests build the image first: `:camunda-zeebe:dockerIt` runs the `*DockerIT` tests, and the
+`it` task of every module that applies `buildlogic.docker-image-test-conventions` (schema-manager,
+the acceptance, testcontainer, Zeebe integration and update tests) runs after `buildDockerImage` and
+reruns when the image changes. They read the image from `-Pdocker.image`.
 
 Frontend builds are triggered by distribution assembly, not by compilation, tests, or a standalone
 webjar `jar` task. An archive built with `-Pskip.fe.build=true` is **not frontend-complete** and must
