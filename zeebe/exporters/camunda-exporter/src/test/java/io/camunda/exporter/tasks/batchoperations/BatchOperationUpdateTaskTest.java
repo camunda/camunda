@@ -137,7 +137,7 @@ public class BatchOperationUpdateTaskTest {
     final var bounded = new BatchOperationUpdateTask(repository, 25, LOGGER, Runnable::run);
 
     // when
-    bounded.execute().toCompletableFuture().join();
+    assertThat(bounded.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then
     Mockito.verify(repository).getNotFinishedBatchOperations(25, null);
@@ -209,9 +209,9 @@ public class BatchOperationUpdateTaskTest {
         .bulkUpdate(Mockito.any());
 
     // when
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
     Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then - the next cycle reads fewer batch operations, so it fans out into a smaller write
     final var reads = ArgumentCaptor.forClass(Integer.class);
@@ -231,12 +231,12 @@ public class BatchOperationUpdateTaskTest {
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
         .when(repository)
         .bulkUpdate(Mockito.any());
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
 
     // when - the smaller cycle succeeds
     Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
-    task.execute().toCompletableFuture().join();
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then - not sticky, since the fan-out depends on which operations the batch holds
     final var reads = ArgumentCaptor.forClass(Integer.class);
@@ -263,11 +263,11 @@ public class BatchOperationUpdateTaskTest {
         .doCallRealMethod()
         .when(repository)
         .bulkUpdate(Mockito.any());
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
 
     // when - the cycle at the reduced read gets its first page through, then is refused again
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then - an accepted page does not restore the read the refused page was sized from
     Mockito.verify(repository).getNotFinishedBatchOperations(4, null);
@@ -286,13 +286,13 @@ public class BatchOperationUpdateTaskTest {
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
         .when(repository)
         .bulkUpdate(Mockito.any());
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
 
     // when - nothing is left unfinished, so the cycle writes nothing
     Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
     repository.batchOperations.clear();
-    task.execute().toCompletableFuture().join();
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then - only a cycle that writes restores the read
     final var reads = ArgumentCaptor.forClass(Integer.class);
@@ -312,14 +312,14 @@ public class BatchOperationUpdateTaskTest {
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
         .when(repository)
         .bulkUpdate(Mockito.any());
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
 
     // when - the cycle still reads an operation, but none of them can be finalized yet, so the
     // bulk update is empty and never reaches the store
     Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
     repository.finishedOperationsCount.clear();
-    task.execute().toCompletableFuture().join();
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then - a cycle that wrote nothing must not restore the read, or the next one rebuilds the
     // same refused write
@@ -341,9 +341,9 @@ public class BatchOperationUpdateTaskTest {
         .bulkUpdate(Mockito.any());
 
     // when
-    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    assertThat(task.execute()).failsWithin(REQUEST_TIMEOUT);
     Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
-    task.execute().toCompletableFuture().join();
+    assertThat(task.execute()).succeedsWithin(REQUEST_TIMEOUT);
 
     // then
     final var reads = ArgumentCaptor.forClass(Integer.class);
