@@ -45,7 +45,28 @@ public record FlowNodeInstanceFilter(
     // can be removed.
     Boolean useTreePathPrefix,
     List<FlowNodeInstanceFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<FlowNodeInstanceFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        flowNodeInstanceKeys,
+        processInstanceKeys,
+        processDefinitionKeys,
+        processDefinitionIds,
+        stateOperations,
+        types,
+        flowNodeIdOperations,
+        flowNodeNameOperations,
+        treePaths,
+        hasIncident,
+        incidentKeys,
+        tenantIds,
+        startDateOperations,
+        endDateOperations,
+        elementInstanceScopeKeys,
+        levels);
+  }
 
   public static FlowNodeInstanceFilter of(
       final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
