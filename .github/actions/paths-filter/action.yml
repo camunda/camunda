@@ -60,6 +60,14 @@ outputs:
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
+  java-source-changes:
+    description: Output whether Java source, test, or resource files changed
+    value: >-
+      ${{ steps.filter-common.outputs.java-code-change == 'true' }}
+  maven-build-changes:
+    description: Output whether Maven build inputs changed
+    value: >-
+      ${{ steps.filter-common.outputs.maven-change == 'true' }}
   identity-frontend-tests:
     description: Output whether Identity frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -307,7 +315,18 @@ outputs:
         steps.filter-common.outputs.gradle-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
-
+  gradle-build-changes:
+    description: Output whether Gradle build inputs changed
+    value: >-
+      ${{ steps.filter-common.outputs.gradle-change == 'true' }}
+  gradle-only-changes:
+    description: Output whether a pull request changes only Gradle build inputs
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        steps.filter-common.outputs.gradle-change == 'true' &&
+        steps.filter-common.outputs.non-gradle-change != 'true'
+      }}
 runs:
   using: composite
   steps:
@@ -317,6 +336,7 @@ runs:
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      predicate-quantifier: some-with-excludes
       filters: |
         actionlint-related-change:
           - '.github/actions/**'
@@ -355,6 +375,7 @@ runs:
           - '**/src/it/**'
           # extra source root registered via build-helper-maven-plugin in the configuration module
           - 'configuration/src/build/**'
+          - '!gradle/**'
 
         maven-change:
           - 'bom/**'
@@ -364,6 +385,7 @@ runs:
           - '**/pom.xml'
           - '.mvn/**'
           - '.ci/db-versions.yml'
+          - '!**/*.gradle.kts'
 
         gradle-change:
           - '**/*.gradle.kts'
@@ -373,6 +395,17 @@ runs:
           - 'gradlew.bat'
           - '.github/scripts/gradle/**'
           - '.github/workflows/gradle-ci.yml'
+
+        # Any changed file outside the gradle-change set; keep both lists identical.
+        non-gradle-change:
+          - '**'
+          - '!**/*.gradle.kts'
+          - '!gradle.properties'
+          - '!gradle/**'
+          - '!gradlew'
+          - '!gradlew.bat'
+          - '!.github/scripts/gradle/**'
+          - '!.github/workflows/gradle-ci.yml'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'

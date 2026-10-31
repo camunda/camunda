@@ -13,16 +13,25 @@ on:
       - release-*
   pull_request: {}
   merge_group: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      build-tool:
+        description: Build tool for the complete test path. Gradle runs do not publish snapshots.
+        type: choice
+        options:
+          - maven
+          - gradle
+        default: maven
   schedule:
     - cron: '0 6 * * *' # daily full build in the morning to re-populate GHA caches
+    - cron: '0 9 * * *' # daily complete Gradle run, see docs/adr/gradle/001-gradle-experimental-ci-integration.md (D6)
 
 # Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
 # Exception for main + stable/* branches: complete builds for every commit needed for confidenence
 # Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
+  group: ${{ format('{0}-{1}-{2}-{3}', github.workflow, github.event_name, github.event.schedule, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
 defaults:
   run:
@@ -53,6 +62,8 @@ jobs:
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
+      java-source-changes: ${{ steps.filter.outputs.java-source-changes }}
+      maven-build-changes: ${{ steps.filter.outputs.maven-build-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
@@ -83,6 +94,15 @@ jobs:
       c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
       c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
       c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
+      gradle-build-changes: ${{ steps.filter.outputs.gradle-build-changes }}
+      gradle-only-changes: ${{ steps.filter.outputs.gradle-only-changes }}
+      # Single source of truth for which build tool CI uses. The Gradle schedule and manual runs that
+      # select Gradle use it too. Pure Gradle-only PRs use Gradle
+      # automatically; the gradle-build label opts non-Java/non-Maven mixed PRs into Gradle. Java
+      # changes, Maven build changes, merge queues, pushes, the default schedule, default manual runs,
+      # and other PRs use Maven.
+      build-tool: ${{ ((github.event_name == 'workflow_dispatch' && inputs.build-tool == 'gradle') || (github.event_name == 'schedule' && github.event.schedule == '0 9 * * *') || github.event_name == 'pull_request' && steps.filter.outputs.java-source-changes != 'true' && steps.filter.outputs.maven-build-changes != 'true' && (steps.filter.outputs.gradle-only-changes == 'true' || contains(github.event.pull_request.labels.*.name, 'gradle-build'))) && 'gradle' || 'maven' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -656,7 +676,15 @@ jobs:
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # Gradle changes and Gradle runs are included because the Gradle distribution parity job and the
+    # Gradle test jobs consume the Maven ZIP.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle'
     needs: [ detect-changes ]
     permissions:
       contents: read
@@ -769,7 +797,9 @@ jobs:
 
   # Sets up test constants for both unit and integration tests. Using outputs instead of env vars so that these constants can be used in a matrix
   setup-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle'
     name: "Setup Tests"
     needs: [ detect-changes ]
     outputs:
@@ -794,6 +824,10 @@ jobs:
       ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
+      # Gradle-format IT task lists (space-separated :module:it references)
+      ZEEBE_IT_DISTRIBUTED_GRADLE: ${{ steps.set-constants.outputs.it_distributed_gradle }}
+      ZEEBE_IT_EXPORTER_GRADLE: ${{ steps.set-constants.outputs.it_exporter_gradle }}
+      ZEEBE_IT_ENGINE_GRADLE: ${{ steps.set-constants.outputs.it_engine_gradle }}
       INTEGRATION_TESTS_MATRIX: ${{ steps.integration-tests-matrix.outputs.matrix }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -859,6 +893,12 @@ jobs:
             echo "it_distributed=${IT_DISTRIBUTED}"
             echo "it_exporter=${IT_EXPORTER}"
             echo "it_engine=${IT_ENGINE}"
+
+            # Gradle-format IT task lists: convert ':m1',':m2' → :m1:it :m2:it
+            to_gradle_it() { echo "$1" | tr -d "'" | tr ',' '\n' | tr -d ' ' | grep -v '^$' | sed 's/$/:it/' | tr '\n' ' ' | sed 's/ $//'; }
+            echo "it_distributed_gradle=$(to_gradle_it "$IT_DISTRIBUTED")"
+            echo "it_exporter_gradle=$(to_gradle_it "$IT_EXPORTER")"
+            echo "it_engine_gradle=$(to_gradle_it "$IT_ENGINE")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build integration tests matrix
@@ -867,6 +907,9 @@ jobs:
           ZEEBE_IT_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.it_distributed }}
           ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
           ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
+          ZEEBE_IT_DISTRIBUTED_GRADLE: ${{ steps.set-constants.outputs.it_distributed_gradle }}
+          ZEEBE_IT_ENGINE_GRADLE: ${{ steps.set-constants.outputs.it_engine_gradle }}
+          ZEEBE_IT_EXPORTER_GRADLE: ${{ steps.set-constants.outputs.it_exporter_gradle }}
           # Opt-in to stress testing the integration-tests job via the PR label "ci:stress-test".
           STRESS_ENABLED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         run: |
@@ -878,6 +921,7 @@ jobs:
               "group": "root",
               "name": "Root Acceptance Tests",
               "maven-modules": "'qa/acceptance-tests'",
+              "gradle-modules": ":camunda-qa-acceptance-tests:it",
               "maven-build-threads": 2,
               "maven-test-fork-count": 3,
               "runs-on": "gcp-perf-core-8-default",
@@ -891,6 +935,7 @@ jobs:
               "group": "qa-testcontainer",
               "name": "Testcontainer Tests",
               "maven-modules": "'qa/testcontainer'",
+              "gradle-modules": ":camunda-testcontainer:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
@@ -904,8 +949,10 @@ jobs:
               "group": "zeebe-ds-modules",
               "name": "Zeebe Distributed Platform Modules",
               "maven-modules": "${ZEEBE_IT_DISTRIBUTED_MODULES}",
+              "gradle-modules": "${ZEEBE_IT_DISTRIBUTED_GRADLE}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
+              "gradle-max-workers": 2,
               "runs-on": "gcp-perf-core-16-longrunning",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
@@ -917,6 +964,7 @@ jobs:
               "group": "zeebe-engine-modules",
               "name": "Zeebe Engine Modules",
               "maven-modules": "${ZEEBE_IT_ENGINE_MODULES}",
+              "gradle-modules": "${ZEEBE_IT_ENGINE_GRADLE}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
@@ -930,6 +978,7 @@ jobs:
               "group": "zeebe-exporter-modules",
               "name": "Zeebe Exporter Modules",
               "maven-modules": "${ZEEBE_IT_EXPORTER_MODULES}",
+              "gradle-modules": "${ZEEBE_IT_EXPORTER_GRADLE}",
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
@@ -941,6 +990,7 @@ jobs:
               "group": "schema-manager",
               "name": "Schema Manager",
               "maven-modules": "schema-manager",
+              "gradle-modules": ":camunda-schema-manager:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 3,
               "runs-on": "gcp-perf-core-8-default",
@@ -954,6 +1004,8 @@ jobs:
               "group": "zeebe-engine-integration",
               "name": "Zeebe Engine QA",
               "maven-modules": "zeebe/qa/integration-tests",
+              "gradle-modules": ":zeebe-qa-integration-tests:it",
+              "gradle-test-filter": "io.camunda.zeebe.it.engine.**",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
@@ -968,6 +1020,8 @@ jobs:
               "group": "zeebe-ds-integration",
               "name": "Zeebe Cluster QA",
               "maven-modules": "zeebe/qa/integration-tests",
+              "gradle-modules": ":zeebe-qa-integration-tests:it",
+              "gradle-test-filter": "io.camunda.zeebe.it.cluster.**",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
@@ -984,6 +1038,8 @@ jobs:
               "group": "zeebe-ds-integration-scaleup",
               "name": "Zeebe Cluster ScaleUp QA",
               "maven-modules": "zeebe/qa/integration-tests",
+              "gradle-modules": ":zeebe-qa-integration-tests:it",
+              "gradle-test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
@@ -996,6 +1052,8 @@ jobs:
               "group": "zeebe-shared-integration",
               "name": "Zeebe General QA",
               "maven-modules": "zeebe/qa/integration-tests",
+              "gradle-modules": ":zeebe-qa-integration-tests:it",
+              "gradle-test-exclude": "io.camunda.zeebe.it.engine.**,io.camunda.zeebe.it.cluster.**",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
@@ -1010,6 +1068,7 @@ jobs:
               "group": "qa-camunda-process-test",
               "name": "Camunda Process",
               "maven-modules": "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example,testing/camunda-process-test-spring-boot-3",
+              "gradle-modules": ":camunda-process-test-java:it :camunda-process-test-spring:it :camunda-process-test-example:it :camunda-process-test-spring-boot-3:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 3,
               "runs-on": "gcp-perf-core-8-default",
@@ -1023,6 +1082,7 @@ jobs:
               "group": "authentication",
               "name": "Authentication",
               "maven-modules": "authentication",
+              "gradle-modules": ":camunda-authentication:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
@@ -1034,6 +1094,7 @@ jobs:
               "group": "qa-clients",
               "name": "Clients",
               "maven-modules": "clients/camunda-spring-boot-starter,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-starter-virtual-threads,clients/java",
+              "gradle-modules": ":camunda-spring-boot-starter:it :camunda-spring-boot-3-starter:it :camunda-spring-boot-starter-virtual-threads:it :camunda-client-java:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
@@ -1045,6 +1106,7 @@ jobs:
               "group": "qa-update",
               "name": "Zeebe QA - Update",
               "maven-modules": "zeebe/qa/update-tests",
+              "gradle-modules": ":zeebe-qa-update-tests:it",
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
@@ -1082,7 +1144,9 @@ jobs:
 
   # Runs unit tests for all modules that are not Operate, Optimize, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle'
     name: "General / Unit - Back End"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
@@ -1098,12 +1162,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: ut-general-unit-tests
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
@@ -1113,6 +1180,7 @@ jobs:
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
       - name: Maven Test Build Unit
+        if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         shell: bash
         # Modules in zeebe, operate, and optimize are skipped as they have dedicated unit test jobs
         #
@@ -1124,8 +1192,17 @@ jobs:
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
           -P include-slow-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -pl ${{ env.GENERAL_UT_MODULES }}
+          -pl ${{ env.GENERAL_UT_MAVEN_MODULES }}
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Test Build Unit
+        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+        shell: bash
+        run: >
+          ./gradlew --no-daemon --console=plain
+          -Pskip.fe.build -PincludeSlowTests -Pparallel.tests -Pjunit.thread.count=16
+          -Ptest.max.retries=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          test ${{ env.GENERAL_UT_GRADLE_MODULES }}
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
@@ -1151,7 +1228,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   zeebe-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle'
     name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
@@ -1207,17 +1286,21 @@ jobs:
           test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: ut-zeebe
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
+        if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
@@ -1233,6 +1316,12 @@ jobs:
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Run Test (Zeebe)
+        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+        shell: bash
+        run: |
+          mapfile -t TASKS < <(echo "${{ matrix.maven-modules }}" | tr -d "'" | tr ',' '\n' | sed '/^$/d; s/$/:test/')
+          ./gradlew --no-daemon --console=plain --max-workers=3 -Pskip.fe.build -PincludeSlowTests -Pparallel.tests -Pjunit.thread.count=16 -Ptest.max.forks=3 -Ptest.jvm.maxheap=4g -Ptest.max.retries="${FLAKY_TEST_RERUN_COUNT}" "${TASKS[@]}" | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -1291,7 +1380,9 @@ jobs:
 
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
       contents: read
@@ -1308,13 +1399,17 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itMultiDb"
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
       contents: read
@@ -1331,6 +1426,8 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itHistory"
       maven-profiles: "history"
       test-type: "history-tests"
       test-type-label: "History"
@@ -1341,7 +1438,9 @@ jobs:
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
       contents: read
@@ -1358,6 +1457,8 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itIdentity"
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
@@ -1367,7 +1468,9 @@ jobs:
 
   physical-tenant-acceptance-tests:
     name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
@@ -1400,6 +1503,8 @@ jobs:
       database-name: "${{ matrix.database-name }}"
       database-image-version: "${{ matrix.database-image-version }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itPhysicalTenant"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
       physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
@@ -1415,7 +1520,9 @@ jobs:
 
   physical-tenant-identity-tests:
     name: "Physical Tenant Acceptance Tests / Identity / ${{ matrix.database-name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
@@ -1442,6 +1549,8 @@ jobs:
       database-name: "${{ matrix.database-name }}"
       database-image-version: "${{ matrix.database-image-version }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itPhysicalTenantIdentity"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
       physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
@@ -1455,7 +1564,9 @@ jobs:
 
   physical-tenant-history-tests:
     name: "Physical Tenant Acceptance Tests / History / ${{ matrix.database-name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
@@ -1482,6 +1593,8 @@ jobs:
       database-name: "${{ matrix.database-name }}"
       database-image-version: "${{ matrix.database-image-version }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      build-tool: "${{ needs.detect-changes.outputs.build-tool }}"
+      gradle-test-task: "itPhysicalTenantHistory"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
       physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
@@ -1494,7 +1607,9 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   rdbms-integration-tests:
-    if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    if: >-
+      (needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     needs: [ detect-changes, build-distball ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
@@ -1531,15 +1646,17 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: it-rdbms
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
       - name: Authenticate to GCS build-cache
-        if: steps.is-fork.outputs.is-fork != 'true'
+        if: steps.is-fork.outputs.is-fork != 'true' && needs.detect-changes.outputs.build-tool == 'maven'
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
@@ -1547,18 +1664,19 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/restore-shared-m2
-        if: steps.is-fork.outputs.is-fork != 'true'
+        if: steps.is-fork.outputs.is-fork != 'true' && needs.detect-changes.outputs.build-tool == 'maven'
       # Fork PRs can't authenticate to GCS (no Vault access), so build the SNAPSHOTs locally
       # instead of restoring them -- same fallback the database/webapp-UT reusable workflows
       # use for their standalone (non-ci.yml) callers.
       - uses: ./.github/actions/build-zeebe
-        if: steps.is-fork.outputs.is-fork == 'true'
+        if: steps.is-fork.outputs.is-fork == 'true' && needs.detect-changes.outputs.build-tool == 'maven'
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
       - name: Maven Test Build DataLayer
+        if: needs.detect-changes.outputs.build-tool == 'maven'
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
@@ -1570,6 +1688,18 @@ jobs:
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Test Build DataLayer
+        if: needs.detect-changes.outputs.build-tool == 'gradle'
+        shell: bash
+        run: |
+          ./gradlew --no-daemon --console=plain --max-workers=6 \
+            -Pskip.fe.build \
+            -Pparallel.tests \
+            -Pjunit.thread.count=2 \
+            -Ptest.max.forks=1 \
+            -Ptest.max.retries=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && '0' || env.FLAKY_TEST_RERUN_COUNT }} \
+            :camunda-qa-acceptance-tests:itRdbms \
+            | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -1626,6 +1756,7 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: it-async-repl
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1691,7 +1822,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
     needs: [ detect-changes, setup-tests, build-distball ]
     timeout-minutes: 30
@@ -1770,8 +1903,10 @@ jobs:
       # The GCS build-cache auth step below authenticates gcloud for the download below.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: build-shared
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1803,15 +1938,18 @@ jobs:
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
       # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
       - uses: ./.github/actions/restore-shared-m2
-        if: steps.is-fork.outputs.is-fork != 'true'
+        if: ${{ steps.is-fork.outputs.is-fork != 'true' && needs.detect-changes.outputs.build-tool == 'maven' }}
       # Fork PRs can't authenticate to GCS (no Vault access), so build the distball + SNAPSHOTs
       # locally instead of restoring them -- same fallback the database/webapp-UT reusable
       # workflows use for their standalone (non-ci.yml) callers. Produces dist/target/*.tar.gz,
       # same as "Download distball from GCS" above, so build-platform-docker below is unchanged.
       - uses: ./.github/actions/build-zeebe
-        if: steps.is-fork.outputs.is-fork == 'true'
+        if: ${{ steps.is-fork.outputs.is-fork == 'true' && needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: ./.github/actions/build-zeebe-gradle
+        id: build-zeebe-gradle
+        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' && matrix.docker-file != '' }}
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -1819,9 +1957,11 @@ jobs:
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: ${{ matrix.docker-file }}
           push: true
+          distball: ${{ steps.build-zeebe-gradle.outputs.distball || 'dist/target/camunda-zeebe-*.tar.gz' }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
+        if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         env:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
@@ -1846,6 +1986,56 @@ jobs:
           ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Test Build Integration
+        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+        env:
+          IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
+          TEST_JVM_ARGS: ${{ matrix.test-jvm-args }}
+        shell: bash
+        run: |
+          if [[ -z "${{ matrix.gradle-modules }}" ]]; then
+            echo "::error::gradle-modules must be set for matrix entry '${{ matrix.name }}' when build-tool is gradle"
+            exit 1
+          fi
+          GRADLE_ARGS=()
+          if [[ -n "${{ matrix.gradle-test-filter }}" ]]; then
+            IFS=',' read -ra patterns <<< "${{ matrix.gradle-test-filter }}"
+            for pattern in "${patterns[@]}"; do
+              GRADLE_ARGS+=("--tests" "${pattern// /}")
+            done
+          fi
+          if [[ -n "${{ matrix.gradle-test-exclude }}" ]]; then
+            GRADLE_ARGS+=("-Pit.exclude.tests=${{ matrix.gradle-test-exclude }}")
+          fi
+          if [[ "${IS_STRESS_ENABLED}" == "true" ]]; then
+            GRADLE_ARGS+=("-Ptest.max.retries=0")
+          else
+            GRADLE_ARGS+=("-Ptest.max.retries=${FLAKY_TEST_RERUN_COUNT}")
+          fi
+          if [[ -n "${TEST_JVM_ARGS}" ]]; then
+            GRADLE_ARGS+=("-Ptest.jvm.extra.args=${TEST_JVM_ARGS}")
+          fi
+          # Mirror Maven's `-T ${maven-build-threads}` module-level parallelism. Gradle runs
+          # projects in parallel by default (org.gradle.parallel=true); when Maven serializes
+          # modules (build-threads=1, e.g. modules that bind the same port) Gradle must too.
+          # `--no-parallel` only serializes cross-module execution; within-module test forks
+          # (maxParallelForks) are unaffected.
+          if [[ "${{ matrix.maven-build-threads }}" == "1" ]]; then
+            GRADLE_ARGS+=("--no-parallel")
+          else
+            GRADLE_ARGS+=("--parallel")
+          fi
+          ./gradlew --no-daemon --console=plain --max-workers=${{ matrix.gradle-max-workers || matrix.maven-test-fork-count }} \
+            -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=2 \
+            -Ptest.max.forks=${{ matrix.maven-test-fork-count }} \
+            -Dfailsafe.timeout=${{ env.IT_FORK_TIMEOUT_SECONDS }} \
+            -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \
+            -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
+            -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}" \
+            ${{ matrix.gradle-modules }} \
+            "${GRADLE_ARGS[@]}" \
+            --profile \
+            | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -1904,6 +2094,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: archunit-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1997,6 +2188,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: build-shared
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -2538,7 +2730,10 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   operate-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     name: "Operate"
     needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-operate.yml
@@ -2552,9 +2747,14 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      build-tool: ${{ needs.detect-changes.outputs.build-tool }}
 
   optimize-ci:
-    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
+    if: >-
+      (needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' ||
+      needs.detect-changes.outputs.build-tool == 'gradle')
     name: "Optimize"
     needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-optimize.yml
@@ -2569,6 +2769,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      build-tool: ${{ needs.detect-changes.outputs.build-tool }}
 
   zeebe-ci:
     # Same gate as every other Java build/test job. A `zeebe/**` scope no longer makes sense: the
@@ -2580,6 +2781,7 @@ jobs:
     secrets: inherit
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
+      build-tool: ${{ needs.detect-changes.outputs.build-tool }}
 
   webapp-client:
     if: needs.detect-changes.outputs.webapp-client-changes == 'true'
@@ -3405,13 +3607,13 @@ jobs:
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
-    needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
+    needs: [ detect-changes, check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
     # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); pending EngOps exception.
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.detect-changes.outputs.build-tool == 'maven' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -3537,11 +3739,11 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
+    needs: [ detect-changes, check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.detect-changes.outputs.build-tool == 'maven' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -3613,11 +3815,11 @@ jobs:
 
   deploy-optimize-docker-snapshot:
     name: Deploy snapshot Optimize Docker image
-    needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
+    needs: [ detect-changes, check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && needs.detect-changes.outputs.build-tool == 'maven' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false

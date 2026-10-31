@@ -56,10 +56,12 @@ inputs:
       cache; see the setup-maven-cache action for why the bound exists.
     required: false
     default: "3"
-  skip-maven-cache:
-    description: Skip Maven cache setup (e.g. when running Gradle instead of Maven)
+  build-tool:
+    description: |
+      Build tool the job runs, `maven` or `gradle`. `gradle` sets up Gradle (with the shared Gradle
+      cache) and skips the Maven cache.
     required: false
-    default: "false"
+    default: maven
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -179,11 +181,26 @@ runs:
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
   - name: Configure Maven cache
-    if: inputs.skip-maven-cache != 'true'
+    if: inputs.build-tool != 'gradle'
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
       cache-download-timeout-mins: ${{ inputs.maven-cache-download-timeout-mins }}
+  - name: Setup Gradle
+    if: inputs.build-tool == 'gradle'
+    uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+    with:
+      # Only main and stable pushes warm the shared cache; all other runs only read it.
+      cache-read-only: >-
+        ${{
+          !(
+            github.event_name == 'push' &&
+            (
+              github.ref == 'refs/heads/main' ||
+              startsWith(github.ref, 'refs/heads/stable/')
+            )
+          )
+        }}
   # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
   - name: Get Maven mirrors and servers to use
     id: maven

@@ -125,9 +125,20 @@ val randomizedCategoryTag = "io.camunda.zeebe.engine.processing.randomized.Rando
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
 val testJvmMaxHeap = providers.gradleProperty("test.jvm.maxheap").orNull
+val testJvmExtraArgs =
+  providers.gradleProperty("test.jvm.extra.args").orNull?.split(" ")?.filter { it.isNotBlank() }
 val testMaxForks = providers.gradleProperty("test.max.forks").orNull?.toInt() ?: 1
 val testRetryMaxRetries =
   providers.gradleProperty("test.max.retries").map { it.toInt() }.getOrElse(0)
+
+// Maven forwards -D properties to the forked test JVMs; Gradle keeps them in the Gradle JVM. Forward
+// the ones the tests read so CI can select the database, image, and smoke mode the same way.
+val forwardedSystemPropertyPrefixes =
+  listOf("test.integration.", "io.camunda.process.test.", "io.camunda.zeebe.it.")
+val forwardedSystemProperties =
+  forwardedSystemPropertyPrefixes
+    .map { providers.systemPropertiesPrefixedBy(it) }
+    .reduce { acc, next -> acc.zip(next) { a, b -> a + b } }
 
 val itPatterns = listOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 
@@ -147,6 +158,7 @@ tasks.withType<Test>().configureEach {
   if (testJvmMaxHeap != null) {
     jvmArgs("-Xmx$testJvmMaxHeap")
   }
+  testJvmExtraArgs?.let { jvmArgs(it) }
 
   // Maven Surefire runs forked JVMs with UTF-8 regardless of the host locale; match that here so
   // tests behave the same whether the CI runner locale is UTF-8 or ASCII (e.g. C/POSIX).
@@ -155,6 +167,7 @@ tasks.withType<Test>().configureEach {
   systemProperty("stderr.encoding", "UTF-8")
   environment("LANG", "en_US.UTF-8")
   environment("LC_ALL", "en_US.UTF-8")
+  forwardedSystemProperties.get().forEach { (name, value) -> systemProperty(name, value) }
 
   if (parallelTests) {
     systemProperty("junit.jupiter.execution.parallel.enabled", "true")

@@ -15,7 +15,10 @@ inputs:
     default: |
       **/target/failsafe-reports/
       **/target/surefire-reports/
+      **/build/test-results/**
+      **/build/reports/**
       **/*.log
+      !**/*.bin
   retention-days:
     description: 'Number of days to keep the test artifact'
     required: false
