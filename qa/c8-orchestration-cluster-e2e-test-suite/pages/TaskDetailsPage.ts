@@ -151,8 +151,16 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    // A non-waiting isVisible() snapshot taken right after navigation can
+    // race the assignee panel still loading, falling through to wait
+    // forever on "Assign to me" when the task is actually already assigned
+    // (so only "Unassign"/assignedToMeText can ever appear). Wait for
+    // whichever terminal state actually resolves, then only click if the
+    // button (not the already-assigned text) is what's showing.
+    await expect(this.assignedToMeText.or(this.assignToMeButton)).toBeVisible({
+      timeout: 60000,
+    });
+    if (await this.assignToMeButton.isVisible()) {
       await this.assignToMeButton.click({timeout: 60000});
     }
   }
@@ -217,6 +225,56 @@ class TaskDetailsPage {
 
   async clickDecrementButton(): Promise<void> {
     await this.decrementButton.click({timeout: 60000});
+  }
+
+  /**
+   * Repeatedly press increment until the input shows the target value.
+   * Tolerates the form-js number button registering a click as two
+   * increments on slow runners.
+   */
+  async incrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'increment');
+  }
+
+  /**
+   * Repeatedly press decrement until the input shows the target value.
+   */
+  async decrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'decrement');
+  }
+
+  private async driveNumberInputToValue(
+    target: string,
+    direction: 'increment' | 'decrement',
+  ): Promise<void> {
+    const button =
+      direction === 'increment' ? this.incrementButton : this.decrementButton;
+    const targetNum = Number(target);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const currentValue = (await this.numberInput.inputValue()) || '0';
+      const currentNum = Number(currentValue);
+      if (currentNum === targetNum) {
+        return;
+      }
+      const wrongDirection =
+        (direction === 'increment' && currentNum > targetNum) ||
+        (direction === 'decrement' && currentNum < targetNum);
+      const correctButton = wrongDirection
+        ? direction === 'increment'
+          ? this.decrementButton
+          : this.incrementButton
+        : button;
+      await correctButton.click({timeout: 60000});
+      try {
+        await expect(this.numberInput).not.toHaveValue(currentValue, {
+          timeout: 5000,
+        });
+      } catch {
+        // If the input value didn't change in 5s the next iteration will
+        // re-read it and decide whether another click is needed.
+      }
+    }
+    await expect(this.numberInput).toHaveValue(target);
   }
 
   async fillDatetimeField(label: string, value: string) {
@@ -396,9 +454,13 @@ class TaskDetailsPage {
       },
       onFailure: async () => {
         // The completed-task view sometimes renders form fields lazily after
-        // first paint; reload to force a fresh load on retry.
+        // first paint; reload to force a fresh load on retry. A fixed sleep
+        // isn't a bound on when the form is actually ready (run 34435455486:
+        // 3 internal retries plus both Playwright attempts all still read an
+        // empty value), so wait on the form's own visibility instead --
+        // same fix already present in this method on main.
         await this.page.reload();
-        await sleep(2000);
+        await expect(this.form).toBeVisible({timeout: 30000});
       },
     });
   }

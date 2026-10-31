@@ -8,14 +8,21 @@
 package io.camunda.zeebe.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -47,6 +54,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       "load-tester.perform-read-benchmarks=false",
     })
 @ActiveProfiles({"starter", "it"})
+@Import(DataAvailabilityIT.RejectSearchesOnDefaultClient.class)
 class DataAvailabilityIT {
 
   @Container
@@ -61,7 +69,8 @@ class DataAvailabilityIT {
 
   @Test
   void shouldMeasureDataAvailabilityLatency() {
-    // given - starter has run for duration-limit seconds with data availability monitoring
+    // given - starter has run for duration-limit seconds with data availability monitoring, while
+    // searches on the default client are rejected: only the separate query client can measure it
 
     // then - verify that data availability latency was recorded
     final var timer =
@@ -72,5 +81,26 @@ class DataAvailabilityIT {
     assertThat(timer.count())
         .describedAs("At least one data availability measurement should be recorded")
         .isGreaterThan(0);
+  }
+
+  @TestConfiguration
+  static class RejectSearchesOnDefaultClient {
+
+    @Bean
+    static BeanPostProcessor rejectSearches() {
+      return new BeanPostProcessor() {
+        @Override
+        public Object postProcessAfterInitialization(final Object bean, final String beanName) {
+          if (!(bean instanceof final CamundaClient client)) {
+            return bean;
+          }
+          final var spy = spy(client);
+          doThrow(new IllegalStateException("searches must not use the default client"))
+              .when(spy)
+              .newProcessInstanceSearchRequest();
+          return spy;
+        }
+      };
+    }
   }
 }

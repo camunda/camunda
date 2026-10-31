@@ -9,10 +9,12 @@ package io.camunda.optimize.service.db.es.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.TENANT_ID;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.ONBOARDED;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -48,6 +50,13 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true"));
+
+  /**
+   * Update-by-query defaults to a scroll page size of 1000. Because each definition contains the
+   * full BPMN XML, limit the scroll page size to reduce server pressure.
+   */
+  private static final int MARK_AS_ONBOARDED_SCROLL_SIZE = 50;
+
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
@@ -158,16 +167,19 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
                 q.bool(
                     b ->
                         b.must(
-                            m ->
-                                m.terms(
-                                    t ->
-                                        t.field(PROCESS_DEFINITION_KEY)
-                                            .terms(
-                                                tt ->
-                                                    tt.value(
-                                                        definitionKeys.stream()
-                                                            .map(FieldValue::of)
-                                                            .toList())))))),
+                                m ->
+                                    m.terms(
+                                        t ->
+                                            t.field(PROCESS_DEFINITION_KEY)
+                                                .terms(
+                                                    tt ->
+                                                        tt.value(
+                                                            definitionKeys.stream()
+                                                                .map(FieldValue::of)
+                                                                .toList()))))
+                            .must(m -> m.term(t -> t.field(ONBOARDED).value(false)))
+                            .must(m -> m.term(t -> t.field(DEFINITION_DELETED).value(false))))),
+        MARK_AS_ONBOARDED_SCROLL_SIZE,
         PROCESS_DEFINITION_INDEX_NAME);
   }
 

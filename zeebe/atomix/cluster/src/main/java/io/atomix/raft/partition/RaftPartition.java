@@ -104,15 +104,39 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return CompletableFuture.completedFuture(this);
   }
 
+  /**
+   * Joins the partition's replication group as a member of the given type. See {@link
+   * io.atomix.raft.RaftServer#join(RaftMember.Type, java.util.Collection)} for the type semantics.
+   */
   public CompletableFuture<RaftPartition> join(
+      final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
     initServer(managementService, snapshotStore);
-    return server.join().thenApply(v -> this);
+    return server.join(type).thenApply(v -> this);
   }
 
   public CompletableFuture<RaftPartition> leave() {
     return server.leave().thenApply(v -> this);
+  }
+
+  /**
+   * Promotes the local member to an ACTIVE voting member via a leader-forwarded reconfiguration -
+   * the second phase of a two-phase join for members that joined as PROMOTABLE and have caught up.
+   * See {@link RaftPartitionServer#promoteMember()} for the retry semantics.
+   */
+  public CompletableFuture<RaftPartition> promoteMember() {
+    return server.promoteMember().thenApply(v -> this);
+  }
+
+  /**
+   * Demotes the local member to a PASSIVE, non-voting member via a leader-forwarded reconfiguration
+   * - the first phase of a two-phase leave, so that the subsequent {@link #leave()} commits without
+   * the departing member's participation. See {@link RaftPartitionServer#demoteMember()} for the
+   * retry semantics.
+   */
+  public CompletableFuture<RaftPartition> demoteMember() {
+    return server.demoteMember().thenApply(v -> this);
   }
 
   private void initServer(

@@ -34,18 +34,21 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ProcessInstanceReader processInstanceReader;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessVariableWriter processVariableWriter;
+  private final EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper;
 
   public EngineDataProcessCleanupService(
       final ConfigurationService configurationService,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final ProcessInstanceWriter processInstanceWriter,
-      final ProcessVariableWriter processVariableWriter) {
+      final ProcessVariableWriter processVariableWriter,
+      final EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper) {
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
     this.processInstanceWriter = processInstanceWriter;
     this.processVariableWriter = processVariableWriter;
+    this.emptyProcessInstanceIndexReaper = emptyProcessInstanceIndexReaper;
   }
 
   @Override
@@ -108,6 +111,9 @@ public class EngineDataProcessCleanupService extends CleanupService {
       default:
         throw new IllegalStateException(
             "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
+    }
+    if (getCleanupConfiguration().getProcessDataCleanupConfiguration().isDeleteEmptyIndices()) {
+      emptyProcessInstanceIndexReaper.deleteIfEmpty(currentProcessDefinitionKey);
     }
 
     LOG.info(

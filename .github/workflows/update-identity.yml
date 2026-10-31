@@ -34,6 +34,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        # Credentials stay: this job commits the bump and pushes the branch.
+        # zizmor: ignore[artipacked]
         with:
           ref: ${{ inputs.targetBranch }}
       - name: Git User Setup
@@ -78,6 +80,11 @@ jobs:
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
+      - name: Mask Camunda client credentials
+        if: success()
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
       - name: Notify Camunda of completion
         if: success()
         uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
@@ -97,6 +104,9 @@ jobs:
               },
               "action": "completed"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -157,6 +167,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

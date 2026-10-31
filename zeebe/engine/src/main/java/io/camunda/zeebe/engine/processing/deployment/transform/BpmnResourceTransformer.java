@@ -249,6 +249,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DirectBuffer lastVersionDigest) {
     return lastVersionDigest != null
         && lastProcess != null
+        // A DRAINING latest would vanish once its drain completes, so it can never be a duplicate;
+        // mint a fresh version. A resting PENDING_DELETION counts as active and stays eligible.
+        && lastProcess.isActive()
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }

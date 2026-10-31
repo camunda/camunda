@@ -13,11 +13,12 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
@@ -51,12 +52,14 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    return CompletableFuture.completedFuture(
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    final var matching =
         backupStatusMap.entrySet().stream()
             .filter(e -> wildcard.matches(e.getKey()))
             .map(Entry::getValue)
-            .toList());
+            .toList();
+    return CompletableFuture.completedFuture(options.select(matching, BackupStatus::id));
   }
 
   @Override

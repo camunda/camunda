@@ -31,6 +31,8 @@ public class DatabaseConnection {
 
   private Boolean initSchemaEnabled;
 
+  private Integer metadataReadMaxWaitInSeconds;
+
   public DatabaseConnection() {}
 
   public Integer getTimeout() {
@@ -134,6 +136,14 @@ public class DatabaseConnection {
     this.initSchemaEnabled = initSchemaEnabled;
   }
 
+  public Integer getMetadataReadMaxWaitInSeconds() {
+    return metadataReadMaxWaitInSeconds;
+  }
+
+  public void setMetadataReadMaxWaitInSeconds(final Integer metadataReadMaxWaitInSeconds) {
+    this.metadataReadMaxWaitInSeconds = metadataReadMaxWaitInSeconds;
+  }
+
   public String toString() {
     return "DatabaseConnection(timeout="
         + this.getTimeout()
@@ -149,6 +159,8 @@ public class DatabaseConnection {
         + this.getProxy()
         + ", awsEnabled="
         + this.getAwsEnabled()
+        + ", metadataReadMaxWaitInSeconds="
+        + this.getMetadataReadMaxWaitInSeconds()
         + ")";
   }
 }

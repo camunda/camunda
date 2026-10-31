@@ -1,3 +1,9 @@
+> [!CAUTION]
+> The `setup` folder in the branch `stable/8.9` does not exist.
+> To deploy a load test for the Camunda Platform 8.9, use the `stable-89` folder from the `main` branch instead.
+
+---
+
 # Welcome
 
 Welcome to the Camunda Load test :wave:

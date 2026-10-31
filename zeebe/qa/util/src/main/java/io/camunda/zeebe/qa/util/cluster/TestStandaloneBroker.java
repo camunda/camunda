@@ -88,12 +88,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
-    // this is required to prevent default spring boot 4.0 security setup to kick in
-    withProperty(
-        "spring.autoconfigure.exclude",
-        "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
-            + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
-
     //noinspection resource
     withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
 
@@ -481,6 +475,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     final var metadata = unifiedConfig.getCluster().getMetadata();
     metadata.setSyncInitializerDelay(Duration.ofMillis(500));
     metadata.setSyncDelay(Duration.ofMillis(500));
+    metadata.setBootstrapTimeout(Duration.ofSeconds(5));
 
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);

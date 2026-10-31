@@ -48,6 +48,10 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Tasklist
   CLIENT_DIR: tasklist/client
+  # Capped at 3 rather than the usual 7 on stable/*: the container-based ITs below take ~5 minutes
+  # per failing attempt, so more retries would exceed their 30 minute job timeout and turn a plain
+  # failure into a timeout. ci.md asks for 3-5 retries "while staying in the timeout".
+  FLAKY_TEST_RERUN_COUNT: 3
 
 jobs:
   # run this test every time the workflow is triggered
@@ -80,19 +84,22 @@ jobs:
 
   fe-type-check:
     if: inputs.runFeTests
-    name: "Tool /  Front End - Type check"
+    name: "Tool / Front End - Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
       TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -102,6 +109,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -118,17 +127,20 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
       TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -138,6 +150,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - run: npm run eslint
         name: ESLint
       - name: Observe build status
@@ -154,16 +168,19 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Stylelint"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -173,6 +190,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - run: npm run stylelint
         name: Stylelint
       - name: Observe build status
@@ -193,12 +212,15 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -224,10 +246,11 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End - Visual Regression"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -235,9 +258,11 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Check out repository code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -248,11 +273,13 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Playwright tests
         run: npm run test:visual
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: tasklist-visual-regression-report
@@ -272,10 +299,11 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -283,9 +311,11 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Check out repository code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -296,11 +326,13 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: tasklist-a11y-report
@@ -338,6 +370,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Create build output log file
@@ -371,6 +405,7 @@ jobs:
           -DskipTests=false
           -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
@@ -416,8 +451,10 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
@@ -453,6 +490,7 @@ jobs:
             -Dspring.profiles.active=docker-test \
             -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
             -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} \
             test
       - name: Upload Test Report
         if: failure()

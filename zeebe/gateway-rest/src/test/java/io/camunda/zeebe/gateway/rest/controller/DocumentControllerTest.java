@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,11 +38,15 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @WebMvcTest(DocumentController.class)
 public class DocumentControllerTest extends RestControllerTest {
@@ -50,6 +55,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
   @MockitoBean DocumentServices documentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @Autowired MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
@@ -359,6 +365,137 @@ public class DocumentControllerTest extends RestControllerTest {
         .isOk()
         .expectBody(byte[].class)
         .isEqualTo(content);
+  }
+
+  @Test
+  void shouldWriteDocumentContentWithinRequestDispatch() throws Exception {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
+
+    // when
+    final MvcResult result = mockMvc.perform(get(DOCUMENTS_BASE_URL + "/documentId")).andReturn();
+
+    // then - the body is fully written before the filter chain unwinds, so filters that write
+    // headers on the way out (Spring Security's HeaderWriterFilter) can't race an async writer
+    assertThat(result.getRequest().isAsyncStarted()).isFalse();
+    assertThat(result.getResponse().getStatus()).isEqualTo(200);
+    assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(content);
+    // and the content is streamed rather than read up front: other Resource types would add a
+    // Content-Length and advertise Range support
+    assertThat(result.getResponse().getHeader(HttpHeaders.CONTENT_LENGTH)).isNull();
+    assertThat(result.getResponse().getHeader(HttpHeaders.ACCEPT_RANGES)).isNull();
+  }
+
+  @Test
+  void shouldSandboxDocumentContentViaContentSecurityPolicy() {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "text/html")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals("Content-Security-Policy", "sandbox; default-src 'none'");
+  }
+
+  @Test
+  void shouldServeUnsafeContentTypeAsAttachment() {
+    // given - a renderable-but-unsafe content type that must not be rendered inline
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "text/html")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment");
+  }
+
+  @Test
+  void shouldServeUnknownContentTypeAsAttachment() {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), null)));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment");
+  }
+
+  @Test
+  void shouldServeAllowlistedContentTypeInline() {
+    // given - a safe content type on the inline allowlist keeps existing image/PDF previews working
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "inline");
+  }
+
+  @Test
+  void shouldServeAllowlistedImageInlineWithSandbox() {
+    // given - an allowlisted image stays inline and is still sandboxed
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "image/png")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "inline")
+        .expectHeader()
+        .valueEquals("Content-Security-Policy", "sandbox; default-src 'none'");
   }
 
   @Test

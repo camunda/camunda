@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.metrics;
 
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
@@ -139,9 +140,17 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** The latency of read benchmark queries executed against the Camunda cluster. */
+  /**
+   * The latency of read benchmark queries executed against the Camunda cluster, labeled with the
+   * outcome of the query and, for failures, the type of the error.
+   */
   READ_BENCHMARK {
-    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.QUERY_NAME};
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {
+          StarterLatencyMetricKeyNames.QUERY_NAME,
+          StarterMetricKeyNames.OUTCOME,
+          StarterMetricKeyNames.ERROR
+        };
 
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(10),
@@ -169,7 +178,7 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "The latency of read benchmark queries executed against the Camunda cluster.";
+      return "The latency of read benchmark queries executed against the Camunda cluster, labeled with the outcome and the error type of failed queries.";
     }
 
     @Override
@@ -186,18 +195,27 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+  },
+
+  PENDING_PROCESS_INSTANCES {
+
+    @Override
+    public String getDescription() {
+      return "The number of process instances that have been started by the starter, but are not yet available for querying.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.pending.process.instances";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
-  public enum StarterMetricKeyNames implements KeyName {
-
-    /** The ID of the partition associated to the metric */
-    PARTITION {
-      @Override
-      public String asString() {
-        return "partition";
-      }
-    },
-
+  public enum StarterLatencyMetricKeyNames implements KeyName {
     /** The name of the query being benchmarked */
     QUERY_NAME {
       @Override

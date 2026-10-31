@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
@@ -47,6 +48,15 @@ public class HttpMessageConverterConfiguration {
     // This converter is needed to properly handle byte arrays
     // e.g. in the context of OpenAPI JSON schema generation
     return new ByteArrayHttpMessageConverter();
+  }
+
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE + 2)
+  public ResourceHttpMessageConverter resourceHttpMessageConverter() {
+    // Must stay ahead of the Jackson converters (@Order 1-4): otherwise the catch-all one claims
+    // document content stored as JSON, tries to serialize the Resource as a bean, and the download
+    // fails with 400. Resources must be streamed as stored.
+    return new ResourceHttpMessageConverter();
   }
 
   @Bean

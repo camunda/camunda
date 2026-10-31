@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -52,6 +53,10 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -273,6 +278,56 @@ public final class JobWorkerImplTest {
       // then
       Awaitility.await("Worker should be closed after detecting underlying executor is closed")
           .until(jobWorker::isClosed, Matchers.equalTo(true));
+    }
+  }
+
+  @Test
+  public void shouldKeepPollingAfterAPollThrowsAnError() {
+    // given a poller that throws an Error, as a protobuf gencode conflict does
+    final ErrorThrowingJobPoller poller = new ErrorThrowingJobPoller();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            1,
+            scheduler,
+            Duration.ofMillis(50),
+            (job, doneCallback) -> doneCallback,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            Runnable::run)) {
+
+      // when the worker runs on
+
+      // then the worker polls again, because a lost Error stops it permanently
+      Awaitility.await("a poll after the failed one")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(poller.getPollCount()).isGreaterThan(1));
+    } finally {
+      scheduler.shutdownNow();
+    }
+  }
+
+  /** Throws an {@link Error} on the first poll, and counts the polls. */
+  private static final class ErrorThrowingJobPoller implements JobPoller {
+    private final AtomicInteger pollCount = new AtomicInteger();
+
+    @Override
+    public void poll(
+        final int maxJobsToActivate,
+        final Consumer<io.camunda.zeebe.client.api.response.ActivatedJob> jobConsumer,
+        final IntConsumer doneCallback,
+        final Consumer<Throwable> errorCallback,
+        final BooleanSupplier openSupplier) {
+      if (pollCount.incrementAndGet() == 1) {
+        throw new NoSuchMethodError("simulated protobuf gencode/runtime version skew");
+      }
+    }
+
+    private int getPollCount() {
+      return pollCount.get();
     }
   }
 

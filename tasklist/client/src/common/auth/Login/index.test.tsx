@@ -58,6 +58,7 @@ describe('<Login />', () => {
 
   it('should redirect to the initial page on success', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -93,6 +94,7 @@ describe('<Login />', () => {
 
   it('should redirect to the referrer page', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -124,6 +126,7 @@ describe('<Login />', () => {
 
   it('should show an error for wrong credentials', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -151,6 +154,7 @@ describe('<Login />', () => {
 
   it('should show a generic error message', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -176,6 +180,7 @@ describe('<Login />', () => {
     ).toBeInTheDocument();
 
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse('')),
       http.post('/login', () => {
         return HttpResponse.error();
       }),
@@ -192,6 +197,7 @@ describe('<Login />', () => {
 
   it('should show a loading state while the login form is submitting', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -243,6 +249,7 @@ describe('<Login />', () => {
 
   it('should not allow the form to be submitted with empty fields', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {
@@ -255,6 +262,7 @@ describe('<Login />', () => {
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
       }),
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post(
         '/login',
         () => {

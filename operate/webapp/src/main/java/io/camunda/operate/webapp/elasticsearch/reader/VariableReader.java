@@ -73,9 +73,13 @@ public class VariableReader extends AbstractReader
   }
 
   @Override
-  public VariableDto getVariable(final String id) {
+  public VariableDto getVariable(final String processInstanceId, final String id) {
     try {
-      final var query = ElasticsearchUtil.idsQuery(id);
+      final var query =
+          ElasticsearchUtil.constantScoreQuery(
+              joinWithAnd(
+                  ElasticsearchUtil.idsQuery(id),
+                  ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId)));
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var searchRequest =

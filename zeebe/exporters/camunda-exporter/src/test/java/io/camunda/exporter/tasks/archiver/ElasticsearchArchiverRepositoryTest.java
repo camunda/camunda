@@ -12,14 +12,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -41,6 +38,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -48,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -196,49 +195,6 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   }
 
   @Test
-  public void shouldNotDeleteWhenMovingIfReindexingFails() {
-    // given
-    when(client.reindex(any(ReindexRequest.class)))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Error reindexing")));
-
-    // when
-    final var future =
-        repository.moveDocuments(
-            "from-index", "to-index", Map.of("key", List.of("1", "2", "3")), Runnable::run);
-
-    // then
-    assertThat(future)
-        .failsWithin(Duration.ofSeconds(5))
-        .withThrowableThat()
-        .withMessageContaining("Error reindexing");
-
-    verify(client).reindex(any(ReindexRequest.class));
-    verifyNoMoreInteractions(client);
-  }
-
-  @Test
-  public void shouldReindexThenDeleteWhenMovingDocuments() {
-    // given
-    when(client.reindex(any(ReindexRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(ReindexResponse.of(b -> b.total(10L))));
-    when(client.deleteByQuery(any(DeleteByQueryRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(DeleteByQueryResponse.of(b -> b.total(10L))));
-
-    // when
-    final var future =
-        repository.moveDocuments(
-            "from-index", "to-index", Map.of("key", List.of("1", "2", "3")), Runnable::run);
-
-    // then
-    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
-
-    final var inOrder = Mockito.inOrder(client);
-    inOrder.verify(client).reindex(any(ReindexRequest.class));
-    inOrder.verify(client).deleteByQuery(any(DeleteByQueryRequest.class));
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
   public void shouldSearchReindexThenNotBulkDeleteWhenMovingDocumentsByIdIfReindexingFails() {
     // given
     when(client.search(any(SearchRequest.class)))
@@ -299,7 +255,58 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     inOrder.verify(client).search(any(SearchRequest.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteMultipleTimesWhenMovingDocumentsByIdIfManyDocsFound()
+      throws IOException {
+    // given
+
+    final var fullBatchSize = 2500;
+    final var fullBatchIds =
+        IntStream.rangeClosed(1, fullBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+    final var lastBatchSize = 1;
+    final var lastBatchIds =
+        IntStream.rangeClosed(1, lastBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+
+    when(client.search(any(SearchRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse(fullBatchIds)),
+            CompletableFuture.completedFuture(searchResponse(lastBatchIds)));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) fullBatchSize).created((long) fullBatchSize).updated(0L))))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) lastBatchSize).created((long) lastBatchSize).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(fullBatchIds)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(lastBatchIds)));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
     inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -322,13 +329,13 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   }
 
   @Test
-  void shouldPropagateRoutingForEachBulkDeleteOperation() {
+  void shouldPropagateRoutingAndUseOptimisticConcurrencyForEachBulkDeleteOperation() {
     // given
     final var docs =
         List.of(
-            new IdWithRouting("4", "routing-4"),
-            new IdWithRouting("5", "routing-5"),
-            new IdWithRouting("6", "routing-6"));
+            new IdWithRouting("4", "routing-4", 40L, 44L),
+            new IdWithRouting("5", "routing-5", 50L, 55L),
+            new IdWithRouting("6", "routing-6", 60L, 66L));
     when(client.bulk(any(BulkRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
 
@@ -346,12 +353,24 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
 
     final var operations = captor.getValue().operations();
     assertThat(operations).hasSize(3);
-    assertThat(operations.get(0).delete().id()).isEqualTo("4");
-    assertThat(operations.get(0).delete().routing()).isEqualTo("routing-4");
-    assertThat(operations.get(1).delete().id()).isEqualTo("5");
-    assertThat(operations.get(1).delete().routing()).isEqualTo("routing-5");
-    assertThat(operations.get(2).delete().id()).isEqualTo("6");
-    assertThat(operations.get(2).delete().routing()).isEqualTo("routing-6");
+
+    final var deleteOperation0 = operations.get(0).delete();
+    assertThat(deleteOperation0.id()).isEqualTo("4");
+    assertThat(deleteOperation0.routing()).isEqualTo("routing-4");
+    assertThat(deleteOperation0.ifSeqNo()).isEqualTo(40L);
+    assertThat(deleteOperation0.ifPrimaryTerm()).isEqualTo(44L);
+
+    final var deleteOperation1 = operations.get(1).delete();
+    assertThat(deleteOperation1.id()).isEqualTo("5");
+    assertThat(deleteOperation1.routing()).isEqualTo("routing-5");
+    assertThat(deleteOperation1.ifSeqNo()).isEqualTo(50L);
+    assertThat(deleteOperation1.ifPrimaryTerm()).isEqualTo(55L);
+
+    final var deleteOperation2 = operations.get(2).delete();
+    assertThat(deleteOperation2.id()).isEqualTo("6");
+    assertThat(deleteOperation2.routing()).isEqualTo("routing-6");
+    assertThat(deleteOperation2.ifSeqNo()).isEqualTo(60L);
+    assertThat(deleteOperation2.ifPrimaryTerm()).isEqualTo(66L);
   }
 
   private SearchResponse<Void> searchResponse(final String... ids) {

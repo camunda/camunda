@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -45,6 +45,20 @@
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Not used by any Java code: this module has no formal dependency on optimize-client's
+         jar, only a raw filesystem reference to its ../client/dist build output (see the
+         resources section below). Under a parallel (-T1C) reactor build, that leaves no
+         guarantee optimize-client's frontend build finishes before this module reads that
+         directory, so an unlucky race can package a jar with no index.html. Declaring this
+         dependency (provided, so it never reaches the runtime classpath/fat jar) gives Maven a
+         real reactor edge forcing optimize-client to build first. -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-client</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Camunda dependencies -->
@@ -230,7 +244,7 @@
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
-      <version>2.3.34</version>
+      <version>2.3.35</version>
     </dependency>
 
     <!-- CSV -->
@@ -294,7 +308,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.11</version>
+      <version>2.1.15</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -423,6 +437,15 @@
       <version>${version.identity}</version>
     </dependency>
 
+    <!-- Pulled in by the starter, declared because CcsmIdentityComponentIdTest binds the
+         IdentityProperties it carries. Has to stay compile scope: test scope would win over the
+         starter's transitive scope and drop it from the runtime classpath. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+      <version>${version.identity}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
@@ -460,6 +483,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-freemarker</artifactId>
+      <exclusions>
+        <!-- override transitive freemarker version with the one pinned above -->
+        <exclusion>
+          <groupId>org.freemarker</groupId>
+          <artifactId>freemarker</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -508,6 +538,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-web-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-webmvc</artifactId>
     </dependency>
 
     <dependency>
@@ -805,6 +839,9 @@
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
+            <!-- Never referenced by Java code on purpose: exists only to give the reactor a real
+                 build-order edge, see the dependency's own comment above. -->
+            <ignoredUnusedDeclaredDependency>io.camunda.optimize:optimize-client:jar</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>

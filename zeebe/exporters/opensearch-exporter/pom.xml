@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
@@ -19,6 +19,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-config-support</artifactId>
     </dependency>
 
     <dependency>

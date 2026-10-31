@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -51,8 +53,9 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Status.Code;
 import io.grpc.StatusException;
@@ -69,13 +72,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.springframework.util.unit.DataSize;
 
-public final class LongPollingActivateJobsTest {
+final class LongPollingActivateJobsTest {
 
   private static final String TYPE = "test";
 
@@ -85,16 +88,20 @@ public final class LongPollingActivateJobsTest {
   private static final int MAX_JOBS_TO_ACTIVATE = 2;
   private static final long MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4).toBytes();
   private final ControlledActorClock actorClock = new ControlledActorClock();
-  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
+
+  @RegisterExtension
+  final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension(actorClock);
+
   private LongPollingActivateJobsHandler<ActivateJobsResponse> handler;
+  private ActorControl handlerActor;
   private ActivateJobsStub activateJobsStub;
   private FailJobStub failJobStub;
   private int partitionsCount;
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
   private final AtomicLong requestIdGenerator = new AtomicLong(1);
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     handler =
         LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
             .setBrokerClient(brokerClient)
@@ -107,7 +114,7 @@ public final class LongPollingActivateJobsTest {
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
-    submitActorToActivateJobs(handler);
+    handlerActor = submitActorToActivateJobs(handler);
 
     activateJobsStub = spy(new ActivateJobsStub());
     activateJobsStub.registerWith(brokerClient);
@@ -120,7 +127,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldBlockRequestsWhenResponseHasNoJobs() {
+  void shouldBlockRequestsWhenResponseHasNoJobs() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         getLongPollingActivateJobsRequest();
@@ -134,7 +141,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUnblockRequestWhenJobsAvailable() {
+  void shouldUnblockRequestWhenJobsAvailable() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         getLongPollingActivateJobsRequest();
@@ -154,7 +161,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldBlockOnlyAfterForwardingUntilThreshold() throws Exception {
+  void shouldBlockOnlyAfterForwardingUntilThreshold() throws Exception {
     // when
     final int amount = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(amount);
@@ -164,7 +171,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldBlockImmediatelyAfterThreshold() throws Exception {
+  void shouldBlockImmediatelyAfterThreshold() throws Exception {
     // given
     final int amount = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(amount);
@@ -180,7 +187,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUnblockOneRequestPerNotificationAndCascade() throws Exception {
+  void shouldUnblockOneRequestPerNotificationAndCascade() throws Exception {
     // given
     final int amount = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(amount);
@@ -205,32 +212,181 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldSkipCancelledRequestAndUnblockNext() {
+  void shouldHandleFirstNotificationImmediately() throws Exception {
     // given
-    final InflightActivateJobsRequest<ActivateJobsResponse> cancelledRequest =
-        getLongPollingActivateJobsRequest();
-    final InflightActivateJobsRequest<ActivateJobsResponse> liveRequest =
-        getLongPollingActivateJobsRequest();
+    actorClock.pinCurrentTime();
+    activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    final int firstRound = FAILED_RESPONSE_THRESHOLD * partitionsCount;
 
-    handler.internalActivateJobsRetry(cancelledRequest);
-    handler.internalActivateJobsRetry(liveRequest);
-    waitUntil(cancelledRequest::hasScheduledTimer);
-    waitUntil(liveRequest::hasScheduledTimer);
-
-    // when — first request's worker disconnects, then jobs become available
-    doReturn(true).when(cancelledRequest.getResponseObserver()).isCancelled();
-    activateJobsStub.addAvailableJobs(TYPE, 1);
+    // when
     brokerClient.notifyJobsAvailable(TYPE);
-    Awaitility.await().until(liveRequest::isCompleted);
 
-    // then — the cancelled request is skipped, the live one gets the jobs
-    verify(cancelledRequest.getResponseObserver(), never()).onNext(any());
-    verify(liveRequest.getResponseObserver(), times(1)).onNext(any());
-    verify(liveRequest.getResponseObserver(), times(1)).onCompleted();
+    // then — one request is woken up without the throttle window elapsing
+    verify(activateJobsStub, timeout(2000).times(firstRound + partitionsCount)).handle(any());
   }
 
   @Test
-  public void shouldCleanUpJobTypeStateWhenAllPendingRequestsCancelled() {
+  void shouldNotDelayJobTypeBecauseAnotherJobTypeIsThrottled() throws Exception {
+    // given — type-b handled a notification without finding jobs, so it is inside its window
+    actorClock.pinCurrentTime();
+    activateJobsStub.addAvailableJobs("type-b", 0);
+    final var requestB = getLongPollingActivateJobsRequest("type-b");
+    handler.internalActivateJobsRetry(requestB);
+    waitUntil(requestB::hasScheduledTimer);
+    brokerClient.notifyJobsAvailable("type-b");
+    verify(activateJobsStub, timeout(2000).times(2 * partitionsCount)).handle(any());
+
+    activateJobsStub.addAvailableJobs("type-c", 0);
+    final var requestC = getLongPollingActivateJobsRequest("type-c");
+    handler.internalActivateJobsRetry(requestC);
+    waitUntil(requestC::hasScheduledTimer);
+    activateJobsStub.addAvailableJobs("type-b", 10);
+    activateJobsStub.addAvailableJobs("type-c", 10);
+
+    // when
+    brokerClient.notifyJobsAvailable("type-b");
+    brokerClient.notifyJobsAvailable("type-c");
+
+    // then — type-c, which was never notified before, is woken up without the clock moving
+    Awaitility.await().until(requestC::isCompleted);
+
+    // and — type-b is still throttled
+    awaitHandlerActor();
+    Awaitility.await().during(Duration.ofMillis(300)).until(() -> !requestB.isCompleted());
+  }
+
+  @Test
+  void shouldHandleOtherJobTypesAndLaterNotificationsWhenHandlingOneFails() {
+    // given — pending requests for two job types; handling the first notification of one fails
+    actorClock.pinCurrentTime();
+    final var failingRequestA = spy(getLongPollingActivateJobsRequest("type-a"));
+    final var requestA = getLongPollingActivateJobsRequest("type-a");
+    final var requestB = getLongPollingActivateJobsRequest("type-b");
+    handler.internalActivateJobsRetry(failingRequestA);
+    handler.internalActivateJobsRetry(requestA);
+    handler.internalActivateJobsRetry(requestB);
+    waitUntil(failingRequestA::hasScheduledTimer);
+    waitUntil(requestA::hasScheduledTimer);
+    waitUntil(requestB::hasScheduledTimer);
+    activateJobsStub.addAvailableJobs("type-a", 1);
+    activateJobsStub.addAvailableJobs("type-b", 1);
+    doThrow(new RuntimeException("expected")).doCallRealMethod().when(failingRequestA).isOpen();
+
+    // when
+    brokerClient.notifyJobsAvailable("type-a");
+    brokerClient.notifyJobsAvailable("type-b");
+
+    // then — the failure did not prevent the other job type from being handled
+    Awaitility.await().until(requestB::isCompleted);
+
+    // when — a later notification of the failed job type arrives
+    brokerClient.notifyJobsAvailable("type-a");
+    awaitHandlerActor();
+    actorClock.addTime(DEFAULT_NOTIFICATION_BATCH_WINDOW);
+
+    // then — it is still handled
+    Awaitility.await().until(requestA::isCompleted);
+  }
+
+  @Test
+  void shouldHandleEachNotificationWhenBatchWindowIsZero() throws Exception {
+    // given
+    final var unbatchedBrokerClient = new StubbedBrokerClient();
+    final var stub = spy(new ActivateJobsStub());
+    stub.registerWith(unbatchedBrokerClient);
+    stub.addAvailableJobs(TYPE, 0);
+    final var unbatchedHandler =
+        LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
+            .setBrokerClient(unbatchedBrokerClient)
+            .setMaxMessageSize(MAX_MESSAGE_SIZE)
+            .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
+            .setProbeTimeoutMillis(PROBE_TIMEOUT)
+            .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
+            .setNotificationBatchWindow(Duration.ZERO)
+            .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+            .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+            .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            .setMetrics(LongPollingMetrics.noop())
+            .build();
+    submitActorToActivateJobs(unbatchedHandler);
+
+    for (int i = 0; i < FAILED_RESPONSE_THRESHOLD; i++) {
+      final var request = getLongPollingActivateJobsRequest();
+      unbatchedHandler.internalActivateJobsRetry(request);
+      waitUntil(request::hasScheduledTimer);
+    }
+    final int firstRound = FAILED_RESPONSE_THRESHOLD * partitionsCount;
+
+    actorClock.pinCurrentTime();
+
+    for (int notification = 1; notification <= 3; notification++) {
+      // when
+      unbatchedBrokerClient.notifyJobsAvailable(TYPE);
+
+      // then — every notification wakes up a request, without the clock moving
+      verify(stub, timeout(2000).times(firstRound + notification * partitionsCount)).handle(any());
+      awaitNoActiveRequests(unbatchedHandler);
+    }
+  }
+
+  @Test
+  void shouldHandleOncePerWindowWhileNotificationsKeepArriving() throws Exception {
+    // given — a first notification was handled immediately
+    actorClock.pinCurrentTime();
+    activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    int expectedInvocations = FAILED_RESPONSE_THRESHOLD * partitionsCount + partitionsCount;
+    brokerClient.notifyJobsAvailable(TYPE);
+    verify(activateJobsStub, timeout(2000).times(expectedInvocations)).handle(any());
+    awaitNoActiveRequests(handler);
+
+    for (int window = 0; window < 3; window++) {
+      // when — notifications keep arriving in every window
+      brokerClient.notifyJobsAvailable(TYPE);
+      brokerClient.notifyJobsAvailable(TYPE);
+      awaitHandlerActor();
+
+      // then — nothing is woken up while the job type is throttled
+      verify(activateJobsStub, after(300).times(expectedInvocations)).handle(any());
+
+      // when — the window elapses
+      actorClock.addTime(DEFAULT_NOTIFICATION_BATCH_WINDOW);
+
+      // then — the throttled notifications wake up a single request
+      expectedInvocations += partitionsCount;
+      awaitInvocationsSettledAt(expectedInvocations);
+      awaitNoActiveRequests(handler);
+    }
+  }
+
+  @Test
+  void shouldHandleNotificationAfterActorClockMovedBackwards() throws Exception {
+    // given — a throttled notification was handled while the clock was advanced
+    actorClock.pinCurrentTime();
+    activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    final int firstRound = FAILED_RESPONSE_THRESHOLD * partitionsCount;
+    brokerClient.notifyJobsAvailable(TYPE);
+    verify(activateJobsStub, timeout(2000).times(firstRound + partitionsCount)).handle(any());
+    awaitNoActiveRequests(handler);
+    brokerClient.notifyJobsAvailable(TYPE);
+    awaitHandlerActor();
+    actorClock.addTime(Duration.ofDays(2));
+    awaitInvocationsSettledAt(firstRound + 2 * partitionsCount);
+    awaitNoActiveRequests(handler);
+
+    // when — the clock moves backwards, and a new request is blocked
+    actorClock.reset();
+    final var request = getLongPollingActivateJobsRequest();
+    handler.internalActivateJobsRetry(request);
+    waitUntil(request::hasScheduledTimer);
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable(TYPE);
+
+    // then — the notification is not throttled
+    Awaitility.await().atMost(Duration.ofSeconds(3)).until(request::isCompleted);
+  }
+
+  @Test
+  void shouldCleanUpJobTypeStateWhenAllPendingRequestsCancelled() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request1 =
         getLongPollingActivateJobsRequest();
@@ -259,7 +415,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCompleteAfterRequestTimeout() {
+  void shouldCompleteAfterRequestTimeout() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> longPollingRequest =
         getLongPollingActivateJobsRequest();
@@ -275,7 +431,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCompleteFollowingRequestsAfterTimeout() {
+  void shouldCompleteFollowingRequestsAfterTimeout() {
     // given
     final List<InflightActivateJobsRequest<ActivateJobsResponse>> requests =
         activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
@@ -296,7 +452,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldNotBlockOtherJobTypes() {
+  void shouldNotBlockOtherJobTypes() {
     // given
     final String otherType = "other-type";
     activateJobsStub.addAvailableJobs(otherType, 2);
@@ -313,7 +469,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldProbeIfNoNotificationReceived() throws Exception {
+  void shouldProbeIfNoNotificationReceived() throws Exception {
     // given
     final long probeTimeout = 2000;
     handler =
@@ -342,7 +498,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldProbeNextRequestWhenBlockedRequestsTimedOut() throws Exception {
+  void shouldProbeNextRequestWhenBlockedRequestsTimedOut() throws Exception {
     // given
     final long longPollingTimeout = 2000;
     final long probeTimeout = 20000;
@@ -378,7 +534,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUseRequestSpecificTimeout() {
+  void shouldUseRequestSpecificTimeout() {
     final int requestTimeout = 1000;
     final ActivateJobsRequest request =
         ActivateJobsRequest.newBuilder()
@@ -399,7 +555,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldUseLargeRequestTimeout() {
+  void shouldUseLargeRequestTimeout() {
     // given
     final long requestTimeout = 50000;
     final InflightActivateJobsRequest<ActivateJobsResponse> shortRequest =
@@ -438,7 +594,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldNotBlockWhenNegativeTimeout() {
+  void shouldNotBlockWhenNegativeTimeout() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         toInflightActivateJobsRequest(
@@ -459,7 +615,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void
+  void
       shouldRepeatActivateJobsRequestAgainstBrokersIfNewJobsArriveWhileIteratingThroughBrokersTheFirstTime() {
     // given
 
@@ -524,7 +680,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void
+  void
       shouldReturnResourceExhaustedErrorIfNoJobsAvailableAndSomeBrokersReturnResourceExhaustionResponse() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
@@ -569,7 +725,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldReturnJobsIfSomeBrokersHaveJobsWhileOthersReturnResourceExhaustionResponse() {
+  void shouldReturnJobsIfSomeBrokersHaveJobsWhileOthersReturnResourceExhaustionResponse() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         toInflightActivateJobsRequest(
@@ -618,7 +774,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldRepeatRequestOnlyOnce() throws Exception {
+  void shouldRepeatRequestOnlyOnce() throws Exception {
     // given
     // the first three requests activates jobs
     final var firstRequest = getLongPollingActivateJobsRequest();
@@ -664,7 +820,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCancelTimerOnResourceExhausted() {
+  void shouldCancelTimerOnResourceExhausted() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         getLongPollingActivateJobsRequest();
@@ -705,7 +861,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCancelTimerOnBrokerRejectionException() {
+  void shouldCancelTimerOnBrokerRejectionException() {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         getLongPollingActivateJobsRequest();
@@ -747,7 +903,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCompleteRequestImmediatelyDespiteNotification() throws Exception {
+  void shouldCompleteRequestImmediatelyDespiteNotification() throws Exception {
     // given
     final InflightActivateJobsRequest<ActivateJobsResponse> request =
         toInflightActivateJobsRequest(
@@ -774,7 +930,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldTimeOutRequestDespiteMultipleNotificationLoops() throws Exception {
+  void shouldTimeOutRequestDespiteMultipleNotificationLoops() throws Exception {
     // given
     final var request = getLongPollingActivateJobsRequest();
 
@@ -797,7 +953,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldNotContinueWithNextPartitionIfResponseIsNotSend() throws Exception {
+  void shouldNotContinueWithNextPartitionIfResponseIsNotSend() throws Exception {
     // given
     final var request =
         spy(
@@ -822,7 +978,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldNotContinueWithNextPartitionIfResponseFailed() throws Exception {
+  void shouldNotContinueWithNextPartitionIfResponseFailed() throws Exception {
     // given
     final var request =
         toInflightActivateJobsRequest(
@@ -846,7 +1002,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSend() throws Exception {
+  void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSend() throws Exception {
     // given
     activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
     final var request = spy(getLongPollingActivateJobsRequest());
@@ -864,8 +1020,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSendDueException()
-      throws Exception {
+  void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSendDueException() throws Exception {
     // given
     activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
     final var request = getLongPollingActivateJobsRequest();
@@ -883,8 +1038,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturned()
-      throws Exception {
+  void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturned() throws Exception {
     // given
     final var responseNotSent = Either.right(false);
 
@@ -921,7 +1075,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturnedDueException()
+  void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturnedDueException()
       throws Exception {
     // given
     final var request =
@@ -959,7 +1113,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldSetCurrentRetriesAndNoBackoff() {
+  void shouldSetCurrentRetriesAndNoBackoff() {
     // given
     final var activatedJobRef = new AtomicReference<ActivatedJob>();
     activateJobsStub.addAvailableJobs(TYPE, 1);
@@ -1015,7 +1169,7 @@ public final class LongPollingActivateJobsTest {
   // issue https://github.com/camunda/camunda/issues/54159
   // before the fix, RoundRobinActivateJobsHandler returned early on
   // !isOpen(), skipping the delegate and leaving the request in activeRequests indefinitely.
-  public void shouldNotRetainActiveRequestWhenTimeoutFiresDuringBrokerActivation() {
+  void shouldNotRetainActiveRequestWhenTimeoutFiresDuringBrokerActivation() {
     // given
     final long probeTimeout = 2000;
     final long requestTimeout = 5000;
@@ -1071,7 +1225,7 @@ public final class LongPollingActivateJobsTest {
   // issue https://github.com/camunda/camunda/issues/54159
   // before the fix, the jobTypeState entry was never removed after
   // all requests timed out, leaving stale failedAttempts that immediately blocked new requests.
-  public void shouldNotBlockNewRequestsAfterAllPendingRequestsTimedOut() {
+  void shouldNotBlockNewRequestsAfterAllPendingRequestsTimedOut() {
     // given
     activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
@@ -1137,16 +1291,39 @@ public final class LongPollingActivateJobsTest {
         });
   }
 
-  private void submitActorToActivateJobs(
+  /**
+   * Throttle timers may fire a few hundred milliseconds after the clock moves, as idle actor
+   * threads park between polls, so wait for the count to be reached and then check it doesn't grow.
+   */
+  private void awaitInvocationsSettledAt(final int invocations) throws Exception {
+    verify(activateJobsStub, timeout(5000).atLeast(invocations)).handle(any());
+    verify(activateJobsStub, after(300).times(invocations)).handle(any());
+  }
+
+  /**
+   * A notification arriving while a request is in flight also repeats that request, so tests
+   * counting wake-ups wait for in-flight requests to settle first.
+   */
+  private void awaitNoActiveRequests(
       final LongPollingActivateJobsHandler<ActivateJobsResponse> handler) {
-    final var future = new CompletableFuture<>();
+    Awaitility.await().until(() -> handler.activeRequestsCountForJobType(TYPE) == 0);
+  }
+
+  /** Returns once the handler's actor has run everything submitted to it so far. */
+  private void awaitHandlerActor() {
+    handlerActor.call(() -> null).join();
+  }
+
+  private ActorControl submitActorToActivateJobs(
+      final LongPollingActivateJobsHandler<ActivateJobsResponse> handler) {
+    final var future = new CompletableFuture<ActorControl>();
     final var actor =
         Actor.newActor()
             .name("LongPollingHandler-Test")
             .actorStartedHandler(handler.andThen(future::complete))
             .build();
-    actorSchedulerRule.submitActor(actor);
-    future.join();
+    actorScheduler.submitActor(actor);
+    return future.join();
   }
 
   @SuppressWarnings("unchecked")

@@ -13,7 +13,6 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -37,7 +36,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
 
   private int submittedTasks = 0;
 
-  @VisibleForTesting
   BackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,

@@ -36,7 +36,10 @@ test.beforeAll(async ({request}) => {
   await sleep(500);
 });
 
-test.describe('task panel page', () => {
+// Serial: `scrolling` needs `usertask_to_be_assigned` completed by the test before
+// it. A retry re-runs `beforeAll`, which recreates that task as open, so the group
+// has to be retried as a whole for the retry to reach the same starting state.
+test.describe.serial('task panel page', () => {
   test.beforeEach(async ({page, loginPage}) => {
     await navigateToApp(page, 'tasklist');
     await loginPage.login('demo', 'demo');
@@ -113,8 +116,7 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  //Skipped due to bug 44583: https://github.com/camunda/camunda/issues/44583
-  test.skip('scrolling', async ({page, taskPanelPageV1}) => {
+  test('scrolling', async ({page, taskPanelPageV1}) => {
     // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
     // V2 mode may have different scrolling/pagination behavior that affects task count expectations
     test.slow();
@@ -149,10 +151,13 @@ test.describe('task panel page', () => {
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
+    // The list keeps a sliding window of 4 pages x 50 tasks, so this scroll evicts
+    // page 1 and leaves pages 2-5. Page 5 holds only the 2 remaining tasks (the last
+    // usertask_for_scrolling_2 and usertask_for_scrolling_3), hence 151 and not 199.
     await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(151);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
 
     await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');

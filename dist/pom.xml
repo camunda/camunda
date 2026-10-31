@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -17,6 +17,7 @@
 
   <properties>
     <spring-boot.run.jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
+    <distro.zip.attach>true</distro.zip.attach>
   </properties>
 
   <dependencies>
@@ -1021,6 +1022,26 @@
             <configuration>
               <appendAssemblyId>false</appendAssemblyId>
               <attach>true</attach>
+              <formats>
+                <format>tar.gz</format>
+              </formats>
+              <descriptors>
+                <descriptor>src/main/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>assemble-zip</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>${distro.zip.attach}</attach>
+              <formats>
+                <format>zip</format>
+              </formats>
               <descriptors>
                 <descriptor>src/main/assembly.xml</descriptor>
               </descriptors>
@@ -1045,7 +1066,7 @@
             <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
             <!-- Reach dist transitively (compile) via camunda-authentication and operate-webapp;
-                 only EncodedSlashIntegrationIT references them directly. Declaring them here as
+                 only EncodedSlashIntegrationTest references them directly. Declaring them here as
                  test-scope would shadow that transitive compile scope and break spring-boot:start
                  at runtime (see PR #52064). -->
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
@@ -1087,7 +1108,7 @@
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
-          <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
+          <!-- Referenced directly only by EncodedSlashIntegrationTest (test code) but reach dist
                transitively at compile scope via camunda-authentication / operate-webapp. We
                cannot declare them as test-scope: that would shadow the transitive compile
                scope and break spring-boot:start at runtime (PR #52064). -->

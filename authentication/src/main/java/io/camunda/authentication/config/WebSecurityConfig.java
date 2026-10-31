@@ -452,13 +452,41 @@ public class WebSecurityConfig {
     return response;
   }
 
+  /**
+   * Whether to write the CSRF token onto the response: on every authenticated GET, and on any
+   * request to the login endpoint regardless of authentication state.
+   *
+   * <p>The login endpoint is special-cased: both webapp chains call {@code
+   * .anonymous(AbstractHttpConfigurer::disable)}, so an unauthenticated visitor has no {@link
+   * Authentication} at all (not even an anonymous one) to gate on. Since {@code POST /login} now
+   * requires a valid CSRF token unconditionally (see {@link CsrfProtectionRequestMatcher}), a
+   * first-time, anonymous {@code GET} of the login page must still be able to obtain one —
+   * otherwise no login, forged or legitimate, could ever succeed. Handing an anonymous visitor a
+   * CSRF token is safe: the token has no meaning on its own, and revealing it to whoever will
+   * submit the login form next is the intended behaviour of the double-submit pattern this class
+   * implements.
+   *
+   * <p>Uses {@link HttpServletRequest#getServletPath()} and exact equality, not {@link
+   * HttpServletRequest#getRequestURI()}/{@code contains}: the latter includes any configured
+   * context path (breaking exact equality) and would also match a path that merely contains
+   * "/login"/"/logout" as an inner segment (e.g. "/api/users/login-history").
+   */
   private static boolean shouldAddCsrf(final HttpServletRequest request) {
-    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    final String path = request.getRequestURI();
+    final String path = request.getServletPath();
+    final boolean isLogout = path != null && path.equals(LOGOUT_URL);
+    if (isLogout) {
+      return false;
+    }
+    final boolean isLogin = path != null && path.equals(LOGIN_URL);
     final String method = request.getMethod();
-    return (auth != null && auth.isAuthenticated())
-        && (path == null || !path.contains(LOGOUT_URL))
-        && ("GET".equalsIgnoreCase(method) || (path != null && (path.contains(LOGIN_URL))));
+    if (!("GET".equalsIgnoreCase(method) || isLogin)) {
+      return false;
+    }
+    if (isLogin) {
+      return true;
+    }
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return auth != null && auth.isAuthenticated();
   }
 
   private static void applyCsrfConfiguration(
@@ -765,7 +793,7 @@ public class WebSecurityConfig {
           oidcAccessTokenDecoderFactory,
           tokenClaimsConverter,
           request,
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
+          buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository),
           buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
     }
 
@@ -869,14 +897,12 @@ public class WebSecurityConfig {
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
 
-      final var additionalJwkSetUrisByIssuer =
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
-
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
-        final var additionalUris =
-            additionalJwkSetUrisByIssuer.get(
-                clientRegistration.getProviderDetails().getIssuerUri());
+        final var oidcConfig =
+            oidcProviderRepository.getOidcAuthenticationConfigurationById(
+                clientRegistration.getRegistrationId());
+        final var additionalUris = oidcConfig != null ? oidcConfig.getAdditionalJwkSetUris() : null;
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
@@ -885,6 +911,8 @@ public class WebSecurityConfig {
                 oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
                     clientRegistration, additionalUris));
       } else {
+        final var additionalJwkSetUrisByIssuer =
+            buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
@@ -918,6 +946,26 @@ public class WebSecurityConfig {
                     }
                     return a;
                   }));
+    }
+
+    /**
+     * Builds the additional-JWKS lookup for the interactive login flow, keyed by registration id.
+     * Unlike {@link #buildAdditionalJwkSetUrisByIssuer}, this does not require an {@code
+     * issuer-uri}: {@link OidcUserAuthenticationConverter#getJwtDecoder} already resolves its
+     * decoder per registration id, so keying this map the same way lets it find the additional URIs
+     * of a provider configured with explicit endpoints and no {@code issuer-uri}.
+     */
+    private Map<String, List<String>> buildAdditionalJwkSetUrisByRegistrationId(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+          .filter(
+              entry ->
+                  entry.getValue().getAdditionalJwkSetUris() != null
+                      && !entry.getValue().getAdditionalJwkSetUris().isEmpty())
+          .collect(
+              toMap(
+                  Map.Entry::getKey,
+                  entry -> List.copyOf(entry.getValue().getAdditionalJwkSetUris())));
     }
 
     private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
@@ -983,8 +1031,6 @@ public class WebSecurityConfig {
     public OidcUserService oidcUserService(
         final ObjectProvider<ObservationRegistry> observationRegistry) {
       final var oauthUserService = new DefaultOAuth2UserService();
-      final var oidcUserService = new OidcUserService();
-      oidcUserService.setOauth2UserService(oauthUserService);
 
       // see DefaultOAuth2UserService#setRestOperations for the minimum handlers/converters required
       final var restTemplate = new RestTemplate();
@@ -999,7 +1045,7 @@ public class WebSecurityConfig {
           observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP));
 
       oauthUserService.setRestOperations(restTemplate);
-      return oidcUserService;
+      return new FailSoftOidcUserService(oauthUserService);
     }
 
     @Bean

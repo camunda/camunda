@@ -195,6 +195,36 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
+  it('preserves element matching semantics for mixed process states', () => {
+    const body: Body = buildMutationRequestBody({
+      searchParams: createSearchParams({
+        elementId: 'taskA',
+        active: 'true',
+        completed: 'true',
+      }),
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        $or: [
+          {
+            elementId: {$eq: 'taskA'},
+            elementInstanceState: {$eq: 'ACTIVE'},
+            state: {$eq: 'ACTIVE'},
+            hasIncident: false,
+          },
+          {
+            elementId: {$eq: 'taskA'},
+            state: {$eq: 'COMPLETED'},
+            hasIncident: false,
+          },
+        ],
+      },
+    });
+  });
+
   it('maps additional filter fields to request body', () => {
     const searchParams = createSearchParams({
       elementId: 'taskA',

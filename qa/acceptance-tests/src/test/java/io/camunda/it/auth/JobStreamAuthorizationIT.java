@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.JobState;
@@ -33,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -100,10 +102,13 @@ public class JobStreamAuthorizationIT {
 
   @AfterEach
   void cleanUp() {
-    // cancel all process instances to ensure no jobs are left in the system
-    STARTED_PROCESS_INSTANCES.forEach(
-        processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
+    // cancel all process instances to ensure no jobs are left in the system.
+    // Take a snapshot and clear up front: if a cancellation fails, the keys must not stay
+    // behind, or every later test in this class fails in tear-down on the same stale key.
+    final var startedProcessInstances = List.copyOf(STARTED_PROCESS_INSTANCES);
     STARTED_PROCESS_INSTANCES.clear();
+    startedProcessInstances.forEach(
+        processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
   }
 
   @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
@@ -139,7 +144,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_1, jobType, TENANT_A);
     deployProcess(PROCESS_ID_1, jobType, TENANT_B);
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
         user1Client
@@ -155,7 +160,7 @@ public class JobStreamAuthorizationIT {
     try {
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_A);
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_B);
-      waitForJobsBeingExported(adminClient, 2, JobState.CREATED, PROCESS_ID_1);
+      waitForJobsBeingExported(adminClient, 2, JobState.CREATED, jobType);
 
       // then
       // expect that  the camunda client of user1 receives no job
@@ -175,7 +180,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_1, jobType, TENANT_B);
     deployProcess(PROCESS_ID_2, jobType, TENANT_B);
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // and a job stream created by the user2 client, with their authorizations
     final var stream =
         user2Client
@@ -183,9 +188,10 @@ public class JobStreamAuthorizationIT {
             .jobType(jobType)
             .consumer(
                 job -> {
-                  user2Client.newCompleteCommand(job).send().join();
+                  // record before completing: the test waits on the completed job being
+                  // exported, which must not be observable before the job is collected
                   jobCollector.add(job);
-                  STARTED_PROCESS_INSTANCES.remove(job.getProcessInstanceKey());
+                  user2Client.newCompleteCommand(job).send().join();
                 })
             .tenantIds(TENANT_A, TENANT_B)
             .send();
@@ -200,7 +206,7 @@ public class JobStreamAuthorizationIT {
 
       // then
       // expect that only one job is completed
-      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, PROCESS_ID_1, PROCESS_ID_2);
+      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, jobType);
       // expect that  the camunda client of user2 receives and completes that one job
       assertThat(jobCollector).hasSize(1);
       assertThat(jobCollector.iterator().next().getTenantId()).isEqualTo(TENANT_B);
@@ -217,7 +223,7 @@ public class JobStreamAuthorizationIT {
     final var jobType = uniqueJobType();
     deployProcess(PROCESS_ID_3, jobType, TENANT_A);
     deployProcess(PROCESS_ID_3, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // a job stream created by user1 with ASSIGNED tenant filter (resolves to tenantA only)
     final var stream =
         user1Client
@@ -232,7 +238,7 @@ public class JobStreamAuthorizationIT {
     try {
       startProcessInstance(adminClient, PROCESS_ID_3, TENANT_A);
       startProcessInstance(adminClient, PROCESS_ID_3, TENANT_B);
-      waitForJobsBeingExported(adminClient, 2, JobState.CREATED, PROCESS_ID_3);
+      waitForJobsBeingExported(adminClient, 2, JobState.CREATED, jobType);
 
       // then
       // user1 has no permissions, so no jobs should be received
@@ -250,7 +256,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_3, jobType, TENANT_A);
     deployProcess(PROCESS_ID_3, jobType, TENANT_B);
     deployProcess(PROCESS_ID_4, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // a job stream created by user2 with ASSIGNED tenant filter (resolves to tenantA and tenantB)
     final var stream =
         user2Client
@@ -258,9 +264,10 @@ public class JobStreamAuthorizationIT {
             .jobType(jobType)
             .consumer(
                 job -> {
-                  user2Client.newCompleteCommand(job).send().join();
+                  // record before completing: the test waits on the completed job being
+                  // exported, which must not be observable before the job is collected
                   jobCollector.add(job);
-                  STARTED_PROCESS_INSTANCES.remove(job.getProcessInstanceKey());
+                  user2Client.newCompleteCommand(job).send().join();
                 })
             .tenantFilter(TenantFilter.ASSIGNED)
             .send();
@@ -274,7 +281,7 @@ public class JobStreamAuthorizationIT {
 
       // then
       // user2 is only authorized for PROCESS_ID_4 on tenantB
-      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, PROCESS_ID_3, PROCESS_ID_4);
+      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, jobType);
       assertThat(jobCollector).hasSize(1);
       assertThat(jobCollector.iterator().next().getTenantId()).isEqualTo(TENANT_B);
     } finally {
@@ -288,7 +295,7 @@ public class JobStreamAuthorizationIT {
     // given
     final var jobType = uniqueJobType();
     deployProcess(PROCESS_ID_5, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
     // a job stream with ASSIGNED filter AND an explicit tenantId(TENANT_A) —
     // the ASSIGNED filter should override the provided tenant IDs, so the broker
     // resolves from all assigned tenants (both A and B), not just tenantA
@@ -298,9 +305,10 @@ public class JobStreamAuthorizationIT {
             .jobType(jobType)
             .consumer(
                 job -> {
-                  user2Client.newCompleteCommand(job).send().join();
+                  // record before completing: the test waits on the completed job being
+                  // exported, which must not be observable before the job is collected
                   jobCollector.add(job);
-                  STARTED_PROCESS_INSTANCES.remove(job.getProcessInstanceKey());
+                  user2Client.newCompleteCommand(job).send().join();
                 })
             .tenantId(TENANT_A)
             .tenantFilter(TenantFilter.ASSIGNED)
@@ -314,7 +322,7 @@ public class JobStreamAuthorizationIT {
       // then
       // if ASSIGNED didn't override the tenant IDs, the stream would be limited to tenantA
       // and would miss this job on tenantB
-      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, PROCESS_ID_5);
+      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, jobType);
       assertThat(jobCollector).hasSize(1);
       assertThat(jobCollector.iterator().next().getTenantId()).isEqualTo(TENANT_B);
     } finally {
@@ -384,14 +392,22 @@ public class JobStreamAuthorizationIT {
 
   private static void cancelProcessInstance(
       final CamundaClient camundaClient, final long processInstanceKey) {
-    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+    try {
+      camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+    } catch (final ProblemException e) {
+      // A test that completes a streamed job runs its instance to completion, so by tear-down
+      // there is nothing left to cancel. Any other rejection is a real failure.
+      if (e.code() != 404) {
+        throw e;
+      }
+    }
   }
 
   private static void waitForJobsBeingExported(
       final CamundaClient camundaClient,
       final int expectedJobs,
       final JobState state,
-      final String... resourceIds) {
+      final String jobType) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -400,9 +416,7 @@ public class JobStreamAuthorizationIT {
               assertThat(
                       camundaClient
                           .newJobSearchRequest()
-                          .filter(
-                              filter ->
-                                  filter.processDefinitionId(fn -> fn.in(resourceIds)).state(state))
+                          .filter(filter -> filter.type(jobType).state(state))
                           .send()
                           .join()
                           .items())

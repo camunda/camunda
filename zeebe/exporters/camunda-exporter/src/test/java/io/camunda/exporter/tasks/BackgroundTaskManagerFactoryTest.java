@@ -19,7 +19,6 @@ import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
@@ -27,6 +26,7 @@ import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
+import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -61,10 +61,9 @@ class BackgroundTaskManagerFactoryTest {
   }
 
   @Test
-  void shouldScheduleProcessInstanceArchiverTaskWhenConfigEnabled() {
+  void shouldScheduleProcessInstanceArchiverJobTaskWhenConfigEnabled() {
     // given
     config.getHistory().setProcessInstanceEnabled(true);
-    config.getHistory().setArchiveByIdEnabled(false);
 
     // when
     final var taskManager = factory.build();
@@ -72,24 +71,8 @@ class BackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain ProcessInstancesArchiverJob when config is enabled")
+        .as("Should contain ProcessInstanceArchiverJob when config is enabled")
         .anyMatch(task -> isProcessInstanceArchiverTask(task));
-  }
-
-  @Test
-  void shouldScheduleProcessInstanceByIdArchiverJobTaskWhenConfigEnabled() {
-    // given
-    config.getHistory().setProcessInstanceEnabled(true);
-    config.getHistory().setArchiveByIdEnabled(true);
-
-    // when
-    final var taskManager = factory.build();
-
-    // then
-    final var tasks = getTasksFromManager(taskManager);
-    assertThat(tasks)
-        .as("Should contain ProcessInstanceByIdArchiverJob when config is enabled")
-        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task));
   }
 
   @Test
@@ -169,8 +152,8 @@ class BackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain both PI by ID archiver and count tasks when all configs are enabled")
-        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task))
+        .as("Should contain both PI archiver and count tasks when all configs are enabled")
+        .anyMatch(task -> isProcessInstanceArchiverTask(task))
         .anyMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
   }
 
@@ -187,8 +170,9 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(10)
+        .hasSize(11)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
+        .anyMatch(task -> isTaskOfType(task, PendingIncidentUpdateCountTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, JobBatchMetricsArchiverJob.class))
@@ -212,7 +196,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(11)
+        .hasSize(12)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -228,7 +212,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(12)
+        .hasSize(13)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -246,10 +230,6 @@ class BackgroundTaskManagerFactoryTest {
 
   private boolean isProcessInstanceArchiverTask(final RunnableTask task) {
     return isTaskOfType(task, ProcessInstanceArchiverJob.class);
-  }
-
-  private boolean isProcessInstanceByIdArchiverTask(final RunnableTask task) {
-    return isTaskOfType(task, ProcessInstanceByIdArchiverJob.class);
   }
 
   private boolean isProcessInstanceToBeArchivedCountTask(final RunnableTask task) {

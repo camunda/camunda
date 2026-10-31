@@ -208,7 +208,8 @@ class DmnEvaluatedDecisionsTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  @DisplayName("If successfully evaluated, the decision")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("If successfully evaluated, the decision")
   class DecisionTypeTests {
 
     private static final String DECISION_TYPES_DRG = "/drg-decision-types.dmn";
@@ -254,7 +255,8 @@ class DmnEvaluatedDecisionsTest {
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  @DisplayName("If successfully evaluated, the decision table")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("If successfully evaluated, the decision table")
   class DecisionTableTest {
 
     // This drg contains different decision tables, each with a special case

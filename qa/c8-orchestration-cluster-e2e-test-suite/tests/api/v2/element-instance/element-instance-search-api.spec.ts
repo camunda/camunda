@@ -14,6 +14,7 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -355,8 +356,7 @@ test.describe('Element Instance Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Element Instances - with invalid pagination parameters', async ({
+  test('Search Element Instances - with invalid pagination parameters', async ({
     request,
   }) => {
     await expect(async () => {
@@ -368,7 +368,11 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

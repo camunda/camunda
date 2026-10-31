@@ -71,7 +71,6 @@ const ActiveCount = styled.div<ActiveCountProps>`
   ${({$hasActiveInstances}) => {
     return css`
       margin-left: auto;
-      width: 139px;
       text-align: right;
 
       color: ${$hasActiveInstances
@@ -110,6 +109,20 @@ const Label = styled.div<LabelProps>`
 const BarContainer = styled.div`
   position: relative;
   margin: var(--cds-spacing-03) 0;
+`;
+
+const RightControls = styled.div`
+  margin-left: auto;
+  padding-inline-start: var(--cds-spacing-05);
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
+
+const DrainingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  color: var(--cds-support-error);
 `;
 
 type ActiveBarProps = {
@@ -166,6 +179,8 @@ export {
   ActiveCount,
   Label,
   BarContainer,
+  RightControls,
   ActiveInstancesBar,
   IncidentsBar,
+  DrainingIndicator,
 };

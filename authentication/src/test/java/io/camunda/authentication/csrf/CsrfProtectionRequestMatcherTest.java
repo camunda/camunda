@@ -156,6 +156,31 @@ class CsrfProtectionRequestMatcherTest {
     assertThat(matcher.matches(request)).isFalse();
   }
 
+  @Test
+  void loginPathAlwaysRequiresCsrfEvenWithoutSession() {
+    // login CSRF (camunda/security-testing-findings#281): /login must be protected even
+    // pre-session, unlike every other path this matcher exempts.
+    final var request = prepareMockRequest();
+    request.setServletPath(WebSecurityConfig.LOGIN_URL);
+    assertThat(matcher.matches(request)).isTrue();
+  }
+
+  @Test
+  void loginPathAlwaysRequiresCsrfWithSession() {
+    final var request = prepareMockRequest();
+    request.getSession(true);
+    request.setServletPath(WebSecurityConfig.LOGIN_URL);
+    assertThat(matcher.matches(request)).isTrue();
+  }
+
+  @Test
+  void loginPathDoesNotRequireCsrfForSafeMethod() {
+    final var request = prepareMockRequest();
+    request.setMethod("GET");
+    request.setServletPath(WebSecurityConfig.LOGIN_URL);
+    assertThat(matcher.matches(request)).isFalse();
+  }
+
   @ParameterizedTest
   @MethodSource("protectedPaths")
   void protectedPathsMatchForCsrfFromBrowser(final String path) {
@@ -177,7 +202,6 @@ class CsrfProtectionRequestMatcherTest {
     final Set<String> allowedPaths = new HashSet<>();
     allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
     allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
-    allowedPaths.add(WebSecurityConfig.LOGIN_URL);
     allowedPaths.add(WebSecurityConfig.LOGOUT_URL);
     return Stream.of(allowedPaths.stream().map(Arguments::of).toArray(Arguments[]::new));
   }

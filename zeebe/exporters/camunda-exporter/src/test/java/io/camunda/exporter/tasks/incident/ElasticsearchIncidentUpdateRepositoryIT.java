@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepositoryIT.RoutedDocument;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
@@ -64,6 +65,12 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
         client,
         Runnable::run,
         LOGGER);
+  }
+
+  @Override
+  protected void refresh(final String index) throws IOException {
+    final var client = new ElasticsearchClient(transport);
+    client.indices().refresh(r -> r.index(index));
   }
 
   @Override

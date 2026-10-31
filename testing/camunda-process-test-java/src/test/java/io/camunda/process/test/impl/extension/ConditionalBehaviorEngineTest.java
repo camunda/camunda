@@ -313,6 +313,10 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldKeepScenarioAliveWhenActionThrows() {
+    // Use a short reset timeout so repeated retries complete quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
     final AtomicInteger actionCount = new AtomicInteger(0);
     final AtomicBoolean gate = new AtomicBoolean(true);
 
@@ -331,11 +335,17 @@ class ConditionalBehaviorEngineTest {
               throw new RuntimeException("action failed");
             });
 
-    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
   }
 
   @Test
   void shouldRetryFailedActionWithoutAdvancingChain() {
+    // Use a short reset timeout so repeated retries complete quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
     final AtomicInteger failCount = new AtomicInteger(2);
     final List<String> sequence = Collections.synchronizedList(new ArrayList<>());
     final AtomicBoolean gate = new AtomicBoolean(true);
@@ -367,6 +377,7 @@ class ConditionalBehaviorEngineTest {
             });
 
     await()
+        .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               assertThat(sequence).hasSizeGreaterThanOrEqualTo(4);
@@ -452,24 +463,29 @@ class ConditionalBehaviorEngineTest {
   }
 
   @Test
-  void shouldNotWaitForResetAfterFailedAction() {
-    final List<Long> fireTimestampsNanos = new CopyOnWriteArrayList<>();
+  void shouldApplyFixedBackoffOnRepeatedActionFailures() {
+    // Use a short resetTimeout so the test completes quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
+    final List<Long> failureTimestampsNanos = new CopyOnWriteArrayList<>();
 
     engine
         .when(() -> {})
         .then(
             () -> {
-              fireTimestampsNanos.add(System.nanoTime());
-              throw new RuntimeException("always fails");
+              failureTimestampsNanos.add(System.nanoTime());
+              throw new RuntimeException("repeated failure");
             });
 
     await()
-        .atMost(3, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(fireTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(failureTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
 
     final long gapMillis =
-        TimeUnit.NANOSECONDS.toMillis(fireTimestampsNanos.get(1) - fireTimestampsNanos.get(0));
-    // resetTimeout=5s, pollInterval=100ms — any gap < 5s proves reset-wait was skipped.
-    assertThat(gapMillis).isLessThan(5000);
+        TimeUnit.NANOSECONDS.toMillis(
+            failureTimestampsNanos.get(1) - failureTimestampsNanos.get(0));
+    // Backoff is fixed at resetTimeout (300ms) — not exponential
+    assertThat(gapMillis).isGreaterThanOrEqualTo(250);
   }
 }

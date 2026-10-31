@@ -14,11 +14,15 @@ import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';
 import * as userMocks from 'common/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {
+  endpoints,
+  type QueryProcessDefinitionsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,
 } from 'v2/mocks/processDefinitions';
+import * as clientConfig from 'common/config/getClientConfig';
 
 const definitionsMock = getQueryProcessDefinitionsResponseMock([
   getProcessDefinitionMock(),
@@ -336,6 +340,167 @@ describe('<CustomFiltersModal />', () => {
     expect(
       await within(dialog).findByRole('combobox', {name: /in a group/i}),
     ).toBeInTheDocument();
+  });
+
+  it('should load processes from the only accessible tenant', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json({
+          ...userMocks.currentUser,
+          tenants: [{tenantId: 'staging', name: 'Staging', description: null}],
+        }),
+      ),
+      http.post(
+        endpoints.queryProcessDefinitions.getUrl(),
+        async ({request}) => {
+          const {filter} =
+            (await request.json()) as QueryProcessDefinitionsRequestBody;
+          if (
+            filter?.tenantId !== 'staging' ||
+            Object.keys(filter).length !== 1
+          ) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json(definitionsMock);
+        },
+      ),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+    expect(
+      screen.queryByRole('combobox', {name: /tenant/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should load processes from all accessible tenants', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.post(
+        endpoints.queryProcessDefinitions.getUrl(),
+        async ({request}) => {
+          const {filter} =
+            (await request.json()) as QueryProcessDefinitionsRequestBody;
+          if (filter === undefined || Object.keys(filter).length !== 0) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json(definitionsMock);
+        },
+      ),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+  });
+
+  it('should load processes from the explicitly selected tenant', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      isMultiTenancyEnabled: true,
+    });
+    storeStateLocally('customFilters', {
+      custom: {assignee: 'all', status: 'all', tenant: 'tenantB'},
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.post(
+        endpoints.queryProcessDefinitions.getUrl(),
+        async ({request}) => {
+          const {filter} =
+            (await request.json()) as QueryProcessDefinitionsRequestBody;
+          if (
+            filter?.tenantId !== 'tenantB' ||
+            Object.keys(filter).length !== 1
+          ) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json(definitionsMock);
+        },
+      ),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        filterId="custom"
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+  });
+
+  it('should load processes without a tenant when multi-tenancy is disabled', async () => {
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryProcessDefinitions.getUrl(),
+        async ({request}) => {
+          const {filter} =
+            (await request.json()) as QueryProcessDefinitionsRequestBody;
+          if (filter === undefined || Object.keys(filter).length !== 0) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json(definitionsMock);
+        },
+      ),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
   });
 
   it('should load from previously saved filters', async () => {

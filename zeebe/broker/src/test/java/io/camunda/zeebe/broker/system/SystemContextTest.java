@@ -402,7 +402,8 @@ final class SystemContextTest {
                 Duration.ofSeconds(10).negated(),
                 Duration.ofSeconds(10).negated(),
                 -1,
-                Duration.ofSeconds(1)));
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(30)));
     clusterCfg.setConfigManager(invalidconfigManagerCfg);
 
     // when
@@ -427,7 +428,11 @@ final class SystemContextTest {
     final var invalidConfigManagerCfg =
         new ConfigManagerCfg(
             new ClusterConfigurationGossiperConfig(
-                Duration.ofSeconds(0), Duration.ofSeconds(0), 0, Duration.ofSeconds(1)));
+                Duration.ofSeconds(0),
+                Duration.ofSeconds(0),
+                0,
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(30)));
     clusterCfg.setConfigManager(invalidConfigManagerCfg);
 
     // when
@@ -452,7 +457,11 @@ final class SystemContextTest {
     final var invalidDynamicConfig =
         new ConfigManagerCfg(
             new ClusterConfigurationGossiperConfig(
-                Duration.ofSeconds(1), Duration.ofSeconds(1), 1, Duration.ofSeconds(1)));
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(1),
+                1,
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(30)));
     clusterCfg.setConfigManager(invalidDynamicConfig);
 
     // when

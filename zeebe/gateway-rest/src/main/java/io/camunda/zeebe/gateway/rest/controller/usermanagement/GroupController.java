@@ -66,17 +66,20 @@ public class GroupController {
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GroupMapper groupMapper;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
 
   public GroupController(
       final GroupServices groupServices,
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final IdentifierValidator identifierValidator) {
+      final IdentifierValidator identifierValidator,
+      final MappingRuleMembershipPolicy mappingRuleMembershipPolicy) {
     this.groupServices = groupServices;
     this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
+    this.mappingRuleMembershipPolicy = mappingRuleMembershipPolicy;
     groupMapper =
         new GroupMapper(new GroupRequestValidator(new GroupValidator(identifierValidator)));
   }
@@ -124,8 +127,11 @@ public class GroupController {
   @CamundaPutMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
-    return groupMapper
-        .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -148,8 +154,11 @@ public class GroupController {
   @CamundaDeleteMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
-    return groupMapper
-        .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 

@@ -7,12 +7,13 @@
  */
 package io.camunda.search.schema.opensearch;
 
-import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.search.schema.IndexMapping;
 import io.camunda.search.schema.IndexMappingProperty;
@@ -23,7 +24,6 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
-import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -64,6 +63,7 @@ import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
@@ -226,8 +226,51 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          // only this setting is requested: the typed model parses every returned setting, so an
+          // unrelated value it does not expect would fail the whole read
+          .getSettings(
+              req ->
+                  req.index(List.copyOf(indexNames))
+                      .name("index.number_of_replicas")
+                      .ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), replicas))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | OpenSearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
-    final var request = createIndexStateManagementPolicy(policyName, deletionMinAge);
+    final var currentPolicyState = getCurrentISMPolicyState(policyName);
+    if (currentPolicyState.exists()
+        && policyDefinitionMatches(currentPolicyState, deletionMinAge)) {
+      LOG.debug(
+          "Index state management policy [{}] already matches configuration; skipping PUT",
+          policyName);
+      return;
+    }
+
+    final var request =
+        createIndexStateManagementPolicy(policyName, deletionMinAge, currentPolicyState);
 
     try (final var response = client.generic().execute(request)) {
       if (response.getStatus() / 100 != 2) {
@@ -390,20 +433,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private Request createIndexStateManagementPolicy(
-      final String policyName, final String deletionMinAge) {
-    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
-      final var jsonMap = objectReader.readTree(policyJson);
-      final var conditions =
-          (ObjectNode)
-              jsonMap
-                  .path("policy")
-                  .path("states")
-                  .path(0)
-                  .path("transitions")
-                  .path(0)
-                  .path("conditions");
-      conditions.put("min_index_age", deletionMinAge);
-
+      final String policyName,
+      final String deletionMinAge,
+      final ISMPolicyState currentPolicyState) {
+    final var jsonMap = desiredPolicyDocument(deletionMinAge);
+    try {
       final var policy = objectWriter.writeValueAsBytes(jsonMap);
 
       final var builder =
@@ -412,7 +446,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .endpoint(getPolicyEndpoint(policyName))
               .body(Body.from(policy, "application/json"));
 
-      final var currentPolicyState = getCurrentISMPolicyState(policyName);
       if (currentPolicyState.exists()) {
         builder.query(
             Map.of(
@@ -425,8 +458,58 @@ public class OpensearchEngineClient implements SearchEngineClient {
       return builder.build();
     } catch (final IOException e) {
       throw new SearchEngineException(
+          "Failed to serialize policy for [%s]".formatted(policyName), e);
+    }
+  }
+
+  /**
+   * Loads the static ISM policy template and patches in the only field that ever varies at runtime,
+   * so both the PUT body and the drift check in {@link #policyDefinitionMatches} build from the
+   * exact same definition.
+   */
+  private JsonNode desiredPolicyDocument(final String deletionMinAge) {
+    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
+      final var jsonMap = objectReader.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
+      return jsonMap;
+    } catch (final IOException e) {
+      throw new SearchEngineException(
           "Failed to deserialize policy file " + OPERATE_DELETE_ARCHIVED_POLICY, e);
     }
+  }
+
+  /**
+   * Compares the full managed policy definition (not just {@code min_index_age}) so that a changed
+   * or removed delete action/state/transition is repaired rather than silently skipped.
+   */
+  private boolean policyDefinitionMatches(
+      final ISMPolicyState currentPolicyState, final String deletionMinAge) {
+    final var desired =
+        normalizedPolicyDefinition(desiredPolicyDocument(deletionMinAge).path("policy"));
+    return desired.equals(currentPolicyState.policyDefinition());
+  }
+
+  /**
+   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and {@code
+   * last_updated_time} into every policy it returns, none of which our PUT ever specifies, so a
+   * whole-document comparison against the static template would never match. Comparing only the
+   * fields the PUT actually sends keeps the drift check meaningful.
+   */
+  private static JsonNode normalizedPolicyDefinition(final JsonNode policyNode) {
+    final var normalized = JsonNodeFactory.instance.objectNode();
+    normalized.set("description", policyNode.path("description"));
+    normalized.set("default_state", policyNode.path("default_state"));
+    normalized.set("states", policyNode.path("states"));
+    return normalized;
   }
 
   private String getPolicyEndpoint(final String policyName) {
@@ -466,18 +549,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private ISMPolicyState fromPolicyJson(final JsonNode policyJsonNode) {
     final var primaryTerm = policyJsonNode.path("_primary_term").asInt();
     final var seqNo = policyJsonNode.path("_seq_no").asInt();
-    return new ISMPolicyState(seqNo, primaryTerm);
+    final var policyDefinition = normalizedPolicyDefinition(policyJsonNode.path("policy"));
+    return new ISMPolicyState(seqNo, primaryTerm, policyDefinition);
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
 
-    final org.opensearch.client.opensearch.indices.IndexSettings settings =
+    final IndexSettings settings =
         utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
+            toAppendSettings, (inp) -> deserializeJson(IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
         .index(utils.listIndicesByAlias(indexDescriptors))
         .settings(settings)
@@ -572,14 +653,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try (final var templateFile =
         getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
+      final var templateSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfShards(settings.getNumberOfShards())
+              .withNumberOfReplicas(settings.getNumberOfReplicas())
+              .withRefreshInterval(settings.getRefreshInterval());
       final var templateFields =
-          deserializeJson(
-              IndexTemplateMapping._DESERIALIZER,
-              utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfShards(settings.getNumberOfShards())
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withRefreshInterval(settings.getRefreshInterval())
-                  .build());
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, templateSettings.build());
 
       return PutIndexTemplateRequest.of(
           b ->
@@ -591,6 +671,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
                               .mappings(templateFields.mappings())
                               .settings(templateFields.settings()))
                   .priority(settings.getTemplatePriority())
+                  .meta(
+                      SETTINGS_FINGERPRINT_META_KEY,
+                      JsonData.of(
+                          templateSettings.settingsFingerprint(settings.getTemplatePriority())))
                   .composedOf(indexTemplateDescriptor.getComposedOf()));
     } catch (final IOException e) {
       throw new SearchEngineException(
@@ -613,8 +697,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas())
               .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority = indexConfiguration.getTemplatePriority();
-      if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+      final var configuredFingerprint = configuredSettings.settingsFingerprint(configuredPriority);
+      if (configuredFingerprint.equals(storedSettingsFingerprint(currentTemplate))) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -639,7 +723,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
                                   .mappings(currentTemplate.template().mappings())
                                   .aliases(currentTemplate.template().aliases()))
                       .composedOf(currentTemplate.composedOf())
-                      .priority(configuredPriority)));
+                      .priority(configuredPriority)
+                      .meta(SETTINGS_FINGERPRINT_META_KEY, JsonData.of(configuredFingerprint))));
 
     } catch (final IOException e) {
       throw new SearchEngineException(
@@ -658,13 +743,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
   }
 
-  private boolean areTemplateSettingsEqualToConfigured(
-      final IndexTemplate currentTemplate,
-      final SchemaSettingsAppender configuredSettings,
-      final Integer configuredPriority) {
-    return Objects.equals(
-            convertValue(configuredPriority, Long::valueOf), currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  private static String storedSettingsFingerprint(final IndexTemplate template) {
+    final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
+    return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
   private IndexTemplate getIndexTemplateState(
@@ -734,14 +815,14 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm) {
+  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, JsonNode policyDefinition) {
 
-    public ISMPolicyState(final int seqNo, final int primaryTerm) {
-      this(true, seqNo, primaryTerm);
+    public ISMPolicyState(final int seqNo, final int primaryTerm, final JsonNode policyDefinition) {
+      this(true, seqNo, primaryTerm, policyDefinition);
     }
 
     static ISMPolicyState empty() {
-      return new ISMPolicyState(false, 0, 0);
+      return new ISMPolicyState(false, 0, 0, null);
     }
   }
 }

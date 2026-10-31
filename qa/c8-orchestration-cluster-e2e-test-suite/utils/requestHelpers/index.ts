@@ -10,6 +10,7 @@ export * from './element-instance-requestHelpers';
 export * from './resource-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
+export * from './process-definition-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
 export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
@@ -52,11 +53,14 @@ export {
   type Authorization,
   expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
+export {searchVariableByNameAndProcessInstanceKey} from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
+  activateSingleJob,
+  completeJob,
   getLast24HoursRange,
   type StatisticsJobItem,
 } from './job-requestHelpers';
@@ -70,6 +74,7 @@ export {
   assertClusterVariableUpdate,
 } from './cluster-variable-requestHelpers';
 export {
+  searchIncidentByPIK,
   createProcessInstanceWithAJob,
   createSingleIncidentProcessInstance,
   createTwoIncidentsInOneProcess,

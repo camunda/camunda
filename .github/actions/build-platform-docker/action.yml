@@ -83,13 +83,12 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      uses: ./.github/actions/setup-buildx-with-retry
       with:
         # to be able to push to local registry, which we use in our tests, we need to use host network
         driver-opts: network=host
         buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
         endpoint: zeebe-context
-        install: true
 
     - name: Set semantic version from Maven project
       id: get-version
@@ -116,6 +115,20 @@ runs:
       shell: bash
       run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
 
+    # The `version` input accepts a list, and the snapshot deploy jobs in ci.yml pass two versions.
+    # The VERSION build arg takes a single one. Keeping the first matches both the image name output
+    # above and what build-push-action already resolved this to: it splits build args on newlines,
+    # so any further line was never a VERSION value to begin with.
+    - name: Reduce a multi-valued version to the first value
+      id: get-version-build-arg
+      shell: bash
+      env:
+        VERSION_INPUT: ${{ inputs.version }}
+        MAVEN_VERSION: ${{ steps.get-version.outputs.result }}
+      run: |
+        version="${VERSION_INPUT:-$MAVEN_VERSION}"
+        echo "version=$(echo "$version" | head -n 1)" >> "$GITHUB_OUTPUT"
+
     - name: Set DISTBALL path relative to the build context
       id: get-distball
       shell: bash
@@ -138,23 +151,15 @@ runs:
         fi
 
     - name: Build Docker image
-      uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
-      env:
-        DOCKER_BUILD_SUMMARY: false
-        DOCKER_BUILD_RECORD_UPLOAD: false
+      uses: ./.github/actions/docker-build-with-retry
       with:
-        context: .
-        file: ${{ inputs.dockerfile }}
+        dockerfile: ${{ inputs.dockerfile }}
         tags: ${{ steps.get-image.outputs.tags }}
-        load: ${{ inputs.push != 'true' }}
-        push: false
         platforms: ${{ inputs.platforms }}
-        provenance: false
-        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
+        push: ${{ inputs.push }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
-          VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+          VERSION=${{ steps.get-version-build-arg.outputs.version }}
           ${{ steps.get-additional-build-args.outputs.result }}
-        target: app

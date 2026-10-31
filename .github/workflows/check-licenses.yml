@@ -5,6 +5,10 @@
 ---
 name: Check Licenses
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches:
@@ -22,6 +26,10 @@ on:
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   detect-changes:
@@ -33,8 +41,10 @@ jobs:
     outputs:
       fossa-changes: ${{ steps.filter.outputs.fossa-changes }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      timeout-minutes: 1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+      with:
+        persist-credentials: false
     - name: Detect changes
       uses: ./.github/actions/paths-filter
       id: filter
@@ -63,21 +73,23 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner: gcp-core-4-longrunning
+          runner: gcp-arm-4-longrunning
         - name: optimize
           path: ./optimize
-          runner: gcp-core-16-longrunning
+          runner: gcp-arm-8-longrunning
           maven-config: |
             -DskipQaBuild=true
         - name: single-app
           path: ./
-          runner: gcp-core-16-longrunning
+          runner: gcp-arm-16-longrunning
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      with:
+        persist-credentials: false
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -112,11 +124,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/setup@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -147,17 +159,24 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
         path: ${{ matrix.project.path }}
         revision-id: ${{ steps.info.outputs.head-revision }}
 
+    # Both attempts otherwise fire back-to-back within seconds, so a brief FOSSA API outage
+    # (a transient 5xx that fails instantly rather than hanging, see INC-8587) takes out both.
+    # Pause between them to let such a window clear before retrying.
+    - name: Backoff before FOSSA retry
+      if: steps.analyze1.outcome != 'success'
+      run: sleep 90
+
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -169,7 +188,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/pr-check@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
@@ -207,6 +226,8 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

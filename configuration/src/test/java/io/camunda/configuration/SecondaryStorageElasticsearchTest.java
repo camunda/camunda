@@ -67,7 +67,6 @@ public class SecondaryStorageElasticsearchTest {
   private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
-  private static final boolean EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final String EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "foo";
   private static final String EXPECTED_HISTORY_ROLLOVER_INTERVAL = "5d";
   private static final int EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE = 200;
@@ -128,8 +127,6 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
-        "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled="
-            + EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.date-format=" + EXPECTED_DATE_FORMAT,
         "camunda.data.secondary-storage.elasticsearch.socket-timeout="
             + EXPECTED_SOCKET_TIMEOUT
@@ -282,6 +279,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
 
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
@@ -293,8 +294,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
-      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled())
-          .isEqualTo(EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED);
       assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
           .isEqualTo(EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT);
       assertThat(exporterConfiguration.getHistory().getRolloverInterval())
@@ -648,6 +647,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
@@ -736,6 +739,207 @@ public class SecondaryStorageElasticsearchTest {
       final ExporterConfiguration exporterConfiguration =
           UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://matching-url:4321");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnections="
+            + EXPECTED_MAX_CONNECTIONS,
+        "zeebe.broker.exporters.camundaexporter.args.connect.maxConnectionsPerRoute="
+            + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithOnlyLegacyExporterConnectionPoolSet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithOnlyLegacyExporterConnectionPoolSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldKeepLegacyConnectionPoolWhenUnifiedConfigIsUnset() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect().getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(exporterConfiguration.getConnect().getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
+    }
+
+    @Test
+    void shouldLeaveTheSearchEngineConnectPropertiesUnsized() {
+      // then an exporter-scoped limit must not size the webapps' client
+      assertThat(searchEngineConnectProperties)
+          .returns(null, SearchEngineConnectProperties::getMaxConnections)
+          .returns(null, SearchEngineConnectProperties::getMaxConnectionsPerRoute);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.database.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.database.max-connections-per-route=" + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+      })
+  class WithConnectionPoolOnLegacyDatabase {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithConnectionPoolOnLegacyDatabase(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyPropertyForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_MAX_CONNECTIONS, ConnectConfiguration::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE, ConnectConfiguration::getMaxConnectionsPerRoute);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyPropertyForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_MAX_CONNECTIONS, SearchEngineConnectProperties::getMaxConnections)
+          .returns(
+              EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
+              SearchEngineConnectProperties::getMaxConnectionsPerRoute);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.database.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.elasticsearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.operate.elasticsearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout="
+            + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.database.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.elasticsearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.operate.elasticsearch.connectionTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
+      })
+  class WithOnlyLegacyTimeoutsSet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithOnlyLegacyTimeoutsSet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getConnect())
+          .returns(EXPECTED_SOCKET_TIMEOUT, ConnectConfiguration::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, ConnectConfiguration::getConnectTimeout);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTimeoutsForTheSearchEngineConnectProperties() {
+      // then
+      assertThat(searchEngineConnectProperties)
+          .returns(EXPECTED_SOCKET_TIMEOUT, SearchEngineConnectProperties::getSocketTimeout)
+          .returns(EXPECTED_CONNECTION_TIMEOUT, SearchEngineConnectProperties::getConnectTimeout);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        // template-priority has no default, so the unified value stays unset
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.index.templatePriority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+      })
+  class WithOnlyLegacyTemplatePrioritySet {
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
+
+    WithOnlyLegacyTemplatePrioritySet(
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTemplatePriorityForTheCamundaExporter() {
+      // given
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+    }
+
+    @Test
+    void shouldFallBackToTheLegacyTemplatePriorityForTheSearchEngineIndexProperties() {
+      // then
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
     }
   }
 

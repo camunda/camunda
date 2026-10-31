@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-search</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
   </parent>
 
   <artifactId>camunda-search-test-utils</artifactId>
@@ -60,6 +60,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>

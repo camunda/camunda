@@ -73,7 +73,6 @@ final class BackupMetadataTrackingDisabledIT {
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          // Continuous backups are disabled by default; no need to set explicitly.
           cfg.getData()
               .getPrimaryStorage()
               .getBackup()

@@ -123,8 +123,10 @@ public class AuditLogTransformerConfigs {
               MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED)
           .withDataCleanupIntents(MappingRuleIntent.DELETED);
 
+  // Unlike other resources, a process deletion is audited on DRAINING rather than DELETED: only
+  // processes drain, and DRAINING is the record written synchronously under the deleter's command.
   public static final TransformerConfig PROCESS_CONFIG =
-      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DELETED);
+      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DRAINING);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

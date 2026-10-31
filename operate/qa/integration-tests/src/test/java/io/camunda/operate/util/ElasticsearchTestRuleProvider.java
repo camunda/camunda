@@ -112,10 +112,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(final Description description) {
-    if (!failed) {
-      final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient, indexPrefix);
-    }
+    final String currentIndexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
+    TestUtil.removeAllIndices(esClient, currentIndexPrefix);
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);

@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {APIRequestContext, APIResponse} from 'playwright-core';
+import {assertStatusCode, buildUrl, defaultHeaders, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
-import {APIRequestContext} from 'playwright-core';
-import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
 
 export function validateProcessDefinitionDeployment(
   deployments: unknown[],
@@ -231,4 +231,27 @@ export async function deployResourceAndGetMetadata(
   }
 
   throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
+}
+
+export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
+
+interface DeleteResourceOptions {
+  headers?: Record<string, string>;
+  data?: Record<string, unknown>;
+}
+
+export function deleteResource(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: DeleteResourceOptions = {},
+): Promise<APIResponse> {
+  // A request carrying a body states its own Content-Type rather than leaving
+  // Playwright to infer one; a bodyless delete only declares what it accepts.
+  const headers =
+    options.headers ??
+    (options.data === undefined ? defaultHeaders() : jsonHeaders());
+  return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
+    headers,
+    ...(options.data === undefined ? {} : {data: options.data}),
+  });
 }

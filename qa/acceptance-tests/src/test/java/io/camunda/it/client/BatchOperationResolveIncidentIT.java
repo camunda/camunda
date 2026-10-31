@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
@@ -29,7 +30,9 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Future;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,5 +205,38 @@ public class BatchOperationResolveIncidentIT {
     assertThat(itemKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  void shouldFinishBatchOperationThatMatchedNoItems() {
+    // given a filter that no process instance can match, so the batch operation gets no items at
+    // all
+    final var unknownProcessDefinitionId = "no-such-process-" + UUID.randomUUID();
+
+    // when
+    final Future<CreateBatchOperationResponse> result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .resolveIncident()
+            .filter(f -> f.processDefinitionId(unknownProcessDefinitionId))
+            .send();
+
+    // then it is reported as finished, with an end date, instead of staying open forever
+    final var batchOperationKey =
+        assertThat(result)
+            .succeedsWithin(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+            .actual()
+            .getBatchOperationKey();
+    Awaitility.await("should finish batch operation that matched no items")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var batchOperation =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
+              assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batchOperation.getOperationsTotalCount()).isZero();
+              assertThat(batchOperation.getEndDate()).isNotNull();
+            });
   }
 }

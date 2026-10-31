@@ -80,6 +80,10 @@ public final class ProcessInstanceMigrationPreconditions {
       """
       Expected to migrate process instance to process definition \
       but no process definition found with key '%d'""";
+  private static final String ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_DRAINING =
+      """
+      Expected to migrate process instance to process definition with key '%d' \
+      but it is being deleted""";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE =
       """
       Expected to migrate process instance '%d' \
@@ -250,6 +254,24 @@ public final class ProcessInstanceMigrationPreconditions {
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.NOT_FOUND);
+    }
+  }
+
+  /**
+   * Checks that the target process definition is not being deleted. A definition that is draining
+   * is kept in state so its running instances can finish, but no new instances may be migrated onto
+   * it.
+   *
+   * @param targetProcessDefinition target process definition to check (must be non-null)
+   * @param targetProcessDefinitionKey target process definition key, for the error message
+   */
+  public static void requireTargetProcessDefinitionNotDraining(
+      final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
+    if (targetProcessDefinition.isDraining()) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          String.format(
+              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_DRAINING, targetProcessDefinitionKey),
+          RejectionType.INVALID_STATE);
     }
   }
 

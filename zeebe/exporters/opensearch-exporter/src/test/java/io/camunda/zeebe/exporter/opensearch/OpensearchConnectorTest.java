@@ -13,6 +13,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.BasicCredentials;
@@ -25,7 +28,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +38,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
@@ -71,6 +77,18 @@ final class OpensearchConnectorTest {
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
 
   @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    final var config = new OpensearchExporterConfiguration();
+    config.url = "http://admin:s3 cr3t@localhost:9200";
+
+    // when / then
+    assertThatThrownBy(() -> OpensearchConnector.of(config).createClient())
+        .hasMessage("Error in url at position 0")
+        .hasNoCause();
+  }
+
+  @Test
   void shouldConfigureMultipleHosts() throws Exception {
     // given
     config.url = "http://localhost:9201,http://localhost:9202";
@@ -87,6 +105,20 @@ final class OpensearchConnectorTest {
         .map(Node::getHost)
         .containsExactlyInAnyOrder(
             HttpHost.create("http://localhost:9201"), HttpHost.create("http://localhost:9202"));
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var builder = mock(HttpAsyncClientBuilder.class);
+
+    // when
+    OpensearchConnector.of(config).configureHttpClient(builder, config);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    verify(builder).setIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
   }
 
   @Nested

@@ -14,7 +14,6 @@ public final class TestEnvironment {
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.util");
 
   private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
-  private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";
 
   private TestEnvironment() {}
 
@@ -39,29 +38,5 @@ public final class TestEnvironment {
       LOG.warn("Failed to read test fork number system property", e);
     }
     return testForkNumber;
-  }
-
-  /**
-   * Returns the test maven ID that maps to a test stage in Jenkins (e.g. junit = 1; it = 2; junit8
-   * = 3
-   *
-   * @return test maven ID that maps to a test stage in Jenkins (e.g. junit = 1; it = 2; junit8 = 3
-   */
-  public static int getTestMavenId() {
-    int testMavenId = 0;
-    try {
-      final String testMavenIdProperty = System.getProperty(TEST_MAVEN_ID_PROPERTY_NAME);
-      if (testMavenIdProperty != null) {
-        testMavenId = Integer.parseInt(testMavenIdProperty);
-      } else {
-        LOG.warn(
-            "No system property '{}' set, using default value {}",
-            TEST_MAVEN_ID_PROPERTY_NAME,
-            testMavenId);
-      }
-    } catch (final Exception e) {
-      LOG.warn("Failed to read test maven id system property", e);
-    }
-    return testMavenId;
   }
 }

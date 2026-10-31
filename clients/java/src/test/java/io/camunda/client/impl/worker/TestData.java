@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 final class TestData {
+  static final int JOB_RETRIES = 34;
+
   static ActivatedJob job() {
     return job(12);
   }
@@ -37,7 +39,7 @@ final class TestData {
         .setElementInstanceKey(23213)
         .setCustomHeaders("{\"version\": \"1\"}")
         .setWorker("worker1")
-        .setRetries(34)
+        .setRetries(JOB_RETRIES)
         .setDeadline(1231)
         .setVariables("{\"key\": \"val\"}")
         .build();

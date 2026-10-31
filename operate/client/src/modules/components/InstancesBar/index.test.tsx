@@ -76,4 +76,39 @@ describe('InstancesBar', () => {
       screen.queryByTestId('active-instances-badge'),
     ).not.toBeInTheDocument();
   });
+
+  it('should not display draining indicator by default', () => {
+    render(
+      <InstancesBar
+        incidentsCount={10}
+        label={{type: 'process', size: 'small', text: 'someLabel'}}
+        activeInstancesCount={5}
+        size="small"
+      />,
+    );
+
+    expect(screen.queryByTestId('draining-indicator')).not.toBeInTheDocument();
+  });
+
+  it('should display draining indicator with description tooltip when draining', async () => {
+    const {user} = render(
+      <InstancesBar
+        incidentsCount={10}
+        label={{type: 'process', size: 'small', text: 'someLabel'}}
+        activeInstancesCount={5}
+        size="small"
+        isDraining
+        drainingDescription="Scheduled for deletion"
+      />,
+    );
+
+    const indicator = screen.getByTestId('draining-indicator');
+    expect(indicator).toBeInTheDocument();
+
+    await user.hover(indicator);
+
+    expect(
+      await screen.findByText('Scheduled for deletion'),
+    ).toBeInTheDocument();
+  });
 });

@@ -57,7 +57,7 @@ const BatchOperation: React.FC = () => {
     actorId,
   } = batchOperationData || {};
 
-  const operationType = formatOperationType(batchOperationType ?? '');
+  const operationType = formatOperationType(batchOperationType);
 
   useEffect(() => {
     document.title = PAGE_TITLE.BATCH_OPERATION(operationType);

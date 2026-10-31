@@ -21,6 +21,7 @@ class OperateProcessInstancePage {
   readonly messageVariable: Locator;
   readonly statusVariable: Locator;
   readonly instanceHeader: Locator;
+  readonly drainingTag: Locator;
   readonly instanceHistory: Locator;
   readonly rootProcessNode: Locator;
   readonly incidentsTable: Locator;
@@ -133,6 +134,7 @@ class OperateProcessInstancePage {
     });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
+    this.drainingTag = this.instanceHeader.getByTestId('draining-tag');
     this.instanceHistory = page.getByTestId('instance-history');
     this.rootProcessNode = this.instanceHistory
       .locator('[data-testid^="node-details-"]')
@@ -158,7 +160,7 @@ class OperateProcessInstancePage {
     this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
     this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
-    this.variableSpinner = page.getByTestId('full-variable-loader');
+    this.variableSpinner = page.getByTestId('full-variable-loader').first();
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
       'show execution count',

@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -289,6 +290,48 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(operation.getId()).isNotNull();
     // assert that incident is resolved
     assertThat(processInstance.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
+  }
+
+  @Test
+  public void testResolveIncidentOfOtherProcessInstanceIsRejected() throws Exception {
+    // given
+    // two instances, only the first one has an incident
+    final Long otherProcessInstanceKey = startDemoProcessInstance();
+    failTaskWithNoRetriesLeft("taskA", otherProcessInstanceKey, "Some error");
+    final Long processInstanceKey = startDemoProcessInstance();
+    final String otherIncidentId =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(otherProcessInstanceKey))
+            .getIncidents()
+            .get(0)
+            .getId();
+
+    // when
+    // we call RESOLVE_INCIDENT operation on the second instance, targeting the incident of the
+    // first one
+    // then
+    // the request is rejected
+    postOperation(
+        processInstanceKey,
+        new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT)
+            .setIncidentId(otherIncidentId),
+        HttpStatus.SC_BAD_REQUEST);
+
+    // and no operation was created for the second instance
+    final ListViewProcessInstanceDto processInstance =
+        processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
+    assertThat(processInstance.getOperations()).isEmpty();
+
+    // and the incident of the first instance was not touched
+    final ListViewProcessInstanceDto otherProcessInstance =
+        processInstanceReader.getProcessInstanceWithOperationsByKey(otherProcessInstanceKey);
+    assertThat(otherProcessInstance.getOperations()).isEmpty();
+    final List<IncidentDto> otherIncidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(otherProcessInstanceKey))
+            .getIncidents();
+    assertThat(otherIncidents).hasSize(1);
+    assertThat(otherIncidents.get(0).isHasActiveOperation()).isFalse();
   }
 
   @Test

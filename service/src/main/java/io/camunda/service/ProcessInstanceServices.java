@@ -221,7 +221,7 @@ public final class ProcessInstanceServices
                     processInstanceSearchClient
                         .withSecurityContext(
                             securityContextProvider.provideSecurityContext(
-                                CamundaAuthentication.anonymous()))
+                                authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                         .searchProcessInstances(
                             processInstanceSearchQuery(
                                 q ->
@@ -232,7 +232,10 @@ public final class ProcessInstanceServices
             .items()
             .stream()
             .collect(
-                Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
+                Collectors.toMap(
+                    ProcessInstanceEntity::processInstanceKey,
+                    Function.identity(),
+                    (first, second) -> first));
 
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
   }

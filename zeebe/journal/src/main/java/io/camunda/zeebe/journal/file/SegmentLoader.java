@@ -212,6 +212,12 @@ final class SegmentLoader {
         final var channel = raf.getChannel(); ) {
       allocateSegment(maxSegmentSize, channel, raf.getFD());
       raf.setLength(maxSegmentSize);
+    }
+
+    // reopen via FileChannel.open, because RandomAccessFile on Windows opens without
+    // FILE_SHARE_DELETE (which we need for renaming segments during compaction)
+    try (final var channel =
+        FileChannel.open(segmentPath, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       return mapSegment(channel, maxSegmentSize);
     }
   }

@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -28,7 +28,13 @@
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
     <version.spring>6.2.19</version.spring>
     <version.roaster>2.31.1.Final</version.roaster>
-    <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
+    <!-- Test-only: keep in sync with micrometer.version managed by spring-boot-dependencies for
+         version.spring-boot above. Tests run on the Micrometer Spring Boot 3.x users get, so calls
+         to newer Micrometer APIs fail here instead of with NoSuchMethodError in users' apps
+         (https://github.com/camunda/camunda/issues/59640). Not a dependency: it is never compiled
+         against or published, so it must not be declared in <dependencies>. -->
+    <version.micrometer-spring-boot-3>1.15.12</version.micrometer-spring-boot-3>
+    <version.aspectjweaver>1.9.26</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
   </properties>
@@ -147,6 +153,10 @@
             <!-- Exclude tests that use Jackson 3.x (tools.jackson.*) which is not available in Spring Boot 3.x -->
             <exclude>io/camunda/client/impl/CamundaObjectMapperTest.java</exclude>
             <exclude>io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java</exclude>
+            <!-- Exclude test that uses org.springframework.boot.health.contributor, which is a
+                 Spring Boot 4.x-only package; Spring Boot 3.x has its own
+                 CamundaClientHealthIndicator override under org.springframework.boot.actuate.health -->
+            <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
           </testExcludes>
         </configuration>
       </plugin>
@@ -359,6 +369,29 @@
             <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
             <exclude>**/configurationMetadata/FormattingTest.java</exclude>
           </excludes>
+          <!-- Swap the compile-time Micrometer for Spring Boot 3's, see version.micrometer-spring-boot-3 -->
+          <classpathDependencyExcludes>
+            <classpathDependencyExclude>io.micrometer:micrometer-core</classpathDependencyExclude>
+            <classpathDependencyExclude>io.micrometer:micrometer-commons</classpathDependencyExclude>
+            <classpathDependencyExclude>io.micrometer:micrometer-observation</classpathDependencyExclude>
+          </classpathDependencyExcludes>
+          <additionalClasspathDependencies>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-core</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-commons</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-observation</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+          </additionalClasspathDependencies>
         </configuration>
       </plugin>
     </plugins>

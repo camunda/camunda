@@ -123,7 +123,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       return getMetadataByFlowNodeId(
           processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
     } else if (request.getFlowNodeInstanceId() != null) {
-      return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
+      return getMetadataByFlowNodeInstanceId(processInstanceId, request.getFlowNodeInstanceId());
     }
     return null;
   }
@@ -605,9 +605,11 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(
+      final String processInstanceId, final String flowNodeInstanceId) {
 
-    final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstanceEntity(flowNodeInstanceId);
+    final FlowNodeInstanceEntity flowNodeInstance =
+        getFlowNodeInstanceEntity(processInstanceId, flowNodeInstanceId);
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
     result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
@@ -788,11 +790,14 @@ public class FlowNodeInstanceReader extends AbstractReader
     return null;
   }
 
-  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
+  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(
+      final String processInstanceId, final String flowNodeInstanceId) {
     try {
       final var query =
           ElasticsearchUtil.constantScoreQuery(
-              ElasticsearchUtil.termsQuery(ID, flowNodeInstanceId));
+              joinWithAnd(
+                  ElasticsearchUtil.termsQuery(ID, flowNodeInstanceId),
+                  ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId)));
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var request =

@@ -19,6 +19,11 @@ on:
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
+  TEST_OWNER: '@camunda/engineering-operations'
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
   build-distball:
@@ -31,9 +36,14 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: build-shared
@@ -72,31 +82,62 @@ jobs:
       # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
       - name: Upload distball (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: distball-${{ github.run_id }}
           path: ${{ steps.build-zeebe.outputs.distball }}
-          retention-days: 1
+          retention-days: 2
           compression-level: 0  # tarball is already gzipped
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: m2-installed-${{ github.run_id }}
           path: m2-installed.tar
-          retention-days: 1
+          retention-days: 2
           compression-level: 6
           if-no-files-found: error
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
       # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
       # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
-      - uses: ./.github/actions/gcs-build-cache-auth
+      # Vault can hang (INC-6820, INC-8811), so the 3m budget is split into three 1m attempts;
+      # healthy auth takes 7-11s. If it nears 1m, rebalance the split; don't raise the total.
+      # Attempts are literal copies (no retry for `uses:`, cf. vault-action-with-retry): keep
+      # them in sync. The last omits `continue-on-error` so exhausted retries fail the job.
+      - name: Authenticate to GCS build-cache (attempt 1 of 3)
+        id: gcs-auth-1
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Authenticate to GCS build-cache (attempt 2 of 3)
+        id: gcs-auth-2
+        if: steps.gcs-auth-1.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Authenticate to GCS build-cache (attempt 3 of 3)
+        id: gcs-auth-3
+        if: steps.gcs-auth-2.outcome == 'failure'
+        timeout-minutes: 1
+        uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Upload distball to GCS
+        # gcs-build-cache-auth runs unconditionally, but its internal Vault/WIF/setup-gcloud
+        # steps no-op on fork PRs (no Vault access -- see gcs-build-cache-auth/action.yml),
+        # so gcloud is never installed. Guard this step the same way.
+        if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
@@ -111,6 +152,8 @@ jobs:
             gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
       - name: Upload SNAPSHOTs to GCS
+        # Same fork-PR guard as "Upload distball to GCS" above.
+        if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"

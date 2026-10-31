@@ -30,6 +30,7 @@ import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.Before;
 import org.junit.Test;
@@ -70,6 +71,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   @MockitoBean private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
   @Autowired private OperateProperties operateProperties;
+  private SaasConfiguration saasConfiguration;
 
   @Before
   public void setUp() {
@@ -78,6 +80,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
     given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
+    saasConfiguration = new SaasConfiguration();
+    given(securityConfiguration.getSaas()).willReturn(saasConfiguration);
     given(operateProfileService.isLoginDelegated()).willReturn(true);
     given(environmentService.getDatabaseType()).willReturn("document-store");
   }
@@ -150,6 +154,21 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"multiTenancyEnabled\":false,"
                 + "\"databaseType\":\"document-store\""
                 + "};");
+  }
+
+  @Test
+  public void testGetClientConfigForCantLogoutInSaas() throws Exception {
+    // given
+    saasConfiguration.setOrganizationId("test-org-id");
+    saasConfiguration.setClusterId("test-cluster-id");
+    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn(null);
+
+    // when
+    final MvcResult mvcResult =
+        mockMvc.perform(get("/operate/client-config.js")).andExpect(status().isOk()).andReturn();
+
+    // then
+    assertThat(mvcResult.getResponse().getContentAsString()).contains("\"canLogout\":false,");
   }
 
   @Test

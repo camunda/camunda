@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {DEFAULT_PAGE_LIMIT, defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
 import {validateResponse} from 'json-body-assertions';
@@ -286,6 +286,42 @@ export async function clearAllProcessInstances(
       );
     }
   }
+}
+
+export type ProcessInstanceItem = {
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  processDefinitionId: string;
+  state: string;
+};
+
+export async function searchProcessInstances(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+): Promise<ProcessInstanceItem[]> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter, page: {limit: DEFAULT_PAGE_LIMIT}},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances/search', method: 'POST', status: '200'},
+    res,
+  );
+  return ((await res.json()).items ?? []) as ProcessInstanceItem[];
+}
+
+export async function expectProcessInstanceCount(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  expectedCount: number,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await searchProcessInstances(request, filter)).toHaveLength(
+      expectedCount,
+    );
+  }).toPass(assertionOptions);
 }
 
 export async function expectProcessState(

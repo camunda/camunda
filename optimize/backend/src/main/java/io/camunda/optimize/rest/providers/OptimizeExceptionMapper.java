@@ -18,6 +18,7 @@ import io.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExi
 import io.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 import io.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import io.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
+import io.camunda.optimize.service.exceptions.OptimizeImportNameNotValidException;
 import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.slf4j.Logger;
@@ -49,6 +50,24 @@ public class OptimizeExceptionMapper {
 
   private ErrorResponseDto getDescriptionNotValidResponseDto(
       final OptimizeImportDescriptionNotValidException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String detailedErrorMessage = exception.getMessage();
+    return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
+  }
+
+  @ExceptionHandler(OptimizeImportNameNotValidException.class)
+  public ResponseEntity<ErrorResponseDto> handleImportNameNotValidException(
+      final OptimizeImportNameNotValidException exception) {
+    LOG.info("Mapping OptimizeImportNameNotValidException");
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .body(getNameNotValidResponseDto(exception));
+  }
+
+  private ErrorResponseDto getNameNotValidResponseDto(
+      final OptimizeImportNameNotValidException exception) {
     final String errorCode = exception.getErrorCode();
     final String errorMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);

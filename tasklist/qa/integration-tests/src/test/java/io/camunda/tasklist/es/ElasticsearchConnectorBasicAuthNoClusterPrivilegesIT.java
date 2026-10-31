@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -24,6 +23,7 @@ import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -74,10 +74,12 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
 
   private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
-      new ElasticsearchContainer(
-              "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
+      TestSearchContainers.createDefeaultElasticsearchContainer()
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
-          .withExposedPorts(9200);
+          .withExposedPorts(9200)
+          .waitingFor(
+              TestSearchContainers.waitForClusterHealth()
+                  .withBasicCredentials(ES_ADMIN_USER, ES_ADMIN_PASSWORD));
 
   @Autowired
   @Qualifier("tasklistEsClient")

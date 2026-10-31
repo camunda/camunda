@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:d0a9c32174cd3ebc022e25e6fd4cce0bed180bbf087ab9e0536aede964e3a114"
+ARG BASE_DIGEST="sha256:b516bb84b4641b88759bf2274e41868d39d467ea435c2c0f9d9bf3d21a717149"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.11_10-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:373787d1d45a87f084fda43e7de0e9acf5eedee049446efac738f13587ec4c64"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.12_8-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:7739f0ffce786528961eea6bf46d9610ee968ac6127c9b2e93494757bdecce9f"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -48,9 +48,12 @@ ARG JATTACH_VERSION
 ARG JATTACH_CHECKSUM_AMD64
 ARG JATTACH_CHECKSUM_ARM64
 
+# --retry-all-errors is what makes the retry apply to a dropped or refused TLS
+# connection to github.com. On its own --retry covers a timeout and the HTTP
+# 408, 429, 500, 502, 503 and 504 responses, none of which an SSL connect error
+# (exit 35) is, so without it the download fails on the first attempt.
 # hadolint ignore=DL4006,DL3018
-RUN --mount=type=cache,target=/root/.jattach,rw \
-    apk add -q --no-cache curl && \
+RUN apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
       CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
@@ -58,7 +61,7 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
+    curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
       "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
       -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \

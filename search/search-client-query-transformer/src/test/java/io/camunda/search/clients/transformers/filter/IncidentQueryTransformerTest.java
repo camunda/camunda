@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
+import io.camunda.search.clients.query.SearchMatchPhraseQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -143,7 +145,10 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByErrorMessage() {
-    final var filter = FilterBuilders.incident(f -> f.errorMessages("No retries left."));
+    // errorMessage is an analyzed text field, so it must be queried with matchPhrase rather
+    // than term - a term query only matches a single, exact, lowercase token (see #64014).
+    final var filter =
+        FilterBuilders.incident(f -> f.errorMessages("Failed to send activated jobs to client"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -152,10 +157,107 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
+            SearchMatchPhraseQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("errorMessage");
-              assertThat(t.value().stringValue()).isEqualTo("No retries left.");
+              assertThat(t.query()).isEqualTo("Failed to send activated jobs to client");
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedErrorMessageLikeFilterCaseInsensitively() {
+    // stringMatchPhraseOperations lowercases the LIKE pattern before building the wildcard
+    // query, unlike stringOperations - switching errorMessage to it also made $like
+    // case-insensitive here, matching the field's lowercase-analyzed tokens.
+    final var filter =
+        FilterBuilders.incident(f -> f.errorMessageOperations(Operation.like("*Failed*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorMessage");
+              assertThat(t.value()).isEqualTo("*failed*");
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedErrorMessageInFilter() {
+    final var filter =
+        FilterBuilders.incident(
+            f ->
+                f.errorMessageOperations(
+                    Operation.in("Failed to send activated jobs to client", "no retries left")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.should()).hasSize(2);
+              assertThat(t.should().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchPhraseQuery.class,
+                      matchPhraseQuery ->
+                          assertThat(matchPhraseQuery.query())
+                              .isEqualTo("Failed to send activated jobs to client"));
+              assertThat(t.should().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchPhraseQuery.class,
+                      matchPhraseQuery ->
+                          assertThat(matchPhraseQuery.query()).isEqualTo("no retries left"));
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedErrorMessageNotInFilter() {
+    final var filter =
+        FilterBuilders.incident(
+            f ->
+                f.errorMessageOperations(
+                    Operation.notIn("Failed to send activated jobs to client", "no retries left")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.mustNot()).hasSize(1);
+              final var mustNotQuery = t.mustNot().getFirst();
+              assertThat(mustNotQuery.queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      should -> {
+                        assertThat(should.should()).hasSize(2);
+                        assertThat(should.should().get(0).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchMatchPhraseQuery.class,
+                                matchPhraseQuery -> {
+                                  assertThat(matchPhraseQuery.field()).isEqualTo("errorMessage");
+                                  assertThat(matchPhraseQuery.query())
+                                      .isEqualTo("Failed to send activated jobs to client");
+                                });
+                        assertThat(should.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchMatchPhraseQuery.class,
+                                matchPhraseQuery -> {
+                                  assertThat(matchPhraseQuery.field()).isEqualTo("errorMessage");
+                                  assertThat(matchPhraseQuery.query()).isEqualTo("no retries left");
+                                });
+                      });
             });
   }
 

@@ -314,6 +314,7 @@ public final class ProcessInstanceClient {
 
     private String[] authorizedTenants;
     private int partition = DEFAULT_PARTITION;
+    private long batchOperationReference = -1;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
     public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
@@ -324,6 +325,11 @@ public final class ProcessInstanceClient {
 
     public ExistingInstanceClient onPartition(final int partition) {
       this.partition = partition;
+      return this;
+    }
+
+    public ExistingInstanceClient withBatchOperationReference(final long batchOperationReference) {
+      this.batchOperationReference = batchOperationReference;
       return this;
     }
 
@@ -359,6 +365,19 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getPartitionId();
+      }
+
+      if (batchOperationReference != -1) {
+        writer.writeCommandOnPartition(
+            partition,
+            builder ->
+                builder
+                    .key(processInstanceKey)
+                    .intent(ProcessInstanceIntent.CANCEL)
+                    .authorizations(authorizedTenants)
+                    .batchOperationReference(batchOperationReference)
+                    .event(new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey)));
+        return;
       }
 
       writer.writeCommandOnPartition(

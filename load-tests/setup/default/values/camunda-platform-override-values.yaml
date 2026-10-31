@@ -1,5 +1,0 @@
-# Consistency check overrides for the max stress scenario.
-# This file is injected as application-override.yml (loaded after and overrides application.yml)
-# when scenario=max, to disable checks that would add overhead during maximum-load tests.
-zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
-zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"

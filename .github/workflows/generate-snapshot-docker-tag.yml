@@ -86,6 +86,7 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             pom.xml
+          persist-credentials: false
       - name: Determine Snapshot Docker Version Tag
         id: set_docker_snapshot_version_tag
         env:

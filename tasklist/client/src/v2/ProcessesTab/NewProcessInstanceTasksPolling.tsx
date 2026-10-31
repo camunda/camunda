@@ -27,7 +27,13 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
     const location = useLocation();
 
     useQuery({
-      queryKey: ['newTasks', instance?.id],
+      queryKey: [
+        'newTasks',
+        instance?.id,
+        newInstance,
+        location.pathname,
+        navigate,
+      ],
       enabled: instance !== null,
       refetchInterval: 1000,
       queryFn: async () => {

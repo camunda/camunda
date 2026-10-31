@@ -34,6 +34,7 @@ import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -321,7 +322,6 @@ public class PassiveRole extends InactiveRole {
                   request.newMembers(),
                   List.of(), // Skip joint consensus
                   true));
-      raft.getCluster().commitCurrentConfiguration();
     } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
       // with the same state. If this is not the case, it is likely that there are two force
@@ -404,17 +404,20 @@ public class PassiveRole extends InactiveRole {
     return handleAppend(request);
   }
 
+  // Polls and votes are answered regardless of the local role and configuration: during a
+  // reconfiguration, consensus is reached based on the candidate's configuration (Raft
+  // dissertation, section 4.1). A passive member's answer can be required to elect a leader,
+  // for example when a joint configuration was appended to a joining member before the leader
+  // failed. Unlike ActiveRole, no role transition happens on a term bump: a passive member may
+  // not have received a configuration yet, and it will be transitioned by the next
+  // ConfigureRequest when its type changes.
+
   @Override
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     raft.checkThread();
     logRequest(request);
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            PollResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot poll RESERVE member")
-                .build()));
+    updateTermAndLeader(request.term(), null);
+    return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
 
   @Override
@@ -422,14 +425,143 @@ public class PassiveRole extends InactiveRole {
     raft.checkThread();
     logRequest(request);
     updateTermAndLeader(request.term(), null);
+    return CompletableFuture.completedFuture(logResponse(handleVote(request)));
+  }
 
-    return CompletableFuture.completedFuture(
-        logResponse(
-            VoteResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(
-                    RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot request vote from RESERVE member")
-                .build()));
+  /** Handles a poll request. */
+  protected PollResponse handlePoll(final PollRequest request) {
+    // If the request term is not as great as the current context term then don't
+    // vote for the candidate. We want to vote for candidates that are at least
+    // as up to date as us.
+    if (request.term() < raft.getTerm()) {
+      log.debug("Rejected {}: candidate's term is less than the current term", request);
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(false)
+          .build();
+    } else if (isLogUpToDate(request.lastLogIndex(), request.lastLogTerm(), request)) {
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(true)
+          .build();
+    } else {
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(false)
+          .build();
+    }
+  }
+
+  /** Returns a boolean value indicating whether the given candidate's log is up-to-date. */
+  boolean isLogUpToDate(final long lastIndex, final long lastTerm, final RaftRequest request) {
+    // If the log is empty then vote for the candidate.
+    if (raft.getLog().isEmpty()) {
+      log.debug("Accepted {}: candidate's log is up-to-date", request);
+      return true;
+    }
+
+    // Read the last entry from the log.
+    final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
+
+    // If the candidate's last log term is lower than the local log's last entry term, reject the
+    // request.
+    if (lastTerm < lastEntry.term()) {
+      log.debug(
+          "Rejected {}: candidate's last log entry ({}) is at a lower term than the local log ({})",
+          request,
+          lastTerm,
+          lastEntry.term());
+      return false;
+    }
+
+    // If the candidate's last term is equal to the local log's last entry term, reject the request
+    // if the
+    // candidate's last index is less than the local log's last index. If the candidate's last log
+    // term is
+    // greater than the local log's last term then it's considered up to date, and if both have the
+    // same term
+    // then the candidate's last index must be greater than the local log's last index.
+    if (lastTerm == lastEntry.term() && lastIndex < lastEntry.index()) {
+      log.debug(
+          "Rejected {}: candidate's last log entry ({}) is at a lower index than the local log ({})",
+          request,
+          lastIndex,
+          lastEntry.index());
+      return false;
+    }
+
+    // If we made it this far, the candidate's last term is greater than or equal to the local log's
+    // last
+    // term, and if equal to the local log's last term, the candidate's last index is equal to or
+    // greater
+    // than the local log's last index.
+    log.info("Accepted {}: candidate's log is up-to-date", request);
+    return true;
+  }
+
+  /** Handles a vote request. */
+  protected VoteResponse handleVote(final VoteRequest request) {
+    // If the request term is not as great as the current context term then don't
+    // vote for the candidate. We want to vote for candidates that are at least
+    // as up to date as us.
+    if (request.term() < raft.getTerm()) {
+      log.debug("Rejected {}: candidate's term is less than the current term", request);
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
+    // If a leader was already determined for this term then reject the request.
+    else if (raft.getLeader() != null) {
+      log.debug("Rejected {}: leader already exists", request);
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
+    // If no vote has been cast, check the log and cast a vote if necessary.
+    // The candidate does not need to be a member of the local configuration: during a
+    // reconfiguration, consensus is reached based on the candidate's configuration, so votes must
+    // be granted based on log up-to-dateness alone (Raft dissertation, section 4.1).
+    else if (raft.getLastVotedFor() == null) {
+      if (isLogUpToDate(request.lastLogIndex(), request.lastLogTerm(), request)) {
+        raft.setLastVotedFor(request.candidate());
+        return VoteResponse.builder()
+            .withStatus(RaftResponse.Status.OK)
+            .withTerm(raft.getTerm())
+            .withVoted(true)
+            .build();
+      } else {
+        return VoteResponse.builder()
+            .withStatus(RaftResponse.Status.OK)
+            .withTerm(raft.getTerm())
+            .withVoted(false)
+            .build();
+      }
+    }
+    // If we already voted for the requesting server, respond successfully.
+    else if (raft.getLastVotedFor().equals(request.candidate())) {
+      log.debug("Accepted {}: already voted for {}", request, raft.getLastVotedFor());
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(true)
+          .build();
+    }
+    // In this case, we've already voted for someone else.
+    else {
+      log.debug("Rejected {}: already voted for {}", request, raft.getLastVotedFor());
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
   }
 
   // validates install request and returns a response if the request should not be processed
@@ -479,26 +611,21 @@ public class PassiveRole extends InactiveRole {
     // to this index.
     // Skip the snapshot and response successfully.
     if (raft.getCommitIndex() > request.index()) {
-      return Either.left(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+      return Either.left(skipNotNeededSnapshot());
     }
 
     // If the snapshot already exists locally, do not overwrite it with a replicated snapshot.
     // Simply reply to the request successfully.
     final var latestIndex = raft.getCurrentSnapshotIndex();
     if (latestIndex >= request.index()) {
-      abortPendingSnapshots();
+      return Either.left(skipNotNeededSnapshot());
+    }
 
-      return Either.left(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+    // If the log has the snapshot's last entry, installing the snapshot would reset the log and
+    // delete the entries after it, which this member may already have acknowledged and the leader
+    // may have committed. The log already covers the snapshot, so skip it.
+    if (logContains(request.index(), request.term())) {
+      return Either.left(skipNotNeededSnapshot());
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -522,12 +649,7 @@ public class PassiveRole extends InactiveRole {
       // This should not happen because we previously check for the latest snapshot. But, if it
       // happens, instead of crashing raft thread, we respond with success because we already
       // have the snapshot.
-      return CompletableFuture.completedFuture(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+      return CompletableFuture.completedFuture(skipNotNeededSnapshot());
     } else {
       log.warn(
           "Failed to create pending snapshot when receiving snapshot {}",
@@ -539,6 +661,32 @@ public class PassiveRole extends InactiveRole {
                   .withStatus(Status.ERROR)
                   .withError(Type.APPLICATION_ERROR, "Failed to create pending snapshot")
                   .build()));
+    }
+  }
+
+  /**
+   * Responds to an install request for a snapshot this member does not need, and tells the leader
+   * to stop sending it. Aborts a pending install of the same snapshot, so the listeners notified
+   * when it started are notified that it ended.
+   */
+  private InstallResponse skipNotNeededSnapshot() {
+    abortPendingSnapshots();
+    return logResponse(
+        InstallResponse.builder()
+            .withStatus(Status.OK)
+            .withPreferredChunkSize(snapshotChunkSize)
+            .withSnapshotNotNeeded()
+            .build());
+  }
+
+  private boolean logContains(final long index, final long term) {
+    final var raftLog = raft.getLog();
+    if (raftLog.isEmpty() || index < raftLog.getFirstIndex() || index > raftLog.getLastIndex()) {
+      return false;
+    }
+
+    try (final RaftLogReader reader = raftLog.openUncommittedReader()) {
+      return reader.seek(index) == index && reader.hasNext() && reader.next().term() == term;
     }
   }
 
@@ -760,16 +908,38 @@ public class PassiveRole extends InactiveRole {
           return;
         }
 
-        // If the last log index meets the commitIndex, break the append loop to avoid appending
-        // uncommitted entries.
-        if (!role().active() && index == commitIndex) {
+        // A PASSIVE member is a committed-only replica by design - the leader ships entries to it
+        // through a committed reader (see RaftMemberContext#newReader) - so it stops appending
+        // when a batch straddles the request's commit index, to avoid persisting uncommitted
+        // entries. A PROMOTABLE member, by contrast, must accept the uncommitted tail that the
+        // leader ships via an uncommitted reader, so it can catch up to the leader's last index
+        // for promotion. Note that this break only fires for batches straddling the commit index:
+        // batches lying entirely beyond it are appended in full by every role, and a dropped
+        // straddle-tail is recovered by the leader's reject/rewind handling - so for PROMOTABLE
+        // this saves the extra probe/rewind round trips at each commit boundary during catch-up
+        // rather than gating it.
+        if (role() == RaftServer.Role.PASSIVE && index == commitIndex) {
           break;
         }
       }
     }
 
-    // Set the first commit index.
-    raft.setFirstCommitIndex(request.commitIndex(), lastLogIndex);
+    // Set the first commit index. Its second argument is the index up to which the leader and this
+    // node agree on persisted data: request.prevLogIndex() is what the leader vouches for holding
+    // itself, extended by the entries appended above.
+    //
+    // For a PASSIVE member that agreement is unknowable from the request: the leader replicates to
+    // it through a committed reader (see RaftMemberContext#newReader), so prevLogIndex is capped at
+    // the leader's commit index and understates the leader's log. Right after an election that
+    // commit index lags, so an ex-leader demoted to PASSIVE - whose own persisted commit index is
+    // higher - tripped the data-loss check spuriously. Pass the local log end instead, which by
+    // construction never lies below the persisted commit index (setCommitIndex clamps to the log
+    // end, and truncation refuses to go below the commit index) and therefore never trips. The
+    // check stays armed for every other role, where the leader's prevLogIndex is exact because it
+    // replicates from an uncommitted reader.
+    final long agreedPersistedIndex =
+        role() == RaftServer.Role.PASSIVE ? raft.getLog().getLastIndex() : lastLogIndex;
+    raft.setFirstCommitIndex(request.commitIndex(), agreedPersistedIndex);
 
     try {
       //     Make sure all entries are flushed before ack to ensure we have persisted what we

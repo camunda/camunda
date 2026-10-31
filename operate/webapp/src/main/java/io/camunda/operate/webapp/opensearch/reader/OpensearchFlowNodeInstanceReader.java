@@ -119,7 +119,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
       return getMetadataByFlowNodeId(
           processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
     } else if (request.getFlowNodeInstanceId() != null) {
-      return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
+      return getMetadataByFlowNodeInstanceId(processInstanceId, request.getFlowNodeInstanceId());
     }
     return null;
   }
@@ -488,9 +488,11 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     return filterAggs != null && filterAggs.filter().docCount() > 0;
   }
 
-  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(
+      final String processInstanceId, final String flowNodeInstanceId) {
 
-    final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstanceEntity(flowNodeInstanceId);
+    final FlowNodeInstanceEntity flowNodeInstance =
+        getFlowNodeInstanceEntity(processInstanceId, flowNodeInstanceId);
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
     result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
@@ -545,10 +547,16 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     return buildBreadcrumbForFlowNodeId(buckets, level);
   }
 
-  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
+  private FlowNodeInstanceEntity getFlowNodeInstanceEntity(
+      final String processInstanceId, final String flowNodeInstanceId) {
     final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
-            .query(constantScore(withTenantCheck(term(ID, flowNodeInstanceId))));
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        and(
+                            term(ID, flowNodeInstanceId),
+                            term(PROCESS_INSTANCE_KEY, processInstanceId)))));
 
     final List<Hit<FlowNodeInstanceEntity>> hits =
         richOpenSearchClient

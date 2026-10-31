@@ -39,6 +39,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY);
     assertThat(configuration.getProcessCacheCapacity())
         .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY);
+    assertThat(configuration.isProcessCacheSoftValues())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES);
     assertThat(configuration.getValidatorsResultsOutputMaxSize())
         .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
     assertThat(configuration.getMaxProcessDepth())
@@ -85,6 +87,7 @@ final class EngineCfgTest {
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(1000);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
+    assertThat(configuration.isProcessCacheSoftValues()).isTrue();
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);

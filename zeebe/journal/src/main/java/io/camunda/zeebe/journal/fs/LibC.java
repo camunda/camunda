@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.journal.fs;
 
-import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.Map;
 import jnr.ffi.LibraryLoader;
-import jnr.ffi.LibraryOption;
-import jnr.ffi.Platform;
 import jnr.ffi.annotations.In;
 import jnr.ffi.types.off_t;
 
@@ -29,27 +25,28 @@ public interface LibC {
   int posix_fallocate(final @In int fd, final @In @off_t long offset, final @In @off_t long len);
 
   /**
-   * Returns an instance of LibC bound to the system's C library (e.g. glibc, musl, etc.).
+   * Returns a process-wide, cached instance of LibC bound to the system's C library (e.g. glibc,
+   * musl, etc.).
    *
    * <p>If it fails to bind to the C library, it will return a {@link InvalidLibC} instance which
    * throws {@link UnsupportedOperationException} on every call.
    *
-   * @return an instance of this library
+   * <p>Binding is done exactly once per JVM, on first use, via {@link LibCHolder}'s class
+   * initialization (guaranteed thread-safe and only-once by the JVM). This matters because {@link
+   * LibraryLoader#loadLibrary} is not safe to call concurrently from multiple threads for the same
+   * library: every {@code SegmentAllocator.defaultAllocator()} call (i.e. every raft partition
+   * bootstrap) used to trigger its own native bind, and doing that from several partitions' actor
+   * threads at once could livelock inside jnr-ffi's internal (non-thread-safe) library registry.
+   *
+   * @return the shared instance of this library
    */
   static LibC ofNativeLibrary() {
-    return ofNativeLibrary(Platform.getNativePlatform().getStandardCLibraryName());
+    return LibCHolder.INSTANCE;
   }
 
   @VisibleForTesting
   static LibC ofNativeLibrary(final String libraryName) {
-    try {
-      return LibraryLoader.loadLibrary(
-          LibC.class, Map.of(LibraryOption.LoadNow, true), libraryName);
-    } catch (final UnsatisfiedLinkError e) {
-      Loggers.FILE_LOGGER.warn(
-          "Failed to load C library; any native calls will not be available", e);
-      return new InvalidLibC();
-    }
+    return LibCHolder.bind(libraryName);
   }
 
   /**

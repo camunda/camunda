@@ -51,6 +51,8 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
+import io.camunda.optimize.service.util.ValidationHelper;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,6 +81,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
+  private final ConfigurationService configurationService;
 
   public DashboardService(
       final DashboardWriter dashboardWriter,
@@ -88,7 +91,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final AuthorizedCollectionService collectionService,
       final AbstractIdentityService identityService,
       final ReportReader reportReader,
-      final DashboardRelationService dashboardRelationService) {
+      final DashboardRelationService dashboardRelationService,
+      final ConfigurationService configurationService) {
     this.dashboardWriter = dashboardWriter;
     this.dashboardReader = dashboardReader;
     this.processVariableService = processVariableService;
@@ -97,6 +101,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     this.identityService = identityService;
     this.reportReader = reportReader;
     this.dashboardRelationService = dashboardRelationService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -179,6 +184,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     collectionService.verifyUserAuthorizedToEditCollectionResources(
         userId, dashboardDefinitionDto.getCollectionId());
     validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId());
+    validateDashboardName(dashboardDefinitionDto.getName());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
@@ -187,6 +193,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final String dashboardId, final String userId, final String name) {
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard =
         getDashboardDefinition(dashboardId, userId);
+    validateDashboardName(name);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
@@ -266,9 +273,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     }
 
     final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    // clamped rather than rejected: this may be Optimize's own " – Copy" variant of a stored name,
+    // which the user cannot correct
     final DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
-    newDashboardDefinitionDto.setName(newDashboardName);
+    newDashboardDefinitionDto.setName(
+        ValidationHelper.clampGeneratedEntityName(newDashboardName, getNameMaxLength()));
     newDashboardDefinitionDto.setDescription(dashboardDefinition.getDescription());
     newDashboardDefinitionDto.setTiles(newDashboardReports);
     newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
@@ -285,6 +295,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             "Dashboard descriptions cannot be non-null and empty");
       }
     }
+  }
+
+  public void validateDashboardName(final String dashboardName) {
+    ValidationHelper.validateEntityName("Dashboard", dashboardName, getNameMaxLength());
+  }
+
+  private Integer getNameMaxLength() {
+    return configurationService.getEntityConfiguration().getNameMaxLength();
   }
 
   private void removeVariableFiltersFromDashboardsIfUnavailable(
@@ -433,6 +451,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId =
         dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
+    validateDashboardName(updatedDashboard.getName());
     validateDashboardFilters(userId, updatedDashboard);
     updateDto
         .getTiles()
@@ -468,20 +487,35 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
-  public void validateDashboardFilters(
+  void validateDashboardFilters(
       final String userId,
       final List<DashboardFilterDto<?>> availableFilters,
       final List<DashboardReportTileDto> reportsInDashboard) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
-          availableFilters.stream()
-              .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
-      validateFiltersHaveData(availableFilters);
-      validateDateAndStateFilters(filtersByClass);
-      validateIdentityFilters(filtersByClass);
-      validateVariableFilters(filtersByClass);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
+    validateDashboardFilterStructure(availableFilters);
+    validateVariableFiltersExistInReports(
+        userId, reportsInDashboard, groupFiltersByClass(availableFilters));
+  }
+
+  /** Validates the filters without needing the dashboard's reports to be stored yet. */
+  public void validateDashboardFilterStructure(final List<DashboardFilterDto<?>> availableFilters) {
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return;
     }
+    final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        groupFiltersByClass(availableFilters);
+    validateFiltersHaveData(availableFilters);
+    validateDateAndStateFilters(filtersByClass);
+    validateIdentityFilters(filtersByClass);
+    validateVariableFilters(filtersByClass);
+  }
+
+  private Map<String, List<DashboardFilterDto<?>>> groupFiltersByClass(
+      final List<DashboardFilterDto<?>> availableFilters) {
+    if (CollectionUtils.isEmpty(availableFilters)) {
+      return Map.of();
+    }
+    return availableFilters.stream()
+        .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
   }
 
   private List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(
@@ -578,6 +612,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                 (DashboardVariableFilterDataDto) variableFilter.getData();
             if (filterData == null) {
               throw new BadRequestException("Variable dashboard filters require additional data");
+            }
+            if (StringUtils.isBlank(filterData.getName())) {
+              throw new InvalidDashboardVariableFilterException(
+                  "Variable dashboard filters require a variable name");
             }
             final VariableType variableType = filterData.getType();
             if ((variableType.equals(VariableType.DATE)

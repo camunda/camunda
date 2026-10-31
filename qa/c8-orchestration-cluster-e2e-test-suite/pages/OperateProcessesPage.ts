@@ -62,6 +62,7 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
+  readonly drainingTag: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
       | 'Resolve Incident'
@@ -189,6 +190,7 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
+    this.drainingTag = page.getByTestId('draining-tag');
     this.batchOperationStartedMessage = (
       batchOperationType:
         | 'Resolve Incident'
@@ -353,6 +355,18 @@ class OperateProcessesPage {
 
   async clickApplyCancelBatchOperationDialogButton(): Promise<void> {
     await this.applyCancelBatchOperationDialogButton.click();
+  }
+
+  // When a cancel confirmation dialog was opened but never submitted (e.g. the
+  // instance-list poll re-rendered the table mid-flow), it stays open and its
+  // buttons cover the select-all checkbox. Dismiss it so a retry can start from
+  // a clean state; a no-op when no dialog is open.
+  async dismissOpenCancelBatchOperationDialog(): Promise<void> {
+    const dialog = this.page.getByRole('dialog').first();
+    if (await dialog.isVisible()) {
+      await this.page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+    }
   }
 
   async clickMigrateBatchOperationButton(): Promise<void> {

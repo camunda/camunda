@@ -497,6 +497,7 @@ public class RdbmsConfiguration {
       final ProcessDefinitionMessageSubscriptionStatisticsDbReader
           processDefinitionMessageSubscriptionStatisticsReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
+      final ProcessDefinitionStatisticsDbReader processDefinitionStatisticsReader,
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
           processDefinitionInstanceVersionStatisticsReader,
@@ -539,6 +540,7 @@ public class RdbmsConfiguration {
         messageSubscriptionReader,
         processDefinitionMessageSubscriptionStatisticsReader,
         correlatedMessageSubscriptionReader,
+        processDefinitionStatisticsReader,
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
         historyDeletionDbReader,

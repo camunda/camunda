@@ -10,9 +10,11 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
-import {mockLogin} from 'modules/mocks/api/login';
+import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
 import * as clientConfig from 'modules/utils/getClientConfig';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
 
 const mockUserResponse = createUser();
 
@@ -28,6 +30,7 @@ describe('authentication store', () => {
   });
 
   it('should login', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -40,7 +43,28 @@ describe('authentication store', () => {
     expect(authenticationStore.status).toBe('logged-in');
   });
 
+  it('should send the CSRF token from the login page with the login request', async () => {
+    const csrfToken = 'csrf-token-from-login-page';
+    let tokenSentWithLogin: string | null = null;
+
+    mockServer.use(
+      http.get('/login', () =>
+        HttpResponse.text('', {headers: {'X-CSRF-TOKEN': csrfToken}}),
+      ),
+      http.post('/login', ({request}) => {
+        tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+        return new HttpResponse(null, {status: 204});
+      }),
+    );
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(tokenSentWithLogin).toBe(csrfToken);
+  });
+
   it('should handle login failure', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError(401);
 
     const result = await authenticationStore.handleLogin('demo', 'demo');
@@ -59,6 +83,7 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -184,9 +209,11 @@ describe('authentication store', () => {
         isLoginDelegated,
       });
 
+      mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
       mockLogout().withSuccess({}, {statusCode: 204});
+      mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
 
@@ -230,9 +257,11 @@ describe('authentication store', () => {
 
     const mockIdpLogoutUrl = 'http://example.com/idpLogout';
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
     mockLogout().withSuccess({url: mockIdpLogoutUrl});
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 

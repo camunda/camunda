@@ -30,8 +30,9 @@ public class ResourceAccessControllerConfigurationTest {
             UnifiedConfiguration.class,
             UnifiedConfigurationHelper.class)
         .withBean(AuthorizationChecker.class, () -> mock(AuthorizationChecker.class))
-        // make REST gateway condition pass
+        // make REST gateway and secondary storage conditions pass
         .withPropertyValues(
+            "camunda.data.secondary-storage.type=elasticsearch",
             "zeebe.broker.gateway.enable=true",
             "camunda.rest.enabled=true",
             // avoid needing AuthorizationChecker by disabling authorizations

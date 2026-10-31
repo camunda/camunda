@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.actuator;
 
+import io.camunda.client.api.response.StatusResponse;
 import io.camunda.client.health.HealthCheck;
 import org.springframework.boot.health.contributor.AbstractHealthIndicator;
 import org.springframework.boot.health.contributor.Health;
@@ -29,10 +30,11 @@ public class CamundaClientHealthIndicator extends AbstractHealthIndicator {
 
   @Override
   protected void doHealthCheck(final Health.Builder builder) {
-    switch (healthCheck.health()) {
-      case UP -> builder.up();
-      case DOWN -> builder.down();
-      default -> throw new IllegalStateException("Unexpected value: " + healthCheck.health());
+    final StatusResponse.Status status = healthCheck.health();
+    if (status == StatusResponse.Status.UP) {
+      builder.up();
+    } else {
+      builder.down();
     }
   }
 }

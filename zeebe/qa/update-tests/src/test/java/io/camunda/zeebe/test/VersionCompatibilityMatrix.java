@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -396,26 +397,23 @@ final class VersionCompatibilityMatrix {
 
     @Override
     public Stream<VersionInfo> discoverVersions() {
-      // Mark latest versions, enrich with release status, and filter to released only
+      // Verify every discovered tag has a corresponding GitHub release and exclude those that
+      // don't; the previous patch, already present in the discovered tags, then becomes latest
+      // via updateLatest() below.
       final var releasedVersions =
           delegate
               .discoverVersions()
               .map(
                   info -> {
-                    if (info.isLatest()) {
-                      final var isReleased = api.fetchRelease(info.version()).isPresent();
-                      return new VersionInfo(info.version(), isReleased, info.isLatest());
-                    } else {
-                      return info;
-                    }
+                    final var isReleased = api.fetchRelease(info.version()).isPresent();
+                    return new VersionInfo(info.version(), isReleased, info.isLatest());
                   })
               .peek(
                   info -> {
                     if (!info.isReleased()) {
                       LOG.warn(
-                          "{} has no corresponding GitHub release yet. Using previous patch as latest for minor {}.",
-                          info.version(),
-                          info.version().minor());
+                          "{} has no corresponding GitHub release. Excluding it from the compatibility matrix.",
+                          info.version());
                     }
                   })
               .filter(VersionInfo::isReleased)
@@ -548,13 +546,65 @@ final class VersionCompatibilityMatrix {
 
   static class GithubAPI {
 
-    final Retry retry =
-        Retry.of(
-            "github-api",
-            RetryConfig.custom()
-                .maxAttempts(10)
-                .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                .build());
+    private final String baseUrl;
+    private final Retry retry;
+
+    GithubAPI() {
+      this(
+          "https://api.github.com",
+          Retry.of(
+              "github-api",
+              RetryConfig.custom()
+                  .maxAttempts(10)
+                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                  .build()));
+    }
+
+    @VisibleForTesting
+    GithubAPI(final String baseUrl, final Retry retry) {
+      this.baseUrl = baseUrl;
+      this.retry = retry;
+    }
+
+    /**
+     * Sends the request, retrying on I/O errors and on transient responses (5xx, 429, and 403 rate
+     * limits). {@link HttpClient#send} does not throw on an error status, so the retry would
+     * otherwise never fire for them.
+     */
+    private HttpResponse<byte[]> send(final HttpClient httpClient, final URI endpoint)
+        throws Exception {
+      return retry.executeCallable(
+          () -> {
+            final var response =
+                httpClient.send(
+                    createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray());
+            final var statusCode = response.statusCode();
+            if (isTransient(response)) {
+              final var body = new String(Objects.requireNonNullElse(response.body(), new byte[0]));
+              throw new IOException(
+                  String.format(
+                      "Transient GitHub API failure. Status: %d, Endpoint: %s, Response: %s",
+                      statusCode, endpoint, body.isEmpty() ? "<empty>" : body));
+            }
+            return response;
+          });
+    }
+
+    /**
+     * GitHub reports a primary or secondary rate limit as either 429 or 403; only a 403 carrying
+     * {@code retry-after} or {@code x-ratelimit-remaining: 0} is a rate limit, any other 403 is a
+     * permanent failure.
+     */
+    private static boolean isTransient(final HttpResponse<?> response) {
+      final var statusCode = response.statusCode();
+      if (statusCode >= 500 || statusCode == 429) {
+        return true;
+      }
+      final var headers = response.headers();
+      return statusCode == 403
+          && (headers.firstValue("retry-after").isPresent()
+              || headers.firstValue("x-ratelimit-remaining").filter("0"::equals).isPresent());
+    }
 
     private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
       final var builder = HttpRequest.newBuilder().GET().uri(endpoint);
@@ -567,14 +617,9 @@ final class VersionCompatibilityMatrix {
 
     public Optional<Release> fetchRelease(final SemanticVersion tagName) {
       final var endpoint =
-          URI.create(
-              "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
+          URI.create(baseUrl + "/repos/camunda/camunda/releases/tags/" + tagName.toString());
       try (final var httpClient = HttpClient.newHttpClient()) {
-        final var response =
-            retry.executeCallable(
-                () ->
-                    httpClient.send(
-                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
+        final var response = send(httpClient, endpoint);
 
         final var statusCode = response.statusCode();
         if (statusCode == 404) {
@@ -596,14 +641,9 @@ final class VersionCompatibilityMatrix {
     }
 
     public Stream<Ref> fetchTags() {
-      final var endpoint =
-          URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
+      final var endpoint = URI.create(baseUrl + "/repos/camunda/camunda/git/matching-refs/tags/8.");
       try (final var httpClient = HttpClient.newHttpClient()) {
-        final var response =
-            retry.executeCallable(
-                () ->
-                    httpClient.send(
-                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
+        final var response = send(httpClient, endpoint);
 
         final var statusCode = response.statusCode();
         if (statusCode < 200 || statusCode >= 300) {

@@ -43,6 +43,7 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -88,8 +89,10 @@ public class ElasticsearchClientBuilder {
 
         if (truststore.size() > 0) {
           final TrustStrategy trustStrategy =
-              configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
-                      == Boolean.TRUE
+              Boolean.TRUE.equals(
+                      configurationService
+                          .getElasticSearchConfiguration()
+                          .getSecuritySslSelfSigned())
                   ? new TrustSelfSignedStrategy()
                   : null;
           sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
@@ -124,6 +127,12 @@ public class ElasticsearchClientBuilder {
       final SSLContext sslContext,
       final HttpRequestInterceptor... requestInterceptors) {
     return httpClientBuilder -> {
+      // TCP keepalive is off by default in the Apache HttpAsyncClient, which lets a firewall or NAT
+      // device in front of Elasticsearch silently drop its tracking entry for an idle pooled
+      // connection; the next request then blocks on that dead socket until the socket timeout
+      httpClientBuilder.setDefaultIOReactorConfig(
+          IOReactorConfig.custom().setSoKeepAlive(true).build());
+
       buildCredentialsProviderIfConfigured(configurationService)
           .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
 

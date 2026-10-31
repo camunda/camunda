@@ -63,6 +63,21 @@ class ForceScaleDownRequestTransformerTest {
   }
 
   @Test
+  void shouldPlanNothingWhenNoBrokerWouldLeave() {
+    // given
+    final var membersToRetain = Set.of(id0, id1, id2, id3);
+    final var forceConfigureTransformer =
+        new ForceScaleDownRequestTransformer(membersToRetain, id0);
+
+    // when
+    final var result = forceConfigureTransformer.operations(currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isEmpty();
+  }
+
+  @Test
   void shouldFailWhenRetainingNonExistingMember() {
     // given
     final var membersToRetain = Set.of(MemberId.from("0"), MemberId.from("4"));

@@ -98,7 +98,7 @@ public class ZeebeProcessDefinitionImportService
       final Runnable importCompleteCallback) {
     final ProcessDefinitionDatabaseImportJob procDefImportJob =
         new ProcessDefinitionDatabaseImportJob(
-            processDefinitionWriter, importCompleteCallback, databaseClient);
+            processDefinitionWriter, importCompleteCallback, databaseClient, partitionId);
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }

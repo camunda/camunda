@@ -13,9 +13,10 @@ import {
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from '../index';
 import {mockInstance, Wrapper} from './index.setup';
-import {createUser, mockProcessXML} from 'modules/testUtils';
+import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader', () => {
@@ -30,6 +31,7 @@ describe('InstanceHeader', () => {
       },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockMe().withSuccess(createUser());
   });
 

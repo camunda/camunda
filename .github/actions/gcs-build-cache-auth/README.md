@@ -6,26 +6,27 @@ Authenticates `gcloud` against the run-scoped GCS build-cache bucket
 (`camunda-monorepo-ci-artifacts`) used to share the Zeebe distball and the
 locally-installed `m2` SNAPSHOT tarball across jobs (see #52693).
 
-It bundles the three steps every build-cache consumer repeated verbatim:
+It bundles the four steps every build-cache consumer repeated verbatim:
 
-1. Fetch the `monorepo-build-cache-sa` service account from Vault (WIF provider +
+1. Detect fork PRs (via [`is-fork`](../is-fork)) and skip Vault/WIF auth entirely
+   when running on one, since secrets aren't available there.
+2. Fetch the `monorepo-build-cache-sa` service account from Vault (WIF provider +
    service account, no long-lived key).
-2. Authenticate via `google-github-actions/auth` using Workload Identity Federation.
-3. Install the gcloud CLI via `google-github-actions/setup-gcloud`.
+3. Authenticate via `google-github-actions/auth` using Workload Identity Federation.
+4. Install the gcloud CLI via `google-github-actions/setup-gcloud`.
 
 After this action runs, the caller issues its own `gcloud storage` command
 (`cp` upload/download, or `rm` cleanup) — the storage operation stays at the call
 site so upload/download/delete intent is visible where it happens.
 
-Most build jobs get this indirectly: `setup-build` nests this action behind its
-opt-in `gcs-build-cache-auth: true` input (auto-disabled for fork PRs). Call this
-action directly when either:
-
-- the job has no build stack (no `setup-build`), e.g. the lightweight
-  `check-results` cleanup; or
-- a long step runs between `setup-build` and the `gcloud storage` command (e.g.
-  `build-distball`'s ~15-min build), so auth must happen late to keep the WIF/OIDC
-  token fresh.
+Call this action directly as its own job step, right alongside (not nested inside)
+`setup-build` when the build stack is also needed. It is **not** wired into
+`setup-build` itself: composite actions can't set `timeout-minutes` on their own
+steps (only a workflow step calling a `uses:` action can), so this action must stay
+a direct, top-level step in the workflow for its caller to bound a Vault/WIF hang
+with `timeout-minutes` — see INC-6820, where a silent WIF hang inside a nested
+call consumed an entire job's timeout budget before GitHub killed the job.
+Always set `timeout-minutes` (e.g. `3`) on the call site.
 
 ## Prerequisites
 
@@ -33,6 +34,8 @@ action directly when either:
   action is referenced by local path.
 - The calling job needs `permissions: id-token: write` so `google-github-actions/auth`
   can mint the OIDC token for WIF.
+- The calling *step* should set `timeout-minutes` (e.g. `3`) so a Vault/WIF hang
+  fails fast instead of silently consuming the job's whole timeout budget.
 
 ## Usage
 
@@ -59,7 +62,9 @@ jobs:
       id-token: write  # required for WIF auth
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/gcs-build-cache-auth
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3  # fail fast on a Vault/WIF hang -- see INC-6820
+        uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}

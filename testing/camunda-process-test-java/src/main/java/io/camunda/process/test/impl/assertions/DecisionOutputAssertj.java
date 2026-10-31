@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import org.assertj.core.api.AbstractAssert;
 
@@ -34,12 +33,13 @@ public class DecisionOutputAssertj extends AbstractAssert<DecisionOutputAssertj,
   }
 
   public void hasOutput(final String decisionOutput, final Object expectedOutput) {
-    final JsonNode decisionOutputJson = jsonMapper.readJson(decisionOutput);
-    final JsonNode expectedOutputJson = jsonMapper.toJsonNode(expectedOutput);
+    final Object decisionOutputJson = jsonMapper.readJson(decisionOutput);
+    final Object expectedOutputJson = jsonMapper.toJsonValue(expectedOutput);
 
     assertThat(decisionOutputJson)
         .withFailMessage(
-            "%s to have output '%s', but was '%s'", actual, expectedOutputJson, decisionOutputJson)
+            "%s to have output '%s', but was '%s'",
+            actual, jsonMapper.toJson(expectedOutputJson), jsonMapper.toJson(decisionOutputJson))
         .isEqualTo(expectedOutputJson);
   }
 }

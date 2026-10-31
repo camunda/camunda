@@ -202,7 +202,8 @@ class EitherTest {
     }
   }
 
-  @DisplayName("Streams of Eithers can be collected using .collector()")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Streams of Eithers can be collected using .collector()")
   @Nested
   class CollectorTests {
 
@@ -238,7 +239,8 @@ class EitherTest {
     }
   }
 
-  @DisplayName("Streams of Eithers can be collected using .collectorFoldingLeft()")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Streams of Eithers can be collected using .collectorFoldingLeft()")
   @Nested
   class CollectorFoldingLeftTests {
 
@@ -271,7 +273,8 @@ class EitherTest {
     }
   }
 
-  @DisplayName("`thenDo` method tests")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("`thenDo` method tests")
   @Nested
   class ThenDoMethodTests {
 
@@ -306,7 +309,8 @@ class EitherTest {
     }
   }
 
-  @DisplayName("`fold` method tests")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("`fold` method tests")
   @Nested
   class FoldMethodTests {
 

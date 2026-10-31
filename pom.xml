@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -89,6 +89,7 @@
               <exclude>.github/instructions/**/*.md</exclude>
               <exclude>.claude/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
+              <exclude>load-tests/skills/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>

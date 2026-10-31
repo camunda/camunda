@@ -197,7 +197,7 @@ final class ManifestMetadataTest {
     @Test
     void shouldOmitDescriptorFieldsWhenDescriptorIsNull() {
       // given
-      final var manifest = Manifest.createFailed(new BackupIdentifierImpl(1, 2, 3));
+      final var manifest = Manifest.createFailed(new BackupIdentifierImpl(1, 2, 3), "error");
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);

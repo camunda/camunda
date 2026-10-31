@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -49,6 +50,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -756,6 +758,91 @@ final class CheckpointRecordsProcessorTest {
     assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
     assertThat(state.getLatestBackupTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
+  }
+
+  @Test
+  void shouldTakeBackupWithSnapshotReservedForCheckpoint() {
+    // given
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(1)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager)
+        .takeBackup(
+            eq(1L),
+            argThat(
+                descriptor -> descriptor.snapshotId().equals(Optional.of("reserved-snapshot"))));
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
+    final var created = (CheckpointRecord) result.records().getFirst().value();
+    assertThat(created.getSnapshotId()).isEqualTo("reserved-snapshot");
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservationWhenCheckpointIsIgnored() {
+    // given
+    state.setLatestCheckpointInfo(1, 10, Instant.now().toEpochMilli(), CheckpointType.MARKER);
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(1)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
+  }
+
+  @Test
+  void shouldCreateFailedBackupWithReservedSnapshotWhenScalingInProgress() {
+    // given
+    scalingInProgress.set(true);
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(1)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setSnapshotId("reserved-snapshot");
+    final var record =
+        new MockTypedCheckpointRecord(
+            10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value, 1, 1);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager)
+        .createFailedBackup(
+            eq(1L),
+            argThat(descriptor -> descriptor.snapshotId().equals(Optional.of("reserved-snapshot"))),
+            any());
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
+  }
+
+  @Test
+  void shouldNotReleaseSnapshotReservationWhenCheckpointHasNoSnapshot() {
+    // given
+    state.setLatestCheckpointInfo(1, 10, Instant.now().toEpochMilli(), CheckpointType.MARKER);
+    final var value =
+        new CheckpointRecord().setCheckpointId(1).setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(20, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
   }
 
   @Test

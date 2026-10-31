@@ -15,7 +15,7 @@ on:
 jobs:
   auto-merge:
     # Only run for PRs from release branches created by release automation
-    if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
+    if: startsWith(github.head_ref, 'release-') && github.event.pull_request.user.login == 'camundait'
     name: Auto-merge release to stable
     runs-on: ubuntu-latest
     timeout-minutes: 240
@@ -37,6 +37,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
 
       - name: Validate branch matching
         id: validate_branches
@@ -163,7 +164,7 @@ jobs:
           fi
       - name: Wait for required checks
         id: wait_checks
-        uses: camunda/infra-global-github-actions/wait-for-required-checks@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+        uses: camunda/infra-global-github-actions/wait-for-required-checks@95c6f97de08ce6befa8e1b222140676204d792fb # main
         with:
           repository_owner: ${{ github.event.repository.owner.login }}
           repository_name: ${{ github.event.repository.name }}
@@ -172,7 +173,7 @@ jobs:
 
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -213,7 +214,7 @@ jobs:
       - name: Monitor merge queue status
         id: monitor_merge
         if: steps.wait_checks.outcome != 'failure'
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@95c6f97de08ce6befa8e1b222140676204d792fb # main
         with:
           pr-number: ${{ github.event.pull_request.number }}
           timeout-minutes: ${{ env.MERGE_QUEUE_TIMEOUT_MINUTES }}
@@ -235,8 +236,15 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
-      - name: Report auto-merge result to Monorepo Release Process
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
         if: always() && env.DRY_RUN != 'true'
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
+      - name: Report auto-merge result to Monorepo Release Process
+        if: always() && env.DRY_RUN != 'true' && steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -251,6 +259,9 @@ jobs:
               "pr_url": "${{ github.event.pull_request.html_url }}",
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
 
       - name: Dry run summary
         if: always() && env.DRY_RUN == 'true'

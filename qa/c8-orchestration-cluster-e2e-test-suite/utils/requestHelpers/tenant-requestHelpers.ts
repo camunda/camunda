@@ -189,13 +189,15 @@ export async function assignMappingRulesToTenant(
       mappingRuleId: mappingRuleIdFromState(tenantIdKey, state, i) as string,
       tenantId: tenantId as string,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', p),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    await assertStatusCode(res, 204);
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', p),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
   }
 }
 

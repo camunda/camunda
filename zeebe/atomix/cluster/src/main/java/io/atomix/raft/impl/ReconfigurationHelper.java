@@ -10,6 +10,7 @@ package io.atomix.raft.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
+import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftServer.Role;
@@ -22,15 +23,16 @@ import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
+import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -54,118 +56,120 @@ public final class ReconfigurationHelper {
     this.raftContext = raftContext;
   }
 
-  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
+  public CompletableFuture<Void> join(final Type type, final Collection<MemberId> clusterMembers) {
     final var result = new CompletableFuture<Void>();
+    if (type == Type.INACTIVE) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Cannot join cluster as %s, must join as %s, %s or %s"
+                  .formatted(type, Type.PASSIVE, Type.PROMOTABLE, Type.ACTIVE)));
+      return result;
+    }
     threadContext.execute(
         () -> {
+          // If the previous join was partially or fully completed, i.e. committed the first
+          // configuration with joint consensus or committed the final configuration, then in the
+          // next retry, this member can already start with that configuration. This is mainly
+          // required if the member is joining a single member cluster, making the quorum 2 out of
+          // 2. If this member did not re-start in the ACTIVE state when the other node has already
+          // included it in the quorum, then the other member cannot become leader and continue the
+          // reconfiguration step.
           try {
-            tryReloadConfigurationFromLog();
+            raftContext.getCluster().reloadConfigurationFromLog();
           } catch (final Exception e) {
             LOGGER.warn("Failed to join cluster, could not reload configuration from log", e);
             result.completeExceptionally(e);
             return;
           }
 
-          // Always transition to PASSIVE or the last member type as found by
-          // `tryReloadConfigurationFromLog`.
-          // This ensures that the member trying to join is not stuck in `INACTIVE` which would
-          // prevent the joining from completing, particularly when joining a single-member cluster
-          // where this new node is already required for quorum.
-          switch (raftContext.getCluster().getLocalMember().getType()) {
-            // The last configuration entry is probably old and has the local member as INACTIVE.
-            // Ignore this and become PASSIVE instead.
-            case INACTIVE -> raftContext.transition(Type.PASSIVE);
-            // The last configuration entry has the local member as PASSIVE or ACTIVE, we can
-            // directly transition to that.
-            case final Type memberType -> raftContext.transition(memberType);
-          }
+          final var storedType = raftContext.getCluster().getLocalMember().getType();
+          final var startType =
+              switch (storedType) {
+                // No configuration at all: the member may replicate and catch up but must not
+                // enter the voting follower role, and it must not stay INACTIVE either, which
+                // accepts no appends and would prevent the join from completing, particularly
+                // when joining a single-member cluster where this new node is already required
+                // for quorum. ACTIVE joins keep starting as PASSIVE: starting them as PROMOTABLE
+                // would satisfy both constraints too, but would surface the PROMOTABLE role on
+                // the production one-shot join path before the dynamic-config orchestration
+                // adopts two-phase joins (#57392); the leader's configuration promotes them
+                // either way.
+                case INACTIVE -> type == Type.ACTIVE ? Type.PASSIVE : type;
+                // Never start above the requested type: non-voting members persist the leader's
+                // uncommitted tail, so the stored type may come from a configuration entry that a
+                // later leader has since truncated - a PROMOTABLE joiner must not enter the
+                // voting follower role on the strength of such an entry while the leader still
+                // counts it as non-voting.
+                default -> Collections.min(List.of(storedType, type));
+              };
+          raftContext.transition(startType);
 
           // We don't know if the latest configuration loaded from the log is valid. So we will
           // retry join any way.
           final var joining =
               new DefaultRaftMember(
-                  raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
-          final var assistingMembers =
+                  raftContext.getCluster().getLocalMember().memberId(), type, Instant.now());
+          final var knownAssistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))
-                  .collect(Collectors.toCollection(LinkedBlockingQueue::new));
-          if (assistingMembers.isEmpty()) {
+                  .toList();
+          if (knownAssistingMembers.isEmpty()) {
             result.completeExceptionally(
                 new IllegalStateException(
                     "Cannot join cluster, because there are no other members in the cluster."));
             return;
           }
-
-          // if single member cluster, we retry with the same member a few times before failing the
-          // join request. This gives the other member a chance to become leader and continue the
-          // reconfiguration process.
-          if (clusterMembers.size() == 1) {
-            final var otherMember = clusterMembers.stream().findFirst().get();
-            assistingMembers.offer(otherMember);
-            assistingMembers.offer(otherMember);
-            assistingMembers.offer(otherMember);
-          }
-          threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+          final var assistingMembers = new LinkedBlockingQueue<>(knownAssistingMembers);
+          final var deadline = Instant.now().plus(raftContext.getConfigurationChangeTimeout());
+          threadContext.execute(
+              () ->
+                  joinWithRetry(
+                      joining, knownAssistingMembers, assistingMembers, result, deadline));
         });
     return result;
   }
 
   /**
-   * If the previous join was partially or fully completed, i.e. committed the first configuration
-   * with joint consensus or committed the final configuration, then in the next retry, this member
-   * can already start with that configuration. This is mainly required if the member is joining to
-   * a single member cluster, making the quorum to 2 out of 2. If this member did not re-start in
-   * the ACTIVE state when the other node has already included it in the quorum, then the other
-   * member cannot become leader and continue the reconfiguration step.
-   */
-  private void tryReloadConfigurationFromLog() {
-    IndexedRaftLogEntry lastConfigurationEntry = null;
-    // The reader needs to be uncommitted because the configuration entry might not be committed yet
-    // on this node, but committed on the leader already.
-    try (final var reader = raftContext.getLog().openUncommittedReader()) {
-      while (reader.hasNext()) {
-        final var entry = reader.next();
-        if (entry.entry() instanceof ConfigurationEntry) {
-          lastConfigurationEntry = entry;
-        }
-      }
-      if (lastConfigurationEntry != null) {
-        final ConfigurationEntry configurationEntry =
-            (ConfigurationEntry) lastConfigurationEntry.entry();
-        raftContext
-            .getCluster()
-            .configure(
-                new Configuration(
-                    lastConfigurationEntry.index(),
-                    lastConfigurationEntry.term(),
-                    configurationEntry.timestamp(),
-                    configurationEntry.newMembers(),
-                    configurationEntry.oldMembers(),
-                    false));
-      }
-    }
-  }
-
-  /**
-   * Repeatedly tries to join the cluster until it succeeds or there are no more members to try.
-   * When sending a join request to an assisting member fails because the member is currently not
-   * known, or it is known but not ready to receive join request, try again with a different
-   * assisting member.
+   * Repeatedly tries to join the cluster until it succeeds or the deadline passes. When sending a
+   * join request to an assisting member fails because the member is currently not known, or it is
+   * known but not ready to receive join request, try again with a different assisting member. Once
+   * every known member failed, start over with all of them after a delay.
    *
    * <p>Retrying helps in cases where the cluster is in flux and not all members are online and
    * ready.
    *
    * @param joining the new member joining
+   * @param knownAssistingMembers all members that can assist the join, used to refill the queue
    * @param assistingMembers a queue of members that we will send a join request to.
    * @param result a future to complete when joining succeeds or fails
+   * @param deadline until when the join is retried
    */
   private void joinWithRetry(
       final RaftMember joining,
+      final Collection<MemberId> knownAssistingMembers,
       final Queue<MemberId> assistingMembers,
-      final CompletableFuture<Void> result) {
+      final CompletableFuture<Void> result,
+      final Instant deadline) {
 
     final var receiver = assistingMembers.poll();
     if (receiver == null) {
+      if (Instant.now().isBefore(deadline)) {
+        // Don't fail while the deadline still has budget: the reasons a member fails to accept a
+        // join request are transient, and there may be only a single assisting member - the
+        // production shape when scaling a partition from one to two replicas - so a single
+        // transport error can drain the queue within milliseconds. Refill it and start over after
+        // a delay, giving the cluster time to make progress.
+        LOGGER.debug(
+            "Join request failed on all known members {}, retrying after {}",
+            knownAssistingMembers,
+            raftContext.getElectionTimeout());
+        assistingMembers.addAll(knownAssistingMembers);
+        threadContext.schedule(
+            raftContext.getElectionTimeout(),
+            () ->
+                joinWithRetry(joining, knownAssistingMembers, assistingMembers, result, deadline));
+        return;
+      }
       result.completeExceptionally(
           new IllegalStateException(
               "Sent join request to all known members, but all failed. No more members left."));
@@ -183,26 +187,65 @@ public final class ReconfigurationHelper {
                     || cause instanceof TimeoutException
                     || cause instanceof ConnectException) {
                   LOGGER.debug("Join request was not acknowledged, retrying", cause);
-                  threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+                  threadContext.execute(
+                      () ->
+                          joinWithRetry(
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
                 }
               } else if (response.status() == Status.OK) {
-                LOGGER.debug("Join request accepted");
-                result.complete(null);
-              } else if (response.error().type() == RaftError.Type.NO_LEADER) {
+                // The leader may have committed the configuration entry admitting this member
+                // without this member's participation at all - e.g. a PROMOTABLE joiner is in no
+                // quorum, so the old side of a joint configuration can commit on the strength of
+                // the existing members alone. Wait for this node's own commit index to reach the
+                // entry before declaring the join done: RaftContext#setCommitIndex clamps to what
+                // this node has itself persisted, so reaching the index implies the entry is
+                // already durable here too - exactly what a restart needs, see
+                // RaftClusterContext#reloadConfigurationFromLog - and it recovers this join's
+                // outcome instead of falling back to treating this node as a fresh, unconfigured
+                // one. A crash before that needs no special handling: the join future then never
+                // completes, so the caller retries it.
                 LOGGER.debug(
-                    "Join request failed, retrying after {}",
-                    raftContext.getElectionTimeout(),
-                    response.error().createException());
-                // Wait for a new leader to be elected and retry then
-                threadContext.schedule(
-                    raftContext.getElectionTimeout(),
-                    () -> joinWithRetry(joining, assistingMembers, result));
+                    "Join request accepted at index {}, waiting for the configuration entry to"
+                        + " commit locally",
+                    response.index());
+                awaitLocalCommit(response.index(), result);
+              } else if (response.error().type() == RaftError.Type.NO_LEADER
+                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
+                if (Instant.now().isBefore(deadline)) {
+                  LOGGER.debug(
+                      "Join request failed, retrying after {}",
+                      raftContext.getElectionTimeout(),
+                      response.error().createException());
+                  // The member is reachable but doesn't know a leader yet, or the leader cannot
+                  // make configuration changes yet. Re-offer it so that, after falling over to the
+                  // remaining members, it is retried once the cluster made progress. That progress
+                  // may depend on this join attempt: while the join is in flight, this server is a
+                  // passive member that answers polls and votes and accepts appends. For example,
+                  // a leader that recovered an uncommitted joint configuration cannot commit its
+                  // initialization entry - and thus rejects configuration changes - until the
+                  // joining member acknowledged it.
+                  assistingMembers.offer(receiver);
+                  threadContext.schedule(
+                      raftContext.getElectionTimeout(),
+                      () ->
+                          joinWithRetry(
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
+                } else {
+                  LOGGER.error(
+                      "Join request failed, not retrying because the join did not complete within {}",
+                      raftContext.getConfigurationChangeTimeout(),
+                      response.error().createException());
+                  result.completeExceptionally(response.error().createException());
+                }
               } else if (response.error().type() == RaftError.Type.UNAVAILABLE) {
                 LOGGER.debug("Join request failed, retrying", response.error().createException());
-                threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+                threadContext.execute(
+                    () ->
+                        joinWithRetry(
+                            joining, knownAssistingMembers, assistingMembers, result, deadline));
               } else {
                 final var errorAsException = response.error().createException();
                 LOGGER.error("Join request rejected, not retrying", errorAsException);
@@ -210,6 +253,59 @@ public final class ReconfigurationHelper {
               }
             },
             threadContext);
+  }
+
+  /**
+   * Completes {@code result} once this node's own commit index reaches {@code index}, using {@link
+   * RaftContext#addCommitListener} rather than polling. {@link RaftContext#setCommitIndex} clamps
+   * to what this node has itself persisted, so waiting for the local commit index - not the
+   * leader's - is what guarantees the entry is durable here too.
+   *
+   * <p>The wait runs on its own {@link RaftContext#getJoinCatchUpTimeout()} budget rather than what
+   * remains of the join-request deadline, which may be mostly spent on retries by the time the join
+   * is accepted: reaching the accepted index is paced by replication - potentially a snapshot
+   * install plus a log replay - not by request round-trips.
+   *
+   * @param index the index of the configuration entry admitting this member
+   * @param result the future to complete once the entry commits locally
+   */
+  private void awaitLocalCommit(final long index, final CompletableFuture<Void> result) {
+    if (raftContext.getCommitIndex() >= index) {
+      LOGGER.debug("Configuration entry at index {} is already committed locally", index);
+      result.complete(null);
+      return;
+    }
+
+    // Self-removing: whichever of the commit notification or the timeout fires first cancels the
+    // other. Needs a mutable field for the timeout handle because the timeout's callback captures
+    // the listener, so the listener must exist before the handle does.
+    final var listener =
+        new RaftCommitListener() {
+          Scheduled timeout;
+
+          @Override
+          public void onCommit(final long committedIndex) {
+            if (committedIndex < index) {
+              return;
+            }
+            raftContext.removeCommitListener(this);
+            timeout.cancel();
+            LOGGER.debug("Configuration entry at index {} committed locally", index);
+            result.complete(null);
+          }
+        };
+    listener.timeout =
+        threadContext.schedule(
+            raftContext.getJoinCatchUpTimeout(),
+            () -> {
+              raftContext.removeCommitListener(listener);
+              result.completeExceptionally(
+                  new TimeoutException(
+                      "Join request was accepted at index %d, but that configuration entry did"
+                          + " not commit locally within the join catch-up timeout of %s"
+                              .formatted(index, raftContext.getJoinCatchUpTimeout())));
+            });
+    raftContext.addCommitListener(listener);
   }
 
   public CompletableFuture<Void> leave() {
@@ -228,7 +324,19 @@ public final class ReconfigurationHelper {
                     raftContext.getCluster().getVotingMembers().stream()
                         .map(RaftMember::memberId)
                         .findAny())
-            .orElseThrow();
+            .orElse(null);
+    if (receiver == null) {
+      // The local member is the last voting member left but has not elected itself leader yet, as
+      // when the second-to-last member just left. Fail with the same error a member without a
+      // known leader would respond with so that the caller retries after the election. Throwing
+      // here instead would crash the raft thread and permanently transition to inactive.
+      future.completeExceptionally(
+          new RaftError(
+                  RaftError.Type.NO_LEADER,
+                  "Cannot leave, no leader is known and there is no other voting member to receive the leave request. Retry after a leader is elected.")
+              .createException());
+      return;
+    }
     raftContext
         .getProtocol()
         .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())

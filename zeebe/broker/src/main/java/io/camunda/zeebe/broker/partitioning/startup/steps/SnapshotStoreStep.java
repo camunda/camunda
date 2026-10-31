@@ -55,7 +55,14 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                   ignored -> {
                     final var snapshotTransfer =
                         new SnapshotTransferImpl(
-                            actor -> new SnapshotTransferServiceClient(context.brokerClient()),
+                            actor ->
+                                new SnapshotTransferServiceClient(
+                                    context.brokerClient(),
+                                    context
+                                        .brokerConfig()
+                                        .getExperimental()
+                                        .getRaft()
+                                        .getBootstrapSnapshotRequestTimeout()),
                             snapshotStore.getSnapshotMetrics(),
                             snapshotStore);
                     return context

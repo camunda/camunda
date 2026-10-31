@@ -67,6 +67,7 @@ jobs:
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
+        persist-credentials: false
 
     - name: Resolve image tag
       id: resolve
@@ -94,6 +95,7 @@ jobs:
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
+        persist-credentials: false
 
     - uses: ./.github/actions/setup-build
       with:
@@ -199,7 +201,7 @@ jobs:
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
-      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
       with:
         branch: ${{ github.head_ref }}
         max_length: '15'
@@ -262,7 +264,7 @@ jobs:
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
-      uses: camunda/infra-global-github-actions/preview-env/create@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/create@379e8654a5f25f22566f80c2e99a611fca365263 # preview-env-1.0.16
       with:
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -297,12 +299,14 @@ jobs:
     steps:
     - name: Check PR for merge conflicts
       if: github.event_name == 'pull_request'
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@379e8654a5f25f22566f80c2e99a611fca365263 # preview-env-1.0.16
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
 
     - name: Checkout
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()
@@ -339,10 +343,12 @@ jobs:
     timeout-minutes: 5
     needs: [deploy-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+    - uses: camunda/infra-global-github-actions/preview-env/comment@379e8654a5f25f22566f80c2e99a611fca365263 # preview-env-1.0.16
 
     - name: Checkout
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()

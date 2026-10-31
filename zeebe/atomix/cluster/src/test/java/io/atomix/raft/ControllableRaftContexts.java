@@ -25,7 +25,9 @@ import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.impl.ReconfigurationHelper;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
@@ -33,9 +35,12 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
@@ -65,6 +70,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -86,26 +93,50 @@ public final class ControllableRaftContexts {
   private final Map<MemberId, DeterministicSingleThreadContext> deterministicExecutors =
       new HashMap<>();
   private final Map<MemberId, CompletableFuture<?>> futuresToFailOnClose = new HashMap<>();
+  // Pending promote/demote/leave futures per member. Unlike futuresToFailOnClose, these carry no
+  // membership bookkeeping; they are only failed when the member's context is torn down, because
+  // their internal retries run on the closed context's scheduler and would never complete.
+  private final Map<MemberId, CompletableFuture<?>> pendingMemberOperations = new HashMap<>();
 
   private Path directory;
   private Random random;
 
   private final int nodeCount;
+  private final Set<MemberId> bootstrappedMembers = new HashSet<>();
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
   private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
   private final Map<MemberId, MeterRegistry> meterRegistries = new HashMap<>();
+  private final Map<MemberId, AtomicBoolean> failNextFlush = new HashMap<>();
   private Duration electionTimeout;
   private Duration heartbeatTimeout;
   private int nextEntry = 0;
 
   // Used only for verification. Map[term -> leader]
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
+  // Used only for verification. Map[voter -> Map[term -> candidate voted for]]
+  private final Map<MemberId, NavigableMap<Long, MemberId>> votesAtTerms = new HashMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
   private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
+  private final Consumer<RaftPartitionConfig> partitionConfigurator;
+
   public ControllableRaftContexts(final int nodeCount) {
+    this(nodeCount, config -> {});
+  }
+
+  /**
+   * @param partitionConfigurator customizes the {@link RaftPartitionConfig} of every created raft
+   *     context. Note that the leader step-down on lost quorum contact is gated on wall-clock time
+   *     ({@code maxQuorumResponseTimeout}, defaulting to two election timeouts), which does not
+   *     advance with the deterministic scheduler. Tests that need to explore leader step-down must
+   *     reduce it to a near-zero duration so that step-down is effectively controlled by {@code
+   *     minStepDownFailureCount} alone.
+   */
+  public ControllableRaftContexts(
+      final int nodeCount, final Consumer<RaftPartitionConfig> partitionConfigurator) {
     this.nodeCount = nodeCount;
+    this.partitionConfigurator = partitionConfigurator;
   }
 
   public Map<MemberId, RaftContext> getRaftServers() {
@@ -155,6 +186,10 @@ public final class ControllableRaftContexts {
     deterministicExecutors.clear();
     messageQueue.clear();
     leadersAtTerms.clear();
+    votesAtTerms.clear();
+    futuresToFailOnClose.clear();
+    pendingMemberOperations.clear();
+    bootstrappedMembers.clear();
     directory = null;
     MicrometerUtil.close(meterRegistry);
   }
@@ -166,6 +201,8 @@ public final class ControllableRaftContexts {
 
   private void bootstrapRaftServers(final Collection<MemberId> bootstrapServers)
       throws ExecutionException, InterruptedException, TimeoutException {
+    bootstrappedMembers.clear();
+    bootstrappedMembers.addAll(bootstrapServers);
     final Set<CompletableFuture<Void>> futures = new HashSet<>();
     final var servers =
         getRaftServers().entrySet().stream()
@@ -214,13 +251,21 @@ public final class ControllableRaftContexts {
     snapshotStores.put(memberId, snapshotStore);
     final RaftContext raftContext =
         createRaftContext(
-            memberId, random, createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore)));
+            memberId,
+            random,
+            createStorage(
+                memberId,
+                cfg ->
+                    cfg.withSnapshotStore(snapshotStore)
+                        .withFlusherFactory(ignored -> failableDirectFlusher(memberId))));
     raftServers.put(memberId, raftContext);
     return raftContext;
   }
 
   public RaftContext createRaftContext(
       final MemberId memberId, final Random random, final RaftStorage storage) {
+    final var partitionConfig = new RaftPartitionConfig();
+    partitionConfigurator.accept(partitionConfig);
     final var raft =
         new RaftContext(
             memberId.id() + "-partition-1",
@@ -232,7 +277,7 @@ public final class ControllableRaftContexts {
             getRaftThreadContextFactory(memberId),
             () -> random,
             RaftElectionConfig.ofPriorityElection(nodeCount, Integer.parseInt(memberId.id()) + 1),
-            new RaftPartitionConfig(),
+            partitionConfig,
             meterRegistries.computeIfAbsent(memberId, this::meterRegistryForMember));
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
@@ -376,6 +421,47 @@ public final class ControllableRaftContexts {
     }
   }
 
+  /** Makes the next flush of the given member's log fail, like a transient I/O error. */
+  public void failNextFlush(final MemberId memberId) {
+    failNextFlush.get(memberId).set(true);
+  }
+
+  private RaftLogFlusher failableDirectFlusher(final MemberId memberId) {
+    final var failNext = failNextFlush.computeIfAbsent(memberId, m -> new AtomicBoolean());
+    return new RaftLogFlusher() {
+      @Override
+      public void flush(final Journal journal) throws FlushException {
+        if (failNext.getAndSet(false)) {
+          throw new FlushException(new IOException("Injected flush failure"));
+        }
+        journal.flush();
+      }
+
+      @Override
+      public boolean isDirect() {
+        return true;
+      }
+    };
+  }
+
+  /** Takes a snapshot at exactly the given committed index, without compacting the log. */
+  public void takeSnapshot(final MemberId memberId, final long snapshotIndex) {
+    final RaftContext raftContext = raftServers.get(memberId);
+    try (final RaftLogReader reader = raftContext.getLog().openCommittedReader()) {
+      reader.seek(snapshotIndex);
+      final long term = reader.next().term();
+      snapshotStores.get(memberId).newSnapshot(snapshotIndex, term, 1, random);
+    }
+  }
+
+  /**
+   * Takes a snapshot like the bootstrap snapshot of a partition created by scaling up: at index 1
+   * and term 1, with positions 0. Its state is not in the log.
+   */
+  public void takeBootstrapSnapshot(final MemberId memberId) {
+    snapshotStores.get(memberId).newSnapshot(1, 1, 0, 0, 1, random);
+  }
+
   public void snapshotAndCompact(final MemberId memberId) {
     final RaftContext raftContext = raftServers.get(memberId);
     // Take snapshot at an index between lastSnapshotIndex and current commitIndex
@@ -405,37 +491,106 @@ public final class ControllableRaftContexts {
 
   public void restart(final MemberId memberId) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
-    futuresToFailOnClose.computeIfPresent(
-        memberId,
-        (ignore, future) -> {
-          future.completeExceptionally(new RuntimeException("Shutting down"));
-          return null;
-        });
+    final var pendingJoin = futuresToFailOnClose.remove(memberId);
+    if (pendingJoin != null) {
+      if (pendingJoin.isDone() && !pendingJoin.isCompletedExceptionally()) {
+        // The member completed its join, so the cluster topology includes it now. From now on it
+        // restarts via bootstrap like the original members, recovering the persisted
+        // configuration.
+        bootstrappedMembers.add(memberId);
+      } else {
+        pendingJoin.completeExceptionally(new RuntimeException("Shutting down"));
+      }
+    }
+    failPendingMemberOperation(memberId);
 
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
-    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
-      newContext.getCluster().bootstrap(raftServers.keySet());
+    // Only members that are part of the cluster restart via bootstrap. A member whose join did
+    // not complete is torn down on restart without a running raft server, like
+    // PartitionManagerImpl removes the partition after a failed join. It only comes back when the
+    // join is retried, driven by the failed join future (see futuresToFailOnClose).
+    if (bootstrappedMembers.contains(memberId)) {
+      try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
+        newContext.getCluster().bootstrap(raftServers.keySet());
+      }
     }
   }
 
   public CompletableFuture<Void> join(
       final MemberId memberId, final Collection<MemberId> otherMembers) {
+    return join(memberId, RaftMember.Type.ACTIVE, otherMembers);
+  }
+
+  public CompletableFuture<Void> join(
+      final MemberId memberId,
+      final RaftMember.Type type,
+      final Collection<MemberId> otherMembers) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
 
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
+    failPendingMemberOperation(memberId);
     createRaftContextForMember(random, Integer.parseInt(memberId.id()));
-    final var future = raftServers.get(memberId).getCluster().join(otherMembers);
+    final var future = raftServers.get(memberId).getCluster().join(type, otherMembers);
     futuresToFailOnClose.put(memberId, future);
     return future;
+  }
+
+  // Promote, demote and leave are deliberately not part of the random RaftOperation streams:
+  // randomly changing arbitrary members' types would make the properties' goals meaningless.
+  // Properties drive them explicitly and retry on failure, like they do with join.
+
+  /** Requests the promotion of the given member's local member to ACTIVE. */
+  public CompletableFuture<Void> promote(final MemberId memberId) {
+    final var future =
+        raftServers.get(memberId).getCluster().getLocalMember().promote(RaftMember.Type.ACTIVE);
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /** Requests the demotion of the given member's local member to PASSIVE. */
+  public CompletableFuture<Void> demote(final MemberId memberId) {
+    final var future =
+        raftServers.get(memberId).getCluster().getLocalMember().demote(RaftMember.Type.PASSIVE);
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /** Requests that the given member leaves the cluster. */
+  public CompletableFuture<Void> leave(final MemberId memberId) {
+    final var future = new ReconfigurationHelper(raftServers.get(memberId)).leave();
+    pendingMemberOperations.put(memberId, future);
+    return future;
+  }
+
+  /**
+   * Mirrors {@link io.atomix.raft.impl.DefaultRaftServer#shutdown()}: transition to INACTIVE before
+   * closing so that the current role - in particular a leader's appender - is stopped first. Tasks
+   * already queued behind the close (append callbacks, reconfiguration completions) then no-op on
+   * the stopped role instead of touching the closed, unmapped journal, which crashed with "journal
+   * not open" or a SIGSEGV in the memory-mapped segment.
+   */
+  private static void closeRaftContext(final RaftContext raftContext) {
+    raftContext.transition(RaftServer.Role.INACTIVE);
+    raftContext.close();
+  }
+
+  private void failPendingMemberOperation(final MemberId memberId) {
+    final var pendingOperation = pendingMemberOperations.remove(memberId);
+    if (pendingOperation != null && !pendingOperation.isDone()) {
+      // The operation's internal retries are driven by timers on the closed context's scheduler
+      // and would never complete; fail the future so that properties retry the operation on the
+      // new context.
+      pendingOperation.completeExceptionally(new RuntimeException("Shutting down"));
+    }
   }
 
   // This is a different from other operations, as it restarts the node and force operations on
@@ -446,12 +601,15 @@ public final class ControllableRaftContexts {
     LOG.info("Shutting down member {}", memberId.id());
     {
       final var raftContext = raftServers.get(memberId);
-      raftContext.getThreadContext().execute(raftContext::close);
+      raftContext.getThreadContext().execute(() -> closeRaftContext(raftContext));
       runUntilDone(memberId);
     }
     deterministicExecutors.remove(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
     final var nodeBeforeRestart = raftServers.remove(memberId);
+    // Losing the metastore forfeits the vote promise: the restarted member may legitimately vote
+    // for a different candidate in a term it already voted in.
+    votesAtTerms.remove(memberId);
 
     // Wait until the other two members become a quorum and elect a leader. Otherwise, the restarted
     // node and the follower without the latest log can become a quorum and result in data loss.
@@ -519,21 +677,20 @@ public final class ControllableRaftContexts {
 
   // Verify that committed entries in all logs are equal
   public void assertAllLogsEqual() {
+    assertAllLogsEqual(raftServers.keySet());
+  }
+
+  // Verify that committed entries in the given members' logs are equal
+  public void assertAllLogsEqual(final Collection<MemberId> members) {
+    final var contexts = members.stream().map(raftServers::get).toList();
     final var readers =
-        raftServers.values().stream()
+        contexts.stream()
             .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
     long index =
-        raftServers.values().stream()
-                .map(s -> s.getLog().getFirstIndex())
-                .min(Long::compareTo)
-                .orElse(1L)
-            - 1;
+        contexts.stream().map(s -> s.getLog().getFirstIndex()).min(Long::compareTo).orElse(1L) - 1;
 
     final long commitIndexOnLeader =
-        raftServers.values().stream()
-            .map(RaftContext::getCommitIndex)
-            .max(Long::compareTo)
-            .orElseThrow();
+        contexts.stream().map(RaftContext::getCommitIndex).max(Long::compareTo).orElseThrow();
 
     while (index < commitIndexOnLeader) {
       final var nextIndex = index + 1;
@@ -558,6 +715,27 @@ public final class ControllableRaftContexts {
 
   public void assertAtMostOneLeader() {
     raftServers.values().forEach(this::updateAndVerifyLeaderTerm);
+  }
+
+  public void assertAtMostOneVotePerMemberAndTerm() {
+    raftServers.forEach(this::updateAndVerifyVotedFor);
+  }
+
+  private void updateAndVerifyVotedFor(final MemberId memberId, final RaftContext s) {
+    final long term = s.getTerm();
+    final var votedFor = s.getLastVotedFor();
+    if (votedFor == null) {
+      return;
+    }
+    final var previousVote = votesAtTerms.computeIfAbsent(memberId, unused -> new TreeMap<>());
+    final var knownVote = previousVote.putIfAbsent(term, votedFor);
+    if (knownVote != null) {
+      assertThat(knownVote)
+          .withFailMessage(
+              "Member %s granted two votes, for %s and %s, at term %s",
+              memberId, knownVote, votedFor, term)
+          .isEqualTo(votedFor);
+    }
   }
 
   private void updateAndVerifyLeaderTerm(final RaftContext s) {
@@ -690,7 +868,16 @@ public final class ControllableRaftContexts {
   }
 
   public boolean allMembersAreReady() {
-    return raftServers.values().stream()
+    return allMembersAreReady(raftServers.keySet());
+  }
+
+  /**
+   * Like {@link #allMembersAreReady()}, but only for the given members. Useful when a member left
+   * the cluster and is thus never READY again.
+   */
+  public boolean allMembersAreReady(final Collection<MemberId> members) {
+    return members.stream()
+        .map(raftServers::get)
         .map(RaftContext::getState)
         .filter(state -> !READY.equals(state))
         .findAny()

@@ -81,6 +81,20 @@ public class TaskRepositoryES extends TaskRepository {
       final Script updateScript,
       final Query filterQuery,
       final String... indices) {
+    return tryUpdateByQueryRequest(updateItemIdentifier, updateScript, filterQuery, null, indices);
+  }
+
+  /**
+   * @param scrollSize number of documents Elasticsearch reindexes per batch, or {@code null} to
+   *     keep the Elasticsearch default (1000). Lower it when the matched documents are large, as
+   *     each batch becomes one bulk request that is subject to the indexing pressure limit.
+   */
+  public boolean tryUpdateByQueryRequest(
+      final String updateItemIdentifier,
+      final Script updateScript,
+      final Query filterQuery,
+      final Integer scrollSize,
+      final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -90,13 +104,18 @@ public class TaskRepositoryES extends TaskRepository {
 
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
-            b ->
-                b.index(esClient.addPrefixesToIndices(indices))
-                    .query(filterQuery)
-                    .conflicts(Conflicts.Proceed)
-                    .script(updateScript)
-                    .waitForCompletion(!clusterTaskCheckingEnabled)
-                    .refresh(true));
+            b -> {
+              b.index(esClient.addPrefixesToIndices(indices))
+                  .query(filterQuery)
+                  .conflicts(Conflicts.Proceed)
+                  .script(updateScript)
+                  .waitForCompletion(!clusterTaskCheckingEnabled)
+                  .refresh(true);
+              if (scrollSize != null) {
+                b.scrollSize(scrollSize.longValue());
+              }
+              return b;
+            });
 
     if (clusterTaskCheckingEnabled) {
       return asyncUpdate(updateItemIdentifier, filterQuery, updateByQueryRequest);

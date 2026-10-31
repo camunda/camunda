@@ -78,6 +78,7 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     teardown: 'api-tests-subset',
@@ -89,6 +90,10 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
@@ -243,6 +248,14 @@ const v2StatelessProjects = [
 export default defineConfig({
   testDir: `./`,
   timeout: 12 * 60 * 1000,
+  // Opt-in cap on the whole run, set in CI via C8E2E_GLOBAL_TIMEOUT_MIN so a
+  // hanging suite stops itself and still writes its report. The changed-spec
+  // verdict step then runs instead of the CI job being killed at its
+  // timeout-minutes, so a PR that changed no spec is not blocked by the hang.
+  // Unset locally, so local runs are unaffected. See camunda/camunda#67452.
+  globalTimeout: process.env.C8E2E_GLOBAL_TIMEOUT_MIN
+    ? Number(process.env.C8E2E_GLOBAL_TIMEOUT_MIN) * 60 * 1000
+    : undefined,
   workers: 4,
   retries: 1,
   expect: {

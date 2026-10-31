@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.stream.api.scheduling.RegeneratingTask;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.PriorityQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -192,6 +194,7 @@ public class ProcessingScheduleServiceImpl
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
       // write later
+      final var resultAbandoned = new AtomicBoolean(false);
       final var writeFuture =
           writeRetryStrategy.runWithRetry(
               () -> {
@@ -200,21 +203,47 @@ public class ProcessingScheduleServiceImpl
                   return true;
                 }
 
-                return logStreamWriter
-                    .tryWrite(WriteContext.scheduled(), recordBatch.entries())
-                    .isRight();
+                final var writeResult =
+                    logStreamWriter.tryWrite(WriteContext.scheduled(), recordBatch.entries());
+                if (writeResult.isRight()) {
+                  return true;
+                }
+
+                final boolean rateLimited =
+                    switch (writeResult.getLeft()) {
+                      case WRITE_LIMIT_EXHAUSTED, REQUEST_LIMIT_EXHAUSTED -> true;
+                      // TODO: these failures are still retried until the write is accepted.
+                      //  Handle them individually, like the rate limits, as a follow-up.
+                      case CLOSED, INVALID_ARGUMENT -> false;
+                      case null -> false;
+                    };
+                if (rateLimited && task instanceof RegeneratingTask) {
+                  resultAbandoned.set(true);
+                  return true;
+                }
+                return false;
               },
               abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t != null) {
+            // a false result without an error means the write was aborted before it succeeded
+            if (t != null || !v) {
               stagedCache.rollback();
+            }
+            if (t != null) {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors
               //   earlier
               LOG.warn("Writing of scheduled TaskResult failed!", t);
+              return;
+            }
+
+            if (resultAbandoned.get() && task instanceof final RegeneratingTask regeneratingTask) {
+              stagedCache.rollback();
+              LOG.debug("Write rate limited, abandoning result of scheduled task.");
+              regeneratingTask.onResultAbandoned();
             }
           });
     };

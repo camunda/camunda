@@ -16,7 +16,7 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -33,13 +33,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.message.BasicHttpResponse;
+import org.apache.hc.core5.http.nio.CapacityChannel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 public class DocumentDataConsumerTest {
 
@@ -99,8 +105,6 @@ public class DocumentDataConsumerTest {
     consumer.updateCapacity(reportedCapacity::set);
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
-    // error is thrown when data exceeds buffer capacity
-    assertThatCode(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));
@@ -124,6 +128,68 @@ public class DocumentDataConsumerTest {
     assertThat(remainingContent).isEqualTo(remainingData);
 
     verifyNoMoreInteractions(callback);
+  }
+
+  @Test
+  void shouldKeepIoLayerReadingWhenItsWindowRunsOutWhileBufferIsEmpty() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(8, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final Http1Window window = new Http1Window(16);
+    // the I/O layer hands over more than its window, and the reader takes most of it before the
+    // I/O layer debits it
+    consumer.consume(ByteBuffer.wrap(new byte[32]));
+    callback.inputStream.read(new byte[30]);
+    window.debit(consumer, 32);
+    callback.inputStream.read(new byte[2]);
+
+    // when
+    // the reader takes the next piece before the I/O layer debits it, which uses up the window
+    consumer.consume(ByteBuffer.wrap(new byte[4]));
+    callback.inputStream.read(new byte[4]);
+    window.debit(consumer, 4);
+
+    // then
+    // nothing is buffered, so nothing would ever grant capacity again if the I/O layer stopped
+    assertThat(window.readingEnabled).isTrue();
+  }
+
+  @Test
+  void shouldAcceptDataBeyondGrantedCapacityAndWithholdCapacityUntilBelowIt() throws IOException {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(4, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    final Callback callback = new Callback();
+    consumer.streamStart(entityDetails, callback);
+    final AtomicInteger grantedCapacity = new AtomicInteger();
+    consumer.updateCapacity(grantedCapacity::addAndGet);
+    consumer.consume(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+    final byte[] content = new byte[8];
+    callback.inputStream.read(content, 0, 2);
+    // fills the buffer up to its capacity, wrapping around its end
+    consumer.consume(ByteBuffer.wrap(new byte[] {4, 5, 6}));
+
+    // when
+    consumer.consume(ByteBuffer.wrap(new byte[] {7, 8}));
+    callback.inputStream.read(content, 2, 2);
+
+    // then
+    // the buffer still holds its capacity, so more space would only let it overflow further
+    assertThat(grantedCapacity.get()).isEqualTo(6);
+
+    // when
+    callback.inputStream.read(content, 4, 4);
+
+    // then
+    assertThat(content).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    // all 8 bytes read are granted again once the buffer is below its capacity
+    assertThat(grantedCapacity.get()).isEqualTo(12);
   }
 
   @Test
@@ -258,6 +324,178 @@ public class DocumentDataConsumerTest {
     assertThat(callback.inputStream.read()).isEqualTo(-1);
 
     verifyNoMoreInteractions(callback);
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldWakeBlockedReaderWhenResourcesAreReleasedBeforeStreamEnd() throws Exception {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(16, objectMapper);
+    final Callback callback = new Callback();
+    consumer.streamStart(octetStreamDetails(), callback);
+
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      consumer.releaseResources();
+
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldWakeBlockedReaderWhenResponseConsumerFailsWithoutReachingEntityConsumer()
+      throws Exception {
+    // given
+    // AbstractAsyncResponseConsumer#failed does not call AsyncEntityConsumer#failed
+    final ApiResponseConsumer<InputStream> responseConsumer =
+        new ApiResponseConsumer<>(new DocumentDataConsumer<>(16, objectMapper));
+    final Callback callback = new Callback();
+    responseConsumer.consumeResponse(
+        new BasicHttpResponse(200), octetStreamDetails(), null, new ResponseCallback(callback));
+
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      responseConsumer.failed(new IOException("connection closed"));
+
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  void shouldNotSignalErrorWhenResourcesAreReleasedAfterStreamEnd() throws IOException {
+    // given
+    final byte[] data = "Test content".getBytes();
+    final DocumentDataConsumer<InputStream> consumer =
+        new DocumentDataConsumer<>(data.length, objectMapper);
+    final Callback callback = new Callback();
+    consumer.streamStart(octetStreamDetails(), callback);
+    consumer.consume(ByteBuffer.wrap(data));
+    consumer.streamEnd(Collections.emptyList());
+
+    // when
+    consumer.releaseResources();
+
+    // then
+    final byte[] content = new byte[data.length];
+    assertThat(callback.inputStream.read(content)).isEqualTo(data.length);
+    assertThat(content).isEqualTo(data);
+    assertThat(callback.inputStream.read()).isEqualTo(-1);
+  }
+
+  private static EntityDetails octetStreamDetails() {
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    return entityDetails;
+  }
+
+  /**
+   * Reads from the stream on a dedicated thread and only returns from {@link #start} once that
+   * thread is parked inside the stream waiting for data, so a subsequent release or failure is
+   * guaranteed to notify an already waiting reader instead of being found by a later read.
+   */
+  private static final class BlockedReader implements AutoCloseable {
+
+    private final Thread thread;
+    private final AtomicReference<Throwable> outcome = new AtomicReference<>();
+
+    private BlockedReader(final InputStream inputStream) {
+      thread =
+          new Thread(
+              () -> {
+                try {
+                  outcome.set(new IllegalStateException("read returned " + inputStream.read()));
+                } catch (final Throwable t) {
+                  outcome.set(t);
+                }
+              },
+              "blocked-document-reader");
+      thread.setDaemon(true);
+    }
+
+    static BlockedReader start(final InputStream inputStream) {
+      final BlockedReader reader = new BlockedReader(inputStream);
+      reader.thread.start();
+      try {
+        await()
+            .atMost(Duration.ofSeconds(5))
+            .until(() -> reader.thread.getState() == Thread.State.WAITING);
+      } catch (final Throwable t) {
+        reader.close();
+        throw t;
+      }
+      return reader;
+    }
+
+    Throwable awaitFailure() {
+      await().atMost(Duration.ofSeconds(5)).until(() -> outcome.get() != null);
+      return outcome.get();
+    }
+
+    @Override
+    public void close() {
+      thread.interrupt();
+      try {
+        thread.join(TimeUnit.SECONDS.toMillis(5));
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  /**
+   * Follows the capacity window of httpcore5's HTTP/1.1 duplexer: any positive update lets it read
+   * again, and debiting received data stops reading and asks for capacity once the window is used
+   * up.
+   */
+  private static final class Http1Window implements CapacityChannel {
+
+    private int window;
+    private boolean readingEnabled = true;
+
+    private Http1Window(final int initialWindow) {
+      window = initialWindow;
+    }
+
+    @Override
+    public void update(final int increment) {
+      if (increment > 0) {
+        window += increment;
+        readingEnabled = true;
+      }
+    }
+
+    private void debit(final DocumentDataConsumer<?> consumer, final int bytes) throws IOException {
+      window -= bytes;
+      if (window <= 0) {
+        readingEnabled = false;
+        consumer.updateCapacity(this);
+      }
+    }
+  }
+
+  static class ResponseCallback
+      implements FutureCallback<ApiResponseConsumer.ApiResponse<InputStream>> {
+
+    private final Callback delegate;
+
+    ResponseCallback(final Callback delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void completed(final ApiResponseConsumer.ApiResponse<InputStream> result) {
+      delegate.completed(result.entity());
+    }
+
+    @Override
+    public void failed(final Exception ex) {}
+
+    @Override
+    public void cancelled() {}
   }
 
   static class Callback implements FutureCallback<ApiEntity<InputStream>> {

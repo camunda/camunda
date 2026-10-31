@@ -78,11 +78,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired CamundaAuthenticationProvider authenticationProvider;
 
+  @Autowired(required = false)
+  ProcessStore processStore;
+
   @Autowired private SecurityConfiguration securityConfiguration;
   private boolean shutdown = false;
-
-  @Autowired(required = false)
-  private ProcessStore processStore;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -158,8 +158,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
       try {
         exists = processStore.count() > 0;
       } catch (final IOException e) {
-        LOGGER.warn("Error occurred when counting processes.", e);
-        return false;
+        // a failed count says nothing about whether data exists, so let createZeebeDataAsync retry
+        throw new OperateRuntimeException("Error occurred when counting processes.", e);
       }
       if (exists) {
         // data already exists

@@ -16,23 +16,32 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.PagedReads;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
-import java.util.Objects;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +80,11 @@ public final class ManifestManager {
   InProgressManifest createInitialManifest(final Backup backup) {
 
     final var manifest = Manifest.createInProgress(backup);
+    writeNewManifest(manifest);
+    return manifest;
+  }
+
+  private void writeNewManifest(final Manifest manifest) {
     final byte[] serializedManifest;
     final var path = manifestPath(manifest);
 
@@ -85,8 +99,6 @@ public final class ManifestManager {
       serializedManifest = MAPPER.writeValueAsBytes(manifest);
       Files.write(path, serializedManifest, StandardOpenOption.CREATE_NEW, StandardOpenOption.SYNC);
       FileUtil.flushDirectory(path.getParent());
-
-      return manifest;
     } catch (final FileAlreadyExistsException e) {
       throw new UnexpectedManifestState("Manifest already exists.");
     } catch (final IOException e) {
@@ -116,9 +128,10 @@ public final class ManifestManager {
   }
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
-    Manifest manifest = getManifest(manifestId);
+    final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
-      manifest = Manifest.createFailed(manifestId);
+      writeNewManifest(Manifest.createFailed(manifestId, failureReason));
+      return;
     }
 
     final var updatedManifest =
@@ -174,17 +187,38 @@ public final class ManifestManager {
     return getManifestWithPath(getManifestPath(id));
   }
 
-  Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-    try (final Stream<Path> files = Files.walk(manifestsPath)) {
-      return files
-          .filter(filePath -> filterBlobsByWildcard(wildcard, filePath.toString()))
-          .map(this::getManifestWithPath)
-          .filter(Objects::nonNull)
-          .filter(m -> wildcard.matches(m.id()))
-          .toList();
+  /** Lists the page of manifests selected by the options, reading only the selected files. */
+  List<Manifest> listManifests(final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    final var collector = new ManifestCollector(wildcard);
+    try {
+      Files.walkFileTree(manifestsPath, collector);
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to list manifests from " + manifestsPath, e);
     }
+    return PagedReads.readPage(
+        collector.manifestFiles(),
+        ManifestFile::id,
+        options,
+        manifestFile -> Optional.ofNullable(getManifestWithPath(manifestFile.path())));
+  }
+
+  /**
+   * Parses the identifier from a manifest path: partitionId/checkpointId/nodeId/manifest.json.
+   * Empty if the checkpoint id segment is a digit run too long to fit a {@code long} — a foreign or
+   * corrupted file rather than one this store wrote, skipped instead of failing the whole walk.
+   */
+  private Optional<BackupIdentifier> parseIdentifier(final Path manifestFile) {
+    final var relativePath = manifestsPath.relativize(manifestFile);
+    final var checkpointId = CheckpointIds.tryParse(relativePath.getName(1).toString());
+    if (checkpointId.isEmpty()) {
+      LOGGER.warn("Tried interpreting file {} as a backup manifest but failed", manifestFile);
+      return Optional.empty();
+    }
+    return Optional.of(
+        new BackupIdentifierImpl(
+            Integer.parseInt(relativePath.getName(2).toString()),
+            Integer.parseInt(relativePath.getName(0).toString()),
+            checkpointId.getAsLong()));
   }
 
   private Manifest getManifestWithPath(final Path path) {
@@ -194,6 +228,8 @@ public final class ManifestManager {
 
     try {
       return MAPPER.readValue(path.toFile(), Manifest.class);
+    } catch (final FileNotFoundException | NoSuchFileException e) {
+      return null;
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to read manifest from path " + path, e);
     }
@@ -231,5 +267,65 @@ public final class ManifestManager {
         .resolve(checkpointId)
         .resolve(nodeId)
         .resolve(MANIFEST_FILENAME);
+  }
+
+  /** A manifest file and the identifier encoded in its path, collected without reading the file. */
+  record ManifestFile(BackupIdentifier id, Path path) {}
+
+  /**
+   * Collects the path of every manifest matching the wildcard, continuing past entries that a
+   * concurrent deletion removes while the traversal is running: an entry gone mid-walk is the same
+   * listing the caller would have seen after the delete, so it is skipped rather than failing the
+   * caller. The traversal keeps its position and everything collected so far — nothing is
+   * re-walked.
+   */
+  @VisibleForTesting
+  final class ManifestCollector extends SimpleFileVisitor<Path> {
+
+    private final BackupIdentifierWildcard wildcard;
+    private final List<ManifestFile> manifestFiles = new ArrayList<>();
+
+    @VisibleForTesting
+    ManifestCollector(final BackupIdentifierWildcard wildcard) {
+      this.wildcard = wildcard;
+    }
+
+    @Override
+    public @NonNull FileVisitResult visitFile(
+        final Path file, final @NonNull BasicFileAttributes attributes) {
+      if (filterBlobsByWildcard(wildcard, file.toString())) {
+        parseIdentifier(file)
+            .filter(wildcard::matches)
+            .ifPresent(id -> manifestFiles.add(new ManifestFile(id, file)));
+      }
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public @NonNull FileVisitResult visitFileFailed(
+        final @NonNull Path file, final @NonNull IOException failure) throws IOException {
+      return continueIfDeletedConcurrently(file, failure);
+    }
+
+    @Override
+    public @NonNull FileVisitResult postVisitDirectory(
+        final @NonNull Path directory, final IOException failure) throws IOException {
+      return failure == null
+          ? FileVisitResult.CONTINUE
+          : continueIfDeletedConcurrently(directory, failure);
+    }
+
+    private FileVisitResult continueIfDeletedConcurrently(
+        final Path path, final IOException failure) throws IOException {
+      if (failure instanceof NoSuchFileException && !path.equals(manifestsPath)) {
+        return FileVisitResult.CONTINUE;
+      }
+      throw failure;
+    }
+
+    @VisibleForTesting
+    List<ManifestFile> manifestFiles() {
+      return manifestFiles;
+    }
   }
 }

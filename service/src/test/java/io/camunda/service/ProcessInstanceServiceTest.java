@@ -74,7 +74,6 @@ import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -289,6 +288,35 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
+  public void shouldReturnOrderedProcessHierarchyWhenSearchReturnsDuplicateInstance() {
+    // given
+    final var childProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 789L)
+            .set(field(ProcessInstanceEntity::treePath), "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
+            .create();
+
+    final var parentProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .create();
+
+    when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1, false, List.of(childProcess, parentProcess, parentProcess), null, null));
 
     // when
     final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
@@ -731,7 +759,8 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Nested
-  @DisplayName("Retry on different partitions")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Retry on different partitions")
   class RetryPartitionsTest {
 
     private static Stream<Named<Throwable>> retryableErrors() {

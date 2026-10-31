@@ -8,10 +8,8 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,11 +19,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public record IncidentsState(
     Collection<IncidentDocument> incidentDocuments,
     Set<String> incidentIdsToSkip,
-    Map<String, List<String>> flowNodeInstanceIndices,
-    Map<String, List<String>> flowNodeInstanceInListViewIndices,
+    Map<String, Set<String>> flowNodeInstanceIndices,
+    Map<String, Set<String>> flowNodeInstanceInListViewIndices,
     Map<Long, String> processInstanceTreePaths,
     Map<String, String> incidentTreePaths,
-    Map<String, List<String>> processInstanceIndices,
+    Map<String, Set<String>> processInstanceIndices,
     Map<String, Set<String>> piIdsWithIncidentIds,
     Map<String, Set<String>> fniIdsWithIncidentIds) {
   public IncidentsState() {
@@ -72,15 +70,17 @@ public record IncidentsState(
   }
 
   public void addProcessInstance(final String id, final String index) {
-    processInstanceIndices.computeIfAbsent(id, k -> new ArrayList<>()).add(index);
+    processInstanceIndices.computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet()).add(index);
   }
 
   public void addFlowNodeInstanceInListView(final String id, final String index) {
-    flowNodeInstanceInListViewIndices.computeIfAbsent(id, k -> new ArrayList<>()).add(index);
+    flowNodeInstanceInListViewIndices
+        .computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet())
+        .add(index);
   }
 
   public void addFlowNodeInstance(final String id, final String index) {
-    flowNodeInstanceIndices.computeIfAbsent(id, k -> new ArrayList<>()).add(index);
+    flowNodeInstanceIndices.computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet()).add(index);
   }
 
   private boolean addIncidentIdByInstanceId(

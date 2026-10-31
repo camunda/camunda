@@ -21,6 +21,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.exporter.tasks.util.AsyncRepeatUntil;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -59,8 +60,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -297,80 +296,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField) {
-    return deleteDocuments(sourceIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    if (keysByField.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var request =
-        new DeleteByQueryRequest.Builder()
-            .index(sourceIndexName)
-            .slices(AUTO_SLICES)
-            .conflicts(Conflicts.Proceed)
-            .query(buildFilterQuery(keysByField, filters))
-            .build();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.deleteByQuery(request))
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(DeleteByQueryResponse::total, executor)
-        .thenApplyAsync(ok -> null, executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters) {
-    if (keysByField.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var request =
-        new ReindexRequest.Builder()
-            .source(src -> src.index(sourceIndexName).query(buildFilterQuery(keysByField, filters)))
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
-            .build();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.reindex(request))
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(
-            response -> {
-              validateReindexResponse(sourceIndexName, response);
-              return null;
-            },
-            executor);
-  }
-
-  @Override
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -481,6 +406,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .allowPartialSearchResults(false)
             .query(query)
             .size(size)
+            // need to ensure we have these for deletes so we are not deleting stale data
+            .seqNoPrimaryTerm(true)
             .source(s -> s.fetch(false))
             .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
 
@@ -499,7 +426,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.stream()
+                      .map(h -> new IdWithRouting(h.id(), h.routing(), h.seqNo(), h.primaryTerm()))
+                      .toList(),
                   hits.getLast().sort());
             });
   }
@@ -564,7 +493,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var operations =
         docs.stream()
-            .map(d -> BulkOperation.of(b -> b.delete(del -> del.id(d.id()).routing(d.routing()))))
+            .map(
+                d ->
+                    BulkOperation.of(
+                        b ->
+                            b.delete(
+                                del ->
+                                    del.id(d.id())
+                                        .routing(d.routing())
+                                        .ifSeqNo(d.seqNo())
+                                        .ifPrimaryTerm(d.primaryTerm()))))
             .toList();
 
     final BulkRequest request =
@@ -579,6 +517,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
     if (response.errors()) {
+      checkIfErrorsAreAllVersionConflicts(sourceIndex, response);
+
       final long errorCount =
           response.items().stream().filter(item -> item.error() != null).count();
       throw new IllegalStateException(
@@ -588,6 +528,23 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     // only count DELETE bulk operation where result was `deleted`
     return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
+  }
+
+  private void checkIfErrorsAreAllVersionConflicts(
+      final String sourceIndex, final BulkResponse response) {
+    var totalConflicts = 0;
+    for (final var item : response.items()) {
+      final var error = item.error();
+      if (error != null) {
+        if (!"version_conflict_engine_exception".equals(error.type())) {
+          return;
+        }
+        totalConflicts++;
+      }
+    }
+    throw new VersionConflictOnArchiveDeleteException(
+        "Deleting reindexed documents from %s index completed with %d version conflicts"
+            .formatted(sourceIndex, totalConflicts));
   }
 
   private SearchRequest createUsageMetricSearchRequest(

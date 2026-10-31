@@ -50,6 +50,7 @@ public class ImportRequestDtoFactory {
         .source(processInstanceDto)
         .type(RequestType.UPDATE)
         .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .requireAlias(true)
         .build();
   }
 }

@@ -222,8 +222,18 @@ export class OperateFiltersPanelPage {
   }
 
   async selectFlowNode(option: string) {
-    await this.flowNodeFilter.click();
-    await this.getOptionByName(option, false).click();
+    // A process/version switch reloads the diagram and its flow node list
+    // asynchronously, and Operate's periodic instance-list poll can re-render
+    // the panel and collapse the element combobox at any moment. Opening the
+    // menu, waiting for the option, and clicking it must therefore be retried
+    // as one unit: clicking the option outside the retry loop times out when
+    // the menu has already closed between the visibility check and the click.
+    await expect(async () => {
+      await this.flowNodeFilter.click();
+      const optionLocator = this.getOptionByName(option, false);
+      await expect(optionLocator).toBeVisible({timeout: 5000});
+      await optionLocator.click({timeout: 5000});
+    }).toPass({timeout: 30000});
   }
 
   async fillVariableNameFilter(name: string) {

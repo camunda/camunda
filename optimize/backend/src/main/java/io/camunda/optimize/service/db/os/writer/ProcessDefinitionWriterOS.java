@@ -9,6 +9,8 @@ package io.camunda.optimize.service.db.os.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.ONBOARDED;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
@@ -46,6 +48,13 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.onboarded = true", Collections.emptyMap());
+
+  /**
+   * Update-by-query defaults to a scroll page size of 1000. Because each definition contains the
+   * full BPMN XML, limit the scroll page size to reduce server pressure.
+   */
+  private static final int MARK_AS_ONBOARDED_SCROLL_SIZE = 50;
+
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
@@ -134,9 +143,12 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
         PROCESS_DEFINITION_INDEX_NAME,
         new BoolQuery.Builder()
             .must(QueryDSL.terms(PROCESS_DEFINITION_KEY, definitionKeys, FieldValue::of))
+            .must(QueryDSL.term(ONBOARDED, false))
+            .must(QueryDSL.term(DEFINITION_DELETED, false))
             .build()
             .toQuery(),
-        MARK_AS_ONBOARDED_SCRIPT);
+        MARK_AS_ONBOARDED_SCRIPT,
+        MARK_AS_ONBOARDED_SCROLL_SIZE);
   }
 
   @Override

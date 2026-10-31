@@ -287,6 +287,9 @@ opensearch:
   connection:
     # Use AWS credentials for authentication
     awsEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED:false}
+    # Maximum time in seconds Optimize keeps retrying to read its metadata document during startup,
+    # e.g. while OpenSearch is still recovering the metadata index shard. 0 disables retries.
+    metadataReadMaxWaitInSeconds: ${CAMUNDA_OPTIMIZE_OPENSEARCH_METADATA_READ_MAX_WAIT_IN_SECONDS:600}
     # Maximum time without connection to Opensearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000
@@ -404,6 +407,9 @@ es:
     clusterTaskCheckingEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CLUSTER_TASK_CHECKING_ENABLED:true}
     # Determines whether this Optimize instance should perform schema initialization
     initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:true}
+    # Maximum time in seconds Optimize keeps retrying to read its metadata document during startup,
+    # e.g. while Elasticsearch is still recovering the metadata index shard. 0 disables retries.
+    metadataReadMaxWaitInSeconds: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_METADATA_READ_MAX_WAIT_IN_SECONDS:600}
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000
@@ -567,6 +573,11 @@ entity:
   kpiRefreshInterval: 600
   # flag to determine whether this Optimize instance should (re)create management entities on startup
   createOnStartup: ${CAMUNDA_OPTIMIZE_ENTITY_CREATE_ON_STARTUP:true}
+  # Maximum number of characters allowed in the name of a report, collection, dashboard or alert.
+  # Matches the orchestration cluster's equivalent limit for name fields. Note that a name well below
+  # this can still be too large to index, as Elasticsearch/OpenSearch cap a term at 32766 bytes and a
+  # character takes up to 3 bytes in UTF-8. Existing longer names remain readable.
+  nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
 export:
   csv:
@@ -600,6 +611,10 @@ historyCleanup:
     # Defines the batch size in which Camunda engine process instance data gets cleaned up.
     # It may be reduced if requests fail due to request size constraints.
     batchSize: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE:10000}
+    # Deletes the process instance index of a process definition key once the cleanup has removed all its
+    # instances, releasing the index's shards. Requires the privileges to add and remove index write blocks
+    # and to delete Optimize's process instance indices. Defaults to false.
+    deleteEmptyIndices: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_DELETE_EMPTY_INDICES:false}
     # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
     # for the specific processDefinition key
     perProcessDefinitionConfig:

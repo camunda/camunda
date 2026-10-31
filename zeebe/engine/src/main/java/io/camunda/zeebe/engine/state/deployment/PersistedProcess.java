@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -34,9 +35,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   private final LongProperty deploymentKeyProp =
       new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
 
   public PersistedProcess() {
-    super(9);
+    super(10);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -45,10 +47,12 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
         .declareProperty(stateProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(deleteHistoryProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
+    reset();
     bpmnProcessIdProp.setValue(processRecord.getBpmnProcessIdBuffer());
     resourceNameProp.setValue(processRecord.getResourceNameBuffer());
     resourceProp.setValue(processRecord.getResourceBuffer());
@@ -93,6 +97,15 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public boolean isDeleteHistory() {
+    return deleteHistoryProp.getValue();
+  }
+
+  public PersistedProcess setDeleteHistory(final boolean deleteHistory) {
+    deleteHistoryProp.setValue(deleteHistory);
+    return this;
+  }
+
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
   }
@@ -117,7 +130,8 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
   public enum PersistedProcessState {
     ACTIVE(0),
-    PENDING_DELETION(1);
+    PENDING_DELETION(1),
+    DRAINING(2);
 
     byte value;
 

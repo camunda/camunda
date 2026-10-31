@@ -93,7 +93,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .elementId("elementId")
                     .elementInstanceState(ElementInstanceState.ACTIVE)
                     .hasElementInstanceIncident(true)
-                    .incidentErrorHashCode(123456789))
+                    .incidentErrorHashCode(123456789)
+                    .businessId("order-4711"))
         .send()
         .join();
 
@@ -120,6 +121,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
     assertThat(filter.getIncidentErrorHashCode().get$Eq()).isEqualTo(123456789);
+    assertThat(filter.getBusinessId().get$Eq()).isEqualTo("order-4711");
   }
 
   @Test
@@ -158,6 +160,25 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final StringFilterProperty tenantId = filter.getTenantId();
     assertThat(tenantId).isNotNull();
     assertThat(tenantId.get$Like()).isEqualTo("string");
+  }
+
+  @Test
+  void shouldGetProcessDefinitionElementStatisticsByBusinessIdStringFilter() {
+    // when
+    client
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .filter(f -> f.businessId(b -> b.like("order-*")))
+        .send()
+        .join();
+
+    // then
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final StringFilterProperty businessId = filter.getBusinessId();
+    assertThat(businessId).isNotNull();
+    assertThat(businessId.get$Like()).isEqualTo("order-*");
   }
 
   @Test
@@ -221,6 +242,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .orFilters(
                         Arrays.asList(
                             f1 -> f1.processInstanceKey(123L).elementId("elementId"),
+                            f2 -> f2.businessId("order-4711"),
                             f3 -> f3.hasElementInstanceIncident(true))))
         .send()
         .join();
@@ -232,12 +254,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     assertThat(filter.getState())
         .isEqualTo(new ProcessInstanceStateFilterProperty().$eq(ProcessInstanceStateEnum.ACTIVE));
-    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or()).hasSize(3);
     assertThat(filter.get$Or())
         .containsExactlyInAnyOrder(
             new BaseProcessInstanceFilterFields()
                 .processInstanceKey(new BasicStringFilterProperty().$eq("123"))
                 .elementId(new StringFilterProperty().$eq("elementId")),
+            new BaseProcessInstanceFilterFields()
+                .businessId(new StringFilterProperty().$eq("order-4711")),
             new BaseProcessInstanceFilterFields().hasElementInstanceIncident(true));
   }
 

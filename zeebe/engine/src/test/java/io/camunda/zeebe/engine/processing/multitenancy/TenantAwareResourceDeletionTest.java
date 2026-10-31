@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -61,6 +62,10 @@ public class TenantAwareResourceDeletionTest {
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+
+  private static final String DRAINING_PROCESS_ID = "draining-tenant-process";
+  private static final BpmnModelInstance DRAINING_PROCESS =
+      Bpmn.createExecutableProcess(DRAINING_PROCESS_ID).startEvent().userTask().endEvent().done();
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -178,6 +183,31 @@ public class TenantAwareResourceDeletionTest {
                         .withIntent(ResourceDeletionIntent.DELETED)
                         .exists()))
         .isFalse();
+  }
+
+  @Test
+  public void shouldAcceptRepeatDeleteOfDrainingProcessForOwningTenant() {
+    // given - a tenant A definition kept DRAINING by a running instance
+    final var deployment =
+        ENGINE.deployment().withXmlResource(DRAINING_PROCESS).withTenantId(TENANT_ID_A).deploy();
+    final var resourceKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(DRAINING_PROCESS_ID)
+        .withTenantId(TENANT_ID_A)
+        .create();
+    ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(USERNAME);
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(resourceKey)
+        .await();
+
+    // when - the owning tenant repeats the delete
+    final var repeat = ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(USERNAME);
+
+    // then - accepted, with the tenant resolved on the response
+    Assertions.assertThat(repeat.getValue()).hasTenantId(TENANT_ID_A);
   }
 
   @Test

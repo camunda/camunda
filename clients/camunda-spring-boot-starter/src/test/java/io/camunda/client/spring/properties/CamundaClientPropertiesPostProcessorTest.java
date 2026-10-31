@@ -137,7 +137,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://bru-2.zeebe.camunda.io:443/xxx1"));
+              .isEqualTo(URI.create("https://bru-2.api.camunda.io:443/xxx1"));
         }
 
         @Test
@@ -246,7 +246,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://bru-2.zeebe.camundatest.io:1443/123"));
+              .isEqualTo(URI.create("https://bru-2.api.camundatest.io:1443/123"));
         }
 
         @Test
@@ -424,7 +424,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://abc-2.zeebe.camunda.io:443/12345"));
+              .isEqualTo(URI.create("https://abc-2.api.camunda.io:443/12345"));
         }
 
         @Test
@@ -793,8 +793,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
               .isEqualTo(
-                  URI.create(
-                      "https://your-cluster-region-id.zeebe.camunda.io:443/your-cluster-id"));
+                  URI.create("https://your-cluster-region-id.api.camunda.io:443/your-cluster-id"));
         }
 
         @Test

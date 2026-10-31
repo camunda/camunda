@@ -83,7 +83,7 @@ public final class ProcessInstanceFilterTransformer
 
     if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
       queries.add(
-          stringMatchPhraseInSingleHasChild(
+          stringMatchPhraseInSingleHasChildOrSelf(
               ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION));
     }
 

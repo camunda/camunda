@@ -17,7 +17,11 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
   public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofGigabytes(1);
+  public static final Duration DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  // Keep in sync with the defaults in RaftPartitionConfig, which these override on startup.
+  private static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
+  private static final long DEFAULT_PROMOTION_LAG_THRESHOLD = 1000;
   // Requests should time out faster than the election timeout to ensure that a single missed
   // heartbeat does not cause immediate re-election.
   private static final Duration DEFAULT_REQUEST_TIMEOUT = DEFAULT_ELECTION_TIMEOUT;
@@ -30,7 +34,10 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
+  private Duration bootstrapSnapshotRequestTimeout = DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
+  private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+  private long promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
@@ -62,12 +69,36 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
     this.snapshotChunkSize = snapshotChunkSize;
   }
 
+  public Duration getBootstrapSnapshotRequestTimeout() {
+    return bootstrapSnapshotRequestTimeout;
+  }
+
+  public void setBootstrapSnapshotRequestTimeout(final Duration bootstrapSnapshotRequestTimeout) {
+    this.bootstrapSnapshotRequestTimeout = bootstrapSnapshotRequestTimeout;
+  }
+
   public Duration getConfigurationChangeTimeout() {
     return configurationChangeTimeout;
   }
 
   public void setConfigurationChangeTimeout(final Duration configurationChangeTimeout) {
     this.configurationChangeTimeout = configurationChangeTimeout;
+  }
+
+  public Duration getJoinCatchUpTimeout() {
+    return joinCatchUpTimeout;
+  }
+
+  public void setJoinCatchUpTimeout(final Duration joinCatchUpTimeout) {
+    this.joinCatchUpTimeout = joinCatchUpTimeout;
+  }
+
+  public long getPromotionLagThreshold() {
+    return promotionLagThreshold;
+  }
+
+  public void setPromotionLagThreshold(final long promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
   }
 
   public Duration getMaxQuorumResponseTimeout() {

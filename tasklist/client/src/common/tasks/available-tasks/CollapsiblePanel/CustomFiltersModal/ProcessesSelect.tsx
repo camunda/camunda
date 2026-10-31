@@ -7,7 +7,6 @@
  */
 
 import {Select, SelectItem} from '@carbon/react';
-import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {useProcesses} from 'v1/api/useProcesses.query';
 import {useAllProcessDefinitions} from 'v2/api/useAllProcessDefinitions.query';
 import {useTranslation} from 'react-i18next';
@@ -62,21 +61,13 @@ type Props = {
   tenantId?: string;
 } & React.ComponentProps<typeof Select>;
 
-const ProcessesSelect: React.FC<Props> = ({
-  tenantId = DEFAULT_TENANT_ID,
-  disabled,
-  ...props
-}) => {
+const ProcessesSelect: React.FC<Props> = ({tenantId, disabled, ...props}) => {
   const {t} = useTranslation();
-  const {data} = useMultiModeProcesses(
-    {
-      tenantId,
-    },
-    {
-      enabled: !disabled,
-      refetchInterval: false,
-    },
-  );
+  const tenantFilter = tenantId === undefined ? {} : {tenantId};
+  const {data} = useMultiModeProcesses(tenantFilter, {
+    enabled: !disabled,
+    refetchInterval: false,
+  });
 
   const processes = normalizeProcesses(
     (isV2Result(data) ? data.items : data?.processes) ?? [],

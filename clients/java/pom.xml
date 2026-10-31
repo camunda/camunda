@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -224,6 +224,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>test</scope>
@@ -254,6 +260,12 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -290,6 +302,22 @@
         <directory>src/main/resources</directory>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>client-java-testcontainers.properties</exclude>
+        </excludes>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
+        <includes>
+          <include>client-java-testcontainers.properties</include>
+        </includes>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>

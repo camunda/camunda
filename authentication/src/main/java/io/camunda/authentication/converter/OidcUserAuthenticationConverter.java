@@ -40,7 +40,7 @@ public class OidcUserAuthenticationConverter
   private final TokenClaimsConverter tokenClaimsConverter;
   private final HttpServletRequest request;
   private final Map<String, JwtDecoder> jwtDecoders;
-  private final Map<String, List<String>> additionalJwkSetUrisByIssuer;
+  private final Map<String, List<String>> additionalJwkSetUrisByRegistrationId;
   private final Map<String, Boolean> preferIdTokenClaimsByRegistrationId;
 
   public OidcUserAuthenticationConverter(
@@ -62,13 +62,13 @@ public class OidcUserAuthenticationConverter
       final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final TokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
     this(
         authorizedClientRepository,
         accessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
-        additionalJwkSetUrisByIssuer,
+        additionalJwkSetUrisByRegistrationId,
         Collections.emptyMap());
   }
 
@@ -77,15 +77,15 @@ public class OidcUserAuthenticationConverter
       final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final TokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer,
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId,
       final Map<String, Boolean> preferIdTokenClaimsByRegistrationId) {
     this.authorizedClientRepository = authorizedClientRepository;
     this.accessTokenDecoderFactory = accessTokenDecoderFactory;
     this.tokenClaimsConverter = tokenClaimsConverter;
     this.request = request;
-    this.additionalJwkSetUrisByIssuer =
-        additionalJwkSetUrisByIssuer != null
-            ? additionalJwkSetUrisByIssuer.entrySet().stream()
+    this.additionalJwkSetUrisByRegistrationId =
+        additionalJwkSetUrisByRegistrationId != null
+            ? additionalJwkSetUrisByRegistrationId.entrySet().stream()
                 .collect(
                     Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())))
             : Collections.emptyMap();
@@ -178,11 +178,7 @@ public class OidcUserAuthenticationConverter
     return jwtDecoders.computeIfAbsent(
         clientRegistrationId,
         k -> {
-          final var issuerUri = clientRegistration.getProviderDetails().getIssuerUri();
-          // issuerUri may be null when configured without auto-discovery (e.g. explicit
-          // jwkSetUri/authorizationUri/tokenUri). Guard against NPE on the immutable map.
-          final var additionalUris =
-              issuerUri != null ? additionalJwkSetUrisByIssuer.get(issuerUri) : null;
+          final var additionalUris = additionalJwkSetUrisByRegistrationId.get(clientRegistrationId);
           return accessTokenDecoderFactory.createAccessTokenDecoder(
               clientRegistration, additionalUris);
         });

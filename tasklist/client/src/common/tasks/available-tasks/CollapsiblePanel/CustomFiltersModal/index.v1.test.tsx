@@ -15,6 +15,7 @@ import {HttpResponse, http} from 'msw';
 import * as userMocks from 'common/mocks/current-user';
 import {createMockProcess} from 'v1/api/useProcesses.query';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
+import * as clientConfig from 'common/config/getClientConfig';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -183,6 +184,204 @@ describe('<CustomFiltersModal />', () => {
     expect(
       within(dialog).getByRole('textbox', {name: /in a group/i}),
     ).toBeInTheDocument();
+  });
+
+  it('should load processes from the only accessible tenant', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json({
+          ...userMocks.currentUser,
+          tenants: [{tenantId: 'staging', name: 'Staging', description: null}],
+        }),
+      ),
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'staging') {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-0')]);
+      }),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+    expect(
+      screen.queryByRole('combobox', {name: /tenant/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should load default-tenant processes for a user with multiple accessible tenants', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.get('tenantId') !== '<default>') {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-0')]);
+      }),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+  });
+
+  it('should load processes from the selected tenant', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+      isMultiTenancyEnabled: true,
+    });
+    storeStateLocally('customFilters', {
+      custom: {assignee: 'all', status: 'all', tenant: 'tenantB'},
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'tenantB') {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-0')]);
+      }),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        filterId="custom"
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
+  });
+
+  it('should reload processes when the selected tenant changes', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+      isMultiTenancyEnabled: true,
+    });
+    nodeMockServer.use(
+      http.get('/v2/authentication/me', () =>
+        HttpResponse.json(userMocks.currentUserWithTenants),
+      ),
+      http.get(
+        '/v1/internal/processes',
+        ({request}) => {
+          if (
+            new URL(request.url).searchParams.get('tenantId') !== '<default>'
+          ) {
+            return HttpResponse.json(null, {status: 400});
+          }
+
+          return HttpResponse.json([
+            createMockProcess('process-default-tenant'),
+          ]);
+        },
+        {once: true},
+      ),
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.get('tenantId') !== 'tenantB') {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-tenantB')]);
+      }),
+    );
+
+    const {user} = render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      await screen.findByRole('option', {
+        name: /process process-default-tenant/i,
+      }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByRole('combobox', {name: /tenant/i}),
+      'tenantB',
+    );
+
+    expect(
+      await screen.findByRole('option', {name: /process process-tenantB/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should load processes without a tenant when multi-tenancy is disabled', async () => {
+    nodeMockServer.use(
+      http.get('/v1/internal/processes', ({request}) => {
+        if (new URL(request.url).searchParams.has('tenantId')) {
+          return HttpResponse.json(null, {status: 400});
+        }
+
+        return HttpResponse.json([createMockProcess('process-0')]);
+      }),
+    );
+
+    render(
+      <CustomFiltersModal
+        isOpen
+        onClose={() => {}}
+        onSuccess={() => {}}
+        onDelete={() => {}}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toBeEnabled(),
+    );
   });
 
   it('should render advanced filters', async () => {

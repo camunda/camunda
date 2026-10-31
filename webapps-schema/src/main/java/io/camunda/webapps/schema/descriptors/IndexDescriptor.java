@@ -22,6 +22,8 @@ public interface IndexDescriptor {
 
   String getIndexName();
 
+  String getComponentName();
+
   String getMappingsClasspathFilename();
 
   @Deprecated

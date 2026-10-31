@@ -200,7 +200,7 @@ public class OidcUserAuthenticationConverterTest {
             oidcAccessTokenDecoderFactory,
             tokenClaimsConverter,
             request,
-            Map.of(issuer, additionalUris));
+            Map.of("test-reg", additionalUris));
 
     final var oidcUser = mock(OidcUser.class);
     when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
@@ -244,15 +244,15 @@ public class OidcUserAuthenticationConverterTest {
   }
 
   @Test
-  public void shouldPassNullWhenIssuerNotInAdditionalUrisMap() {
-    // given — converter configured with additional URIs for a different issuer
+  public void shouldPassNullWhenRegistrationNotInAdditionalUrisMap() {
+    // given — converter configured with additional URIs for a different registration
     final var converter =
         new OidcUserAuthenticationConverter(
             authorizedClientRepository,
             oidcAccessTokenDecoderFactory,
             tokenClaimsConverter,
             request,
-            Map.of("https://other-issuer.example.com", List.of("https://other/jwks")));
+            Map.of("other-reg", List.of("https://other/jwks")));
 
     final var oidcUser = mock(OidcUser.class);
     when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
@@ -286,7 +286,7 @@ public class OidcUserAuthenticationConverterTest {
     // when
     converter.convert(authentication);
 
-    // then — null is passed because issuer is not in the map
+    // then — null is passed because the registration is not in the map
     verify(oidcAccessTokenDecoderFactory)
         .createAccessTokenDecoder(eq(clientRegistration), isNull());
   }
@@ -294,20 +294,16 @@ public class OidcUserAuthenticationConverterTest {
   @Test
   public void shouldCacheDecoderForSameClientRegistration() {
     // given — converter with additional URIs
-    final var issuer = "https://issuer.example.com";
     final var converter =
         new OidcUserAuthenticationConverter(
             authorizedClientRepository,
             oidcAccessTokenDecoderFactory,
             tokenClaimsConverter,
             request,
-            Map.of(issuer, List.of("https://issuer.example.com/extra/jwks")));
+            Map.of("cached-reg", List.of("https://issuer.example.com/extra/jwks")));
 
-    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
-    when(providerDetails.getIssuerUri()).thenReturn(issuer);
     final var clientRegistration = mock(ClientRegistration.class);
     when(clientRegistration.getRegistrationId()).thenReturn("cached-reg");
-    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
 
     final var accessToken = mock(OAuth2AccessToken.class);
     when(accessToken.getTokenValue()).thenReturn("token-1", "token-2");
@@ -340,19 +336,21 @@ public class OidcUserAuthenticationConverterTest {
   }
 
   @Test
-  public void shouldNotThrowWhenIssuerUriIsNull() {
+  public void shouldResolveAdditionalJwkSetUrisWhenIssuerUriIsNull() {
     // given — OIDC provider configured without issuer-uri (only
-    // jwkSetUri/authorizationUri/tokenUri)
-    // This is the regression test for the NPE introduced by PR #47219:
-    // additionalJwkSetUrisByIssuer is an immutable Map.copyOf() and does not permit null key
-    // lookups.
+    // jwkSetUri/authorizationUri/tokenUri). Regression test for
+    // https://github.com/camunda/camunda/issues/50801: the login flow used to resolve
+    // additional-jwk-set-uris from a map keyed by issuer URI, so a provider without an
+    // issuer-uri could never have its additional JWKS endpoints resolved. Keying the lookup
+    // by registration id instead means it no longer depends on issuer-uri being configured.
+    final var additionalUris = List.of("https://other/jwks");
     final var converter =
         new OidcUserAuthenticationConverter(
             authorizedClientRepository,
             oidcAccessTokenDecoderFactory,
             tokenClaimsConverter,
             request,
-            Map.of("https://other-issuer.example.com", List.of("https://other/jwks")));
+            Map.of("no-issuer-reg", additionalUris));
 
     final var oidcUser = mock(OidcUser.class);
     when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
@@ -384,12 +382,13 @@ public class OidcUserAuthenticationConverterTest {
     when(tokenClaimsConverter.convert(any()))
         .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
 
-    // when / then — must not throw NullPointerException when issuerUri is null
+    // when / then — must not throw when issuerUri is null
     assertThatCode(() -> converter.convert(authentication)).doesNotThrowAnyException();
 
-    // and — null is passed to decoder factory since issuer has no additional JWKS configured
+    // and — the additional URIs registered for this registration id are still passed to the
+    // decoder factory, even though the provider has no issuer-uri
     verify(oidcAccessTokenDecoderFactory)
-        .createAccessTokenDecoder(eq(clientRegistration), isNull());
+        .createAccessTokenDecoder(eq(clientRegistration), eq(additionalUris));
   }
 
   @Test

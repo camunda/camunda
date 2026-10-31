@@ -50,7 +50,15 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     try {
       incident = incidentReader.getIncidentById(operation.getIncidentKey());
     } catch (final NotFoundException ex) {
-      failOperation(operation, "No appropriate incidents found: " + ex.getMessage());
+      failOperation(operation, incidentNotFoundMessage(operation));
+      return;
+    }
+
+    // The incident must belong to this process instance (fail closed on missing keys). The same
+    // message is used for "not found" and "does not belong" so the caller cannot tell them apart.
+    if (operation.getProcessInstanceKey() == null
+        || !operation.getProcessInstanceKey().equals(incident.getProcessInstanceKey())) {
+      failOperation(operation, incidentNotFoundMessage(operation));
       return;
     }
 
@@ -74,6 +82,12 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     }
     // mark operation as sent
     markAsSent(operation);
+  }
+
+  private static String incidentNotFoundMessage(final OperationEntity operation) {
+    return String.format(
+        "No incident %s found for process instance %s.",
+        operation.getIncidentKey(), operation.getProcessInstanceKey());
   }
 
   @Override

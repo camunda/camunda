@@ -46,7 +46,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.YearMonth;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -142,156 +142,6 @@ final class OpenSearchArchiverRepositoryIT {
             .getFullQualifiedName();
     auditLogIndex =
         resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class).getFullQualifiedName();
-  }
-
-  @Test
-  void shouldDeleteDocuments() throws IOException {
-    // given
-    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(indexName, doc));
-    testClient.indices().refresh(r -> r.index(indexName));
-
-    // when - delete the first two documents
-    final var result =
-        repository.deleteDocuments(
-            indexName, Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(indexName));
-    final var remaining =
-        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("only the third document is remaining")
-        .hasSize(1)
-        .first()
-        .extracting(Hit::id)
-        .isEqualTo("3");
-  }
-
-  @Test
-  void shouldDeleteDocumentsWithFilters() throws IOException {
-    // given
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex();
-    documents.forEach(doc -> index(auditLogIndex, doc));
-    testClient.indices().refresh(r -> r.index(auditLogIndex));
-
-    // when - delete documents with ids [1, 2, 3], but only if the type is "A"
-    final var result =
-        repository.deleteDocuments(
-            auditLogIndex, Map.of("id", List.of("1", "2", "3")), Map.of("entityType", "A"));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(auditLogIndex));
-    final var remaining =
-        testClient.search(
-            r -> r.index(auditLogIndex).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("documents 1,3 should be deleted")
-        .hasSize(1)
-        .first()
-        .extracting(h -> h.source().id())
-        .isEqualTo("2");
-  }
-
-  @Test
-  void shouldReindexDocumentsWithFilters() throws IOException {
-    // given
-    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex(sourceIndexName);
-    createAuditLogIndex(destIndexName);
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-
-    // when - reindex documents with id "1" or "2", but only if the type is "A"
-    final var result =
-        repository.reindexDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", List.of("1", "2", "3")),
-            Map.of("entityType", "A"));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(destIndexName));
-    final var reindexed =
-        testClient.search(
-            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("documents 1,3 should be reindexed")
-        .hasSize(2)
-        .extracting(h -> h.source().id())
-        .containsExactlyInAnyOrder("1", "3");
-  }
-
-  @Test
-  void shouldMoveDocumentsWithFilters() throws IOException {
-    // given
-    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex(sourceIndexName);
-    createAuditLogIndex(destIndexName);
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-
-    // when
-    final var result =
-        repository.moveDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", List.of("1", "2", "3")),
-            Map.of("entityType", "A"),
-            Runnable::run);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
-
-    final var remaining =
-        testClient.search(
-            r -> r.index(sourceIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("only document 2 should remain")
-        .hasSize(1)
-        .first()
-        .extracting(h -> h.source().id())
-        .isEqualTo("2");
-
-    final var moved =
-        testClient.search(
-            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(moved.hits().hits())
-        .as("documents 1,3 should be moved")
-        .hasSize(2)
-        .extracting(h -> h.source().id())
-        .containsExactlyInAnyOrder("1", "3");
   }
 
   @Test
@@ -432,83 +282,6 @@ final class OpenSearchArchiverRepositoryIT {
     for (final var index : untouchedIndices) {
       assertThat(fetchPolicyForIndex(index)).as("no policy applied to %s", index).isEqualTo("null");
     }
-  }
-
-  @Test
-  void shouldReindexDocuments() throws IOException {
-    // given
-    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - reindex the first two documents
-    final var result =
-        repository.reindexDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("all documents are remaining")
-        .hasSize(3)
-        .extracting(Hit::id)
-        .containsExactlyInAnyOrder("1", "2", "3");
-  }
-
-  @Test
-  void shouldMoveDocuments() throws IOException {
-    // given
-    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - move the first two documents
-    final var result =
-        repository.moveDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
-            Runnable::run);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("only the last document is remaining")
-        .hasSize(1)
-        .extracting(Hit::id)
-        .containsExactly("3");
   }
 
   @Test
@@ -799,8 +572,13 @@ final class OpenSearchArchiverRepositoryIT {
               assertThat(firstBatch.get().finishDate()).isEqualTo(firstExpected);
             });
     repository
-        .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("1", "2")), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("1", "2")),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     final var secondBatchDocuments =
@@ -822,8 +600,13 @@ final class OpenSearchArchiverRepositoryIT {
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     repository
-        .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("3", "4")), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("3", "4")),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     // we create another batch of documents, which is two hours ago, since the default archive point
@@ -999,8 +782,12 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate())
-        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString()); // rollover is 1M
+    final var expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
   @Test
@@ -1305,6 +1092,11 @@ final class OpenSearchArchiverRepositoryIT {
         .extracting(IdWithRouting::id)
         .containsExactlyInAnyOrder("1", "2", "4");
     assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
+    // need to ensure we have these for deletes
+    for (final var doc : batch.documents()) {
+      assertThat(doc.seqNo()).isNotNull();
+      assertThat(doc.primaryTerm()).isNotNull();
+    }
     assertThat(batch.searchAfter()).hasSize(1);
     assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
@@ -1500,7 +1292,7 @@ final class OpenSearchArchiverRepositoryIT {
     // when - delete with the routing each doc was indexed under
     final var idsWithRouting =
         docs.stream()
-            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7)))
+            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7), null, null))
             .toList();
     final var result = repository.deleteDocumentsById(indexName, idsWithRouting);
 
@@ -1514,6 +1306,37 @@ final class OpenSearchArchiverRepositoryIT {
         .isEqualTo(total);
     testClient.indices().refresh(r -> r.index(indexName));
     assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
+  }
+
+  @Test
+  void shouldFailToDeleteDocumentIfWrongSeqNoAndPrimaryTermProvided() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents = List.of(new TestDocument("1"));
+    documents.forEach(doc -> index(indexName, doc));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(new IdWithRouting("1", null, Long.MAX_VALUE, Long.MAX_VALUE)));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(30))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(VersionConflictOnArchiveDeleteException.class);
+
+    testClient.indices().refresh(r -> r.index(indexName));
+    final var remaining =
+        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("document has not been deleted")
+        .hasSize(1)
+        .first()
+        .extracting(Hit::id)
+        .isEqualTo("1");
   }
 
   @Test

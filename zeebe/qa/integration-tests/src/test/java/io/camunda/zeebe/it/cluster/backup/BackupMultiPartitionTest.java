@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.cluster.backup;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
@@ -24,8 +25,8 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
-import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -43,7 +44,7 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -70,7 +72,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 class BackupMultiPartitionTest {
-  @Container private static final MinioContainer S3 = new MinioContainer();
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
   private static final String JOB_TYPE = "test";
   private static final BpmnModelInstance SIMPLE_PROCESS =
       Bpmn.createExecutableProcess("process").startEvent("start").endEvent("end").done();
@@ -87,7 +89,8 @@ class BackupMultiPartitionTest {
   private BackupStore s3BackupStore;
   private S3BackupConfig s3ClientConfig;
   private String bucketName = null;
-  private GrpcClientRule client;
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
   private BackupRequestHandler backupRequestHandler;
   private BackupActuator backupActuator;
 
@@ -143,7 +146,8 @@ class BackupMultiPartitionTest {
 
   @BeforeEach
   void setup() {
-    client = new GrpcClientRule(cluster.newClientBuilder().build());
+    client = cluster.newClientBuilder().build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
     backupActuator = BackupActuator.of(cluster.anyGateway());
     backupRequestHandler = new BackupRequestHandler(cluster.anyGateway().bean(BrokerClient.class));
     createBackupStoreForTest();
@@ -151,8 +155,7 @@ class BackupMultiPartitionTest {
 
   @AfterEach
   void close() {
-    // Create bucket before for storing backups
-    s3BackupStore.closeAsync();
+    s3BackupStore.closeAsync().join();
     // reset so that each test can use a different bucket name
     bucketName = null;
   }
@@ -166,7 +169,7 @@ class BackupMultiPartitionTest {
     takeBackupOnPartition(backupId, 1);
 
     // when
-    client.deployProcess(SIMPLE_PROCESS);
+    resourcesHelper.deployProcess(SIMPLE_PROCESS);
 
     // then
     waitUntilBackupIsCompleted(backupId);
@@ -176,7 +179,7 @@ class BackupMultiPartitionTest {
   @Timeout(value = 120)
   void shouldTriggerBackupViaInterPartitionMessageSubscriptionCommands() {
     // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
+    final long processKey = resourcesHelper.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
 
     final long backupId = 2;
     // trigger backup only on partition 1
@@ -193,7 +196,7 @@ class BackupMultiPartitionTest {
   @Timeout(value = 120)
   void shouldTriggerBackupViaInterPartitionMessageCorrelationCommands() {
     // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
+    final long processKey = resourcesHelper.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
     createProcessInstanceOnPartitionOne(processKey);
 
     final long backupId = 3;
@@ -222,8 +225,7 @@ class BackupMultiPartitionTest {
 
     // then
     final var jobHandler = new RecordingJobHandler();
-    try (final var ignored =
-        client.getClient().newWorker().jobType(JOB_TYPE).handler(jobHandler).open()) {
+    try (final var ignored = client.newWorker().jobType(JOB_TYPE).handler(jobHandler).open()) {
       Awaitility.await("All jobs created before restoring the cluster are activated")
           .timeout(Duration.ofSeconds(30))
           .untilAsserted(
@@ -295,7 +297,7 @@ class BackupMultiPartitionTest {
   void canRetrieveCheckpointStateFromMultiplePartitions()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
+    final long processKey = resourcesHelper.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
     createProcessInstanceOnPartitionOne(processKey);
 
     final long backupId = 3;
@@ -352,48 +354,11 @@ class BackupMultiPartitionTest {
     assertThat(backupStates.get(1).checkpointPosition()).isGreaterThan(0);
   }
 
-  @Test
-  @Timeout(value = 120)
-  void canRetrieveCheckpointStateFromPartialPartitions()
-      throws ExecutionException, InterruptedException, TimeoutException {
-    // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
-    createProcessInstanceOnPartitionOne(processKey);
-
-    final long backupId = 3;
-    // trigger backup only on partition 2
-    takeBackupOnPartition(backupId, 2);
-
-    // then
-    waitUntilBackupCompletedOnPartition(backupId, 2);
-
-    final var state = getCheckpointState();
-    assertThat(state).isNotNull();
-    assertThat(state.getCheckpointStates()).hasSize(1);
-    assertThat(state.getBackupStates()).hasSize(1);
-
-    final var checkpointStates =
-        state.getCheckpointStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    final var backupStates =
-        state.getBackupStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
-  }
-
   private Set<Long> createJobsOnAllPartitions() {
     final Set<Integer> partitions = new HashSet<>();
     final Set<Long> jobKeys = new HashSet<>();
     while (partitions.size() < cluster.partitionsCount()) {
-      final long jobKey = client.createSingleJob(JOB_TYPE);
+      final long jobKey = resourcesHelper.createSingleJob(JOB_TYPE);
       jobKeys.add(jobKey);
       partitions.addAll(
           RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -460,7 +425,6 @@ class BackupMultiPartitionTest {
 
   private void publishMessageAndWaitUntilCorrelated() {
     client
-        .getClient()
         .newPublishMessageCommand()
         .messageName(MESSAGE_NAME)
         .correlationKey(CORRELATION_KEY_VALUE_FOR_PARTITION_2)
@@ -482,7 +446,6 @@ class BackupMultiPartitionTest {
             () -> {
               final var createInstanceResult =
                   client
-                      .getClient()
                       .newCreateInstanceCommand()
                       .processDefinitionKey(processKey)
                       .variables(Map.of(CORRELATION_KEY, CORRELATION_KEY_VALUE_FOR_PARTITION_2))

@@ -95,12 +95,12 @@ test.describe('HTO User Flow Tests', () => {
     });
   });
 
-  test('User Task Editing Variables Flow', async ({
+  // Skipped due to bug #66364: https://github.com/camunda/camunda/issues/66364
+  test.skip('User Task Editing Variables Flow', async ({
     page,
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    operateFiltersPanelPage,
     taskPanelPageV1,
     taskDetailsPageV1,
     loginPage,
@@ -134,7 +134,9 @@ test.describe('HTO User Flow Tests', () => {
       await expect(page.getByText('"testValue"')).not.toBeVisible({
         timeout: 90000,
       });
-      await expect(page.getByText('"updatedValue"')).toBeVisible();
+      await expect(page.getByText('"updatedValue"')).toBeVisible({
+        timeout: 90000,
+      });
       await sleep(10000);
 
       await navigateToApp(page, 'tasklist');

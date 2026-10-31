@@ -34,6 +34,18 @@ camundaExMedic="<!subteam^S064J3N99A5|camunda-ex-medic>"
 lookupTeamMedic["Camunda Ex"]=$camundaExMedic
 lookupTeamMedic["CamundaEx"]=$camundaExMedic
 
+# @pod-operate-admin-medic
+operateAdminMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-admin-pod"]=$operateAdminMedic
+
+# @pod-employee-engagement-tasklist-medic
+tasklistMedic="<!subteam^S0BPB1RF1NZ|pod-employee-engagement-tasklist-medic>"
+lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
+
+# @bi-pod-medic
+optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
+lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
 

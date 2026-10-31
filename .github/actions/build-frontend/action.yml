@@ -38,9 +38,9 @@ runs:
 
     - name: Install node dependencies (yarn)
       if: ${{ inputs.package-manager == 'yarn' }}
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: yarn
+      uses: ./.github/actions/yarn-install-with-retry
+      with:
+        directory: ${{ inputs.directory }}
 
     - name: Install node dependencies (npm)
       if: ${{ inputs.package-manager == 'npm' }}

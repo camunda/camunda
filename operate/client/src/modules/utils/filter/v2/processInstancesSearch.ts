@@ -56,6 +56,117 @@ const parseProcessInstancesFilter = (
   return ProcessInstancesFilterSchema.parse(Object.fromEntries(search));
 };
 
+const buildStateCriterion = (
+  states: ProcessInstanceState[],
+): ProcessInstancesSearchFilter['state'] => {
+  const [state] = states;
+  return state && states.length === 1 ? {$eq: state} : {$in: states};
+};
+
+const getSelectedStates = (
+  filter: ProcessInstancesFilter,
+): ProcessInstanceState[] =>
+  [
+    filter.active ? 'ACTIVE' : undefined,
+    filter.completed ? 'COMPLETED' : undefined,
+    filter.canceled ? 'TERMINATED' : undefined,
+  ].filter((state): state is ProcessInstanceState => state !== undefined);
+
+const compactFilters = (
+  filters: Array<ProcessInstancesSearchFilter | false | undefined>,
+): ProcessInstancesSearchFilter[] =>
+  filters.filter(
+    (filter): filter is ProcessInstancesSearchFilter =>
+      filter !== false && filter !== undefined,
+  );
+
+const buildStateFilter = (
+  filter: ProcessInstancesFilter,
+): ProcessInstancesSearchFilter => {
+  const states = getSelectedStates(filter);
+
+  if (filter.incidents && states.length > 0) {
+    return {$or: [{state: {$in: states}}, {hasIncident: true}]};
+  }
+
+  if (filter.incidents) {
+    return {hasIncident: true};
+  }
+
+  if (states.length > 0) {
+    return {
+      state: buildStateCriterion(states),
+      hasIncident: false,
+    };
+  }
+
+  return {};
+};
+
+const buildElementFilter = (
+  elementId: string,
+  matchActiveElement: boolean,
+): ProcessInstancesSearchFilter => ({
+  elementId: {$eq: elementId},
+  ...(matchActiveElement && {
+    elementInstanceState: {$eq: 'ACTIVE'},
+  }),
+});
+
+const buildMixedStateElementFilter = (
+  filter: ProcessInstancesFilter,
+  elementId: string,
+): ProcessInstancesSearchFilter => {
+  const activeElementFilter = buildElementFilter(elementId, true);
+  const executedElementFilter = buildElementFilter(elementId, false);
+  const finishedStates = getSelectedStates(filter).filter(
+    (state) => state !== 'ACTIVE',
+  );
+
+  return {
+    $or: compactFilters([
+      filter.active && {
+        ...activeElementFilter,
+        state: {$eq: 'ACTIVE'},
+        hasIncident: false,
+      },
+      finishedStates.length > 0 && {
+        ...executedElementFilter,
+        state: buildStateCriterion(finishedStates),
+        hasIncident: false,
+      },
+      filter.incidents && {
+        ...activeElementFilter,
+        hasIncident: true,
+      },
+    ]),
+  };
+};
+
+const buildStateAndElementFilter = (
+  filter: ProcessInstancesFilter,
+): ProcessInstancesSearchFilter => {
+  const stateFilter = buildStateFilter(filter);
+
+  if (!filter.elementId) {
+    return stateFilter;
+  }
+
+  const hasFinishedStateFilter = Boolean(filter.completed || filter.canceled);
+  const hasActiveElementStateFilter = Boolean(
+    filter.active || filter.incidents,
+  );
+
+  if (hasFinishedStateFilter && hasActiveElementStateFilter) {
+    return buildMixedStateElementFilter(filter, filter.elementId);
+  }
+
+  return {
+    ...stateFilter,
+    ...buildElementFilter(filter.elementId, !hasFinishedStateFilter),
+  };
+};
+
 const parseProcessInstancesSearchFilter = (
   search: URLSearchParams,
 ): ProcessInstancesSearchFilter | undefined => {
@@ -68,7 +179,7 @@ const parseProcessInstancesSearchFilter = (
     return undefined;
   }
 
-  const apiFilter: ProcessInstancesSearchFilter = {};
+  const apiFilter = buildStateAndElementFilter(filter);
 
   if (filter.processDefinitionId) {
     apiFilter.processDefinitionId = {$eq: filter.processDefinitionId};
@@ -99,33 +210,6 @@ const parseProcessInstancesSearchFilter = (
     apiFilter.parentProcessInstanceKey = {
       $eq: filter.parentProcessInstanceKey,
     };
-  }
-
-  const states: ProcessInstanceState[] = [];
-  if (filter.active) {
-    states.push('ACTIVE');
-  }
-  if (filter.completed) {
-    states.push('COMPLETED');
-  }
-  if (filter.canceled) {
-    states.push('TERMINATED');
-  }
-
-  if (filter.incidents) {
-    if (states.length > 0) {
-      apiFilter.$or = [{state: {$in: states}}, {hasIncident: true}];
-    } else {
-      apiFilter.hasIncident = true;
-    }
-  } else if (states.length > 0) {
-    apiFilter.state = states.length === 1 ? {$eq: states[0]} : {$in: states};
-    apiFilter.hasIncident = false;
-  }
-
-  if (filter.elementId) {
-    apiFilter.elementId = {$eq: filter.elementId};
-    apiFilter.elementInstanceState = {$eq: 'ACTIVE'};
   }
 
   if (filter.batchOperationId) {

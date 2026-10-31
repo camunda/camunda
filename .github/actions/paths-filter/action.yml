@@ -161,11 +161,14 @@ outputs:
         steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
   protobuf-changes:
-    description: Output whether any Protobuf files have changed
+    description: >-
+      Output whether the Protobuf backwards-compatibility check should be run based on GitHub event and files changed.
+      Restricted to pull requests and merge queues: the check's breaking-change comparison relies on PR/merge-group
+      context (e.g. a "BREAKING CHANGE:" acknowledgment) that isn't available on a plain push to main/stable.
     value: >-
       ${{
-        github.event_name == 'push' ||
-        (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
+        (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+        steps.filter-common.outputs.protobuf-change == 'true'
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
@@ -193,6 +196,15 @@ outputs:
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
+      }}
+  release-notes-action:
+    description: Output whether the release-notes action's tests and bundle-drift guards should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.release-notes-action-change == 'true'
       }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
@@ -236,7 +248,7 @@ runs:
   using: composite
   steps:
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-common
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -247,9 +259,26 @@ runs:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
+          - '.github/scripts/download-with-retry.sh'
 
         renovate-config-change:
           - '**/renovate.json'
+
+        # The gate workflow is included so a change to it still runs the action's
+        # tests and the bundle-drift guard that back it.
+        #
+        # The first two globs overlap `ci-relevant` (which already covers
+        # .github/actions/** and .github/workflows/**) and are kept on purpose:
+        # ci-relevant additionally requires check.sh to judge the change
+        # CI-relevant, so an excluded path there would otherwise skip the
+        # action's own tests. The last two are not GitHub Actions files at all,
+        # so only this filter catches them — and both are drift-guarded by the
+        # action's CI, which is exactly what must run when they change.
+        release-notes-action-change:
+          - '.github/actions/release-notes/**'
+          - '.github/workflows/release-notes*'
+          - '.github/pull_request_template.md'
+          - 'commitlint.config.cjs'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
@@ -300,6 +329,7 @@ runs:
           - 'zeebe/gateway-protocol/src/main/proto/v2/**'
           - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
           - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
+          - '.github/scripts/oas-breaking-change-check/**'
 
         rdbms-change:
         - 'db/rdbms/**'
@@ -308,7 +338,7 @@ runs:
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-github-actions
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -342,7 +372,7 @@ runs:
         echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
       fi
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-identity
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -351,7 +381,7 @@ runs:
         identity-frontend-change:
           - 'identity/client/**'
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-zeebe
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -361,7 +391,7 @@ runs:
           - 'zeebe/**'
           - 'clients/**'
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-operate
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -373,7 +403,7 @@ runs:
         operate-frontend-change:
           - operate/client/**
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-tasklist
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -385,7 +415,7 @@ runs:
         tasklist-frontend-change:
           - tasklist/client/**
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -401,7 +431,7 @@ runs:
           - optimize/client/**
           - optimize/backend/src/main/resources/localization/**
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-client-components
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -410,7 +440,7 @@ runs:
         client-components-change:
           - 'client-components/**'
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-dep-manifests
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -426,7 +456,7 @@ runs:
           - '**/go.mod'
           - '**/go.sum'
 
-  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-docs
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}

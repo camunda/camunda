@@ -29,6 +29,7 @@ test.beforeAll(async () => {
     './resources/date_and_time_task_with_form.bpmn',
     './resources/form_with_date_and_time.form',
     './resources/number_task_with_form.bpmn',
+    './resources/number_task_with_form_by_buttons.bpmn',
     './resources/form_with_number.form',
     './resources/radio_button_task_with_form.bpmn',
     './resources/form_with_radio_button.form',
@@ -65,6 +66,7 @@ test.beforeAll(async () => {
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
     createInstances('Number_Task', 1, 2),
+    createInstances('Number_Task_By_Buttons', 1, 2),
     createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
@@ -312,6 +314,17 @@ test.describe('task details page', () => {
     await expect(taskDetailsPageV1.form).toContainText('EUR 264');
     await expect(taskDetailsPageV1.form).toContainText('Total: EUR 544.5');
 
+    // Guard against form-js reverting a dynamic-list value on a delayed
+    // re-render: re-assert (and re-fill) every item row now that the form is
+    // idle, so no required field is silently left empty when submitting.
+    // Same race and fix as processes-page.spec.ts's "complete process with
+    // start node having deployed form" (see commit de873f1e75d).
+    await taskDetailsPageV1.verifyDynamicListValues([
+      {label: 'Item Name*', value: 'Laptop'},
+      {label: 'Unit Price*', value: '1'},
+      {label: 'Quantity*', value: '2'},
+    ]);
+
     await taskDetailsPageV1.completeTaskButton.click();
 
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible({
@@ -354,6 +367,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with form from assigned to me filter', async ({
+    page,
     taskPanelPageV1,
     taskDetailsPageV1,
   }) => {
@@ -366,6 +380,20 @@ test.describe('task details page', () => {
     await taskPanelPageV1.filterBy('Assigned to me');
     await taskPanelPageV1.openTask('User registration');
 
+    // This file's beforeAll creates 3 "User registration" instances shared
+    // across multiple tests, all rendered with the identical task name, and
+    // TaskPanelPageV1.openTask() matches by name only (`.nth(0)`) with no
+    // other disambiguation. Once more than one of them has been completed,
+    // the "Completed" filter can list more than one task under this exact
+    // name, so re-searching by name below could silently reopen a different
+    // test's already-completed instance instead of this one (observed: a
+    // stale "Jon" from another test's data instead of this test's own
+    // "Gaius Julius Caesar"). Capture this task's own URL now, while the
+    // "Assigned to me" filter still makes it unambiguous, and navigate back
+    // to it directly afterwards — the same pattern already used by the
+    // "complete task" test above.
+    const taskUrl = page.url();
+
     await expect(taskDetailsPageV1.nameInput).toBeVisible();
     await taskDetailsPageV1.fillTextInput('Name*', 'Gaius Julius Caesar');
     await taskDetailsPageV1.fillTextInput('Address*', 'Rome');
@@ -376,7 +404,7 @@ test.describe('task details page', () => {
 
     await taskPanelPageV1.filterBy('Completed');
     await taskPanelPageV1.assertCompletedHeadingVisible();
-    await taskPanelPageV1.openTask('User registration');
+    await page.goto(taskUrl);
 
     await taskDetailsPageV1.assertFieldValue('Name*', 'Gaius Julius Caesar');
     await taskDetailsPageV1.assertFieldValue('Address*', 'Rome');
@@ -447,7 +475,7 @@ test.describe('task details page', () => {
     taskDetailsPageV1,
   }) => {
     await taskPanelPageV1.filterBy('Unassigned');
-    await taskPanelPageV1.openTask('UserTask_Number');
+    await taskPanelPageV1.openTask('UserTask_Number_Buttons');
     await taskDetailsPageV1.clickAssignToMeButton();
 
     await taskDetailsPageV1.clickIncrementButton();
@@ -462,7 +490,7 @@ test.describe('task details page', () => {
 
     await taskPanelPageV1.filterBy('Completed');
     await taskPanelPageV1.assertCompletedHeadingVisible();
-    await taskPanelPageV1.openTask('UserTask_Number');
+    await taskPanelPageV1.openTask('UserTask_Number_Buttons');
     await taskDetailsPageV1.assertFieldValue('Number', '1');
   });
 
@@ -566,7 +594,7 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.assertItemChecked('Value2');
   });
 
-  // TODO issue #3719
+  // Skipped due to bug #62714: https://github.com/camunda/camunda/issues/62714
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with tag list form', async ({
     taskPanelPageV1,
@@ -591,7 +619,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPageV1.form.getByText('Value 2')).toBeVisible();
   });
 
-  // TODO issue #3719
+  // Skipped due to bug #62714: https://github.com/camunda/camunda/issues/62714
   // eslint-disable-next-line playwright/no-skipped-test
   test.skip('task completion with text template form', async ({
     taskPanelPageV1,
@@ -626,7 +654,6 @@ test.describe('task details page', () => {
   test('task completion with large variable form', async ({
     taskPanelPageV1,
     taskDetailsPageV1,
-    page,
   }) => {
     await taskPanelPageV1.filterBy('Unassigned');
     await taskPanelPageV1.openTask('Big Variable Usertask');

@@ -268,4 +268,92 @@ public class RepeatingIntervalTest {
             .toEpochMilli();
     assertThat(dueDate).isEqualTo(expected);
   }
+
+  @Test
+  public void shouldKeepNaturalNextOccurrenceWhenNotOverdue() {
+    // given — natural next occurrence (lastDueDate + interval) is still ahead of now
+    final RepeatingInterval repeatingInterval =
+        new RepeatingInterval(3, new Interval(Period.ZERO, Duration.ofSeconds(10)));
+    final long lastDueDate = Instant.now().toEpochMilli();
+    final long now = lastDueDate + Duration.ofSeconds(5).toMillis();
+
+    // when
+    final RepeatingInterval rescheduled =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, 3);
+
+    // then — resolves to lastDueDate + interval, unaffected by now
+    assertThat(rescheduled.getDueDate(now))
+        .isEqualTo(lastDueDate + Duration.ofSeconds(10).toMillis());
+    assertThat(rescheduled.getRepetitions()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldReanchorOnNowWhenNaturalNextOccurrenceEqualsNow() {
+    // given — now lands exactly on the natural next occurrence (lastDueDate + interval)
+    final RepeatingInterval repeatingInterval =
+        new RepeatingInterval(3, new Interval(Period.ZERO, Duration.ofSeconds(10)));
+    final long lastDueDate = Instant.now().toEpochMilli();
+    final long now = lastDueDate + Duration.ofSeconds(10).toMillis();
+
+    // when
+    final RepeatingInterval rescheduled =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, 3);
+
+    // then — re-anchored a full interval past now, not the (already overdue) natural occurrence
+    assertThat(rescheduled.getDueDate(now)).isEqualTo(now + Duration.ofSeconds(10).toMillis());
+  }
+
+  @Test
+  public void shouldReanchorOnNowWhenOverdueForSeveralIntervals() {
+    // given — several intervals elapsed since lastDueDate (e.g. a long suspension)
+    final RepeatingInterval repeatingInterval =
+        new RepeatingInterval(3, new Interval(Period.ZERO, Duration.ofSeconds(10)));
+    final long lastDueDate = Instant.now().toEpochMilli();
+    final long now = lastDueDate + Duration.ofSeconds(35).toMillis();
+
+    // when
+    final RepeatingInterval rescheduled =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, 3);
+
+    // then — the missed cycles collapse into a single re-anchor a full interval past now
+    assertThat(rescheduled.getDueDate(now)).isEqualTo(now + Duration.ofSeconds(10).toMillis());
+  }
+
+  @Test
+  public void shouldCarryOverGivenRepetitionsRegardlessOfOriginalRepetitions() {
+    // given — receiver has its own (stale) repetitions count
+    final RepeatingInterval repeatingInterval =
+        new RepeatingInterval(5, new Interval(Period.ZERO, Duration.ofSeconds(10)));
+    final long lastDueDate = Instant.now().toEpochMilli();
+    final long now = lastDueDate + Duration.ofSeconds(5).toMillis();
+
+    // when
+    final RepeatingInterval withFiniteRepetitions =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, 2);
+    final RepeatingInterval withInfiniteRepetitions =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, RepeatingInterval.INFINITE);
+
+    // then — the returned repetitions always reflect the passed-in value, not the receiver's
+    assertThat(withFiniteRepetitions.getRepetitions()).isEqualTo(2);
+    assertThat(withInfiniteRepetitions.getRepetitions()).isEqualTo(RepeatingInterval.INFINITE);
+  }
+
+  @Test
+  public void shouldReplaceExistingStartTimeWithLastDueDate() {
+    // given — receiver already carries an explicit start, unrelated to lastDueDate
+    final ZonedDateTime originalStart = ZonedDateTime.now().minusDays(30);
+    final RepeatingInterval repeatingInterval =
+        new RepeatingInterval(
+            3, new Interval(Optional.of(originalStart), Period.ZERO, Duration.ofSeconds(10)));
+    final long lastDueDate = Instant.now().toEpochMilli();
+    final long now = lastDueDate + Duration.ofSeconds(5).toMillis();
+
+    // when
+    final RepeatingInterval rescheduled =
+        repeatingInterval.nextOccurrenceAfter(lastDueDate, now, 3);
+
+    // then — rebased on lastDueDate, the receiver's original start is discarded
+    assertThat(rescheduled.getDueDate(now))
+        .isEqualTo(lastDueDate + Duration.ofSeconds(10).toMillis());
+  }
 }

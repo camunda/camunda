@@ -209,6 +209,11 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getFeatures()
         .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+            processing.isEvaluateBoundaryEventCorrelationKeyInActivityScope());
 
     populateFromEngine(override);
   }
@@ -509,6 +514,10 @@ public class BrokerBasedPropertiesOverride {
     override
         .getExperimental()
         .getRaft()
+        .setBootstrapSnapshotRequestTimeout(raft.getBootstrapSnapshotRequestTimeout());
+    override
+        .getExperimental()
+        .getRaft()
         .setConfigurationChangeTimeout(raft.getConfigurationChangeTimeout());
     override
         .getExperimental()
@@ -538,9 +547,10 @@ public class BrokerBasedPropertiesOverride {
     final var syncTimeout = metadata.getSyncRequestTimeout();
     final var gossipFanout = metadata.getGossipFanout();
     final var syncInitializerDelay = metadata.getSyncInitializerDelay();
+    final var bootstrapTimeout = metadata.getBootstrapTimeout();
     final var configManagerGossipConfig =
         new ClusterConfigurationGossiperConfig(
-            syncDelay, syncTimeout, gossipFanout, syncInitializerDelay);
+            syncDelay, syncTimeout, gossipFanout, syncInitializerDelay, bootstrapTimeout);
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
   }
 

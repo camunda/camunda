@@ -1,0 +1,54 @@
+---
+name: yarn install with retry
+
+# owner: @camunda/engineering-operations
+
+description: >
+  Runs `yarn` wrapped in retry logic so a singular transient network failure
+  does not fail the whole job. Beyond the registry itself, postinstall scripts
+  of native dependencies (e.g. sharp) fetch prebuilt binaries straight from
+  GitHub releases, which aborts often enough to be a recurring flake.
+
+inputs:
+  directory:
+    description: >
+      Directory to install dependencies in. The retry action runs from the
+      repository root and ignores `working-directory`, so this must be passed
+      explicitly.
+    required: true
+  args:
+    description: Extra arguments to pass to `yarn`, e.g. `--frozen-lockfile`.
+    required: false
+    default: ""
+  max_attempts:
+    description: Maximum number of attempts before giving up.
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: Seconds to wait between attempts.
+    required: false
+    default: "5"
+  timeout_minutes:
+    description: Timeout per attempt in minutes.
+    required: false
+    default: "10"
+
+runs:
+  using: composite
+  steps:
+    - name: Install node dependencies
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: ${{ inputs.timeout_minutes }}
+        # Pin to bash so a forward-slash `directory` works consistently on
+        # Linux, container images, and Windows runners (git-bash).
+        shell: bash
+        # yarn installs incrementally, so a killed attempt can leave a partially
+        # extracted node_modules that the next one would install on top of. The
+        # GHA cache holds the global yarn dir, not node_modules, so discarding it
+        # costs a re-link rather than a re-download.
+        on_retry_command: rm -rf "${{ inputs.directory }}/node_modules"
+        command: |
+          cd "${{ inputs.directory }}" && yarn ${{ inputs.args }}

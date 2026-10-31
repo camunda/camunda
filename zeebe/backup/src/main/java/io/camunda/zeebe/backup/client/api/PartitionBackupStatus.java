@@ -72,7 +72,7 @@ public record PartitionBackupStatus(
     return new PartitionBackupStatus(
         response.getPartitionId(),
         BackupStatusCode.FAILED,
-        Optional.of(response.getFailureReason()),
+        Optional.ofNullable(response.getFailureReason()),
         Optional.ofNullable(response.getCreatedAt()),
         Optional.ofNullable(response.getLastUpdated()),
         Optional.ofNullable(response.getSnapshotId()),

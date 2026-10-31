@@ -10,7 +10,7 @@ import {makeObservable, observable, action} from 'mobx';
 import {commonApi} from 'common/api';
 import {getClientConfig} from 'common/config/getClientConfig';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
-import {request} from 'common/api/request';
+import {request, requestCsrfToken} from 'common/api/request';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {currentUserQueryOptions} from 'common/api/useCurrentUser.query';
 import {z} from 'zod';
@@ -47,6 +47,10 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
+    // The login endpoint rejects a POST without a CSRF token, and a GET of the login page is
+    // where the server sends one.
+    await requestCsrfToken(commonApi.loginCsrfToken());
+
     const {response, error} = await request(
       commonApi.login({username, password}),
       {

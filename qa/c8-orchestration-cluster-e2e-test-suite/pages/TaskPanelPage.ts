@@ -59,6 +59,7 @@ class TaskPanelPage {
       'User Task with form rerender 1': 'user_task_with_form_rerender_1',
       'User Task with form rerender 2': 'user_task_with_form_rerender_2',
       UserTask_Number: 'UserTask_Number',
+      UserTask_Number_Buttons: 'UserTask_Number_Buttons',
       'Date and Time Task': 'Date_and_Time_Task',
       'Checkbox Task': 'Checkbox_User_Task',
       'Select User Task': 'Select',

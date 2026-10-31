@@ -189,7 +189,7 @@ public class SpringCamundaClientConfigurationTest {
 
     // then
     assertThat(config.getRestAddress())
-        .isEqualTo(URI.create("https://my-region.zeebe.camunda.io:443/my-cluster"));
+        .isEqualTo(URI.create("https://my-region.api.camunda.io:443/my-cluster"));
     assertThat(config.getGrpcAddress())
         .isEqualTo(URI.create("https://my-cluster.my-region.zeebe.camunda.io:443"));
     assertThat(config.getCredentialsProvider()).isInstanceOf(OAuthCredentialsProvider.class);
@@ -218,7 +218,7 @@ public class SpringCamundaClientConfigurationTest {
 
     // then
     assertThat(config.getRestAddress())
-        .isEqualTo(URI.create("https://us-east.zeebe.camunda.io:443/auto-detected-cluster"));
+        .isEqualTo(URI.create("https://us-east.api.camunda.io:443/auto-detected-cluster"));
     assertThat(config.getGrpcAddress())
         .isEqualTo(URI.create("https://auto-detected-cluster.us-east.zeebe.camunda.io:443"));
   }

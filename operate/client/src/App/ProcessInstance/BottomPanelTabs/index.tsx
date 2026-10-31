@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router';
+import {Navigate, Outlet, useLocation, useNavigate} from 'react-router';
+import {useLayoutEffect, useRef} from 'react';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -16,6 +17,8 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
+import {modificationsStore} from 'modules/stores/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -50,12 +53,70 @@ function useSelectionAwareIncidentsCount(
 }
 
 const BottomPanelTabs: React.FC = () => {
-  const {hasSelection} = useProcessInstanceElementSelection();
-  const {data: processInstance} = useProcessInstance();
+  const {hasSelection, selectedElementId} =
+    useProcessInstanceElementSelection();
+  const {data: businessObjects} = useBusinessObjects();
+  const {data: processInstance, isLoading: isProcessInstanceLoading} =
+    useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
+
+  const previousSelectedElementIdRef = useRef(selectedElementId);
+  useLayoutEffect(() => {
+    const previousSelectedElementId = previousSelectedElementIdRef.current;
+    const hasSelectedElementChanged =
+      selectedElementId !== previousSelectedElementId;
+
+    if (modificationsStore.isModificationModeEnabled) {
+      if (hasSelectedElementChanged) {
+        previousSelectedElementIdRef.current = selectedElementId;
+      }
+      return;
+    }
+
+    if (
+      hasSelectedElementChanged &&
+      (!hasSelection ||
+        (!isProcessInstanceLoading && businessObjects !== undefined))
+    ) {
+      previousSelectedElementIdRef.current = selectedElementId;
+    }
+
+    const isSelectingCallActivity =
+      hasSelectedElementChanged &&
+      selectedElementId !== null &&
+      !isProcessInstanceLoading &&
+      businessObjects !== undefined &&
+      businessObjects?.[selectedElementId]?.$type === 'bpmn:CallActivity';
+
+    if (!isSelectingCallActivity) {
+      return;
+    }
+
+    const pathname = hasIncident
+      ? Paths.processInstanceIncidents({processInstanceId})
+      : Paths.processInstanceDetails({processInstanceId});
+    navigate(
+      {
+        pathname,
+        search: location.search,
+      },
+      {replace: true},
+    );
+  }, [
+    hasSelection,
+    selectedElementId,
+    hasIncident,
+    isProcessInstanceLoading,
+    businessObjects,
+    processInstanceId,
+    location.search,
+    navigate,
+  ]);
+
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
     hasIncident,

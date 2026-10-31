@@ -77,7 +77,7 @@ jobs:
           ./mvnw -B -T2C -pl dist -am -DskipTests -DskipChecks -Dflatten.skip=true --no-transfer-progress package
 
       - name: Upload Camunda Distribution
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-dist
           path: dist/target/camunda-zeebe-*.tar.gz
@@ -144,14 +144,14 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - name: Set up Java 21
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: "temurin"
+          java-version: "25"
 
       - name: Download Camunda Distribution Artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: camunda-dist
           path: ./dist/target
@@ -267,7 +267,7 @@ jobs:
       - name: Install IntelliJ HTTP Client
         shell: bash
         run: |
-          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
           ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 

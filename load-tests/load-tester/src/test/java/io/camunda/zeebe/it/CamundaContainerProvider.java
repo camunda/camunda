@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.it;
 
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL;
-
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.time.Duration;
@@ -49,13 +47,8 @@ final class CamundaContainerProvider {
     return new CamundaContainer(DockerImageName.parse(imageName).withTag(imageVersion))
         .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)))
         // capture container-side broker/exporter stdout so IT failures (indexing stalls,
-        // backpressure, crashes, early history cleanup) are diagnosable from the test log
-        .withLogConsumer(new Slf4jLogConsumer(CONTAINER_LOG).withPrefix("camunda"))
-        // CamundaContainer defaults the RDBMS history TTL to PT2S and runs cleanup every 2-5s, so
-        // completed process instances are purged within seconds of completion. These ITs query
-        // completed instances after an async delay, which races that cleanup and flakes when the
-        // runner is slow. Extend the TTL so instances survive the assertion window.
-        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL, "PT1H");
+        // backpressure, crashes) are diagnosable from the test log
+        .withLogConsumer(new Slf4jLogConsumer(CONTAINER_LOG).withPrefix("camunda"));
   }
 
   static void registerClientProperties(

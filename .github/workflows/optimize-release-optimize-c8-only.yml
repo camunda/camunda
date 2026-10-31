@@ -67,7 +67,7 @@ jobs:
         # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -169,7 +169,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install common tooling (buildx) # required on self-hosted runners
-        uses: camunda/infra-global-github-actions/common-tooling@b20a0e8f64ea6554900bab2d3fb3906be613aa19 # common-tooling: v1.0.1
+        uses: camunda/infra-global-github-actions/common-tooling@379e8654a5f25f22566f80c2e99a611fca365263 # common-tooling-1.0.9
         with:
           buildx-enabled: true
           java-enabled: false
@@ -226,7 +226,7 @@ jobs:
 
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@11a434ffbf6bb3357363d1933be71a4076a90a6b # 3.0.11
+        uses: YunaBraska/java-info-action@7a178ff2b0222107efbaab0c457c2ff09a84a801 # 3.0.14
         with:
           work-dir: ./optimize
 

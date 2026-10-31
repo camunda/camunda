@@ -8,6 +8,9 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -21,12 +24,15 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.protocol.BasicHttpContext;
 import org.elasticsearch.client.Node;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientFactoryTest {
@@ -35,6 +41,18 @@ final class ElasticsearchClientFactoryTest {
 
   private static RestClient extractRestClient(final ElasticsearchClient client) {
     return ((RestClientTransport) client._transport()).restClient();
+  }
+
+  @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    config.url = "http://elastic:s3cr3t@localhost:notaport";
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid Elasticsearch url at position 0")
+        .hasNoCause();
   }
 
   @Test
@@ -115,6 +133,20 @@ final class ElasticsearchClientFactoryTest {
 
     // then
     assertThat(context.getAttribute("foo")).isEqualTo("baz");
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var builder = mock(HttpAsyncClientBuilder.class);
+
+    // when
+    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    verify(builder).setDefaultIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepalive()).isTrue();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

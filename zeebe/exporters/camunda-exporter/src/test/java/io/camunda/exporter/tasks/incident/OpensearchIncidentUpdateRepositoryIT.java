@@ -60,6 +60,12 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
   }
 
   @Override
+  protected void refresh(final String index) throws IOException {
+    final var client = new OpenSearchClient(transport);
+    client.indices().refresh(r -> r.index(index));
+  }
+
+  @Override
   protected <T> Collection<T> search(
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException {

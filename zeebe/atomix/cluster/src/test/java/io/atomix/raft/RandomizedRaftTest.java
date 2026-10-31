@@ -204,6 +204,7 @@ public class RandomizedRaftTest {
       }
       operation.run(raftContexts, member);
       raftContexts.assertAtMostOneLeader();
+      raftContexts.assertAtMostOneVotePerMemberAndTerm();
 
       if (step % 100 == 0) { // reading logs after every operation can be too slow
         raftContexts.assertAllLogsEqual();
@@ -231,6 +232,7 @@ public class RandomizedRaftTest {
     }
 
     raftContexts.assertAtMostOneLeader();
+    raftContexts.assertAtMostOneVotePerMemberAndTerm();
     raftContexts.assertAllLogsEqual();
 
     // when - no more message loss

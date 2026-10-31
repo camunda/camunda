@@ -14,24 +14,20 @@ import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
-import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class IndexRepositoryES implements IndexRepository, ConfigurationReloadable {
+public class IndexRepositoryES implements IndexRepository {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IndexRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
-  private final Set<String> indices = ConcurrentHashMap.newKeySet();
 
   public IndexRepositoryES(
       final OptimizeElasticsearchClient esClient,
@@ -54,11 +50,6 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    indices.clear();
-  }
-
-  @Override
   public boolean indexExists(
       final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
@@ -76,13 +67,9 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
 
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
         esClient, indexMappingCreator, readOnlyAliases);
-
-    final String index = getIndexName(indexMappingCreator);
-
-    indices.add(index);
   }
 
   private boolean indexExists(final String index) {
-    return indices.contains(index) || elasticSearchSchemaManager.indexExists(esClient, index);
+    return elasticSearchSchemaManager.indexExists(esClient, index);
   }
 }

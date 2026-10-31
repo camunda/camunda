@@ -317,13 +317,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getSocketTimeout() {
     final var socketTimeout =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".socket-timeout",
             this.socketTimeout != null ? Math.toIntExact(this.socketTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacySocketTimeoutProperties());
     return socketTimeout != null ? Duration.ofMillis(socketTimeout) : null;
   }
@@ -332,13 +333,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.socketTimeout = socketTimeout;
   }
 
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".connection-timeout",
             connectionTimeout != null ? Math.toIntExact(connectionTimeout.toMillis()) : null,
             Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            BackwardsCompatibilityMode.SUPPORTED,
             legacyConnectionTimeoutProperties());
     return connectionTimeoutInt != null ? Duration.ofMillis(connectionTimeoutInt) : null;
   }
@@ -348,11 +350,30 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
+   * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use, and deliberately kept that way.
+   *
+   * <p>{@code SUPPORTED} was originally chosen because matching mode failed startup whenever the
+   * unified value was unset, which is always the case here - the field has no default. {@link
+   * UnifiedConfigurationHelper} now falls back to the legacy value instead of failing, so that
+   * reason no longer applies. The connection-pool and timeout properties stay on {@code SUPPORTED}
+   * on a different one: when a deployment sets both a unified and a differing legacy value, these
+   * properties prefer the unified value and warn, where matching mode would refuse to start.
+   * Realigning them would turn that warning into a startup failure for clusters running today, so
+   * it is a decision of its own rather than a side effect of fixing the validation.
+   *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
   public Integer getMaxConnections() {
-    validatePositive(".max-connections", maxConnections);
-    return maxConnections;
+    final Integer resolved =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".max-connections",
+            maxConnections,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyMaxConnectionsProperties());
+    validatePositive(".max-connections", resolved);
+    return resolved;
   }
 
   public void setMaxConnections(final Integer maxConnections) {
@@ -360,11 +381,20 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
+   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}.
+   *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
   public Integer getMaxConnectionsPerRoute() {
-    validatePositive(".max-connections-per-route", maxConnectionsPerRoute);
-    return maxConnectionsPerRoute;
+    final Integer resolved =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".max-connections-per-route",
+            maxConnectionsPerRoute,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            legacyMaxConnectionsPerRouteProperties());
+    validatePositive(".max-connections-per-route", resolved);
+    return resolved;
   }
 
   public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
@@ -570,6 +600,22 @@ public abstract class DocumentBasedSecondaryStorageDatabase
         "camunda.operate." + dbName + ".connectionTimeout",
         "camunda.tasklist." + dbName + ".connectionTimeout",
         "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
+  }
+
+  /**
+   * Only 'camunda.database', where the properties around it also list 'camunda.operate.*',
+   * 'camunda.tasklist.*' and the exporter args. The connection pool was never exposed on the
+   * operate and tasklist prefixes. The exporter args are deliberately left out too: those resolve
+   * under SUPPORTED, so listing them would let a limit meant for the exporter's client silently
+   * size the webapps' client as well.
+   */
+  private Set<String> legacyMaxConnectionsProperties() {
+    return Set.of("camunda.database.maxConnections");
+  }
+
+  /** See {@link #legacyMaxConnectionsProperties()} for why only 'camunda.database' is listed. */
+  private Set<String> legacyMaxConnectionsPerRouteProperties() {
+    return Set.of("camunda.database.maxConnectionsPerRoute");
   }
 
   private Set<String> legacyNumberOfReplicasProperties() {

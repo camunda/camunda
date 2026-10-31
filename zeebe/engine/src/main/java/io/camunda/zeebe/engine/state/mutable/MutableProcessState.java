@@ -34,6 +34,13 @@ public interface MutableProcessState extends ProcessState {
   void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
+   * Marks a definition {@link PersistedProcessState#DRAINING}, remembering from the record whether
+   * its instances' history must be deleted once drained. Updates both the ColumnFamily and the
+   * in-memory cache.
+   */
+  void markDraining(final ProcessRecord processRecord);
+
+  /**
    * Sets the deployment key of a process that was not previously associated with a deployment. This
    * method updates both the ColumnFamily and the in memory cache. Throws an exception if the
    * process is already associated with another deployment.
@@ -49,6 +56,26 @@ public interface MutableProcessState extends ProcessState {
    * Deletes a process from the state and cache
    *
    * @param processRecord the record of the process that is deleted
+   * @deprecated only for replaying Process:DELETED v1 events, use {@link
+   *     #deleteProcessAndRepointVersionTag(ProcessRecord)} instead
    */
+  @Deprecated
   void deleteProcess(final ProcessRecord processRecord);
+
+  /**
+   * Deletes a process like {@link #deleteProcess(ProcessRecord)}, but keeps the version tag lookup
+   * of other versions with the same tag: if it points at the deleted process, it is re-pointed to
+   * the latest remaining version with that tag, otherwise it is left untouched.
+   *
+   * @param processRecord the record of the process that is deleted
+   */
+  void deleteProcessAndRepointVersionTag(final ProcessRecord processRecord);
+
+  /**
+   * Records that the given partition still owes a drain report for the given process definition.
+   */
+  void addPendingDeletion(long processDefinitionKey, int partitionId);
+
+  /** Clears the given partition's outstanding drain report for the given process definition. */
+  void removePendingDeletion(long processDefinitionKey, int partitionId);
 }

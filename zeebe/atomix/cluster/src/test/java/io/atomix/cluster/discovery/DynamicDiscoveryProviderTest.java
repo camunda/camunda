@@ -47,7 +47,9 @@ class DynamicDiscoveryProviderTest {
         new DynamicDiscoveryConfig()
             .setAddresses(List.of("localhost:26500"))
             .setRefreshInterval(Duration.ofSeconds(30));
-    final DynamicDiscoveryProvider provider = new DynamicDiscoveryProvider(config);
+    // a fixed resolver, since localhost resolves to 127.0.0.1 and ::1 on dual-stack hosts
+    final DynamicDiscoveryProvider provider =
+        new DynamicDiscoveryProvider(config, host -> List.of(loopback(host)));
     providers.add(provider);
 
     // when
@@ -229,18 +231,13 @@ class DynamicDiscoveryProviderTest {
 
     final Function<String, List<InetAddress>> mockResolver =
         address -> {
-          if (address.equals("unresolvable.invalid.host:26500")) {
+          if (address.equals("unresolvable.invalid.host")) {
             throw new RuntimeException("Failed to resolve address");
-          } else {
-            try {
-              return List.of(InetAddress.getByName(address));
-            } catch (final UnknownHostException e) {
-              throw new RuntimeException(e);
-            }
           }
+          return List.of(loopback(address));
         };
 
-    final DynamicDiscoveryProvider provider = new DynamicDiscoveryProvider(config);
+    final DynamicDiscoveryProvider provider = new DynamicDiscoveryProvider(config, mockResolver);
     providers.add(provider);
 
     // when
@@ -283,5 +280,13 @@ class DynamicDiscoveryProviderTest {
     // then
     assertThat(provider).isInstanceOf(DynamicDiscoveryProvider.class);
     assertThat(provider.config()).isEqualTo(config);
+  }
+
+  private static InetAddress loopback(final String host) {
+    try {
+      return InetAddress.getByAddress(host, new byte[] {127, 0, 0, 1});
+    } catch (final UnknownHostException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

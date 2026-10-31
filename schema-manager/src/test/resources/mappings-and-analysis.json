@@ -1,0 +1,27 @@
+{
+  "settings": {
+    "index": {
+      "analysis": {
+        "normalizer": {
+          "case_insensitive": {
+            "filter": "lowercase"
+          }
+        },
+        "analyzer": {
+          "keyword_analyzer": {
+            "tokenizer": "keyword"
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "keyword",
+        "normalizer": "case_insensitive"
+      }
+    }
+  }
+}

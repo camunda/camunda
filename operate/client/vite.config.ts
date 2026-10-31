@@ -57,7 +57,12 @@ export default defineConfig(({mode}) => ({
       '/v2': 'http://localhost:8080',
       '/login': {
         target: 'http://localhost:8080',
-        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+        // The login flow does a GET /login to fetch a CSRF token before POSTing credentials, so
+        // that GET must reach the backend too, not just the POST. Match the backend's own check
+        // (Sec-Fetch-Mode: navigate) instead of the HTTP method, so only real browser navigations
+        // are served locally and the CSRF-token GET is proxied through.
+        bypass: (req) =>
+          req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined,
       },
       '/logout': {
         target: 'http://localhost:8080',

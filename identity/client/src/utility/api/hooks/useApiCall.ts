@@ -69,6 +69,9 @@ const useApiCall: UseApiCall = <R, P>(
   const call: ApiCall<R, P> = useCallback(
     async (params?: P) => {
       setLoading(true);
+      // The 401 handler may call recoverThirdPartySession(), which disables
+      // the session, so capture this before the request.
+      const wasLoggedIn = isLoggedIn();
 
       const {
         data: apiData,
@@ -80,7 +83,7 @@ const useApiCall: UseApiCall = <R, P>(
       if (apiStatus >= 400 && !options.suppressErrorNotification) {
         switch (apiStatus) {
           case 401:
-            if (isLoggedIn()) {
+            if (wasLoggedIn) {
               enqueueNotification({
                 kind: "error",
                 title: t("unauthorized"),

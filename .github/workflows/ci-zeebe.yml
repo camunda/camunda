@@ -35,7 +35,8 @@ env:
 jobs:
   smoke-tests:
     name: "Smoke - ${{ matrix.os }} with ${{ matrix.arch }}"
-    timeout-minutes: 20
+    # Unified CI ceiling for a required job (docs/monorepo-docs/ci.md); do not raise.
+    timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
     env:
@@ -57,8 +58,10 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -72,6 +75,9 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+          # Must stay above the slowest observed build (~11.4min on windows).
+          retry-max-attempts: 2
+          retry-timeout-minutes: 15
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         # Currently only Linux runners support building docker images without further ado
@@ -85,6 +91,7 @@ jobs:
           dockerfile: 'camunda.Dockerfile'
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Not retryable: `tee` would truncate the log and hide attempt 1 from Analyze Test Runs.
       - name: Run smoke test on ${{ matrix.arch }}
         shell: bash
         env:
@@ -134,8 +141,10 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -185,6 +194,11 @@ jobs:
 
   performance-tests:
     name: "Performance"
+    # This job runs a JMH microbenchmark on a shared, noisy runner pool and has a long
+    # flake history (see INC-7154, camunda/camunda#14971, camunda/camunda#39868). Restrict it to
+    # pull_request/merge_group so a flaky assertion doesn't page on every push to
+    # protected branches (main/stable/*); PR and merge-queue coverage is unaffected.
+    if: contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -193,8 +207,10 @@ jobs:
       TEST_OWNER: '@camunda/core-features'
       TEST_TYPE: Performance
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -262,14 +278,19 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - name: Install and allow strace tests
-        run: |
-          sudo apt-get -qq update && sudo apt-get install -y strace
-          sudo sysctl -w kernel.yama.ptrace_scope=0
+      - name: Install strace
+        uses: ./.github/actions/apt-install
+        with:
+          packages: strace
+          no-install-recommends: "false"
+      - name: Allow ptrace for strace tests
+        run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -331,8 +352,10 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_TYPE: Build
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
@@ -406,6 +429,8 @@ jobs:
       - strace-tests
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - run: |
           EXIT_CODE=${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
           exit $EXIT_CODE
@@ -435,6 +460,7 @@ jobs:
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-load-test.outputs.concurrency_group_name }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -442,13 +468,11 @@ jobs:
       TEST_OWNER: '@camunda/reliability-testing'
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
       IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-      # Jib's default HTTP timeout (20s) for registry push/pull is too low and has caused
-      # intermittent failures pushing the load-test images; see discussion in
-      # https://camunda.slack.com/archives/C5AHF1D8T/p1784723160353049
-      JIB_HTTP_TIMEOUT: 60000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -457,10 +481,30 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
+      # registry.camunda.cloud intermittently stops answering the manifest PUT at the end of the
+      # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
+      # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
+      # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -481,6 +525,7 @@ jobs:
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
+      queue: max
     uses: ./.github/workflows/zeebe-snyk.yml
     with:
       monitor: true
@@ -496,23 +541,26 @@ jobs:
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
     name: Auto-merge backport and release PRs
+    # GitHub cannot enable auto-merge on stacked PRs, so this job fails for them. That failure must
+    # not fail zeebe-ci, which the `check-results` merge gate depends on.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 3
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      github.actor == 'monorepo-devops-automation[bot]'
+      github.event.pull_request.user.login == 'monorepo-devops-automation[bot]'
     permissions:
       checks: read
       pull-requests: write
     env:
       TEST_OWNER: '@camunda/engineering-operations'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -523,6 +571,8 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         env:

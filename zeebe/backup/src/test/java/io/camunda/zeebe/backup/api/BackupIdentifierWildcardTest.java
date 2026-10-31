@@ -183,4 +183,14 @@ class BackupIdentifierWildcardTest {
   void prefixCheckpointPatternShouldThrowExceptionForEmptyPrefix(final String prefix) {
     assertThatThrownBy(() -> new Prefix(prefix)).isInstanceOf(IllegalArgumentException.class);
   }
+
+  /**
+   * A sign character embedded verbatim in {@link Prefix#asRegex()} can produce a pattern a store
+   * fails to compile: e.g. "+10" wrapped in a regex group becomes a dangling quantifier.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"+10", "-10", "1a2"})
+  void prefixCheckpointPatternShouldRejectNonDigitCharacters(final String prefix) {
+    assertThatThrownBy(() -> new Prefix(prefix)).isInstanceOf(IllegalArgumentException.class);
+  }
 }

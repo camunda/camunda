@@ -8,6 +8,7 @@
 package io.camunda.optimize.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.spy;
@@ -19,12 +20,18 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.ErrorResponse;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -89,5 +96,43 @@ public class OptimizeElasticsearchClientTest {
     // then the delete operation is completed
     deleteIndexTask.shutdown();
     assertThat(deleteIndexTask.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  public void shouldNameWhyBulkItemsFailedWhenSkippingDocumentsAtNestedLimit() throws IOException {
+    // given
+    underTest =
+        spy(
+            new OptimizeElasticsearchClient(
+                restClient, objectMapper, elasticsearchClient, indexNameService));
+    when(underTest.esWithTransportOptions()).thenReturn(elasticsearchClient);
+    final BulkResponseItem blocked =
+        BulkResponseItem.of(
+            item ->
+                item.operationType(OperationType.Update)
+                    .index("optimize-process-instance-a_v8")
+                    .id("1")
+                    .status(403)
+                    .error(
+                        e ->
+                            e.type("cluster_block_exception")
+                                .reason("index [optimize-process-instance-a_v8] blocked")));
+    when(elasticsearchClient.bulk(any(BulkRequest.class)))
+        .thenReturn(BulkResponse.of(b -> b.errors(true).took(1L).items(blocked)));
+    final BulkRequest bulkRequest =
+        BulkRequest.of(
+            b ->
+                b.operations(
+                    o ->
+                        o.update(
+                            u ->
+                                u.index("optimize-process-instance-a_v8")
+                                    .id("1")
+                                    .action(a -> a.doc(Map.of())))));
+
+    // when / then
+    assertThatThrownBy(() -> underTest.doBulkRequest(bulkRequest, "process instances", true))
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessageContaining("cluster_block_exception");
   }
 }

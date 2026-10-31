@@ -8,10 +8,13 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
+import io.camunda.gateway.protocol.model.BatchOperationResponse;
+import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
@@ -21,8 +24,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -103,6 +108,81 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getState()).isNull();
     assertThat(response.getProcessedDate()).isNull();
     assertThat(response.getErrorMessage()).isNull();
+  }
+
+  @Test
+  void shouldConvertBatchOperationEntity() {
+    // given
+    final var entity =
+        new BatchOperationEntity(
+            "batch-1",
+            BatchOperationState.COMPLETED,
+            BatchOperationType.CANCEL_PROCESS_INSTANCE,
+            OffsetDateTime.parse("2025-01-15T11:53:00Z"),
+            OffsetDateTime.parse("2025-01-15T12:53:00Z"),
+            AuditLogActorType.USER,
+            "actor-1",
+            10,
+            2,
+            8,
+            List.of());
+
+    // when
+    final BatchOperationResponse response = SearchQueryResponseMapper.toBatchOperation(entity);
+
+    // then
+    assertThat(response.getBatchOperationKey()).isEqualTo("batch-1");
+    assertThat(response.getState()).isEqualTo(BatchOperationStateEnum.COMPLETED);
+    assertThat(response.getBatchOperationType())
+        .isEqualTo(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE);
+    assertThat(response.getOperationsTotalCount()).isEqualTo(10);
+    assertThat(response.getOperationsFailedCount()).isEqualTo(2);
+    assertThat(response.getOperationsCompletedCount()).isEqualTo(8);
+  }
+
+  @Test
+  void shouldMapNullBatchOperationTypeInsteadOfFailingWholeResponse() {
+    // given — a batch operation whose type was never recorded in secondary storage
+    final var untyped =
+        new BatchOperationEntity(
+            "batch-untyped",
+            BatchOperationState.COMPLETED,
+            null, // operationType
+            null,
+            null,
+            null,
+            null,
+            1,
+            0,
+            1,
+            List.of());
+    final var typed =
+        new BatchOperationEntity(
+            "batch-typed",
+            BatchOperationState.ACTIVE,
+            BatchOperationType.RESOLVE_INCIDENT,
+            null,
+            null,
+            null,
+            null,
+            1,
+            0,
+            0,
+            List.of());
+
+    // when
+    final var response =
+        SearchQueryResponseMapper.toBatchOperationSearchQueryResult(
+            new SearchQueryResult<>(2, false, List.of(untyped, typed), null, null));
+
+    // then — the untyped item maps to null rather than taking down its siblings
+    assertThat(response.getItems())
+        .extracting(
+            BatchOperationResponse::getBatchOperationKey,
+            BatchOperationResponse::getBatchOperationType)
+        .containsExactly(
+            tuple("batch-untyped", null),
+            tuple("batch-typed", BatchOperationTypeEnum.RESOLVE_INCIDENT));
   }
 
   @Test

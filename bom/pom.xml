@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>camunda-bom</artifactId>
-  <version>8.9.14-SNAPSHOT</version>
+  <version>8.9.27-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Camunda BOM</name>
@@ -157,6 +157,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-process-test-langchain4j</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-json-test-cases</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -27,7 +27,16 @@ public class SearchTopHitsAggregatorTransformer
                 topHitsAggBuilder -> {
                   topHitsAggBuilder
                       .size(value.size())
-                      .source(s -> s.filter(f -> f.includes(value.fields())));
+                      .source(
+                          s ->
+                              s.filter(
+                                  f -> {
+                                    f.includes(value.fields());
+                                    if (!value.excludes().isEmpty()) {
+                                      f.excludes(value.excludes());
+                                    }
+                                    return f;
+                                  }));
 
                   // Convert FieldSorting list to SortOptions
                   value

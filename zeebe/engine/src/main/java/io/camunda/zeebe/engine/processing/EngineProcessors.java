@@ -55,6 +55,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
@@ -81,6 +82,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -260,12 +262,14 @@ public final class EngineProcessors {
         authCheckBehavior,
         incidentMetrics);
     addResourceDeletionProcessors(
+        partitionId,
         typedRecordProcessors,
         writers,
         processingState,
         commandDistributionBehavior,
         bpmnBehaviors,
-        authCheckBehavior);
+        authCheckBehavior,
+        routingInfo);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -627,12 +631,14 @@ public final class EngineProcessors {
   }
 
   private static void addResourceDeletionProcessors(
+      final int partitionId,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
             writers,
@@ -640,9 +646,16 @@ public final class EngineProcessors {
             processingState,
             commandDistributionBehavior,
             bpmnBehaviors,
-            authCheckBehavior);
+            authCheckBehavior,
+            routingInfo);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+
+    final var deleteCompleteProcessor =
+        new ProcessDeleteCompleteProcessor(
+            partitionId, writers, processingState, commandDistributionBehavior);
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS, ProcessIntent.DELETE_COMPLETE, deleteCompleteProcessor);
   }
 
   private static void addResourceFetchProcessors(

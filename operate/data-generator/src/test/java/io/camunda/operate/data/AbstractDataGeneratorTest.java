@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessInstanceServices;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +134,32 @@ class AbstractDataGeneratorTest {
 
     // then
     assertThat(processDefinitionKey).isNull();
+  }
+
+  @Test
+  void shouldPropagateProcessCountFailureInsteadOfReportingDataExists() throws IOException {
+    // given
+    final ProcessStore processStore = mock(ProcessStore.class);
+    generator.processStore = processStore;
+    final IOException searchFailure = new IOException("no_shard_available_action_exception");
+    when(processStore.count()).thenThrow(searchFailure);
+
+    // when / then
+    assertThatThrownBy(() -> generator.shouldCreateData(false))
+        .isInstanceOf(OperateRuntimeException.class)
+        .hasCause(searchFailure);
+  }
+
+  @Test
+  void shouldRecogniseAWrappedCountFailureAsSchemaNotReady() {
+    // given
+    final OperateRuntimeException wrapped =
+        new OperateRuntimeException(
+            "Error occurred when counting processes.",
+            new IOException("no_shard_available_action_exception"));
+
+    // when / then
+    assertThat(generator.isSchemaNotReady(wrapped)).isTrue();
   }
 
   @Test

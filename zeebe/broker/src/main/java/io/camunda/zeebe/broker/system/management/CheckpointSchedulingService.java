@@ -28,6 +28,7 @@ import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -86,10 +87,14 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
     final var retentionCfg = backupCfg.getRetention();
     if (shouldRegisterRetentionJob()) {
-      final var backupStore = buildBackupStore(backupCfg);
+      if (backupCfg.getStore() == BackupStoreType.NONE) {
+        throw new IllegalStateException("No backup store configured");
+      }
+      // The retention job owns the store: it builds one whenever it starts and releases it when it
+      // stops, so it keeps working across the stop/start cycles that follow the lowest member id.
       backupRetentionJob =
           new BackupRetention(
-              backupStore,
+              () -> buildBackupStore(backupCfg),
               brokerClient,
               retentionCfg.getCleanupSchedule(),
               retentionCfg.getWindow(),
@@ -115,20 +120,19 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   @Override
   protected void onActorCloseRequested() {
     membershipService.removeListener(this);
-    if (isSchedulerActive()) {
-      final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
-      shutdownFutures.add(checkpointScheduler.closeAsync());
-      if (backupRetentionJob != null) {
-        shutdownFutures.add(backupRetentionJob.closeAsync());
+    final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        shutdownFutures.add(schedulerActor.closeAsync());
       }
-      actor.runOnCompletion(
-          shutdownFutures,
-          (error) -> {
-            if (error != null) {
-              LOG.error("Failed to close checkpoint creator actor", error);
-            }
-          });
     }
+    actor.runOnCompletion(
+        shutdownFutures,
+        (error) -> {
+          if (error != null) {
+            LOG.error("Failed to close checkpoint scheduling actors", error);
+          }
+        });
   }
 
   @Override
@@ -149,29 +153,36 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   }
 
   private void checkedStopScheduler() {
-    if (shouldStopSchedulers() && isSchedulerActive()) {
-      checkpointScheduler.close();
-      if (backupRetentionJob != null) {
-        backupRetentionJob.close();
+    if (!shouldStopSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (!schedulerActor.isActorClosed()) {
+        schedulerActor.close();
       }
     }
   }
 
   private void checkedStartScheduler() {
-    if (shouldStartSchedulers() && isSchedulerInactive()) {
-      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.ioBound());
-      if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
+    if (!shouldStartSchedulers()) {
+      return;
+    }
+    for (final var schedulerActor : schedulerActors()) {
+      if (schedulerActor.isActorClosed()) {
+        actorScheduler.submitActor(schedulerActor, SchedulingHints.ioBound());
       }
     }
   }
 
-  private boolean isSchedulerActive() {
-    return checkpointScheduler != null && !checkpointScheduler.isActorClosed();
-  }
-
-  private boolean isSchedulerInactive() {
-    return checkpointScheduler != null && checkpointScheduler.isActorClosed();
+  private List<Actor> schedulerActors() {
+    final List<Actor> actors = new ArrayList<>(2);
+    if (checkpointScheduler != null) {
+      actors.add(checkpointScheduler);
+    }
+    if (backupRetentionJob != null) {
+      actors.add(backupRetentionJob);
+    }
+    return actors;
   }
 
   private boolean shouldStartSchedulers() {

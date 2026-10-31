@@ -100,6 +100,7 @@ const createProcessDefinition = (
   options: Partial<ProcessDefinition> = {},
 ): ProcessDefinition => {
   return {
+    state: 'ACTIVE',
     name: 'Big variable process',
     processDefinitionId: 'bigVarProcess',
     processDefinitionKey: '2223894723423800',
@@ -144,6 +145,7 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
 const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
   searchResult([
     {
+      state: 'ACTIVE',
       name: 'New demo process',
       processDefinitionId: 'demoProcess',
       processDefinitionKey: 'demoProcess3',
@@ -154,6 +156,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Demo process',
       processDefinitionId: 'demoProcess',
       processDefinitionKey: 'demoProcess2',
@@ -164,6 +167,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Demo process',
       processDefinitionId: 'demoProcess',
       processDefinitionKey: 'demoProcess1',
@@ -174,6 +178,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: null,
       processDefinitionId: 'eventBasedGatewayProcess',
       processDefinitionKey: '2251799813696866',
@@ -184,6 +189,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Event based gateway with message start',
       processDefinitionId: 'eventBasedGatewayProcess',
       processDefinitionKey: '2251799813685911',
@@ -194,6 +200,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Big variable process',
       processDefinitionId: 'bigVarProcess',
       processDefinitionKey: '2251799813685892',
@@ -204,6 +211,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Big variable process',
       processDefinitionId: 'bigVarProcess',
       processDefinitionKey: '2251799813685893',
@@ -214,6 +222,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Big variable process',
       processDefinitionId: 'bigVarProcess',
       processDefinitionKey: '2251799813685894',
@@ -224,6 +233,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       name: 'Order',
       processDefinitionId: 'orderProcess',
       processDefinitionKey: 'orderProcess1',

@@ -21,6 +21,7 @@ import {
 function mockResponses({
   batchOperations,
   processDefinitions,
+  drainingProcessDefinitions,
   statistics,
   processInstances,
   processXml,
@@ -28,6 +29,7 @@ function mockResponses({
 }: {
   batchOperations?: QueryBatchOperationsResponseBody;
   processDefinitions?: QueryProcessDefinitionsResponseBody['items'];
+  drainingProcessDefinitions?: QueryProcessDefinitionsResponseBody['items'];
   statistics?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: QueryProcessInstancesResponseBody;
   processXml?: string;
@@ -124,15 +126,28 @@ function mockResponses({
     }
 
     if (route.request().url().includes('/v2/process-definitions/search')) {
+      const query = route
+        .request()
+        .postDataJSON() as QueryProcessDefinitionsRequestBody;
+
+      if (query.filter?.state === 'DRAINING') {
+        const items = drainingProcessDefinitions ?? [];
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify({
+            items,
+            page: {totalItems: items.length},
+          }),
+          headers: {'content-type': 'application/json'},
+        });
+      }
+
       if (!processDefinitions) {
         return route.fulfill({
           status: 400,
           headers: {'content-type': 'application/json'},
         });
       }
-      const query = route
-        .request()
-        .postDataJSON() as QueryProcessDefinitionsRequestBody;
 
       let matchingDefinitions = processDefinitions;
       if (query.filter?.processDefinitionId) {
@@ -227,6 +242,7 @@ function mockResponses({
 
 const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685249',
     name: 'Always completing process',
     version: 1,
@@ -237,6 +253,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685430',
     name: 'Big variable process',
     version: 1,
@@ -247,6 +264,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686145',
     name: 'Call Activity Process',
     version: 1,
@@ -257,6 +275,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686130',
     name: 'DMN invoice',
     version: 1,
@@ -267,6 +286,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686159',
     name: 'Data store process',
     version: 1,
@@ -277,6 +297,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686151',
     name: 'Error Process',
     version: 1,
@@ -287,6 +308,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687212',
     name: 'Escalation events',
     version: 2,
@@ -297,6 +319,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686163',
     name: 'Escalation events',
     version: 1,
@@ -307,6 +330,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686147',
     name: 'Event Subprocess Process',
     version: 1,
@@ -317,6 +341,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687203',
     name: 'Event based gateway with timer start',
     version: 2,
@@ -327,6 +352,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686134',
     name: 'Event based gateway with message start',
     version: 1,
@@ -337,6 +363,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687190',
     name: 'Flight registration',
     version: 2,
@@ -347,6 +374,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686118',
     name: 'Flight registration',
     version: 1,
@@ -357,6 +385,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686168',
     name: 'Inclusive gateway',
     version: 1,
@@ -367,6 +396,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685251',
     name: 'Input Output Mapping Test',
     version: 1,
@@ -377,6 +407,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686161',
     name: 'Link events process',
     version: 1,
@@ -387,6 +418,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687192',
     name: 'Multi-Instance Process',
     version: 2,
@@ -397,6 +429,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686120',
     name: 'Sequential Multi-Instance Process',
     version: 1,
@@ -407,6 +440,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686137',
     name: 'Nested subprocesses',
     version: 1,
@@ -417,6 +451,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685301',
     name: 'Only Incidents Process',
     version: 2,
@@ -427,6 +462,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685257',
     name: 'Only Incidents Process',
     version: 1,
@@ -437,6 +473,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686114',
     name: 'Order process',
     version: 1,
@@ -447,6 +484,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686165',
     name: 'Signal event',
     version: 1,
@@ -457,6 +495,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686155',
     name: 'Terminate End Event',
     version: 1,
@@ -467,6 +506,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687198',
     name: 'Timer process',
     version: 2,
@@ -477,6 +517,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686143',
     name: 'Timer process',
     version: 1,
@@ -487,6 +528,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685364',
     name: 'Without Incidents Process',
     version: 2,
@@ -497,6 +539,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685350',
     name: 'Without Incidents Process',
     version: 1,
@@ -507,6 +550,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685255',
     name: 'Without Instances Process',
     version: 2,
@@ -517,6 +561,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813685253',
     name: 'Without Instances Process',
     version: 1,
@@ -527,6 +572,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686157',
     name: 'undefined-task',
     version: 1,
@@ -537,6 +583,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686149',
     name: null,
     version: 1,
@@ -547,6 +594,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687891',
     name: null,
     version: 2,
@@ -557,6 +605,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687210',
     name: 'Called Process',
     version: 1,
@@ -567,6 +616,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687889',
     name: null,
     version: 3,
@@ -577,6 +627,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687201',
     name: null,
     version: 2,
@@ -587,6 +638,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686132',
     name: null,
     version: 1,
@@ -597,6 +649,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686153',
     name: null,
     version: 1,
@@ -607,6 +660,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686124',
     name: null,
     version: 1,
@@ -617,6 +671,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686126',
     name: null,
     version: 1,
@@ -627,6 +682,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687206',
     name: null,
     version: 2,
@@ -637,6 +693,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686139',
     name: null,
     version: 1,
@@ -647,6 +704,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686116',
     name: null,
     version: 1,
@@ -657,6 +715,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686122',
     name: null,
     version: 1,
@@ -667,6 +726,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686128',
     name: null,
     version: 1,
@@ -677,6 +737,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813687208',
     name: null,
     version: 2,
@@ -687,6 +748,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686141',
     name: null,
     version: 1,
@@ -697,6 +759,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686133',
     name: 'Lots Of Tasks',
     version: 1,
@@ -707,6 +770,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
+    state: 'ACTIVE',
     processDefinitionKey: '2251799813686146',
     name: 'Lots Of Tasks',
     version: 2,
@@ -1818,6 +1882,7 @@ const mockProcessInstancesWithOperationError: QueryProcessInstancesResponseBody 
 const mockOrderProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
   [
     {
+      state: 'ACTIVE',
       processDefinitionKey: '2251799813686115',
       name: 'Order process',
       version: 2,
@@ -1828,6 +1893,7 @@ const mockOrderProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] 
       hasStartForm: false,
     },
     {
+      state: 'ACTIVE',
       processDefinitionKey: '2251799813686114',
       name: 'Order process',
       version: 1,
@@ -1929,6 +1995,7 @@ const mockOrderProcessV2Instances: QueryProcessInstancesResponseBody = {
 const mockAhspProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
   [
     {
+      state: 'ACTIVE',
       processDefinitionId: 'migration-ahsp-process_v1',
       version: 1,
       name: 'Ad Hoc Subprocess Source',
@@ -1939,6 +2006,7 @@ const mockAhspProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
       versionTag: null,
     },
     {
+      state: 'ACTIVE',
       processDefinitionId: 'migration-ahsp-process_v2',
       version: 2,
       name: 'Ad Hoc Subprocess Target',

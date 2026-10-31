@@ -17,7 +17,8 @@ import { getAuthentication } from "src/utility/api/authentication";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
 import { addHandler, removeHandler } from "src/utility/api/request";
-import { activateSession } from "src/utility/auth";
+import { activateSession, recoverThirdPartySession } from "src/utility/auth";
+import { isOIDC } from "src/configuration";
 import { C3Provider } from "../layout/C3Provider";
 
 const GlobalStyle = createGlobalStyle`
@@ -76,7 +77,14 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         response.status === 401 &&
         !window.location.pathname.includes("/login")
       ) {
-        void navigate(`/login?next=${window.location.pathname}`);
+        // In OIDC mode there is no in-app login form to send the user to — the
+        // IdP owns the session, so reload and let the server-side auth filter
+        // chain re-establish it (or bounce to the IdP's own login page).
+        if (isOIDC) {
+          recoverThirdPartySession();
+        } else {
+          void navigate(`/login?next=${window.location.pathname}`);
+        }
       }
     };
 

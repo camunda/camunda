@@ -6,6 +6,8 @@
 //   FB_EVIDENCE        optional free-text evidence (e.g. failing step name)
 //   FB_REPO            owner/repo of the failing run (for links)
 //   FB_PR              PR number, or a merge_group head_ref to extract it from, or empty
+//   FB_PR_IS_DRAFT     "true"/"false" when the caller knows it; empty → resolve via API
+//   FB_SKIP_ON_DRAFT   "false" to Slack-alert on draft PRs too (default: skip)
 //   FB_COOKBOOK_URL    debugging cookbook link
 //   FB_SLACK_CHANNEL   Slack channel id/name (optional → skip Slack)
 //   GH_TOKEN           token with PR write on FB_REPO (optional → skip PR comment)
@@ -26,7 +28,7 @@ const RELIABILITY =
 // Owner→medic Slack subteam map — keep in sync with alwaysgreen-streak-detector.yml.
 const MEDIC = {
   '@camunda/test-automation-team': '<!subteam^S09UF0EV0HG|test-automation-medic>',
-  '@camunda/distribution': '<!subteam^S053K7C7QKU|distribution-medic>',
+  '@camunda/distribution': '<!subteam^S0CBB7Y72SV|smx-medic>',
   '@camunda/engineering-operations': '<!subteam^S07D6C6B18T|monorepo-ci-medic>',
   '@camunda/core-features': '<!subteam^S08P2CU9V8W|core-features-medic>',
 };
@@ -111,6 +113,8 @@ function model() {
     repo: env('FB_REPO'),
     cookbook: env('FB_COOKBOOK_URL'),
     pr,
+    prIsDraft: env('FB_PR_IS_DRAFT').toLowerCase(),
+    skipOnDraft: env('FB_SKIP_ON_DRAFT', 'true').toLowerCase() !== 'false',
   };
 }
 
@@ -207,12 +211,63 @@ async function upsertPrComment(m, md) {
   }
 }
 
+// Draft state of m.pr: the caller-supplied value first (no API call), then the
+// API. Returns false when there is no PR at all (e.g. a push run), and null when
+// a PR exists but the state can't be determined — null is treated as "not a
+// draft", so an unresolvable lookup never silences a real failure.
+async function resolveDraft(m) {
+  if (!m.pr) return false;
+  if (m.prIsDraft === 'true') return true;
+  if (m.prIsDraft === 'false') return false;
+  if (!m.repo || !env('GH_TOKEN')) return null;
+  try {
+    const {stdout} = await gh([
+      'api',
+      `repos/${m.repo}/pulls/${m.pr}`,
+      '--jq',
+      '.draft',
+    ]);
+    const draft = stdout.trim();
+    if (draft === 'true') return true;
+    if (draft === 'false') return false;
+    return null;
+  } catch (e) {
+    console.error(`[feedback] draft lookup failed: ${e.message || e}`);
+    return null;
+  }
+}
+
+// Publishes the posted message's identity so a later job in the same run can reply in
+// its thread instead of opening a second top-level message for the same failure.
+async function setStepOutput(name, value) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file || !value) return;
+  try {
+    await appendFile(file, `${name}=${value}\n`);
+  } catch (e) {
+    console.error(`[feedback] could not write output ${name}: ${e.message || e}`);
+  }
+}
+
 async function postSlack(m) {
   const channel = env('FB_SLACK_CHANNEL');
   const token = env('SLACK_BOT_TOKEN');
   if (!channel || !token) {
     console.log('[feedback] Slack skipped (no channel/token)');
     return;
+  }
+  // Draft PRs are work in progress: their failures are expected often enough
+  // that alerting on them is noise for everyone but the author, who still gets
+  // the job summary and the PR comment.
+  if (m.skipOnDraft) {
+    const draft = await resolveDraft(m);
+    if (draft === true) {
+      console.log(`[feedback] Slack skipped (PR #${m.pr} is a draft)`);
+      return;
+    }
+    if (draft === null) {
+      console.log('[feedback] draft state unresolved — posting to Slack anyway');
+    }
   }
   try {
     const res = await fetch('https://slack.com/api/chat.postMessage', {
@@ -225,7 +280,9 @@ async function postSlack(m) {
     });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || 'unknown');
-    console.log(`[feedback] posted to Slack ${channel}`);
+    console.log(`[feedback] posted to Slack ${channel} (ts=${j.ts})`);
+    await setStepOutput('slack_ts', j.ts);
+    await setStepOutput('slack_channel', j.channel || channel);
   } catch (e) {
     console.error(`[feedback] Slack post failed: ${e.message || e}`);
   }

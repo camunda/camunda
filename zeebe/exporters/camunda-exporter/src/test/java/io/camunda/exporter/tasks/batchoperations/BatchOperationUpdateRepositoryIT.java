@@ -17,6 +17,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
@@ -164,39 +165,107 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var repository = createRepository();
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
           .isEmpty();
     }
 
     @Test
-    void shouldReturnBatchOperationIds() throws PersistenceException {
+    void shouldReturnBatchOperationsWithStateAndTotalCount() throws PersistenceException {
       // given
       final var repository = createRepository();
-      createBatchOperationEntity("1", OffsetDateTime.now());
-      createBatchOperationEntity("2", OffsetDateTime.now());
-      final var expected = createBatchOperationEntity("3", null);
+      createBatchOperationEntity("1", OffsetDateTime.now(), BatchOperationState.COMPLETED, 2);
+      createBatchOperationEntity("2", OffsetDateTime.now(), BatchOperationState.COMPLETED, 2);
+      createBatchOperationEntity("3", null, BatchOperationState.ACTIVE, 5);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
+
+      // then the update task can tell how many items the batch operation has, and whether it is
+      // finished, without a second request
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .containsExactly(new NotFinishedBatchOperation("3", BatchOperationState.ACTIVE, 5));
+    }
+
+    @Test
+    void shouldReturnBatchOperationWithoutItems() throws PersistenceException {
+      // given a completed batch operation whose item query matched nothing
+      final var repository = createRepository();
+      createBatchOperationEntity("1", null, BatchOperationState.COMPLETED, 0);
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-          .hasSize(1)
-          .contains(expected.getId());
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
     }
 
-    private BatchOperationEntity createBatchOperationEntity(
-        final String id, final OffsetDateTime endTime) throws PersistenceException {
-      final var batchOperationEntity = new BatchOperationEntity().setId(id).setEndDate(endTime);
-      indexBatchOperation(batchOperationEntity);
-      return batchOperationEntity;
+    @Test
+    void shouldReturnNoMoreThanTheRequestedBatchSize() throws PersistenceException {
+      // given - more unfinished batch operations than a cycle is allowed to read. Unbounded, every
+      // one of them went into a single operations-count aggregation and a single bulk update, which
+      // is how a support cluster built a request the circuit breaker refused.
+      final var repository = createRepository();
+      for (int i = 0; i < 25; i++) {
+        createBatchOperationEntity(String.valueOf(i), null, BatchOperationState.ACTIVE, 5);
+      }
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations(10, null);
+
+      // then - the read is capped, and with it both requests derived from what it returns
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(NotFinishedBatchOperation.class))
+          .hasSize(10);
+    }
+
+    @Test
+    void shouldReturnTheNextPageAfterTheGivenId() throws PersistenceException {
+      // given - three unfinished operations, indexed out of id order
+      final var repository = createRepository();
+      createBatchOperationEntity("c", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("a", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("b", null, BatchOperationState.ACTIVE, 5);
+
+      // when - read in pages of two
+      final var firstPage = repository.getNotFinishedBatchOperations(2, null);
+      final var nextPage = repository.getNotFinishedBatchOperations(2, "b");
+
+      // then - pages follow the id order, so paging on the last id reaches every operation once
+      assertThat(firstPage)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("a", "b");
+      assertThat(nextPage)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("c");
+    }
+
+    private void createBatchOperationEntity(
+        final String id,
+        final OffsetDateTime endTime,
+        final BatchOperationState state,
+        final int operationsTotalCount)
+        throws PersistenceException {
+      indexBatchOperation(
+          new BatchOperationEntity()
+              .setId(id)
+              .setEndDate(endTime)
+              .setState(state)
+              .setOperationsTotalCount(operationsTotalCount));
     }
   }
 
@@ -318,6 +387,27 @@ abstract class BatchOperationUpdateRepositoryIT {
       final BatchOperationEntity batchOperationEntity4 = getBatchOperationEntity("4");
       assertThat(batchOperationEntity4.getEndDate()).isNull();
       assertThat(batchOperationEntity4.getOperationsFinishedCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldSetEndDateOfCompletedBatchOperationWithoutOperations()
+        throws PersistenceException {
+      // given a completed batch operation whose item query matched nothing, so it has no items
+      final var repository = createRepository();
+      createBatchOperationEntity("1", 0, BatchOperationState.COMPLETED);
+
+      // when
+      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 0, 0, 0, 0)));
+
+      // then
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(1);
+
+      final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
+      assertThat(batchOperationEntity.getEndDate()).isNotNull();
+      assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
     }
 
     private BatchOperationEntity createBatchOperationEntity(

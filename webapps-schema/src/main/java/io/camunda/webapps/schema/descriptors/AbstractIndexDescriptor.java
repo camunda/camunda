@@ -80,8 +80,6 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     return indexPrefix;
   }
 
-  public abstract String getComponentName();
-
   public static String formatIndexPrefix(final String indexPrefix) {
     return indexPrefix != null && !indexPrefix.isBlank() ? indexPrefix + "-" : "";
   }

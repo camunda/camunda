@@ -7,21 +7,32 @@
  */
 package io.camunda.optimize;
 
+import static io.camunda.optimize.MetricEnum.IMPORT_DB_WRITE_FAILURES_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class OptimizeMetrics {
 
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
+  public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
+
+  private static final ConcurrentMap<GaugeKey, AtomicLong> GAUGE_VALUES = new ConcurrentHashMap<>();
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
       final List<T> entities) {
@@ -44,4 +55,55 @@ public class OptimizeMetrics {
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
         .register(Metrics.globalRegistry);
   }
+
+  public static Counter getCounter(
+      final MetricEnum metric, final String recordType, final Integer partitionId) {
+    return Counter.builder(metric.getName())
+        .description(metric.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
+  public static void recordDbWriteFailure(
+      final String recordType, final String partitionId, final Throwable failure) {
+    final ErrorType errorType =
+        Objects.requireNonNullElse(ErrorType.fromException(failure), ErrorType.UNKNOWN);
+    Counter.builder(IMPORT_DB_WRITE_FAILURES_METRIC.getName())
+        .description(IMPORT_DB_WRITE_FAILURES_METRIC.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, partitionId)
+        .tag(ERROR_TYPE_TAG, errorType.getValue())
+        .register(Metrics.globalRegistry)
+        .increment();
+  }
+
+  public static void setGauge(
+      final MetricEnum metric,
+      final String recordType,
+      final Integer partitionId,
+      final long value) {
+    setGauge(
+        metric,
+        Tags.of(RECORD_TYPE_TAG, recordType, PARTITION_ID_TAG, String.valueOf(partitionId)),
+        value);
+  }
+
+  public static void setGauge(final MetricEnum metric, final Tags tags, final long value) {
+    GAUGE_VALUES
+        .computeIfAbsent(
+            new GaugeKey(metric, tags),
+            key -> {
+              final AtomicLong gaugeValue = new AtomicLong();
+              Gauge.builder(metric.getName(), gaugeValue, AtomicLong::get)
+                  .description(metric.getDescription())
+                  .baseUnit(metric.getBaseUnit())
+                  .tags(tags)
+                  .register(Metrics.globalRegistry);
+              return gaugeValue;
+            })
+        .set(value);
+  }
+
+  private record GaugeKey(MetricEnum metric, Tags tags) {}
 }

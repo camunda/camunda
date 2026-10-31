@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -65,6 +67,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public final class RecordToWrite implements LogAppendEntry {
 
@@ -86,6 +89,21 @@ public final class RecordToWrite implements LogAppendEntry {
     recordMetadata.authorization(
         AuthorizationUtil.getAuthInfo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     return new RecordToWrite(recordMetadata);
+  }
+
+  /** Like a command written by the broker itself: no authorization claims, no request. */
+  public static RecordToWrite commandWithoutClaims() {
+    return new RecordToWrite(new RecordMetadata().recordType(RecordType.COMMAND));
+  }
+
+  /** Like a command sent by a client through the gateway: user claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final String username) {
+    return new RecordToWrite(
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .requestId(1L)
+            .requestStreamId(1)
+            .authorization(AuthorizationUtil.getAuthInfo(username)));
   }
 
   public static RecordToWrite event() {
@@ -160,6 +178,12 @@ public final class RecordToWrite implements LogAppendEntry {
       final ProcessInstanceCreationIntent intent, final ProcessInstanceCreationRecordValue value) {
     recordMetadata.valueType(ValueType.PROCESS_INSTANCE_CREATION).intent(intent);
     unifiedRecordValue = (ProcessInstanceCreationRecord) value;
+    return this;
+  }
+
+  public RecordToWrite process(final ProcessIntent intent, final Process value) {
+    recordMetadata.valueType(ValueType.PROCESS).intent(intent);
+    unifiedRecordValue = (ProcessRecord) value;
     return this;
   }
 

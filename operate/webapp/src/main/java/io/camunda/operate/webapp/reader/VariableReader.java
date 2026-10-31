@@ -14,7 +14,7 @@ import java.util.List;
 public interface VariableReader {
   List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request);
 
-  VariableDto getVariable(String id);
+  VariableDto getVariable(String processInstanceId, String id);
 
   VariableDto getVariableByName(String processInstanceId, String scopeId, String variableName);
 }

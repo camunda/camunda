@@ -97,8 +97,10 @@
       </if>
       <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
         <foreach collection="filter.errorMessageOperations" item="operation">
-          AND ERROR_MESSAGE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+          AND
+          <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+            <property name="column" value="ERROR_MESSAGE"/>
+          </include>
         </foreach>
       </if>
       <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">

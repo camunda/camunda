@@ -366,14 +366,10 @@ public class VariableService {
           .setParent(flowNodeInstance.getId(), String.valueOf(getScopeKey(flowNodeInstance)));
     }
 
-    // ensure that process instances are added
-    // as a FNI to the FNI tree
-    flowNodeTrees
-        .keySet()
-        .forEach(
-            id -> {
-              getFlowNodeTree(flowNodeTrees, id).setParent(id, ABSENT_PARENT_ID);
-            });
+    // ensure that process instances are added as a FNI to the FNI tree
+    flowNodeTrees.forEach(
+        (processInstanceId, flowNodeTree) ->
+            flowNodeTree.setParent(processInstanceId, ABSENT_PARENT_ID));
 
     return flowNodeTrees;
   }

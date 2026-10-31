@@ -14,11 +14,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
@@ -53,6 +55,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               joinOperation.partitionId(),
               joinOperation.priority(),
               joinOperation.memberId(),
+              joinOperation.asLearner(),
               partitionChangeExecutor);
       case final PartitionLeaveOperation leaveOperation ->
           new PartitionLeaveApplier(
@@ -60,6 +63,12 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               leaveOperation.memberId(),
               leaveOperation.minimumAllowedReplicas(),
               partitionChangeExecutor);
+      case final PartitionPromoteOperation promoteOperation ->
+          new PartitionPromoteApplier(
+              promoteOperation.partitionId(), promoteOperation.memberId(), partitionChangeExecutor);
+      case final PartitionDemoteOperation demoteOperation ->
+          new PartitionDemoteApplier(
+              demoteOperation.partitionId(), demoteOperation.memberId(), partitionChangeExecutor);
       case final MemberJoinOperation memberJoinOperation ->
           new MemberJoinApplier(memberJoinOperation.memberId(), clusterMembershipChangeExecutor);
       case final MemberLeaveOperation memberLeaveOperation ->

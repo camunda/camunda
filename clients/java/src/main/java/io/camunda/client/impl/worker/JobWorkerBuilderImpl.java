@@ -36,7 +36,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -220,7 +219,7 @@ public final class JobWorkerBuilderImpl
             tenantFilter,
             maxJobsActive);
 
-    final Executor jobExecutor;
+    final JobExecutor jobExecutor;
     if (enableStreaming) {
       if (streamTimeout != null) {
         ensurePositive("streamTimeout", streamTimeout);
@@ -241,7 +240,11 @@ public final class JobWorkerBuilderImpl
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      jobExecutor = jobHandlingExecutor;
+      // A worker without job push still bounds its work through the executor, so its poll sizing
+      // and its close condition read one and the same capacity count as a streaming worker does.
+      // Nothing else takes capacity here, so a poll sized to the free capacity always fits and the
+      // executor never actually refuses a job.
+      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     }
 
     final JobWorkerImpl jobWorker =
@@ -249,13 +252,16 @@ public final class JobWorkerBuilderImpl
             maxJobsActive,
             scheduledExecutor,
             pollInterval,
+            jobClient,
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
             backoffSupplier,
             streamNoJobsBackoffSupplier,
             metrics,
-            jobExecutor);
+            jobExecutor,
+            System::nanoTime,
+            timeout);
     closeables.add(jobWorker);
     return jobWorker;
   }

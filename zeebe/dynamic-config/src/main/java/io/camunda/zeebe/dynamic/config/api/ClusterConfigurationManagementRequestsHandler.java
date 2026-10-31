@@ -28,8 +28,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -74,6 +76,8 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
+    // A two-phase join: the member joins as a learner and is promoted to a voting member once it
+    // has caught up on the partition's log.
     return handleRequest(
         joinPartitionRequest.dryRun(),
         ignore ->
@@ -82,22 +86,37 @@ public final class ClusterConfigurationManagementRequestsHandler
                     new PartitionJoinOperation(
                         joinPartitionRequest.memberId(),
                         joinPartitionRequest.partitionId(),
-                        joinPartitionRequest.priority()))));
+                        joinPartitionRequest.priority(),
+                        true),
+                    new PartitionPromoteOperation(
+                        joinPartitionRequest.memberId(), joinPartitionRequest.partitionId()))));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
 
+    // A two-phase leave: the member is demoted to a non-voting member first, so that the removal
+    // commits without its participation. The demotion is only allowed when another active replica
+    // remains - otherwise the leave is emitted alone and rejected by its applier, as before.
     return handleRequest(
         leavePartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(),
-                        leavePartitionRequest.partitionId(),
-                        1))));
+        currentConfiguration -> {
+          final var memberId = leavePartitionRequest.memberId();
+          final var partitionId = leavePartitionRequest.partitionId();
+          final var otherActiveReplicaExists =
+              currentConfiguration.members().entrySet().stream()
+                  .filter(entry -> !entry.getKey().equals(memberId))
+                  .filter(entry -> entry.getValue().hasPartition(partitionId))
+                  .anyMatch(
+                      entry ->
+                          entry.getValue().getPartition(partitionId).state().isActiveReplica());
+          final var leave = new PartitionLeaveOperation(memberId, partitionId, 1);
+          return Either.right(
+              otherActiveReplicaExists
+                  ? List.of(new PartitionDemoteOperation(memberId, partitionId), leave)
+                  : List.of(leave));
+        });
   }
 
   @Override

@@ -26,6 +26,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
@@ -59,9 +60,9 @@ public class EmbeddedOptimizeExtension
 
   private static final ObjectMapper configObjectMapper =
       new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
-  private static String serializedDefaultConfiguration;
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EmbeddedOptimizeExtension.class);
+  private String serializedDefaultConfiguration;
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
   private OptimizeRequestExecutor requestExecutor;
@@ -82,15 +83,15 @@ public class EmbeddedOptimizeExtension
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
-    if (serializedDefaultConfiguration == null) {
-      // store the default configuration to restore it later
-      try {
-        serializedDefaultConfiguration =
-            configObjectMapper.writeValueAsString(getConfigurationService());
-      } catch (final JsonProcessingException e) {
-        throw new OptimizeRuntimeException(e);
-      }
+
+    // store the default configuration to restore it later
+    try {
+      serializedDefaultConfiguration =
+          configObjectMapper.writeValueAsString(getConfigurationService());
+    } catch (final JsonProcessingException e) {
+      throw new OptimizeRuntimeException(e);
     }
+
     if (beforeAllMode) {
       setupOptimize();
     }
@@ -171,12 +172,16 @@ public class EmbeddedOptimizeExtension
   }
 
   public void importAllZeebeEntitiesFromLastIndex() {
+    final List<CompletableFuture<Void>> importFutures =
+        getImportSchedulerManager()
+            .getZeebeImportScheduler()
+            .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
+            .getImportMediators()
+            .stream()
+            .map(ImportMediator::runImport)
+            .toList();
     try {
-      getImportSchedulerManager()
-          .getZeebeImportScheduler()
-          .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
-          .runImportRound(true)
-          .get();
+      CompletableFuture.allOf(importFutures.toArray(new CompletableFuture[0])).get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new OptimizeRuntimeException(e);
     }

@@ -57,7 +57,8 @@ public class ClientConfig {
     isMultiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/tasklist";
-    canLogout = profileService.currentProfileCanLogout();
+    // when operating in SaaS we don't have the logout option.
+    canLogout = !securityConfiguration.getSaas().isConfigured();
     isLoginDelegated = profileService.isLoginDelegated();
     maxRequestSize = maxRequestSizeConfigValue.toBytes();
     clientMode = isV2ModeEnabled ? "v2" : "v1";

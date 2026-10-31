@@ -19,13 +19,11 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,11 +31,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController("VariableControllerV1")
@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Variable", description = "Variable API")
 @Validated
 @ConditionalOnRdbmsDisabled
-public class VariableController extends ErrorController implements SearchController<Variable> {
+public class VariableController extends ErrorController {
 
   public static final String URI = "/v1/variables";
   public static final String BY_PROCESS_INSTANCE_KEY = "/process-instance/{key}";
@@ -127,53 +127,16 @@ public class VariableController extends ErrorController implements SearchControl
                     description =
                         "Returns next variables for 'processInstanceKey' ascending by 'name'. (Copy value of 'sortValues' field of previous results) "),
               }))
-  @Override
+  @ResponseStatus(HttpStatus.OK)
+  @PostMapping(
+      value = SearchController.SEARCH,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public Results<Variable> search(@RequestBody(required = false) Query<Variable> query) {
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Variable.class);
     permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return variableDao.search(query);
-  }
-
-  @Operation(
-      summary = "Get variable by key",
-      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      responses = {
-        @ApiResponse(description = "Success", responseCode = "200"),
-        @ApiResponse(
-            description = ServerException.TYPE,
-            responseCode = "500",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ClientException.TYPE,
-            responseCode = "400",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ForbiddenException.TYPE,
-            responseCode = "403",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ResourceNotFoundException.TYPE,
-            responseCode = "404",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
-      })
-  @Override
-  public Variable byKey(
-      @Parameter(description = "Key of variable", required = true) @PathVariable final Long key) {
-    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
-    return variableDao.byKey(key);
   }
 }

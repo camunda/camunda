@@ -195,84 +195,20 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
       case NOT_IN:
         return createEqualsOneOrMoreValuesQueryBuilder(dto);
       case LESS_THAN:
-        builder.nested(
-            n ->
-                n.path(VARIABLES)
-                    .query(
-                        qq ->
-                            qq.bool(
-                                boolQueryBuilder
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .lt(convertToDouble(value)))))
-                                    .build())));
-        break;
       case GREATER_THAN:
-        builder.nested(
-            n ->
-                n.path(VARIABLES)
-                    .query(
-                        qq ->
-                            qq.bool(
-                                boolQueryBuilder
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .gt(convertToDouble(value)))))
-                                    .build())));
-        break;
       case LESS_THAN_EQUALS:
-        builder.nested(
-            n ->
-                n.path(VARIABLES)
-                    .query(
-                        qq ->
-                            qq.bool(
-                                boolQueryBuilder
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .lte(convertToDouble(value)))))
-                                    .build())));
-        break;
       case GREATER_THAN_EQUALS:
-        builder.nested(
-            n ->
-                n.path(VARIABLES)
-                    .query(
-                        qq ->
-                            qq.bool(
-                                boolQueryBuilder
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .gte(convertToDouble(value)))))
-                                    .build())));
+        boolQueryBuilder.must(
+            createNumericRangeQuery(
+                nestedVariableValueFieldLabel, dto.getType(), data.getOperator(), value));
         break;
       default:
-        builder.nested(n -> n.path(VARIABLES).query(qq -> qq.bool(boolQueryBuilder.build())));
         LOG.warn(
             "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
             data.getOperator(),
             dto.getType());
     }
+    builder.nested(n -> n.path(VARIABLES).query(qq -> qq.bool(boolQueryBuilder.build())));
     return builder;
   }
 
@@ -421,9 +357,5 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
   private BoolQuery.Builder createExcludeUndefinedOrNullQueryBuilder(
       final String variableName, final VariableType variableType) {
     return createExcludeUndefinedOrNullQueryFilterBuilder(variableName, variableType);
-  }
-
-  private static Double convertToDouble(final Object value) {
-    return value == null ? null : ((Number) value).doubleValue();
   }
 }

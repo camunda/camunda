@@ -44,6 +44,8 @@ jobs:
       contents: read
     steps:
       - name: Checkout
+        # Credentials stay: the next step fetches gh-pages from origin.
+        # zizmor: ignore[artipacked]
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       # Detect changes against the base branch
@@ -73,12 +75,19 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Shared with docs-build-deploy.yml and docs-preview-cleanup.yml -- see the note there.
+    concurrency:
+      group: gh-pages-write
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: write
       pull-requests: write
 
     steps:
       - name: Checkout
+        # Credentials stay: pr-preview-action pushes the preview to gh-pages.
+        # zizmor: ignore[artipacked]
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js
@@ -103,7 +112,7 @@ jobs:
           BASE_URL: /camunda/pr-preview/pr-${{ github.event.pull_request.number }}/
 
       - name: Deploy PR Preview
-        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
+        uses: rossjrw/pr-preview-action@873417d2df72380da1f3978378fb58560bcde976 # v1.8.2
         with:
           source-dir: ./monorepo-docs-site/build/
           preview-branch: gh-pages

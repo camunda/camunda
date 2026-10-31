@@ -26,6 +26,7 @@ describe('authentication store', () => {
 
   it('should login', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
@@ -43,6 +44,7 @@ describe('authentication store', () => {
 
   it('should handle login failure', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse('', {status: 401}), {
         once: true,
       }),
@@ -71,6 +73,7 @@ describe('authentication store', () => {
     });
 
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
@@ -104,6 +107,7 @@ describe('authentication store', () => {
     });
 
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
@@ -228,6 +232,7 @@ describe('authentication store', () => {
       });
 
       nodeMockServer.use(
+        http.get('/login', () => new HttpResponse(''), {once: true}),
         http.post('/login', () => new HttpResponse(''), {once: true}),
         http.get(
           '/v2/authentication/me',
@@ -237,6 +242,7 @@ describe('authentication store', () => {
         http.post('/logout', () => new HttpResponse('', {status: 204}), {
           once: true,
         }),
+        http.get('/login', () => new HttpResponse(''), {once: true}),
         http.post('/login', () => new HttpResponse(''), {once: true}),
         http.get(
           '/v2/authentication/me',
@@ -281,6 +287,7 @@ describe('authentication store', () => {
     const mockIdpLogoutUrl = 'http://example.com/idpLogout';
 
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,

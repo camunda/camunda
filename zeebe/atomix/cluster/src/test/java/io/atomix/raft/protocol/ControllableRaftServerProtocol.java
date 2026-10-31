@@ -56,6 +56,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private final MemberId localMemberId;
   private final Map<CompletableFuture<?>, Long> timeoutQueue = new HashMap<>();
   private long currentTime = 0;
+  private int receivedInstallRequests = 0;
   private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
 
   public ControllableRaftServerProtocol(
@@ -225,13 +226,20 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     final var responseFuture = new CompletableFuture<InstallResponse>();
     send(
         memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.install(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        () -> {
+          server(memberId).receivedInstallRequests++;
+          getServer(memberId)
+              .thenCompose(listener -> listener.install(request))
+              .thenAccept(
+                  response -> send(localMemberId, () -> responseFuture.complete(response), null));
+        },
         responseFuture);
     return responseFuture;
+  }
+
+  /** Returns how many install requests this member received, i.e. were delivered to it. */
+  public int getReceivedInstallRequests() {
+    return receivedInstallRequests;
   }
 
   @Override

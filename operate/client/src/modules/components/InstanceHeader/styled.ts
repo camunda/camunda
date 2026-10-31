@@ -74,6 +74,8 @@ const Container = styled.header<ContainerProps>`
 `;
 
 const AdditionalContent = styled.div`
+  display: flex;
+  align-items: center;
   margin-left: auto;
   flex-shrink: 0;
 `;

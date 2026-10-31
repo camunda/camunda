@@ -25,11 +25,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
@@ -183,6 +185,16 @@ final class ClusterApiUtils {
               .operation(OperationEnum.PARTITION_LEAVE)
               .brokerId(Integer.parseInt(leave.memberId().id()))
               .partitionId(leave.partitionId());
+      case final PartitionPromoteOperation promote ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_PROMOTE)
+              .brokerId(Integer.parseInt(promote.memberId().id()))
+              .partitionId(promote.partitionId());
+      case final PartitionDemoteOperation demote ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_DEMOTE)
+              .brokerId(Integer.parseInt(demote.memberId().id()))
+              .partitionId(demote.partitionId());
       case final PartitionReconfigurePriorityOperation reconfigure ->
           new Operation()
               .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
@@ -342,6 +354,7 @@ final class ClusterApiUtils {
       case JOINING -> PartitionStateCode.JOINING;
       case ACTIVE -> PartitionStateCode.ACTIVE;
       case LEAVING -> PartitionStateCode.LEAVING;
+      case LEARNER -> PartitionStateCode.LEARNER;
       // TODO: Define state code for BootStrapping
       case BOOTSTRAPPING, UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
@@ -458,6 +471,16 @@ final class ClusterApiUtils {
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
                   .brokerId(Integer.parseInt(leave.memberId().id()))
                   .partitionId(leave.partitionId());
+          case final PartitionPromoteOperation promote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_PROMOTE)
+                  .brokerId(Integer.parseInt(promote.memberId().id()))
+                  .partitionId(promote.partitionId());
+          case final PartitionDemoteOperation demote ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DEMOTE)
+                  .brokerId(Integer.parseInt(demote.memberId().id()))
+                  .partitionId(demote.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new TopologyChangeCompletedInner()
                   .operation(

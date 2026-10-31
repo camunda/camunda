@@ -148,12 +148,16 @@ for (const {description, sort} of sortTestCases) {
       const body = await res.json();
       const values = body.items.map(
         (item: Record<string, unknown>) => item[sort.field],
-      ) as Array<string | number>;
-      const sorted = [...values].sort();
+      ) as Array<string | number | null>;
+      // Null placement is undefined by the API and differs per backend
+      // (ES/OS last on ASC, RDBMS first - camunda#57579), so assert ordering
+      // only over rows that carry a value.
+      const present = values.filter((value) => value !== null);
+      const sorted = [...present].sort();
       if (sort.order === 'DESC') {
         sorted.reverse();
       }
-      expect(values).toEqual(sorted);
+      expect(present).toEqual(sorted);
     }).toPass(defaultAssertionOptions);
   });
 }

@@ -8,13 +8,17 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
+import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.EnumSet;
@@ -30,11 +34,15 @@ public class CreateRequestOperationValidator {
 
   private final VariableReader variableReader;
   private final OperationReader operationReader;
+  private final IncidentReader incidentReader;
 
   public CreateRequestOperationValidator(
-      final VariableReader variableReader, final OperationReader operationReader) {
+      final VariableReader variableReader,
+      final OperationReader operationReader,
+      final IncidentReader incidentReader) {
     this.variableReader = variableReader;
     this.operationReader = operationReader;
+    this.incidentReader = incidentReader;
   }
 
   public void validate(final CreateOperationRequestDto request, final String processInstanceId) {
@@ -50,6 +58,17 @@ public class CreateRequestOperationValidator {
           String.format(
               "ScopeId, variable name, and variable value must be defined for %s operation on processInstanceId=%s.",
               request.getOperationType(), processInstanceId));
+    }
+
+    if (request.getOperationType().equals(RESOLVE_INCIDENT)
+        && request.getIncidentId() != null
+        && !incidentBelongsToProcessInstance(request.getIncidentId(), processInstanceId)) {
+      // same message for "not found" and "does not belong" to not reveal incidents of other
+      // process instances
+      throw new InvalidRequestException(
+          String.format(
+              "No incident %s found for process instance %s.",
+              request.getIncidentId(), processInstanceId));
     }
 
     if (request.getOperationType().equals(ADD_VARIABLE)) {
@@ -68,6 +87,17 @@ public class CreateRequestOperationValidator {
                     + "an ADD_VARIABLE operation for this variable already exists.",
                 request.getVariableName(), request.getVariableScopeId(), processInstanceId));
       }
+    }
+  }
+
+  private boolean incidentBelongsToProcessInstance(
+      final String incidentId, final String processInstanceId) {
+    try {
+      final IncidentEntity incident = incidentReader.getIncidentById(Long.valueOf(incidentId));
+      return incident.getProcessInstanceKey() != null
+          && String.valueOf(incident.getProcessInstanceKey()).equals(processInstanceId);
+    } catch (final NotFoundException | NumberFormatException e) {
+      return false;
     }
   }
 

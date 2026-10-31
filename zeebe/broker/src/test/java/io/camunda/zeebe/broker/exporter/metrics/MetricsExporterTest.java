@@ -171,7 +171,8 @@ class MetricsExporterTest {
 
   //
   @Nested
-  @DisplayName("MetricsExporter should configure a Filter")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("MetricsExporter should configure a Filter")
   class FilterTest {
 
     static Stream<TypeCombination> acceptedCombinations() {

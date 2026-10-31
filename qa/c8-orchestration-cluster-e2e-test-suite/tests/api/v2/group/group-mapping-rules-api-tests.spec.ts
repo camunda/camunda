@@ -182,7 +182,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
 
       await expect(async () => {
         const res = await request.post(
-        buildUrl('/groups/{groupId}/mapping-rules/search', p),
+          buildUrl('/groups/{groupId}/mapping-rules/search', p),
           {
             headers: jsonHeaders(),
             data: {},
@@ -201,7 +201,6 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         expect(json.page.totalItems).toBe(0);
         expect(json.items.length).toBe(0);
       }).toPass(defaultAssertionOptions);
-      
     });
   });
 

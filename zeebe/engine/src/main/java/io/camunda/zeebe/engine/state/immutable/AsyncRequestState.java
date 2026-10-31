@@ -46,5 +46,9 @@ public interface AsyncRequestState {
     public long operationReference() {
       return record.getOperationReference();
     }
+
+    public long batchOperationReference() {
+      return record.getBatchOperationReference();
+    }
   }
 }

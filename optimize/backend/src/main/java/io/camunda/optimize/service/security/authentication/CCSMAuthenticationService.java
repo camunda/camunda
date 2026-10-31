@@ -67,6 +67,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       tokens = ccsmTokenService.exchangeAuthCode(authCode, uri);
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
     } catch (final NotAuthorizedException ex) {
+      LOG.warn("Login callback failed: {}", ex.getMessage(), ex);
       response.sendError(
           HttpStatus.FORBIDDEN.value(),
           "User has no authorization to access Optimize. Please check your Identity configuration");
@@ -95,7 +96,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     }
   }
 
-  private String buildRootRedirect(final URI uri) {
+  private String buildRootUrl(final URI uri) {
     final String configuredRedirectRootUrl =
         configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl();
     String redirectUri;
@@ -111,17 +112,18 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       redirectUri += configurationService.getContextPath().orElse("/");
     }
 
+    // There are some instances where the final slash is needed to load the page, with Tomcat.
+    return StringUtils.appendIfMissing(redirectUri, "/");
+  }
+
+  private String buildRootRedirect(final URI uri) {
+    final String rootUrl = buildRootUrl(uri);
+
     // Instead of redirecting to the home page, we redirect to a redirector that
     // will redirect again to the home page. The reason is that we need to attach
     // auth cookies to the request, and this only happens if the redirection is initiated
     // by a human. Having a redirector that does window.location=<url> simulates the behavior.
-    String targetUri = redirectUri;
-
-    // There are some instances where the final slash is needed to load the page, with Tomcat.
-    targetUri = StringUtils.appendIfMissing(targetUri, "/");
-
-    redirectUri = StringUtils.appendIfMissing(redirectUri, "/");
-    redirectUri += "static/redirect.html?url=" + targetUri;
+    final String redirectUri = rootUrl + "static/redirect.html?url=" + rootUrl;
 
     LOG.trace("Using root redirect Url: {}", redirectUri);
     return redirectUri;

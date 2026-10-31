@@ -29,6 +29,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -172,6 +173,12 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                           PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
                           PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
                           PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
+                      .permitAll()
+                      // An error dispatch must complete without the authentication entry
+                      // point, otherwise it starts the login flow again and causes a
+                      // redirect loop. Only the ERROR dispatch is public here: a direct
+                      // request to /error still needs authentication.
+                      .dispatcherTypeMatchers(DispatcherType.ERROR)
                       .permitAll()
                       // public share resources
                       .requestMatchers(

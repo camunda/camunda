@@ -8,18 +8,22 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
@@ -42,9 +46,13 @@ public class CreateRequestOperationValidatorTest {
 
   @Mock private OperationReader mockOperationReader;
 
+  @Mock private IncidentReader mockIncidentReader;
+
   @BeforeEach
   public void setup() {
-    underTest = new CreateRequestOperationValidator(mockVariableReader, mockOperationReader);
+    underTest =
+        new CreateRequestOperationValidator(
+            mockVariableReader, mockOperationReader, mockIncidentReader);
   }
 
   @Test
@@ -174,5 +182,75 @@ public class CreateRequestOperationValidatorTest {
 
     // when - then
     assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassValidationWhenIncidentBelongsToProcessInstance() {
+    // given
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT).setIncidentId("456");
+    when(mockIncidentReader.getIncidentById(456L))
+        .thenReturn(new IncidentEntity().setKey(456L).setProcessInstanceKey(123L));
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldPassValidationForResolveIncidentWithoutIncidentId() {
+    // given: all incidents of the process instance are resolved
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT);
+
+    // when - then
+    assertThatCode(() -> underTest.validate(request, "123")).doesNotThrowAnyException();
+    verifyNoInteractions(mockIncidentReader);
+  }
+
+  @Test
+  void shouldFailValidationWhenIncidentBelongsToOtherProcessInstance() {
+    // given
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT).setIncidentId("456");
+    when(mockIncidentReader.getIncidentById(456L))
+        .thenReturn(new IncidentEntity().setKey(456L).setProcessInstanceKey(999L));
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("No incident 456 found for process instance 123.");
+  }
+
+  @Test
+  void shouldFailValidationWhenIncidentHasNoProcessInstanceKey() {
+    // given
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT).setIncidentId("456");
+    when(mockIncidentReader.getIncidentById(456L)).thenReturn(new IncidentEntity().setKey(456L));
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("No incident 456 found for process instance 123.");
+  }
+
+  @Test
+  void shouldFailValidationWithSameMessageWhenIncidentDoesNotExist() {
+    // given
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT).setIncidentId("456");
+    when(mockIncidentReader.getIncidentById(456L)).thenThrow(new NotFoundException("not found"));
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("No incident 456 found for process instance 123.");
+  }
+
+  @Test
+  void shouldFailValidationWhenIncidentIdIsNotANumber() {
+    // given
+    final var request = new CreateOperationRequestDto(RESOLVE_INCIDENT).setIncidentId("abc");
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("No incident abc found for process instance 123.");
+    verifyNoInteractions(mockIncidentReader);
   }
 }

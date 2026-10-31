@@ -60,6 +60,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class SnapshotApiRequestHandlerTest {
 
+  private static final int MAXIMUM_CHUNK_SIZE = 8 * 1024 * 1024;
+
   @RegisterExtension
   public final ControlledActorSchedulerExtension scheduler =
       new ControlledActorSchedulerExtension();
@@ -144,7 +146,8 @@ public class SnapshotApiRequestHandlerTest {
             takeSnapshotMock,
             1,
             SnapshotCopyUtil::copyAllFiles,
-            snapshotHandler);
+            snapshotHandler,
+            MAXIMUM_CHUNK_SIZE);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
@@ -156,7 +159,7 @@ public class SnapshotApiRequestHandlerTest {
                 snapshotPath -> Map.of(),
                 new SimpleMeterRegistry()));
 
-    client = new SnapshotTransferServiceClient(brokerClient);
+    client = new SnapshotTransferServiceClient(brokerClient, Duration.ofSeconds(30));
 
     scheduler.workUntilDone();
   }
@@ -187,9 +190,10 @@ public class SnapshotApiRequestHandlerTest {
         .succeedsWithin(Duration.ofSeconds(30))
         .satisfies(
             snapshot -> {
-              final var lastSnapshotId = senderSnapshotStore.getLatestSnapshot().get().getId();
+              final var bootstrapSnapshotId =
+                  senderSnapshotStore.getBootstrapSnapshot().orElseThrow().getId();
               final var snapshotId = snapshot.getId();
-              assertThat(snapshotId).isEqualTo(lastSnapshotId);
+              assertThat(snapshotId).isEqualTo(bootstrapSnapshotId);
             });
 
     assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))

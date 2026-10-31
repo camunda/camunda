@@ -12,8 +12,9 @@ runs:
   using: composite
   steps:
     - name: Install xmllint
-      shell: bash
-      run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      uses: ./.github/actions/apt-install
+      with:
+        packages: libxml2-utils
 
     - name: Validate flattened POM metadata
       shell: bash

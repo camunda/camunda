@@ -47,11 +47,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
@@ -363,8 +365,8 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
-      case BOOTSTRAPPING ->
-          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
+      case BOOTSTRAPPING, LEARNER ->
+          throw new IllegalStateException("Member cannot be in %s state".formatted(state));
     };
   }
 
@@ -375,6 +377,7 @@ public class ProtoBufSerializer
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
       case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
+      case LEARNER -> PartitionState.State.LEARNER;
     };
   }
 
@@ -385,6 +388,7 @@ public class ProtoBufSerializer
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
       case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
+      case LEARNER -> Topology.State.LEARNER;
     };
   }
 
@@ -438,12 +442,21 @@ public class ProtoBufSerializer
           builder.setPartitionJoin(
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(joinOperation.partitionId())
-                  .setPriority(joinOperation.priority()));
+                  .setPriority(joinOperation.priority())
+                  .setAsLearner(joinOperation.asLearner()));
       case final PartitionLeaveOperation leaveOperation ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(leaveOperation.partitionId())
                   .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
+      case final PartitionPromoteOperation promoteOperation ->
+          builder.setPartitionPromote(
+              Topology.PartitionPromoteOperation.newBuilder()
+                  .setPartitionId(promoteOperation.partitionId()));
+      case final PartitionDemoteOperation demoteOperation ->
+          builder.setPartitionDemote(
+              Topology.PartitionDemoteOperation.newBuilder()
+                  .setPartitionId(demoteOperation.partitionId()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -693,12 +706,19 @@ public class ProtoBufSerializer
       return new PartitionJoinOperation(
           memberId,
           topologyChangeOperation.getPartitionJoin().getPartitionId(),
-          topologyChangeOperation.getPartitionJoin().getPriority());
+          topologyChangeOperation.getPartitionJoin().getPriority(),
+          topologyChangeOperation.getPartitionJoin().getAsLearner());
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           memberId,
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
           topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
+    } else if (topologyChangeOperation.hasPartitionPromote()) {
+      return new PartitionPromoteOperation(
+          memberId, topologyChangeOperation.getPartitionPromote().getPartitionId());
+    } else if (topologyChangeOperation.hasPartitionDemote()) {
+      return new PartitionDemoteOperation(
+          memberId, topologyChangeOperation.getPartitionDemote().getPartitionId());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(memberId);
     } else if (topologyChangeOperation.hasMemberLeave()) {

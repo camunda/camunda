@@ -34,6 +34,15 @@ const ProcessVersionField: React.FC = observer(() => {
   return (
     <Field name="processDefinitionVersion">
       {({input}) => {
+        const inputValue = input.value === 'all' ? 'all' : Number(input.value);
+        const selectedItem =
+          versions.find(({value}) => value === inputValue) ??
+          (input.value === ''
+            ? null
+            : {
+                value: inputValue,
+              });
+
         return (
           <Dropdown
             label="Select a Process Version"
@@ -41,15 +50,23 @@ const ProcessVersionField: React.FC = observer(() => {
             titleText="Version"
             id="processVersion"
             onChange={({selectedItem}) => {
-              input.onChange(selectedItem);
+              input.onChange(selectedItem?.value);
               form.change('elementId', undefined);
             }}
             disabled={isDisabled}
             items={versions}
-            itemToString={(item) =>
-              item === 'all' || item === null ? 'All versions' : item.toString()
-            }
-            selectedItem={input.value === 'all' ? 'all' : Number(input.value)}
+            itemToString={(item) => {
+              if (item === null) {
+                return '';
+              }
+              if (item.value === 'all') {
+                return 'All versions';
+              }
+              return item.state === 'DELETED'
+                ? `${item.value} (Deleted)`
+                : item.value.toString();
+            }}
+            selectedItem={selectedItem}
             size="sm"
           />
         );

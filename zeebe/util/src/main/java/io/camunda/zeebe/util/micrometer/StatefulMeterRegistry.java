@@ -60,7 +60,7 @@ final class StatefulMeterRegistry extends CompositeMeterRegistry {
     final var existing = gauges.get(meter.getId());
 
     // we explicitly compare identity, because the meters should be the same
-    if (existing != null && existing.delegate() != meter) {
+    if (existing != null && !existing.isSameMeter(meter)) {
       LOGGER.warn(
           """
           A new meter {} was added a the stateful meter registry, but there was already an \

@@ -30,15 +30,32 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
 
   private final Pattern allowedPathsPattern;
 
+  // The login endpoint requires a valid CSRF token unconditionally, even on a browser that holds
+  // no session yet: without this, a cross-site POST /login is indistinguishable from a legitimate
+  // one on a browser that already has an authenticated session, and silently replaces the victim's
+  // session with an attacker-controlled one (camunda/security-testing-findings#281). The generic
+  // "protect once a session exists" rule below is not enough here, because the attack's whole
+  // premise is that the victim's browser already has a session by the time the forged request
+  // lands. Checked ahead of allowedPathsPattern/isSwaggerReferer so neither can exempt it.
+  private final Pattern enforcedPathsPattern;
+
   public CsrfProtectionRequestMatcher() {
     allowedPathsPattern = getAllowedPathsPattern();
+    enforcedPathsPattern = getEnforcedPathsPattern();
   }
 
   @Override
   public boolean matches(final HttpServletRequest request) {
+    if (matchesPattern(ALLOWED_METHODS, request.getMethod())) {
+      return false;
+    }
+
+    if (matchesPattern(enforcedPathsPattern, request.getServletPath())) {
+      return true;
+    }
+
     // short-circuit check for the following conditions
-    if (matchesPattern(ALLOWED_METHODS, request.getMethod())
-        || matchesPattern(allowedPathsPattern, request.getServletPath())
+    if (matchesPattern(allowedPathsPattern, request.getServletPath())
         || isSwaggerReferer(request)) {
       return false;
     }
@@ -71,14 +88,23 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     final Set<String> paths = new HashSet<>();
     paths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
     paths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
-    paths.add(WebSecurityConfig.LOGIN_URL);
     paths.add(WebSecurityConfig.LOGOUT_URL);
+    final Pattern compiledPattern = compilePathsPattern(paths);
+    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", compiledPattern);
+    return compiledPattern;
+  }
+
+  private Pattern getEnforcedPathsPattern() {
+    final Pattern compiledPattern = compilePathsPattern(Set.of(WebSecurityConfig.LOGIN_URL));
+    LOG.debug("CSRF protection configuration - enforced paths pattern: {}", compiledPattern);
+    return compiledPattern;
+  }
+
+  private Pattern compilePathsPattern(final Set<String> paths) {
     final String patternAsString =
         paths.stream()
             .map(path -> path.replace("**", ".*")) // Replace wildcard with regex equivalent
             .collect(Collectors.joining("|", "^(", ")$")); // Combine paths into regex
-    final Pattern compiledPattern = Pattern.compile(patternAsString);
-    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", compiledPattern);
-    return compiledPattern;
+    return Pattern.compile(patternAsString);
   }
 }

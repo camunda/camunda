@@ -573,7 +573,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
-      meta.storeCommitIndex(commitIndex);
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
         final long configurationIndex = clusterConfig.index();
@@ -581,6 +580,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           cluster.commitCurrentConfiguration();
         }
       }
+      // Persist the commit index only after the configuration it covers is persisted. This keeps
+      // the invariant that a committed configuration entry at or below the stored commit index is
+      // always recoverable from the meta store, so startup only needs to search the uncommitted
+      // part of the log for configuration entries. The reverse order would allow a crash to leave
+      // a stored commit index covering a configuration that is in neither the meta store nor,
+      // after restart, in memory.
+      meta.storeCommitIndex(commitIndex);
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
     }
@@ -936,6 +942,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public Duration getElectionTimeout() {
     return partitionConfig.getElectionTimeout();
+  }
+
+  /**
+   * Returns the configuration change timeout.
+   *
+   * @return The configuration change timeout.
+   */
+  public Duration getConfigurationChangeTimeout() {
+    return partitionConfig.getConfigurationChangeTimeout();
+  }
+
+  /**
+   * Returns the join catch-up timeout.
+   *
+   * @return The join catch-up timeout.
+   */
+  public Duration getJoinCatchUpTimeout() {
+    return partitionConfig.getJoinCatchUpTimeout();
   }
 
   /**
@@ -1298,6 +1322,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public int getPreferSnapshotReplicationThreshold() {
     return partitionConfig.getPreferSnapshotReplicationThreshold();
+  }
+
+  public long getPromotionLagThreshold() {
+    return partitionConfig.getPromotionLagThreshold();
   }
 
   public void setPreferSnapshotReplicationThreshold(final int snapshotReplicationThreshold) {

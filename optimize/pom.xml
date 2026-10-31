@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.9.14-SNAPSHOT</version>
+  <version>8.9.27-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -47,7 +47,7 @@
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- This is used in the start-backend.js script to determine the backing Camunda version -->
-    <camunda.docker.version>8.9.0</camunda.docker.version>
+    <camunda.docker.version>8.9-SNAPSHOT</camunda.docker.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
@@ -60,8 +60,8 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch-java-client>8.19.19</version.elasticsearch-java-client>
-    <version.elasticsearch>8.19.19</version.elasticsearch>
+    <version.elasticsearch-java-client>8.19.23</version.elasticsearch-java-client>
+    <version.elasticsearch>8.19.23</version.elasticsearch>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
@@ -99,7 +99,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.9.14-SNAPSHOT</version>
+      <version>8.9.27-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -270,12 +270,12 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>templating-maven-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -340,7 +340,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.6.3</version>
+          <version>3.6.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

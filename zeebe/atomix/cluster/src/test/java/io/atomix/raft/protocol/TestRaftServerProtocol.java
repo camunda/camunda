@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,8 +55,11 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private final Map<Class<?>, ResponseInterceptor<?>> responseInterceptors =
       new ConcurrentHashMap<>();
 
+  private final MemberId memberId;
+
   public TestRaftServerProtocol(
       final MemberId memberId, final Map<MemberId, TestRaftServerProtocol> servers) {
+    this.memberId = memberId;
     this.servers = servers;
     servers.put(memberId, this);
   }
@@ -396,6 +400,23 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   /**
+   * interceptor is called before the request is handled by the receiver, with the receiver's member
+   * id as the first argument. Some requests are intercepted twice, once on the sending and once on
+   * the receiving protocol.
+   */
+  public <T> void interceptRequest(
+      final Class<T> requestType, final BiConsumer<MemberId, T> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          // listener is null when intercepting on the receiving protocol
+          final var receiver = listener != null ? listener.memberId : memberId;
+          interceptor.accept(receiver, (T) request);
+          return CompletableFuture.completedFuture(listener);
+        });
+  }
+
+  /**
    * interceptor is called before sending the request to the receiver. If the interceptor returns a
    * failed future, the request is not processed by the receiver. Otherwise, request will be
    * forwarded to the receiver.
@@ -408,6 +429,30 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
             interceptor
                 .apply((T) request)
                 .thenCompose(ignore -> CompletableFuture.completedFuture(listener)));
+  }
+
+  /**
+   * Intercepts the delivery of a request to a specific receiver, with the receiver's member id as
+   * the first argument. If the interceptor returns a failed future, the request is not delivered to
+   * the receiver. Otherwise, the request is forwarded to the receiver. Unlike the other overloads,
+   * this combines receiver visibility with the ability to block the request, which the {@link
+   * Consumer}/{@link BiConsumer} variants cannot do and the {@link Function} variant cannot see the
+   * receiver for. Named distinctly from {@code interceptRequest} rather than added as another
+   * overload: a same-arity {@link BiConsumer} overload already exists, and javac's overload
+   * resolution for implicitly-typed two-arg lambdas can find call sites ambiguous between the two
+   * even when only one is structurally compatible with the lambda body.
+   */
+  public <T> void interceptDelivery(
+      final Class<T> requestType,
+      final BiFunction<MemberId, T, CompletableFuture<Void>> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          final var receiver = listener != null ? listener.memberId : memberId;
+          return interceptor
+              .apply(receiver, (T) request)
+              .thenCompose(ignore -> CompletableFuture.completedFuture(listener));
+        });
   }
 
   public <T extends RaftResponse> void interceptResponse(

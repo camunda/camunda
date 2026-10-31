@@ -17,6 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -27,6 +28,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
@@ -151,20 +153,22 @@ public final class OpensearchConnector {
       final var uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
     } catch (final URISyntaxException e) {
-      throw new SearchClientConnectException("Error in url: " + osConfig.getUrl(), e);
+      // neither the url nor the cause is included: both quote the unparseable text, which may
+      // hold credentials
+      throw new SearchClientConnectException("Error in url");
     }
   }
 
   private HttpHost[] getHttpHosts(final OpensearchExporterConfiguration osConfig) {
     final var urls = osConfig.getUrls();
     if (urls != null && !urls.isEmpty()) {
-      return urls.stream()
-          .map(
-              url -> {
+      return IntStream.range(0, urls.size())
+          .mapToObj(
+              i -> {
                 try {
-                  return HttpHost.create(url);
+                  return HttpHost.create(urls.get(i));
                 } catch (final URISyntaxException e) {
-                  throw new SearchClientConnectException("Error in url: " + url, e);
+                  throw new SearchClientConnectException("Error in url at position " + i);
                 }
               })
           .toArray(HttpHost[]::new);
@@ -186,6 +190,8 @@ public final class OpensearchConnector {
     if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
     }
+
+    setupKeepAlive(httpAsyncClientBuilder);
 
     final ProxyConfiguration proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
@@ -244,6 +250,17 @@ public final class OpensearchConnector {
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
+  }
+
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device in front of OpenSearch drops its connection
+   * tracking entry for a connection left idle between flushes without sending a RST or FIN, and the
+   * next flush blocks on that dead socket until the request timeout expires.
+   */
+  private void setupKeepAlive(final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+    httpAsyncClientBuilder.setIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(true).build());
   }
 
   private void setupProxy(

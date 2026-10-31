@@ -42,5 +42,7 @@ public interface ProcessDefinitionMapper {
 
   void markDeleted(Long processDefinitionKey);
 
+  void markDraining(Long processDefinitionKey);
+
   void deleteByKeys(List<Long> processDefinitionKeys);
 }

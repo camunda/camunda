@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.9.14-SNAPSHOT</version>
+    <version>8.9.27-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -21,7 +21,7 @@
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
     <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Update to the latest available version. -->
-    <io.camunda.process.test.connectorsDockerImageVersion>8.9.6</io.camunda.process.test.connectorsDockerImageVersion>
+    <io.camunda.process.test.connectorsDockerImageVersion>8.9.17</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
@@ -150,6 +150,20 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Backs a JsonMapper test double that cannot produce Jackson 2 trees, covering the
+         assertions against a JSON library other than the one they are built on. -->
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
       <scope>test</scope>
     </dependency>
 

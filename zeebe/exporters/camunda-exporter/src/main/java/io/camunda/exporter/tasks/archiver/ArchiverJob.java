@@ -133,7 +133,8 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var finishDate = batch.finishDate();
     return archiverRepository
-        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
+        .moveDocumentsById(
+            sourceIdxName, sourceIdxName + finishDate, idsMap, filters, Map.of(), executor)
         .thenApplyAsync(ok -> batch.size(), executor);
   }
 

@@ -14,10 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -115,15 +113,10 @@ public class DeleteResourceIT {
             .send()
             .join();
 
-    // then
+    // then - no batch is returned; draining finalizes the deletion asynchronously
     assertThat(response).isNotNull();
     assertThat(response.getResourceKey()).isEqualTo(String.valueOf(processDefinitionKey));
-    final CreateBatchOperationResponse batchOperation = response.getCreateBatchOperationResponse();
-    assertThat(batchOperation).isNotNull();
-    assertThat(batchOperation.getBatchOperationKey()).isNotNull();
-    assertThat(Long.valueOf(batchOperation.getBatchOperationKey())).isGreaterThan(0);
-    assertThat(batchOperation.getBatchOperationType())
-        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    assertThat(response.getCreateBatchOperationResponse()).isNull();
 
     waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 0);
   }
