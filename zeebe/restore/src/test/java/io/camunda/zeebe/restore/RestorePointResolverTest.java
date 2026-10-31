@@ -37,8 +37,8 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId()).hasSize(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions()).hasSize(1);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -62,8 +62,10 @@ final class RestorePointResolverTest {
 
     // then – it picks the checkpoint closest to now (= checkpoint 2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1p1, cp2p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp1p2, cp2p2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1p1.checkpointId(), cp2p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds())
+        .containsExactly(cp1p2.checkpointId(), cp2p2.checkpointId());
   }
 
   @Test
@@ -88,8 +90,8 @@ final class RestorePointResolverTest {
 
     // then – checkpoint 1 is closest to 'to'
     assertThat(result.globalCheckpointId()).isOne();
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp1p2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp1p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds()).containsExactly(cp1p2.checkpointId());
   }
 
   @Test
@@ -110,7 +112,8 @@ final class RestorePointResolverTest {
 
     // then – marker is excluded from backups, only backup-type entries are included
     assertThat(result.globalCheckpointId()).isEqualTo(3);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup1, backup2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup2.checkpointId());
   }
 
   @Test
@@ -131,7 +134,8 @@ final class RestorePointResolverTest {
 
     // then – stops at checkpoint 2, does not include checkpoint 3
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -157,7 +161,7 @@ final class RestorePointResolverTest {
     // then – range [3,4] is filtered out (start=t3 > from=t2), and within range [1,2],
     // cp1 is trimmed because its timestamp (t1) is before 'from' (t2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp2.checkpointId());
   }
 
   @Test
@@ -183,7 +187,8 @@ final class RestorePointResolverTest {
     // then – only checkpoints from range [1,2]
     // cp1.firstLogPosition=50 <= 100 ✓, cp3.firstLogPosition=250 > 100 ✗
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -243,7 +248,7 @@ final class RestorePointResolverTest {
 
     // then – MANUAL_BACKUP should be included (shouldCreateBackup() = true)
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -270,7 +275,8 @@ final class RestorePointResolverTest {
 
     // then – only backup-type checkpoints, stopping at checkpoint 4
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup1, backup2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup2.checkpointId());
   }
 
   @Test
@@ -305,10 +311,10 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId()).hasSize(3);
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2);
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
-    assertThat(result.backupsByPartitionId().get(3)).hasSize(2);
+    assertThat(result.partitions()).hasSize(3);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2);
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
+    assertThat(result.partitions().get(3).backupIds()).hasSize(2);
   }
 
   @Test
@@ -373,8 +379,8 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2); // cp1, cp2
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2); // cp1, cp2
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
   }
 
   @Test
@@ -396,7 +402,7 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(backup.checkpointId());
   }
 
   @Test
@@ -419,7 +425,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 trimmed by from, cp4 excluded by to → only cp2 and cp3
     assertThat(result.globalCheckpointId()).isEqualTo(3);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2.checkpointId(), cp3.checkpointId());
   }
 
   @Test
@@ -462,7 +469,8 @@ final class RestorePointResolverTest {
 
     // then – only checkpoints from range [3,4]
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -505,7 +513,8 @@ final class RestorePointResolverTest {
 
     // then – only backups up to checkpoint 2 are returned
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -569,10 +578,10 @@ final class RestorePointResolverTest {
     // then – checkpoint 3 is selected (cp2 on P2 has checkpointPosition=210 >= 200)
     assertThat(result.globalCheckpointId()).isEqualTo(3);
     // P1 has no exported position → all checkpoints kept
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2);
     // P2 cp2 (pos=110) is kept as the safe starting snapshot (last before exportedPosition=200) but
     // cp1 is discarded based on the exporter position.
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
   }
 
   @Test
@@ -704,7 +713,8 @@ final class RestorePointResolverTest {
 
     // then – no exception, both backups included
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -723,7 +733,8 @@ final class RestorePointResolverTest {
 
     // then – overlapping is fine, no exception
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -760,7 +771,7 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -790,7 +801,7 @@ final class RestorePointResolverTest {
 
     // then – both partitions resolve successfully
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId()).hasSize(2);
+    assertThat(result.partitions()).hasSize(2);
   }
 
   @Test
@@ -843,7 +854,8 @@ final class RestorePointResolverTest {
     // then – cp1 is trimmed, but cp2 is kept as the starting snapshot because its exporter
     // position is guaranteed to be <= the RDBMS exported position
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2.checkpointId(), cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -867,7 +879,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 and cp2 trimmed, only cp3 and cp4 are restored
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -900,8 +913,10 @@ final class RestorePointResolverTest {
 
     // then – P1 starts from cp2 (last before 250), P2 starts from cp3 (last before 350)
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2p1, cp3p1, cp4p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp3p2, cp4p2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2p1.checkpointId(), cp3p1.checkpointId(), cp4p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds())
+        .containsExactly(cp3p2.checkpointId(), cp4p2.checkpointId());
   }
 
   @Test
@@ -925,7 +940,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 must not be trimmed; it is the safe starting snapshot
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -950,7 +966,207 @@ final class RestorePointResolverTest {
 
     // then – cp1 is trimmed (before 'from'), marker is skipped, restore starts from cp3
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
+  }
+
+  @Test
+  void shouldNotRestoreToAMarkerWithoutABackupBeforeIt() {
+    // given - a marker in the log of the first backup, whose snapshot can be ahead of the marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var marker = entry(1, 50, t1, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup2 = entry(2, 100, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(marker, backup2, backup3), List.of(new RangeEntry(2, 3)));
+
+    // when - restoring to the marker's time
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t1, Map.of());
+
+    // then - the closest checkpoint that can be restored is the first backup
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(backup2.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(backup2.checkpointPosition());
+  }
+
+  @Test
+  void shouldKeepTheBackupBeforeTheMarkerWhenDiscardingBackupsBeforeFrom() {
+    // given - 'from' lies between the backup before a marker and the marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-05T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker = entry(2, 150, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(backup1, marker, backup3), List.of(new RangeEntry(1, 3)));
+    final var from = Instant.parse("2025-01-02T00:00:00Z");
+
+    // when
+    final var result = RestorePointResolver.resolve(List.of(meta), from, t2, null);
+
+    // then - the restore starts from the backup before the marker, as the snapshot of the backup
+    // after it is ahead of the marker
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup3.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(marker.checkpointPosition());
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionToTheMarkerWhenTheBackupsAfterItDiffer() {
+    // given - backup 20 was never confirmed on partition 2 and backup 25 never on partition 1, so
+    // marker 15 is the latest checkpoint common to both partitions that covers the exported
+    // positions; each partition's first backup after the marker is a different one
+    final var t10 = Instant.parse("2025-01-01T10:00:00Z");
+    final var t15 = Instant.parse("2025-01-01T15:00:00Z");
+    final var t20 = Instant.parse("2025-01-01T20:00:00Z");
+    final var t25 = Instant.parse("2025-01-01T23:00:00Z");
+    final var backup10p1 = entry(10, 100, t10, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker15p1 = entry(15, 150, t15, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup20p1 =
+        entry(20, 200, t20, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var backup10p2 = entry(10, 80, t10, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker15p2 = entry(15, 130, t15, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup25p2 =
+        entry(25, 260, t25, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(81));
+    final var metadataByPartition =
+        List.of(
+            metadata(
+                1, List.of(backup10p1, marker15p1, backup20p1), List.of(new RangeEntry(10, 20))),
+            metadata(
+                2, List.of(backup10p2, marker15p2, backup25p2), List.of(new RangeEntry(10, 25))));
+
+    // when
+    final var result =
+        RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 120L, 2, 110L));
+
+    // then - both partitions are restored to the marker, each at its own position of it
+    assertThat(result.globalCheckpointId()).isEqualTo(15);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup10p1.checkpointId(), backup20p1.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(marker15p1.checkpointPosition());
+    assertThat(result.partitions().get(2).backupIds())
+        .containsExactly(backup10p2.checkpointId(), backup25p2.checkpointId());
+    assertThat(result.partitions().get(2).checkpointPosition())
+        .hasValue(marker15p2.checkpointPosition());
+  }
+
+  @Test
+  void shouldRestoreToTheMarkerClosestToTo() {
+    // given
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker = entry(2, 150, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(backup1, marker, backup3), List.of(new RangeEntry(1, 3)));
+
+    // when
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t2, Map.of());
+
+    // then - the backup after the marker holds it in its log, but the restore ends at the marker
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup3.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(marker.checkpointPosition());
+  }
+
+  @Test
+  void shouldRejectAMarkerTheRestoredLogCannotEndAt() {
+    // given - inconsistent metadata: the marker's position is before the backup taken ahead of it,
+    // whose snapshot the restore starts from
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker = entry(2, 50, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(backup1, marker, backup3), List.of(new RangeEntry(1, 3)));
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), null, t2, Map.of()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(
+            "Cannot restore partition 1 up to checkpoint 2 at position 50: it must be in [101, 200]");
+  }
+
+  @Test
+  void shouldStartFromTheLastBackupBeforeTheExportedPositionWhenRestoringToAMarker() {
+    // given - two backups before a marker, the exported position between the second and the marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-04T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var backup2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var marker = entry(3, 250, t3, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup4 = entry(4, 300, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var meta =
+        metadata(1, List.of(backup1, backup2, marker, backup4), List.of(new RangeEntry(1, 4)));
+
+    // when
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t3, Map.of(1, 220L));
+
+    // then
+    assertThat(result.globalCheckpointId()).isEqualTo(3);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup2.checkpointId(), backup4.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(marker.checkpointPosition());
+  }
+
+  @Test
+  void shouldRestoreToAMarkerFromTheBackupBeforeItWhenItCoversTheExportedPosition() {
+    // given - 'from' and the exported position both lie between the second backup and a marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-04T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-05T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var backup2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var marker = entry(3, 250, t3, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup4 = entry(4, 300, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var meta =
+        metadata(1, List.of(backup1, backup2, marker, backup4), List.of(new RangeEntry(1, 4)));
+    final var from = Instant.parse("2025-01-03T00:00:00Z");
+
+    // when
+    final var result = RestorePointResolver.resolve(List.of(meta), from, t3, Map.of(1, 220L));
+
+    // then - the backup before 'from' that precedes the marker is kept, and covers the position
+    assertThat(result.globalCheckpointId()).isEqualTo(3);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup2.checkpointId(), backup4.checkpointId());
+    assertThat(result.partitions().get(1).checkpointPosition())
+        .hasValue(marker.checkpointPosition());
+  }
+
+  @Test
+  void shouldNotRestoreToAMarkerWhenTheBackupKeptAfterFromDoesNotCoverTheExportedPosition() {
+    // given - 'from' lies between the second backup and a marker, but the exported position lies
+    // between the two backups, so only the discarded first backup covers it
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-04T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-05T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var backup2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var marker = entry(3, 250, t3, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup4 = entry(4, 300, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var meta =
+        metadata(1, List.of(backup1, backup2, marker, backup4), List.of(new RangeEntry(1, 4)));
+    final var from = Instant.parse("2025-01-03T00:00:00Z");
+
+    // when - then
+    assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), from, t3, Map.of(1, 150L)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("the exporter position 150 is not covered by the first remaining");
   }
 
   private static CheckpointEntry entry(

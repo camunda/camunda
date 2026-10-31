@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
@@ -29,9 +30,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,18 +69,18 @@ public class PartitionRestoreService {
    */
   public void restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    restore(PartitionRestore.ofBackups(backupId), validator);
   }
 
   /**
    * Downloads backups, restores them to the partition's data directory. Backups are truncated to
-   * checkpoint positions.
+   * checkpoint positions, and the last one to the restore's checkpoint position when it has one.
    *
-   * @param backupIds ids of the backups to restore from
+   * @param restore what the partition is restored from
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public void restore(final PartitionRestore restore, final BackupValidator validator)
       throws IOException, FlushException {
-    validateAndSortBackupIds(backupIds);
+    validateBackupIds(restore.backupIds());
 
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
@@ -88,7 +89,8 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
-      for (final var backupId : backupIds) {
+      final long lastBackupId = restore.backupIds().last();
+      for (final var backupId : restore.backupIds()) {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
@@ -97,7 +99,12 @@ public class PartitionRestoreService {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
         }
-        copyBetweenCheckpoints(previousBackup, backup, restoreTarget, restoredJournal);
+        final var checkpointPosition = backup.descriptor().checkpointPosition();
+        final var untilPosition =
+            backupId == lastBackupId
+                ? restore.checkpointPosition().orElse(checkpointPosition)
+                : checkpointPosition;
+        copyBetweenCheckpoints(previousBackup, untilPosition, restoreTarget, restoredJournal);
         previousBackup = backup;
         FileUtil.deleteFolder(restoreTarget);
       }
@@ -109,31 +116,27 @@ public class PartitionRestoreService {
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
-  /** Ensures that we have a valid array of backup ids. */
-  private static void validateAndSortBackupIds(final long[] backupIds) {
-    if (backupIds.length == 0) {
+  private static void validateBackupIds(final SortedSet<Long> backupIds) {
+    if (backupIds.isEmpty()) {
       throw new IllegalArgumentException("No backups to restore");
     }
-
-    for (final long backupId : backupIds) {
-      if (backupId < 0) {
-        throw new IllegalArgumentException("Backup id must not be negative but was " + backupId);
-      }
+    if (backupIds.first() < 0) {
+      throw new IllegalArgumentException(
+          "Backup id must not be negative but was " + backupIds.first());
     }
-    Arrays.sort(backupIds);
   }
 
   /**
    * This copies records from the journal in the source directory to the target journal. Records
-   * outside of the checkpoint range <code>(previousBackup.checkpointPosition,
-   * sourceBackup.checkpointPosition]</code> are skipped.
+   * outside of the range <code>(previousBackup.checkpointPosition, untilPosition]</code> are
+   * skipped.
    *
    * <p>If this is the first backup we are restoring, the target journal will be reset to match the
    * index of the source journal.
    */
   private void copyBetweenCheckpoints(
       final Backup previousBackup,
-      final Backup sourceBackup,
+      final long untilPosition,
       final Path sourceDirectory,
       final Journal targetJournal) {
     try (final var sourceJournal =
@@ -154,8 +157,7 @@ public class PartitionRestoreService {
         targetJournal.reset(sourceReader.getNextIndex());
       }
 
-      copyUntilCheckpoint(
-          targetJournal, sourceReader, sourceBackup.descriptor().checkpointPosition());
+      copyUntilCheckpoint(targetJournal, sourceReader, untilPosition);
     }
   }
 
