@@ -149,8 +149,50 @@ final class RestoreParameterValidatorTest {
                       request(NO_BACKUP_IDS, null, null, DB, false)))
           .withMessage(
               "Cannot resolve a restore point: no backupId was specified and no "
-                  + "exported-position data is available. Configure RDBMS as the secondary "
-                  + "storage to enable time-range restores, or specify a backupId.");
+                  + "exported-position data is available. Specify a backupId, or a time range "
+                  + "with from.");
+    }
+  }
+
+  @Nested
+  final class NoSecondaryStorage {
+
+    private static final String DB = "none";
+
+    private final RestoreValidator validatorWithoutExportedPositions =
+        new RestoreValidator(1, null, null);
+
+    @Test
+    void shouldAcceptTimeRangeWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptFromAloneWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, null, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectToAloneWithoutExportedPositions() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, null, LATER, DB, true)))
+          .withMessage(
+              "Cannot resolve a restore point: from is required for a time range restore when "
+                  + "no exported-position data is available.");
     }
   }
 

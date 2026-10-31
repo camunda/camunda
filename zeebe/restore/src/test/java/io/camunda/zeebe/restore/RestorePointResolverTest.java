@@ -646,6 +646,35 @@ final class RestorePointResolverTest {
   }
 
   @Test
+  void shouldSelectTheRangeContainingFromWithoutExportedPositions() {
+    // given - two separate ranges, both starting before `from`, but only the second reaches it
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-03-01T00:00:00Z");
+    final var t4 = Instant.parse("2025-04-01T00:00:00Z");
+    final var metadataByPartition =
+        List.of(
+            metadata(
+                1,
+                List.of(
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(250)),
+                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301))),
+                List.of(new RangeEntry(1, 2), new RangeEntry(3, 4))));
+
+    // when
+    final var withTo = RestorePointResolver.resolve(metadataByPartition, t3, t4, null);
+    final var withoutTo = RestorePointResolver.resolve(metadataByPartition, t3, null, null);
+
+    // then - both restore from the second range, not up to the end of the first
+    assertThat(withTo.globalCheckpointId()).isEqualTo(4);
+    assertThat(withTo.partitions().get(1).backupIds()).containsExactly(3L, 4L);
+    assertThat(withoutTo.globalCheckpointId()).isEqualTo(4);
+    assertThat(withoutTo.partitions().get(1).backupIds()).containsExactly(3L, 4L);
+  }
+
+  @Test
   void shouldFailWhenNoCommonCheckpointExistsAcrossMultiplePartitions() {
     // given – partitions have non-overlapping checkpoint sets
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
