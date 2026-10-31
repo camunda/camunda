@@ -8,12 +8,37 @@
 
 import React, {useRef, useEffect, useLayoutEffect, useState, useCallback, useId} from 'react';
 import {useTranslation} from 'react-i18next';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {ArrowUpRight} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
 import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from '../BpmnJS';
 import type {OverlayData, OverlayEntry} from '../overlayTypes';
 import {DiagramControls} from './DiagramControls';
 import {DiagramOverlayContext} from '../DiagramOverlayContext';
+
+const DRILL_DOWN_ICON_SIZE = 14;
+const DRILL_DOWN_ICON_MARKUP = renderToStaticMarkup(<ArrowUpRight aria-hidden />);
+
+function addDrillDownIcon(element: Element) {
+	if (element.querySelector('.op-drilldown-icon') !== null) {
+		return;
+	}
+	const shape = element.querySelector<SVGGraphicsElement>('.djs-visual > :nth-child(1)');
+	const icon = new DOMParser().parseFromString(DRILL_DOWN_ICON_MARKUP, 'image/svg+xml').documentElement;
+	if (shape === null || !(icon instanceof SVGElement)) {
+		return;
+	}
+	const {x, y, width} = shape.getBBox();
+	icon.setAttribute('class', 'op-drilldown-icon');
+	icon.setAttribute('x', String(x + width - DRILL_DOWN_ICON_SIZE - 4));
+	icon.setAttribute('y', String(y + 4));
+	icon.setAttribute('width', String(DRILL_DOWN_ICON_SIZE));
+	icon.setAttribute('height', String(DRILL_DOWN_ICON_SIZE));
+	icon.setAttribute('aria-hidden', 'true');
+	icon.setAttribute('pointer-events', 'none');
+	element.querySelector('.djs-visual')?.appendChild(icon);
+}
 
 type OnRootChange = (rootElementId: string, getSelectionRootId: (elementId: string) => string | undefined) => void;
 
@@ -330,7 +355,23 @@ function Diagram({
 			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
 			element.setAttribute('aria-label', getLabel(element));
 			element.setAttribute('aria-describedby', keyboardHintId);
+			if (element.classList.contains('op-drilldown')) {
+				element.setAttribute('aria-keyshortcuts', 'Shift+Enter');
+				element.setAttribute('aria-label', `${getLabel(element)}, ${t('operate.shared.diagram.drillDownHint')}`);
+			}
 		});
+
+		canvas.querySelectorAll('[aria-keyshortcuts]').forEach((element) => {
+			if (!element.classList.contains('op-drilldown')) {
+				element.removeAttribute('aria-keyshortcuts');
+			}
+		});
+		canvas.querySelectorAll('.op-drilldown-icon').forEach((icon) => {
+			if (icon.closest('.op-drilldown') === null) {
+				icon.remove();
+			}
+		});
+		canvas.querySelectorAll('.op-drilldown').forEach(addDrillDownIcon);
 
 		canvas.querySelectorAll('.op-non-selectable').forEach((element) => {
 			const label = getLabel(element);
@@ -350,32 +391,42 @@ function Diagram({
 		t,
 	]);
 
-	const handleCanvasKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-		const target = event.target instanceof Element ? event.target.closest<SVGElement>('.op-selectable') : null;
-		if (target === null) {
-			return;
-		}
+	const handleCanvasKeyDown = useCallback(
+		(event: React.KeyboardEvent<HTMLDivElement>) => {
+			const target = event.target instanceof Element ? event.target.closest<SVGElement>('.op-selectable') : null;
+			if (target === null) {
+				return;
+			}
 
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-			return;
-		}
+			const elementId = target.getAttribute('data-element-id');
+			if (event.key === 'Enter' && event.shiftKey && elementId !== null && target.matches('.op-drilldown')) {
+				event.preventDefault();
+				onElementDoubleClick?.(elementId);
+				return;
+			}
 
-		const direction = ARROW_DIRECTIONS[event.key];
-		if (direction === undefined) {
-			return;
-		}
-		const next = findNearestInDirection(
-			target,
-			[...event.currentTarget.querySelectorAll<SVGElement>('.op-selectable')],
-			direction,
-		);
-		if (next !== undefined) {
-			event.preventDefault();
-			next.focus();
-		}
-	}, []);
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+				return;
+			}
+
+			const direction = ARROW_DIRECTIONS[event.key];
+			if (direction === undefined) {
+				return;
+			}
+			const next = findNearestInDirection(
+				target,
+				[...event.currentTarget.querySelectorAll<SVGElement>('.op-selectable')],
+				direction,
+			);
+			if (next !== undefined) {
+				event.preventDefault();
+				next.focus();
+			}
+		},
+		[onElementDoubleClick],
+	);
 
 	const handleCanvasFocus = useCallback((event: React.FocusEvent<HTMLDivElement>) => {
 		setIsKeyboardFocused(event.target instanceof Element && event.target.matches(':focus-visible'));

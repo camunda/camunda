@@ -284,6 +284,26 @@
 		cursor: wait;
 	}
 
+	.op-drilldown-icon {
+		fill: none;
+		stroke: var(--neutral-foreground-subtle);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.op-drilldown-loading .op-drilldown-icon {
+			animation: op-drilldown-pulse 1s ease-in-out infinite;
+		}
+	}
+
+	@keyframes op-drilldown-pulse {
+		50% {
+			opacity: 0.3;
+		}
+	}
+
 	/* The renderer sets the shape fill inline, which only `!important` can override. */
 	.op-selected .djs-visual {
 		rect,
