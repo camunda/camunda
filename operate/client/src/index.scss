@@ -399,6 +399,18 @@ body:has(#root.operate-nav-v2) {
   }
 }
 
+/* Linked menu rows (the app switcher's) set no colour of their own and rely on the design system's
+   `a { color: inherit }`, which sits in a cascade layer and so loses to Carbon's unlayered link
+   colour. Kept outside the block above and inside `:where` so it stays at Carbon's specificity,
+   letting the rows' `text-*` utilities still win. */
+:where(
+    [data-slot='dropdown-menu-content'],
+    [data-slot='dropdown-menu-sub-content']
+  )
+  a {
+  color: inherit;
+}
+
 /* removes dotted default focus */
 button::-moz-focus-inner {
   border: 0;
