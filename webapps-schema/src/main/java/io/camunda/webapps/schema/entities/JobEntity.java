@@ -46,6 +46,9 @@ public class JobEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String businessId;
 
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Integer storageOrdinal;
+
   @BeforeVersion880 private String tenantId;
   @BeforeVersion880 private String type;
   @BeforeVersion880 private String worker;
@@ -327,6 +330,15 @@ public class JobEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public JobEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -376,7 +388,8 @@ public class JobEntity
         creationTime,
         lastUpdateTime,
         rootProcessInstanceKey,
-        businessId);
+        businessId,
+        storageOrdinal);
   }
 
   @Override
@@ -416,7 +429,8 @@ public class JobEntity
         && Objects.equals(creationTime, jobEntity.creationTime)
         && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
         && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey)
-        && Objects.equals(businessId, jobEntity.businessId);
+        && Objects.equals(businessId, jobEntity.businessId)
+        && Objects.equals(storageOrdinal, jobEntity.storageOrdinal);
   }
 
   @Override
@@ -485,6 +499,8 @@ public class JobEntity
         + ", businessId='"
         + businessId
         + '\''
+        + ", storageOrdinal="
+        + storageOrdinal
         + "} "
         + super.toString();
   }

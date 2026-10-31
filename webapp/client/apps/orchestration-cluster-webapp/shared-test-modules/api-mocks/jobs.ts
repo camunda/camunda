@@ -37,6 +37,7 @@ function createJob(overrides?: Partial<Job>): Job {
 		creationTime: null,
 		lastUpdateTime: null,
 		priority: 50,
+		storageOrdinal: null,
 		...overrides,
 	};
 }
