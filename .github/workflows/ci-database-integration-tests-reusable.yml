@@ -61,6 +61,15 @@ on:
           "elasticsearch - identity"). Leave empty to display the database type alone. Joined with
           a non-slash separator because the GHA sidebar only displays the last " / "-separated
           segment of the check name.
+      shard:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          Name of this job's shard when a caller splits one suite across parallel jobs (e.g.
+          "client"). Appended to the job's display name, test artifact name, flaky-test matrix key
+          and build-status job name so the shards don't overwrite each other's results. Leave
+          empty for an unsharded suite.
       maven-profiles:
         required: false
         type: string
@@ -132,7 +141,7 @@ jobs:
     # the GHA sidebar only shows the last " / "-separated segment of the composed check name, so
     # append the suite with a non-slash separator to keep matrix entries distinguishable
     # (e.g. "elasticsearch - identity")
-    name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}"
+    name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
@@ -244,14 +253,14 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}"
+          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # 1.0.0
         continue-on-error: true
         id: matrix-write
         with:
           matrix-step-name: "${{ inputs.test-type }}"
-          matrix-key: "${{ inputs.test-type }} - ${{ inputs.database-type }}"
+          matrix-key: "${{ inputs.test-type }} - ${{ inputs.database-type }}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -260,7 +269,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}"
+          job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}${{ inputs.shard != '' && format('/{0}', inputs.shard) || '' }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
