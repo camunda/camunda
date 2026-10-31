@@ -322,6 +322,46 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /**
+   * Time spent in a single StreamProcessorLifecycleAware.onRecovered listener. Listeners run
+   * synchronously before processing starts, so this is time processing is delayed by.
+   */
+  ON_RECOVERED_LISTENER_DURATION {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(1),
+      Duration.ofMillis(10),
+      Duration.ofMillis(100),
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(30)
+    };
+
+    @Override
+    public String getDescription() {
+      return "Time spent in a StreamProcessorLifecycleAware.onRecovered listener (in seconds)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.on.recovered.listener.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return OnRecoveredListenerKeys.values();
+    }
+  },
+
   /** Describes the state of the stream processor, namely if it is active or paused */
   PROCESSOR_STATE {
     @Override
@@ -352,6 +392,19 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "zeebe_stream_processor_error_handling_phase";
+      }
+    }
+  }
+
+  /**
+   * The listener whose onRecovered duration was measured by {@link #ON_RECOVERED_LISTENER_DURATION}
+   */
+  public enum OnRecoveredListenerKeys implements KeyName {
+    /** The fully qualified class name of the StreamProcessorLifecycleAware implementation */
+    LISTENER {
+      @Override
+      public String asString() {
+        return "listener";
       }
     }
   }
