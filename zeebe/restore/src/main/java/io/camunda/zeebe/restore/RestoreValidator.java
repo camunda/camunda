@@ -35,11 +35,21 @@ public class RestoreValidator {
    * be used as a basic sanity check after the restore process completes.
    */
   public static boolean validate(final BrokerCfg configuration) {
+    return validate(configuration, configuration.getCluster().getPartitionsCount());
+  }
+
+  /**
+   * Like {@link #validate(BrokerCfg)}, but expects the partitions of a cluster with {@code
+   * partitionCount} partitions, the partition count of the restored backups, which can be fewer
+   * than are configured.
+   */
+  public static boolean validate(final BrokerCfg configuration, final int partitionCount) {
     final var localBrokerId = configuration.getCluster().getNodeId();
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
         new PartitionDistribution(
-            StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
+            StaticConfigurationGenerator.getStaticConfiguration(
+                    configuration, partitionCount, localMember)
                 .generatePartitionDistribution());
 
     final var partitionsToRestore =
