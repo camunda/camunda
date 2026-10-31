@@ -9,6 +9,7 @@
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {Task} from './Task';
 
@@ -27,6 +28,7 @@ const baseProps: TaskProps = {
 	dueDate: null,
 	completionDate: null,
 	priority: 50,
+	isSuspended: false,
 	currentUser,
 };
 
@@ -98,6 +100,30 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('High')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Medium')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Low')).not.toBeInTheDocument();
+	});
+
+	it('should render the suspended icon and announce it in the link name', async () => {
+		const screen = await renderWithRouter(() => <TestTask isSuspended />, {
+			path: '/tasklist/$userTaskKey',
+			initialEntry: '/tasklist/other-task',
+		});
+
+		await expect.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice (suspended)'})).toBeVisible();
+		await expect.element(screen.getByText('Suspended', {exact: true})).not.toBeInTheDocument();
+
+		await userEvent.hover(screen.getByRole('img', {name: 'Process instance suspended'}));
+
+		await expect.element(screen.getByRole('tooltip', {name: 'Process instance suspended'})).toBeVisible();
+	});
+
+	it('should not render the suspended icon', async () => {
+		const screen = await renderWithRouter(() => <TestTask isSuspended={false} />, {
+			path: '/tasklist/$userTaskKey',
+			initialEntry: '/tasklist/other-task',
+		});
+
+		await expect.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'})).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'Process instance suspended'})).not.toBeInTheDocument();
 	});
 
 	it.for([
