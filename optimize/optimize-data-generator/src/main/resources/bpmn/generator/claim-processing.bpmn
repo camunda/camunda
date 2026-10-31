@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Web Modeler" exporterVersion="0.0.0">
+
+  <process id="claim-processing" isExecutable="true">
+    <startEvent id="startEvent_1">
+      <outgoing>f0</outgoing>
+    </startEvent>
+    <serviceTask id="serviceTask_1" name="Assess claim">
+      <incoming>f0</incoming>
+      <outgoing>f1</outgoing>
+    </serviceTask>
+    <exclusiveGateway id="exclusiveGateway_1" name="Eligible?">
+      <incoming>f1</incoming>
+      <outgoing>f2</outgoing>
+      <outgoing>f3</outgoing>
+    </exclusiveGateway>
+    <serviceTask id="serviceTask_2" name="Process payout">
+      <incoming>f2</incoming>
+      <outgoing>f4</outgoing>
+    </serviceTask>
+    <endEvent id="endEvent_1">
+      <incoming>f4</incoming>
+    </endEvent>
+    <userTask id="userTask_1" name="Manual review">
+      <incoming>f3</incoming>
+      <outgoing>f5</outgoing>
+    </userTask>
+    <endEvent id="endEvent_B">
+      <incoming>f5</incoming>
+    </endEvent>
+    <sequenceFlow id="f0" sourceRef="startEvent_1"       targetRef="serviceTask_1"/>
+    <sequenceFlow id="f1" sourceRef="serviceTask_1"      targetRef="exclusiveGateway_1"/>
+    <sequenceFlow id="f2" name="eligible"                sourceRef="exclusiveGateway_1" targetRef="serviceTask_2"/>
+    <sequenceFlow id="f3" name="needs review"            sourceRef="exclusiveGateway_1" targetRef="userTask_1"/>
+    <sequenceFlow id="f4" sourceRef="serviceTask_2"      targetRef="endEvent_1"/>
+    <sequenceFlow id="f5" sourceRef="userTask_1"         targetRef="endEvent_B"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="claim-processing">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="162" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_1_di" bpmnElement="serviceTask_1">
+        <dc:Bounds x="240" y="140" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="exclusiveGateway_1_di" bpmnElement="exclusiveGateway_1" isMarkerVisible="true">
+        <dc:Bounds x="400" y="155" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_2_di" bpmnElement="serviceTask_2">
+        <dc:Bounds x="510" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
+        <dc:Bounds x="672" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="userTask_1_di" bpmnElement="userTask_1">
+        <dc:Bounds x="510" y="220" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_B_di" bpmnElement="endEvent_B">
+        <dc:Bounds x="672" y="242" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
+        <di:waypoint x="188" y="180"/><di:waypoint x="240" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="340" y="180"/><di:waypoint x="400" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
+        <di:waypoint x="425" y="155"/><di:waypoint x="425" y="80"/><di:waypoint x="510" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f3_di" bpmnElement="f3">
+        <di:waypoint x="425" y="205"/><di:waypoint x="425" y="260"/><di:waypoint x="510" y="260"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f4_di" bpmnElement="f4">
+        <di:waypoint x="610" y="80"/><di:waypoint x="672" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f5_di" bpmnElement="f5">
+        <di:waypoint x="610" y="260"/><di:waypoint x="672" y="260"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

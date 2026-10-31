@@ -7,8 +7,44 @@
  */
 package io.camunda.optimize.service.dashboard;
 
+import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.NONE;
+import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.START_DATE;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_LIMIT_HIT_RATE_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BAND_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKEN_BREAKDOWN_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,15 +74,11 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -54,9 +86,12 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EntityConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -94,42 +129,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(15);
-  }
-
-  @Test
-  void shouldSeedThreeKpiReportsWithDeterministicIdsOnColdStart() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then three reports are upserted with deterministic IDs and correct localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
-            isNull(),
-            any(),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION),
-            isNull());
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID),
-            isNull(),
-            any(),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION),
-            isNull());
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID),
-            isNull(),
-            any(),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION),
-            isNull());
+    assertThat(saved.getTiles()).hasSize(12);
   }
 
   @Test
@@ -145,7 +145,7 @@ public class AgenticControlDashboardServiceTest {
     // then — reports are upserted on every call, dashboard is updated but never recreated
     verify(reportWriter, times(2))
         .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
+            eq(AgenticControlDashboardService.AGENT_RUNS_REPORT_ID),
             any(),
             any(),
             any(),
@@ -153,37 +153,6 @@ public class AgenticControlDashboardServiceTest {
             any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter, times(2)).updateDashboard(any(), any());
-  }
-
-  @Test
-  void shouldUseDeterministicTileIdsMatchingReportIds() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then tile IDs in the saved dashboard match the deterministic report ID constants
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    assertThat(saved.getTiles())
-        .extracting(
-            io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto::getId)
-        .containsExactlyInAnyOrder(
-            AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID,
-            AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID,
-            AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
-            AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
-            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
-            AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID,
-            AgenticControlDashboardService.TOKEN_TREND_REPORT_ID,
-            AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID,
-            AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID,
-            AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
-            AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
-            AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID,
-            AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID,
-            AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID,
-            AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
   }
 
   @Test
@@ -244,7 +213,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(15))
+    verify(reportWriter, times(12))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -320,109 +289,7 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldResolveKpiReportLocalizationCodesInEveryLocale() throws IOException {
-    for (final String locale : new String[] {"en", "de"}) {
-      final Map<String, Object> agenticControl = readAgenticControlLocalization(locale);
-      @SuppressWarnings("unchecked")
-      final Map<String, Object> report = (Map<String, Object>) agenticControl.get("report");
-      assertThat(report)
-          .as("locale '%s' must define all KPI report localization codes", locale)
-          .containsKeys(
-              AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME,
-              AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION,
-              AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME,
-              AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
-              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME,
-              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
-              AgenticControlDashboardService.KPI_TOKEN_TREND_NAME,
-              AgenticControlDashboardService.KPI_TOKEN_TREND_FOOTNOTE,
-              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_NAME,
-              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE,
-              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_DESCRIPTION,
-              AgenticControlDashboardService.KPI_TOKEN_TREND_FOOTNOTE,
-              AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_NAME,
-              AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_FOOTNOTE,
-              AgenticControlDashboardService.KPI_DURATION_P50_NAME,
-              AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
-              AgenticControlDashboardService.KPI_DURATION_P95_NAME,
-              AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION,
-              AgenticControlDashboardService.DURATION_STABILITY_NAME,
-              AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION,
-              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_NAME,
-              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION,
-              AgenticControlDashboardService.KPI_TOOL_CALLS_NAME,
-              AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION,
-              AgenticControlDashboardService.TOOL_CALLS_HEATMAP_NAME,
-              AgenticControlDashboardService.TOOL_CALLS_HEATMAP_DESCRIPTION,
-              AgenticControlDashboardService.DURATION_HEATMAP_NAME,
-              AgenticControlDashboardService.DURATION_HEATMAP_DESCRIPTION);
-    }
-  }
-
-  @Test
-  void shouldSeedDurationStabilityReportWithCorrectDefinition() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the stability report is upserted with the deterministic ID
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.DURATION_STABILITY_NAME),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto data = dataCaptor.getValue();
-
-    // view: PROCESS_INSTANCE + DURATION
-    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
-
-    // groupBy: EndDateGroupByDto with AUTOMATIC unit
-    assertThat(data.getGroupBy()).isInstanceOf(EndDateGroupByDto.class);
-    final EndDateGroupByDto endDateGroupBy = (EndDateGroupByDto) data.getGroupBy();
-    assertThat(endDateGroupBy.getValue().getUnit()).isEqualTo(AggregateByDateUnit.AUTOMATIC);
-
-    // aggregation types: exactly P50 then P95, in order
-    final List<AggregationDto> aggTypes =
-        List.copyOf(data.getConfiguration().getAggregationTypes());
-    assertThat(aggTypes).hasSize(2);
-    assertThat(aggTypes.get(0).getType()).isEqualTo(AggregationType.PERCENTILE);
-    assertThat(aggTypes.get(0).getValue()).isEqualTo(50.0);
-    assertThat(aggTypes.get(1).getType()).isEqualTo(AggregationType.PERCENTILE);
-    assertThat(aggTypes.get(1).getValue()).isEqualTo(95.0);
-
-    // visualization: LINE
-    assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.LINE);
-
-    // filters: completedInstancesOnly + hasAgentInstances
-    assertThat(data.getFilter()).hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
-    assertThat(data.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
-
-    // flagged as agentic control report
-    assertThat(data.isAgenticControlReport()).isTrue();
-
-    // deterministic ID matches the seed string
-    assertThat(AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID)
-        .isEqualTo(
-            java.util
-                .UUID
-                .nameUUIDFromBytes(
-                    "agentic-duration-stability".getBytes(java.nio.charset.StandardCharsets.UTF_8))
-                .toString());
-  }
-
-  @Test
-  void shouldSeedDurationStabilityTileAtCorrectPositionAndDimensions() {
+  void shouldSeedKpiTrendAndAgentTrendSections() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
@@ -430,624 +297,230 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final var stabilityTile =
-        saved.getTiles().stream()
-            .filter(
-                t -> t.getId().equals(AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID))
-            .findFirst()
-            .orElseThrow();
-
-    assertThat(stabilityTile.getPosition().getX()).isEqualTo(0);
-    assertThat(stabilityTile.getPosition().getY()).isEqualTo(12);
-    assertThat(stabilityTile.getDimensions().getWidth()).isEqualTo(18);
-    assertThat(stabilityTile.getDimensions().getHeight()).isEqualTo(2);
-    assertThat(stabilityTile.getConfiguration()).isEqualTo(Map.of("section", "duration"));
+    final Map<Object, Long> tilesPerSection =
+        captureSavedDashboard().getTiles().stream()
+            .collect(
+                Collectors.groupingBy(
+                    tile -> configOf(tile).get("section"), Collectors.counting()));
+    assertThat(tilesPerSection)
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kpi", 6L, "trends", 3L, "agentTrends", 3L));
   }
 
   @Test
-  void shouldSeedTokenOutlierBandsTileNextToTokenTrend() {
+  void shouldShowKpisAtEveryLevelTrendsOnTheDashboardAndAgentTrendsInTheAgentView() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
     // when
     underTest.reconcile();
 
-    // then — placed in the right half of the token-trend row, matching its size
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final var outlierTile =
-        saved.getTiles().stream()
-            .filter(
-                t -> t.getId().equals(AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID))
-            .findFirst()
-            .orElseThrow();
-
-    assertThat(outlierTile.getPosition().getX()).isEqualTo(9);
-    assertThat(outlierTile.getPosition().getY()).isEqualTo(6);
-    assertThat(outlierTile.getDimensions().getWidth()).isEqualTo(9);
-    assertThat(outlierTile.getDimensions().getHeight()).isEqualTo(4);
-    assertThat(outlierTile.getConfiguration())
-        .isEqualTo(
-            Map.of(
-                "section",
-                "token",
-                "footnote",
-                AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE_KEY));
+    // then
+    final Map<String, List<String>> levelsById =
+        captureSavedDashboard().getTiles().stream()
+            .collect(Collectors.toMap(DashboardReportTileDto::getId, tile -> levelsOf(tile)));
+    assertThat(levelsById)
+        .containsEntry(AGENT_SUCCESS_RATE_REPORT_ID, List.of("overview", "process", "agent"))
+        .containsEntry(AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID, List.of("overview", "process"))
+        .containsEntry(AGENT_TOKEN_BAND_REPORT_ID, List.of("agent"))
+        .containsEntry(AGENT_LIMIT_HIT_RATE_REPORT_ID, List.of("overview", "process"))
+        .containsEntry(AGENT_LIMIT_HIT_RATE_AGENT_REPORT_ID, List.of("agent"));
   }
 
   @Test
-  void shouldDefineTopNNoticeLabelInEveryLocale() throws IOException {
+  void shouldCompareOnlyKpiTilesWithThePreviousPeriod() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final Map<String, Object> goodDirectionById =
+        captureSavedDashboard().getTiles().stream()
+            .filter(tile -> Boolean.TRUE.equals(configOf(tile).get("comparisonPeriod")))
+            .collect(
+                Collectors.toMap(
+                    DashboardReportTileDto::getId,
+                    tile -> configOf(tile).get("deltaGoodDirection")));
+    assertThat(goodDirectionById)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                AGENT_TOTAL_TOKENS_REPORT_ID, "down",
+                AGENT_RUNS_REPORT_ID, "up",
+                AGENT_SUCCESS_RATE_REPORT_ID, "up"));
+  }
+
+  @Test
+  void shouldReadEveryTileFromTheAgentRunIndexForCompletedProcessInstancesOnly() {
+    // when
+    final List<ProcessReportDataDto> reports = seedAndCaptureReports();
+
+    // then
+    assertThat(reports)
+        .hasSize(12)
+        .allSatisfy(
+            report -> {
+              assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+              assertThat(report.isAgenticControlReport()).isTrue();
+              assertThat(report.getFilter())
+                  .hasSize(1)
+                  .first()
+                  .isInstanceOf(CompletedInstancesOnlyFilterDto.class);
+            });
+  }
+
+  @Test
+  void shouldSeedOneReportPerMetric() {
+    // when
+    final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
+
+    // then
+    assertReport(reports, AGENT_TOTAL_TOKENS_REPORT_ID, ViewProperty.TOTAL_TOKENS, NONE)
+        .containsExactly(new AggregationDto(AggregationType.SUM));
+    assertReport(reports, AGENT_AVG_TOKENS_REPORT_ID, ViewProperty.TOTAL_TOKENS, NONE)
+        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertReport(reports, AGENT_RUNS_REPORT_ID, ViewProperty.FREQUENCY, NONE);
+    assertReport(reports, AGENT_SUCCESS_RATE_REPORT_ID, ViewProperty.SUCCESS_RATE, NONE);
+    assertReport(reports, AGENT_DURATION_REPORT_ID, ViewProperty.DURATION, NONE)
+        .containsExactly(
+            new AggregationDto(AggregationType.AVERAGE),
+            new AggregationDto(AggregationType.PERCENTILE, 50.0),
+            new AggregationDto(AggregationType.PERCENTILE, 95.0));
+    assertReport(reports, AGENT_HUMAN_WAIT_REPORT_ID, ViewProperty.HUMAN_WAIT, NONE)
+        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertReport(reports, AGENT_LIMIT_HIT_RATE_REPORT_ID, ViewProperty.LIMIT_HIT_RATE, NONE);
+    assertReport(reports, AGENT_ITERATIONS_REPORT_ID, ViewProperty.MODEL_CALLS, NONE)
+        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
+    assertThat(reports.get(AGENT_TOKEN_BREAKDOWN_REPORT_ID).getView().getProperties())
+        .containsExactly(
+            ViewProperty.INPUT_TOKENS,
+            ViewProperty.OUTPUT_TOKENS,
+            ViewProperty.CACHE_WRITE_TOKENS,
+            ViewProperty.CACHE_READ_TOKENS,
+            ViewProperty.REASONING_TOKENS);
+  }
+
+  @Test
+  void shouldSplitMedianTokensPerRunByModelWeekByWeek() {
+    // when
+    final ProcessReportDataDto report =
+        seedAndCaptureReportsById().get(AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID);
+
+    // then
+    assertThat(report.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
+    assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
+    assertThat(((DateGroupByValueDto) report.getGroupBy().getValue()).getUnit())
+        .isEqualTo(AggregateByDateUnit.WEEK);
+    assertThat(report.getDistributedBy()).isInstanceOf(AgentModelDistributedByDto.class);
+    assertThat(report.getVisualization()).isEqualTo(ProcessVisualization.LINE);
+    assertThat(report.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 50.0));
+  }
+
+  @Test
+  void shouldBandTokensPerRunForTheAgentView() {
+    // when
+    final ProcessReportDataDto report = seedAndCaptureReportsById().get(AGENT_TOKEN_BAND_REPORT_ID);
+
+    // then
+    assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
+    assertThat(report.getConfiguration().getAggregationTypes())
+        .containsExactly(
+            new AggregationDto(AggregationType.PERCENTILE, 5.0),
+            new AggregationDto(AggregationType.PERCENTILE, 50.0),
+            new AggregationDto(AggregationType.PERCENTILE, 95.0),
+            new AggregationDto(AggregationType.AVERAGE));
+  }
+
+  @Test
+  void shouldFormatRatesAsPercentagesAndWaitTimeAsDuration() {
+    // when
+    final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
+
+    // then
+    assertThat(reports.get(AGENT_SUCCESS_RATE_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("percentage");
+    assertThat(reports.get(AGENT_HUMAN_WAIT_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("duration");
+    assertThat(reports.get(AGENT_ITERATIONS_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("frequency");
+    assertThat(reports.get(AGENT_DURATION_REPORT_ID).getConfiguration().getValueFormat()).isNull();
+  }
+
+  @Test
+  void shouldResolveTileLocalizationCodesInEveryLocale() throws IOException {
     for (final String locale : new String[] {"en", "de"}) {
-      final Map<String, Object> agenticControlPlane =
-          readLocalizationNode(locale, "agenticControlPlane");
-      assertThat(agenticControlPlane)
-          .as("locale '%s' must define agenticControlPlane.topNNotice", locale)
-          .containsKey("topNNotice");
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> report =
+          (Map<String, Object>) readAgenticControlLocalization(locale).get("report");
+      assertThat(report)
+          .as("locale '%s' must define all tile localization codes", locale)
+          .containsKeys(
+              AGENT_TOTAL_TOKENS_NAME,
+              AGENT_TOTAL_TOKENS_DESCRIPTION,
+              AGENT_AVG_TOKENS_NAME,
+              AGENT_AVG_TOKENS_DESCRIPTION,
+              AGENT_RUNS_NAME,
+              AGENT_RUNS_DESCRIPTION,
+              AGENT_SUCCESS_RATE_NAME,
+              AGENT_SUCCESS_RATE_DESCRIPTION,
+              AGENT_DURATION_NAME,
+              AGENT_DURATION_DESCRIPTION,
+              AGENT_HUMAN_WAIT_NAME,
+              AGENT_HUMAN_WAIT_DESCRIPTION,
+              AGENT_TOKEN_BREAKDOWN_NAME,
+              AGENT_TOKEN_BREAKDOWN_DESCRIPTION,
+              AGENT_TOKENS_PER_RUN_BY_MODEL_NAME,
+              AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION,
+              AGENT_LIMIT_HIT_RATE_NAME,
+              AGENT_LIMIT_HIT_RATE_DESCRIPTION,
+              AGENT_TOKEN_BAND_NAME,
+              AGENT_TOKEN_BAND_DESCRIPTION,
+              AGENT_ITERATIONS_NAME,
+              AGENT_ITERATIONS_DESCRIPTION);
     }
   }
 
-  @Test
-  void shouldSeedTokenTrendReportWithBothTokenMeasures() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then a single multi-measure report is upserted with a deterministic ID
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOKEN_TREND_REPORT_ID),
-            isNull(),
-            any(),
-            eq(AgenticControlDashboardService.KPI_TOKEN_TREND_NAME),
-            isNull(),
-            isNull());
+  @SuppressWarnings("unchecked")
+  private static Map<Object, Object> configOf(final DashboardReportTileDto tile) {
+    return (Map<Object, Object>) tile.getConfiguration();
   }
 
-  @Test
-  void shouldSumBothTokenMeasuresPerWeekInTokenTrendReport() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the token-trend report exposes input and output tokens as SUM measures so weekly totals
-    // are not averaged
-    assertThat(captureTokenTrendReport())
-        .satisfies(
-            data -> {
-              assertThat(data.getView().getProperties())
-                  .containsExactly(ViewProperty.INPUT_TOKENS, ViewProperty.OUTPUT_TOKENS);
-              assertThat(data.getConfiguration().getAggregationTypes())
-                  .extracting(agg -> agg.getType())
-                  .containsExactly(AggregationType.SUM);
-            });
+  @SuppressWarnings("unchecked")
+  private static List<String> levelsOf(final DashboardReportTileDto tile) {
+    return (List<String>) ((Map<?, ?>) tile.getConfiguration()).get("levels");
   }
 
-  private ProcessReportDataDto captureTokenTrendReport() {
-    final ArgumentCaptor<ProcessReportDataDto> captor =
+  private static ListAssert<AggregationDto> assertReport(
+      final Map<String, ProcessReportDataDto> reports,
+      final String reportId,
+      final ViewProperty property,
+      final ProcessGroupByType groupByType) {
+    final ProcessReportDataDto report = reports.get(reportId);
+    assertThat(report).as("report %s", reportId).isNotNull();
+    assertThat(report.getView().getProperties()).containsExactly(property);
+    assertThat(report.getGroupBy().getType()).isEqualTo(groupByType);
+    return assertThat(List.copyOf(report.getConfiguration().getAggregationTypes()));
+  }
+
+  private List<ProcessReportDataDto> seedAndCaptureReports() {
+    return List.copyOf(seedAndCaptureReportsById().values());
+  }
+
+  private Map<String, ProcessReportDataDto> seedAndCaptureReportsById() {
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<String> ids = ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<ProcessReportDataDto> data =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
-    verify(reportWriter)
+    underTest.reconcile();
+    verify(reportWriter, times(12))
         .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOKEN_TREND_REPORT_ID),
-            isNull(),
-            captor.capture(),
-            any(),
-            isNull(),
-            isNull());
-    return captor.getValue();
-  }
-
-  @Test
-  void shouldExposeTokenTileDescriptionAsSubtitle() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the avg-tokens NUMBER tile surfaces its description as the subtitle override
-    final ArgumentCaptor<ProcessReportDataDto> captor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID),
-            isNull(),
-            captor.capture(),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_NAME),
-            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_DESCRIPTION),
-            isNull());
-    assertThat(captor.getValue().getConfiguration().getSubtitle())
-        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_DESCRIPTION);
-  }
-
-  @Test
-  void shouldExposeAllNumberTileDescriptionsAsSubtitles() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then every KPI number tile surfaces its description as the subtitle override so the tile
-    // shows
-    // a human-readable description instead of the auto-derived measure label
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION);
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION);
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION);
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION);
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION);
-    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID))
-        .isEqualTo(AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION);
-  }
-
-  private String capturedSubtitle(final String reportId) {
-    final ArgumentCaptor<ProcessReportDataDto> captor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(reportId), isNull(), captor.capture(), any(), any(), isNull());
-    return captor.getValue().getConfiguration().getSubtitle();
-  }
-
-  @Test
-  void shouldUpsertTokenTrendReportOnWarmRestart() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
-        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
-
-    // when
-    underTest.reconcile();
-    underTest.reconcile();
-
-    // then the token-trend report is upserted on every reconcile
-    verify(reportWriter, times(2))
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOKEN_TREND_REPORT_ID),
-            any(),
-            any(),
-            any(),
-            any(),
-            any());
-  }
-
-  @Test
-  void shouldSeedTopTokenConsumersReportGroupedByProcessSortedDesc() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then a single total-tokens report grouped by process is seeded as a descending horizontal bar
-    assertThat(captureTopTokenConsumersReport())
-        .satisfies(
-            data -> {
-              assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
-              assertThat(data.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
-              assertThat(data.getGroupBy().getType())
-                  .isEqualTo(ProcessGroupByType.PROCESS_DEFINITION_KEY);
-              assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.BAR);
-              assertThat(data.getConfiguration().getHorizontalBar()).isTrue();
-              assertThat(data.getConfiguration().getAggregationTypes())
-                  .extracting(AggregationDto::getType)
-                  .containsExactly(AggregationType.SUM);
-              assertThat(data.getConfiguration().getSorting())
-                  .hasValueSatisfying(
-                      sorting -> {
-                        assertThat(sorting.getBy()).contains(ReportSortingDto.SORT_BY_VALUE);
-                        assertThat(sorting.getOrder()).contains(SortOrder.DESC);
-                      });
-            });
-  }
-
-  @Test
-  void shouldPlaceTopTokenConsumersTileFullWidthBelowFailureRateByVersion() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the consumers tile spans the full grid width directly below the failure-rate-by-version
-    // tile
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final DashboardReportTileDto failureRate =
-        tileById(saved, AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID);
-    final DashboardReportTileDto consumers =
-        tileById(saved, AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID);
-
-    assertThat(consumers.getPosition().getX()).isZero();
-    assertThat(consumers.getPosition().getY())
-        .isEqualTo(failureRate.getPosition().getY() + failureRate.getDimensions().getHeight());
-    assertThat(consumers.getDimensions().getWidth()).isEqualTo(18);
-
-    // and it advertises the server-side top-N limit for the frontend to request, and is only
-    // shown at the dashboard root (L0)
-    @SuppressWarnings("unchecked")
-    final Map<String, Object> configuration = (Map<String, Object>) consumers.getConfiguration();
-    assertThat(configuration)
-        .containsEntry("topN", String.valueOf(AgenticControlDashboardService.TOKEN_CONSUMERS_LIMIT))
-        .containsEntry("visibleInL0Only", Boolean.TRUE);
-  }
-
-  private DashboardReportTileDto tileById(
-      final DashboardDefinitionRestDto dashboard, final String id) {
-    return dashboard.getTiles().stream()
-        .filter(tile -> id.equals(tile.getId()))
-        .findFirst()
-        .orElseThrow();
-  }
-
-  private ProcessReportDataDto captureTopTokenConsumersReport() {
-    final ArgumentCaptor<ProcessReportDataDto> captor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID),
-            isNull(),
-            captor.capture(),
-            eq(AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_NAME),
-            isNull(),
-            isNull());
-    return captor.getValue();
-  }
-
-  @Test
-  void shouldSeedP50DurationReportWithCorrectConfig() {
-    assertDurationReportSeeded(
-        AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
-        AgenticControlDashboardService.KPI_DURATION_P50_NAME,
-        AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
-        50.0);
-  }
-
-  @Test
-  void shouldSeedP95DurationReportWithCorrectConfig() {
-    assertDurationReportSeeded(
-        AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
-        AgenticControlDashboardService.KPI_DURATION_P95_NAME,
-        AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION,
-        95.0);
-  }
-
-  @Test
-  void shouldUpsertP50AndP95ReportsOnWarmRestart() {
-    // given — dashboard already exists (warm restart)
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
-        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
-
-    // when
-    underTest.reconcile();
-
-    // then both duration percentile reports are upserted even when the dashboard is not recreated
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID),
-            any(),
-            any(),
-            any(),
-            any(),
-            any());
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID),
-            any(),
-            any(),
-            any(),
-            any(),
-            any());
-    verify(dashboardWriter, never()).saveDashboard(any());
-  }
-
-  @Test
-  void shouldSeedFailureRateByVersionReportWithGroupedBarShape() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the report is upserted with the correct deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_NAME),
-            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto reportData = dataCaptor.getValue();
-    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(reportData.getView().getProperties()).contains(ViewProperty.PERCENTAGE);
-    assertThat(reportData.getGroupBy()).isInstanceOf(ProcessDefinitionVersionGroupByDto.class);
-    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.BAR);
-    assertThat(reportData.isAgenticControlReport()).isTrue();
-  }
-
-  @Test
-  void shouldMarkFailureRateByVersionTileAsL1Only() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the tile carries the L1-only visibility flag so the frontend hides it in the L0 view
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final DashboardReportTileDto failureRateTile =
-        saved.getTiles().stream()
-            .filter(
-                tile ->
-                    AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID.equals(
-                        tile.getId()))
-            .findFirst()
-            .orElseThrow();
-    assertThat(failureRateTile.getConfiguration())
-        .isEqualTo(Map.of("section", "reliabilityAndToolCalls", "visibleInL1Only", true));
-  }
-
-  @Test
-  void shouldSeedTotalToolCallsReportAsSummedNumber() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the report is upserted with the deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_NAME),
-            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto reportData = dataCaptor.getValue();
-    // view: AGENT_INSTANCE + TOOL_CALLS, summed into a single number with no grouping
-    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
-    assertThat(reportData.getView().getProperties()).containsExactly(ViewProperty.TOOL_CALLS);
-    assertThat(reportData.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
-    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.NUMBER);
-    assertThat(reportData.getConfiguration().getAggregationTypes())
-        .extracting(AggregationDto::getType)
-        .containsExactly(AggregationType.SUM);
-    // filters: completedInstancesOnly + hasAgentInstances (scope is applied per-request by the
-    // frontend, so the seeded report carries no definitions)
-    assertThat(reportData.getFilter())
-        .hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
-    assertThat(reportData.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
-    assertThat(reportData.getDefinitions()).isEmpty();
-    assertThat(reportData.isAgenticControlReport()).isTrue();
-  }
-
-  @Test
-  void shouldPlaceTotalToolCallsTileFullWidthVisibleInBothScopes() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then a single full-width tile in the reliability section, with no L0/L1-only flag, so the
-    // number renders in both the fleet (L0) and drill-down (L1) views
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final List<DashboardReportTileDto> toolCallsTiles =
-        saved.getTiles().stream()
-            .filter(t -> AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID.equals(t.getId()))
-            .toList();
-    assertThat(toolCallsTiles).hasSize(1);
-
-    final DashboardReportTileDto toolCallsTile = toolCallsTiles.getFirst();
-    assertThat(toolCallsTile.getConfiguration())
-        .isEqualTo(
-            Map.of(
-                "section",
-                "reliabilityAndToolCalls",
-                "footnote",
-                AgenticControlDashboardService.KPI_TOOL_CALLS_FOOTNOTE_KEY));
-    assertThat(toolCallsTile.getDimensions().getWidth()).isEqualTo(18);
-    assertThat(toolCallsTile.getDimensions().getHeight()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldSeedToolCallsHeatmapReportWithFlowNodeViewAndGroupBy() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the report is upserted with the deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_NAME),
-            eq(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto reportData = dataCaptor.getValue();
-    // view: FLOW_NODE + TOOL_CALLS, grouped by flow node and rendered as a heat map
-    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(reportData.getView().getProperties()).containsExactly(ViewProperty.TOOL_CALLS);
-    assertThat(reportData.getGroupBy()).isInstanceOf(FlowNodesGroupByDto.class);
-    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.HEAT);
-    assertThat(reportData.getConfiguration().getAggregationTypes())
-        .extracting(AggregationDto::getType)
-        .containsExactly(AggregationType.SUM);
-    // filters: completedInstancesOnly + hasAgentInstances, no fixed definition (scoped by the
-    // frontend's process selection)
-    assertThat(reportData.getFilter())
-        .hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
-    assertThat(reportData.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
-    assertThat(reportData.getDefinitions()).isEmpty();
-    assertThat(reportData.isAgenticControlReport()).isTrue();
-  }
-
-  @Test
-  void shouldUseDeterministicToolCallsHeatmapReportId() {
-    // when / then
-    assertThat(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID)
-        .isEqualTo(
-            java.util
-                .UUID
-                .nameUUIDFromBytes(
-                    "agentic-tool-calls-heatmap".getBytes(java.nio.charset.StandardCharsets.UTF_8))
-                .toString());
-  }
-
-  @Test
-  void shouldMarkToolCallsHeatmapTileAsL1OnlyAtCorrectPositionAndDimensions() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the tile is L1-only (a heat map needs a single process definition's BPMN XML to render)
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final DashboardReportTileDto heatmapTile =
-        tileById(saved, AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID);
-
-    assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isZero();
-    assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
-    assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
-    assertThat(heatmapTile.getConfiguration())
-        .isEqualTo(Map.of("section", "reliabilityAndToolCalls", "visibleInL1Only", true));
-  }
-
-  @Test
-  void shouldUpsertToolCallsHeatmapReportOnWarmRestart() {
-    // given the dashboard already exists (warm restart)
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
-        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
-
-    // when
-    underTest.reconcile();
-    underTest.reconcile();
-
-    // then the heatmap report is upserted on every reconcile
-    verify(reportWriter, times(2))
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID),
-            any(),
-            any(),
-            any(),
-            any(),
-            any());
-  }
-
-  @Test
-  void shouldSeedDurationHeatmapReportWithFlowNodeViewAndGroupBy() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the report is upserted with the deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.DURATION_HEATMAP_NAME),
-            eq(AgenticControlDashboardService.DURATION_HEATMAP_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto reportData = dataCaptor.getValue();
-    // view: FLOW_NODE + DURATION, grouped by flow node and rendered as a heat map
-    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(reportData.getView().getProperties()).containsExactly(ViewProperty.DURATION);
-    assertThat(reportData.getGroupBy()).isInstanceOf(FlowNodesGroupByDto.class);
-    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.HEAT);
-    // average duration per flow node (a single aggregation, no unused percentiles)
-    assertThat(reportData.getConfiguration().getAggregationTypes())
-        .extracting(AggregationDto::getType)
-        .containsExactly(AggregationType.AVERAGE);
-    // filters: completedInstancesOnly + hasAgentInstances, no fixed definition (scoped by the
-    // frontend's process selection)
-    assertThat(reportData.getFilter())
-        .hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
-    assertThat(reportData.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
-    assertThat(reportData.getDefinitions()).isEmpty();
-    assertThat(reportData.isAgenticControlReport()).isTrue();
-  }
-
-  @Test
-  void shouldUseDeterministicDurationHeatmapReportId() {
-    // when / then
-    assertThat(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID)
-        .isEqualTo(
-            java.util
-                .UUID
-                .nameUUIDFromBytes(
-                    "agentic-duration-heatmap".getBytes(java.nio.charset.StandardCharsets.UTF_8))
-                .toString());
-  }
-
-  @Test
-  void shouldMarkDurationHeatmapTileAsL1OnlyInDurationSectionAtCorrectPositionAndDimensions() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-
-    // when
-    underTest.reconcile();
-
-    // then the tile is L1-only (a heat map needs a single process definition's BPMN XML to render)
-    // and lives in the duration section
-    final DashboardDefinitionRestDto saved = captureSavedDashboard();
-    final DashboardReportTileDto heatmapTile =
-        tileById(saved, AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
-
-    assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isZero();
-    assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
-    assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
-    assertThat(heatmapTile.getConfiguration())
-        .isEqualTo(Map.of("section", "duration", "visibleInL1Only", true));
-  }
-
-  @Test
-  void shouldUpsertDurationHeatmapReportOnWarmRestart() {
-    // given the dashboard already exists (warm restart)
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
-        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
-
-    // when
-    underTest.reconcile();
-    underTest.reconcile();
-
-    // then the heatmap report is upserted on every reconcile
-    verify(reportWriter, times(2))
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID),
-            any(),
-            any(),
-            any(),
-            any(),
-            any());
+            ids.capture(), isNull(), data.capture(), any(), any(), isNull());
+    final Map<String, ProcessReportDataDto> byId = new LinkedHashMap<>();
+    for (int i = 0; i < ids.getAllValues().size(); i++) {
+      byId.put(ids.getAllValues().get(i), data.getAllValues().get(i));
+    }
+    return byId;
   }
 
   @SuppressWarnings("unchecked")
@@ -1075,31 +548,5 @@ public class AgenticControlDashboardServiceTest {
         ArgumentCaptor.forClass(DashboardDefinitionRestDto.class);
     verify(dashboardWriter).saveDashboard(captor.capture());
     return captor.getValue();
-  }
-
-  private void assertDurationReportSeeded(
-      final String reportId,
-      final String nameKey,
-      final String descKey,
-      final double expectedPercentile) {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the report is upserted with the correct deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(reportId), isNull(), dataCaptor.capture(), eq(nameKey), eq(descKey), isNull());
-
-    final ProcessReportDataDto reportData = dataCaptor.getValue();
-    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(reportData.getView().getProperties()).contains(ViewProperty.DURATION);
-    assertThat(reportData.getConfiguration().getAggregationTypes())
-        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, expectedPercentile));
-    assertThat(reportData.isAgenticControlReport()).isTrue();
   }
 }

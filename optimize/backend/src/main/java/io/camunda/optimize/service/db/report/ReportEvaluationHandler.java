@@ -37,6 +37,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisua
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -482,6 +483,11 @@ public abstract class ReportEvaluationHandler {
     }
     if (definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
         && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
+      dateValue.setUnit(additionalFilters.getGroupByDateUnit());
+    }
+    // Agent run tiles group by run start date.
+    if (definitionDto.getData().getGroupBy() instanceof final StartDateGroupByDto startDateGroupBy
+        && startDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
       dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
   }

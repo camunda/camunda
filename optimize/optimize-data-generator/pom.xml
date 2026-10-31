@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda.optimize</groupId>
+    <artifactId>optimize-parent</artifactId>
+    <version>8.11.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>optimize-data-generator</artifactId>
+  <name>Optimize Data Generator</name>
+  <description>Standalone CLI tool that generates synthetic Zeebe process-instance data and bulk-indexes it
+    into Elasticsearch. Used for local development, performance testing, and PoC demos.</description>
+
+  <dependencies>
+
+    <!--
+      optimize-backend provides all Zeebe record DTOs (ZeebeRecordDto, ZeebeProcessInstanceRecordDto,
+      ZeebeIncidentRecordDto, ZeebeUserTaskRecordDto, etc.), optimize-commons (ZeebeConstants,
+      ObjectMapperFactory, OptimizeElasticsearchClient, DatabaseConstants), zeebe-protocol,
+      the Elasticsearch clients, and Apache HTTP components — everything the generator needs.
+    -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Direct compile-time dependencies (transitively provided by optimize-backend, declared
+         explicitly here to satisfy dependency:analyze-only) -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-commons</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+    </dependency>
+
+    <!-- Logging runtime (needed for standalone CLI execution) -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Required at runtime by the ES low-level REST client -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Build an executable uber-jar for the CLI. Run via:
+           java -jar optimize-data-generator-VERSION-shaded.jar -\-instances 100000 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <dependencies>
+          <!-- Merges Log4j2Plugins.dat files from all shaded JARs so that Log4j2's plugin
+               registry (including XmlConfigurationFactory) survives shading intact. -->
+          <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-transform-maven-shade-plugin-extensions</artifactId>
+            <version>0.1.0</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>shaded</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>io.camunda.optimize.test.generator.ZeebeDataGeneratorCli</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <!-- Merge Log4j2 plugin cache files so XmlConfigurationFactory is registered -->
+                <transformer implementation="org.apache.logging.log4j.maven.plugins.shade.transformer.Log4j2PluginCacheFileTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <!-- Spring Boot ships log4j2.springboot which makes SpringBootConfigurationFactory
+                         hijack Log4j2 configuration. Without a Spring context this produces no output,
+                         so we exclude it and let Log4j2 pick up our log4j2.xml instead. -->
+                    <exclude>log4j2.springboot</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

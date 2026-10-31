@@ -11,6 +11,7 @@ import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.AgentRunFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -93,6 +95,7 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
   private final FlowNodeStartDateQueryFilterES flowNodeStartDateQueryFilter;
   private final FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter;
   private final HasAgentInstancesQueryFilterES hasAgentInstancesQueryFilter;
+  private AgentRunQueryFilterES agentRunQueryFilter;
 
   public ProcessQueryFilterEnhancerES(
       final ConfigurationService configurationService,
@@ -158,6 +161,12 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
     this.flowNodeStartDateQueryFilter = flowNodeStartDateQueryFilter;
     this.flowNodeEndDateQueryFilter = flowNodeEndDateQueryFilter;
     this.hasAgentInstancesQueryFilter = hasAgentInstancesQueryFilter;
+  }
+
+  // Setter injection keeps the long constructor unchanged for this prototype-only filter.
+  @Autowired
+  public void setAgentRunQueryFilter(final AgentRunQueryFilterES agentRunQueryFilter) {
+    this.agentRunQueryFilter = agentRunQueryFilter;
   }
 
   @Override
@@ -248,6 +257,10 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
           query, extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext);
       hasAgentInstancesQueryFilter.addFilters(
           query, extractInstanceFilters(filters, HasAgentInstancesFilterDto.class), filterContext);
+      if (agentRunQueryFilter != null) {
+        agentRunQueryFilter.addFilters(
+            query, extractInstanceFilters(filters, AgentRunFilterDto.class), filterContext);
+      }
     }
     addInstanceFilterForViewLevelMatching(query, filters, filterContext);
   }
