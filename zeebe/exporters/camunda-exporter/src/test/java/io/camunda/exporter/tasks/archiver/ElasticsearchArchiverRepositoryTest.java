@@ -32,7 +32,6 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -319,7 +318,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     // when
     ((ElasticsearchArchiverRepository) repository)
         .getArchiveDocIdsBatch(
-            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), List.of(), 10)
+            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), null, 10)
         .join();
 
     // then
@@ -346,7 +345,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
             .join();
 
     // then
-    assertThat(deleted).isEqualTo(3L);
+    assertThat(deleted).isEqualTo(3);
 
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
     verify(client).bulk(captor.capture());
