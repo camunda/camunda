@@ -2422,6 +2422,13 @@
 					"preparingPdfPreview": "Preparing PDF preview…"
 				},
 				"diagram": {
+					"enterFullscreen": "Enter fullscreen",
+					"exitFullscreen": "Exit fullscreen",
+					"showMinimap": "Show minimap",
+					"hideMinimap": "Hide minimap",
+					"resetZoom": "Reset diagram zoom",
+					"zoomOut": "Zoom out diagram",
+					"zoomIn": "Zoom in diagram",
 					"label": "Diagram"
 				},
 				"stateIcon": {
@@ -2441,7 +2448,8 @@
 					"canceled": "Canceled",
 					"completed": "Completed",
 					"evaluated": "Evaluated",
-					"failed": "Failed"
+					"failed": "Failed",
+					"pending": "pending modification"
 				},
 				"modificationBadge": {
 					"added": "{{count}} added",

@@ -188,7 +188,130 @@
 
 	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
 	.ope-selected .djs-visual rect {
-		fill: var(--info-background-subtle) !important;
+		fill: var(--info-background-strong) !important;
+	}
+}
+
+/* Pending state pills emit a ring in their own colour (--pulse) instead of changing opacity. */
+@keyframes state-overlay-ring {
+	0% {
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse) 55%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 6px transparent;
+	}
+}
+
+.state-overlay-pending-ring {
+	animation: state-overlay-ring 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.state-overlay-pending-ring {
+		animation: none;
+	}
+}
+
+/*
+ * The shared BpmnJS renderer emits Carbon variable names, so they are mapped to DS tokens here.
+ * Same approach as .dmn-viewer-theme for the BPMN diagram: plain unlayered rules
+ * beat the unlayered bpmn-js and diagram-js-minimap stylesheets by specificity.
+ */
+.bpmn-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+	--cds-layer-01: var(--viewer-layer);
+	--cds-highlight: var(--info-background-subtle);
+	--cds-icon-secondary: var(--neutral-foreground-subtle);
+	--cds-text-primary: var(--neutral-foreground-strong);
+	--cds-background-brand: var(--info-action-default);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.bjs-powered-by {
+		display: none;
+	}
+
+	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
+		stroke: var(--info-action-default) !important;
+	}
+
+	.op-selectable:hover {
+		cursor: pointer;
+	}
+
+	.op-selectable:focus {
+		outline: none;
+	}
+
+	.op-selectable:hover .djs-outline {
+		stroke-width: 1px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-selectable:focus-visible .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-selected-frame .djs-outline,
+	.op-selected-frame:focus-visible .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-non-selectable {
+		cursor: not-allowed;
+	}
+
+	.op-drilldown {
+		user-select: none;
+	}
+
+	.op-drilldown-loading,
+	.op-drilldown-loading * {
+		cursor: wait;
+	}
+
+	/* The renderer sets the shape fill inline, which only `!important` can override. */
+	.op-selected .djs-visual {
+		rect,
+		circle,
+		polygon {
+			fill: var(--info-background-strong) !important;
+		}
+	}
+
+	.djs-minimap {
+		top: auto !important;
+		bottom: 4.5rem !important;
+		right: 1rem !important;
+		z-index: 10;
+		background-color: var(--viewer-layer) !important;
+		border-color: var(--neutral-border-subtle) !important;
+	}
+
+	.djs-minimap .map {
+		width: 240px !important;
+		height: 135px !important;
+	}
+
+	.djs-minimap .toggle:before {
+		content: '' !important;
+	}
+
+	.djs-minimap:not(.open) .toggle {
+		display: none;
+	}
+
+	.djs-minimap.open .overlay {
+		background: var(--neutral-background-strong) !important;
+		opacity: 0.2;
+	}
+
+	.djs-minimap .viewport-dom {
+		border-color: var(--primary-action-default) !important;
 	}
 }
 
