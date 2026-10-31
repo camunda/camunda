@@ -55,6 +55,9 @@ public class PersistedBatchOperation extends UnpackedObject
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>("batchOperationType", BatchOperationType.class);
 
+  /** The storage ordinal the batch operation inherited from the active ordinal at creation. */
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
+
   /** The status of the batch operation. */
   private final EnumProperty<BatchOperationStatus> statusProp =
       new EnumProperty<>("status", BatchOperationStatus.class);
@@ -144,9 +147,10 @@ public class PersistedBatchOperation extends UnpackedObject
       new ObjectProperty<>("followUpCommand", new NestedRecord());
 
   public PersistedBatchOperation() {
-    super(18);
+    super(19);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
@@ -169,6 +173,7 @@ public class PersistedBatchOperation extends UnpackedObject
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
     setKey(record.getBatchOperationKey());
     setBatchOperationType(record.getBatchOperationType());
+    setStorageOrdinal(record.getStorageOrdinal());
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
@@ -246,6 +251,15 @@ public class PersistedBatchOperation extends UnpackedObject
   public PersistedBatchOperation setBatchOperationType(
       final BatchOperationType batchOperationType) {
     batchOperationTypeProp.setValue(batchOperationType);
+    return this;
+  }
+
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public PersistedBatchOperation setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

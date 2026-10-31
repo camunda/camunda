@@ -22,18 +22,21 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_ITEM_KEY_LIST = "itemKeys";
+  public static final String PROP_BATCH_ITEMS_STORAGE_ORDINAL = "batchItemsStorageOrdinal";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp =
-      new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
+  private final IntegerProperty batchItemsStorageOrdinalProp =
+      new IntegerProperty(PROP_BATCH_ITEMS_STORAGE_ORDINAL, 0);
 
   public BatchOperationExecutionRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(itemKeysProp);
+        .declareProperty(itemKeysProp)
+        .declareProperty(batchItemsStorageOrdinalProp);
   }
 
   @Override
@@ -68,10 +71,22 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getBatchItemsStorageOrdinal() {
+    return batchItemsStorageOrdinalProp.getValue();
+  }
+
+  public BatchOperationExecutionRecord setBatchItemsStorageOrdinal(
+      final int batchItemsStorageOrdinal) {
+    batchItemsStorageOrdinalProp.setValue(batchItemsStorageOrdinal);
+    return this;
+  }
+
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setStorageOrdinal(record.getStorageOrdinal());
     setItemKeys(record.getItemKeys());
+    setBatchItemsStorageOrdinal(record.getBatchItemsStorageOrdinal());
     return this;
   }
 }

@@ -38,6 +38,7 @@ public class BatchOperationExecutionSchedulerTest {
 
   public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   public static final long BATCH_OPERATION_KEY = 123456789L;
+  private static final int STORAGE_ORDINAL = 1234;
   private static final int DEFAULT_PAGE_SIZE = 100;
 
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
@@ -152,7 +153,8 @@ public class BatchOperationExecutionSchedulerTest {
     // then
     verify(batchOperationInitializer).initializeBatchOperation(any(), eq(taskResultBuilder));
     verify(batchOperationInitializer)
-        .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+        .appendFailedCommand(
+            taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, errorMessage, errorType);
     verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
@@ -234,7 +236,8 @@ public class BatchOperationExecutionSchedulerTest {
     // then
     verify(retryPolicy).evaluate("cursor", cause, 0);
     verify(batchOperationInitializer)
-        .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+        .appendFailedCommand(
+            taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, errorMessage, errorType);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
@@ -475,6 +478,7 @@ public class BatchOperationExecutionSchedulerTest {
   private static PersistedBatchOperation createBatchOperation() {
     return new PersistedBatchOperation()
         .setKey(BATCH_OPERATION_KEY)
+        .setStorageOrdinal(STORAGE_ORDINAL)
         .setStatus(BatchOperationStatus.CREATED)
         .setBatchOperationType(CANCEL_PROCESS_INSTANCE)
         .setInitializationSearchCursor("")
