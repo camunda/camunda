@@ -28,6 +28,7 @@
 //   modified, each relative to the suite root (e.g. tests/operate/foo.spec.ts).
 //
 import fs from 'node:fs';
+import {isAbsolute, relative, resolve} from 'node:path';
 
 const [reportPath, changedSpecsPath] = process.argv.slice(2);
 
@@ -40,7 +41,7 @@ if (!reportPath || !changedSpecsPath) {
 
 // Reduce any spec path to the part that is stable across report formats and git
 // diff output: the segment starting at the test root. Playwright may report a
-// file relative to the suite dir (tests/operate/x.spec.ts) or absolute
+// file relative to its config rootDir (see toSuitePath) or absolute
 // (/home/runner/.../tests/operate/x.spec.ts); git diff paths arrive already
 // stripped of the qa/<suite>/ prefix by the caller. Normalising both to the
 // `tests/` or `v2-stateless-tests/` tail lets them be compared directly.
@@ -94,6 +95,18 @@ try {
   process.exit(2);
 }
 
+// A spec's `file` in the report is relative to config.rootDir, which is the
+// config's testDir. A suite with testDir './tests/' (stable/8.8) therefore
+// reports api/v2/x.spec.ts, which has no root for normalize() to find and never
+// matches the changed list, so every failure would count as untouched. Resolving
+// against rootDir first yields the suite-relative path, since this script runs
+// from the suite dir.
+const rootDir = report?.config?.rootDir;
+function toSuitePath(file) {
+  if (!rootDir || !file || isAbsolute(file)) return normalize(file);
+  return normalize(relative(process.cwd(), resolve(rootDir, file)));
+}
+
 // Walk the suite tree carrying the nearest file context, since a spec inherits
 // its file from the suite that owns it.
 const specs = [];
@@ -110,10 +123,11 @@ const failedChanged = [];
 const failedUntouched = [];
 for (const spec of specs) {
   if (spec.ok) continue;
-  if (changed.has(normalize(spec.file))) {
-    failedChanged.push(normalize(spec.file));
+  const file = toSuitePath(spec.file);
+  if (changed.has(file)) {
+    failedChanged.push(file);
   } else {
-    failedUntouched.push(normalize(spec.file));
+    failedUntouched.push(file);
   }
 }
 
