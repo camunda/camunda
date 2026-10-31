@@ -56,6 +56,12 @@ public class OidcAuthenticationConfigurationTest {
                 .build(),
             true),
         Arguments.of(
+            "revocationEndpointUri is set",
+            OidcAuthenticationConfiguration.builder()
+                .revocationEndpointUri("revocation-endpoint-uri")
+                .build(),
+            true),
+        Arguments.of(
             "clientId is set",
             OidcAuthenticationConfiguration.builder().clientId("cid").build(),
             true),
