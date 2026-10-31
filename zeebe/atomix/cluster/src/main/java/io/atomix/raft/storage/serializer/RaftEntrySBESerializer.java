@@ -33,6 +33,7 @@ import io.camunda.zeebe.util.SbeUtil;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -46,6 +47,9 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   final RaftLogEntryDecoder raftLogEntryDecoder = new RaftLogEntryDecoder();
   final ApplicationEntryDecoder applicationEntryDecoder = new ApplicationEntryDecoder();
   final ConfigurationEntryDecoder configurationEntryDecoder = new ConfigurationEntryDecoder();
+  private final MutableDirectBuffer epochBuffer =
+      new UnsafeBuffer(new byte[RaftLogEntryEncoder.epochLength()]);
+  private final DirectBuffer epochView = new UnsafeBuffer();
 
   @Override
   public int getApplicationEntrySerializedLength(final ApplicationEntry entry) {
@@ -86,11 +90,12 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   @Override
   public int writeApplicationEntry(
       final long term,
+      final UUID epoch,
       final ApplicationEntry entry,
       final MutableDirectBuffer buffer,
       final int offset) {
 
-    final int entryOffset = writeRaftFrame(term, EntryType.ApplicationEntry, buffer, offset);
+    final int entryOffset = writeRaftFrame(term, epoch, EntryType.ApplicationEntry, buffer, offset);
 
     headerEncoder
         .wrap(buffer, offset + entryOffset)
@@ -112,20 +117,23 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   @Override
   public int writeInitialEntry(
       final long term,
+      final UUID epoch,
       final InitialEntry entry,
       final MutableDirectBuffer buffer,
       final int offset) {
 
-    return writeRaftFrame(term, EntryType.InitialEntry, buffer, offset);
+    return writeRaftFrame(term, epoch, EntryType.InitialEntry, buffer, offset);
   }
 
   @Override
   public int writeConfigurationEntry(
       final long term,
+      final UUID epoch,
       final ConfigurationEntry entry,
       final MutableDirectBuffer buffer,
       final int offset) {
-    final int entryOffset = writeRaftFrame(term, EntryType.ConfigurationEntry, buffer, offset);
+    final int entryOffset =
+        writeRaftFrame(term, epoch, EntryType.ConfigurationEntry, buffer, offset);
 
     headerEncoder
         .wrap(buffer, offset + entryOffset)
@@ -173,6 +181,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
         headerDecoder.version());
     final long term = raftLogEntryDecoder.term();
     final EntryType type = raftLogEntryDecoder.type();
+    final UUID epoch = readEpoch(term);
 
     final int entryOffset = headerDecoder.encodedLength() + raftLogEntryDecoder.encodedLength();
 
@@ -190,7 +199,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
           default -> throw new IllegalStateException("Unexpected entry type " + type);
         };
 
-    return new RaftLogEntry(term, entry);
+    return new RaftLogEntry(term, epoch, entry);
   }
 
   private int getNewMemberEntryLength(final RaftMember raftMember) {
@@ -209,6 +218,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
 
   private int writeRaftFrame(
       final long term,
+      final UUID epoch,
       final EntryType entryType,
       final MutableDirectBuffer buffer,
       final int offset) {
@@ -221,8 +231,25 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     raftLogEntryEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
     raftLogEntryEncoder.term(term);
     raftLogEntryEncoder.type(entryType);
+    // a UUID's bytes are most significant first, as in its canonical form
+    epochBuffer.putLong(0, epoch.getMostSignificantBits(), ByteOrder.BIG_ENDIAN);
+    epochBuffer.putLong(Long.BYTES, epoch.getLeastSignificantBits(), ByteOrder.BIG_ENDIAN);
+    raftLogEntryEncoder.putEpoch(epochBuffer, 0, RaftLogEntryEncoder.epochLength());
 
     return headerEncoder.encodedLength() + raftLogEntryEncoder.encodedLength();
+  }
+
+  private UUID readEpoch(final long term) {
+    // An entry written before epochs existed gets one made from its term. It never equals a
+    // random UUID, whose version bits make its most significant bits non-zero.
+    if (raftLogEntryDecoder.actingVersion() < RaftLogEntryDecoder.epochSinceVersion()) {
+      return new UUID(0, term);
+    }
+
+    raftLogEntryDecoder.wrapEpoch(epochView);
+    return new UUID(
+        epochView.getLong(0, ByteOrder.BIG_ENDIAN),
+        epochView.getLong(Long.BYTES, ByteOrder.BIG_ENDIAN));
   }
 
   private ApplicationEntry readApplicationEntry(final DirectBuffer buffer, final int entryOffset) {
