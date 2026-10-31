@@ -15,7 +15,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.P
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
@@ -58,9 +57,8 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterOS
   public AgenticProcessDefinitionKeyGroupByInterpreterOS(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      final ProcessViewInterpreterFacadeOS viewInterpreter,
-      final DefinitionService definitionService) {
-    super(configurationService, distributedByInterpreter, viewInterpreter, definitionService);
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
+    super(configurationService, distributedByInterpreter, viewInterpreter);
   }
 
   @Override

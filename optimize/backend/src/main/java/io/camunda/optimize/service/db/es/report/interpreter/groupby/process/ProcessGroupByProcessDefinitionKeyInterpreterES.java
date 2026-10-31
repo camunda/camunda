@@ -21,7 +21,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -46,17 +45,14 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
-  private final DefinitionService definitionService;
 
   public ProcessGroupByProcessDefinitionKeyInterpreterES(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter,
-      final DefinitionService definitionService) {
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
-    this.definitionService = definitionService;
   }
 
   @Override
@@ -105,8 +101,8 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByInterpreter.isKeyOfNumericType(context));
     if (shouldResolveDefinitionNames(context)) {
-      ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
-          compositeCommandResult, definitionService);
+      ProcessDefinitionNameResolver.applyDefinitionLabels(
+          compositeCommandResult, context.getReportData().getDefinitions());
     }
   }
 
