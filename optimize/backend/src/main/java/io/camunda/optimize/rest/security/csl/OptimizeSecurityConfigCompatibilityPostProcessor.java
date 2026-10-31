@@ -161,6 +161,9 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // implementation, so CSL's session repository always finds the SessionStorePort bean it
     // requires. putIfAbsent so an operator can still opt out.
     derived.putIfAbsent(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY, "true");
+    // Keeps refresh-token revocation at logout off on 8.10, as before CSL 1.2.0 turned it on by
+    // default. putIfAbsent so an operator can still opt in.
+    derived.putIfAbsent(OIDC_PREFIX + "revocation-enabled", "false");
   }
 
   // OIDC / Identity (CCSM), from the CAMUNDA_OPTIMIZE_IDENTITY_* env vars, or — when those are

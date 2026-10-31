@@ -1288,4 +1288,30 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY))
         .isEqualTo("false");
   }
+
+  @Test
+  void shouldDisableRefreshTokenRevocationByDefault() {
+    // given
+    final StandardEnvironment env = environmentWith(cslEnabledConfig());
+
+    // when
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // then
+    assertThat(env.getProperty(OIDC + "revocation-enabled")).isEqualTo("false");
+  }
+
+  @Test
+  void shouldLetOperatorTurnOnRefreshTokenRevocation() {
+    // given an operator who explicitly opted in
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(OIDC + "revocation-enabled", "true");
+    final StandardEnvironment env = environmentWith(legacy);
+
+    // when
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // then the bridged default does not override them
+    assertThat(env.getProperty(OIDC + "revocation-enabled")).isEqualTo("true");
+  }
 }
