@@ -116,12 +116,6 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
     jobSuspendedCounter.increment();
   }
 
-  public void jobsSuspended(final int count) {
-    if (count > 0) {
-      jobSuspendedCounter.increment(count);
-    }
-  }
-
   public void jobResumed() {
     jobResumedCounter.increment();
   }
