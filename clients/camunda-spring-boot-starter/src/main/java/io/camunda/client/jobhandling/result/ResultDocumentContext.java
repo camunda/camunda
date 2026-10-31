@@ -99,7 +99,7 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
             final CreateDocumentBatchCommandStep2 addDocumentCommand =
                 documentBatchCommand.addDocument();
             addDocumentCommand.fileName(fileName);
-            documentBuilder.apply(addDocumentCommand);
+            final var unused = documentBuilder.apply(addDocumentCommand);
             addDocumentCommand.done();
           });
       response = documentBatchCommand.execute();
