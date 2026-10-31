@@ -1,0 +1,85 @@
+# description: AI pull-request review trial for the Operate & Admin pod via camunda/pr-review-agent.
+#              Shadow mode only: the bot posts a COMMENT review and never approves.
+#              The pod's config is .github/pr-review-agent/operate-admin.yml, read from main.
+#              Keep this check NON-required.
+# type: CI Helper
+# owner: @camunda/operate-admin-pod
+---
+name: AI PR Review (Operate & Admin)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    # Only PRs that touch this pod's code. Later patterns win.
+    paths:
+      - "operate/**"
+      - "identity/**"
+      - "webapp/client/apps/orchestration-cluster-webapp/src/operate/**"
+      - "webapp/client/apps/orchestration-cluster-webapp/src/admin/**"
+
+# github.workflow differs per pod, so the pods' runs never cancel each other.
+# A `labeled` event for any label other than `ai-review` (the config's
+# opt_in_label) gets its own group and skips the review job, so it never
+# cancels a review that is still running.
+concurrency:
+  group: >-
+    ${{ github.event.action == 'labeled' && github.event.label.name != 'ai-review'
+        && format('ai-pr-review-ignored-{0}', github.run_id)
+        || format('ai-pr-review-{0}-{1}', github.workflow, github.event.pull_request.number) }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+env:
+  TEST_OWNER: "@camunda/operate-admin-pod"
+
+jobs:
+  review:
+    if: github.event.action != 'labeled' || github.event.label.name == 'ai-review'
+    # The called workflow's jobs can only narrow these, never widen them.
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: read
+      statuses: read
+    # No release tag exists yet; pinned to main.
+    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@db54401cbcea61e9464656d7e9f760b4bec2f2b5 # main
+    with:
+      config: operate-admin
+      force_shadow_mode: true
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+
+  # A reusable-workflow job cannot run steps, so build status is observed here.
+  observe-review-status:
+    name: Observe build status
+    needs: review
+    if: always() && needs.review.result != 'skipped'
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      # Base commit, never the PR head: this job holds Vault credentials.
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: ai-pr-review-operate-admin
+          build_status: ${{ needs.review.result }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
