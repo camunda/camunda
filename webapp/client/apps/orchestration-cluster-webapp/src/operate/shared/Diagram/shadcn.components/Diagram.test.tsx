@@ -250,4 +250,68 @@ describe('<Diagram />', () => {
 
 		expect(onElementDoubleClick).toHaveBeenCalledWith('startEvent_1');
 	});
+	it('should describe how to navigate the diagram with the keyboard', async () => {
+		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+
+		await expect
+			.poll(() => document.querySelector('[data-testid="diagram-canvas"]')?.getAttribute('aria-describedby'))
+			.not.toBeNull();
+		const hintId = document.querySelector('[data-testid="diagram-canvas"]')!.getAttribute('aria-describedby')!;
+		expect(document.getElementById(hintId)?.textContent).toBe(
+			'Use the arrow keys to move between elements and Enter to select.',
+		);
+	});
+
+	it('should name non-selectable elements even without tooltip text', async () => {
+		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('aria-label'))
+			.toBe('end event');
+	});
+
+	it('should append the tooltip text to the name of non-selectable elements', async () => {
+		await render(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} nonSelectableNodeTooltipText="Not selectable" />,
+		);
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('aria-label'))
+			.toBe('end event, Not selectable');
+	});
+
+	it('should attach the keyboard hint to selectable elements', async () => {
+		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('aria-describedby'))
+			.toBe(document.querySelector('[data-testid="diagram-canvas"]')?.getAttribute('aria-describedby'));
+	});
+
+	it('should drop button semantics from elements that stop being selectable', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+		await expect
+			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('role'))
+			.toBe('button');
+
+		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['endEvent_1']} />);
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('role'))
+			.toBe('button');
+		expect(document.querySelectorAll('[role="button"][data-element-id]')).toHaveLength(1);
+		expect(document.querySelector('[data-element-id="startEvent_1"]')?.hasAttribute('tabindex')).toBe(false);
+	});
+
+	it('should show the keyboard hint while an element has keyboard focus', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+		const hint = screen.getByText('Use the arrow keys to move between elements and Enter to select.');
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('tabindex'))
+			.toBe('0');
+		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
+
+		await expect.element(hint).toBeVisible();
+	});
 });

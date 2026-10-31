@@ -2429,7 +2429,30 @@
 					"resetZoom": "Reset diagram zoom",
 					"zoomOut": "Zoom out diagram",
 					"zoomIn": "Zoom in diagram",
-					"label": "Diagram"
+					"label": "Diagram",
+					"elementTypes": {
+						"startEvent": "start event",
+						"endEvent": "end event",
+						"intermediateCatchEvent": "intermediate catch event",
+						"intermediateThrowEvent": "intermediate throw event",
+						"boundaryEvent": "boundary event",
+						"task": "task",
+						"serviceTask": "service task",
+						"userTask": "user task",
+						"scriptTask": "script task",
+						"sendTask": "send task",
+						"receiveTask": "receive task",
+						"manualTask": "manual task",
+						"businessRuleTask": "business rule task",
+						"callActivity": "call activity",
+						"subProcess": "subprocess",
+						"exclusiveGateway": "exclusive gateway",
+						"parallelGateway": "parallel gateway",
+						"inclusiveGateway": "inclusive gateway",
+						"eventBasedGateway": "event-based gateway"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Use the arrow keys to move between elements and Enter to select."
 				},
 				"stateIcon": {
 					"active": "active state",
