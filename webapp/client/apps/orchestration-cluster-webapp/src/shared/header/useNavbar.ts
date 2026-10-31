@@ -9,7 +9,7 @@
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useCallback} from 'react';
@@ -31,7 +31,7 @@ const tabRoutes = {
 	operateBatchOperations: '/operate/batch-operations',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
-function useNavbar(currentUser: CurrentUser): NavbarConfig {
+function useNavbar(currentUser: AuthenticatedCurrentUser): NavbarConfig {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
 	const hasRouteMatch = useHasRouteMatch();

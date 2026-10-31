@@ -182,8 +182,8 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
         actions={
           camundaUser === undefined ? undefined : (
             <LogoutAwareUserMenu
-              userName={camundaUser.displayName}
-              userEmail={camundaUser.email}
+              userName={camundaUser.displayName ?? camundaUser.username ?? ""}
+              userEmail={camundaUser.email ?? ""}
               canLogout={Boolean(camundaUser.canLogout)}
               onLogout={logoutWithNotification}
               items={userMenuItems}

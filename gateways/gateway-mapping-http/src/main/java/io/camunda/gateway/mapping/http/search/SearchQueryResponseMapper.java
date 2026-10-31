@@ -1460,6 +1460,28 @@ public final class SearchQueryResponseMapper {
         .displayName(camundaUser.displayName())
         .email(camundaUser.email())
         .username(camundaUser.username())
+        .anonymous(false)
+        .build();
+  }
+
+  /**
+   * The current user of a caller without an identity, which only an unprotected API serves: no
+   * username, no memberships and nothing to log out of. Access is not restricted there, so every
+   * component is authorized, as when authorizations are disabled.
+   */
+  public static CamundaUserResult toAnonymousCamundaUser() {
+    return CamundaUserResult.Builder.create()
+        .authorizedComponents(List.of("*"))
+        .tenants(List.of())
+        .groups(List.of())
+        .roles(List.of())
+        .salesPlanType(null)
+        .c8Links(Map.of())
+        .canLogout(false)
+        .displayName(null)
+        .email(null)
+        .username(null)
+        .anonymous(true)
         .build();
   }
 

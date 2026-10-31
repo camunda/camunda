@@ -19,7 +19,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
@@ -162,4 +162,24 @@ test('should show a loading state while the login form is submitting', async ({n
 
 	await expect(loginPage.loadingButton).toBeVisible();
 	await expect(loginPage.loadingButton).toBeDisabled();
+});
+
+test('should redirect to login when the API answers with an anonymous user', async ({network, page, loginPage}) => {
+	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createAnonymousCurrentUser()),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+	);
+
+	await page.goto('/operate');
+
+	await expect(page).toHaveURL((url) => url.pathname === '/login');
+	await expect(loginPage.usernameInput).toBeVisible();
 });

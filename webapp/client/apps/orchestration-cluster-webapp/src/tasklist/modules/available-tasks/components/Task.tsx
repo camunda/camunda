@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {Text} from '@camunda/design-system';
 import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from '@camunda/design-system/icons';
@@ -31,7 +31,7 @@ type Props = {
 	dueDate: string | null;
 	completionDate: string | null;
 	priority: number | null;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 };
 
 const Task = React.forwardRef<HTMLDivElement, Props>(
