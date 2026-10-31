@@ -11,10 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -26,10 +29,18 @@ public final class UserTaskLookupRecord extends UnifiedRecordValue
       new ArrayProperty<>("fetchVariables", StringValue::new);
   private final StringProperty tenantIdProperty =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final ObjectProperty<UserTaskRecord> userTaskProperty =
+      new ObjectProperty<>("userTask", new UserTaskRecord());
+  private final EnumProperty<UserTaskLifecycleState> lifecycleStateProperty =
+      new EnumProperty<>(
+          "lifecycleState", UserTaskLifecycleState.class, UserTaskLifecycleState.UNSPECIFIED);
 
   public UserTaskLookupRecord() {
-    super(2);
-    declareProperty(fetchVariablesProperty).declareProperty(tenantIdProperty);
+    super(4);
+    declareProperty(fetchVariablesProperty)
+        .declareProperty(tenantIdProperty)
+        .declareProperty(userTaskProperty)
+        .declareProperty(lifecycleStateProperty);
   }
 
   @Override
@@ -46,12 +57,32 @@ public final class UserTaskLookupRecord extends UnifiedRecordValue
   }
 
   @Override
+  public UserTaskRecord getUserTask() {
+    return userTaskProperty.getValue();
+  }
+
+  public UserTaskLookupRecord setUserTask(final UserTaskRecord userTask) {
+    userTaskProperty.getValue().wrap(userTask);
+    return this;
+  }
+
+  @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProperty.getValue());
   }
 
   public UserTaskLookupRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public UserTaskLifecycleState getLifecycleState() {
+    return lifecycleStateProperty.getValue();
+  }
+
+  public UserTaskLookupRecord setLifecycleState(final UserTaskLifecycleState lifecycleState) {
+    lifecycleStateProperty.setValue(lifecycleState);
     return this;
   }
 }
