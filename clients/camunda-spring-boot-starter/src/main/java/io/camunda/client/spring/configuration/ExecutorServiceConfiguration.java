@@ -37,7 +37,19 @@ public class ExecutorServiceConfiguration {
   @Bean
   public CamundaClientExecutorService meteredCamundaClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry) {
-    return MeteredCamundaClientExecutorService.createDefault(
-        camundaClientProperties.getExecutionThreads(), meterRegistry);
+    final CamundaClientExecutorService executors =
+        CamundaClientExecutorService.create(camundaClientProperties.getExecutionThreads());
+    if (executors.getJobHandlingExecutor() == executors.getScheduledExecutor()) {
+      return new MeteredCamundaClientExecutorService(
+          executors.getScheduledExecutor(),
+          executors.isScheduledExecutorOwnedByCamundaClient(),
+          meterRegistry);
+    }
+    return new MeteredCamundaClientExecutorService(
+        executors.getScheduledExecutor(),
+        executors.isScheduledExecutorOwnedByCamundaClient(),
+        executors.getJobHandlingExecutor(),
+        executors.isJobHandlingExecutorOwnedByCamundaClient(),
+        meterRegistry);
   }
 }

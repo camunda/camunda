@@ -126,7 +126,7 @@ public final class CamundaClientBuilderImpl
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private TenantFilter defaultJobWorkerTenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
   private int jobWorkerMaxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
-  private int numJobWorkerExecutionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
+  private Integer numJobWorkerExecutionThreads;
   private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME_VAR;
   private Duration defaultJobTimeout = DEFAULT_JOB_TIMEOUT;
   private Duration defaultJobPollInterval = DEFAULT_JOB_POLL_INTERVAL;
@@ -187,7 +187,15 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return numJobWorkerExecutionThreads;
+    return numJobWorkerExecutionThreads != null
+        ? numJobWorkerExecutionThreads
+        : DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
+  }
+
+  static boolean isNumJobWorkerExecutionThreadsConfigured(
+      final CamundaClientConfiguration configuration) {
+    return !(configuration instanceof CamundaClientBuilderImpl)
+        || ((CamundaClientBuilderImpl) configuration).numJobWorkerExecutionThreads != null;
   }
 
   @Override
@@ -538,8 +546,8 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
-    numJobWorkerExecutionThreads = numSubscriptionThreads;
+  public CamundaClientBuilder numJobWorkerExecutionThreads(final int numThreads) {
+    numJobWorkerExecutionThreads = numThreads;
     return this;
   }
 
@@ -824,8 +832,11 @@ public final class CamundaClientBuilderImpl
           ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE,
           configuration.getDefaultJobWorkerTenantFilter().name());
     }
-    setIfNotNull(
-        properties, JOB_WORKER_EXECUTION_THREADS, configuration.getNumJobWorkerExecutionThreads());
+    if (isNumJobWorkerExecutionThreadsConfigured(configuration)) {
+      properties.setProperty(
+          JOB_WORKER_EXECUTION_THREADS,
+          String.valueOf(configuration.getNumJobWorkerExecutionThreads()));
+    }
     setIfNotNull(
         properties, JOB_WORKER_MAX_JOBS_ACTIVE, configuration.getDefaultJobWorkerMaxJobsActive());
     setIfNotNull(properties, DEFAULT_JOB_WORKER_NAME, configuration.getDefaultJobWorkerName());

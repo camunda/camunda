@@ -58,6 +58,12 @@ ADR for that domain is written.
   only the push path, the single capacity count stays, poll-only workers are
   unchanged, no measurable throughput cost in a cluster A/B
   (camunda/camunda#59734).
+- `clients/0003-run-job-handlers-on-virtual-threads-by-default.md` — when no
+  job handling threads or executor are configured, the Java client and Spring
+  Boot starter run each job handler on its own virtual thread (bounded per
+  worker by `maxJobsActive`), with runtime detection and fallback on JVMs
+  without virtual threads; explicit thread counts and custom executors keep
+  their behavior (camunda/camunda#14662).
 - `storage/001-remove-numeric-key-from-identity-entity-filters.md` — drop the
   internal numeric `key` filter fields from `UserFilter`, `GroupFilter`,
   `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
