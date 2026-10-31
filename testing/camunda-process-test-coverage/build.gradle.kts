@@ -1,3 +1,4 @@
+import buildlogic.frontendBuildSkipped
 import buildlogic.skipWhen
 import com.github.gradle.node.npm.task.NpmTask
 
@@ -15,12 +16,7 @@ java { disableAutoTargetJvm() }
 
 tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 
-val skipFrontendBuild =
-  providers
-    .gradleProperty("skip.fe.build")
-    .orElse(providers.gradleProperty("quickly"))
-    .map { value -> value.isEmpty() || value.toBoolean() }
-    .orElse(false)
+val skipFrontendBuild = frontendBuildSkipped()
 
 val npmTest =
   tasks.register<NpmTask>("npmTest") {
