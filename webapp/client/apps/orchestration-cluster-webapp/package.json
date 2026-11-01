@@ -77,7 +77,7 @@
 	"devDependencies": {
 		"@axe-core/playwright": "4.13.0",
 		"@msw/playwright": "0.7.0",
-		"@playwright/test": "1.63.0",
+		"@playwright/test": "1.64.1",
 		"@svgr/cli": "8.1.0",
 		"@tanstack/devtools-vite": "0.8.5",
 		"@tanstack/react-devtools": "0.10.13",
