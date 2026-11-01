@@ -4472,6 +4472,7 @@ final class JsonSerializableToJsonTest {
                       "recordValue": {
                         "resourceKey": 1,
                         "resourceType": "PROCESS_DEFINITION",
+                        "resourceStorageOrdinal": 0,
                         "processId": "",
                         "tenantId": "<default>",
                         "decisionDefinitionId": ""
@@ -4800,6 +4801,7 @@ final class JsonSerializableToJsonTest {
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setResourceStorageOrdinal(7)
                     .setProcessId("processId")
                     .setTenantId("tenantId")
                     .setDecisionDefinitionId("decisionDefinitionId"),
@@ -4807,6 +4809,7 @@ final class JsonSerializableToJsonTest {
       {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
+        "resourceStorageOrdinal": 7,
         "processId": "processId",
         "tenantId": "tenantId",
         "decisionDefinitionId": "decisionDefinitionId"
@@ -4827,6 +4830,7 @@ final class JsonSerializableToJsonTest {
       {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
+        "resourceStorageOrdinal": 0,
         "processId": "",
         "tenantId": "<default>",
         "decisionDefinitionId": ""
