@@ -241,7 +241,7 @@
     <version.jna>5.19.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>4.1.0</version.mybatis-spring>
-    <version.mybatis>3.5.19</version.mybatis>
+    <version.mybatis>3.6.0</version.mybatis>
     <version.mybatis-spring-boot-starter>4.1.0</version.mybatis-spring-boot-starter>
     <version.javassist>3.33.0-GA</version.javassist>
 
