@@ -21,6 +21,11 @@ on:
         type: boolean
         required: false
         default: false
+      build-tool:
+        description: "Build tool to use ('maven' or 'gradle'). Gradle is PR-only opt-in via the 'gradle-build' label."
+        type: string
+        required: false
+        default: maven
   workflow_call:
     inputs:
       runFeTests:
@@ -36,6 +41,11 @@ on:
         type: boolean
         required: false
         default: false
+      build-tool:
+        description: "Build tool to use ('maven' or 'gradle'). Gradle is PR-only opt-in via the 'gradle-build' label."
+        type: string
+        required: false
+        default: maven
 
 defaults:
   run:
@@ -68,15 +78,22 @@ jobs:
           - suite: DataLayer
             suiteName: Data Layer
             owner: '@camunda/data-layer'
+            modules: "operate-common"
           - suite: CoreFeatures
             suiteName: Core Features
             owner: '@camunda/core-features'
+          - suite: CoreFeatures
+            suiteName: Core Features
+            modules: "operate-common"
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
       owner: ${{ matrix.owner }}
       use-shared-distball: ${{ inputs.use-shared-distball }}
+      build-tool: ${{ inputs.build-tool }}
+      modules: ${{ matrix.modules }}
+      gradleSuiteAsTask: true
 
   # Checks to see if Operate can properly build itself
   build-operate-backend:
