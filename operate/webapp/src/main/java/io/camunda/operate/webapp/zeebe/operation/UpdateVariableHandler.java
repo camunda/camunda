@@ -12,11 +12,13 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /** Update the variable. */
@@ -26,8 +28,22 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
+    final var scopeKey = operation.getScopeKey();
+    final var processInstanceKey = operation.getProcessInstanceKey();
+    if (!scopeKey.equals(processInstanceKey)
+        && !flowNodeInstanceReader
+            .getFlowNodeInstanceKeysOfProcessInstance(processInstanceKey, Set.of(scopeKey))
+            .contains(scopeKey)) {
+      failOperation(
+          operation,
+          String.format(
+              "Scope %s does not belong to process instance %s.", scopeKey, processInstanceKey));
+      return;
+    }
     final Map<String, Object> updateVariableMap =
         getVariableMap(operation.getVariableName(), operation.getVariableValue());
     final var key =

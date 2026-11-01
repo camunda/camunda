@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VAR
 import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
@@ -35,14 +36,17 @@ public class CreateRequestOperationValidator {
   private final VariableReader variableReader;
   private final OperationReader operationReader;
   private final IncidentReader incidentReader;
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
 
   public CreateRequestOperationValidator(
       final VariableReader variableReader,
       final OperationReader operationReader,
-      final IncidentReader incidentReader) {
+      final IncidentReader incidentReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.variableReader = variableReader;
     this.operationReader = operationReader;
     this.incidentReader = incidentReader;
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
   }
 
   public void validate(final CreateOperationRequestDto request, final String processInstanceId) {
@@ -69,6 +73,14 @@ public class CreateRequestOperationValidator {
           String.format(
               "No incident %s found for process instance %s.",
               request.getIncidentId(), processInstanceId));
+    }
+
+    if (isVariableOperation(request)
+        && !scopeBelongsToProcessInstance(request.getVariableScopeId(), processInstanceId)) {
+      throw new InvalidRequestException(
+          String.format(
+              "Scope %s does not belong to process instance %s.",
+              request.getVariableScopeId(), processInstanceId));
     }
 
     if (request.getOperationType().equals(ADD_VARIABLE)) {
@@ -99,6 +111,21 @@ public class CreateRequestOperationValidator {
     } catch (final NotFoundException | NumberFormatException e) {
       return false;
     }
+  }
+
+  private boolean scopeBelongsToProcessInstance(
+      final String variableScopeId, final String processInstanceId) {
+    final long scopeKey;
+    try {
+      scopeKey = Long.parseLong(variableScopeId);
+    } catch (final NumberFormatException e) {
+      return false;
+    }
+    final long processInstanceKey = Long.parseLong(processInstanceId);
+    return scopeKey == processInstanceKey
+        || flowNodeInstanceReader
+            .getFlowNodeInstanceKeysOfProcessInstance(processInstanceKey, Set.of(scopeKey))
+            .contains(scopeKey);
   }
 
   private static boolean isVariableOperation(final CreateOperationRequestDto request) {
