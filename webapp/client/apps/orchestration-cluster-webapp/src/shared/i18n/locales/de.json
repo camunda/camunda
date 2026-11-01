@@ -2417,7 +2417,30 @@
 					"resetZoom": "Diagrammzoom zurücksetzen",
 					"zoomOut": "Diagramm verkleinern",
 					"zoomIn": "Diagramm vergrößern",
-					"label": "Diagramm"
+					"label": "Diagramm",
+					"elementTypes": {
+						"startEvent": "Startereignis",
+						"endEvent": "Endereignis",
+						"intermediateCatchEvent": "Zwischenereignis (fangend)",
+						"intermediateThrowEvent": "Zwischenereignis (werfend)",
+						"boundaryEvent": "Grenzereignis",
+						"task": "Aufgabe",
+						"serviceTask": "Service-Aufgabe",
+						"userTask": "Benutzeraufgabe",
+						"scriptTask": "Skript-Aufgabe",
+						"sendTask": "Sendeaufgabe",
+						"receiveTask": "Empfangsaufgabe",
+						"manualTask": "Manuelle Aufgabe",
+						"businessRuleTask": "Geschäftsregel-Aufgabe",
+						"callActivity": "Aufrufaktivität",
+						"subProcess": "Teilprozess",
+						"exclusiveGateway": "Exklusives Gateway",
+						"parallelGateway": "Paralleles Gateway",
+						"inclusiveGateway": "Inklusives Gateway",
+						"eventBasedGateway": "Ereignisbasiertes Gateway"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Mit den Pfeiltasten zwischen Elementen wechseln und mit der Eingabetaste auswählen."
 				},
 				"stateIcon": {
 					"active": "Status aktiv",
