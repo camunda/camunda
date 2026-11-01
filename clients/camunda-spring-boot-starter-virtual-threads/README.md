@@ -11,6 +11,8 @@ Virtual threads (introduced in Java 21) are lightweight threads that allow for h
 - **Virtual threads** for job execution (unbounded, created per task)
 - **Single platform thread** for scheduling operations
 
+On Java 21+, the standard `camunda-spring-boot-starter` already runs job handlers on virtual threads when `camunda.client.execution-threads` is not set, so this module is no longer needed for that. It still applies when `execution-threads` is set, and it adds executor metrics when a `MeterRegistry` bean is present.
+
 ## Requirements
 
 - Java 21 or higher

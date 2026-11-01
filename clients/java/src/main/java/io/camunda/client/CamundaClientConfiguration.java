@@ -64,6 +64,7 @@ public interface CamundaClientConfiguration {
   TenantFilter getDefaultJobWorkerTenantFilter();
 
   /**
+   * @return the configured number of job handling threads, or 1 if none is configured
    * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();
