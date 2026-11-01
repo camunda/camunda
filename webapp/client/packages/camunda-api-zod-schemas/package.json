@@ -826,7 +826,7 @@
 		"@kubb/parser-ts": "5.12.4",
 		"@kubb/plugin-ts": "5.0.14",
 		"@kubb/plugin-zod": "5.4.12",
-		"@types/node": "26.6.5",
+		"@types/node": "26.6.6",
 		"changelogen": "0.6.2",
 		"kubb": "5.12.4",
 		"typescript": "7.0.2",
