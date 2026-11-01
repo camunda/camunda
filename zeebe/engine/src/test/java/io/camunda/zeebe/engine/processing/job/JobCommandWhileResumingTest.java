@@ -8,14 +8,14 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -92,9 +92,13 @@ public final class JobCommandWhileResumingTest {
   }
 
   private static void seedResuming(final long processInstanceKey) {
-    await().until(ENGINE::hasReachedEnd);
-    ((MutableProcessingState) ENGINE.getProcessingState())
-        .getSuspensionState()
-        .setSuspensionState(processInstanceKey, State.RESUMING);
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.RESUMING, new ProcessInstanceRecord()));
+    ENGINE.start();
   }
 }

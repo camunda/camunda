@@ -8,13 +8,12 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -59,10 +58,14 @@ public final class SuspensionGateTest {
   public void shouldBufferInternalCommandWhileSuspending() {
     // given
     final var taskActivated = createInstanceWithActivatedJob();
-    await().until(ENGINE::hasReachedEnd);
-    ((MutableProcessingState) ENGINE.getProcessingState())
-        .getSuspensionState()
-        .setSuspensionState(taskActivated.getValue().getProcessInstanceKey(), State.SUSPENDING);
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(taskActivated.getValue().getProcessInstanceKey())
+            .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()));
+    ENGINE.start();
 
     assertInternalCommandIsBuffered(taskActivated);
   }
@@ -144,9 +147,14 @@ public final class SuspensionGateTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
-    ((MutableProcessingState) ENGINE.getProcessingState())
-        .getSuspensionState()
-        .setSuspensionState(processInstanceKey, State.RESUMING);
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.RESUMING, new ProcessInstanceRecord()));
+    ENGINE.start();
 
     // when
     ENGINE.writeRecords(
