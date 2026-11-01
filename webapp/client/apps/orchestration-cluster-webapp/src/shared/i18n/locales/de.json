@@ -1580,6 +1580,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Platzhalter für die Kopfzeile",
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
+					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"
+				},
 				"history": {
 					"title": "Instanzhistorie",
 					"tabs": "Prozessinstanz-Registerkarten",
