@@ -24,8 +24,8 @@ class OperatePreviewProcessesPage extends BasePage {
 		return this.page.getByRole('heading', {name: 'Processes'});
 	}
 
-	get filtersPanelPlaceholder() {
-		return this.page.getByText('Filters panel placeholder');
+	get nameFilter() {
+		return this.page.getByLabel('Name');
 	}
 
 	get diagramPanelPlaceholder() {
