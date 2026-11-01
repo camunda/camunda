@@ -55,4 +55,14 @@ describe('<DangerButton />', () => {
 
 		await expect.element(button).toBeDisabled();
 	});
+
+	it('should render an icon-only button without the text label', async () => {
+		const screen = await render(
+			<DangerButton type="DELETE" onClick={vi.fn()} title="Delete Instance 123" isIconOnly />,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Delete Instance 123', exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Delete', {exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('delete-operation')).toBeVisible();
+	});
 });

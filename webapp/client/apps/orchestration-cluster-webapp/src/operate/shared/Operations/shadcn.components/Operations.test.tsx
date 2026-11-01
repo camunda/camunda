@@ -49,18 +49,12 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect
-			.element(screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
-			.toBeVisible();
-		await expect
-			.element(screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
-			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Retry Instance`, exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Cancel Instance`, exact: true})).toBeVisible();
 		await expect
 			.element(screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
-		await expect
-			.element(screen.getByRole('button', {name: `Delete Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
-			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Delete Instance`, exact: true})).toBeVisible();
 	});
 
 	it('should render suspend button', async () => {
@@ -72,9 +66,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
-			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Suspend Instance`, exact: true})).toBeVisible();
 	});
 
 	it('should render resume button', async () => {
@@ -86,9 +78,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect
-			.element(screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
-			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Resume Instance`, exact: true})).toBeVisible();
 	});
 
 	it('should render no buttons when operations array is empty', async () => {
@@ -96,24 +86,14 @@ describe('<Operations />', () => {
 			wrapper: getWrapper(),
 		});
 
-		expect(
-			screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Retry Instance`, exact: true}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Cancel Instance`, exact: true}).elements()).toHaveLength(0);
 		expect(
 			screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Delete Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Delete Instance`, exact: true}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Suspend Instance`, exact: true}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Resume Instance`, exact: true}).elements()).toHaveLength(0);
 	});
 
 	it('should execute resolve incident operation', async () => {

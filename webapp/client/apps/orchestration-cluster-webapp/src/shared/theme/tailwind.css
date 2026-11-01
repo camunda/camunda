@@ -40,6 +40,13 @@
 @source inline("[&_[data-slot=data-table]>div.rounded-xl]:{rounded-none!,border-0!}");
 
 /*
+ * Same scanner limitation for the stronger hover background on row action
+ * icon buttons in the Processes InstancesTable.tsx; the DS ghost hover (unlayered, so it needs important) matches
+ * the table row hover, so without it the button shows no hover cue.
+ */
+@source inline("[&_[data-slot=icon-button]:hover:not(:disabled)]:bg-[var(--neutral-background-strong)]!");
+
+/*
  * Maps the DS tokens onto the CSS variables dmn-js reads, so DecisionViewer
  * does not carry ~20 arbitrary-variant classes. Kept as plain unlayered rules
  * (not `@utility`, which lands in the `utilities` layer) so they win over the

@@ -1092,8 +1092,7 @@
 					}
 				},
 				"scaffold": {
-					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama",
-					"instancesTablePlaceholder": "Marcador de posición de la tabla de instancias"
+					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama"
 				},
 				"migration": {
 					"migrate": "Migrar",
@@ -1334,7 +1333,10 @@
 					"viewParentInstance": "Ver instancia principal {{key}}",
 					"none": "Ninguna",
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
-					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
+					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+					"tableLabel": "Instancias de proceso",
+					"loadingPreviousPage": "Cargando instancias de proceso anteriores",
+					"loadingNextPage": "Cargando instancias de proceso siguientes"
 				},
 				"diagramHeader": {
 					"title": "Proceso",

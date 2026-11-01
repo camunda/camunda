@@ -21,6 +21,7 @@ import {setVariableConditions, useVariableConditions} from '../VariablesFilter/v
 import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
+import {InstancesTable} from './InstancesTable';
 
 type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -217,12 +218,9 @@ const Processes: React.FC<Props> = ({search}) => {
 								{t('operate.processes.scaffold.diagramPanelPlaceholder')}
 							</Text>
 						</section>
-						<section className="flex h-full flex-col">
-							<PanelHeader title={t('operate.processes.instancesTable.title')} className="bg-transparent" />
-							<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-								{t('operate.processes.scaffold.instancesTablePlaceholder')}
-							</Text>
-						</section>
+						<div className="h-full overflow-hidden">
+							<InstancesTable search={search} />
+						</div>
 					</ResizablePanel>
 				</div>
 			</div>

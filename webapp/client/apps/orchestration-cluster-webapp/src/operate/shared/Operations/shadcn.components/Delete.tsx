@@ -27,8 +27,9 @@ const Delete: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 			<DangerButton
 				type="DELETE"
 				onClick={() => setIsDeleteModalVisible(true)}
-				title={t('operate.shared.operations.deleteTitle', {processInstanceKey})}
+				title={t('operate.shared.operations.deleteInstance')}
 				disabled={disabled}
+				isIconOnly
 				size="sm"
 			/>
 			{isDeleteModalVisible && (

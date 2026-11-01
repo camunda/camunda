@@ -24,17 +24,16 @@ const Operations: React.FC<Props> = ({operations, processInstanceKey, isLoading 
 
 	return (
 		<div className="flex flex-row items-center gap-2">
-			{isLoading ? (
-				<div
-					className="flex flex-row items-center gap-2"
-					data-testid="operation-spinner"
-					role="status"
-					aria-live="polite"
-				>
-					<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-					<span>{loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}</span>
-				</div>
-			) : null}
+			<div className="flex size-4 items-center justify-center">
+				{isLoading ? (
+					<div data-testid="operation-spinner" role="status" aria-live="polite">
+						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+						<span className="sr-only">
+							{loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
+						</span>
+					</div>
+				) : null}
+			</div>
 			<OperationItems>
 				{operations.map((operation) => (
 					<OperationRenderer key={operation.type} operation={operation} processInstanceKey={processInstanceKey} />

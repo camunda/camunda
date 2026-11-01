@@ -11,15 +11,22 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
-test('should have no accessibility violations in the processes placeholder shell', async ({
+test('should have no accessibility violations on the processes page with instances', async ({
 	network,
 	operatePreviewProcessesPage,
 	makeAxeBuilder,
@@ -37,10 +44,18 @@ test('should have no accessibility violations in the processes placeholder shell
 		mockQueryProcessDefinitionsEndpoint({
 			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: [createProcessInstance()]})),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+		}),
 	);
 
-	await operatePreviewProcessesPage.goto();
+	await operatePreviewProcessesPage.goto('?active=true');
 	await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable.getByRole('link', {name: '2251799813685280'})).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

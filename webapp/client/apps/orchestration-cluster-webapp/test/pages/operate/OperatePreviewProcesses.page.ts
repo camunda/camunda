@@ -16,8 +16,8 @@ class OperatePreviewProcessesPage extends BasePage {
 		super(page);
 	}
 
-	async goto() {
-		return this.page.goto(this.processesUrl);
+	async goto(search = '') {
+		return this.page.goto(`${this.processesUrl}${search}`);
 	}
 
 	get heading() {
@@ -32,8 +32,8 @@ class OperatePreviewProcessesPage extends BasePage {
 		return this.page.getByText('Diagram panel placeholder');
 	}
 
-	get instancesTablePlaceholder() {
-		return this.page.getByText('Instances table placeholder');
+	get instancesTable() {
+		return this.page.getByTestId('process-instances-table');
 	}
 }
 
