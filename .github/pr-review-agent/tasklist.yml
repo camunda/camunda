@@ -1,0 +1,47 @@
+# Team config of the Employee Engagement & Tasklist pod for camunda/pr-review-agent
+# (see its docs/configuration.md). Read from main: changes take effect once merged.
+# Caller: .github/workflows/ai-pr-review-tasklist.yml
+schema_version: 1
+
+# Comment only, never approve.
+shadow_mode: true
+
+vault:
+  anthropic_api_key:
+    # TODO: the pod's Anthropic key is not in Vault yet. The repo's Vault role
+    # (github-actions-camunda-ci) can read products/camunda/*.
+    path: secret/data/products/camunda/ci/ai-pr-review
+    field: TASKLIST_ANTHROPIC_API_KEY
+
+triggers:
+  opt_in_label: ai-review
+  skip_authors:
+    - renovate[bot]
+    - dependabot[bot]
+
+policy:
+  # Read from the PR base commit, never the PR head.
+  skills:
+    - path: AGENTS.md
+    - path: .agents/skills/tasklist-frontend/SKILL.md
+  instructions: |
+    - This review covers the Employee Engagement & Tasklist pod: webapp/client/,
+      except the Operate and Admin UIs under
+      webapp/client/apps/orchestration-cluster-webapp/src/{operate,admin}/,
+      which the Operate & Admin pod owns. Other teams own the rest of the
+      monorepo; focus findings on this scope.
+
+escalation:
+  # Changed paths that always need a human, whatever the agent says.
+  # `*` also matches `/`.
+  rules:
+    - reason: auth
+      paths: ["*/auth/*", "*/authentication/*", "*/security/*"]
+    - reason: build config
+      paths: ["webapp/client/pom.xml", "webapp/client/build.gradle.kts", "webapp/client/eslint*", "webapp/client/scripts/*"]
+    - reason: dependencies
+      paths: ["*/package.json", "*/package-lock.json"]
+
+notifications:
+  # Tagged when the agent's session transcript could not be captured.
+  capture_alert_mentions: ["@camunda/ple"]

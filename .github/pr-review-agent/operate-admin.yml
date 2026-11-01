@@ -1,0 +1,48 @@
+# Team config of the Operate & Admin pod for camunda/pr-review-agent
+# (see its docs/configuration.md). Read from main: changes take effect once merged.
+# Caller: .github/workflows/ai-pr-review-operate-admin.yml
+schema_version: 1
+
+# Comment only, never approve.
+shadow_mode: true
+
+vault:
+  anthropic_api_key:
+    # TODO: the pod's Anthropic key is not in Vault yet. The repo's Vault role
+    # (github-actions-camunda-ci) can read products/camunda/*.
+    path: secret/data/products/camunda/ci/ai-pr-review
+    field: OPERATE_ADMIN_ANTHROPIC_API_KEY
+
+triggers:
+  opt_in_label: ai-review
+  skip_authors:
+    - renovate[bot]
+    - dependabot[bot]
+
+policy:
+  # Read from the PR base commit, never the PR head.
+  skills:
+    - path: AGENTS.md
+    - path: .agents/skills/operate-frontend/SKILL.md
+  instructions: |
+    - This review covers the Operate & Admin pod: operate/, identity/, and the
+      webapp's Operate and Admin UIs under
+      webapp/client/apps/orchestration-cluster-webapp/src/{operate,admin}/.
+      Other teams own the rest of the monorepo; focus findings on this scope.
+    - operate/client/ is the legacy Operate frontend. New Operate UI work goes
+      to the orchestration cluster webapp.
+
+escalation:
+  # Changed paths that always need a human, whatever the agent says.
+  # `*` also matches `/`.
+  rules:
+    - reason: identity and auth
+      paths: ["identity/*", "*/auth/*", "*/authentication/*", "*/security/*"]
+    - reason: build config
+      paths: ["*/pom.xml", "*/build.gradle.kts"]
+    - reason: dependencies
+      paths: ["*/package.json", "*/package-lock.json"]
+
+notifications:
+  # Tagged when the agent's session transcript could not be captured.
+  capture_alert_mentions: ["@camunda/ple"]
