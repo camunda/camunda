@@ -160,7 +160,11 @@ final class CommandApiRequestHandler
   }
 
   void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
-    actor.submit(() -> leadingStream = logStreamWriter);
+    actor.submit(
+        () -> {
+          leadingStream = logStreamWriter;
+          processingPaused = false;
+        });
   }
 
   void removePartition(final int partitionId) {
