@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ibatis.session.ExecutorType;
@@ -854,5 +855,70 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+  }
+
+  @Test
+  void shouldGroupUserTaskStatementsAndKeepOrderPerKey() {
+    // given: two user tasks, each with insert and two updates (update + candidate deletes)
+    final List<QueueItem> items = new ArrayList<>();
+    for (final long key : List.of(1L, 2L)) {
+      items.add(userTaskItem(key, WriteStatementType.INSERT, "insert"));
+    }
+    for (int round = 0; round < 2; round++) {
+      for (final long key : List.of(1L, 2L)) {
+        items.add(userTaskItem(key, WriteStatementType.UPDATE, "update"));
+        items.add(userTaskItem(key, WriteStatementType.DELETE, "deleteCandidateUsers"));
+        items.add(userTaskItem(key, WriteStatementType.DELETE, "deleteCandidateGroups"));
+      }
+    }
+
+    // when
+    final var result = DefaultExecutionQueue.groupPreservingOrderPerId(items);
+
+    // then: same SQL runs next to each other, so each run becomes one JDBC batch
+    assertThat(result)
+        .extracting(QueueItem::statementId)
+        .containsExactly(
+            "insert",
+            "insert",
+            "update",
+            "update",
+            "deleteCandidateUsers",
+            "deleteCandidateUsers",
+            "deleteCandidateGroups",
+            "deleteCandidateGroups",
+            "update",
+            "update",
+            "deleteCandidateUsers",
+            "deleteCandidateUsers",
+            "deleteCandidateGroups",
+            "deleteCandidateGroups");
+    // and: the order of each key is unchanged
+    for (final long key : List.of(1L, 2L)) {
+      assertThat(result.stream().filter(i -> i.id().equals(key)).toList())
+          .containsExactlyElementsOf(items.stream().filter(i -> i.id().equals(key)).toList());
+    }
+  }
+
+  @Test
+  void shouldKeepOriginalOrderWhenAnItemHasNoId() {
+    // given
+    final List<QueueItem> items =
+        List.of(
+            userTaskItem(1L, WriteStatementType.UPDATE, "update"),
+            new QueueItem(
+                ContextType.USER_TASK, WriteStatementType.DELETE, null, "deleteAll", null),
+            userTaskItem(2L, WriteStatementType.UPDATE, "update"));
+
+    // when
+    final var result = DefaultExecutionQueue.groupPreservingOrderPerId(items);
+
+    // then
+    assertThat(result).containsExactlyElementsOf(items);
+  }
+
+  private static QueueItem userTaskItem(
+      final long key, final WriteStatementType type, final String statementId) {
+    return new QueueItem(ContextType.USER_TASK, type, key, statementId, key);
   }
 }
