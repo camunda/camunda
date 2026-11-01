@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
@@ -60,6 +62,22 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     }
   }
 
+  @Override
+  void assertRestoreNotApplied(final RestoreTarget target, final String expectedMessage)
+      throws Exception {
+    stopBrokerAndEmptyWorkingDirectory();
+    try (final var restoreApp = testRestoreApp(target)) {
+      // A failure while restoring is wrapped by the application runner
+      var failure = catchThrowable(restoreApp::start);
+      while (failure != null && failure.getCause() != null) {
+        failure = failure.getCause();
+      }
+      assertThat(failure)
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining(expectedMessage);
+    }
+  }
+
   /** The restore app requires an empty data directory to restore into. */
   private void stopBrokerAndEmptyWorkingDirectory() throws IOException {
     broker.stop();
@@ -80,10 +98,15 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
 
   @SuppressWarnings("resource")
   private TestRestoreApp testRestoreApp(final RestoreTarget target) {
-    return new TestRestoreApp()
-        .withProperty("camunda.data.secondary-storage.type", "rdbms")
-        .withUnifiedConfig(this::configureRestoreApp)
-        .withWorkingDirectory(workingDirectory)
-        .withTimeRange(target.from(), target.to());
+    final var restoreApp =
+        new TestRestoreApp()
+            .withProperty("camunda.data.secondary-storage.type", "rdbms")
+            .withUnifiedConfig(this::configureRestoreApp)
+            .withWorkingDirectory(workingDirectory)
+            .withTimeRange(target.from(), target.to());
+    if (!target.backupIds().isEmpty()) {
+      restoreApp.withBackupId(target.backupIds().stream().mapToLong(Long::longValue).toArray());
+    }
+    return restoreApp;
   }
 }

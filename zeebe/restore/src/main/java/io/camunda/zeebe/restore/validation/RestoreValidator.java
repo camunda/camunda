@@ -119,10 +119,14 @@ public final class RestoreValidator
             "Invalid time range: from (%s) must be before to (%s)"
                 .formatted(instantFrom, instantTo));
         Preconditions.test(
-            !hasBackupIds && exportedPositionSupplier == null,
+            !hasBackupIds && !hasTimeRange && exportedPositionSupplier == null,
             "Cannot resolve a restore point: no backupId was specified and no exported-position "
-                + "data is available. Configure RDBMS as the secondary storage to enable "
-                + "time-range restores, or specify a backupId.");
+                + "data is available. Specify a backupId, or a time range with from.");
+        // Without exported positions, only `from` tells which range of backups to restore from.
+        Preconditions.test(
+            hasTimeRange && instantFrom == null && exportedPositionSupplier == null,
+            "Cannot resolve a restore point: from is required for a time range restore when no "
+                + "exported-position data is available.");
       }
       case "elasticsearch", "opensearch" -> {
         Preconditions.test(
@@ -208,13 +212,21 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
-    // Exported positions are mandatory for a range restore: validateParameters rejects the request
-    // without a way to read them, and they are what the partitions to restore are taken from.
+    if (exportedPositionSupplier == null) {
+      // No secondary storage to keep consistent with: restore the partitions of the backup the
+      // time range resolves to.
+      final var from =
+          requireNonNull(
+              instantFrom, "from is required to restore a time range without exported positions");
+      final var restoredPartitionCount = timeRangePartitionCount(from, instantTo);
+      final var restorableBackups =
+          RestorePointResolver.resolve(
+              loadMetadataForAllPartitions(restoredPartitionCount), from, instantTo, null);
+      verifyLastBackupsHoldThePartitions(restorableBackups, restoredPartitionCount);
+      return restorableBackups;
+    }
     final var exportedPositions =
-        requireExportedPositions(
-            exportedPositions(
-                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
-                partitionCount));
+        requireExportedPositions(exportedPositions(exportedPositionSupplier, partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
     final var restorableBackups =
@@ -224,9 +236,29 @@ public final class RestoreValidator
     return restorableBackups;
   }
 
+  /**
+   * The partition count of the backups the time range resolves to, read from the first backup
+   * partition 1 restores from, as every backup holds partition 1. Partition 1 alone can resolve to
+   * a later restore point than all partitions together, when a backup failed on another partition,
+   * so its last backup may be one the restore does not reach. A range spanning a scale up cannot be
+   * restored, as the added partitions hold no backup as early as {@code from}, so all backups of
+   * the range share the count of the first one.
+   */
+  private int timeRangePartitionCount(final Instant from, final @Nullable Instant to) {
+    final var store =
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
+    final var firstPartition =
+        RestorePointResolver.resolve(loadMetadataForAllPartitions(1), from, to, null)
+            .partitions()
+            .get(1);
+    final var firstBackup =
+        requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().first();
+    return backupPartitionCount(store, firstBackup);
+  }
+
   @VisibleForTesting
   void verifyLastBackupsHoldThePartitions(
-      final RestorableBackups restorableBackups, final int exportedPartitionCount) {
+      final RestorableBackups restorableBackups, final int expectedPartitionCount) {
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
     restorableBackups.partitions().values().stream()
@@ -236,20 +268,20 @@ public final class RestoreValidator
         .forEach(
             lastBackup ->
                 verifyPartitionCountsAgree(
-                    lastBackup, backupPartitionCount(store, lastBackup), exportedPartitionCount));
+                    lastBackup, backupPartitionCount(store, lastBackup), expectedPartitionCount));
   }
 
   /**
-   * The partitions to restore are those of the last backup, which have to be the ones the RDBMS
-   * holds exported positions for.
+   * The partitions to restore are those of the last backup, which have to be the expected ones:
+   * those the RDBMS holds exported positions for, or without a secondary storage those of the first
+   * backup partition 1 restores from.
    */
   private static void verifyPartitionCountsAgree(
-      final long backupId, final int backupPartitionCount, final int exportedPartitionCount) {
-    if (backupPartitionCount != exportedPartitionCount) {
+      final long backupId, final int backupPartitionCount, final int expectedPartitionCount) {
+    if (backupPartitionCount != expectedPartitionCount) {
       throw new IllegalStateException(
-          ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
-                  + "positions for %d")
-              .formatted(backupId, backupPartitionCount, exportedPartitionCount));
+          "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
+              .formatted(backupId, backupPartitionCount, expectedPartitionCount));
     }
   }
 
