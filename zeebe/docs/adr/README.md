@@ -24,3 +24,9 @@ process-execution data path). These are module-scoped decisions; see the
 | [0012](0012-810-agent-instance-written-by-agent-runtime.md)         | Agent instance as the anchor for one agent run, written by the agent runtime, engine owns completion          |
 | [0013](0013-810-agent-history-commit-under-job-lease.md)            | Agent history committed per job activation under the job lease, superseded items discarded at commit          |
 
+### 8.11
+
+|                           ADR                           |                                                 Decision                                                 |
+|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [0014](0014-811-hub-managed-identity-policy-updates.md) | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch |
+
