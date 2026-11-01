@@ -45,7 +45,7 @@
     "react-dom": "19.3.0",
     "react-error-boundary": "6.1.1",
     "react-final-form": "7.0.0",
-    "react-final-form-arrays": "4.0.0",
+    "react-final-form-arrays": "5.0.0",
     "react-markdown": "10.1.0",
     "react-router-dom": "7.18.3",
     "react-transition-group": "4.4.5",
