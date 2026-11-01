@@ -113,7 +113,7 @@
     "playwright": "1.64.0",
     "prettier": "3.9.4",
     "resize-observer-polyfill": "1.5.1",
-    "rollup-plugin-sbom": "4.0.0",
+    "rollup-plugin-sbom": "5.0.0",
     "sass": "1.106.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.0",
