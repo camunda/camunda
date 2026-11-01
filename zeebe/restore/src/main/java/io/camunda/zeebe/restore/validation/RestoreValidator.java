@@ -187,15 +187,14 @@ public final class RestoreValidator
     return store
         .list(searchPattern)
         .thenAccept(
-            statuses ->
-                statuses.stream()
-                    .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-                    .findAny()
-                    .orElseThrow(
-                        () ->
-                            new NoSuchElementException(
-                                "No completed backup found for partition %d with backup id %d"
-                                    .formatted(partitionId, backupId))));
+            statuses -> {
+              if (statuses.stream()
+                  .noneMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED)) {
+                throw new NoSuchElementException(
+                    "No completed backup found for partition %d with backup id %d"
+                        .formatted(partitionId, backupId));
+              }
+            });
   }
 
   /**

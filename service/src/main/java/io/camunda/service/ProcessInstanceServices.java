@@ -634,7 +634,8 @@ public final class ProcessInstanceServices
         .whenComplete(
             (response, error) -> {
               if (error == null && identifier != null) {
-                definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
+                final var unused =
+                    definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
               }
             });
   }

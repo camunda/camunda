@@ -205,7 +205,8 @@ public class ElasticsearchExporter implements Exporter {
 
     final String indexSuffixDatePattern = configuration.index.indexSuffixDatePattern;
     try {
-      DateTimeFormatter.ofPattern(indexSuffixDatePattern).withZone(ZoneOffset.UTC);
+      final var unused =
+          DateTimeFormatter.ofPattern(indexSuffixDatePattern).withZone(ZoneOffset.UTC);
     } catch (final IllegalArgumentException iae) {
       throw new ExporterException(
           String.format(
