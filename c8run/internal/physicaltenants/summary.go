@@ -98,34 +98,35 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 			if err == nil {
 				_ = resp.Body.Close()
 				if resp.StatusCode < 300 {
-					result.Ready, result.Err, result.Warning = true, "", ""
-					break
+					return ProbeResult{ID: t.ID, Ready: true}
 				}
 				// Unknown tenants are rejected with 404 before security runs, so 401/403 proves the
 				// tenant is configured and serving. Security runs before the storage check, though,
 				// so its storage readiness is reported as unverified rather than claimed.
 				if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-					result.Ready, result.Unverified, result.Err = true, true, ""
+					result = ProbeResult{ID: t.ID, Ready: true, Unverified: true}
 					if settings.OIDC {
 						result.Warning = "storage readiness can't be checked without an OIDC token; open its Operate URL to confirm"
-					} else {
-						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this physical tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+						break
 					}
-					break
+					// The tenant can serve requests before its seeded user is initialized, so a
+					// rejected login is retried until the probe budget is spent.
+					result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this physical tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+				} else {
+					result = ProbeResult{ID: t.ID, Err: fmt.Sprintf("POST %s returned HTTP %d", url, resp.StatusCode)}
+					switch resp.StatusCode {
+					case http.StatusNotFound:
+						result.Err += " (the physical tenant is not configured; check log/camunda.log for physical tenant validation errors)"
+					case http.StatusServiceUnavailable:
+						result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
+					}
 				}
-				result.Err = fmt.Sprintf("POST %s returned HTTP %d", url, resp.StatusCode)
-				switch resp.StatusCode {
-				case http.StatusNotFound:
-					result.Err += " (the physical tenant is not configured; check log/camunda.log for physical tenant validation errors)"
-				case http.StatusServiceUnavailable:
-					result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
-				}
-			} else if result.Err == "" || ctx.Err() == nil {
+			} else if !result.Ready && (result.Err == "" || ctx.Err() == nil) {
 				result.Err = err.Error()
 			}
 			select {
 			case <-ctx.Done():
-				if result.Err == "" {
+				if !result.Ready && result.Err == "" {
 					result.Err = "timed out waiting for the physical tenant"
 				}
 				return result
