@@ -32,12 +32,16 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
   }
 
   @Override
-  public void execute(final long processInstanceKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long processInstanceKey,
+      final int itemStorageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     final var authentication = batchOperation.getAuthentication();
     final var authInfo =
         AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new ProcessInstanceModificationRecord();
     command.setProcessInstanceKey(processInstanceKey);
+    command.setStorageOrdinal(itemStorageOrdinal);
     batchOperation.getModificationPlan().getMoveInstructions().forEach(command::addMoveInstruction);
 
     LOGGER.trace("Modifying process instance with key '{}'", processInstanceKey);

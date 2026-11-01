@@ -11,6 +11,7 @@ import com.google.common.collect.Lists;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -59,17 +60,19 @@ public class BatchOperationChunkAppender {
    * chunks were appended, the end cursor of the page, the number of items processed, and whether it
    * was the last page of items.
    *
-   * @param batchOperationKey the key of the batch operation being processed
+   * @param operation the batch operation being processed
    * @param page the page of items to process
    * @param taskResultBuilder the builder to append command records to
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
   private ChunkingOutcome chunkAndAppend(
-      final long batchOperationKey,
+      final PersistedBatchOperation operation,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
-    final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
+    final boolean appendedChunks =
+        appendChunks(
+            taskResultBuilder, operation.getKey(), operation.getStorageOrdinal(), page.items());
 
     if (!appendedChunks) {
       return new ChunkingOutcome.BufferFull();
@@ -100,15 +103,16 @@ public class BatchOperationChunkAppender {
     } catch (final Exception e) {
       return new ChunkingOutcome.FetchFailed(e);
     }
-    return chunkAndAppend(context.operation().getKey(), page, taskResultBuilder);
+    return chunkAndAppend(context.operation(), page, taskResultBuilder);
   }
 
   private boolean appendChunks(
       final TaskResultBuilder taskResultBuilder,
       final long batchOperationKey,
+      final int storageOrdinal,
       final List<Item> items) {
 
-    final var chunkRecords = createChunks(batchOperationKey, items);
+    final var chunkRecords = createChunks(batchOperationKey, storageOrdinal, items);
     final FollowUpCommandMetadata metadata =
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey));
 
@@ -127,10 +131,14 @@ public class BatchOperationChunkAppender {
     return false;
   }
 
+  // TODO(#57006): group the items by their storage ordinal before partitioning and set it as
+  // batchItemsStorageOrdinal on every chunk once the item providers expose it. Every chunk must
+  // hold items of a single ordinal, state keeps one ordinal per chunk. Until then every chunk
+  // is written with 0 = not known.
   private List<BatchOperationChunkRecord> createChunks(
-      final long batchOperationKey, final List<Item> items) {
+      final long batchOperationKey, final int storageOrdinal, final List<Item> items) {
     return Lists.partition(items, chunkSize).stream()
-        .map(chunkItems -> createChunkRecord(batchOperationKey, chunkItems))
+        .map(chunkItems -> createChunkRecord(batchOperationKey, storageOrdinal, chunkItems))
         .toList();
   }
 
@@ -145,9 +153,10 @@ public class BatchOperationChunkAppender {
   }
 
   private static BatchOperationChunkRecord createChunkRecord(
-      final long batchOperationKey, final List<Item> chunkItems) {
+      final long batchOperationKey, final int storageOrdinal, final List<Item> chunkItems) {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
+    command.setStorageOrdinal(storageOrdinal);
     command.setItems(
         chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
     return command;

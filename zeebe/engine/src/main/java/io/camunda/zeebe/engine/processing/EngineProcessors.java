@@ -501,6 +501,7 @@ public final class EngineProcessors {
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
+        storageOrdinalProvider,
         typedRecordProcessors,
         writers,
         commandDistributionBehavior,

@@ -34,11 +34,13 @@ public class BatchOperationCommands {
   public void appendInitializationCommand(
       final TaskResultBuilder builder,
       final long batchOperationKey,
+      final int storageOrdinal,
       final String searchResultCursor,
       final int pageSize) {
     final var command =
         new BatchOperationInitializationRecord()
             .setBatchOperationKey(batchOperationKey)
+            .setStorageOrdinal(storageOrdinal)
             .setSearchResultCursor(Strings.nullToEmpty(searchResultCursor))
             .setSearchQueryPageSize(pageSize);
 
@@ -51,9 +53,11 @@ public class BatchOperationCommands {
   }
 
   public void appendFinishInitializationCommand(
-      final TaskResultBuilder builder, final long batchOperationKey) {
+      final TaskResultBuilder builder, final long batchOperationKey, final int storageOrdinal) {
     final var command =
-        new BatchOperationInitializationRecord().setBatchOperationKey(batchOperationKey);
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setStorageOrdinal(storageOrdinal);
     LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
 
     builder.appendCommandRecord(
@@ -64,8 +68,11 @@ public class BatchOperationCommands {
   }
 
   public void appendExecutionCommand(
-      final TaskResultBuilder builder, final long batchOperationKey) {
-    final var command = new BatchOperationExecutionRecord().setBatchOperationKey(batchOperationKey);
+      final TaskResultBuilder builder, final long batchOperationKey, final int storageOrdinal) {
+    final var command =
+        new BatchOperationExecutionRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setStorageOrdinal(storageOrdinal);
 
     LOG.trace("Appending batch operation execution {}", batchOperationKey);
     builder.appendCommandRecord(
@@ -78,6 +85,7 @@ public class BatchOperationCommands {
   public void appendFailureCommand(
       final TaskResultBuilder builder,
       final long batchOperationKey,
+      final int storageOrdinal,
       final String message,
       final BatchOperationErrorType errorType) {
     final var error =
@@ -88,6 +96,7 @@ public class BatchOperationCommands {
     final var command =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(batchOperationKey)
+            .setStorageOrdinal(storageOrdinal)
             .setError(error);
 
     LOG.trace("Appending batch operation {} failed event", batchOperationKey);

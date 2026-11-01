@@ -4532,7 +4532,8 @@ final class JsonSerializableToJsonTest {
                 {
                   "batchOperationKey": 12345,
                   "items": [],
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "batchItemsStorageOrdinal": 0
                 }
                 """
       },
@@ -4554,7 +4555,8 @@ final class JsonSerializableToJsonTest {
                                 .setProcessInstanceKey(2L)
                                 .setRootProcessInstanceKey(3L),
                             new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L)))
-                    .setStorageOrdinal(14),
+                    .setStorageOrdinal(14)
+                    .setBatchItemsStorageOrdinal(7),
         """
                 {
                   "items": [
@@ -4574,7 +4576,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "batchOperationKey": 12345,
-                  "storageOrdinal": 14
+                  "storageOrdinal": 14,
+                  "batchItemsStorageOrdinal": 7
                 }
                 """
       },
@@ -4590,12 +4593,14 @@ final class JsonSerializableToJsonTest {
                 new BatchOperationExecutionRecord()
                     .setBatchOperationKey(12345L)
                     .setItemKeys(Set.of(1L, 2L))
-                    .setStorageOrdinal(15),
+                    .setStorageOrdinal(15)
+                    .setBatchItemsStorageOrdinal(7),
         """
                 {
                   "batchOperationKey": 12345,
                   "itemKeys": [1, 2],
-                  "storageOrdinal": 15
+                  "storageOrdinal": 15,
+                  "batchItemsStorageOrdinal": 7
                 }
                 """
       },
@@ -4612,7 +4617,8 @@ final class JsonSerializableToJsonTest {
                 {
                   "batchOperationKey": 12345,
                   "itemKeys": [],
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "batchItemsStorageOrdinal": 0
                 }
                 """
       },
