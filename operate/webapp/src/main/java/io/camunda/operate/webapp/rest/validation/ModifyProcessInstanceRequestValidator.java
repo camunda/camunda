@@ -8,9 +8,11 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.findViolation;
 
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
@@ -23,9 +25,13 @@ import org.springframework.util.StringUtils;
 public class ModifyProcessInstanceRequestValidator {
 
   private final ProcessInstanceReader processInstanceReader;
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
 
-  public ModifyProcessInstanceRequestValidator(final ProcessInstanceReader processInstanceReader) {
+  public ModifyProcessInstanceRequestValidator(
+      final ProcessInstanceReader processInstanceReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.processInstanceReader = processInstanceReader;
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
   }
 
   public void validate(final ModifyProcessInstanceRequestDto modifyRequest) {
@@ -60,6 +66,11 @@ public class ModifyProcessInstanceRequestValidator {
                         "Unknown Modification.Type given for process instance with key %s.",
                         processInstanceKey));
               }
+            });
+    findViolation(flowNodeInstanceReader, processInstanceKey, modifyRequest.getModifications())
+        .ifPresent(
+            message -> {
+              throw new InvalidRequestException(message);
             });
   }
 
