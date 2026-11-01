@@ -18,7 +18,8 @@ import org.jspecify.annotations.Nullable;
 public record VariableEntity(
     Long variableKey,
     String name,
-    String value,
+    // null when the value is redacted by the REDACT protection mode.
+    @Nullable String value,
     // only set when the value exceeds the preview size threshold.
     @Nullable String fullValue,
     Boolean isPreview,
@@ -36,7 +37,7 @@ public record VariableEntity(
   public VariableEntity(
       final Long variableKey,
       final String name,
-      final String value,
+      final @Nullable String value,
       final @Nullable String fullValue,
       final Boolean isPreview,
       final Long scopeKey,
@@ -61,7 +62,6 @@ public record VariableEntity(
   public VariableEntity {
     Objects.requireNonNull(variableKey, "variableKey");
     Objects.requireNonNull(name, "name");
-    Objects.requireNonNull(value, "value");
     Objects.requireNonNull(isPreview, "isPreview");
     Objects.requireNonNull(scopeKey, "scopeKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");

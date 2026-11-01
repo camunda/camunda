@@ -17,6 +17,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.CompletionException;
@@ -242,6 +243,22 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
     assertThat(problemDetail.getTitle()).isEqualTo(ALREADY_EXISTS.name());
     assertThat(problemDetail.getDetail()).isEqualTo(reason);
+  }
+
+  @Test
+  void shouldMapInvalidVariableRequestExceptionToBadRequestProblemDetail() {
+    // given
+    final var message =
+        "Expected variables metadata to only describe variables set in the request, but found no variable for: 'ssn'";
+    final Throwable error = new CompletionException(new InvalidVariableRequestException(message));
+
+    // when
+    final ProblemDetail problemDetail = GatewayErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
+    assertThat(problemDetail.getDetail()).isEqualTo(message);
   }
 
   @Test

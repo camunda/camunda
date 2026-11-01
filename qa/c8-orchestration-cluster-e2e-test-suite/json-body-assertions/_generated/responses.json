@@ -12201,7 +12201,8 @@
                 },
                 {
                   "name": "value",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "variableKey",
@@ -12323,7 +12324,8 @@
                 },
                 {
                   "name": "value",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "variableKey",
@@ -12415,7 +12417,8 @@
                 },
                 {
                   "name": "value",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "variableKey",
@@ -12498,7 +12501,8 @@
           },
           {
             "name": "value",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "variableKey",

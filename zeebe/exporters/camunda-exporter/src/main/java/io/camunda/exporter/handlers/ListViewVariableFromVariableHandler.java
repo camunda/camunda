@@ -77,7 +77,9 @@ public class ListViewVariableFromVariableHandler
     final var recordValue = record.getValue();
     final String value = recordValue.getValue();
     final String truncatedValue =
-        value.length() > variableSizeThreshold ? value.substring(0, variableSizeThreshold) : value;
+        value != null && value.length() > variableSizeThreshold
+            ? value.substring(0, variableSizeThreshold)
+            : value;
 
     entity
         .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
