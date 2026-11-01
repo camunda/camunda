@@ -26,6 +26,7 @@ import {EditTenantModal} from '#/admin/modules/tenants/EditTenantModal';
 import {DeleteTenantModal} from '#/admin/modules/tenants/DeleteTenantModal';
 import {isDefaultTenant} from '#/admin/modules/tenants/defaultTenant';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type TenantsSearch} from '#/admin/modules/tenants/searchSchema';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
 import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
@@ -112,6 +113,7 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems,
 
 	const closeModal = useCallback(() => setModal(null), []);
 	const title = t('admin.headerNavItemTenants');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -127,48 +129,57 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems,
 						</Button>
 					</p>
 				</div>
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-						<div className="flex flex-col gap-2 sm:flex-1">
-							<Label htmlFor="tenants-search" className="sr-only">
-								{t('admin.tenants.searchByTenantId')}
-							</Label>
-							<SearchInput
-								id="tenants-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.tenants.searchByTenantId')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button onClick={() => setModal({type: 'add'})}>
-							<Plus aria-hidden />
-							{t('admin.tenants.createTenant')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
-						columns={columns}
-						data={tenants}
-						getRowId={(tenant) => tenant.tenantId}
-						rowHref={(tenant) => detailPath.tenant(tenant.tenantId)}
-						linkComponent={RouterRowLink}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.tenants.noTenants')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.tenants.resourceSingular')}
+						resources={t('admin.tenants.resourcePlural')}
+						guideUrl={TENANTS_GUIDE_URL}
+						onCreate={() => setModal({type: 'add'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+							<div className="flex flex-col gap-2 sm:flex-1">
+								<Label htmlFor="tenants-search" className="sr-only">
+									{t('admin.tenants.searchByTenantId')}
+								</Label>
+								<SearchInput
+									id="tenants-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.tenants.searchByTenantId')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button onClick={() => setModal({type: 'add'})}>
+								<Plus aria-hidden />
+								{t('admin.tenants.createTenant')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+							columns={columns}
+							data={tenants}
+							getRowId={(tenant) => tenant.tenantId}
+							rowHref={(tenant) => detailPath.tenant(tenant.tenantId)}
+							linkComponent={RouterRowLink}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.tenants.noTenants')}
+						/>
+					</div>
+				)}
 			</div>
 			<AddTenantModal isOpen={modal?.type === 'add'} onClose={closeModal} />
 			<EditTenantModal tenant={modal?.type === 'edit' ? modal.tenant : null} onClose={closeModal} />

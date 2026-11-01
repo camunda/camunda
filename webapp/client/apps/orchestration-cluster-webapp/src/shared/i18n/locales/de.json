@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Zuordnungsregel gelöscht",
 				"createMappingRuleError": "Zuordnungsregel konnte nicht erstellt werden",
 				"updateMappingRuleError": "Zuordnungsregel konnte nicht aktualisiert werden",
-				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden"
+				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden",
+				"resourceSingular": "Zuordnungsregel",
+				"resourcePlural": "Zuordnungsregeln"
 			},
 			"users": {
 				"username": "Benutzername",
@@ -212,7 +214,9 @@
 				"userDeleted": "Benutzer {{username}} gelöscht",
 				"deleteUserFailed": "Benutzer konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Benutzer",
+				"resourcePlural": "Benutzer"
 			},
 			"groups": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -260,7 +264,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Gruppe sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -275,7 +278,6 @@
 						"idLabel": "Rollen-ID",
 						"select": "Rolle auswählen",
 						"search": "Nach Rollen-ID suchen",
-						"empty": "Dieser Gruppe sind keine Rollen zugewiesen.",
 						"remove": "Rolle entfernen",
 						"confirmRemove": "Möchten Sie die Rolle <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Rolle {{id}} zugewiesen",
@@ -292,7 +294,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Gruppe sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -305,13 +306,14 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Gruppe sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Gruppe",
+				"resourcePlural": "Gruppen"
 			},
 			"clusterVariables": {
 				"closeButton": "Schließen",
@@ -363,7 +365,9 @@
 				"deleteClusterVariableSuccess": "Cluster-Variable gelöscht",
 				"createClusterVariableError": "Cluster-Variable konnte nicht erstellt werden",
 				"updateClusterVariableError": "Cluster-Variable konnte nicht aktualisiert werden",
-				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden"
+				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden",
+				"resourceSingular": "Cluster-Variable",
+				"resourcePlural": "Cluster-Variablen"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -421,7 +425,9 @@
 				"updateGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht aktualisiert werden",
 				"deleteGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "globalen Aufgaben-Listener",
+				"resourcePlural": "globale Aufgaben-Listener"
 			},
 			"authorizations": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -475,7 +481,11 @@
 				"deleteAuthorizationSuccess": "Autorisierung gelöscht",
 				"deleteAuthorizationError": "Autorisierung konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Es konnte nicht bestätigt werden, dass die Änderung wirksam wurde",
-				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen."
+				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
+				"resourceSingular": "Autorisierung",
+				"resourcePlural": "Autorisierungen",
+				"noAuthorizationsYet": "Für diesen Ressourcentyp gibt es noch keine Autorisierungen",
+				"noAuthorizationsYetDescription": "Autorisierungen legen Zugriffsberechtigungen für verschiedene Ressourcen fest. Erstellen Sie eine Autorisierung, indem Sie einen Eigentümer, eine Ressource und mindestens eine Berechtigung auswählen."
 			},
 			"roles": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -523,7 +533,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Rolle sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -539,7 +548,6 @@
 						"enterId": "Gruppen-ID eingeben",
 						"select": "Gruppe auswählen",
 						"search": "Nach Gruppen-ID suchen",
-						"empty": "Dieser Rolle sind keine Gruppen zugewiesen.",
 						"remove": "Gruppe entfernen",
 						"confirmRemove": "Möchten Sie die Gruppe <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Gruppe {{id}} zugewiesen",
@@ -556,7 +564,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Rolle sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -569,13 +576,14 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Rolle sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Rolle",
+				"resourcePlural": "Rollen"
 			},
 			"tenants": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -623,7 +631,6 @@
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
 					"users": {
 						"tab": "Benutzer",
-						"empty": "Diesem Mandanten sind keine Benutzer zugewiesen.",
 						"assign": "Benutzer zuweisen",
 						"idLabel": "Benutzer",
 						"select": "Benutzer suchen und auswählen",
@@ -634,7 +641,6 @@
 					},
 					"groups": {
 						"tab": "Gruppen",
-						"empty": "Diesem Mandanten sind keine Gruppen zugewiesen.",
 						"assign": "Gruppe zuweisen",
 						"idLabel": "Gruppen",
 						"select": "Gruppen suchen und auswählen",
@@ -645,7 +651,6 @@
 					},
 					"roles": {
 						"tab": "Rollen",
-						"empty": "Diesem Mandanten sind keine Rollen zugewiesen.",
 						"assign": "Rolle zuweisen",
 						"idLabel": "Rollen",
 						"select": "Rollen suchen und auswählen",
@@ -655,7 +660,6 @@
 					},
 					"mappingRules": {
 						"tab": "Zuordnungsregeln",
-						"empty": "Diesem Mandanten sind keine Zuordnungsregeln zugewiesen.",
 						"assign": "Zuordnungsregel zuweisen",
 						"idLabel": "Zuordnungsregeln",
 						"select": "Zuordnungsregeln suchen und auswählen",
@@ -665,7 +669,6 @@
 					},
 					"clients": {
 						"tab": "Clients",
-						"empty": "Diesem Mandanten sind keine Clients zugewiesen.",
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
@@ -678,7 +681,30 @@
 				"unassignSuccess": "Aus Mandant entfernt",
 				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Mandant",
+				"resourcePlural": "Mandanten",
+				"emptyStateDisclaimer": "Mitglieder dieses Mandanten erhalten Zugriff auf die Daten innerhalb des Mandanten."
+			},
+			"emptyState": {
+				"title": "Noch keine {{resources}} erstellt",
+				"description": "Legen Sie zunächst Folgendes an: {{resource}}.",
+				"createAction": "{{resource}} erstellen",
+				"learnMore": "Mehr über {{resources}} erfahren"
+			},
+			"members": {
+				"kinds": {
+					"users": "Benutzer",
+					"groups": "Gruppen",
+					"roles": "Rollen",
+					"mappingRules": "Zuordnungsregeln",
+					"clients": "Clients"
+				},
+				"emptyState": {
+					"title": "Diesem Element ({{parent}}) sind noch keine {{resources}} zugewiesen",
+					"description": "Beginnen Sie mit der ersten Zuweisung.",
+					"learnMore": "Mehr über {{resources}} erfahren"
+				}
 			}
 		},
 		"tasklist": {

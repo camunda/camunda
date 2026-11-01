@@ -123,8 +123,20 @@ describe('<AdminAuthorizationsPage />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Resource ID'})).not.toBeInTheDocument();
 	});
 
-	it('should show an empty state when there are no authorizations', async () => {
+	it('should offer to create the first authorization when the resource type has none', async () => {
 		const {screen} = await renderPage({authorizations: [], totalItems: 0});
+
+		await expect
+			.element(screen.getByText("You don't have any authorizations for this resource type yet"))
+			.toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}).last());
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when an owner ID filter finds no authorizations', async () => {
+		const {screen} = await renderPage({authorizations: [], totalItems: 0, search: {ownerId: 'nobody'}});
 
 		await expect.element(screen.getByText('No authorizations found.')).toBeVisible();
 	});
@@ -239,7 +251,7 @@ describe('<AdminAuthorizationsPage />', () => {
 			}),
 			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '42'}))}),
 		);
-		const {screen} = await renderPage({authorizations: []});
+		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');
@@ -266,7 +278,7 @@ describe('<AdminAuthorizationsPage />', () => {
 			}),
 			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '43'}))}),
 		);
-		const {screen} = await renderPage({resourceType: 'SECRET', authorizations: []});
+		const {screen} = await renderPage({resourceType: 'SECRET'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');
@@ -316,7 +328,7 @@ describe('<AdminAuthorizationsPage />', () => {
 			}),
 			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '44'}))}),
 		);
-		const {screen} = await renderPage({resourceType: 'USER_TASK', authorizations: []});
+		const {screen} = await renderPage({resourceType: 'USER_TASK'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');
@@ -327,7 +339,7 @@ describe('<AdminAuthorizationsPage />', () => {
 	});
 
 	it('should require an owner, a resource ID and a permission', async () => {
-		const {screen} = await renderPage({authorizations: []});
+		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Create', exact: true}));
@@ -346,7 +358,7 @@ describe('<AdminAuthorizationsPage />', () => {
 				),
 			}),
 		);
-		const {screen} = await renderPage({authorizations: []});
+		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');
@@ -377,7 +389,7 @@ describe('<AdminAuthorizationsPage />', () => {
 			mockCreateAuthorizationEndpoint({successResponse: HttpResponse.json({authorizationKey: '45'})}),
 			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
-		const {screen} = await renderPage({authorizations: []});
+		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');

@@ -25,6 +25,7 @@ import {AddClusterVariableModal} from '#/admin/modules/cluster-variables/AddClus
 import {DeleteClusterVariableModal} from '#/admin/modules/cluster-variables/DeleteClusterVariableModal';
 import {EditClusterVariableModal} from '#/admin/modules/cluster-variables/EditClusterVariableModal';
 import {ViewClusterVariableModal} from '#/admin/modules/cluster-variables/ViewClusterVariableModal';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
 import {
 	DEFAULT_PAGE_SIZE,
 	PAGE_SIZES,
@@ -138,6 +139,7 @@ const AdminClusterVariablesPage: React.FC<AdminClusterVariablesPageProps> = ({
 	);
 
 	const title = t('admin.headerNavItemClusterVariables');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
 	const closeModal = () => setModal(null);
 
 	return (
@@ -154,45 +156,54 @@ const AdminClusterVariablesPage: React.FC<AdminClusterVariablesPageProps> = ({
 						</Button>
 					</p>
 				</div>
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-						<div className="flex flex-col gap-2 sm:flex-1">
-							<Label htmlFor="cluster-variables-search" className="sr-only">
-								{t('admin.clusterVariables.searchByName')}
-							</Label>
-							<SearchInput
-								id="cluster-variables-search"
-								className="w-full sm:max-w-sm sm:min-w-48"
-								placeholder={t('admin.clusterVariables.searchByName')}
-								value={searchDraft}
-								onChange={(event) => setSearchDraft(event.target.value)}
-								onClear={() => setSearchDraft('')}
-							/>
-						</div>
-						<Button onClick={() => setModal({type: 'add'})}>
-							<Plus aria-hidden />
-							{t('admin.clusterVariables.addClusterVariable')}
-						</Button>
-					</div>
-					<DataTable
-						aria-label={title}
-						columns={columns}
-						data={clusterVariables}
-						getRowId={({scope, tenantId, name}) => `${scope}:${tenantId ?? ''}:${name}`}
-						rowActions={rowActions}
-						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
-						pagination={{
-							manual: true,
-							pageSizes: [...PAGE_SIZES],
-							defaultPageSize: DEFAULT_PAGE_SIZE,
-							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-							pageIndex: (search.page ?? 1) - 1,
-							rowCount: totalItems,
-							onPaginationChange: handlePaginationChange,
-						}}
-						emptyState={t('admin.clusterVariables.noClusterVariables')}
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.clusterVariables.resourceSingular')}
+						resources={t('admin.clusterVariables.resourcePlural')}
+						guideUrl={CLUSTER_VARIABLES_GUIDE_URL}
+						onCreate={() => setModal({type: 'add'})}
 					/>
-				</div>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+							<div className="flex flex-col gap-2 sm:flex-1">
+								<Label htmlFor="cluster-variables-search" className="sr-only">
+									{t('admin.clusterVariables.searchByName')}
+								</Label>
+								<SearchInput
+									id="cluster-variables-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.clusterVariables.searchByName')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button onClick={() => setModal({type: 'add'})}>
+								<Plus aria-hidden />
+								{t('admin.clusterVariables.addClusterVariable')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							columns={columns}
+							data={clusterVariables}
+							getRowId={({scope, tenantId, name}) => `${scope}:${tenantId ?? ''}:${name}`}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.clusterVariables.noClusterVariables')}
+						/>
+					</div>
+				)}
 			</div>
 			<AddClusterVariableModal
 				isOpen={modal?.type === 'add'}

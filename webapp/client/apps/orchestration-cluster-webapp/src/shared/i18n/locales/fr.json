@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Règle de mappage supprimée",
 				"createMappingRuleError": "Échec de la création de la règle de mappage",
 				"updateMappingRuleError": "Échec de la mise à jour de la règle de mappage",
-				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage"
+				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage",
+				"resourceSingular": "règle de mappage",
+				"resourcePlural": "règles de mappage"
 			},
 			"users": {
 				"username": "Nom d'utilisateur",
@@ -212,7 +214,9 @@
 				"userDeleted": "Utilisateur {{username}} supprimé",
 				"deleteUserFailed": "Échec de la suppression de l'utilisateur",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "utilisateur",
+				"resourcePlural": "utilisateurs"
 			},
 			"groups": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -260,7 +264,6 @@
 						"select": "Sélectionnez un utilisateur",
 						"search": "Rechercher par nom d'utilisateur",
 						"enterId": "Saisir le nom d'utilisateur",
-						"empty": "Aucun utilisateur n'est attribué à ce groupe.",
 						"remove": "Retirer l'utilisateur",
 						"confirmRemove": "Voulez-vous vraiment retirer <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Utilisateur {{id}} attribué",
@@ -275,7 +278,6 @@
 						"idLabel": "ID du rôle",
 						"select": "Sélectionnez un rôle",
 						"search": "Rechercher par ID de rôle",
-						"empty": "Aucun rôle n'est attribué à ce groupe.",
 						"remove": "Retirer le rôle",
 						"confirmRemove": "Voulez-vous vraiment retirer le rôle <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Rôle {{id}} attribué",
@@ -292,7 +294,6 @@
 						"idLabel": "ID de la règle de mappage",
 						"select": "Sélectionnez une règle de mappage",
 						"search": "Rechercher par ID de règle de mappage",
-						"empty": "Aucune règle de mappage n'est attribuée à ce groupe.",
 						"remove": "Retirer la règle de mappage",
 						"confirmRemove": "Voulez-vous vraiment retirer la règle de mappage <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Règle de mappage {{id}} attribuée",
@@ -305,13 +306,14 @@
 						"assign": "Attribuer un client",
 						"idLabel": "ID du client",
 						"enterId": "Saisissez l'ID du client",
-						"empty": "Aucun client n'est attribué à ce groupe.",
 						"remove": "Retirer le client",
 						"confirmRemove": "Voulez-vous vraiment retirer le client <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "groupe",
+				"resourcePlural": "groupes"
 			},
 			"clusterVariables": {
 				"closeButton": "Fermer",
@@ -363,7 +365,9 @@
 				"deleteClusterVariableSuccess": "Variable de cluster supprimée",
 				"createClusterVariableError": "Impossible de créer la variable de cluster",
 				"updateClusterVariableError": "Impossible de mettre à jour la variable de cluster",
-				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster"
+				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster",
+				"resourceSingular": "variable de cluster",
+				"resourcePlural": "variables de cluster"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -421,7 +425,9 @@
 				"updateGlobalTaskListenerError": "Échec de la mise à jour de l'écouteur global de tâche",
 				"deleteGlobalTaskListenerError": "Échec de la suppression de l'écouteur global de tâche",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "écouteur global de tâches",
+				"resourcePlural": "écouteurs globaux de tâches"
 			},
 			"authorizations": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -475,7 +481,11 @@
 				"deleteAuthorizationSuccess": "Autorisation supprimée",
 				"deleteAuthorizationError": "Échec de la suppression de l'autorisation",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a pris effet",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "autorisation",
+				"resourcePlural": "autorisations",
+				"noAuthorizationsYet": "Vous n'avez pas encore d'autorisations pour ce type de ressource",
+				"noAuthorizationsYetDescription": "Les autorisations définissent les droits d'accès à différentes ressources. Créez une autorisation en sélectionnant un propriétaire, une ressource et au moins une permission."
 			},
 			"roles": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -523,7 +533,6 @@
 						"select": "Sélectionnez un utilisateur",
 						"search": "Rechercher par nom d'utilisateur",
 						"enterId": "Saisir le nom d'utilisateur",
-						"empty": "Aucun utilisateur n'est attribué à ce rôle.",
 						"remove": "Retirer l'utilisateur",
 						"confirmRemove": "Voulez-vous vraiment retirer <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Utilisateur {{id}} attribué",
@@ -539,7 +548,6 @@
 						"enterId": "Saisissez l'ID du groupe",
 						"select": "Sélectionnez un groupe",
 						"search": "Rechercher par ID de groupe",
-						"empty": "Aucun groupe n'est attribué à ce rôle.",
 						"remove": "Retirer le groupe",
 						"confirmRemove": "Voulez-vous vraiment retirer le groupe <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Groupe {{id}} attribué",
@@ -556,7 +564,6 @@
 						"idLabel": "ID de la règle de mappage",
 						"select": "Sélectionnez une règle de mappage",
 						"search": "Rechercher par ID de règle de mappage",
-						"empty": "Aucune règle de mappage n'est attribuée à ce rôle.",
 						"remove": "Retirer la règle de mappage",
 						"confirmRemove": "Voulez-vous vraiment retirer la règle de mappage <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Règle de mappage {{id}} attribuée",
@@ -569,13 +576,14 @@
 						"assign": "Attribuer un client",
 						"idLabel": "ID du client",
 						"enterId": "Saisissez l'ID du client",
-						"empty": "Aucun client n'est attribué à ce rôle.",
 						"remove": "Retirer le client",
 						"confirmRemove": "Voulez-vous vraiment retirer le client <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "rôle",
+				"resourcePlural": "rôles"
 			},
 			"tenants": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -623,7 +631,6 @@
 					"candidatesLoadError": "Impossible de charger les options",
 					"users": {
 						"tab": "Utilisateurs",
-						"empty": "Aucun utilisateur n'est assigné à ce locataire.",
 						"assign": "Assigner un utilisateur",
 						"idLabel": "Utilisateurs",
 						"select": "Rechercher et sélectionner des utilisateurs",
@@ -634,7 +641,6 @@
 					},
 					"groups": {
 						"tab": "Groupes",
-						"empty": "Aucun groupe n'est assigné à ce locataire.",
 						"assign": "Assigner un groupe",
 						"idLabel": "Groupes",
 						"select": "Rechercher et sélectionner des groupes",
@@ -645,7 +651,6 @@
 					},
 					"roles": {
 						"tab": "Rôles",
-						"empty": "Aucun rôle n'est assigné à ce locataire.",
 						"assign": "Assigner un rôle",
 						"idLabel": "Rôles",
 						"select": "Rechercher et sélectionner des rôles",
@@ -655,7 +660,6 @@
 					},
 					"mappingRules": {
 						"tab": "Règles de mappage",
-						"empty": "Aucune règle de mappage n'est assignée à ce locataire.",
 						"assign": "Assigner une règle de mappage",
 						"idLabel": "Règles de mappage",
 						"select": "Rechercher et sélectionner des règles de mappage",
@@ -665,7 +669,6 @@
 					},
 					"clients": {
 						"tab": "Clients",
-						"empty": "Aucun client n'est assigné à ce locataire.",
 						"assign": "Assigner un client",
 						"idLabel": "ID du client",
 						"enterId": "Saisissez un ID de client",
@@ -678,7 +681,30 @@
 				"unassignSuccess": "Retiré du locataire",
 				"unassignError": "Impossible de retirer du locataire",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "locataire",
+				"resourcePlural": "locataires",
+				"emptyStateDisclaimer": "Les membres de ce locataire auront accès aux données du locataire."
+			},
+			"emptyState": {
+				"title": "Aucun élément « {{resources}} » créé pour le moment",
+				"description": "Commencez par créer un élément « {{resource}} ».",
+				"createAction": "Créer : {{resource}}",
+				"learnMore": "En savoir plus sur : {{resources}}"
+			},
+			"members": {
+				"kinds": {
+					"users": "utilisateurs",
+					"groups": "groupes",
+					"roles": "rôles",
+					"mappingRules": "règles de mappage",
+					"clients": "clients"
+				},
+				"emptyState": {
+					"title": "Aucun élément « {{resources}} » n'est encore attribué à : {{parent}}",
+					"description": "Commencez par en attribuer un.",
+					"learnMore": "En savoir plus sur : {{resources}}"
+				}
 			}
 		},
 		"tasklist": {
