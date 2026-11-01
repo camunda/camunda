@@ -154,4 +154,21 @@ test.describe('Task details page', () => {
 		await expect(taskDetailPage.processForbiddenError).toBeVisible();
 		await expect(taskDetailPage.processRetryButton).not.toBeVisible();
 	});
+
+	test('should show a suspended label and disable the actions of a suspended task', async ({
+		network,
+		taskDetailPage,
+	}) => {
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username, isSuspended: true})),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281');
+
+		await expect(taskDetailPage.suspendedLabel).toBeVisible();
+		await expect(taskDetailPage.unassignButton).toBeDisabled();
+		await expect(taskDetailPage.completeTaskButton).toBeDisabled();
+	});
 });

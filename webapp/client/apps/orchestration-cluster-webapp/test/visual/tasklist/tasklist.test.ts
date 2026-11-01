@@ -56,7 +56,7 @@ test('should match the tasklist index page snapshot with available tasks', async
 					items: [
 						createUserTask({userTaskKey: '1', assignee: 'jane'}),
 						createUserTask({userTaskKey: '2', assignee: 'demo', businessId: 'ORDER-2024-0042'}),
-						createUserTask({userTaskKey: '3', businessId: 'ORDER-2024-0043'}),
+						createUserTask({userTaskKey: '3', businessId: 'ORDER-2024-0043', isSuspended: true}),
 					],
 				}),
 			),

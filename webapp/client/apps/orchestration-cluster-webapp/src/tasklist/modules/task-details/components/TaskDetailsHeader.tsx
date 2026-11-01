@@ -12,6 +12,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {ArrowLeft, CircleCheck, LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {AssigneeBadge} from '#/tasklist/modules/available-tasks/components/AssigneeBadge';
+import {SuspendedBadge} from '#/tasklist/modules/available-tasks/components/SuspendedBadge';
 
 type RightPanelProps = {
 	taskState: UserTask['state'];
@@ -86,6 +87,7 @@ type Props = {
 	processName: string;
 	assignee: string | null;
 	taskState: UserTask['state'];
+	isSuspended: boolean;
 	user: CurrentUser;
 	assignButton: React.ReactNode;
 	detailsButton?: React.ReactNode;
@@ -96,6 +98,7 @@ const TaskDetailsHeader: React.FC<Props> = ({
 	processName,
 	assignee,
 	taskState,
+	isSuspended,
 	user,
 	assignButton,
 	detailsButton,
@@ -125,6 +128,11 @@ const TaskDetailsHeader: React.FC<Props> = ({
 			</div>
 			<div className="flex min-w-0 max-w-full shrink-0 items-center gap-4 max-lg:ml-0 max-lg:w-full max-lg:justify-start lg:ml-auto lg:w-auto lg:justify-end">
 				{detailsButton ? <span className="flex items-center max-lg:order-3">{detailsButton}</span> : null}
+				{isSuspended ? (
+					<span className="flex items-center max-lg:order-2">
+						<SuspendedBadge />
+					</span>
+				) : null}
 				<RightPanel taskState={taskState} assignee={assignee} user={user} assignButton={assignButton} />
 			</div>
 		</header>
