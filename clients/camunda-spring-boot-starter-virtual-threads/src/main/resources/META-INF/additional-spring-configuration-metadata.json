@@ -1,0 +1,20 @@
+{
+  "groups": [
+    {
+      "name": "camunda.client.threads",
+      "description": "Properties for the threading behavior of the Camunda client."
+    },
+    {
+      "name": "camunda.client.threads.virtual",
+      "description": "Properties for virtual-thread job handling of the Camunda client."
+    }
+  ],
+  "properties": [
+    {
+      "name": "camunda.client.threads.virtual.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether job handling uses Java 21 virtual threads. Enabled by default when the camunda-spring-boot-starter-virtual-threads module is on the classpath. Set to false to fall back to the default platform-thread executor sized by camunda.client.execution-threads.",
+      "defaultValue": true
+    }
+  ]
+}
