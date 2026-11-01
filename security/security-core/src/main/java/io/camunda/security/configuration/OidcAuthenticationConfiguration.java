@@ -42,6 +42,8 @@ public class OidcAuthenticationConfiguration {
   private List<String> additionalJwkSetUris;
   private String authorizationUri;
   private String endSessionEndpointUri;
+  private String revocationEndpointUri;
+  private boolean revocationEnabled = false;
   private String tokenUri;
   private AuthorizeRequestConfiguration authorizeRequestConfiguration =
       new AuthorizeRequestConfiguration();
@@ -169,6 +171,22 @@ public class OidcAuthenticationConfiguration {
 
   public void setEndSessionEndpointUri(final String endSessionEndpointUri) {
     this.endSessionEndpointUri = endSessionEndpointUri;
+  }
+
+  public String getRevocationEndpointUri() {
+    return revocationEndpointUri;
+  }
+
+  public void setRevocationEndpointUri(final String revocationEndpointUri) {
+    this.revocationEndpointUri = revocationEndpointUri;
+  }
+
+  public boolean isRevocationEnabled() {
+    return revocationEnabled;
+  }
+
+  public void setRevocationEnabled(final boolean revocationEnabled) {
+    this.revocationEnabled = revocationEnabled;
   }
 
   public String getTokenUri() {
@@ -319,6 +337,7 @@ public class OidcAuthenticationConfiguration {
         || additionalJwkSetUris != null
         || authorizationUri != null
         || endSessionEndpointUri != null
+        || revocationEndpointUri != null
         || tokenUri != null
         || authorizeRequestConfiguration == null
         || authorizeRequestConfiguration.isSet()
@@ -359,6 +378,8 @@ public class OidcAuthenticationConfiguration {
     private List<String> additionalJwkSetUris;
     private String authorizationUri;
     private String endSessionEndpointUri;
+    private String revocationEndpointUri;
+    private boolean revocationEnabled = false;
     private String tokenUri;
     private AuthorizeRequestConfiguration authorizeRequestConfiguration =
         new AuthorizeRequestConfiguration();
@@ -435,6 +456,16 @@ public class OidcAuthenticationConfiguration {
 
     public Builder endSessionEndpointUri(final String endSessionEndpointUri) {
       this.endSessionEndpointUri = endSessionEndpointUri;
+      return this;
+    }
+
+    public Builder revocationEndpointUri(final String revocationEndpointUri) {
+      this.revocationEndpointUri = revocationEndpointUri;
+      return this;
+    }
+
+    public Builder revocationEnabled(final boolean revocationEnabled) {
+      this.revocationEnabled = revocationEnabled;
       return this;
     }
 
@@ -531,6 +562,8 @@ public class OidcAuthenticationConfiguration {
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);
       config.setEndSessionEndpointUri(endSessionEndpointUri);
+      config.setRevocationEndpointUri(revocationEndpointUri);
+      config.setRevocationEnabled(revocationEnabled);
       config.setScope(scope);
       config.setJwkSetUri(jwkSetUri);
       config.setAdditionalJwkSetUris(additionalJwkSetUris);
