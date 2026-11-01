@@ -85,7 +85,7 @@ jobs:
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
-      uses: camunda/infra-global-github-actions/preview-env/destroy@7b093dcfcc0e330fb401e011258efbab0faf6bb5 # preview-env-1.1.1
+      uses: camunda/infra-global-github-actions/preview-env/destroy@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
       with:
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 5
     needs: [teardown-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@7b093dcfcc0e330fb401e011258efbab0faf6bb5 # preview-env-1.1.1
+    - uses: camunda/infra-global-github-actions/preview-env/comment@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
