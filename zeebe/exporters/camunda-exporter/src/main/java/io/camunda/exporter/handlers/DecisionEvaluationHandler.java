@@ -27,18 +27,21 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DecisionEvaluationHandler
     implements OrdinalIndexExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
-  private static final String ID_PATTERN = "%s-%d";
   private final String indexName;
+
+  // getEvaluatedDecisions() deep-copies every decision on each call, and updateEntity is invoked
+  // once per evaluated decision of the same record. Reusing the list for the current record keeps
+  // the export cost linear in the number of decisions instead of quadratic.
+  private CachedDecisions cachedDecisions;
 
   public DecisionEvaluationHandler(final String indexName) {
     this.indexName = indexName;
@@ -61,19 +64,7 @@ public class DecisionEvaluationHandler
 
   @Override
   public List<String> generateIds(final Record<DecisionEvaluationRecordValue> record) {
-    // To ensure compatibility with older Zeebe versions, we first check if the IDs are already
-    // present in the record. If they are, we use them directly. If not,
-    // we fall back to the legacy ID generation method.
-    final var ids =
-        record.getValue().getEvaluatedDecisions().stream()
-            .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
-            .toList();
-    // If none of the IDs are empty, we can safely return the list.
-    // "" is the default value for the decisionEvaluationInstanceKey field.
-    if (!ids.contains("")) {
-      return ids;
-    }
-    return generateIdsLegacy(record);
+    return getCachedDecisions(record).ids();
   }
 
   @Override
@@ -85,14 +76,18 @@ public class DecisionEvaluationHandler
   public void updateEntity(
       final Record<DecisionEvaluationRecordValue> record, final DecisionInstanceEntity entity) {
     final DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
-    final int decisionIndex =
-        getEvaluatedDecisionValueIndex(decisionEvaluation, record.getKey(), entity.getId());
+    final CachedDecisions cached = getCachedDecisions(record);
+    final List<EvaluatedDecisionValue> evaluatedDecisions = cached.decisions();
+    // fails on an unknown id instead of exporting an incomplete entity; see indexOf
+    final int decisionIndex = cached.indexOf(entity.getId());
+    if (cached.markExported(decisionIndex)) {
+      cachedDecisions = null;
+    }
 
-    final EvaluatedDecisionValue decision =
-        decisionEvaluation.getEvaluatedDecisions().get(decisionIndex - 1);
+    final EvaluatedDecisionValue decision = evaluatedDecisions.get(decisionIndex - 1);
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
-    final DecisionInstanceState state = getState(record, decisionEvaluation, decisionIndex);
+    final DecisionInstanceState state = getState(record, evaluatedDecisions.size(), decisionIndex);
     entity
         .setKey(record.getKey())
         .setExecutionIndex(decisionIndex)
@@ -146,35 +141,19 @@ public class DecisionEvaluationHandler
     return indexName;
   }
 
-  private int getEvaluatedDecisionValueIndex(
-      final DecisionEvaluationRecordValue decisionEvaluation,
-      final long key,
-      final String entityId) {
-    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final String id = ID_PATTERN.formatted(key, i);
-      if (Objects.equals(entityId, id)) {
-        LOGGER.debug(
-            "Decision evaluation: id {} key {}, decisionId {}",
-            id,
-            key,
-            decisionEvaluation.getDecisionId());
-
-        return i;
-      }
+  private CachedDecisions getCachedDecisions(final Record<DecisionEvaluationRecordValue> record) {
+    if (cachedDecisions == null || !cachedDecisions.isFor(record)) {
+      cachedDecisions = new CachedDecisions(record);
     }
-    LOGGER.warn(
-        "Decision evaluation: id {} not found in evaluated decisions {}",
-        entityId,
-        decisionEvaluation.getEvaluatedDecisions());
-    return 0;
+    return cachedDecisions;
   }
 
   private DecisionInstanceState getState(
       final Record<DecisionEvaluationRecordValue> record,
-      final DecisionEvaluationRecordValue decisionEvaluation,
+      final int evaluatedDecisionsCount,
       final int i) {
     if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name())
-        && i == decisionEvaluation.getEvaluatedDecisions().size()) {
+        && i == evaluatedDecisionsCount) {
       return DecisionInstanceState.FAILED;
     } else {
       return DecisionInstanceState.EVALUATED;
@@ -212,12 +191,90 @@ public class DecisionEvaluationHandler
     return outputs;
   }
 
-  private List<String> generateIdsLegacy(final Record<DecisionEvaluationRecordValue> record) {
-    final var ids = new ArrayList<String>();
-    final var decisionEvaluation = record.getValue();
-    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      ids.add(ID_PATTERN.formatted(record.getKey(), i));
+  /**
+   * The evaluated decisions of one record and their entity ids. Each decision resolves by both its
+   * decisionEvaluationInstanceKey and its legacy id {@code <recordKey>-<index>} (1-based); records
+   * written by older Zeebe versions have no instance key (default ""), so their entities use the
+   * legacy ids. Tracks which decisions were exported, regardless of order or repetition, so the
+   * copies can be released once every decision is done.
+   */
+  private static final class CachedDecisions {
+    private final int partitionId;
+    private final long position;
+    private final long key;
+    private final List<EvaluatedDecisionValue> decisions;
+    private final List<String> ids;
+    private final Map<String, Integer> indexById;
+    private final BitSet exported;
+    private int remaining;
+
+    private CachedDecisions(final Record<DecisionEvaluationRecordValue> record) {
+      partitionId = record.getPartitionId();
+      position = record.getPosition();
+      key = record.getKey();
+      decisions = record.getValue().getEvaluatedDecisions();
+      remaining = decisions.size();
+      exported = new BitSet(remaining);
+      indexById = HashMap.newHashMap(2 * remaining);
+
+      final List<String> legacyIds = new ArrayList<>(remaining);
+      final List<String> instanceKeys = new ArrayList<>(remaining);
+      for (int i = 1; i <= remaining; i++) {
+        final String legacyId = key + "-" + i;
+        final String instanceKey = decisions.get(i - 1).getDecisionEvaluationInstanceKey();
+        legacyIds.add(legacyId);
+        instanceKeys.add(instanceKey);
+        indexById.put(legacyId, i);
+        if (!instanceKey.isEmpty()) {
+          indexById.putIfAbsent(instanceKey, i);
+        }
+      }
+      ids = instanceKeys.contains("") ? legacyIds : instanceKeys;
     }
-    return ids;
+
+    boolean isFor(final Record<DecisionEvaluationRecordValue> record) {
+      return partitionId == record.getPartitionId()
+          && position == record.getPosition()
+          && key == record.getKey();
+    }
+
+    List<EvaluatedDecisionValue> decisions() {
+      return decisions;
+    }
+
+    List<String> ids() {
+      return ids;
+    }
+
+    /**
+     * Returns the 1-based index of the decision exported under the given entity id.
+     *
+     * <p>Only reachable through a bug: the batch writer passes ids returned by {@link #ids()} for
+     * the same record, and all of them are in the map. The failure is deliberate. The exporter
+     * retries the record, so exporting on this partition stalls on it (as it did before, through an
+     * {@code IndexOutOfBoundsException}). That surfaces the bug, whereas skipping it would flush an
+     * id-only, empty decision instance, because {@code updateEntity} cannot drop an entity. The
+     * message omits the decision payload, since inputs and outputs may hold business data.
+     *
+     * @throws IllegalStateException if the id matches no evaluated decision of the record
+     */
+    int indexOf(final String entityId) {
+      final Integer index = indexById.get(entityId);
+      if (index == null) {
+        throw new IllegalStateException(
+            "Decision evaluation %d has no evaluated decision with id %s (%d decisions)"
+                .formatted(key, entityId, decisions.size()));
+      }
+      return index;
+    }
+
+    /** Marks the decision as exported; returns true once every decision of the record is. */
+    boolean markExported(final int index) {
+      if (!exported.get(index - 1)) {
+        exported.set(index - 1);
+        remaining--;
+      }
+      return remaining == 0;
+    }
   }
 }

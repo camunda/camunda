@@ -34,8 +34,9 @@ public class DecisionEvaluationAuditLogTransformer
         .setDecisionRequirementsId(value.getDecisionRequirementsId())
         .setDecisionRequirementsKey(value.getDecisionRequirementsKey());
 
-    if (value.getEvaluatedDecisions() != null) {
-      value.getEvaluatedDecisions().stream()
+    final var evaluatedDecisions = value.getEvaluatedDecisions();
+    if (evaluatedDecisions != null) {
+      evaluatedDecisions.stream()
           .filter(
               ed ->
                   ed.getDecisionEvaluationInstanceKey() != null
