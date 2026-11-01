@@ -223,6 +223,7 @@ final class CommandApiRequestHandler
           leadingStream = logStreamWriter;
           acceptedSinceLeading = false;
           frozenForTransfer = false;
+          processingPaused = false;
           traceState("leading");
         });
   }

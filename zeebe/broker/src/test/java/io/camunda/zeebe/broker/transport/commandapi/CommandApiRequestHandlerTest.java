@@ -229,6 +229,29 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
+  public void shouldWriteToLogWhenLeadingAgainAfterStepDownWhilePaused() {
+    // given
+    handler.addPartition(0, mock(LogStreamWriter.class));
+    handler.onRecovered(0);
+    handler.onPaused(0);
+    handler.removePartition(0);
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    handler.addPartition(0, logWriter);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    handleRequest(request);
+
+    // then
+    verify(logWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
+  }
+
+  @Test
   public void shouldReturnPartitionLeaderMismatchWhenWriterClosed() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
