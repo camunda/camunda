@@ -22,6 +22,7 @@ import com.azure.storage.common.implementation.Constants;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
@@ -48,7 +49,6 @@ final class FileSetManager {
       new BlobRequestConditions().setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
 
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
-  private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
   private final BlobBatchClient blobBatchClient;
   private final ReentrantLock containerCreationLock = new ReentrantLock();
@@ -190,7 +190,6 @@ final class FileSetManager {
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return PATH_FORMAT.formatted(
-        id.partitionId(), id.checkpointId(), id.brokerId().id(), fileSetName);
+    return BackupStorePaths.fileSetPath(id, fileSetName);
   }
 }

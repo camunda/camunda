@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BrokerMemberId;
@@ -71,7 +72,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
                     .bucket(getConfig().bucketName())
                     .key(
                         getStore().derivePath(backup.descriptor(), backup.id(), Directory.MANIFESTS)
-                            + S3BackupStore.MANIFEST_OBJECT_KEY)
+                            + MANIFEST_OBJECT_NAME)
                     .build(),
                 AsyncResponseTransformer.toBytes())
             .join();
@@ -162,7 +163,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             ? getStore().legacyObjectPrefix(backup.id())
             : getStore().objectPrefix(backup.id(), Directory.MANIFESTS);
 
-    final var manifest = manifestPrefix + S3BackupStore.MANIFEST_OBJECT_KEY;
+    final var manifest = manifestPrefix + MANIFEST_OBJECT_NAME;
     final var snapshotObjects =
         backup.snapshot().names().stream()
             .map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
@@ -235,7 +236,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
                 req.bucket(getConfig().bucketName())
                     .key(
                         getStore().derivePath(backup.descriptor(), backup.id(), Directory.MANIFESTS)
-                            + S3BackupStore.MANIFEST_OBJECT_KEY),
+                            + MANIFEST_OBJECT_NAME),
             AsyncRequestBody.fromString("{s"))
         .join();
 
@@ -260,9 +261,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             delete ->
                 delete
                     .bucket(getConfig().bucketName())
-                    .key(
-                        getStore().legacyObjectPrefix(backup.id())
-                            + S3BackupStore.MANIFEST_OBJECT_KEY))
+                    .key(getStore().legacyObjectPrefix(backup.id()) + MANIFEST_OBJECT_NAME))
         .join();
 
     // then

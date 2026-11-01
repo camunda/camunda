@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.filesystem;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -57,22 +58,6 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-
-  /**
-   * The path format consists of the following elements:
-   *
-   * <ul>
-   *   <li>{@code manifestsPath}
-   *   <li>{@code partitionId}
-   *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
-   *   <li>{@code "manifest.json"}
-   * </ul>
-   *
-   * The path format is constructed by {@code
-   * manifestsPath}/partitionId/checkpointId/nodeId/manifest.json
-   */
-  private static final String MANIFEST_FILENAME = "manifest.json";
 
   private final Path manifestsPath;
 
@@ -269,7 +254,7 @@ public final class ManifestManager {
         .resolve(partitionId)
         .resolve(checkpointId)
         .resolve(nodeId)
-        .resolve(MANIFEST_FILENAME);
+        .resolve(MANIFEST_OBJECT_NAME);
   }
 
   /** A manifest file and the identifier encoded in its path, collected without reading the file. */
