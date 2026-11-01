@@ -13,6 +13,7 @@ type OptionalFilter =
 	| 'batchOperationKey'
 	| 'errorMessage'
 	| 'hasRetriesLeft'
+	| 'variable'
 	| 'startDateRange'
 	| 'endDateRange';
 
@@ -29,4 +30,9 @@ type OptionalFilterValues = {
 	endDateTo?: string;
 };
 
-export type {OptionalFilter, OptionalFilterValues};
+type VariableFieldValues = {
+	variableName?: string;
+	variableValues?: string;
+};
+
+export type {OptionalFilter, OptionalFilterValues, VariableFieldValues};

@@ -24,6 +24,7 @@ import {
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {setVariableConditions} from '../VariablesFilter/variableFilterStore';
 import {processesSearchSchema} from '../processesFilter';
 import {Processes} from './Processes';
 
@@ -202,5 +203,34 @@ describe('<Processes /> (design system)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
 		await expect.element(screen.getByLabelText('Process Instance Key(s)')).not.toBeInTheDocument();
+	});
+
+	it('should move focus to the variables group when it is added from the menu', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
+
+		await expect.element(screen.getByRole('group', {name: 'Variables'})).toHaveFocus();
+	});
+
+	it('should store an inline equals variable condition', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Value'}), '"open"');
+
+		await expect.poll(() => sessionStorage.getItem('operate.variableFilter.conditions')).toContain('status');
+	});
+
+	it('should clear the variable conditions when filters are reset', async () => {
+		setVariableConditions([{name: 'status', operator: 'equals', value: '"open"'}]);
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
+
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 	});
 });
