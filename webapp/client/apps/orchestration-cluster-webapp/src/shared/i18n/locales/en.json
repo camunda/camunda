@@ -2451,6 +2451,7 @@
 						"inclusiveGateway": "inclusive gateway",
 						"eventBasedGateway": "event-based gateway"
 					},
+					"drillDownHint": "Press Shift+Enter to drill down.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Use the arrow keys to move between elements and Enter to select."
 				},

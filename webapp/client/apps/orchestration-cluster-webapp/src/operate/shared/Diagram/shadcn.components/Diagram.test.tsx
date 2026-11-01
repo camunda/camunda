@@ -314,4 +314,73 @@ describe('<Diagram />', () => {
 
 		await expect.element(hint).toBeVisible();
 	});
+
+	it('should show a non-interactive icon on drill-down elements', async () => {
+		await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+			/>,
+		);
+
+		const icon = () => document.querySelector('[data-element-id="startEvent_1"] .op-drilldown-icon');
+		await expect.poll(() => icon()?.getAttribute('aria-hidden')).toBe('true');
+		expect(icon()?.getAttribute('pointer-events')).toBe('none');
+		expect(document.querySelector('[data-element-id="endEvent_1"] .op-drilldown-icon')).toBeNull();
+	});
+
+	it('should remove the drill-down icon and shortcut when drill-down is no longer set', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+			/>,
+		);
+		const element = () => document.querySelector('[data-element-id="startEvent_1"]');
+		await expect.poll(() => element()?.querySelector('.op-drilldown-icon')).not.toBeNull();
+
+		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} customElementClasses={[]} />);
+
+		await expect.poll(() => element()?.querySelector('.op-drilldown-icon')).toBeNull();
+		expect(element()?.hasAttribute('aria-keyshortcuts')).toBe(false);
+	});
+
+	it('should drill down on Shift+Enter and announce the shortcut', async () => {
+		const onElementDoubleClick = vi.fn();
+		await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1']}
+				customElementClasses={[['startEvent_1', 'op-drilldown']]}
+				onElementDoubleClick={onElementDoubleClick}
+			/>,
+		);
+
+		const element = () => document.querySelector<SVGElement>('[data-element-id="startEvent_1"]');
+		await expect.poll(() => element()?.getAttribute('aria-keyshortcuts')).toBe('Shift+Enter');
+		expect(element()?.getAttribute('aria-label')).toContain('Press Shift+Enter to drill down.');
+
+		element()!.focus();
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+
+		expect(onElementDoubleClick).toHaveBeenCalledExactlyOnceWith('startEvent_1');
+	});
+
+	it('should not drill down on Shift+Enter for elements without drill-down', async () => {
+		const onElementDoubleClick = vi.fn();
+		await render(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} onElementDoubleClick={onElementDoubleClick} />,
+		);
+
+		await expect
+			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('tabindex'))
+			.toBe('0');
+		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+
+		expect(onElementDoubleClick).not.toHaveBeenCalled();
+		expect(document.querySelector('[data-element-id="startEvent_1"]')?.hasAttribute('aria-keyshortcuts')).toBe(false);
+	});
 });
