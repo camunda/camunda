@@ -31,6 +31,7 @@ import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint;
@@ -496,6 +497,87 @@ class SecretStoreConfigurationTest {
       verify(construction.constructed().get(0)).close();
       assertThat(meterRegistry.getMeters()).isEmpty();
     }
+  }
+
+  @Test
+  void shouldBuildEnvVarStoreWhenEnvStoreConfigured() {
+    // given
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", "APP_SECRET_"));
+
+    // when
+    final var registry =
+        registries(resolver).byPhysicalTenant().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then the default store is the environment-variable store, seen through the caching wrapper
+    assertThat(registry.getStores()).containsOnlyKeys(SecretStoreRegistry.DEFAULT_STORE_ID);
+    assertThat(
+            registry
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .is(EnvVarSecretStore.class))
+        .isTrue();
+  }
+
+  @Test
+  void shouldBuildEnvVarStoreOnlyForThePhysicalTenantThatConfiguresIt() {
+    // given an env store configured for tenanta alone
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                "TENANTA_SECRET_",
+                "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                "tenanta-admin",
+                "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
+
+    // when
+    final var registries = registries(resolver).byPhysicalTenant();
+
+    // then tenanta reads from the environment and the default tenant stays on the noop fallback
+    assertThat(
+            registries
+                .get("tenanta")
+                .getStores()
+                .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+                .is(EnvVarSecretStore.class))
+        .isTrue();
+    assertThatIsNoopStore(
+        registries
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID));
+  }
+
+  @Test
+  void shouldThrowWhenFileAndEnvStoresCombinedExceedOne() {
+    // given one file store and one env store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.env.env-store.prefix", "APP_SECRET_"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldThrowWhenEnvStoreIsNotNamedDefault() {
+    // given a single env store under an id no secret reference can address
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.main.prefix", "APP_SECRET_"));
+
+    // when / then — the property named carries the env type segment the operator wrote
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("the only supported store id is 'default'")
+        .withMessageContaining("camunda.secrets.stores.env.main")
+        .withMessageContaining("camunda.secrets.stores.env.default");
   }
 
   @ParameterizedTest
