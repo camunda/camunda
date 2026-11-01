@@ -1,7 +1,7 @@
+import buildlogic.frontendBuildSkipped
 import buildlogic.skipWhen
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.npm.task.NpmTask
-import io.camunda.gradle.flags.asEnabledFlag
 import buildlogic.requiredVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.jvm.tasks.Jar
@@ -38,12 +38,13 @@ extensions.configure<NodeExtension> {
   nodeProjectDir.set(layout.projectDirectory)
 }
 
-val skipFrontendBuild =
-  providers
-    .gradleProperty("skip.fe.build")
-    .orElse(providers.gradleProperty("quickly"))
-    .asEnabledFlag()
-    .orElse(false)
+val skipFrontendBuild = frontendBuildSkipped()
+
+// The plugin's setup tasks are dependencies of the guarded tasks below and would still download
+// Node and npm when those are skipped.
+tasks.named("nodeSetup") { skipWhen(skipFrontendBuild) }
+
+tasks.named("npmSetup") { skipWhen(skipFrontendBuild) }
 
 val npmVersionPackage =
   tasks.register<NpmTask>("npmVersionPackage") {
@@ -102,6 +103,13 @@ val npmBuild =
   }
 
 tasks.named<Jar>("jar") {
-  mustRunAfter(npmBuild)
-  from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) { into(resourceTargetPath) }
+  // builtBy makes every consumer of the jar, such as the distribution, wait for the npm build.
+  from(
+    objects
+      .fileCollection()
+      .from(frontendPackagedDirectory.orElse(frontendBuildDirectory))
+      .builtBy(npmBuild)
+  ) {
+    into(resourceTargetPath)
+  }
 }

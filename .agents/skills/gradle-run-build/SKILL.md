@@ -55,11 +55,12 @@ IT classes: same filter on the `it` task.
 ./gradlew :<project>:compileTestJava                   # compile one project
 ./gradlew :<project>:test --tests <Class>              # unit test
 ./gradlew :<project>:it --tests <Class>                # integration test
-./gradlew buildDistball                                # dist tar incl. frontend build
-./gradlew buildDistballZip                             # dist zip incl. frontend build
+./gradlew buildDistball                                # backend-only dist tar (frontend skipped by default)
+./gradlew buildDistballZip                             # backend-only dist zip
 ./gradlew -Pdist.tar.gzip=true buildDistball           # dist tar.gz instead of an uncompressed tar
-./gradlew -Pskip.fe.build=true buildDistball           # backend-only dist, skips frontend
-./gradlew buildDockerImage                             # image; -Pdocker.image=name:tag
+./gradlew -Pskip.fe.build=false buildDistball          # dist tar incl. frontend build
+./gradlew buildDockerImage                             # test image, no frontend; -Pdocker.image=name:tag
+./gradlew buildDockerImageRelease                      # release image incl. frontend build
 ./gradlew -p gradle/build-logic test                   # build-logic tests (not run by CI)
 ```
 
