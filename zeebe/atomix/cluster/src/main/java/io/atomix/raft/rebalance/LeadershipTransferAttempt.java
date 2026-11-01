@@ -81,9 +81,9 @@ import org.slf4j.LoggerFactory;
  * </pre>
  *
  * <p>Every outcome above lands in {@link #finish}, which undoes both sides of the pause before
- * reporting to the coordinator (but only while this node is still the leader) - once leadership has
- * moved, the step-down will already have exited the pause. {@link #onPauseDeadlineExpired} leaves
- * that to the step-down for the same reason.
+ * reporting to the coordinator (but only while this node is still the leader of the term the
+ * transfer started in) - once leadership has moved, the step-down exits the pause. {@link
+ * #onPauseDeadlineExpired} leaves that to the step-down for the same reason.
  */
 @NullMarked
 final class LeadershipTransferAttempt {
@@ -97,6 +97,7 @@ final class LeadershipTransferAttempt {
   private final RebalanceConfiguration configuration;
   private final Runnable finishListener;
   private long startMs;
+  private long startTerm;
   private boolean finished;
   private @Nullable TransferPhase activePhase;
 
@@ -118,6 +119,7 @@ final class LeadershipTransferAttempt {
   void start() {
     raft.checkThread();
     startMs = System.currentTimeMillis();
+    startTerm = raft.getTerm();
     raft.getLeadershipTransferWriteBarrier()
         .freeze(configuration.replicationTimeout())
         .whenCompleteAsync(
@@ -224,8 +226,9 @@ final class LeadershipTransferAttempt {
     }
     finished = true;
     finishListener.run();
-    if (!leader.isRunning()) {
-      // the step-down that ended this leader already lifted the freeze
+    if (!leader.isRunning() || raft.getTerm() > startTerm) {
+      // the step-down that ends this leader's term lifts the freeze; this node can learn of the new
+      // leader before its own step-down has run, and must not take writes in between
       reportResult(result);
       return;
     }

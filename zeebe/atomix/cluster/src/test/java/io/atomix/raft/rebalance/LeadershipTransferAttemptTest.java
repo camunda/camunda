@@ -27,7 +27,9 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -89,6 +91,36 @@ public class LeadershipTransferAttemptTest {
     assertThat(barrier.unfrozen)
         .as("the barrier is reopened when the Raft-side pause refuses to arm")
         .isTrue();
+  }
+
+  @Test
+  public void shouldKeepTheOldLeaderFrozenWhenItLearnsTheNewLeaderBeforeSteppingDown()
+      throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    protocolOf(memberId(target))
+        .interceptDelivery(
+            VoteRequest.class,
+            (receiver, request) ->
+                receiver.equals(memberId(leader))
+                    ? CompletableFuture.failedFuture(new ConnectException())
+                    : CompletableFuture.completedFuture(null));
+    final var barrier =
+        new RecordingBarrier(CompletableFuture.completedFuture(System.currentTimeMillis()));
+    leader.getContext().setLeadershipTransferWriteBarrier(barrier);
+    final var reported = armResultHandler();
+
+    // when
+    startAttempt(leader);
+
+    // then
+    assertThat(reported)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(barrier.unfrozen).isFalse();
   }
 
   /** Drives an attempt directly, bypassing admission, the way the runner would after accepting. */
