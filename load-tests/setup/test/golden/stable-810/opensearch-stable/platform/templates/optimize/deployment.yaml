@@ -45,13 +45,13 @@ spec:
       annotations:
 
         checksum/config-identity-env: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
-        checksum/config-shared-identity-env: 791fee3ccdb10c29c185def03d481ff5fbe6fcee2325fb4934dc1cb5405fd992
+        checksum/config-shared-identity-env: 6403af1afd3cf48452767a7e8bba9790b5575b0c44f24bd72d7ae5ad13ff0e14
     spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.10.5
+          image: camunda/optimize:8.10.7
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -69,10 +69,6 @@ spec:
               value: "9200"
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
               value: "opensearch"
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "c8-golden-stable-810-opensearch-stable-elasticsearch"
-            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: "9200"
             - name: OPTIMIZE_LOG_APPENDER
               value: Stackdriver
             - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
@@ -108,7 +104,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:8.10.5
+          image: camunda/optimize:8.10.7
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -126,10 +122,6 @@ spec:
               value: "9200"
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
               value: "opensearch"
-            - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "c8-golden-stable-810-opensearch-stable-elasticsearch"
-            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
-              value: "9200"
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
