@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Règle de mappage supprimée",
 				"createMappingRuleError": "Échec de la création de la règle de mappage",
 				"updateMappingRuleError": "Échec de la mise à jour de la règle de mappage",
-				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage"
+				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage",
+				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
 			},
 			"users": {
 				"username": "Nom d'utilisateur",
