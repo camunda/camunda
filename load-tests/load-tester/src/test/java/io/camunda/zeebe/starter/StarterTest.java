@@ -8,6 +8,7 @@
 package io.camunda.zeebe.starter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -29,13 +30,16 @@ import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 class StarterTest {
 
@@ -55,12 +59,8 @@ class StarterTest {
         properties,
         registry,
         mock(StarterLivenessIndicator.class),
-        mock(ProcessDeployer.class),
-        mock(ProcessInstanceCreator.class),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        mock(ApplicationContext.class));
+        mock(TaskScheduler.class),
+        mock(ApplicationEventPublisher.class));
 
     // then
     final var gauge = registry.find(StarterMetricsDoc.CLIENT_INFO.getName()).gauge();
@@ -99,28 +99,48 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.initialize();
     final var registry = new SimpleMeterRegistry();
     final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var deployer =
+        new ProcessDeployer(
+            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
     final var creator =
         new ProcessInstanceCreator(
-            loaderClient, properties, registry, payloadReader, livenessIndicator);
+            loaderClient,
+            properties,
+            registry,
+            payloadReader,
+            livenessIndicator,
+            mock(ConfigurableApplicationContext.class));
+    final var availabilityMeter =
+        new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
     final var starter =
         new Starter(
             properties,
             registry,
             livenessIndicator,
-            new ProcessDeployer(
-                loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator),
-            creator,
-            Optional.of(new ProcessInstanceStartMeter(registry, properties, queryClient, creator)),
-            Optional.empty(),
-            Optional.empty(),
-            mock(ApplicationContext.class));
+            scheduler,
+            event -> {
+              creator.close();
+              availabilityMeter.close();
+            });
 
     // when
-    starter.run();
+    availabilityMeter.start();
+    creator.start();
+    starter.scheduleFinish();
 
     // then
+    await()
+        .atMost(Duration.ofSeconds(20))
+        .until(
+            () -> {
+              final var gauge = registry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
+              return gauge != null && gauge.value() == 1.0;
+            });
+    scheduler.shutdown();
     verify(loaderClient, atLeastOnce()).newCreateInstanceCommand();
     verify(loaderClient, never()).newProcessInstanceSearchRequest();
     verify(queryClient, atLeastOnce()).newProcessInstanceSearchRequest();
