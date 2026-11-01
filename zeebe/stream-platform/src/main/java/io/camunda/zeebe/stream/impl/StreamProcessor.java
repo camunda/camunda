@@ -94,6 +94,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
    */
   public static final Duration PENDING_SIDE_EFFECTS_STALL_THRESHOLD = Duration.ofSeconds(30);
 
+  public static final Duration SLOW_ON_RECOVERED_LISTENER_THRESHOLD = Duration.ofSeconds(1);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -350,10 +352,33 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
+    lifecycleAwareListeners.forEach(this::notifyRecovered);
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
+    }
+  }
+
+  // Listeners run synchronously on the actor before the first command is read, so a slow one
+  // delays processing without any other trace. Log the ones that exceed the threshold.
+  private void notifyRecovered(final StreamProcessorLifecycleAware listener) {
+    final var clock = streamProcessorContext.getMeterRegistry().config().clock();
+    final long startNanos = clock.monotonicTime();
+    try {
+      listener.onRecovered(streamProcessorContext);
+    } finally {
+      // Recorded in finally so a listener that throws still shows up as slow, if it was.
+      final var duration = Duration.ofNanos(clock.monotonicTime() - startNanos);
+      metrics.observeOnRecoveredListenerDuration(listener.getClass().getName(), duration);
+      if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
+        LOG.warn(
+            "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
+                + " until all listeners return",
+            listener.getClass().getName(),
+            partitionId,
+            duration,
+            SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
+      }
     }
   }
 
