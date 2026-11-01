@@ -14,10 +14,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -26,8 +26,18 @@ import org.slf4j.LoggerFactory;
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
+
+  /**
+   * Maximum number of pending process instance keys sent per availability check. A search returns
+   * at most one page of instances, so sending more keys than fit on a page only inflates the query
+   * cost (see https://github.com/camunda/camunda/issues/65373) without answering them. The
+   * availability-checker query in the Starter uses it as its page limit.
+   */
+  public static final int AVAILABILITY_CHECK_BATCH_SIZE = 2500;
+
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
-  private final Map<Long, PiCreationResult> startedInstances;
+  // oldest first, as instances are added in start order
+  private final LinkedBlockingDeque<PiCreationResult> pendingInstances;
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
@@ -44,7 +54,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     this.clock = clock;
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
-    startedInstances = new ConcurrentHashMap<>();
+    pendingInstances = new LinkedBlockingDeque<>();
     piCheckExecutorService = scheduledExecutorService;
     dataAvailabilityQueryDurationTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION)
@@ -52,7 +62,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
     MicrometerUtil.buildGauge(
-            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, startedInstances::size)
+            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, pendingInstances::size)
         .register(registry);
   }
 
@@ -108,16 +118,24 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   private void checkForProcessInstances() {
-    if (startedInstances.isEmpty()) {
+    if (pendingInstances.isEmpty()) {
       LOG.debug("No instances awaiting, skip check for process instances.");
       rescheduleCheck(0);
       return;
     }
 
-    LOG.debug("Current instances awaiting {}", startedInstances.size());
+    // Query only the oldest instances that fit on a single search page. A search answers at
+    // most one page, so the remaining newer keys would only inflate the query cost (see
+    // https://github.com/camunda/camunda/issues/65373) without confirming them. The oldest
+    // instances have been pending the longest and are the most likely to be available.
+    final var batch = pendingInstances.stream().limit(AVAILABILITY_CHECK_BATCH_SIZE).toList();
+    final var batchKeys = batch.stream().map(PiCreationResult::processInstanceKey).toList();
+    final boolean batchWasFull = batch.size() >= AVAILABILITY_CHECK_BATCH_SIZE;
+
+    LOG.debug("Current instances awaiting {}, checking {}", pendingInstances.size(), batch.size());
     final var startQueryTime = clock.getNanos();
     availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+        .findAvailableInstances(batchKeys)
         .whenCompleteAsync(
             (availableInstances, error) -> {
               final var endQueryTime = clock.getNanos();
@@ -126,13 +144,18 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
               if (error == null) {
                 LOG.debug("Available process instances items: {}", availableInstances.size());
-                processAvailableInstances(availableInstances);
+                processAvailableInstances(batch, availableInstances);
               } else {
                 LOG.error("Error while checking for available process instances", error);
               }
 
               cleanUpStaleInstances();
-              rescheduleCheck(duration);
+              if (batchWasFull) {
+                // more instances are pending than one check covers, so don't wait for the interval
+                scheduleCheck(0);
+              } else {
+                rescheduleCheck(duration);
+              }
             },
             piCheckExecutorService);
   }
@@ -140,25 +163,24 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private void cleanUpStaleInstances() {
     // clean up stale instances which exceeded the max duration - to save memory
     final long nanoTime = clock.getNanos();
-    final var instancesWhereTimeExceededDeadline =
-        startedInstances.values().stream()
-            .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
-            .toList();
-    instancesWhereTimeExceededDeadline.forEach(
-        piResults -> {
-          final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
-          LOG.debug(
-              "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
-              piResults.processInstanceKey,
-              TimeUnit.NANOSECONDS.toMillis(durationNanos));
-          recordInstanceAvailable(piResults, durationNanos);
-        });
+    PiCreationResult oldest;
+    while ((oldest = pendingInstances.peek()) != null
+        && nanoTime - oldest.startTimeNanos > MAX_DURATION) {
+      pendingInstances.poll();
+      final long durationNanos = clock.getNanos() - oldest.startTimeNanos;
+      LOG.debug(
+          "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
+          oldest.processInstanceKey,
+          TimeUnit.NANOSECONDS.toMillis(durationNanos));
+      recordInstanceAvailable(oldest, durationNanos);
+    }
   }
 
-  private void processAvailableInstances(final List<Long> availableInstances) {
-    availableInstances.stream()
-        .map(startedInstances::get)
-        .filter(Objects::nonNull)
+  private void processAvailableInstances(
+      final List<PiCreationResult> batch, final List<Long> availableInstances) {
+    final var availableKeys = Set.copyOf(availableInstances);
+    batch.stream()
+        .filter(piResults -> availableKeys.contains(piResults.processInstanceKey))
         .forEach(
             piResults -> {
               final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
@@ -168,6 +190,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                   TimeUnit.NANOSECONDS.toMillis(durationNanos));
               recordInstanceAvailable(piResults, durationNanos);
             });
+    pendingInstances.removeIf(piResults -> availableKeys.contains(piResults.processInstanceKey));
   }
 
   private void recordInstanceAvailable(
@@ -181,12 +204,10 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                     .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
-    startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    pendingInstances.add(new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
