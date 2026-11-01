@@ -10,11 +10,13 @@ import {Suspense} from 'react';
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
+import {queryProcessInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
@@ -24,6 +26,10 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -45,10 +51,17 @@ const Harness = () => {
 };
 
 const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="d" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="d" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="order" isExecutable="true">
     <bpmn:startEvent id="start" name="Start" />
   </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="order">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
 const ORDER_V2 = createProcessDefinition({processDefinitionId: 'order', name: 'Order', version: 2});
@@ -74,11 +87,12 @@ describe('<Processes /> (design system)', () => {
 		sessionStorage.clear();
 	});
 
-	it('should render the sr-only processes title, the diagram placeholder, and the instances table', async () => {
+	it('should render the sr-only processes title, the diagram panel, and the instances table', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await expect.element(screen.getByRole('heading', {name: 'Processes'})).toBeInTheDocument();
-		await expect.element(screen.getByText('Diagram panel placeholder')).toBeVisible();
+		await expect.element(screen.getByRole('region', {name: 'Diagram Panel'})).toBeVisible();
+		await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
 		await expect.element(screen.getByRole('region', {name: 'Process Instances Panel'})).toBeVisible();
 	});
 
@@ -179,6 +193,51 @@ describe('<Processes /> (design system)', () => {
 		});
 
 		await expect.element(screen.getByLabelText('Element')).toHaveTextContent('removedTask');
+	});
+
+	it('should select and clear a diagram element in the URL, filter instances by it and restore it through history', async ({
+		worker,
+	}) => {
+		const requestBodies: unknown[] = [];
+		worker.use(
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'start', active: 1}),
+					]),
+				),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				schema: queryProcessInstancesRequestBodySchema.refine((body) => {
+					requestBodies.push(body);
+					return true;
+				}),
+				successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: []})),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderWithRouter(Harness, {
+			path: PATH,
+			initialEntry: `${PATH}?process=order&version=2&active=true`,
+		});
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const getNode = () => document.querySelector<SVGElement>('[data-element-id="start"]')!;
+
+		await userEvent.click(getNode());
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: 'start'});
+		await expect
+			.poll(() => requestBodies.some((body) => JSON.stringify(body).includes('"elementId":{"$eq":"start"}')))
+			.toBe(true);
+
+		await userEvent.click(getNode());
+
+		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('elementId');
+
+		screen.router.history.back();
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: 'start'});
+		await expect.element(screen.getByLabelText('Element')).toHaveTextContent('Start');
 	});
 
 	it('should move focus to the date range group when it is added from the menu', async () => {

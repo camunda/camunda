@@ -16,6 +16,7 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 type Props = {
 	content: string;
 	copyButtonDescription: string;
+	title?: string;
 	className?: string;
 };
 
@@ -44,7 +45,7 @@ async function copyToClipboard(text: string) {
 	}
 }
 
-const CopiableContent: React.FC<Props> = ({content, copyButtonDescription, className}) => {
+const CopiableContent: React.FC<Props> = ({content, copyButtonDescription, title, className}) => {
 	const {t} = useTranslation();
 	const [copiedContent, setCopiedContent] = useState<string | null>(null);
 	const isCopied = copiedContent === content;
@@ -89,7 +90,7 @@ const CopiableContent: React.FC<Props> = ({content, copyButtonDescription, class
 				type="button"
 				variant="ghost"
 				size="sm"
-				title={copyButtonDescription}
+				title={title ?? copyButtonDescription}
 				aria-label={`${copyButtonDescription}: ${content}`}
 				onClick={handleCopy}
 			>
