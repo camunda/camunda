@@ -56,11 +56,11 @@ class StarterTest {
         mock(CamundaClient.class),
         properties,
         registry,
-        mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
         mock(WebClient.Builder.class),
         new ObjectMapper(),
+        mock(ProcessInstanceCreator.class),
         mock(ApplicationContext.class));
 
     // then
@@ -100,17 +100,20 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
     final var starter =
         new Starter(
             loaderClient,
             queryClient,
             properties,
-            new SimpleMeterRegistry(),
-            payloadReader,
+            registry,
             mock(ConnectionMonitor.class),
-            mock(StarterLivenessIndicator.class),
+            livenessIndicator,
             mock(WebClient.Builder.class),
             new ObjectMapper(),
+            new ProcessInstanceCreator(
+                loaderClient, properties, registry, payloadReader, livenessIndicator),
             mock(ApplicationContext.class));
 
     // when
