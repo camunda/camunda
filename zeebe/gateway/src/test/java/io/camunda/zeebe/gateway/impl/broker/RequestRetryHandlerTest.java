@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -101,6 +102,20 @@ final class RequestRetryHandlerTest {
     retryHandler.sendRequest(request, (key, response) -> {}, error::set);
 
     // then - the request was retried on all partitions
+    assertThat(brokerClient.sendCount.get()).isEqualTo(PARTITION_COUNT);
+  }
+
+  @Test
+  void shouldRetryOnOtherPartitionsWhenTheBrokerHasNoHandlerForThePartition() {
+    // given
+    final var request = new TestBrokerRequest(Optional.empty());
+    brokerClient.setError(new NoRemoteHandler("command-api-1"));
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    retryHandler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then
     assertThat(brokerClient.sendCount.get()).isEqualTo(PARTITION_COUNT);
   }
 

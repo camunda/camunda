@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -219,13 +221,22 @@ public final class RequestRetryHandler {
   }
 
   private boolean shouldRetryWithNextPartition(final Throwable error) {
-    if (error instanceof ConnectException) {
+    if (error instanceof ConnectException || isNoRemoteHandler(error)) {
       return true;
     } else if (error instanceof BrokerErrorException) {
       final ErrorCode code = ((BrokerErrorException) error).getError().getCode();
       return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
     }
     return false;
+  }
+
+  /**
+   * The broker has no handler for the partition's commands, e.g. because the partition is shutting
+   * down there after its leadership moved, so it never received the request.
+   */
+  private static boolean isNoRemoteHandler(final Throwable error) {
+    return error instanceof NoRemoteHandler
+        || (error instanceof CompletionException && error.getCause() instanceof NoRemoteHandler);
   }
 
   private boolean shouldRetryWithNextPartition(
