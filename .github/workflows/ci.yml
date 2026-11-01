@@ -2068,6 +2068,101 @@ jobs:
       changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
       gating: changed
 
+  # Non-blocking companion to the gate above. The gate (c8-e2e-test-suite-tests)
+  # blocks only on the specs a PR changed, so a change to a shared page object,
+  # fixture or config can break untouched tests without ever turning it red. This
+  # job reds whenever ANY suite test failed, making that breakage visible. It is
+  # NOT in check-results and its `utils-` prefix keeps it out of the required set
+  # (conftest exempts utils-*), so it never blocks a merge — it only warns. See
+  # camunda/team-test-automation#188.
+  utils-c8-e2e-suite-full-result:
+    name: "C8 E2E Test Suite / Full Result (non-blocking)"
+    needs: [ detect-changes, c8-e2e-test-suite-tests ]
+    # !cancelled() (not always()): run whether the suite passed or failed, but
+    # not on a cancelled/superseded run, where missing artifacts are expected and
+    # a red here would be noise.
+    if: >-
+      !cancelled()
+      && needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
+      && github.event.pull_request.head.repo.fork != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read # download this run's suite JSON report artifacts
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download suite JSON reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: C8 Suite JSON Report -*
+          path: suite-json-reports
+      - name: Red if any suite test failed
+        env:
+          # The suite caller aggregates every matrix leg with the gate verdict
+          # applied, so it is "success" only when every leg completed and passed
+          # its gate. Anything else (a leg that crashed or never uploaded a
+          # report, or a changed-spec failure) leaves it non-success — which is
+          # how an incomplete run with some legs missing their report is caught,
+          # since the report scan below can only see the reports that do exist.
+          SUITE_RESULT: ${{ needs.c8-e2e-test-suite-tests.result }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob globstar
+          rc=0
+          if [ "${SUITE_RESULT:-}" != "success" ]; then
+            echo "::warning::The suite run reported '${SUITE_RESULT:-unknown}', not success — a matrix leg failed to complete (and may not have produced a report) or a changed spec failed. Full Result is red."
+            rc=1
+          fi
+          reports=(suite-json-reports/**/results.json)
+          if [ "${#reports[@]}" -eq 0 ]; then
+            echo "::error::No suite JSON reports were produced, but the suite was expected to run (the run was not cancelled). Something stopped the suite from writing or uploading its reports — treating as a failure. Check the suite jobs for a setup/upload problem."
+            exit 1
+          fi
+          echo "Scanning ${#reports[@]} report(s) for any test failure..."
+          set +e
+          node -e '
+            const fs = require("fs");
+            const failed = [];
+            for (const p of process.argv.slice(1)) {
+              let r;
+              try { r = JSON.parse(fs.readFileSync(p, "utf8")); } catch { failed.push(p + " (unreadable or invalid JSON report)"); continue; }
+              const walk = (s) => {
+                for (const sp of s?.specs ?? []) if (sp?.ok === false) failed.push(sp.title ?? sp.file ?? p);
+                for (const c of s?.suites ?? []) walk(c);
+              };
+              for (const s of r?.suites ?? []) walk(s);
+              if ((r?.errors?.length ?? 0) > 0) failed.push(p + " (load/setup error)");
+            }
+            if (failed.length) {
+              console.error("Suite tests failed (non-blocking — this does NOT block the merge; the changed-spec gate does):");
+              for (const f of [...new Set(failed)]) console.error("  - " + f);
+              process.exit(1);
+            }
+            console.log("All suite tests passed.");
+          ' "${reports[@]}"
+          scan_rc=$?
+          set -e
+          [ "${scan_rc}" -ne 0 ] && rc=1
+          if [ "${rc}" -ne 0 ]; then
+            echo "Full Result: RED (non-blocking — the changed-spec gate decides the merge)."
+          else
+            echo "Full Result: green — the whole suite passed."
+          fi
+          exit "${rc}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
