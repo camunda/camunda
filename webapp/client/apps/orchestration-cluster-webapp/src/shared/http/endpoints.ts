@@ -904,6 +904,16 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	getMappingRule: ({mappingRuleId}: Pick<MappingRule, 'mappingRuleId'>) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.getMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getMappingRule.method,
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
 	createMappingRule: (body: CreateMappingRuleRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.createMappingRule.getUrl()), {
 			...BASE_REQUEST_OPTIONS,

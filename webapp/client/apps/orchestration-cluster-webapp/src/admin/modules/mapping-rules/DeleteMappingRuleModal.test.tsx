@@ -13,7 +13,7 @@ import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {mockDeleteMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockDeleteMappingRuleEndpoint, mockGetMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {DeleteMappingRuleModal} from './DeleteMappingRuleModal';
 
@@ -56,7 +56,10 @@ describe('<DeleteMappingRuleModal />', () => {
 	it('should delete the mapping rule on confirm', async ({worker}) => {
 		const mockOnClose = vi.fn();
 		const mappingRule = createMappingRule({mappingRuleId: 'my-rule'});
-		worker.use(mockDeleteMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 204})}));
+		worker.use(
+			mockDeleteMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+		);
 
 		const screen = await render(<DeleteMappingRuleModal mappingRule={mappingRule} onClose={mockOnClose} />, {
 			wrapper: getWrapper(),

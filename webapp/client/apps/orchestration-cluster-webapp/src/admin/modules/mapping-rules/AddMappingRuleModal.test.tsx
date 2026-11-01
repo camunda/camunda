@@ -14,7 +14,8 @@ import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {mockCreateMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockCreateMappingRuleEndpoint, mockGetMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {AddMappingRuleModal} from './AddMappingRuleModal';
 
 function getWrapper() {
@@ -38,6 +39,12 @@ describe('<AddMappingRuleModal />', () => {
 
 	it('should create a mapping rule with the entered values', async ({worker}) => {
 		const mockOnClose = vi.fn();
+		const createdMappingRule = createMappingRule({
+			mappingRuleId: 'my-rule',
+			name: 'My rule',
+			claimName: 'email',
+			claimValue: 'demo@example.com',
+		});
 		worker.use(
 			mockCreateMappingRuleEndpoint({
 				schema: z.object({
@@ -46,9 +53,10 @@ describe('<AddMappingRuleModal />', () => {
 					claimName: z.literal('email'),
 					claimValue: z.literal('demo@example.com'),
 				}),
-				successResponse: HttpResponse.json({}),
+				successResponse: HttpResponse.json(createdMappingRule),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
+			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(createdMappingRule)}),
 		);
 
 		const screen = await render(<AddMappingRuleModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});

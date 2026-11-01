@@ -74,6 +74,7 @@ import type {
 	QueryRolesRequestBody,
 	QueryRolesResponseBody,
 	Role,
+	MappingRule,
 	QueryUsersByRoleRequestBody,
 	QueryUsersByRoleResponseBody,
 	QueryGroupsByRoleRequestBody,
@@ -128,6 +129,7 @@ const queryKeys = {
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	mappingRule: (mappingRuleId: string) => ['mappingRule', mappingRuleId] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
 	groups: (body: QueryGroupsRequestBody) => ['groups', body] as const,
@@ -619,6 +621,18 @@ const queries = {
 			queryKey: queryKeys.queryAuditLogs(body),
 			queryFn: async (): Promise<QueryAuditLogsResponseBody> => {
 				const {response, error} = await request(endpoints.queryAuditLogs(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getMappingRule: (mappingRuleId: string) =>
+		queryOptions({
+			queryKey: queryKeys.mappingRule(mappingRuleId),
+			queryFn: async (): Promise<MappingRule> => {
+				const {response, error} = await request(endpoints.getMappingRule({mappingRuleId}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
