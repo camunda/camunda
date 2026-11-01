@@ -2,6 +2,7 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
   id("buildlogic.integration-test-module-conventions")
 }
 
