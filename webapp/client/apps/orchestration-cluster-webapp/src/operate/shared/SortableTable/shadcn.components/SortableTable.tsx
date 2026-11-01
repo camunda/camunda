@@ -151,6 +151,7 @@ type BatchAction = {
 	id: string;
 	label: string;
 	variant?: 'default' | 'destructive';
+	icon?: React.ReactNode;
 	disabled?: boolean;
 	onClick: () => void;
 };
