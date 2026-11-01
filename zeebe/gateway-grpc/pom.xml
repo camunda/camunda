@@ -182,7 +182,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
