@@ -31,6 +31,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 @ExtendWith(ProcessingStateExtension.class)
 final class JobSuspensionVisitorTest {
@@ -83,24 +86,15 @@ final class JobSuspensionVisitorTest {
     verify(stateWriter).appendFollowUpEvent(eq(JOB_KEY), eq(JobIntent.SUSPENDED), any());
   }
 
-  @Test
-  void shouldNotSuspendAlreadyActivatedJob() {
-    // given - a job a worker already picked up is off the activatable index
+  @ParameterizedTest
+  @EnumSource(
+      value = State.class,
+      mode = Mode.EXCLUDE,
+      names = {"ACTIVATABLE", "WAITING_FOR_SECRET_RESOLUTION"})
+  void shouldNotSuspendJobInOtherState(final State state) {
+    // given - e.g. a job a worker already picked up, or one a restarted walk already suspended
     final var record = activatableJob();
-    jobState.activate(JOB_KEY, record);
-
-    // when
-    suspendElementInstance();
-
-    // then
-    verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
-  }
-
-  @Test
-  void shouldNotSuspendAlreadySuspendedJob() {
-    // given - a restarted or overlapping walk reaches a job it already suspended
-    final var record = activatableJob();
-    jobState.updateJobState(JOB_KEY, State.SUSPENDED);
+    jobState.updateJobState(JOB_KEY, state);
     jobState.makeJobNotActivatable(JOB_KEY, record);
 
     // when

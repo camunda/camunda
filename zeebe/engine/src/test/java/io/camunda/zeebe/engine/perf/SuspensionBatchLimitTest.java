@@ -14,28 +14,24 @@ import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stress test finding the number of active elements at which SUSPEND hits
- * ExceededBatchRecordSizeException (4 MB batch limit). Three configurations: jobs only,
- * subscriptions only, and both. Each size asserts the previously-observed outcome (success or
- * EXCEEDED_BATCH_RECORD_SIZE rejection) so a regression in the batch limit is caught rather than
- * only logged. Jobs are suspended by the element instance walk, one per batch, so job count alone
- * no longer causes a rejection.
+ * Stress test checking that SUSPEND stays within the 4 MB batch limit
+ * (ExceededBatchRecordSizeException) as the number of active elements grows. Three configurations:
+ * jobs only, subscriptions only, and both. Jobs are suspended by the element instance walk, one per
+ * batch, so job count alone does not grow any batch. Subscriptions are still closed in the SUSPEND
+ * command's own batch, so the subscription sizes guard that batch against a regression.
  */
 @Tag("performance")
 class SuspensionBatchLimitTest {
@@ -45,38 +41,9 @@ class SuspensionBatchLimitTest {
 
   private static final long GENEROUS_WAIT_TIME_MS = Duration.ofSeconds(30).toMillis();
 
-  static Stream<Arguments> jobOnlySizes() {
-    return Stream.of(
-        Arguments.of(100, false),
-        Arguments.of(1000, false),
-        Arguments.of(2000, false),
-        Arguments.of(4000, false),
-        Arguments.of(5000, false),
-        Arguments.of(10000, false));
-  }
-
-  static Stream<Arguments> subscriptionOnlySizes() {
-    return Stream.of(
-        Arguments.of(100, false),
-        Arguments.of(500, false),
-        Arguments.of(1000, false),
-        Arguments.of(2000, false),
-        Arguments.of(5000, false));
-  }
-
-  static Stream<Arguments> bothSizes() {
-    return Stream.of(
-        Arguments.of(100, false),
-        Arguments.of(500, false),
-        Arguments.of(1000, false),
-        Arguments.of(2000, false),
-        Arguments.of(5000, false));
-  }
-
   @ParameterizedTest
-  @MethodSource("jobOnlySizes")
-  void shouldFindJobOnlyBatchLimit(final int elementCount, final boolean expectRejection)
-      throws Throwable {
+  @ValueSource(ints = {100, 1000, 2000, 5000, 10000})
+  void shouldSuspendInstanceWithOnlyJobs(final int elementCount) throws Throwable {
     final TestContext ctx = TestEngine.createTestContext();
     try {
       final TestEngine engine = TestEngine.createSinglePartitionEngine(ctx);
@@ -113,11 +80,11 @@ class SuspensionBatchLimitTest {
       resetExporter();
 
       // when
-      final var result = trySuspend(piClient, piKey, expectRejection);
+      final var result = trySuspend(piClient, piKey);
       logResult("Jobs only", elementCount, result);
 
       // then
-      assertSuspendOutcome(result, expectRejection);
+      assertSuspended(result);
     } finally {
       ctx.close();
       RecordingExporter.reset();
@@ -125,9 +92,8 @@ class SuspensionBatchLimitTest {
   }
 
   @ParameterizedTest
-  @MethodSource("subscriptionOnlySizes")
-  void shouldFindSubscriptionOnlyBatchLimit(final int elementCount, final boolean expectRejection)
-      throws Throwable {
+  @ValueSource(ints = {100, 500, 1000, 2000, 5000})
+  void shouldSuspendInstanceWithOnlySubscriptions(final int elementCount) throws Throwable {
     final TestContext ctx = TestEngine.createTestContext();
     try {
       final TestEngine engine = TestEngine.createSinglePartitionEngine(ctx);
@@ -160,11 +126,11 @@ class SuspensionBatchLimitTest {
       resetExporter();
 
       // when
-      final var result = trySuspend(piClient, piKey, expectRejection);
+      final var result = trySuspend(piClient, piKey);
       logResult("Subscriptions only", elementCount, result);
 
       // then
-      assertSuspendOutcome(result, expectRejection);
+      assertSuspended(result);
     } finally {
       ctx.close();
       RecordingExporter.reset();
@@ -172,9 +138,8 @@ class SuspensionBatchLimitTest {
   }
 
   @ParameterizedTest
-  @MethodSource("bothSizes")
-  void shouldFindCombinedBatchLimit(final int elementCount, final boolean expectRejection)
-      throws Throwable {
+  @ValueSource(ints = {100, 500, 1000, 2000, 5000})
+  void shouldSuspendInstanceWithJobsAndSubscriptions(final int elementCount) throws Throwable {
     final TestContext ctx = TestEngine.createTestContext();
     try {
       final TestEngine engine = TestEngine.createSinglePartitionEngine(ctx);
@@ -225,11 +190,11 @@ class SuspensionBatchLimitTest {
       resetExporter();
 
       // when
-      final var result = trySuspend(piClient, piKey, expectRejection);
+      final var result = trySuspend(piClient, piKey);
       logResult("Jobs + subscriptions", elementCount, result);
 
       // then
-      assertSuspendOutcome(result, expectRejection);
+      assertSuspended(result);
     } finally {
       ctx.close();
       RecordingExporter.reset();
@@ -242,12 +207,8 @@ class SuspensionBatchLimitTest {
   }
 
   private static Record<ProcessInstanceRecordValue> trySuspend(
-      final ProcessInstanceClient piClient, final long piKey, final boolean expectRejection) {
-    final var client = piClient.withInstanceKey(piKey).onPartition(1);
-    if (expectRejection) {
-      return client.expectSuspendRejection().suspend();
-    }
-    return client.suspend();
+      final ProcessInstanceClient piClient, final long piKey) {
+    return piClient.withInstanceKey(piKey).onPartition(1).suspend();
   }
 
   private static void logResult(
@@ -267,12 +228,7 @@ class SuspensionBatchLimitTest {
     }
   }
 
-  private static void assertSuspendOutcome(
-      final Record<ProcessInstanceRecordValue> result, final boolean expectRejection) {
-    if (expectRejection) {
-      assertThat(result.getRejectionType()).isEqualTo(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
-    } else {
-      assertThat(result.getIntent()).isEqualTo(ProcessInstanceIntent.SUSPENDED);
-    }
+  private static void assertSuspended(final Record<ProcessInstanceRecordValue> result) {
+    assertThat(result.getIntent()).isEqualTo(ProcessInstanceIntent.SUSPENDED);
   }
 }
