@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Zuordnungsregel gelöscht",
 				"createMappingRuleError": "Zuordnungsregel konnte nicht erstellt werden",
 				"updateMappingRuleError": "Zuordnungsregel konnte nicht aktualisiert werden",
-				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden"
+				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden",
+				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
 			},
 			"users": {
 				"username": "Benutzername",

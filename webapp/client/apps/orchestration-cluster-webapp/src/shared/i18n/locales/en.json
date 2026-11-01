@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Mapping rule deleted",
 				"createMappingRuleError": "Failed to create mapping rule",
 				"updateMappingRuleError": "Failed to update mapping rule",
-				"deleteMappingRuleError": "Failed to delete mapping rule"
+				"deleteMappingRuleError": "Failed to delete mapping rule",
+				"changeNotConfirmed": "Couldn't confirm the change took effect",
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
 			},
 			"users": {
 				"username": "Username",

@@ -171,7 +171,9 @@
 				"deleteMappingRuleSuccess": "Regla de mapeo eliminada",
 				"createMappingRuleError": "No se pudo crear la regla de mapeo",
 				"updateMappingRuleError": "No se pudo actualizar la regla de mapeo",
-				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo"
+				"deleteMappingRuleError": "No se pudo eliminar la regla de mapeo",
+				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente."
 			},
 			"users": {
 				"username": "Nombre de usuario",
