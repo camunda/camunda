@@ -2410,6 +2410,13 @@
 					"preparingPdfPreview": "Preparando vista previa PDF…"
 				},
 				"diagram": {
+					"enterFullscreen": "Entrar en pantalla completa",
+					"exitFullscreen": "Salir de pantalla completa",
+					"showMinimap": "Mostrar minimapa",
+					"hideMinimap": "Ocultar minimapa",
+					"resetZoom": "Restablecer el zoom del diagrama",
+					"zoomOut": "Alejar el diagrama",
+					"zoomIn": "Acercar el diagrama",
 					"label": "Diagrama"
 				},
 				"stateIcon": {
@@ -2429,7 +2436,8 @@
 					"canceled": "Cancelado",
 					"completed": "Completado",
 					"evaluated": "Evaluado",
-					"failed": "Fallido"
+					"failed": "Fallido",
+					"pending": "modificación pendiente"
 				},
 				"modificationBadge": {
 					"added": "{{count}} añadido(s)",
