@@ -46,6 +46,7 @@ import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -75,7 +76,6 @@ import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -752,9 +752,14 @@ final class CamundaExporterIT {
 
     // when
     final var largeString = RandomStringUtils.randomAlphanumeric(250_000);
-    final var varEntity = new VariableEntity();
-    varEntity.setFullValue(largeString);
-    final var variableSize = ObjectSizeEstimator.estimateSize(varEntity);
+    final var variableSize =
+        RecordSizes.of(
+            factory.generateRecord(
+                ValueType.VARIABLE,
+                r ->
+                    r.withValue(
+                            ImmutableVariableRecordValue.builder().withValue(largeString).build())
+                        .withBrokerVersion("8.8.0")));
 
     final var requiredVariableRecordsForFlush =
         Math.ceil((double) (memoryLimit * 1024 * 1024) / variableSize);
