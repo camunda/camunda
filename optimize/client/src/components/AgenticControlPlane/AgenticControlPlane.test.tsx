@@ -8,11 +8,16 @@
 
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
-
-import {evaluateReport} from 'services';
+import {Tabs} from '@carbon/react';
 
 import {AgenticControlPlane} from './AgenticControlPlane';
-import {loadAgenticDashboard} from './service';
+import {AgentInventory} from './AgentInventory';
+import {AgentView} from './AgentView';
+import {DrillBreadcrumb} from './DrillBreadcrumb';
+import {FilterBar} from './FilterBar';
+import {ProcessFailures} from './ProcessFailures';
+import {loadAgentDetail, loadAgenticDashboard} from './service';
+import {TileSections} from './TileSections';
 
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
@@ -24,75 +29,89 @@ jest.mock('notifications', () => ({showError: jest.fn()}));
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
-  evaluateReport: jest.fn(),
+  loadDefinitions: jest.fn().mockReturnValue([{key: 'loan', name: 'Loan approval'}]),
 }));
 
 jest.mock('./service', () => ({
-  loadAgenticDashboard: jest.fn().mockReturnValue({tiles: [], availableFilters: []}),
+  loadAgenticDashboard: jest.fn(),
+  loadAgentDetail: jest.fn(),
 }));
+
+const tiles = [
+  {id: 'kpi-tile', configuration: {levels: ['overview', 'process', 'agent'], section: 'kpi'}},
+];
+
+const agentDetail = {
+  agentId: 'loan:review',
+  name: 'Review agent',
+  agentType: 'AI_AGENT_SUB_PROCESS',
+  processDefinitionKey: 'loan',
+  processDefinitionName: 'Loan approval',
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (loadAgenticDashboard as jest.Mock).mockReturnValue({tiles: [], availableFilters: []});
+  (loadAgenticDashboard as jest.Mock).mockReturnValue({tiles});
+  (loadAgentDetail as jest.Mock).mockReturnValue(agentDetail);
 });
 
+type Node = ReturnType<typeof shallow>;
+
+async function render() {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+  return node;
+}
+
+function filterBar(node: Node) {
+  return node.find(FilterBar);
+}
+
+function selectTab(node: Node, selectedIndex: number) {
+  (node.find(Tabs).prop('onChange') as (state: {selectedIndex: number}) => void)({selectedIndex});
+}
+
+async function selectProcess(node: Node, key: string | null) {
+  (filterBar(node).prop('onProcessScopeChange') as (key: string | null) => void)(key);
+  await runAllEffects();
+}
+
+async function selectAgents(node: Node, agentIds: string[]) {
+  (filterBar(node).prop('onAgentIdsChange') as (ids: string[]) => void)(agentIds);
+  await runAllEffects();
+}
+
+function breadcrumb(node: Node) {
+  return node.find(DrillBreadcrumb);
+}
+
 it('should show a loading state while the dashboard is being fetched', () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValue(undefined);
   const node = shallow(<AgenticControlPlane />);
 
   expect(node.find('Loading')).toExist();
 });
 
-it('should load the agentic dashboard on mount', async () => {
-  shallow(<AgenticControlPlane />);
-
-  await runAllEffects();
+it('should open on the dashboard tab at overview level', async () => {
+  const node = await render();
 
   expect(loadAgenticDashboard).toHaveBeenCalled();
+  expect(node.find(Tabs).prop('selectedIndex')).toBe(0);
+  const sections = node.find(TileSections);
+  expect(sections.prop('level')).toBe('overview');
+  expect(sections.prop('sections')).toEqual(['kpi', 'trends']);
+  expect(sections.prop('tiles')).toEqual(tiles);
+  expect(sections.prop('definitions')).toEqual([]);
+  expect(node.find(ProcessFailures)).not.toExist();
+  expect(node.find(AgentInventory)).not.toExist();
 });
 
-it('should render the dashboard once tiles are loaded', async () => {
-  const node = shallow(<AgenticControlPlane />);
+it('should pass the date filter and its date unit to the tiles', async () => {
+  const node = await render();
 
-  await runAllEffects();
+  (filterBar(node).prop('onPresetChange') as (v: string) => void)('7d');
 
-  expect(node.find('DashboardRenderer')).toExist();
-  expect(node.find('Loading')).not.toExist();
-});
-
-it('should pass the default Last 30 days filter to DashboardRenderer', async () => {
-  const node = shallow(<AgenticControlPlane />);
-
-  await runAllEffects();
-
-  const expectedFilter = [
-    {
-      type: 'instanceEndDate',
-      filterLevel: 'instance',
-      data: {
-        type: 'rolling',
-        start: {value: 30, unit: 'days'},
-        end: null,
-        excludeUndefined: false,
-        includeUndefined: false,
-      },
-    },
-  ];
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('filter')).toEqual(
-    expectedFilter
-  );
-  expect(node.find('.token-section').find('DashboardRenderer').prop('filter')).toEqual(
-    expectedFilter
-  );
-});
-
-it('should update the filter when the date preset changes', async () => {
-  const node = shallow(<AgenticControlPlane />);
-
-  await runAllEffects();
-
-  (node.find('FilterBar').prop('onPresetChange') as (v: string) => void)('7d');
-
-  const expectedFilter = [
+  expect(node.find(TileSections).prop('filter')).toEqual([
     {
       type: 'instanceEndDate',
       filterLevel: 'instance',
@@ -104,225 +123,163 @@ it('should update the filter when the date preset changes', async () => {
         includeUndefined: false,
       },
     },
-  ];
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('filter')).toEqual(
-    expectedFilter
+  ]);
+  expect(node.find(TileSections).prop('groupByDateUnit')).toBe('day');
+});
+
+it('should switch to the process level when a process is selected', async () => {
+  const node = await render();
+
+  await selectProcess(node, 'loan');
+  (filterBar(node).prop('onVersionsChange') as (v: string[]) => void)(['3']);
+
+  const sections = node.find(TileSections);
+  expect(sections.prop('level')).toBe('process');
+  expect(sections.prop('definitions')).toEqual([{key: 'loan', versions: ['3']}]);
+  expect(node.find(ProcessFailures).prop('processDefinitionKey')).toBe('loan');
+  expect(breadcrumb(node).prop('processName')).toBe('Loan approval');
+  expect(breadcrumb(node).prop('rootLabelKey')).toBe('agenticControlPlane.breadcrumb.allProcesses');
+
+  await selectProcess(node, null);
+
+  expect(node.find(TileSections).prop('level')).toBe('overview');
+  expect(node.find(ProcessFailures)).not.toExist();
+});
+
+it('should apply the model filter at the process level', async () => {
+  const node = await render();
+
+  await selectProcess(node, 'loan');
+  (filterBar(node).prop('onModelsChange') as (v: string[]) => void)(['gpt-4o']);
+
+  expect(filterBar(node).prop('showModelFilter')).toBeUndefined();
+  expect(node.find(TileSections).prop('filter')).toContainEqual({
+    type: 'agentRun',
+    filterLevel: 'instance',
+    data: {agentIds: [], models: ['gpt-4o'], providers: []},
+  });
+});
+
+it('should reset version, agents and models when the process changes', async () => {
+  const node = await render();
+
+  await selectProcess(node, 'loan');
+  (filterBar(node).prop('onVersionsChange') as (v: string[]) => void)(['3']);
+  (filterBar(node).prop('onModelsChange') as (v: string[]) => void)(['gpt-4o']);
+  await selectProcess(node, 'other');
+
+  expect(filterBar(node).prop('versions')).toEqual(['all']);
+  expect(filterBar(node).prop('models')).toEqual([]);
+});
+
+it('should show the inventory scoped to the selected process on the inventory tab', async () => {
+  const node = await render();
+
+  await selectProcess(node, 'loan');
+  selectTab(node, 1);
+
+  const inventory = node.find(AgentInventory);
+  expect(inventory.prop('processDefinitionKey')).toBe('loan');
+  expect(inventory.prop('processName')).toBe('Loan approval');
+  expect(node.find(TileSections)).not.toExist();
+});
+
+it('should open the agent view from an inventory row and go back to the inventory', async () => {
+  const node = await render();
+  selectTab(node, 1);
+
+  (node.find(AgentInventory).prop('onSelectAgent') as (id: string) => void)('loan:review');
+  await runAllEffects();
+
+  expect(loadAgentDetail).toHaveBeenCalledWith('loan:review', expect.any(Date));
+  expect(node.find(AgentView).prop('agent')).toEqual(agentDetail);
+  const sections = node.find(TileSections);
+  expect(sections.prop('level')).toBe('agent');
+  expect(sections.prop('sections')).toEqual(['kpi', 'agentTrends']);
+  expect(sections.prop('definitions')).toEqual([{key: 'loan', versions: ['all']}]);
+  expect(sections.prop('filter')).toContainEqual({
+    type: 'agentRun',
+    filterLevel: 'instance',
+    data: {agentIds: ['loan:review'], models: [], providers: []},
+  });
+  expect(breadcrumb(node).prop('rootLabelKey')).toBe(
+    'agenticControlPlane.breadcrumb.agentInventory'
   );
-  expect(node.find('.token-section').find('DashboardRenderer').prop('filter')).toEqual(
-    expectedFilter
-  );
-});
+  expect(breadcrumb(node).prop('agentName')).toBe('Review agent');
+  expect(breadcrumb(node).prop('processName')).toBe('Loan approval');
 
-it('should render the page header with title and description', async () => {
-  const node = shallow(<AgenticControlPlane />);
-
+  (breadcrumb(node).prop('onRoot') as () => void)();
   await runAllEffects();
 
-  expect(node.find('.title')).toExist();
-  expect(node.find('.description')).toExist();
+  expect(node.find(AgentView)).not.toExist();
+  expect(node.find(AgentInventory)).toExist();
+  expect(node.find(AgentInventory).prop('processDefinitionKey')).toBe(null);
 });
 
-it('should pass the loaded tiles to DashboardRenderer', async () => {
-  const tiles = [{id: 'report-1', position: {x: 0, y: 0}, dimensions: {width: 4, height: 3}}];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
-
-  const node = shallow(<AgenticControlPlane />);
-
+it('should scope the inventory to the agent process from the process crumb', async () => {
+  const node = await render();
+  selectTab(node, 1);
+  (node.find(AgentInventory).prop('onSelectAgent') as (id: string) => void)('loan:review');
   await runAllEffects();
 
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
+  (breadcrumb(node).prop('onProcess') as () => void)();
+  await runAllEffects();
+
+  expect(node.find(AgentInventory).prop('processDefinitionKey')).toBe('loan');
+  expect(filterBar(node).prop('processScope')).toBe('loan');
 });
 
-it('should hide visibleInL0Only tiles when a process is selected', async () => {
-  const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
-    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+it('should open the agent view when one agent is picked in the agent filter', async () => {
+  const node = await render();
+  await selectProcess(node, 'loan');
+  (filterBar(node).prop('onVersionsChange') as (v: string[]) => void)(['2']);
 
-  const node = shallow(<AgenticControlPlane />);
+  await selectAgents(node, ['loan:review']);
+
+  expect(node.find(AgentView)).toExist();
+  expect(node.find(TileSections).prop('definitions')).toEqual([{key: 'loan', versions: ['2']}]);
+  expect(breadcrumb(node).prop('rootLabelKey')).toBe('agenticControlPlane.breadcrumb.allProcesses');
+
+  (breadcrumb(node).prop('onProcess') as () => void)();
   await runAllEffects();
 
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-
-  const visibleTiles = node.find('.kpi-section').find('DashboardRenderer').prop('tiles') as {
-    id: string;
-  }[];
-  expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
+  expect(node.find(AgentView)).not.toExist();
+  expect(node.find(TileSections).prop('level')).toBe('process');
+  expect(filterBar(node).prop('versions')).toEqual(['2']);
 });
 
-it('should hide visibleInL1Only tiles when no process is selected (L0)', async () => {
-  const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
-    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+it('should keep the dashboard when several agents are picked in the agent filter', async () => {
+  const node = await render();
 
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
+  await selectAgents(node, ['loan:review', 'loan:triage']);
 
-  const visibleTiles = node.find('.kpi-section').find('DashboardRenderer').prop('tiles') as {
-    id: string;
-  }[];
-  expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
+  expect(node.find(AgentView)).not.toExist();
+  expect(node.find(TileSections).prop('level')).toBe('overview');
+  expect(node.find(TileSections).prop('filter')).toContainEqual({
+    type: 'agentRun',
+    filterLevel: 'instance',
+    data: {agentIds: ['loan:review', 'loan:triage'], models: [], providers: []},
+  });
 });
 
-it('should include definitions in evaluate calls when a process is selected', async () => {
-  const node = shallow(<AgenticControlPlane />);
+it('should open the agent view from the process failures table', async () => {
+  const node = await render();
+  await selectProcess(node, 'loan');
+
+  (node.find(ProcessFailures).prop('onSelectAgent') as (id: string) => void)('loan:review');
   await runAllEffects();
 
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('report-id', [], {});
-
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
-    {key: 'my-process', versions: ['all']},
-  ]);
+  expect(node.find(AgentView)).toExist();
+  expect(node.find(Tabs).prop('selectedIndex')).toBe(0);
 });
 
-it('should pass empty definitions in evaluate calls when no process is selected', async () => {
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
+it('should leave the agent view when switching tabs', async () => {
+  const node = await render();
+  await selectAgents(node, ['loan:review']);
+  expect(node.find(AgentView)).toExist();
 
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('report-id', [], {});
+  selectTab(node, 1);
 
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
-});
-
-it('should include the selected version in evaluate definitions', async () => {
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
-
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('report-id', [], {});
-
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
-    {key: 'my-process', versions: ['3']},
-  ]);
-});
-
-it('should pass the selected versions to FilterBar', async () => {
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['2']);
-
-  expect(node.find('FilterBar').prop('versions')).toEqual(['2']);
-});
-
-it('should reset the version to all when the process scope changes', async () => {
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
-  expect(node.find('FilterBar').prop('versions')).toEqual(['3']);
-
-  // selecting a different process must reset the version filter
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('other-process');
-
-  expect(node.find('FilterBar').prop('versions')).toEqual(['all']);
-
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('report-id', [], {});
-
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
-    {key: 'other-process', versions: ['all']},
-  ]);
-});
-
-it('should render a reliabilityAndToolCalls tile in its section in both L0 and L1', async () => {
-  // the Total tool calls tile carries no L0/L1-only flag, so it must show in both scopes
-  const tiles = [
-    {
-      id: 'tool-calls',
-      configuration: {section: 'reliabilityAndToolCalls'},
-      position: {x: 0, y: 6},
-      dimensions: {width: 18, height: 2},
-    },
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
-
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  // L0 (fleet view — no process selected)
-  expect(
-    (
-      node.find('.reliabilityAndToolCalls-section').find('DashboardRenderer').prop('tiles') as {
-        id: string;
-      }[]
-    ).map((t) => t.id)
-  ).toEqual(['tool-calls']);
-
-  // L1 (process drill-down)
-  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
-
-  expect(
-    (
-      node.find('.reliabilityAndToolCalls-section').find('DashboardRenderer').prop('tiles') as {
-        id: string;
-      }[]
-    ).map((t) => t.id)
-  ).toEqual(['tool-calls']);
-});
-
-it('should inject the configured top-N limit when evaluating a tile with a topN config', async () => {
-  const tiles = [
-    {id: 'consumers', configuration: {section: 'token', topN: '10'}, position: {x: 0, y: 0}},
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
-
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('consumers', [], {});
-
-  expect(evaluateReport).toHaveBeenCalledWith('consumers', [], {limit: 10}, [], 'week');
-});
-
-it('should not inject a limit for token tiles without a topN config', async () => {
-  const tiles = [{id: 'token-trend', configuration: {section: 'token'}, position: {x: 0, y: 0}}];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
-
-  const node = shallow(<AgenticControlPlane />);
-  await runAllEffects();
-
-  const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
-  loadTile('token-trend', [], {});
-
-  expect(evaluateReport).toHaveBeenCalledWith('token-trend', [], {}, [], 'week');
+  expect(node.find(AgentView)).not.toExist();
+  expect(node.find(AgentInventory)).toExist();
 });

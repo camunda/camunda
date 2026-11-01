@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -52,6 +53,7 @@ public class ProcessInstanceWriter {
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
   private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
+  private List<ProcessInstanceImportListener> importListeners = List.of();
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
@@ -64,6 +66,18 @@ public class ProcessInstanceWriter {
     this.importRequestDtoFactory = importRequestDtoFactory;
     this.processInstanceRepository = processInstanceRepository;
     this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
+  }
+
+  // Optional, so the writer can still be built without listeners (unit tests, OpenSearch).
+  @Autowired(required = false)
+  public void setImportListeners(final List<ProcessInstanceImportListener> importListeners) {
+    this.importListeners = List.copyOf(importListeners);
+  }
+
+  public void notifyImported(
+      final String recordType, final List<ProcessInstanceDto> processInstances) {
+    importListeners.forEach(
+        listener -> listener.onProcessInstancesImported(recordType, processInstances));
   }
 
   public void deleteInstancesByDefinitionId(final String bpmnProcessId, final String definitionId) {

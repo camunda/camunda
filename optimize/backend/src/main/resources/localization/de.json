@@ -5,9 +5,6 @@
     "title": "Agentic control plane",
     "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
     "dateRange": "Zeitraum",
-    "tokenUsage": "Token-Nutzung",
-    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool-Aufrufe",
-    "duration": "Dauer",
     "topNNotice": "Top {shown} von {total}.",
     "presets": {
       "last7Days": "Letzte 7 Tage",
@@ -32,6 +29,135 @@
       "all": "Alle Versionen",
       "latest": "Neueste Version",
       "version": "Version {version}"
+    },
+    "inventory": {
+      "title": "Agenteninventar",
+      "agent": "Agent",
+      "process": "Prozess",
+      "runs": "Agentenläufe",
+      "durationP50": "Dauer (P50)",
+      "lastRun": "Letzter Lauf",
+      "empty": "Noch keine Agenten gefunden.",
+      "agentsInProcess": "Agenten in {process}",
+      "summary": "{agents} Agenten in {processes} Prozessen, {external} extern",
+      "search": "Agenten suchen",
+      "searchPlaceholder": "Name, Prozess oder Modell",
+      "source": "Quelle",
+      "sourceCamunda": "Camunda",
+      "sourceExternal": "Extern",
+      "model": "Modell",
+      "totalTokens": "Tokens gesamt",
+      "tokensPerRun": "Tokens pro Lauf",
+      "successRate": "Erfolgsrate",
+      "durationP95": "Dauer (P95)",
+      "humanSteps": "Menschliche Schritte pro Lauf",
+      "noMatch": "Keine Agenten passen zu \"{query}\".",
+      "selectHint": "Wählen Sie einen Agenten aus, um Details zu sehen."
+    },
+    "breadcrumb": {
+      "allProcesses": "Alle Prozesse",
+      "agentInventory": "Agenteninventar"
+    },
+    "agentFilter": {
+      "label": "Agent",
+      "placeholder": "All agents"
+    },
+    "modelFilter": {
+      "label": "Model",
+      "placeholder": "All models"
+    },
+    "tabs": {
+      "label": "Ansichten",
+      "dashboard": "Dashboard",
+      "inventory": "Agenteninventar"
+    },
+    "overview": {
+      "allAgents": "Alle Agenten",
+      "processAgents": "{process}: Agenten",
+      "completedRuns": "Abgeschlossene Agentenläufe im Zeitraum"
+    },
+    "failures": {
+      "title": "Wo die Agenten dieses Prozesses scheitern",
+      "description": "Agenten mit fehlgeschlagenen Läufen im Zeitraum und ihre häufigsten Fehlerursachen.",
+      "agent": "Agent",
+      "runs": "Agentenläufe",
+      "failedRuns": "Fehlgeschlagene Läufe",
+      "successRate": "Erfolgsrate",
+      "topReasons": "Häufigste Fehlerursachen",
+      "empty": "Keine fehlgeschlagenen Agentenläufe im Zeitraum."
+    },
+    "failureReason": {
+      "kind": {
+        "LIMIT": "Limit",
+        "INCIDENT": "Incident"
+      },
+      "limitHit": "Limit erreicht: {limit}",
+      "tool": "Tool: {tool}",
+      "agentElement": "Agentenelement",
+      "unknownLimit": "unbekanntes Limit",
+      "runs": "{runs} Läufe"
+    },
+    "limits": {
+      "maxModelCalls": "max. Modellaufrufe",
+      "maxToolCalls": "max. Tool-Aufrufe",
+      "maxTokens": "max. Tokens"
+    },
+    "agentView": {
+      "process": "Prozess",
+      "version": "Prozessversion",
+      "type": "Typ",
+      "model": "Modell",
+      "limits": "Limits",
+      "noLimits": "Keine Limits",
+      "limitValue": "{value} {limit}",
+      "modelCallsPerRun": "Modellaufrufe pro Lauf",
+      "ofLimit": "{value} von {max}",
+      "runs": "Agentenläufe",
+      "runsValue": "{runs} ({failed} fehlgeschlagen)",
+      "limitHits": "An Limits gestoppt",
+      "limitHitCount": "{runs} bei {limit}",
+      "types": {
+        "AI_AGENT_SUB_PROCESS": "AI Agent Sub-process",
+        "AI_AGENT_TASK": "AI Agent Task",
+        "EXTERNAL_AGENT": "Externer Agent",
+        "UNKNOWN": "Unbekannt"
+      },
+      "failureReasons": {
+        "title": "Warum Agentenläufe fehlschlugen",
+        "description": "{failed} fehlgeschlagene Läufe, nach Limit oder nach Incident-Typ und Element, mit der ersten Incident-Meldung.",
+        "kind": "Art",
+        "element": "Element",
+        "errorType": "Fehlertyp",
+        "message": "Meldung",
+        "runs": "Läufe",
+        "empty": "Keine fehlgeschlagenen Läufe im Zeitraum."
+      },
+      "tools": {
+        "title": "Tools",
+        "tool": "Tool",
+        "calls": "Aufrufe",
+        "callsPerRun": "Aufrufe pro Lauf",
+        "failureRate": "Fehlerrate",
+        "empty": "Keine Tool-Aufrufe im Zeitraum.",
+        "unavailable": "Daten pro Tool gibt es nur für AI Agent Sub-process Agenten."
+      },
+      "models": {
+        "title": "Modellvergleich",
+        "model": "Modell",
+        "runs": "Läufe",
+        "tokensPerRun": "Tokens pro Lauf",
+        "avgDuration": "Ø Dauer",
+        "successRate": "Erfolgsrate",
+        "empty": "Keine Läufe im Zeitraum."
+      },
+      "whereUsed": {
+        "title": "Wo dieser Agent verwendet wird",
+        "startedFrom": "Gestartet von",
+        "runs": "Läufe",
+        "tokens": "Tokens",
+        "share": "Anteil",
+        "empty": "Keine Läufe im Zeitraum."
+      }
     }
   },
   "navigation": {
@@ -335,7 +461,17 @@
       "totalTokens": "Tokens insgesamt",
       "inputTokens": "Eingabe-Tokens",
       "outputTokens": "Ausgabe-Tokens",
-      "toolCalls": "Tool-Aufrufe"
+      "toolCalls": "Tool-Aufrufe",
+      "modelCalls": "Model calls",
+      "humanSteps": "Human steps",
+      "incidentRate": "Incident rate",
+      "limitHitRate": "Limit hit rate",
+      "adoptionRate": "Adoption rate",
+      "successRate": "Erfolgsquote",
+      "cacheWriteTokens": "Cache-Schreib-Tokens",
+      "cacheReadTokens": "Cache-Lese-Tokens",
+      "reasoningTokens": "davon Reasoning-Tokens",
+      "humanWait": "Wartezeit auf Personen"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1497,6 +1633,10 @@
       "zoomIn": "Diagramm vergrößern",
       "zoomOut": "Diagramm verkleinern",
       "resetZoom": "Diagrammzoom zurücksetzen"
+    },
+    "agentRun": {
+      "label": "Agent run",
+      "label-plural": "Agent runs"
     }
   },
   "apiErrors": {
@@ -1616,7 +1756,51 @@
       "agenticToolCallsHeatmapName": "Tool-Aufrufe je Prozessknoten",
       "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
       "agenticDurationHeatmapName": "Dauer je Prozessknoten",
-      "agenticDurationHeatmapDescription": "Durchschnittliche Dauer je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt."
+      "agenticDurationHeatmapDescription": "Durchschnittliche Dauer je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
+      "agenticRunIncidentRateByProcessName": "Agenten-Incident-Rate nach Prozess",
+      "agenticRunIncidentRateByProcessDescription": "Anteil der Agentenläufe, deren Agentenelement einen Incident ausgelöst hat, je Prozess.",
+      "agenticRunIncidentRateName": "Agent incident rate",
+      "agenticRunIncidentRateDescription": "Share of agent runs whose agent element raised an incident.",
+      "agenticRunLimitHitRateName": "Runs hitting a limit",
+      "agenticRunLimitHitRateDescription": "Share of agent runs that reached a configured model call, tool call or token limit.",
+      "agenticRunDurationP50Name": "Run duration (P50)",
+      "agenticRunDurationP50Description": "Median time from an agent run’s start to its last activity.",
+      "agenticRunDurationP95Name": "Run duration (P95)",
+      "agenticRunDurationP95Description": "95th percentile of the time from an agent run’s start to its last activity.",
+      "agenticRunIterationsName": "Avg iterations per run",
+      "agenticRunIterationsDescription": "Average number of model calls per agent run.",
+      "agenticRunHumanStepsName": "Human steps per run",
+      "agenticRunHumanStepsDescription": "Average number of user tasks in the process instance of each agent run.",
+      "agenticRunCountName": "Agent runs",
+      "agenticRunCountDescription": "Number of agent runs in completed process instances.",
+      "agenticRunCountOverTimeName": "Agent runs over time",
+      "agenticRunCountOverTimeDescription": "Agent runs per week, by run start.",
+      "agenticRunCountByAgentName": "Agent runs by agent",
+      "agenticRunCountByAgentDescription": "Number of agent runs per agent.",
+      "agenticRunToolCallsByToolName": "Tool calls per tool",
+      "agenticRunToolCallsByToolDescription": "How often each tool element ran in processes with agent runs.",
+      "agenticRunAdoptionRateName": "Agentic adoption rate",
+      "agenticRunAdoptionRateDescription": "Share of completed instances of agentic processes in which at least one agent ran.",
+      "agenticRunAvgTokensName": "Avg tokens per run",
+      "agenticRunAvgTokensDescription": "Average tokens per agent run: input, output and cache tokens.",
+      "agenticRunTotalTokensName": "Total tokens",
+      "agenticRunTotalTokensDescription": "Input, output and cache tokens of all agent runs. Reasoning tokens are part of output.",
+      "agenticRunSuccessRateName": "Success rate",
+      "agenticRunSuccessRateDescription": "Share of agent runs without an incident on the agent or its tools and without a limit hit.",
+      "agenticRunDurationName": "Agent run duration",
+      "agenticRunDurationDescription": "Sum of the agent's element instance durations, without time spent in user-task tools. Average, P50 and P95. For an AI Agent Task, tool time is not included.",
+      "agenticRunHumanWaitName": "Human wait per run",
+      "agenticRunHumanWaitDescription": "Average time agents waited on user-task tools. Excluded from the agent run duration.",
+      "agenticRunTokenBreakdownName": "Token breakdown",
+      "agenticRunTokenBreakdownDescription": "Input, output, cache write and cache read tokens. Reasoning is part of output, shown separately.",
+      "agenticRunTokensPerRunByModelName": "Median tokens per run by model",
+      "agenticRunTokensPerRunByModelDescription": "Median tokens of an agent run, per model. From 8.10 cache tokens are counted, which raises the numbers.",
+      "agenticRunTokenBandName": "Tokens per run against the normal range",
+      "agenticRunTokenBandDescription": "P5, P50 and P95 of tokens per run, and the average.",
+      "agenticRunTokensOverTimeName": "Token usage over time",
+      "agenticRunTokensOverTimeDescription": "Tokens and agent runs per week, by run start.",
+      "agenticRunTokensByModelName": "Token usage per model",
+      "agenticRunTokensByModelDescription": "Tokens per model and provider. A run that switched models counts toward each."
     }
   },
   "managementDashboard": {
