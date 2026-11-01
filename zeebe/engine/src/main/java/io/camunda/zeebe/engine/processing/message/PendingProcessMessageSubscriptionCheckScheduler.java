@@ -86,11 +86,14 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
   }
 
   private boolean sendPendingCommand(final ProcessMessageSubscription subscription) {
-    // can only be opening/closing as an opened subscription is not indexed in the sent time column
+    // The entry may be stale, as processing updates it apart from the row. Only the row tells which
+    // command is due; a skipped entry is kept, processing removes it.
     if (subscription.isOpening()) {
       sendOpenCommand(subscription);
-    } else {
+    } else if (subscription.isClosing()) {
       sendCloseCommand(subscription);
+    } else {
+      return true;
     }
 
     final var sentTime = clock.millis();
