@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.optimize;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.OptimizeProperties;
 import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
 import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
@@ -20,18 +23,30 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Periodically evaluates Optimize dashboards and reports to exercise the Optimize REST API under
  * load, publishing per-request latency and status metrics. Failures are throttled-logged and the
  * next cycle continues.
  */
+@Component
+@Profile("starter")
+@ConditionalOnProperty(
+    name = "load-tester.optimize.report-evaluation-enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class OptimizeReportEvaluator implements AutoCloseable {
 
   static final String PAGE_HOMEPAGE = "homepage";
@@ -39,6 +54,14 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   static final String PHASE_DASHBOARD = "dashboard";
   static final String PHASE_REPORT_EVALUATE = "report_evaluate";
   static final String NA = "n/a";
+
+  /** OAuth scope requested for the Optimize bearer token. */
+  private static final String OAUTH_SCOPE = "openid";
+
+  /** Keycloak token endpoint, relative to {@code <keycloakUrl>/auth/realms/<realm>}. */
+  private static final String REALMS_PATH = "/auth/realms/";
+
+  private static final String TOKEN_ENDPOINT_PATH = "/protocol/openid-connect/token";
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeReportEvaluator.class);
   private static final ThrottledLogger THROTTLED_LOGGER =
@@ -54,6 +77,20 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   private final ConcurrentHashMap<String, Counter> requestCounters = new ConcurrentHashMap<>();
   private ScheduledFuture<?> scheduledTask;
 
+  @Autowired
+  public OptimizeReportEvaluator(
+      final LoadTesterProperties properties,
+      final WebClient.Builder webClientBuilder,
+      final ObjectMapper objectMapper,
+      final MeterRegistry registry) {
+    this(
+        properties.getOptimize(),
+        createApiClient(properties.getOptimize(), webClientBuilder, objectMapper),
+        Executors.newScheduledThreadPool(1),
+        registry);
+  }
+
+  // Could be merged with the constructor above if the executor and the API client were beans.
   public OptimizeReportEvaluator(
       final OptimizeProperties props,
       final OptimizeApiClient client,
@@ -63,6 +100,25 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     this.client = client;
     this.executor = executor;
     this.registry = registry;
+  }
+
+  private static OptimizeApiClient createApiClient(
+      final OptimizeProperties props,
+      final WebClient.Builder webClientBuilder,
+      final ObjectMapper objectMapper) {
+    // applyEnvironmentOverrides(false): keep this provider from inheriting the Zeebe client's OAuth
+    // env vars (orchestration creds). Token caching/refresh/retry are handled by the provider.
+    final CredentialsProvider credentials =
+        CredentialsProvider.newCredentialsProviderBuilder()
+            .clientId(props.getClientId())
+            .clientSecret(props.getClientSecret())
+            .audience(props.getAudience())
+            .scope(OAUTH_SCOPE)
+            .authorizationServerUrl(
+                props.getKeycloakUrl() + REALMS_PATH + props.getRealm() + TOKEN_ENDPOINT_PATH)
+            .applyEnvironmentOverrides(false)
+            .build();
+    return new OptimizeApiClient(props, webClientBuilder, objectMapper, credentials);
   }
 
   public void start() {
