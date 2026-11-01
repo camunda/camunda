@@ -21,7 +21,7 @@ jobs:
       with:
         persist-credentials: false
     - name: Check all PRs for conflict
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@7b093dcfcc0e330fb401e011258efbab0faf6bb5 # preview-env-1.1.1
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
     - name: Observe build status
       if: always()
       continue-on-error: true
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check PR for merge conflicts
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@7b093dcfcc0e330fb401e011258efbab0faf6bb5 # preview-env-1.1.1
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
     - name: Checkout
