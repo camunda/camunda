@@ -644,6 +644,13 @@ public final class JobCompleteProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    // UPDATING user task listeners can deny actions. If we allow the listener through, the listener
+    // will be unable to complete and variable updates will not reflect until resumption
+    return isTaskListenerJob(record.getKey()) ? SuspensionAction.REJECT : SuspensionAction.PROCESS;
+  }
+
+  private boolean isTaskListenerJob(final long jobKey) {
+    final var job = processState.getJobState().getJob(jobKey);
+    return job != null && job.getJobKind() == JobKind.TASK_LISTENER;
   }
 }

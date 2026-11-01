@@ -229,9 +229,11 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
 - **Resume.** After the drain, each `RESUME_USER_TASKS` cycle resumes the next tracked task in key
   order, using `resumeFromUserTaskKey` as cursor and skipping entries whose task is gone. It then
   hands off to `RESUME_JOBS`. If no task is tracked, the drain goes straight to `RESUME_JOBS`.
-- **Order.** User tasks resume before jobs. Commands are rejected until `ProcessInstance.RESUMED`,
-  so whatever resumes last waits least. A stream worker answers within milliseconds, and a
-  rejected job waits for its timeout. A person is slower and can retry.
+- **Order.** User tasks resume before jobs. User task commands are rejected until
+  `ProcessInstance.RESUMED`, so whatever resumes last waits least. A person is slower and can
+  retry. Job commands are processed while `RESUMING`, so a fast worker is not rejected
+  ([#62715](https://github.com/camunda/camunda/issues/62715)). Task listener job completion is
+  still rejected, since its follow-up is a user task command.
 
 ## Alternatives considered
 
