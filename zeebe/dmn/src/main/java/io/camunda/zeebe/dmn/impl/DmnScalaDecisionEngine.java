@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn.impl;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
@@ -29,6 +30,7 @@ import org.camunda.dmn.DmnEngine;
 import org.camunda.dmn.DmnEngine.EvalFailure;
 import org.camunda.dmn.DmnEngine.EvalResult;
 import org.camunda.feel.syntaxtree.Val;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.util.Either;
@@ -101,10 +103,10 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
   public DecisionEvaluationResult evaluateDecisionById(
       final ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       final String decisionId,
-      final DecisionContext context) {
+      final @Nullable DecisionContext context) {
 
-    Objects.requireNonNull(decisionRequirementsGraph);
-    Objects.requireNonNull(decisionId);
+    requireNonNull(decisionRequirementsGraph);
+    requireNonNull(decisionId);
     final DecisionContext evalContext = Objects.requireNonNullElse(context, Map::of);
 
     if (!decisionRequirementsGraph.isValid()) {

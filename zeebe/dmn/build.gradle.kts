@@ -10,6 +10,7 @@ dependencies {
   api(libs.org.agrona.agrona)
   api(libs.org.camunda.feel.feel.engine)
   implementation(project(":zeebe-msgpack-core"))
+  implementation(libs.org.jspecify.jspecify)
   testImplementation(project(":zeebe-test-util"))
 }
 

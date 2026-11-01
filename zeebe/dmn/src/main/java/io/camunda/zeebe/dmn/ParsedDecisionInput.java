@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.dmn;
 
-public interface ParsedDecisionInput {
-  String getId();
+import org.jspecify.annotations.Nullable;
 
-  String getName();
+public interface ParsedDecisionInput {
+  @Nullable String getId();
+
+  @Nullable String getName();
 }
