@@ -358,9 +358,9 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   @Override
-  public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
-      final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
-    final var keysAggName = "flowNodeInstanceKeys";
+  public Set<Long> findFlowNodeInstanceKeysOwnedBy(
+      final Long processInstanceKey, final Set<Long> candidateKeys) {
+    final var keysAggName = "candidateKeys";
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(
@@ -371,13 +371,13 @@ public class FlowNodeInstanceReader extends AbstractReader
                                 termQuery(
                                     FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
                                     processInstanceKey),
-                                termsQuery(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys))))
+                                termsQuery(FlowNodeInstanceTemplate.KEY, candidateKeys))))
                     // A key is one bucket however many documents carry it, so as many buckets as
                     // keys return every match. The hits are not needed.
                     .aggregation(
                         terms(keysAggName)
                             .field(FlowNodeInstanceTemplate.KEY)
-                            .size(flowNodeInstanceKeys.size()))
+                            .size(candidateKeys.size()))
                     .size(0));
     try {
       final Terms keysAgg =

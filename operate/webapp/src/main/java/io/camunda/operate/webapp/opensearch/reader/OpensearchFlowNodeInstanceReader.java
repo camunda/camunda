@@ -313,9 +313,9 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   @Override
-  public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
-      final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
-    final var keysAggName = "flowNodeInstanceKeys";
+  public Set<Long> findFlowNodeInstanceKeysOwnedBy(
+      final Long processInstanceKey, final Set<Long> candidateKeys) {
+    final var keysAggName = "candidateKeys";
     final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
@@ -323,12 +323,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                     withTenantCheck(
                         and(
                             term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-                            longTerms(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys)))))
+                            longTerms(FlowNodeInstanceTemplate.KEY, candidateKeys)))))
             // A key is one bucket however many documents carry it, so as many buckets as keys
             // return every match.
             .aggregations(
                 keysAggName,
-                termAggregation(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys.size())
+                termAggregation(FlowNodeInstanceTemplate.KEY, candidateKeys.size())
                     ._toAggregation());
 
     return richOpenSearchClient

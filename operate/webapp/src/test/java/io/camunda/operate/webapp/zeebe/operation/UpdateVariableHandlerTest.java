@@ -101,8 +101,7 @@ public class UpdateVariableHandlerTest {
   void shouldSendSetVariablesCommandForFlowNodeInstanceOfProcessInstance() throws Exception {
     // given
     final var operation = createLockedOperation().setScopeKey(789L);
-    when(flowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(
-            processInstanceKey, Set.of(789L)))
+    when(flowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(789L)))
         .thenReturn(Set.of(789L));
     doReturn(variableDocumentKey)
         .when(operateServicesAdapter)

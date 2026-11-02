@@ -34,7 +34,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     final var processInstanceKey = operation.getProcessInstanceKey();
     if (!scopeKey.equals(processInstanceKey)
         && !flowNodeInstanceReader
-            .getFlowNodeInstanceKeysOfProcessInstance(processInstanceKey, Set.of(scopeKey))
+            .findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(scopeKey))
             .contains(scopeKey)) {
       failOperation(
           operation,

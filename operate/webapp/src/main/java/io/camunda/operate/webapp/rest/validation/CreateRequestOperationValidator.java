@@ -122,7 +122,7 @@ public class CreateRequestOperationValidator {
     final long processInstanceKey = Long.parseLong(processInstanceId);
     return scopeKey == processInstanceKey
         || flowNodeInstanceReader
-            .getFlowNodeInstanceKeysOfProcessInstance(processInstanceKey, Set.of(scopeKey))
+            .findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(scopeKey))
             .contains(scopeKey);
   }
 
