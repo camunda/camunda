@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
+import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.db.repository.script.UserIdMigrationScriptFactory;
@@ -102,9 +103,7 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
                         n.path("data.roles")
                             .ignoreUnmapped(true)
                             .scoreMode(ChildScoreMode.None)
-                            .query(
-                                qq ->
-                                    qq.term(t -> t.field("data.roles.identity.id").value(userId)))))
+                            .query(userRoleQuery(userId))))
         .should(s -> s.term(t -> t.field("owner").value(userId)))
         .should(s -> s.term(t -> t.field("lastModifier").value(userId)))
         .minimumShouldMatch("1");
@@ -117,8 +116,21 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
                 n ->
                     n.path("data.roles")
                         .scoreMode(ChildScoreMode.None)
-                        .query(
-                            qq -> qq.term(t -> t.field("data.roles.identity.id").value(userId)))));
+                        .query(userRoleQuery(userId))));
+  }
+
+  private static Query userRoleQuery(final String userId) {
+    return Query.of(
+        q ->
+            q.bool(
+                b ->
+                    b.must(m -> m.term(t -> t.field("data.roles.identity.id").value(userId)))
+                        .must(
+                            m ->
+                                m.term(
+                                    t ->
+                                        t.field("data.roles.identity.type")
+                                            .value(IdentityType.USER.getId())))));
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {
