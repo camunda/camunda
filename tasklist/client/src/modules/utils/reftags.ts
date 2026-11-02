@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import zod, {ZodSchema} from 'zod';
+import zod, {type ZodType} from 'zod';
 
 const TASK_OPENED_REF = zod.object({
   by: zod.enum(['user', 'auto-select']),
@@ -32,7 +32,7 @@ function encodeRefTagData<T extends object>(data: T): string {
 function decodeRefTagData<T>(
   str: string | null,
   prefix: string,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
 ): T | null {
   if (!str) {
     return null;

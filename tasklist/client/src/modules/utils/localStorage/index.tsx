@@ -23,6 +23,10 @@ const validators = {
 type Validators = typeof validators;
 type StorageKey = keyof Validators;
 
+const typedValidators: {
+  [Key in StorageKey]: z.ZodType<z.infer<Validators[Key]>>;
+} = validators;
+
 function storeStateLocally<Key extends StorageKey>(
   storageKey: Key,
   value: z.infer<Validators[Key]>,
@@ -44,7 +48,7 @@ function getStateLocally<Key extends StorageKey>(
       return null;
     }
 
-    const result = validators[storageKey].safeParse(JSON.parse(value));
+    const result = typedValidators[storageKey].safeParse(JSON.parse(value));
 
     return result.success ? result.data : null;
   } catch {
