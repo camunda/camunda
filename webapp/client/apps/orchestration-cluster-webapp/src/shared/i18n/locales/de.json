@@ -2050,7 +2050,12 @@
 					"parentEntity": "Übergeordnete Entität",
 					"details": "Details",
 					"actor": "Akteur",
-					"date": "Datum"
+					"date": "Datum",
+					"result": "Ergebnis",
+					"actions": "Aktionen",
+					"tableLabel": "Operationsprotokoll",
+					"loadingPreviousPage": "Vorherige Protokolleinträge werden geladen",
+					"loadingNextPage": "Nächste Protokolleinträge werden geladen"
 				},
 				"emptyState": {
 					"noItemsTitle": "Noch keine Einträge im Operationsprotokoll",

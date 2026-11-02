@@ -47,6 +47,7 @@ const tabRoutes = {
 	operateDecisions: '/operate/decisions',
 	operateDecisionsPreview: '/operate-preview/decisions',
 	operateOperationsLog: '/operate/operations-log',
+	operateOperationsLogPreview: '/operate-preview/operations-log',
 	operateBatchOperations: '/operate/batch-operations',
 	adminIndex: '/admin',
 	adminUsers: '/admin/users',
@@ -200,7 +201,9 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 		const isOperateDecisionsRoute =
 			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
 			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;
-		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
+		const isOperateOperationsLogRoute =
+			matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false ||
+			matchRoute({to: tabRoutes['operateOperationsLogPreview'], fuzzy: true}) !== false;
 		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
 		return {

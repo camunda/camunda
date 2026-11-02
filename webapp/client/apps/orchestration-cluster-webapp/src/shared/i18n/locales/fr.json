@@ -2053,7 +2053,12 @@
 					"parentEntity": "Entité parente",
 					"details": "Détails",
 					"actor": "Acteur",
-					"date": "Date"
+					"date": "Date",
+					"result": "Résultat",
+					"actions": "Actions",
+					"tableLabel": "Journal des opérations",
+					"loadingPreviousPage": "Chargement des entrées précédentes du journal",
+					"loadingNextPage": "Chargement des entrées suivantes du journal"
 				},
 				"emptyState": {
 					"noItemsTitle": "Aucune entrée dans le journal des opérations pour le moment",
