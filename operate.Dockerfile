@@ -62,6 +62,26 @@ EXPOSE 8080
 RUN apk update && apk upgrade
 RUN apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
 
+# CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
+# Sectigo's AAA Certificate Services from the JDK cacerts. Alpine's ca-certificates still ships
+# emSign G1, and update-ca-certificates rebuilds both the OS bundle and the JVM cacerts from
+# /etc/ca-certificates.conf. Deselect G1 there, so it stays out when a derived image runs
+# update-ca-certificates to add its own CA. The build fails if G1, G3 or AAA is in either store.
+# emSign C1 and C3 are not part of Oracle's removal and stay.
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+RUN g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    sed -i 's|^mozilla/emSign_Root_CA_-_G1\.crt$|!&|' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
+    fingerprints() { keytool "$@" | awk '$1=="SHA256:"{f=$2; gsub(":","",f); print f}'; }; \
+    jvm=$(fingerprints -list -v -cacerts -storepass changeit); \
+    os=$(fingerprints -printcert -file /etc/ssl/certs/ca-certificates.crt); \
+    [ "$(wc -l <<< "$jvm")" -gt 100 ]; \
+    [ "$(wc -l <<< "$os")" -gt 100 ]; \
+    ! grep -qxE "$g3|$g1|$aaa" <<< "$jvm"$'\n'"$os"
+SHELL ["/bin/sh", "-c"]
+
 ENV OPE_HOME=/usr/local/operate
 
 WORKDIR ${OPE_HOME}
