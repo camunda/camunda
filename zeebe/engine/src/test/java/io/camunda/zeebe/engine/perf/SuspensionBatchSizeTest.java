@@ -29,9 +29,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Stress test checking that SUSPEND stays within the 4 MB batch limit
  * (ExceededBatchRecordSizeException) as the number of active elements grows. Three configurations:
- * jobs only, subscriptions only, and both. Jobs are suspended by the element instance walk, one per
- * batch, so job count alone does not grow any batch. Subscriptions are still closed in the SUSPEND
- * command's own batch, so the subscription sizes guard that batch against a regression.
+ * jobs only, subscriptions only, and both. Jobs and message subscriptions are suspended by the
+ * element instance walk, one element instance per batch, so their count does not grow any batch.
  */
 @Tag("performance")
 class SuspensionBatchSizeTest {
@@ -92,7 +91,7 @@ class SuspensionBatchSizeTest {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {100, 500, 1000, 2000, 5000})
+  @ValueSource(ints = {100, 1000, 2000, 5000, 10000})
   void shouldSuspendInstanceWithOnlySubscriptions(final int elementCount) throws Throwable {
     final TestContext ctx = TestEngine.createTestContext();
     try {
@@ -138,7 +137,7 @@ class SuspensionBatchSizeTest {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {100, 500, 1000, 2000, 5000})
+  @ValueSource(ints = {100, 1000, 2000, 5000, 10000})
   void shouldSuspendInstanceWithJobsAndSubscriptions(final int elementCount) throws Throwable {
     final TestContext ctx = TestEngine.createTestContext();
     try {
