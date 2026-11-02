@@ -26,7 +26,7 @@ public enum UserTaskLifecycleState {
 
   /**
    * Default when no state applies: on the lookup command and on the {@code FETCHED} event on the
-   * log. A lookup response must never carry it.
+   * log. On a lookup response, it means the engine has no lifecycle state stored for the task.
    */
   UNSPECIFIED,
 

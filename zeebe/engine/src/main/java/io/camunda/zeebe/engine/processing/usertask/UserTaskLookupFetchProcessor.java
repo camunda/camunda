@@ -132,9 +132,8 @@ public final class UserTaskLookupFetchProcessor
       case UPDATING -> UserTaskLifecycleState.UPDATING;
       case COMPLETING -> UserTaskLifecycleState.COMPLETING;
       case CANCELING -> UserTaskLifecycleState.CANCELING;
-      case NOT_FOUND ->
-          throw new IllegalStateException(
-              "Expected a stored user task to have a lifecycle state, but got NOT_FOUND");
+      // no lifecycle state stored for the task: still answer with the task instead of failing
+      case NOT_FOUND -> UserTaskLifecycleState.UNSPECIFIED;
     };
   }
 
