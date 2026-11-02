@@ -254,6 +254,27 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 
+  @Override
+  public Set<Long> findFlowNodeInstanceKeysOwnedBy(
+      final Long processInstanceKey, final Set<Long> candidateKeys) {
+    final var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate, ONLY_RUNTIME)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        and(
+                            term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+                            longTerms(FlowNodeInstanceTemplate.KEY, candidateKeys)))))
+            .size(candidateKeys.size())
+            .source(sourceInclude(FlowNodeInstanceTemplate.KEY));
+
+    record Result(Long key) {}
+
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
+        .map(Result::key)
+        .collect(Collectors.toSet());
+  }
+
   private FlowNodeInstanceResponseDto getFlowNodeInstances(final FlowNodeInstanceQueryDto request) {
     final FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
