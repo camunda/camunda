@@ -16,4 +16,12 @@ public interface MutableMessageCorrelationState
   void removeMessageCorrelation(long messageKey);
 
   void putMessageCorrelation(long messageKey, long requestId, int requestStreamId);
+
+  /**
+   * Persists the request data of a message correlation, including the operation reference of the
+   * command that initiated the correlation, so the terminal CORRELATED/NOT_CORRELATED records can
+   * be correlated back to the client's operation.
+   */
+  void putMessageCorrelation(
+      long messageKey, long requestId, int requestStreamId, long operationReference);
 }

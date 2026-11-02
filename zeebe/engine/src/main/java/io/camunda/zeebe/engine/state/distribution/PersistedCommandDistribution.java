@@ -11,12 +11,14 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.ProjectionOf;
@@ -33,14 +35,19 @@ public class PersistedCommandDistribution extends UnpackedObject
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
   private final AuthInfoProperty authInfoProperty = new AuthInfoProperty("authInfo");
+  // Defaults to the null value so distributions persisted before this property existed still
+  // decode.
+  private final LongProperty operationReferenceProperty =
+      new LongProperty("operationReference", RecordMetadataDecoder.operationReferenceNullValue());
 
   public PersistedCommandDistribution() {
-    super(5);
+    super(6);
     declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty)
-        .declareProperty(authInfoProperty);
+        .declareProperty(authInfoProperty)
+        .declareProperty(operationReferenceProperty);
   }
 
   @Override
@@ -56,6 +63,7 @@ public class PersistedCommandDistribution extends UnpackedObject
 
     commandValueProperty.getValue().copyFrom(commandDistributionRecord.getCommandValue());
     authInfoProperty.setValue(commandDistributionRecord.getAuthInfo());
+    operationReferenceProperty.setValue(commandDistributionRecord.getOperationReference());
 
     return this;
   }
@@ -91,5 +99,9 @@ public class PersistedCommandDistribution extends UnpackedObject
 
   public AuthInfo getAuthInfo() {
     return authInfoProperty.getValue();
+  }
+
+  public long getOperationReference() {
+    return operationReferenceProperty.getValue();
   }
 }

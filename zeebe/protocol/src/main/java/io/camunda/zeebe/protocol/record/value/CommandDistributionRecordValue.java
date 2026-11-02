@@ -49,4 +49,12 @@ public interface CommandDistributionRecordValue extends RecordValue {
    * @return the wrapped record value
    */
   RecordValue getCommandValue();
+
+  /**
+   * @return the operation reference of the command that initiated the distribution, so records
+   *     written on receiving partitions can be correlated back to the client's operation; {@code
+   *     io.camunda.zeebe.protocol.record.RecordMetadataDecoder#operationReferenceNullValue()} when
+   *     none was set
+   */
+  long getOperationReference();
 }

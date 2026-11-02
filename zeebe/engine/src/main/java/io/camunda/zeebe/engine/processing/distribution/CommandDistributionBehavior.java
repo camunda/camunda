@@ -161,6 +161,9 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
    * @param value the value of the command to distribute
    * @param authInfo Auth info that will be attached to the distributed command, for receiving
    *     partitions to check authorizations. May be null to not distribute any auth info.
+   * @param operationReference the operation reference of the command that initiated the
+   *     distribution, carried over so that records written on receiving partitions can be
+   *     correlated back to the client's operation
    * @param partitions the partitions to distribute the command to
    */
   private <T extends UnifiedRecordValue> void distributeCommand(
@@ -170,6 +173,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final Intent intent,
       final T value,
       final AuthInfo authInfo,
+      final long operationReference,
       final Set<Integer> partitions) {
     if (partitions.isEmpty()
         || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
@@ -184,12 +188,18 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setPartitionId(currentPartitionId)
             .setValueType(valueType)
             .setIntent(intent)
-            .setCommandValue(value);
+            .setCommandValue(value)
+            .setOperationReference(operationReference);
 
     if (authInfo != null) {
       distributionRecord.setAuthInfo(authInfo);
     }
 
+    System.out.println(
+        "DISTRIBUTE DEBUG: opRef param="
+            + operationReference
+            + " recordOpRef="
+            + distributionRecord.getOperationReference());
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
@@ -304,11 +314,18 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
       final var authInfo = distributionRecord.getAuthInfo();
+      final var operationReference = distributionRecord.getOperationReference();
 
       sideEffectWriter.appendSideEffect(
           () -> {
             interPartitionCommandSender.sendCommand(
-                partition, valueType, intent, distributionKey, commandValue, authInfo);
+                partition,
+                valueType,
+                intent,
+                distributionKey,
+                commandValue,
+                authInfo,
+                operationReference);
           });
     }
   }
@@ -432,7 +449,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             distributionRecord.getIntent(),
             distributionKey,
             distributionRecord.getCommandValue(),
-            distributionRecord.getAuthInfo());
+            distributionRecord.getAuthInfo(),
+            distributionRecord.getOperationReference());
   }
 
   public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
@@ -469,8 +487,26 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     <T extends UnifiedRecordValue> void distribute(TypedRecord<T> command);
 
     /** Distributes the command as specified. */
+    default <T extends UnifiedRecordValue> void distribute(
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
+      distribute(
+          valueType,
+          intent,
+          value,
+          authInfo,
+          io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue());
+    }
+
+    /**
+     * Distributes the command as specified, carrying the given operation reference so records
+     * written on receiving partitions can be correlated back to the client's operation.
+     */
     <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
+        final ValueType valueType,
+        final Intent intent,
+        final T value,
+        final AuthInfo authInfo,
+        final long operationReference);
   }
 
   public interface ContinuationRequestBuilder {
@@ -544,12 +580,17 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           command.getIntent(),
           command.getValue(),
           command.getAuthInfo(),
+          command.getOperationReference(),
           partitions);
     }
 
     @Override
     public <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
+        final ValueType valueType,
+        final Intent intent,
+        final T value,
+        final AuthInfo authInfo,
+        final long operationReference) {
       distributeCommand(
           queue,
           key,
@@ -557,6 +598,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
           authInfo,
+          operationReference,
           partitions);
     }
 

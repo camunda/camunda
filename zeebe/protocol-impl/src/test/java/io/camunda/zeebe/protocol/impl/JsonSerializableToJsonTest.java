@@ -2928,11 +2928,13 @@ final class JsonSerializableToJsonTest {
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
                   .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
-                  .setStartTime(123L);
+                  .setStartTime(123L)
+                  .setOperationReference(456L);
             },
         """
                 {
                   "startTime": 123,
+                  "operationReference": 456,
                   "partitionId": 1,
                   "queueId": "totally-random-queue-id",
                   "valueType": "DEPLOYMENT",
@@ -2976,6 +2978,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "startTime": -1,
+                  "operationReference": -1,
                   "partitionId": 1,
                   "queueId": null,
                   "valueType": "NULL_VAL",
@@ -3574,7 +3577,8 @@ final class JsonSerializableToJsonTest {
                   .setRequestStreamId(requestStreamId)
                   .setProcessDefinitionKey(5L)
                   .setBusinessId("biz-42")
-                  .setStorageOrdinal(storageOrdinal);
+                  .setStorageOrdinal(storageOrdinal)
+                  .setOperationReference(7L);
             },
         """
                 {
@@ -3588,6 +3592,7 @@ final class JsonSerializableToJsonTest {
                   "messageKey": 2,
                   "requestId": 3,
                   "requestStreamId": 4,
+                  "operationReference": 7,
                   "processDefinitionKey": 5,
                   "businessId": "biz-42",
                   "storageOrdinal": 6
@@ -3846,6 +3851,7 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "requestId": -1,
                   "requestStreamId": -1,
+                  "operationReference": -1,
                   "processDefinitionKey": -1,
                   "businessId": "",
                   "storageOrdinal": 0

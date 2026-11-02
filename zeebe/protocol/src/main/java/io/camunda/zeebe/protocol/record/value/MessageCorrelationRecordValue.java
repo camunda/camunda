@@ -55,6 +55,14 @@ public interface MessageCorrelationRecordValue
   int getRequestStreamId();
 
   /**
+   * @return the operation reference of the initial correlate command, used to correlate the
+   *     terminal records back to the client's operation; {@code
+   *     io.camunda.zeebe.protocol.record.RecordMetadataDecoder#operationReferenceNullValue()} when
+   *     none was set
+   */
+  long getOperationReference();
+
+  /**
    * The optional business id used to additionally constrain message correlation. When non-empty, a
    * correlation only succeeds against subscriptions whose stored business id matches. When empty,
    * business id is not used as a constraint and the message correlates regardless of the
