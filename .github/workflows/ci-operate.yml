@@ -382,7 +382,7 @@ jobs:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -444,7 +444,7 @@ jobs:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-admin-pod'
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -581,7 +581,7 @@ jobs:
       TEST_TYPE: screenshot-update
       TEST_OWNER: '@camunda/operate-admin-pod'
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
