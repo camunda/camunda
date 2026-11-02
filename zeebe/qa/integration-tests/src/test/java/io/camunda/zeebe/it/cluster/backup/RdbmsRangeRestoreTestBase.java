@@ -520,6 +520,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
             () ->
                 assertThat(backupActuator.status(backupId).getState())
                     .isEqualTo(StateCode.COMPLETED));
+    InProcessRestoreTestUtil.awaitBackupInMetadata(backupActuator, backupId);
 
     return backupActuator.status(backupId);
   }
