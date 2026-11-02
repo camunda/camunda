@@ -41,6 +41,23 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		await expect.element(screen.getByRole('tab', {name: 'Variables'})).toBeVisible();
 	});
 
+	it('should render the provided top panel instead of the diagram placeholder', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance activeTab="variables" header={HEADER} topPanel={<p>Instance diagram</p>} />
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByText('Instance diagram')).toBeVisible();
+		await expect.element(screen.getByText('Diagram panel placeholder')).not.toBeInTheDocument();
+	});
+
 	it('should mark the active tab and report tab changes', async () => {
 		const onTabChange = vi.fn();
 		const screen = await renderWithRouter(
