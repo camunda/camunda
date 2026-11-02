@@ -170,6 +170,18 @@
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.pitest</groupId>
+          <artifactId>pitest-maven</artifactId>
+          <configuration>
+            <!-- the tests of this module cover the api classes better than the api tests do -->
+            <crossModule>${pit.crossModule}</crossModule>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <!-- generate Java protobuf code -->
       <plugin>
