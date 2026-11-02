@@ -14,11 +14,13 @@ import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_N
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 
+import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.db.repository.script.UserIdMigrationScriptFactory;
@@ -104,13 +106,19 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
                     n.path("data.roles")
                         .ignoreUnmapped(true)
                         .scoreMode(ChildScoreMode.None)
-                        .query(term("data.roles.identity.id", userId)))
+                        .query(userRoleQuery(userId)))
             .toQuery();
     return or(rolesQuery, term("owner", userId), term("lastModifier", userId));
   }
 
   private Query buildCollectionRolesQuery(final String userId) {
-    return nested("data.roles", term("data.roles.identity.id", userId), ChildScoreMode.None);
+    return nested("data.roles", userRoleQuery(userId), ChildScoreMode.None);
+  }
+
+  private static Query userRoleQuery(final String userId) {
+    return and(
+        term("data.roles.identity.id", userId),
+        term("data.roles.identity.type", IdentityType.USER.getId()));
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {

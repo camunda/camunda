@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.given;
 
 import io.camunda.optimize.AbstractCCSMIT;
@@ -203,6 +204,55 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
               assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
               assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
             });
+  }
+
+  @Test
+  void shouldTakeALaterHigherRoleAndLeaveOtherRolesUntouched() {
+    // given - [other:manager, old:viewer, new:manager, group named like the old ID:editor]
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Role Order Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "oldRole", roleDocument(OLD_USER_ID, RoleType.VIEWER),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.MANAGER),
+                "groupRole",
+                    Map.of(
+                        "id", "GROUP:" + OLD_USER_ID,
+                        "identity", Map.of("id", OLD_USER_ID, "type", "group"),
+                        "role", RoleType.EDITOR.getId())),
+            "ctx._source.data.roles.add(params.oldRole);"
+                + "ctx._source.data.roles.add(params.newRole);"
+                + "ctx._source.data.roles.add(params.groupRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .extracting(
+            role -> role.getId(),
+            role -> role.getIdentity().getId(),
+            role -> role.getIdentity().getType(),
+            role -> role.getRole())
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, IdentityType.USER, RoleType.MANAGER),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, IdentityType.USER, RoleType.MANAGER),
+            tuple("GROUP:" + OLD_USER_ID, OLD_USER_ID, IdentityType.GROUP, RoleType.EDITOR));
   }
 
   private static Map<String, Object> roleDocument(final String userId, final RoleType role) {
