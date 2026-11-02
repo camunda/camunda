@@ -34,13 +34,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Benchmarks the time to suspend a process instance with many active elements that are message
- * subscriptions rather than jobs, contrasting with {@link SuspendJobsBenchmark}. Suspend runs two
- * independent BFS walks over the element tree: {@code ProcessInstanceSuspensionJobBehavior}
- * (suspends activatable jobs) and {@code ProcessInstanceSuspensionMessageSubscriptionBehavior}
- * (closes {@code OPENED} message subscriptions). A wide tree of parallel receive tasks exercises
- * only the second walk, isolating the per-element cost of closing a subscription from the
- * per-element cost of suspending a job. Uses the same shallow, wide (root -&gt; N parallel
- * receive-task instances) shape as {@link SuspendJobsBenchmark} so the two are directly comparable.
+ * subscriptions rather than jobs, contrasting with {@link SuspendJobsBenchmark}. The measured time
+ * covers both closing the {@code OPENED} message subscriptions and the {@code
+ * ElementInstanceWalkSuspendProcessor} walk, which visits every element instance in its own batch
+ * even when there is no job to suspend. Uses the same shallow, wide (root -&gt; N parallel
+ * receive-task instances) shape as {@link SuspendJobsBenchmark}.
  */
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -130,7 +128,7 @@ public class SuspendWideNonJobTreeBenchmark {
 
   @Benchmark
   public long measureSuspendTime() {
-    // onPartition(1) keeps the timed section to the engine's subscription walk only, and keeps this
+    // onPartition(1) keeps the timed section to the engine's suspension work only, and keeps this
     // comparable with SuspendJobsBenchmark: without it the client scans RecordingExporter to
     // discover the partition first, adding harness work to the measurement.
     processInstanceClient.withInstanceKey(processInstanceKey).onPartition(1).suspend();

@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Benchmarks the time to suspend a process instance with many active elements. Uses a parallel
- * multi-instance service task to create PIs with N active jobs. The suspend operation BFS-walks all
- * element instances and writes Job.SUSPENDED for each activatable job.
+ * multi-instance service task to create PIs with N active jobs. The suspend operation walks all
+ * element instances, one per batch, and writes Job.SUSPENDED for each activatable job.
  */
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -49,9 +49,6 @@ public class SuspendJobsBenchmark {
 
   private static final Logger LOG = LoggerFactory.getLogger(SuspendJobsBenchmark.class.getName());
 
-  // 4000 is the largest count that still suspends: SUSPEND writes Job.SUSPENDED for every
-  // activatable job in one command, and beyond ~4000 that batch exceeds the 4MB record-size limit
-  // (see SuspensionBatchLimitTest, where 5000 is rejected).
   @Param({"100", "1000", "2000", "4000"})
   private int activeElementCount;
 
