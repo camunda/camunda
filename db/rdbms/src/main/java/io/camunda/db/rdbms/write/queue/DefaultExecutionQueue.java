@@ -10,7 +10,6 @@ package io.camunda.db.rdbms.write.queue;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
@@ -83,9 +82,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       queue.add(entry);
-      // Track memory consumption
-      final long entrySize = ObjectSizeEstimator.estimateSize(entry);
-      currentQueueMemoryBytes += entrySize;
 
       metrics.recordEnqueuedStatement(entry.statementId());
     }
@@ -165,12 +161,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
         if (merger.canBeMerged(item)) {
           LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
-          final QueueItem oldItem = item;
-          final long oldSize = ObjectSizeEstimator.estimateSize(oldItem);
-          final QueueItem newItem = merger.merge(oldItem);
-          final long newSize = ObjectSizeEstimator.estimateSize(newItem);
-          queue.set(index, newItem);
-          currentQueueMemoryBytes = currentQueueMemoryBytes - oldSize + newSize;
+          queue.set(index, merger.merge(item));
           metrics.recordMergedQueueItem(item.contextType(), item.statementId());
           return true;
         }
@@ -179,6 +170,13 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       return false;
+    }
+  }
+
+  @Override
+  public void addEstimatedBytes(final long bytes) {
+    synchronized (queue) {
+      currentQueueMemoryBytes += bytes;
     }
   }
 
