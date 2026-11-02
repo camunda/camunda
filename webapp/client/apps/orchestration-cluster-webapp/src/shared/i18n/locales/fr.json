@@ -2193,6 +2193,18 @@
 					"retry": "Réessayer",
 					"retrying": "Nouvelle tentative de chargement des éléments"
 				},
+				"ds": {
+					"forbidden": {
+						"heading": "Vous n'avez pas l'autorisation d'afficher ces informations"
+					},
+					"itemsTable": {
+						"tableLabel": "Éléments de l'opération par lots",
+						"loadingPreviousPage": "Chargement des éléments précédents",
+						"loadingNextPage": "Chargement d'autres éléments",
+						"expandFailure": "Afficher les détails de l'échec",
+						"collapseFailure": "Masquer les détails de l'échec"
+					}
+				},
 				"actions": {
 					"suspend": "Suspendre",
 					"resume": "Reprendre",

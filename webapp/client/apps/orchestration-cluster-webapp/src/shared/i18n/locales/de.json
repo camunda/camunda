@@ -2190,6 +2190,18 @@
 					"retry": "Erneut versuchen",
 					"retrying": "Elemente werden erneut geladen"
 				},
+				"ds": {
+					"forbidden": {
+						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					},
+					"itemsTable": {
+						"tableLabel": "Elemente der Batch-Operation",
+						"loadingPreviousPage": "Vorherige Elemente werden geladen",
+						"loadingNextPage": "Weitere Elemente werden geladen",
+						"expandFailure": "Fehlerdetails anzeigen",
+						"collapseFailure": "Fehlerdetails ausblenden"
+					}
+				},
 				"actions": {
 					"suspend": "Pausieren",
 					"resume": "Fortsetzen",
