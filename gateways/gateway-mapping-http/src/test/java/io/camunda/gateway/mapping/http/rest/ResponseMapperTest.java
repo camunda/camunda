@@ -8,10 +8,12 @@
 package io.camunda.gateway.mapping.http.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.UserTaskLookupStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.service.ClusterTopologyServices.ClusterBroker;
 import io.camunda.service.ClusterTopologyServices.ClusterTopology;
@@ -30,12 +32,17 @@ import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRe
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
@@ -855,6 +862,130 @@ class ResponseMapperTest {
       assertThat(actualPartition.getRole()).isEqualTo(expectedPartition.getRole());
       assertThat(actualPartition.getHealth()).isEqualTo(expectedPartition.getHealth());
       assertThat(actualPartition.getState()).isEqualTo(expectedPartition.getState());
+    }
+  }
+
+  @Nested
+  class UserTaskLookupResponseMappingTest {
+
+    @Test
+    void shouldMapUserTaskAndVariables() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.ASSIGNING)
+              .setUserTask(
+                  new UserTaskRecord()
+                      .setUserTaskKey(1L)
+                      .setElementId("underwriter-review")
+                      .setElementInstanceKey(2L)
+                      .setProcessInstanceKey(3L)
+                      .setRootProcessInstanceKey(4L)
+                      .setBpmnProcessId("loan")
+                      .setProcessDefinitionKey(5L)
+                      .setProcessDefinitionVersion(6)
+                      .setTenantId("tenant-a")
+                      .setAssignee("previous-assignee")
+                      .setCandidateGroupsList(List.of("underwriters"))
+                      .setCandidateUsersList(List.of("jane"))
+                      .setDueDate("2026-11-10T10:00:00Z")
+                      .setFollowUpDate("2026-11-05T10:00:00Z")
+                      .setFormKey(7L)
+                      .setExternalFormReference("external-form")
+                      .setCustomHeaders(
+                          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("k", "v"))))
+                      .setPriority(80)
+                      .setTags(Set.of("urgent"))
+                      .setBusinessId("loan-42")
+                      .setCreationTimestamp(Instant.parse("2026-11-02T10:00:00Z").toEpochMilli())
+                      .setVariables(
+                          new UnsafeBuffer(
+                              MsgPackConverter.convertToMsgPack(
+                                  Map.of("recommendation", "recommended")))));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getUserTaskKey()).isEqualTo("1");
+      assertThat(result.getState()).isEqualTo(UserTaskLookupStateEnum.ASSIGNING);
+      assertThat(result.getElementId()).isEqualTo("underwriter-review");
+      assertThat(result.getElementInstanceKey()).isEqualTo("2");
+      assertThat(result.getProcessInstanceKey()).isEqualTo("3");
+      assertThat(result.getRootProcessInstanceKey()).isEqualTo("4");
+      assertThat(result.getProcessDefinitionId()).isEqualTo("loan");
+      assertThat(result.getProcessDefinitionKey()).isEqualTo("5");
+      assertThat(result.getProcessDefinitionVersion()).isEqualTo(6);
+      assertThat(result.getTenantId()).isEqualTo("tenant-a");
+      assertThat(result.getAssignee()).isEqualTo("previous-assignee");
+      assertThat(result.getCandidateGroups()).containsExactly("underwriters");
+      assertThat(result.getCandidateUsers()).containsExactly("jane");
+      assertThat(result.getDueDate()).isEqualTo("2026-11-10T10:00:00Z");
+      assertThat(result.getFollowUpDate()).isEqualTo("2026-11-05T10:00:00Z");
+      assertThat(result.getFormKey()).isEqualTo("7");
+      assertThat(result.getExternalFormReference()).isEqualTo("external-form");
+      assertThat(result.getCustomHeaders()).containsExactly(Map.entry("k", "v"));
+      assertThat(result.getPriority()).isEqualTo(80);
+      assertThat(result.getTags()).containsExactly("urgent");
+      assertThat(result.getBusinessId()).isEqualTo("loan-42");
+      assertThat(result.getCreationDate()).isEqualTo("2026-11-02T10:00:00.000Z");
+      assertThat(result.getVariables()).containsExactly(Map.entry("recommendation", "recommended"));
+    }
+
+    @Test
+    void shouldMapUnsetOptionalFieldsToNull() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.CREATING)
+              .setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getAssignee()).isNull();
+      assertThat(result.getRootProcessInstanceKey()).isNull();
+      assertThat(result.getDueDate()).isNull();
+      assertThat(result.getFollowUpDate()).isNull();
+      assertThat(result.getFormKey()).isNull();
+      assertThat(result.getExternalFormReference()).isNull();
+      assertThat(result.getBusinessId()).isNull();
+      assertThat(result.getCandidateGroups()).isEmpty();
+      assertThat(result.getCandidateUsers()).isEmpty();
+      assertThat(result.getVariables()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = UserTaskLifecycleState.class,
+        mode = EnumSource.Mode.EXCLUDE,
+        names = "UNSPECIFIED")
+    void shouldMapLifecycleState(final UserTaskLifecycleState lifecycleState) {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(lifecycleState)
+              .setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getState().name()).isEqualTo(lifecycleState.name());
+    }
+
+    @Test
+    void shouldRejectUnspecifiedLifecycleState() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord().setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when/then
+      assertThatThrownBy(() -> ResponseMapper.toUserTaskLookupResult(lookup))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("UNSPECIFIED")
+          .hasMessageContaining("This is a bug, please report it.");
     }
   }
 }

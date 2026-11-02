@@ -67,6 +67,7 @@ import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskLookupRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -154,6 +155,12 @@ public class RequestMapper {
                 .action(completionRequest.getAction())
                 .build(),
         userTaskKey);
+  }
+
+  public static LookupUserTaskRequest toUserTaskLookupRequest(
+      final @Nullable UserTaskLookupRequest lookupRequest, final long userTaskKey) {
+    return new LookupUserTaskRequest(
+        userTaskKey, getStringListOrEmpty(lookupRequest, UserTaskLookupRequest::getFetchVariables));
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
@@ -985,6 +992,8 @@ public class RequestMapper {
       long userTaskKey, Map<String, Object> variables, String action) {}
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
+
+  public record LookupUserTaskRequest(long userTaskKey, List<String> fetchVariables) {}
 
   public record AssignUserTaskRequest(
       long userTaskKey, @Nullable String assignee, String action, boolean allowOverride) {}

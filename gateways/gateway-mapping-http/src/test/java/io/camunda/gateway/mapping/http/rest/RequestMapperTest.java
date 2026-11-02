@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
+import io.camunda.gateway.protocol.model.UserTaskLookupRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
@@ -697,6 +698,48 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().jobLeaseToken()).isNull();
+    }
+  }
+
+  @Nested
+  class UserTaskLookupRequestMappingTest {
+
+    @Test
+    void shouldMapAbsentBodyToAllVariables() {
+      // when
+      final var result = RequestMapper.toUserTaskLookupRequest(null, 123L);
+
+      // then
+      assertThat(result.userTaskKey()).isEqualTo(123L);
+      assertThat(result.fetchVariables()).isEmpty();
+    }
+
+    @Test
+    void shouldMapAbsentFetchVariablesToAllVariables() {
+      // given
+      final var request = UserTaskLookupRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toUserTaskLookupRequest(request, 123L);
+
+      // then
+      assertThat(result.fetchVariables()).isEmpty();
+    }
+
+    @Test
+    void shouldMapFetchVariables() {
+      // given
+      final var request =
+          UserTaskLookupRequest.Builder.create()
+              .fetchVariables(List.of("recommendation", "applicant"))
+              .build();
+
+      // when
+      final var result = RequestMapper.toUserTaskLookupRequest(request, 123L);
+
+      // then
+      assertThat(result.userTaskKey()).isEqualTo(123L);
+      assertThat(result.fetchVariables()).containsExactly("recommendation", "applicant");
     }
   }
 }

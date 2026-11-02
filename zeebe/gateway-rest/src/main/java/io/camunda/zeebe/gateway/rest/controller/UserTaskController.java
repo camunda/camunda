@@ -12,7 +12,9 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.AssignUserTaskRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.CompleteUserTaskRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.LookupUserTaskRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateUserTaskRequest;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
@@ -21,6 +23,7 @@ import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskLookupRequest;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
@@ -41,6 +44,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,6 +74,16 @@ public class UserTaskController {
     return completeUserTask(
         physicalTenantId,
         RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
+  }
+
+  @CamundaPostMapping(path = "/{userTaskKey}/lookup")
+  public CompletableFuture<ResponseEntity<Object>> lookupUserTask(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long userTaskKey,
+      @RequestBody(required = false) final UserTaskLookupRequest lookupRequest) {
+
+    return lookupUserTask(
+        physicalTenantId, RequestMapper.toUserTaskLookupRequest(lookupRequest, userTaskKey));
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/assignment")
@@ -278,6 +292,19 @@ public class UserTaskController {
                 request.variables(),
                 request.action(),
                 authenticationProvider.getCamundaAuthentication()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> lookupUserTask(
+      final String physicalTenantId, final LookupUserTaskRequest request) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            userTaskServices.lookupUserTask(
+                request.userTaskKey(),
+                request.fetchVariables(),
+                authenticationProvider.getCamundaAuthentication()),
+        ResponseMapper::toUserTaskLookupResult,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(

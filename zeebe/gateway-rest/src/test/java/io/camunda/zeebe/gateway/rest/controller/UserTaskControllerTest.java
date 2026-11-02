@@ -18,20 +18,31 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,6 +65,8 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+
+  static final String USER_TASKS_V2_URL = "/v2/user-tasks";
 
   static Stream<String> urls() {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
@@ -1339,5 +1352,193 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
         .jsonPath("$.status")
         .isEqualTo(504);
+  }
+
+  @Test
+  void shouldLookUpUserTask() {
+    // given
+    final var lookup =
+        new UserTaskLookupRecord()
+            .setLifecycleState(UserTaskLifecycleState.ASSIGNING)
+            .setUserTask(
+                new UserTaskRecord()
+                    .setUserTaskKey(1L)
+                    .setElementId("underwriter-review")
+                    .setElementInstanceKey(2L)
+                    .setProcessInstanceKey(3L)
+                    .setRootProcessInstanceKey(3L)
+                    .setBpmnProcessId("loan")
+                    .setProcessDefinitionKey(4L)
+                    .setProcessDefinitionVersion(1)
+                    .setAssignee("previous-assignee")
+                    .setCandidateGroupsList(List.of("underwriters"))
+                    .setCreationTimestamp(Instant.parse("2026-11-02T10:00:00Z").toEpochMilli())
+                    .setVariables(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(
+                                Map.of("recommendation", "recommended")))));
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(lookup));
+
+    final var expectedBody =
+        """
+            {
+              "userTaskKey": "1",
+              "state": "ASSIGNING",
+              "elementId": "underwriter-review",
+              "elementInstanceKey": "2",
+              "processInstanceKey": "3",
+              "rootProcessInstanceKey": "3",
+              "processDefinitionId": "loan",
+              "processDefinitionKey": "4",
+              "processDefinitionVersion": 1,
+              "tenantId": "<default>",
+              "assignee": "previous-assignee",
+              "candidateGroups": ["underwriters"],
+              "candidateUsers": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "formKey": null,
+              "externalFormReference": null,
+              "customHeaders": {},
+              "priority": 50,
+              "tags": [],
+              "businessId": null,
+              "creationDate": "2026-11-02T10:00:00.000Z",
+              "variables": { "recommendation": "recommended" }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_V2_URL + "/1/lookup")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldLookUpAllVariablesWithoutRequestBody() {
+    // given
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(createdLookup()));
+
+    // when
+    webClient
+        .post()
+        .uri(USER_TASKS_V2_URL + "/1/lookup")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    Mockito.verify(userTaskServices).lookupUserTask(eq(1L), eq(List.of()), any());
+  }
+
+  @Test
+  void shouldLookUpRequestedVariables() {
+    // given
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(createdLookup()));
+
+    // when
+    webClient
+        .post()
+        .uri(USER_TASKS_V2_URL + "/1/lookup")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            { "fetchVariables": ["recommendation", "applicant"] }""")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    Mockito.verify(userTaskServices)
+        .lookupUserTask(eq(1L), eq(List.of("recommendation", "applicant")), any());
+  }
+
+  @ParameterizedTest
+  @MethodSource("lookupRejections")
+  void shouldMapLookupRejectionToProblemDetail(
+      final RejectionType rejectionType, final HttpStatus expectedStatus) {
+    // given
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapBrokerRejection(
+                    new BrokerRejection(
+                        UserTaskLookupIntent.FETCH, 1L, rejectionType, "rejection reason"))));
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": %d,
+              "title": "%s",
+              "detail": "Command 'FETCH' rejected with code '%s': rejection reason",
+              "instance": "%s"
+            }"""
+            .formatted(
+                expectedStatus.value(),
+                rejectionType,
+                rejectionType,
+                USER_TASKS_V2_URL + "/1/lookup");
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_V2_URL + "/1/lookup")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(expectedStatus)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldYieldServiceUnavailableWhenLookupIsRejectedByBackpressure() {
+    // given
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")))));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_V2_URL + "/1/lookup")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("RESOURCE_EXHAUSTED");
+  }
+
+  static Stream<Arguments> lookupRejections() {
+    return Stream.of(
+        Arguments.of(RejectionType.NOT_FOUND, HttpStatus.NOT_FOUND),
+        Arguments.of(RejectionType.INVALID_STATE, HttpStatus.CONFLICT),
+        Arguments.of(RejectionType.FORBIDDEN, HttpStatus.FORBIDDEN));
+  }
+
+  private static UserTaskLookupRecord createdLookup() {
+    return new UserTaskLookupRecord()
+        .setLifecycleState(UserTaskLifecycleState.CREATED)
+        .setUserTask(new UserTaskRecord().setUserTaskKey(1L));
   }
 }

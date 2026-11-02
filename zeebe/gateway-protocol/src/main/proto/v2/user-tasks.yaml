@@ -229,6 +229,93 @@ paths:
       x-added-in-version: "8.5"
       x-scope: physical-tenant
 
+  /user-tasks/{userTaskKey}/lookup:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - User task
+      operationId: lookupUserTask
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: PROCESS_DEFINITION, permissionType: READ_USER_TASK }
+            - { resourceType: USER_TASK, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Look up an active user task (alpha)
+      description: |
+        Returns an active user task together with the variables visible to it, read from the
+        engine's state instead of secondary storage. The task and its variables are read at the
+        same point in processing, so they are consistent with each other and with any command the
+        engine has already processed, for example the completion of a previous task.
+
+        The response includes the task's lifecycle `state`. Use it to interpret the returned
+        values: while a change to the task is in progress, the task fields and variables are the
+        ones from before the change, and `state` names the pending change. For example, with
+        `ASSIGNING` the returned `assignee` is still the previous one, because task listeners can
+        deny the new assignment; with `COMPLETING` the variables don't include the ones sent with
+        the completion yet.
+
+        Only active tasks can be looked up. The lookup returns 404 when the task doesn't exist,
+        when it was already completed or canceled (use the user task search for those), or when it
+        belongs to a tenant the caller isn't assigned to. It returns 409 when the task's process
+        instance is banned: an instance that hit an unrecoverable error and can only be canceled.
+
+        Each lookup is processed by the engine. Use it when a task is opened, not for polling.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to look up.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskLookupRequest'
+      responses:
+        "200":
+          description: The user task and its variables are returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTaskLookupResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            No active user task with the given key is visible to the caller: the task doesn't
+            exist, was already completed or canceled, or belongs to a tenant the caller isn't
+            assigned to.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: >
+            The user task can't be looked up because its process instance is banned: it hit an
+            unrecoverable error and can only be canceled. More details are provided in the
+            response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /user-tasks/{userTaskKey}/form:
     get:
       x-eventually-consistent: true
@@ -1154,6 +1241,166 @@ components:
         - CANCELING
         - CANCELED
         - FAILED
+
+    UserTaskLookupRequest:
+      type: object
+      properties:
+        fetchVariables:
+          description: >
+            The names of the variables to return. If absent or empty, all variables visible to the
+            user task are returned. A name without a matching variable is left out of the response.
+          type: array
+          example:
+            - recommendation
+            - applicant
+          items:
+            type: string
+    UserTaskLookupResult:
+      type: object
+      required:
+        - userTaskKey
+        - state
+        - elementId
+        - elementInstanceKey
+        - processInstanceKey
+        - rootProcessInstanceKey
+        - processDefinitionId
+        - processDefinitionKey
+        - processDefinitionVersion
+        - tenantId
+        - assignee
+        - candidateGroups
+        - candidateUsers
+        - dueDate
+        - followUpDate
+        - formKey
+        - externalFormReference
+        - customHeaders
+        - priority
+        - tags
+        - businessId
+        - creationDate
+        - variables
+      properties:
+        userTaskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
+        state:
+          $ref: '#/components/schemas/UserTaskLookupStateEnum'
+        elementId:
+          description: The element ID of the user task.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The key of the element instance.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The ID of the process definition.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processDefinitionVersion:
+          type: integer
+          description: The version of the process definition.
+          format: int32
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        assignee:
+          nullable: true
+          description: >
+            The assignee of the user task. While the task is in the `CREATING` state, the assignee
+            from the process model is not set yet.
+          type: string
+        candidateGroups:
+          type: array
+          description: The candidate groups for this user task.
+          items:
+            type: string
+        candidateUsers:
+          type: array
+          description: The candidate users for this user task.
+          items:
+            type: string
+        dueDate:
+          description: The due date of the user task.
+          nullable: true
+          type: string
+          format: date-time
+        followUpDate:
+          description: The follow-up date of the user task.
+          nullable: true
+          type: string
+          format: date-time
+        formKey:
+          description: The key of the form.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+        externalFormReference:
+          description: The external form reference.
+          nullable: true
+          type: string
+        customHeaders:
+          type: object
+          description: Custom headers for the user task.
+          additionalProperties:
+            type: string
+        priority:
+          type: integer
+          description: The priority of the user task. The higher the value the higher the priority.
+          minimum: 0
+          maximum: 100
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          description: |
+            The business ID of the owning process instance, inherited when the user task was
+            created. This is `null` for user tasks whose owning process instance has no business ID.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        creationDate:
+          type: string
+          description: The creation date of the user task.
+          format: date-time
+        variables:
+          description: >
+            The variables visible to the user task, as a JSON object of name and value. If a name
+            exists in several scopes, the value of the innermost scope is returned. Values are
+            never truncated.
+          type: object
+          additionalProperties: true
+    UserTaskLookupStateEnum:
+      description: |
+        The lifecycle state of an active user task. A state ending in `-ING` means a change to the
+        task is in progress, for example waiting for task listeners; the task fields still hold
+        the values from before the change.
+      type: string
+      enum:
+        - CREATING
+        - CREATED
+        - ASSIGNING
+        - CLAIMING
+        - UPDATING
+        - COMPLETING
+        - CANCELING
 
     ## Filters
 
