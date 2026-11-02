@@ -248,6 +248,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
     container.close();
     containers.remove(container);
+    updateEventFilter();
     state.removeExporterState(exporterId);
     // After removing this exporter, the exporter index has changed. Reset it so that we don't
     // miss to export the record to any of the exporters whose index has changed.
@@ -341,6 +342,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.openExporter();
     }
     containers.add(container);
+    updateEventFilter();
     LOG.debug("Exporter '{}' is enabled.", exporterId);
 
     if (idle) {
@@ -484,6 +486,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.configureExporter();
     }
 
+    updateEventFilter();
+  }
+
+  /**
+   * Builds the event filter from the currently enabled exporters. Must run whenever an exporter is
+   * added or removed: with the filter of an earlier set of exporters, a newly enabled exporter
+   * would only get the records those accepted, and none at all if there were none, while the
+   * skipped records still advance its position.
+   */
+  private void updateEventFilter() {
     eventFilter = positionsToSkipFilter.and(createEventFilter(containers));
     LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
