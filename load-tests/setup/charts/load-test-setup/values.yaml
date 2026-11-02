@@ -182,6 +182,12 @@ keycloak:
       cpu: "2"
       memory: 2Gi
 
+  # -- The hostname Keycloak pins for the issuer ("iss" claim) and the URLs it exposes.
+  # `localhost` suits browser SSO through a port-forward. A cluster that declares physical tenants
+  # sets `keycloak`: the broker validates the exact issuer and fetches its discovery document from
+  # that same URL, so the issuer must be reachable from inside the cluster.
+  hostname: localhost
+
   http:
     # -- The port Keycloak listens on for HTTP traffic.
     # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080

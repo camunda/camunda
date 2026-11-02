@@ -77,4 +77,29 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
     // then
     assertThat(decisionInstance.getBusinessId()).isEqualTo("order-42");
   }
+
+  @Test
+  void shouldGetDecisionInstanceWithStorageOrdinal() {
+    // given
+    final String decisionInstanceId = "1-1";
+    gatewayService.onDecisionInstanceRequest(
+        decisionInstanceId,
+        Instancio.create(DecisionInstanceResult.class)
+            .decisionEvaluationKey("1")
+            .decisionDefinitionKey("2")
+            .elementInstanceKey("3")
+            .processDefinitionKey("4")
+            .processInstanceKey("5")
+            .rootDecisionDefinitionKey("6")
+            .rootProcessInstanceKey("7")
+            .storageOrdinal(1001)
+            .evaluationDate(OffsetDateTime.now().toString()));
+
+    // when
+    final DecisionInstance decisionInstance =
+        client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+
+    // then
+    assertThat(decisionInstance.getStorageOrdinal()).isEqualTo(1001);
+  }
 }

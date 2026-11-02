@@ -40,7 +40,11 @@ const ClusterVariableValueField: React.FC<Props> = ({
 				autoFocus={autoFocus}
 				isInvalid={Boolean(errorMessage)}
 				height="240px"
-				options={{ariaLabel: label}}
+				options={{
+					ariaLabel: label,
+					quickSuggestions: false,
+					suggestOnTriggerCharacters: false,
+				}}
 			/>
 		</div>
 		{errorMessage ? (

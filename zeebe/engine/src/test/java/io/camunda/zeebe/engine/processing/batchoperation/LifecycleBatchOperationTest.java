@@ -19,6 +19,10 @@ import org.junit.Test;
 
 public final class LifecycleBatchOperationTest extends AbstractBatchOperationTest {
 
+  public LifecycleBatchOperationTest() {
+    super(false);
+  }
+
   @Test
   public void shouldCancelBatchOperation() {
     // given
@@ -37,7 +41,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CANCELED);
 
-    // and no follow op up command to execute again
+    // and no follow op up command to execute again, even after a full scheduler pass
+    completeSchedulerPassWithSecondBatch();
     // Note: we broadcast a signal so we have a command we can limit the RecordingExporter on.
     final var limitRecord = engine.signal().withSignalName("limitSignal").broadcast();
     assertThat(
@@ -68,7 +73,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPENDED);
 
-    // and no follow op up command to execute again
+    // and no follow op up command to execute again, even after a full scheduler pass
+    completeSchedulerPassWithSecondBatch();
     // Note: we broadcast a signal so we have a command we can limit the RecordingExporter on.
     final var limitRecord = engine.signal().withSignalName("limitSignal").broadcast();
     assertThat(
@@ -147,6 +153,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
 
     // when we resume it again
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+    advanceSchedulerUntil(r -> r.getIntent() == BatchOperationIntent.COMPLETED);
 
     // then the batch should be active
     assertThat(
@@ -305,5 +312,14 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
               assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.RESUME);
               assertThat(r.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
             });
+  }
+
+  /**
+   * The scheduler only runs when the test clock advances. Completing a second batch proves that a
+   * scheduler pass finished after the lifecycle transition of the first batch.
+   */
+  private void completeSchedulerPassWithSecondBatch() {
+    createNewCancelProcessInstanceBatchOperation(Set.of(4L, 5L, 6L));
+    advanceSchedulerUntil(r -> r.getIntent() == BatchOperationIntent.COMPLETED);
   }
 }

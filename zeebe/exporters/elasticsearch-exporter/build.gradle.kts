@@ -15,6 +15,7 @@ dependencies {
   api(libs.org.apache.httpcomponents.httpcore)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.co.elastic.clients.elasticsearch.java)
   api(libs.io.micrometer.micrometer.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)

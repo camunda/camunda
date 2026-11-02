@@ -12,19 +12,37 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class DefaultZeebeDbFactory {
+  private static final long MINIMUM_MEMORY_BYTES = 32 * 1024 * 1024; // 32 MB
+  private static final int DEFAULT_PARTITION_COUNT = 3;
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
+    return defaultFactory(DEFAULT_PARTITION_COUNT);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(final int partitions) {
+    return defaultFactory(partitions, MINIMUM_MEMORY_BYTES * partitions);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+      final int partitions, final long memoryLimitBytes) {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final var rocksDbConfig = new RocksDbConfiguration();
+    rocksDbConfig.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    rocksDbConfig.setMemoryLimit(memoryLimitBytes);
     return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(),
+        rocksDbConfig,
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE),
-        SimpleMeterRegistry::new);
+        SimpleMeterRegistry::new,
+        RocksDbResources.of(rocksDbConfig, new RuntimeInfo(partitions)));
   }
 }

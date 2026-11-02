@@ -52,4 +52,17 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <!-- Keep the original ONF/Apache headers of the classes moved over from atomix. -->
+          <skipExistingHeaders>true</skipExistingHeaders>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

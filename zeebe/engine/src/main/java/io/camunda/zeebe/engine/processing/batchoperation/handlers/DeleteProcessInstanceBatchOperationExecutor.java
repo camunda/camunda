@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -37,7 +38,8 @@ public class DeleteProcessInstanceBatchOperationExecutor implements BatchOperati
     LOGGER.trace("Delete process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new HistoryDeletionRecord();
     command.setResourceKey(itemKey);
     command.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
@@ -47,6 +49,6 @@ public class DeleteProcessInstanceBatchOperationExecutor implements BatchOperati
         HistoryDeletionIntent.DELETE,
         command,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

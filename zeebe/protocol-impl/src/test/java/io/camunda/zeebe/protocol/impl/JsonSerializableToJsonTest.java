@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -102,6 +103,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
@@ -138,6 +140,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -216,7 +219,7 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AuthInfo authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
               recordMetadata
                   .intent(intent)
@@ -279,7 +282,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "fails",
                   "brokerVersion": "1.2.3",
                   "authorizations": {
-                    "foo" : "bar"
+                    "authorized_username" : "foo"
                   },
                   "agent": {
                     "elementId": "agent-element"
@@ -2159,6 +2162,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
+                  "resumeFromUserTaskKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2193,6 +2197,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "resumeFromJobKey": -1,
+                  "resumeFromUserTaskKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2923,7 +2928,7 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")))
+                  .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
                   .setStartTime(123L);
             },
         """
@@ -2956,7 +2961,7 @@ final class JsonSerializableToJsonTest {
                     "tenantId": "<default>",
                     "deploymentKey": -1
                   },
-                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{"authorized_username": "foo"}}
                 }
                 """
       },
@@ -2977,7 +2982,7 @@ final class JsonSerializableToJsonTest {
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
                   "commandValue": null,
-                  "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{}}
                 }
                 """
       },
@@ -3035,6 +3040,7 @@ final class JsonSerializableToJsonTest {
                     "storageOrdinal": 0,
                     "businessId": "",
                     "resumeFromJobKey": -1,
+                    "resumeFromUserTaskKey": -1,
                     "elementInstanceKey": -1
                   }
                 }
@@ -3127,6 +3133,102 @@ final class JsonSerializableToJsonTest {
                   "parentKey": -1,
                   "index": -1,
                   "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// UserTaskLookupRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new UserTaskLookupRecord()
+                    .setFetchVariables(List.of("foo", "bar"))
+                    .setTenantId("tenant-1")
+                    .setUserTask(
+                        new UserTaskRecord()
+                            .setUserTaskKey(123)
+                            .setElementId("task")
+                            .setAssignee("demo")
+                            .setVariables(
+                                new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':1}"))))
+                    .setLifecycleState(UserTaskLifecycleState.CREATED),
+        """
+                {
+                  "fetchVariables": ["foo", "bar"],
+                  "tenantId": "tenant-1",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "task",
+                    "elementInstanceKey": -1,
+                    "assignee": "demo",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {"foo": 1},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": 123,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "CREATED"
+                }
+                """
+      },
+      {
+        "Empty UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
+        """
+                {
+                  "fetchVariables": [],
+                  "tenantId": "<default>",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "",
+                    "elementInstanceKey": -1,
+                    "assignee": "",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": -1,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "UNSPECIFIED"
                 }
                 """
       },

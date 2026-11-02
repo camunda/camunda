@@ -29,6 +29,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Minimal JWKS + OIDC discovery HTTP server backed by a freshly generated RSA or EC key pair.
@@ -168,6 +169,16 @@ public final class JwksTestServer {
   public static String signForIssuer(
       final JwksTestServer server, final String issuer, final List<String> audiences)
       throws Exception {
+    return signForIssuer(server, issuer, audiences, Map.of());
+  }
+
+  /** As {@link #signForIssuer(JwksTestServer, String, List)}, with {@code claims} added. */
+  public static String signForIssuer(
+      final JwksTestServer server,
+      final String issuer,
+      final List<String> audiences,
+      final Map<String, Object> claims)
+      throws Exception {
     final var header = new JWSHeader.Builder(server.algorithm).keyID(server.kid()).build();
     final var builder =
         new JWTClaimsSet.Builder()
@@ -178,6 +189,7 @@ public final class JwksTestServer {
     if (!audiences.isEmpty()) {
       builder.audience(audiences);
     }
+    claims.forEach(builder::claim);
     final var jwt = new SignedJWT(header, builder.build());
     jwt.sign(server.signer());
     return jwt.serialize();

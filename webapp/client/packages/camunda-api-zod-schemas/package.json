@@ -820,21 +820,21 @@
 	},
 	"packageManager": "npm@12.2.1",
 	"devDependencies": {
-		"@kubb/adapter-oas": "5.12.4",
-		"@kubb/cli": "5.12.4",
-		"@kubb/core": "5.12.4",
-		"@kubb/parser-ts": "5.12.4",
-		"@kubb/plugin-ts": "5.0.14",
-		"@kubb/plugin-zod": "5.4.12",
-		"@types/node": "26.6.5",
+		"@kubb/adapter-oas": "5.15.3",
+		"@kubb/cli": "5.15.3",
+		"@kubb/core": "5.15.3",
+		"@kubb/parser-ts": "5.15.3",
+		"@kubb/plugin-ts": "5.4.0",
+		"@kubb/plugin-zod": "5.8.0",
+		"@types/node": "26.6.6",
 		"changelogen": "0.6.2",
-		"kubb": "5.12.4",
+		"kubb": "5.15.3",
 		"typescript": "7.0.2",
 		"vite": "8.3.5",
 		"vite-plugin-circular-dependency": "0.6.0",
 		"vite-plugin-dts": "5.1.2",
 		"yaml": "2.9.1",
-		"zod": "^4.6.5"
+		"zod": "^4.6.7"
 	},
 	"peerDependencies": {
 		"zod": "^4.0.0"

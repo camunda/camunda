@@ -138,6 +138,10 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByRole('button', {name: /^Complete Task$/i});
 	}
 
+	get suspendedLabel() {
+		return this.detailsHeader.getByText('Suspended', {exact: true});
+	}
+
 	get completionLabel() {
 		return this.page.getByTestId('completion-label');
 	}

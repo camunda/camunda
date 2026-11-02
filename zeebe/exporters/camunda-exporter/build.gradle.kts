@@ -24,6 +24,7 @@ dependencies {
   implementation(libs.com.google.code.findbugs.jsr305)
   api(libs.org.agrona.agrona)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   api(libs.com.auth0.java.jwt)
   implementation(libs.org.apache.commons.commons.lang3)

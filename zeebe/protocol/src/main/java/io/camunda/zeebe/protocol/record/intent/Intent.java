@@ -47,7 +47,7 @@ public interface Intent {
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
-  @SuppressWarnings("deprecated")
+  @SuppressWarnings("deprecation")
   static Map<ValueType, Class<? extends Intent>> computeValueTypeToIntentMap() {
     final Map<ValueType, Class<? extends Intent>> map = new LinkedHashMap<>();
     map.put(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.class);
@@ -128,6 +128,7 @@ public interface Intent {
     map.put(ValueType.USAGE_METRIC, UsageMetricIntent.class);
     map.put(ValueType.USER, UserIntent.class);
     map.put(ValueType.USER_TASK, UserTaskIntent.class);
+    map.put(ValueType.USER_TASK_LOOKUP, UserTaskLookupIntent.class);
     map.put(ValueType.VARIABLE, VariableIntent.class);
     map.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.class);
     return map;

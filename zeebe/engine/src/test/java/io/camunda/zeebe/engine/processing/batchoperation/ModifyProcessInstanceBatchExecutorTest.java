@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -26,7 +29,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
   @Test
   public void shouldModifyProcessInstance() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
 
     // create a process with two user tasks
     final long processDefinitionKey =
@@ -80,7 +84,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
   @Test
   public void shouldModifyProcessInstanceFail() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
 
     // create a process with two user tasks
     final long processDefinitionKey =
@@ -142,7 +147,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
   @Test
   public void shouldModifyProcessInstanceFailNoProcessInstance() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
 
     // then start the batch where we modify the non-existing process instance
     final var batchOperationKey =

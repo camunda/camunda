@@ -16,7 +16,6 @@ import static io.camunda.optimize.service.db.report.result.CompositeCommandResul
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
@@ -48,17 +47,14 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterOS
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
-  private final DefinitionService definitionService;
 
   public ProcessGroupByProcessDefinitionKeyInterpreterOS(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      final ProcessViewInterpreterFacadeOS viewInterpreter,
-      final DefinitionService definitionService) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.configurationService = configurationService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
-    this.definitionService = definitionService;
   }
 
   @Override
@@ -99,8 +95,8 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterOS
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByInterpreter.isKeyOfNumericType(context));
     if (shouldResolveDefinitionNames(context)) {
-      ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
-          compositeCommandResult, definitionService);
+      ProcessDefinitionNameResolver.applyDefinitionLabels(
+          compositeCommandResult, context.getReportData().getDefinitions());
     }
   }
 

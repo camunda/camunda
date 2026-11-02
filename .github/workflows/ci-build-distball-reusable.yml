@@ -101,10 +101,33 @@ jobs:
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
       # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
       # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
-      # timeout-minutes bounds a Vault/WIF hang so it fails fast instead of silently
-      # eating the whole job timeout-minutes budget -- see INC-6820.
-      - name: Authenticate to GCS build-cache
-        timeout-minutes: 3
+      # Vault can hang (INC-6820, INC-8811), so the 3m budget is split into three 1m attempts;
+      # healthy auth takes 7-11s. If it nears 1m, rebalance the split; don't raise the total.
+      # Attempts are literal copies (no retry for `uses:`, cf. vault-action-with-retry): keep
+      # them in sync. The last omits `continue-on-error` so exhausted retries fail the job.
+      - name: Authenticate to GCS build-cache (attempt 1 of 3)
+        id: gcs-auth-1
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Authenticate to GCS build-cache (attempt 2 of 3)
+        id: gcs-auth-2
+        if: steps.gcs-auth-1.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Authenticate to GCS build-cache (attempt 3 of 3)
+        id: gcs-auth-3
+        if: steps.gcs-auth-2.outcome == 'failure'
+        timeout-minutes: 1
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}

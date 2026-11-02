@@ -43,12 +43,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.Testcontainers;
 
 public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
+
+  // The inbound context of the cluster secrets process is the value of this cluster secret
+  private static final String CLUSTER_SECRET_WEBHOOK_CONTEXT = "cluster-secrets-webhook";
 
   @RegisterExtension
   @Order(1)
@@ -69,25 +74,35 @@ public class CamundaProcessTestConnectorsIT {
       new CamundaProcessTestExtension()
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
-              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
+              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
+          .withClusterSecret("HEALTH_PATH", "readiness")
+          .withClusterSecret("WEBHOOK_CONTEXT", CLUSTER_SECRET_WEBHOOK_CONTEXT);
 
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
-  @Test
-  void shouldInvokeInAndOutboundConnectors() throws IOException {
+  /**
+   * Runs the same scenario for connector secrets ({@code {{secrets.NAME}}}) and for cluster secrets
+   * ({@code camunda.secrets.NAME}), which connectors resolve through the engine in their job input
+   * and through {@code /v2/secrets/resolve} in their inbound properties.
+   */
+  @ParameterizedTest
+  @CsvSource({
+    "connector-process.bpmn, connector-process, " + INBOUND_CONNECTOR_ID,
+    "cluster-secrets-connector-process.bpmn, cluster-secrets-connector-process, "
+        + CLUSTER_SECRET_WEBHOOK_CONTEXT
+  })
+  void shouldInvokeInAndOutboundConnectors(
+      final String resource, final String processId, final String inboundContext)
+      throws IOException {
     // given
-    client
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("connector-process.bpmn")
-        .send()
-        .join();
+    client.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId("connector-process")
+            .bpmnProcessId(processId)
             .latestVersion()
             .variable("key", "key-1")
             .send()
@@ -101,7 +116,7 @@ public class CamundaProcessTestConnectorsIT {
 
     // when: invoke the inbound connector
     final String inboundAddress =
-        processTestContext.getConnectorsAddress() + "/inbound/" + INBOUND_CONNECTOR_ID;
+        processTestContext.getConnectorsAddress() + "/inbound/" + inboundContext;
     final HttpPost request = new HttpPost(inboundAddress);
     final String requestBody = "{\"key\":\"key-1\"}";
     request.setEntity(HttpEntities.create(requestBody, ContentType.APPLICATION_JSON));

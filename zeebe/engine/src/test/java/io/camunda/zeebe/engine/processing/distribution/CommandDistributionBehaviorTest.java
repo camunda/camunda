@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
@@ -87,10 +88,8 @@ class CommandDistributionBehaviorTest {
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+        AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
+            .withFormat(AuthDataFormat.PRE_AUTHORIZED);
 
     command =
         new MockTypedRecord<>(
@@ -216,10 +215,8 @@ class CommandDistributionBehaviorTest {
 
     // given command with auth info
     final var authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+        AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
+            .withFormat(AuthDataFormat.PRE_AUTHORIZED);
 
     final var key = keyGenerator.nextKey();
     final var command =

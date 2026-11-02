@@ -207,7 +207,7 @@ jobs:
           - component: shared
             owner: "@camunda/orchestration-cluster-webapps"
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -262,7 +262,7 @@ jobs:
     timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -318,7 +318,7 @@ jobs:
           - component: shared
             owner: "@camunda/orchestration-cluster-webapps"
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -381,7 +381,7 @@ jobs:
           - component: shared
             owner: "@camunda/orchestration-cluster-webapps"
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:
@@ -446,7 +446,7 @@ jobs:
           - component: shared
             owner: "@camunda/orchestration-cluster-webapps"
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     defaults:
       run:

@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.listview;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -37,6 +38,10 @@ public class VariableForListViewEntity
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinal;
 
   public static String getIdBy(final long scopeKey, final String name) {
     return String.format("%d-%s", scopeKey, name);
@@ -146,6 +151,15 @@ public class VariableForListViewEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public VariableForListViewEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -158,7 +172,8 @@ public class VariableForListViewEntity
         tenantId,
         position,
         joinRelation,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        storageOrdinal);
   }
 
   @Override
@@ -179,6 +194,7 @@ public class VariableForListViewEntity
         && Objects.equals(varValue, that.varValue)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
-        && Objects.equals(joinRelation, that.joinRelation);
+        && Objects.equals(joinRelation, that.joinRelation)
+        && Objects.equals(storageOrdinal, that.storageOrdinal);
   }
 }

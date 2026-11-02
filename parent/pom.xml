@@ -46,7 +46,7 @@
     <version.bouncycastle>1.86</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>1.1.2</version.camunda-security-library>
+    <version.camunda-security-library>1.2.0</version.camunda-security-library>
     <version.checkstyle>14.3.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.21.0</version.commons-lang>
@@ -55,7 +55,7 @@
     <version.commons-codec>1.23.0</version.commons-codec>
     <version.commons-compress>1.28.0</version.commons-compress>
     <version.commons-validator>1.11.0</version.commons-validator>
-    <version.zstd-jni>1.5.7-24</version.zstd-jni>
+    <version.zstd-jni>1.5.7-25</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
@@ -64,9 +64,9 @@
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.51.0</version.error-prone>
-    <version.nullaway>0.14.2</version.nullaway>
+    <version.nullaway>0.14.3</version.nullaway>
     <version.grpc>1.85.1</version.grpc>
-    <version.gson>2.14.0</version.gson>
+    <version.gson>2.15.0</version.gson>
     <version.guava>33.7.2-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.icu4j>79.1</version.icu4j>
@@ -131,8 +131,8 @@
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
     <version.feel-scala>1.22.1</version.feel-scala>
-    <version.dmn-scala>1.12.5</version.dmn-scala>
-    <version.rest-assured>6.2.0</version.rest-assured>
+    <version.dmn-scala>1.12.6</version.dmn-scala>
+    <version.rest-assured>6.3.0</version.rest-assured>
     <version.spring>7.0.10</version.spring>
     <version.spring-security>7.1.2</version.spring-security>
     <version.spring-boot>4.1.2</version.spring-boot>
@@ -149,7 +149,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.6.0</version.json-smart>
-    <version.byte-buddy>1.18.15-jdk5</version.byte-buddy>
+    <version.byte-buddy>1.18.16-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.4.0</version.resilience4j>
     <version.kotlin-stdlib>2.4.21</version.kotlin-stdlib>
@@ -172,11 +172,11 @@
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.9</version.azure-sdk>
-    <version.awssdk>2.57.3</version.awssdk>
+    <version.awssdk>2.57.7</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
-    <version.jackson-databind-nullable>0.2.12</version.jackson-databind-nullable>
+    <version.jackson-databind-nullable>0.2.13</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.22</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
@@ -208,7 +208,7 @@
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.5</version.unboundid-ldapsdk>
     <version.parsson>1.1.9</version.parsson>
-    <version.springdoc>3.1.1</version.springdoc>
+    <version.springdoc>3.2.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v26.10.0</version.node>
@@ -230,7 +230,7 @@
     <version.auth0.commons>1.12.1</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.18.2</version.okio-jvm>
-    <version.jwks-rsa>0.24.1</version.jwks-rsa>
+    <version.jwks-rsa>0.24.2</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.10</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
@@ -261,7 +261,7 @@
     <plugin.version.exec>3.6.4</plugin.version.exec>
     <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
-    <plugin.version.jacoco>0.8.15</plugin.version.jacoco>
+    <plugin.version.jacoco>0.8.16</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
     <plugin.version.openapi-generator>7.26.0</plugin.version.openapi-generator>
     <plugin.version.protobuf-maven-plugin>5.1.11</plugin.version.protobuf-maven-plugin>
@@ -447,6 +447,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-micrometer</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -991,6 +997,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-secret-store-gcp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-secret-store-env</artifactId>
         <version>${project.version}</version>
       </dependency>
 

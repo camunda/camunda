@@ -10,7 +10,6 @@ import {useCallback, useEffect} from 'react';
 import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import type {Tenant} from '@camunda/camunda-api-zod-schemas/8.11';
 import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminTenantsPage} from '#/admin/pages/AdminTenantsPage';
 import {getTenantsRequestBody} from '#/admin/modules/tenants/getTenantsRequestBody';
@@ -69,20 +68,12 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/tenants/')({
 			[navigate, search],
 		);
 
-		const handleOpenTenant = useCallback(
-			({tenantId}: Tenant) => {
-				navigate({to: '/admin/tenants/$tenantId', params: {tenantId}});
-			},
-			[navigate],
-		);
-
 		return (
 			<AdminTenantsPage
 				tenants={data.items}
 				totalItems={data.page.totalItems}
 				search={search}
 				onSearchChange={handleSearchChange}
-				onOpenTenant={handleOpenTenant}
 			/>
 		);
 	},

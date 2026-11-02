@@ -37,6 +37,7 @@ public class DecisionInstanceBuilder implements DecisionInstance {
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
   private String businessId;
+  private Integer storageOrdinal;
   private Long elementInstanceKey;
   private long decisionDefinitionKey;
   private String decisionDefinitionId;
@@ -92,6 +93,11 @@ public class DecisionInstanceBuilder implements DecisionInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
   }
 
   @Override
@@ -219,6 +225,11 @@ public class DecisionInstanceBuilder implements DecisionInstance {
 
   public DecisionInstanceBuilder setBusinessId(final String businessId) {
     this.businessId = businessId;
+    return this;
+  }
+
+  public DecisionInstanceBuilder setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 

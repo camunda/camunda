@@ -42,8 +42,9 @@ public record PartitionRebalance(
     }
     if (progress != PartitionRebalanceProgress.COMPLETED && outcome != null) {
       throw new IllegalArgumentException(
-          "A partition rebalance for partition %d of %s with progress %s must not have an "
-              + "outcome".formatted(partitionId, physicalTenantId, progress));
+          ("A partition rebalance for partition %d of %s with progress %s must not have an "
+                  + "outcome")
+              .formatted(partitionId, physicalTenantId, progress));
     }
   }
 

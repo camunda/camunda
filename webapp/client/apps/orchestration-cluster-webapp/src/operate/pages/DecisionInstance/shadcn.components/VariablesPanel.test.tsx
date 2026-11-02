@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, beforeAll} from 'vitest';
 import {useParams} from '@tanstack/react-router';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse, http} from 'msw';
@@ -18,6 +18,7 @@ import {mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handle
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {VariablesPanel} from './VariablesPanel';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const TABLE_ID = '4294980768';
 const LITERAL_ID = '4294980769';
@@ -41,6 +42,8 @@ function renderPanel() {
 }
 
 describe('<VariablesPanel />', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(() => {
 		localStorage.removeItem('operate.panelStates');
 	});

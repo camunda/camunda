@@ -43,7 +43,6 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // no explicit copy needed: RecordMetadata.authorization() already copies via copyFrom()
       appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
     }
   }

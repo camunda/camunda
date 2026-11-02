@@ -32,9 +32,10 @@ import org.apache.hc.core5.http.nio.CapacityChannel;
 /**
  * An asynchronous consumer for binary data that represents a document.
  *
- * <p>This implementation guarantees that the data is consumed in a non-blocking manner, and that
- * the data is stored in a buffer with a fixed capacity. The consumer works with a {@link
- * CapacityChannel} to notify the I/O layer when more data can be read from the network.
+ * <p>This implementation guarantees that the data is consumed in a non-blocking manner, and that it
+ * asks the I/O layer for no more data than fits into a buffer with a fixed capacity. The consumer
+ * works with a {@link CapacityChannel} to notify the I/O layer when more data can be read from the
+ * network. The I/O layer may still hand over more than that; the buffer then grows to hold it.
  *
  * <p>If the server returns:
  *
@@ -85,7 +86,6 @@ public class DocumentDataConsumer<T>
       problemDetail = true;
     } else {
       problemDetail = false;
-      inputStream.setCapacityCallback(this);
       resultCallback.completed((ApiEntity<T>) ApiEntity.of(inputStream));
     }
   }
@@ -121,11 +121,12 @@ public class DocumentDataConsumer<T>
       return;
     }
 
+    // The I/O layer calls this whenever its window runs low, and HTTP/1.1 stops reading until it is
+    // granted more. Its window can be smaller than the free space, as it also counts data it pushed
+    // beyond the window, so the free space is granted again on every call. The stream restarts
+    // counting freed space from here, which keeps it from granting that space a second time.
     this.capacityChannel = capacityChannel;
-    final int availableSpace = inputStream.getAvailableSpace();
-    if (availableSpace > 0) {
-      capacityChannel.update(availableSpace);
-    }
+    inputStream.reportAvailableSpace(this);
   }
 
   @Override
@@ -144,13 +145,23 @@ public class DocumentDataConsumer<T>
       return;
     }
 
-    inputStream.endOfStream();
     completed = true;
+    // errors signalled after the end of the stream are ignored by the stream itself, so a late
+    // releaseResources() cannot flag a fully received document as aborted
+    inputStream.endOfStream();
   }
 
   @Override
   public void releaseResources() {
-    // nothing to release
+    // AbstractAsyncResponseConsumer#failed only releases resources and never reaches our own
+    // #failed, so a cancelled or aborted exchange would otherwise leave a blocked reader waiting
+    // for data that never arrives. This is a no-op once the stream has ended.
+    if (!problemDetail) {
+      inputStream.signalError(
+          new IOException(
+              "Document stream was aborted before the response was fully received (connection"
+                  + " closed, timed out or cancelled)"));
+    }
   }
 
   @Override

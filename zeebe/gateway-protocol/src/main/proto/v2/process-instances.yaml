@@ -1793,6 +1793,7 @@ components:
         - rootProcessInstanceKey
         - tags
         - businessId
+        - storageOrdinal
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1864,6 +1865,13 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        storageOrdinal:
+          description: |
+            The storage ordinal this process instance's data belongs to. This is `null` for
+            data exported before storage ordinals were introduced in version 8.11.
+          nullable: true
+          type: integer
+          format: int32
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.8"
@@ -1899,6 +1907,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: storageOrdinal
+          addedInVersion: "8.11"
 
     CancelProcessInstanceRequest:
       type: object

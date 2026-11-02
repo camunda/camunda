@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DRG cache queries, from a DRG cache incident on 8.9 brokers. Add this pack when
+     DeployedDrg or DbDecisionState shows up in the starter pack's histogram or
+     top_dominators. Same rules as the starter pack. -->
+<section name="DRG cache queries" xmlns="http://www.eclipse.org/mat/report.xsd">
+  <param key="filename_suffix" value="drg_cache" />
+  <param key="format" value="csv" />
+  <param key="limit" value="10000000" />
+
+  <!-- DRG cache: DbDecisionState.drgCache, a Guava cache. Join on mapId. -->
+  <query name="decision_states">
+    <command>oql "SELECT s.@objectId AS id, s.@retainedHeapSize AS retained, s.drgCache.localCache.@objectId AS mapId FROM io.camunda.zeebe.engine.state.deployment.DbDecisionState s"</command>
+  </query>
+  <query name="caches">
+    <command>oql "SELECT c.@objectId AS mapId, c.@retainedHeapSize AS retained, c.maxWeight AS maxWeight FROM com.google.common.cache.LocalCache c"</command>
+  </query>
+  <query name="cache_segments">
+    <command>oql "SELECT seg.@objectId AS segId, seg.map.@objectId AS mapId, seg.count AS cnt, seg.maxSegmentWeight AS maxSegWeight FROM com.google.common.cache.LocalCache$Segment seg"</command>
+  </query>
+  <!-- retained is empty while the entry loads. Use segId only where it matches a
+       cache_segments row. -->
+  <query name="drg_entries">
+    <command>oql "SELECT e.@objectId AS entryId, e.key.drgKey.value AS drgKey, e.valueReference.referent.@retainedHeapSize AS retained, dominatorof(e).@objectId AS segId FROM com.google.common.cache.LocalCache$StrongAccessEntry e WHERE e.key.drgKey != null"</command>
+  </query>
+  <query name="deployed_drgs">
+    <command>oql "SELECT d.@objectId AS id, d.@retainedHeapSize AS retained FROM io.camunda.zeebe.engine.state.deployment.DeployedDrg d"</command>
+  </query>
+  <!-- Process cache in DbProcessState, for comparison -->
+  <query name="deployed_processes">
+    <command>oql "SELECT p.@objectId AS id, p.@retainedHeapSize AS retained FROM io.camunda.zeebe.engine.state.deployment.DeployedProcess p"</command>
+  </query>
+</section>

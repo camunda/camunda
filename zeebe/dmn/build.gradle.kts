@@ -6,6 +6,7 @@ dependencies {
   api(libs.org.camunda.bpm.extension.dmn.scala.dmn.engine)
   api(libs.org.scala.lang.scala.library)
   api(libs.org.camunda.bpm.model.camunda.dmn.model)
+  implementation(libs.org.camunda.bpm.model.camunda.xml.model)
   api(libs.org.agrona.agrona)
   api(libs.org.camunda.feel.feel.engine)
   implementation(project(":zeebe-msgpack-core"))

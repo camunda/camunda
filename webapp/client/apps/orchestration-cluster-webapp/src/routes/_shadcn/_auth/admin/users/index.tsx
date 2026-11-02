@@ -10,7 +10,6 @@ import {useCallback} from 'react';
 import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
 import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminUsersPage} from '#/admin/pages/AdminUsersPage';
 import {getUsersRequestBody, usersSearchSchema, type UsersSearch} from '#/admin/modules/users/searchSchema';
@@ -56,20 +55,12 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 			[navigate, search],
 		);
 
-		const handleOpenUser = useCallback(
-			(user: User) => {
-				navigate({to: '/admin/users/$username', params: {username: user.username}});
-			},
-			[navigate],
-		);
-
 		return (
 			<AdminUsersPage
 				users={data.items}
 				totalItems={data.page.totalItems}
 				search={search}
 				onSearchChange={handleSearchChange}
-				onOpenUser={handleOpenUser}
 			/>
 		);
 	},

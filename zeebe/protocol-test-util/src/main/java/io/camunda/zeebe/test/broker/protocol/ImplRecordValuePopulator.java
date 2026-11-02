@@ -19,6 +19,8 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -88,6 +90,8 @@ final class ImplRecordValuePopulator {
           populateArrayProperty(field, implInstance, random);
         } else if (fieldType.equals(ObjectProperty.class)) {
           populateObjectProperty(field, implInstance, random);
+        } else if (fieldType.equals(AuthInfoProperty.class)) {
+          ((AuthInfoProperty) field.get(implInstance)).setValue(random.nextObject(AuthInfo.class));
         } else if (!BaseProperty.class.isAssignableFrom(fieldType)) {
           // Skip non-property fields (e.g. caches, internal state, MsgPackWriter/Reader)
         } else {

@@ -48,6 +48,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           6755399441058457L,
           3755399441058437L,
           "business-1",
+          1001,
           6755399441058465L,
           "tenantId",
           "ddi",
@@ -71,6 +72,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           .setProcessInstanceKey(6755399441058457L)
           .setRootProcessInstanceKey(3755399441058437L)
           .setBusinessId("business-1")
+          .setStorageOrdinal(1001)
           .setElementInstanceKey(6755399441058465L)
           .setTenantId("tenantId")
           .setDecisionId("ddi")

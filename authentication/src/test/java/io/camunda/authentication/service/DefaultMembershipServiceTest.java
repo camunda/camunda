@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -91,7 +93,9 @@ class DefaultMembershipServiceTest {
                     .tenantServices(TENANT_A, tenantATenantServices)
                     .roleServices(TENANT_A, tenantARoleServices)
                     .mappingRuleServices(TENANT_A, tenantAMappingRuleServices));
-    service = new DefaultMembershipService(serviceRegistry, new CamundaSecurityLibraryProperties());
+    service =
+        new DefaultMembershipService(
+            serviceRegistry, new CamundaSecurityLibraryProperties(), new MockEnvironment());
     RequestContextHolder.setRequestAttributes(
         new ServletRequestAttributes(new MockHttpServletRequest()));
   }
@@ -194,7 +198,8 @@ class DefaultMembershipServiceTest {
                     .groupServices("default", realGroupServices)
                     .roleServices("default", roleServices)
                     .tenantServices("default", tenantServices));
-    return new DefaultMembershipService(registry, new CamundaSecurityLibraryProperties());
+    return new DefaultMembershipService(
+        registry, new CamundaSecurityLibraryProperties(), new MockEnvironment());
   }
 
   @Test
@@ -478,6 +483,60 @@ class DefaultMembershipServiceTest {
     assertThat(service.lookupOutages).isEmpty();
   }
 
+  @Test
+  void shouldLookUpGroupsFromDbWhenRequestTenantUsesCamundaGroups() {
+    // given
+    final var serviceUnderTest =
+        serviceWithProperties(
+            Map.of(
+                "camunda.security.authentication.oidc.groups-claim",
+                "groups",
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim",
+                ""));
+    when(tenantAGroupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "ga1", "group", null)));
+    final var query =
+        new MembershipQuery(
+                Map.of("sub", "alice", "groups", List.of("token-group")),
+                "alice",
+                PrincipalType.USER)
+            .withMappingRuleIds(List.of());
+
+    // when
+    final var groups = new ArrayList<String>();
+    inPhysicalTenant(TENANT_A, () -> groups.addAll(serviceUnderTest.groupIds(query)));
+
+    // then
+    assertThat(groups).containsExactly("ga1");
+  }
+
+  @Test
+  void shouldReadGroupsFromClaimOfIssuingProvider() {
+    // given
+    final var issuer = "https://okta.example.com/oauth2/default";
+    final var serviceUnderTest =
+        serviceWithProperties(
+            Map.of(
+                "camunda.security.authentication.oidc.groups-claim",
+                "groups",
+                "camunda.security.authentication.providers.oidc.okta.issuer-uri",
+                issuer,
+                "camunda.security.authentication.providers.oidc.okta.groups-claim",
+                "roles"));
+    final var query =
+        new MembershipQuery(
+            Map.of("iss", issuer, "groups", List.of("okta-group"), "roles", List.of("okta-role")),
+            "alice",
+            PrincipalType.USER);
+
+    // when
+    final var groups = serviceUnderTest.groupIds(query);
+
+    // then
+    assertThat(groups).containsExactly("okta-role");
+    verifyNoInteractions(groupServices);
+  }
+
   private void inPhysicalTenant(final String physicalTenantId, final Runnable call) {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
@@ -514,6 +573,27 @@ class DefaultMembershipServiceTest {
                     .groupServices("default", groupServices)
                     .roleServices("default", roleServices)
                     .tenantServices("default", tenantServices));
-    return new DefaultMembershipService(serviceRegistry, config);
+    return new DefaultMembershipService(serviceRegistry, config, new MockEnvironment());
+  }
+
+  /**
+   * Builds the service from configuration properties, with the cluster config resolved the way
+   * {@code PhysicalTenantSecurityConfiguration} resolves it when physical tenants are configured.
+   */
+  private DefaultMembershipService serviceWithProperties(final Map<String, String> properties) {
+    final var environment = new MockEnvironment();
+    properties.forEach(environment::setProperty);
+    final var config = new CamundaSecurityLibraryProperties();
+    config.setAuthentication(
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", environment));
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .groupServices("default", groupServices)
+                    .roleServices("default", roleServices)
+                    .tenantServices("default", tenantServices)
+                    .groupServices(TENANT_A, tenantAGroupServices));
+    return new DefaultMembershipService(serviceRegistry, config, environment);
   }
 }

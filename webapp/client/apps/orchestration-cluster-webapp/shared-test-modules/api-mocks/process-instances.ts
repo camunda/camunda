@@ -47,6 +47,7 @@ function createProcessInstance(overrides?: Partial<ProcessInstance>): ProcessIns
 		rootProcessInstanceKey: null,
 		tags: [],
 		businessId: null,
+		storageOrdinal: null,
 		...overrides,
 	};
 }

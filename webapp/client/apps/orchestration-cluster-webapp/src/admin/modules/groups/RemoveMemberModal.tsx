@@ -6,18 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Trans, useTranslation} from 'react-i18next';
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	buttonVariants,
-} from '@camunda/design-system';
+import {RemoveMemberModal as SharedRemoveMemberModal} from '../shared/RemoveMemberModal';
 import type {MemberKind} from './members';
 import {useGroupMemberMutations} from './useGroupMemberMutations';
 
@@ -30,46 +19,18 @@ type Props = {
 };
 
 const RemoveMemberModal: React.FC<Props> = ({isOpen, groupId, kind, memberId, onClose}) => {
-	const {t} = useTranslation();
 	const {unassign} = useGroupMemberMutations(groupId);
 
-	const handleRemove = (event: React.MouseEvent<HTMLButtonElement>) => {
-		event.preventDefault();
-		unassign.mutate({kind, id: memberId}, {onSuccess: onClose});
-	};
-
 	return (
-		<AlertDialog
-			open={isOpen}
-			onOpenChange={(open) => {
-				if (!open) {
-					onClose();
-				}
-			}}
-		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>{isOpen ? t(`admin.groups.members.${kind}.remove`) : undefined}</AlertDialogTitle>
-				</AlertDialogHeader>
-				<AlertDialogDescription>
-					<Trans
-						i18nKey={`admin.groups.members.${kind}.confirmRemove`}
-						values={{id: memberId}}
-						components={{strong: <strong />}}
-					/>
-				</AlertDialogDescription>
-				<AlertDialogFooter>
-					<AlertDialogCancel disabled={unassign.isPending}>{t('admin.groups.cancel')}</AlertDialogCancel>
-					<AlertDialogAction
-						className={buttonVariants({variant: 'destructive'})}
-						disabled={unassign.isPending}
-						onClick={handleRemove}
-					>
-						{t(`admin.groups.members.${kind}.remove`)}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+		<SharedRemoveMemberModal
+			isOpen={isOpen}
+			owner="groups"
+			kind={kind}
+			memberId={memberId}
+			isPending={unassign.isPending}
+			onRemove={() => unassign.mutate({kind, id: memberId}, {onSuccess: onClose})}
+			onClose={onClose}
+		/>
 	);
 };
 

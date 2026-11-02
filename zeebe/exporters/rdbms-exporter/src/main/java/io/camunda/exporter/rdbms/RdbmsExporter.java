@@ -25,6 +25,7 @@ import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +72,8 @@ public final class RdbmsExporter {
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
 
+  private final LongSupplier nanoClock;
+
   // Async replication support — null when disabled
   private final ReplicationControllerFactory replicationControllerFactory;
   private ReplicationController replicationController;
@@ -84,8 +88,10 @@ public final class RdbmsExporter {
       final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
-      final ReplicationControllerFactory replicationControllerFactory) {
+      final ReplicationControllerFactory replicationControllerFactory,
+      final LongSupplier nanoClock) {
     this.historyCleanupService = historyCleanupService;
+    this.nanoClock = nanoClock;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
 
@@ -229,6 +235,7 @@ public final class RdbmsExporter {
   }
 
   public void export(final Record<?> record) {
+    final long exportStartNanos = nanoClock.getAsLong();
     if (!replicationController.isReplicationInSync()) {
       throw new ExporterException(
           String.format(
@@ -281,6 +288,7 @@ public final class RdbmsExporter {
         if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
           oldestRecordTimestampInBatch = recordTimestamp;
         }
+        rdbmsWriters.getExecutionQueue().addEstimatedBytes(RecordSizes.of(record));
       }
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here. When a flush fails
@@ -293,7 +301,7 @@ public final class RdbmsExporter {
             alreadyProcessed || flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
         final boolean flushed = rdbmsWriters.flush(shouldFlush);
         if (flushed) {
-          resetIntervalFlush();
+          resetIntervalFlush(exportStartNanos);
         }
       } catch (final ExporterPositionMismatchException e) {
         log(
@@ -328,12 +336,28 @@ public final class RdbmsExporter {
    * After a flush triggered not by an interval, we need to reset the interval flush task to avoid
    * too many flushes.
    */
-  private void resetIntervalFlush() {
+  private void resetIntervalFlush(final long workStartNanos) {
     if (!flushAfterEachRecord() && currentFlushTask != null) {
       currentFlushTask.cancel();
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+      scheduleIntervalFlush(workStartNanos);
     }
+  }
+
+  /**
+   * Schedules the next interval flush {@code flushInterval} after the work that started at {@code
+   * workStartNanos} (an export or interval flush, including the flush itself) completed.
+   *
+   * <p>The actor clock is only refreshed between actor jobs, so a delay passed to the controller at
+   * the end of a flush counts from when the current job started, not from now. When a flush blocks
+   * for longer than {@code flushInterval} (e.g. against a high-latency database) the next flush
+   * would already be due and run right away, leaving the exporter alternating between a flush and a
+   * single exported record. Adding the time spent in this job to the delay compensates for that.
+   */
+  private void scheduleIntervalFlush(final long workStartNanos) {
+    final Duration workDuration = Duration.ofNanos(nanoClock.getAsLong() - workStartNanos);
+    currentFlushTask =
+        controller.scheduleCancellableTask(
+            flushInterval.plus(workDuration), this::flushAndReschedule);
   }
 
   public void purge() {
@@ -403,6 +427,7 @@ public final class RdbmsExporter {
 
   @VisibleForTesting
   void flushAndReschedule() {
+    final long workStartNanos = nanoClock.getAsLong();
     try {
       flushExecutionQueue();
     } catch (final Exception e) {
@@ -412,8 +437,7 @@ public final class RdbmsExporter {
           lastFlushedPosition + 1,
           lastPosition);
     } finally {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+      scheduleIntervalFlush(workStartNanos);
     }
   }
 
@@ -463,6 +487,7 @@ public final class RdbmsExporter {
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
     private ReplicationControllerFactory replicationControllerFactory;
+    private LongSupplier nanoClock = System::nanoTime;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -524,6 +549,12 @@ public final class RdbmsExporter {
       return this;
     }
 
+    @VisibleForTesting("Allows controlling elapsed time for interval flush scheduling")
+    Builder nanoClock(final LongSupplier nanoClock) {
+      this.nanoClock = nanoClock;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
@@ -535,7 +566,8 @@ public final class RdbmsExporter {
           rdbmsSchemaManagerRegistry,
           historyCleanupService,
           historyDeletionService,
-          replicationControllerFactory);
+          replicationControllerFactory,
+          nanoClock);
     }
   }
 }

@@ -11,12 +11,12 @@ dependencies {
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.jetbrains.annotations)
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
-  testImplementation(libs.com.google.guava.guava)
   compileOnly(libs.com.github.spotbugs.spotbugs.annotations)
 }
 

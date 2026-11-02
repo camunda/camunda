@@ -101,10 +101,6 @@ dependencies {
 
 // Spring @WebMvcTest uses Logback-specific APIs (LogbackLoggingSystem).
 // server-conventions adds log4j-slf4j2-impl globally; exclude it here so Logback wins.
-configurations.testRuntimeClasspath {
-  exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j2-impl")
-  exclude(group = "org.apache.logging.log4j", module = "log4j-core")
-}
 
 description = "Zeebe Gateway REST API server"
 

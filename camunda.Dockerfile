@@ -81,10 +81,11 @@ WORKDIR /camunda
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
-COPY --link ${DISTBALL} camunda.tar.gz
+COPY --link ${DISTBALL} camunda.tar
 
+# tar detects gzip itself, so DISTBALL can be a .tar or a .tar.gz
 RUN mkdir camunda-zeebe && \
-    tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
+    tar xfv camunda.tar --strip 1 -C camunda-zeebe
 
 ARG TARGETARCH
 # Extract the target-arch RocksDB native lib into a system library dir and strip ALL

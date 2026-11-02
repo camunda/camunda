@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
-import io.atomix.cluster.Member;
-import java.util.Set;
+import io.atomix.cluster.MemberId;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public interface NodeIdProvider extends AutoCloseable {
@@ -55,11 +55,11 @@ public interface NodeIdProvider extends AutoCloseable {
   CompletableFuture<Boolean> previousNodeGracefullyShutdown();
 
   /**
-   * Sets the current known cluster members.
+   * Sets the node versions of the current known cluster members.
    *
-   * @param currentMembers the current members of the cluster
+   * @param memberVersions the version of each current member of the cluster
    */
-  void setMembers(Set<Member> currentMembers);
+  void setMemberVersions(Map<MemberId, Version> memberVersions);
 
   /**
    * Awaits until the NodeIdProvider is ready and other services can start safely.
@@ -109,7 +109,7 @@ public interface NodeIdProvider extends AutoCloseable {
       }
 
       @Override
-      public void setMembers(final Set<Member> currentMembers) {
+      public void setMemberVersions(final Map<MemberId, Version> memberVersions) {
         // no-op
       }
 

@@ -110,17 +110,6 @@ class BatchOperationGoneError extends Error {
 	}
 }
 
-async function requestOrThrowTreatingNotFoundAsGone(input: Request): Promise<Response> {
-	try {
-		return await requestOrThrow(input);
-	} catch (error) {
-		if (isNotFoundError(error)) {
-			throw new BatchOperationGoneError();
-		}
-		throw error;
-	}
-}
-
 function pendingActionsQueryKey(batchOperationKey: string) {
 	return ['batchOperationPendingActions', batchOperationKey] as const;
 }
@@ -361,10 +350,7 @@ function useBatchOperationActions(batchOperationKey: string) {
 		mutationFn: async () => {
 			addPendingAction('suspend');
 			await withAbortTimeout(
-				(signal) =>
-					requestOrThrowTreatingNotFoundAsGone(
-						new Request(endpoints.suspendBatchOperation({batchOperationKey}), {signal}),
-					),
+				(signal) => requestOrThrow(new Request(endpoints.suspendBatchOperation({batchOperationKey}), {signal})),
 				SINGLE_REQUEST_TIMEOUT_MS,
 			);
 			return waitForBatchOperationTransition(queryClient, batchOperationKey, 'suspend');
@@ -378,10 +364,7 @@ function useBatchOperationActions(batchOperationKey: string) {
 		mutationFn: async () => {
 			addPendingAction('resume');
 			await withAbortTimeout(
-				(signal) =>
-					requestOrThrowTreatingNotFoundAsGone(
-						new Request(endpoints.resumeBatchOperation({batchOperationKey}), {signal}),
-					),
+				(signal) => requestOrThrow(new Request(endpoints.resumeBatchOperation({batchOperationKey}), {signal})),
 				SINGLE_REQUEST_TIMEOUT_MS,
 			);
 			return waitForBatchOperationTransition(queryClient, batchOperationKey, 'resume');
@@ -395,10 +378,7 @@ function useBatchOperationActions(batchOperationKey: string) {
 		mutationFn: async () => {
 			addPendingAction('cancel');
 			await withAbortTimeout(
-				(signal) =>
-					requestOrThrowTreatingNotFoundAsGone(
-						new Request(endpoints.cancelBatchOperation({batchOperationKey}), {signal}),
-					),
+				(signal) => requestOrThrow(new Request(endpoints.cancelBatchOperation({batchOperationKey}), {signal})),
 				SINGLE_REQUEST_TIMEOUT_MS,
 			);
 			return waitForBatchOperationTransition(queryClient, batchOperationKey, 'cancel');

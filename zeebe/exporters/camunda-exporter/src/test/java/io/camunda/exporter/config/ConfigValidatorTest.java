@@ -204,6 +204,30 @@ public class ConfigValidatorTest {
   }
 
   @Test
+  void shouldForbidReindexBatchSizeToBeLessThanOne() {
+    // given
+    config.getHistory().setReindexBatchSize(0);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.reindexBatchSize must be >= 1. Current value: 0");
+  }
+
+  @Test
+  void shouldForbidReindexBatchSizeToBeGreaterThanTenThousand() {
+    // given
+    config.getHistory().setReindexBatchSize(10_0001);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.reindexBatchSize must be <= 10000. Current value: 100001");
+  }
+
+  @Test
   void shouldForbidDelayBetweenRunsToBeLessThanOne() {
     // given
     config.getHistory().setDelayBetweenRuns(0);

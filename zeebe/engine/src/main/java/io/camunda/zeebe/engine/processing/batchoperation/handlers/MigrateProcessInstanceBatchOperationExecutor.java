@@ -11,6 +11,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -42,7 +43,8 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
     final var migrationPlan = batchOperation.getMigrationPlan();
 
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new ProcessInstanceMigrationRecord();
     command.setProcessInstanceKey(processInstanceKey);
     command.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
@@ -61,6 +63,6 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
         ProcessInstanceMigrationIntent.MIGRATE,
         command,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

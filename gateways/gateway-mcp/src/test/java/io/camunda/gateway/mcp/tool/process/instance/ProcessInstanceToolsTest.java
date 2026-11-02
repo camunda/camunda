@@ -91,6 +91,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           "PI_123",
           Set.of("tag1", "tag2"),
           null,
+          null,
           null);
 
   static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =

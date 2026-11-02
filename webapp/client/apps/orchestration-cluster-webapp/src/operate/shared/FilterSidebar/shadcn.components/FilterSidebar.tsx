@@ -22,9 +22,16 @@ type Props = {
 	children: React.ReactNode;
 	onResetClick?: () => void;
 	isResetButtonDisabled: boolean;
+	hideCollapsedLabel?: boolean;
 };
 
-const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+const FilterSidebar: React.FC<Props> = ({
+	children,
+	localStorageKey,
+	onResetClick,
+	isResetButtonDisabled,
+	hideCollapsedLabel,
+}) => {
 	const {t} = useTranslation();
 	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
 	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
@@ -41,6 +48,7 @@ const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick
 		<CollapsablePanel
 			label={t('operate.shared.filtersPanel.label')}
 			icon={Filter}
+			hideCollapsedLabel={hideCollapsedLabel}
 			panelPosition="LEFT"
 			maxWidth={320}
 			isCollapsed={panelState === 'collapsed'}

@@ -145,4 +145,32 @@ public class TransientPendingSubscriptionStateTest {
                     new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER),
                     500));
   }
+
+  @Test
+  public void shouldNotAddEntryOnRefresh() {
+    // given
+    final var subscription =
+        new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    // when
+    sut.refresh(subscription, 500);
+
+    // then
+    assertThat(sut.entriesBefore(Long.MAX_VALUE)).isEmpty();
+  }
+
+  @Test
+  public void shouldUpdateLastSentTimeOfExistingEntryOnRefresh() {
+    // given
+    final var subscription =
+        new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    sut.add(subscription, 500);
+
+    // when
+    sut.refresh(subscription, 2000);
+
+    // then
+    assertThat(sut.entriesBefore(1000)).isEmpty();
+    assertThat(sut.entriesBefore(Long.MAX_VALUE)).containsExactly(subscription);
+  }
 }

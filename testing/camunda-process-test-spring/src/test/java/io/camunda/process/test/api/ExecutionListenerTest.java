@@ -16,12 +16,15 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,10 +40,12 @@ import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
@@ -56,6 +61,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +75,7 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
@@ -95,6 +102,7 @@ public class ExecutionListenerTest {
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
   @Mock private TestCaseRunnerProxy testCaseRunnerProxy;
   @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient camundaClockClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientProperties camundaClientProperties;
@@ -293,6 +301,44 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  void shouldCloseClockClient() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    listener.beforeTestClass(testContext);
+    setField(listener, "camundaClockClient", camundaClockClient);
+
+    // when
+    listener.afterTestClass(testContext);
+
+    // then
+    verify(camundaClockClient).close();
+  }
+
+  @Test
+  void shouldIgnoreFailureWhenClosingClockClient() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    listener.beforeTestClass(testContext);
+    setField(listener, "camundaClockClient", camundaClockClient);
+    CamundaAssert.setJudgeConfig(mock(JudgeConfig.class));
+
+    doThrow(new RuntimeException("Expected: failed to close")).when(camundaClockClient).close();
+
+    // when
+    listener.afterTestClass(testContext);
+
+    // then
+    verify(camundaContainerRuntime).close();
+    assertThat(CamundaAssert.getJudgeConfig()).isNull();
+  }
+
+  @Test
   void shouldCloseCamundaClient() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =
@@ -305,7 +351,7 @@ public class ExecutionListenerTest {
 
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     listener.afterTestMethod(testContext);
 
     // then
@@ -338,7 +384,7 @@ public class ExecutionListenerTest {
 
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(new AssertionError("test failure (expected)"));
     listener.afterTestMethod(testContext);
@@ -362,7 +408,7 @@ public class ExecutionListenerTest {
 
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(null);
     listener.afterTestMethod(testContext);
@@ -390,6 +436,41 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  void shouldNotUsePreviousTestCaseIfClusterIsNotReady() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+    final Instant previousTestCaseStartTime = Instant.parse("2026-03-01T10:00:00Z");
+
+    listener.beforeTestClass(testContext);
+    setClientMocks(listener);
+    when(camundaClockClient.getCurrentTime()).thenReturn(previousTestCaseStartTime);
+
+    // a previous test case that passed
+    listener.beforeTestMethod(testContext);
+    setTestResultCollectorMock(listener);
+    listener.afterTestMethod(testContext);
+
+    // a test case that fails because the cluster is not ready
+    final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+    doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+    assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
+    // lenient: afterTestMethod doesn't check the outcome of a test case that never started
+    lenient().when(testContext.getTestException()).thenReturn(exception);
+
+    // when
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaProcessTestResultCollector, never()).collect();
+
+    final ArgumentCaptor<Instant> testCaseStartTimes = ArgumentCaptor.forClass(Instant.class);
+    verify(cleanupStrategy, times(2)).cleanup(any(), any(), testCaseStartTimes.capture());
+    assertThat(testCaseStartTimes.getAllValues()).containsExactly(previousTestCaseStartTime, null);
+  }
+
+  @Test
   void shouldResetClockInBetweenTests() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =
@@ -400,13 +481,13 @@ public class ExecutionListenerTest {
     listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
-    // CamundaManagementClient will attempt to call resetTime() and we need to prevent
+    // The clock client will attempt to call resetTime() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     listener.afterTestMethod(testContext);
 
     // then
-    verify(camundaManagementClient).resetTime();
+    verify(camundaClockClient).resetTime();
   }
 
   @Test
@@ -426,11 +507,11 @@ public class ExecutionListenerTest {
     listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     listener.afterTestMethod(testContext);
 
     // then
-    verify(camundaManagementClient, never()).resetTime();
+    verify(camundaClockClient, never()).resetTime();
   }
 
   @Test
@@ -450,7 +531,7 @@ public class ExecutionListenerTest {
     listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     listener.afterTestMethod(testContext);
 
     // then
@@ -499,7 +580,7 @@ public class ExecutionListenerTest {
 
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(listener);
+    setClientMocks(listener);
     listener.afterTestMethod(testContext);
     listener.afterTestClass(testContext);
 
@@ -572,11 +653,23 @@ public class ExecutionListenerTest {
     assertThat(CamundaAssert.getJudgeConfig()).isNull();
   }
 
-  private void setManagementClientDummy(final CamundaProcessTestExecutionListener listener) {
+  private void setClientMocks(final CamundaProcessTestExecutionListener listener) {
+    setField(listener, "camundaManagementClient", camundaManagementClient);
+    setField(listener, "camundaClockClient", camundaClockClient);
+  }
+
+  private static void setField(
+      final CamundaProcessTestExecutionListener listener,
+      final String fieldName,
+      final Object value) {
     try {
-      final Field cmcField = listener.getClass().getDeclaredField("camundaManagementClient");
-      cmcField.setAccessible(true);
-      cmcField.set(listener, camundaManagementClient);
+      final Field field = listener.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      // beforeTestClass builds a real client; close it so that replacing it doesn't leak it
+      if (field.get(listener) instanceof final AutoCloseable previousValue) {
+        previousValue.close();
+      }
+      field.set(listener, value);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
     }
@@ -624,6 +717,64 @@ public class ExecutionListenerTest {
 
       // when/then
       assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
+    }
+
+    @Test
+    void shouldReadCurrentTimeOnceClusterIsReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      // when
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final InOrder inOrder = inOrder(camundaContainerRuntime, camundaClockClient);
+      inOrder.verify(camundaContainerRuntime).waitUntilClusterReady(any());
+      inOrder.verify(camundaClockClient).getCurrentTime();
+    }
+
+    @Test
+    void shouldNotReadCurrentTimeIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      doThrow(new RuntimeException("Expected: cluster not ready"))
+          .when(camundaContainerRuntime)
+          .waitUntilClusterReady(any());
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      // when
+      assertThatThrownBy(() -> listener.beforeTestMethod(testContext))
+          .hasMessage("Expected: cluster not ready");
+
+      // then
+      verify(camundaClockClient, never()).getCurrentTime();
+    }
+
+    @Test
+    void shouldStartTestCaseIfCurrentTimeCannotBeRead() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      when(camundaClockClient.getCurrentTime())
+          .thenThrow(new RuntimeException("Expected: time cannot be read"));
+
+      // when / then
+      assertThatCode(() -> listener.beforeTestMethod(testContext)).doesNotThrowAnyException();
     }
   }
 

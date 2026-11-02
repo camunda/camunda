@@ -80,4 +80,38 @@ describe('useDebouncedUrlFilter', () => {
 		// then
 		expect(result.current[0]).toBe('ab');
 	});
+
+	it('should drop an edited draft and not commit it when the applied value changes by navigation', async () => {
+		// given
+		const {result, rerender, onCommit} = await setup('foo');
+		result.current[1]('foobar');
+
+		// when: back/forward navigation changes the URL while the commit is pending
+		await rerender({applied: 'baz'});
+
+		// then
+		await expect.poll(() => result.current[0]).toBe('baz');
+		await new Promise((resolve) => setTimeout(resolve, DELAY * 2));
+		expect(onCommit).not.toHaveBeenCalled();
+	});
+
+	it('should treat navigating back to an already applied value as navigation, not as a late commit', async () => {
+		// given
+		const {result, rerender, onCommit} = await setup('');
+		result.current[1]('a');
+		await expect.poll(() => onCommit.mock.calls).toEqual([['a']]);
+		await rerender({applied: 'a'});
+		result.current[1]('b');
+		await expect.poll(() => onCommit.mock.calls).toEqual([['a'], ['b']]);
+		await rerender({applied: 'b'});
+		result.current[1]('c');
+
+		// when: Back to the earlier applied value while 'c' is still pending
+		await rerender({applied: 'a'});
+
+		// then
+		await expect.poll(() => result.current[0]).toBe('a');
+		await new Promise((resolve) => setTimeout(resolve, DELAY * 2));
+		expect(onCommit.mock.calls).toEqual([['a'], ['b']]);
+	});
 });

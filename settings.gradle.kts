@@ -247,6 +247,8 @@ registerProject(":camunda-zeebe", "dist")
 
 registerProject(":zeebe-util", "zeebe/util")
 
+registerProject(":zeebe-micrometer", "zeebe/micrometer")
+
 registerProject(":camunda-qa-compatibility-test", "qa/compatibility-test")
 
 include(":webapps-common")
@@ -406,6 +408,8 @@ registerProject(":camunda-secret-store-file", "secret-store/secret-store-file")
 registerProject(":camunda-secret-store-aws", "secret-store/secret-store-aws")
 
 registerProject(":camunda-secret-store-gcp", "secret-store/secret-store-gcp")
+
+registerProject(":camunda-secret-store-env", "secret-store/secret-store-env")
 
 registerProject(":zeebe-rebalance", "zeebe/rebalance")
 

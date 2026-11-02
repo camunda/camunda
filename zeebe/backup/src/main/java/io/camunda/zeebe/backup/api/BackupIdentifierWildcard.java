@@ -8,8 +8,8 @@
 package io.camunda.zeebe.backup.api;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
-import io.camunda.zeebe.util.MemberIdUtil;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
@@ -73,10 +73,7 @@ public interface BackupIdentifierWildcard {
    * matches the full set of possible forms (both zoned and zone-less).
    */
   static String memberIdRegex(final BackupIdentifierWildcard wildcard) {
-    return wildcard
-        .brokerId()
-        .map(id -> Pattern.quote(id.id()))
-        .orElse(MemberIdUtil.regexPattern());
+    return wildcard.brokerId().map(id -> Pattern.quote(id.id())).orElse(MemberId.regexPattern());
   }
 
   sealed interface CheckpointPattern {

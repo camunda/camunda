@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -205,6 +207,53 @@ final class PhysicalTenantHandlerFactoryTest {
     assertThat(keycloakContext.call(() -> AuthenticationHandler.CLIENT_ID.get())).isNull();
     assertThat(keycloakContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
         .containsExactly("keycloak-team");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "https://okta.example.com/, https://okta.example.com",
+    "https://okta.example.com, https://okta.example.com/"
+  })
+  void shouldResolveTokenWithProviderSettingsWhenIssuerDiffersByTrailingSlash(
+      final String configuredIssuer, final String tokenIssuer) throws Exception {
+    // given a named provider whose issuer-uri differs from its tokens' iss by a trailing slash
+    // (#61896)
+    final var config = securityConfig(AuthenticationMethod.OIDC);
+    final var defaultSlot = config.getAuthentication().getOidc();
+    defaultSlot.setIssuerUri("https://keycloak.example.com");
+    defaultSlot.setClientId("keycloak-client");
+    defaultSlot.setGroupsClaim("roles");
+    final var okta = new OidcConfiguration();
+    okta.setIssuerUri(configuredIssuer);
+    okta.setClientId("okta-client");
+    okta.setClientIdClaim("azp");
+    okta.setPreferUsernameClaim(false);
+    okta.setGroupsClaim("groups");
+    final var providers = new OidcProvidersConfiguration();
+    providers.setOidc(new LinkedHashMap<>(Map.of("okta", okta)));
+    config.getAuthentication().setProviders(providers);
+
+    final var decoder = mock(JwtDecoder.class);
+    when(decoder.decode("okta-token")).thenReturn(tokenWithAllClaims(tokenIssuer));
+
+    final var handler =
+        PhysicalTenantHandlerFactory.build(
+                Map.of("tenanta", config),
+                true,
+                authConfig -> decoder,
+                claimsProviderFactory,
+                userServicesForTenant,
+                passwordEncoder)
+            .get("tenanta");
+
+    // when
+    final var oktaContext = handler.authenticate("Bearer okta-token").get();
+
+    // then the token is resolved with the provider's settings, not the tenant default's
+    assertThat(oktaContext.call(() -> AuthenticationHandler.CLIENT_ID.get()))
+        .isEqualTo("some-client");
+    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
+        .containsExactly("okta-team");
   }
 
   @Test

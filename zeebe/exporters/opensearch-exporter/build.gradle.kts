@@ -13,6 +13,7 @@ dependencies {
   api(libs.org.apache.httpcomponents.client5.httpclient5)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.annotations)

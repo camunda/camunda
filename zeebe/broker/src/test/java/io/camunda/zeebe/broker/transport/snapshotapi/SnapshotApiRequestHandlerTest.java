@@ -189,9 +189,10 @@ public class SnapshotApiRequestHandlerTest {
         .succeedsWithin(Duration.ofSeconds(30))
         .satisfies(
             snapshot -> {
-              final var lastSnapshotId = senderSnapshotStore.getLatestSnapshot().get().getId();
+              final var bootstrapSnapshotId =
+                  senderSnapshotStore.getBootstrapSnapshot().orElseThrow().getId();
               final var snapshotId = snapshot.getId();
-              assertThat(snapshotId).isEqualTo(lastSnapshotId);
+              assertThat(snapshotId).isEqualTo(bootstrapSnapshotId);
             });
 
     assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))
@@ -247,7 +248,7 @@ public class SnapshotApiRequestHandlerTest {
         .satisfies(
             snapshot -> {
               assertThat(snapshot.getId())
-                  .isEqualTo(tenantSenderStore.getLatestSnapshot().get().getId());
+                  .isEqualTo(tenantSenderStore.getBootstrapSnapshot().orElseThrow().getId());
               assertThat(snapshot.getId())
                   .isNotEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId());
             });

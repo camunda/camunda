@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableLong;
 import org.assertj.core.api.Assertions;
@@ -416,6 +417,59 @@ public final class EngineErrorHandlingTest {
   }
 
   @Test
+  public void shouldBanInstanceOnStackOverflowError() {
+    // given
+    final AtomicReference<DumpProcessor> dumpProcessorRef = new AtomicReference<>();
+    final ErrorProneProcessor processor =
+        new ErrorProneProcessor(() -> new StackOverflowError("expected"));
+
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
+              processingState = processingContext.getProcessingState();
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.COMPLETE_ELEMENT,
+                      dumpProcessorRef.get());
+            });
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(2))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(
+        e ->
+            Records.isEvent(
+                e, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    // then
+    final RecordMetadata metadata = new RecordMetadata();
+    metadata.valueType(ValueType.PROCESS_INSTANCE);
+    final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
+        .isTrue();
+    assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
+  }
+
+  @Test
   public void shouldBanInstanceOnReplay() throws Exception {
     // given
     final long failedPos =
@@ -706,10 +760,22 @@ public final class EngineErrorHandlingTest {
       implements TypedRecordProcessor<ProcessInstanceRecord> {
 
     public final AtomicLong processCount = new AtomicLong(0);
+    private final Supplier<? extends Error> errorSupplier;
+
+    public ErrorProneProcessor() {
+      this(null);
+    }
+
+    public ErrorProneProcessor(final Supplier<? extends Error> errorSupplier) {
+      this.errorSupplier = errorSupplier;
+    }
 
     @Override
     public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processCount.incrementAndGet();
+      if (errorSupplier != null) {
+        throw errorSupplier.get();
+      }
       throw new RuntimeException("expected");
     }
 

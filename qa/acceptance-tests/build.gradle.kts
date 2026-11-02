@@ -11,6 +11,8 @@ plugins {
 }
 
 dependencies {
+  testImplementation(project(":zeebe-micrometer"))
+  testImplementation(project(":zeebe-workflow-engine"))
   testImplementation(project(":camunda-cluster"))
   testImplementation(libs.org.jspecify.jspecify)
   testImplementation(project(":camunda-authentication"))
@@ -102,7 +104,6 @@ dependencies {
   testImplementation(libs.com.oracle.database.jdbc.ojdbc8)
   testImplementation(libs.com.microsoft.sqlserver.mssql.jdbc)
   testImplementation(libs.com.github.docker.java.docker.java.api)
-  testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-elasticsearch-exporter"))
   testImplementation(project(":zeebe-opensearch-exporter"))
   testImplementation(libs.co.elastic.clients.elasticsearch.java)

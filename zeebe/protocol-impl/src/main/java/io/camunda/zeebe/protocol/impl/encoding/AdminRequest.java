@@ -9,12 +9,12 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static org.agrona.collections.ArrayUtil.EMPTY_BYTE_ARRAY;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
 import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
-import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +85,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
     if (brokerId == AdminRequestEncoder.brokerIdNullValue()) {
       return null;
     }
-    return MemberIdUtil.memberIdString(zone, brokerId);
+    return MemberId.memberIdString(zone, brokerId);
   }
 
   public void setBrokerId(final int brokerId, final @Nullable String zone) {

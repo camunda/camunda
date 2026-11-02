@@ -138,10 +138,9 @@ public final class ProcessInstanceFilterTransformer
   private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
-    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
-    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
+    flowNodeInstanceQueries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
+    flowNodeInstanceQueries.addAll(
+        stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
 

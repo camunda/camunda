@@ -151,7 +151,7 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
 
   @Override
   public AuthInfo getAuthInfo() {
-    return null;
+    return AuthInfo.EMPTY;
   }
 
   @Override

@@ -19,6 +19,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Use this interface to build mock job workers in your process tests.
@@ -40,6 +41,61 @@ public interface JobWorkerMockBuilder {
    * @param variables the variables to include when completing the job.
    */
   JobWorkerMock thenComplete(final Map<String, Object> variables);
+
+  /**
+   * Configures the mock worker to complete jobs with variables derived from the job's own
+   * variables, for example the multi-instance loop counter and input element.
+   *
+   * <p>If the supplier returns {@code null} or throws, the job fails through the client's default
+   * job exception handler: retries decrease by one and, once exhausted, an incident is raised. The
+   * supplier should have no side effects, since a failing job may be retried up to the job's retry
+   * count (3 by default in BPMN). {@link JobWorkerMock#getInvocations()} counts every attempt,
+   * including retries.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   processTestContext
+   *       .mockJobWorker("myworker")
+   *       .thenComplete(
+   *           jobVariables ->
+   *               Map.of(
+   *                   "sampleType",
+   *                   jobVariables.get("loopCounter").equals(1) ? "regolith" : "basalt"));
+   * </pre>
+   *
+   * @param variablesSupplier a function that receives the job's variables and returns the variables
+   *     to complete the job with.
+   */
+  JobWorkerMock thenComplete(
+      final Function<Map<String, Object>, Map<String, Object>> variablesSupplier);
+
+  /**
+   * Configures the mock worker to complete jobs with variables selected by table lookup. See {@link
+   * VariablesTable} for the matching rules (subset match, empty-{@code when} catch-all, number
+   * comparison without widening, {@code null} handling). If no row matches, the job completes
+   * without variables.
+   *
+   * <p>A failing match behaves like {@link #thenComplete(Function)}: the job fails through the
+   * client's default job exception handler, retries apply, and {@link
+   * JobWorkerMock#getInvocations()} counts every attempt.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   processTestContext
+   *       .mockJobWorker("myworker")
+   *       .thenComplete(
+   *           VariablesTable.when(Map.of("loopCounter", 1))
+   *               .thenReturn(Map.of("sampleType", "regolith"))
+   *               .when(Map.of("loopCounter", 2))
+   *               .thenReturn(Map.of("sampleType", "basalt")));
+   * </pre>
+   *
+   * @param variablesTable the table of {@code when}/{@code variables} rows to match the job's
+   *     variables against.
+   */
+  JobWorkerMock thenComplete(final VariablesTable variablesTable);
 
   /**
    * Configures the mock worker to complete jobs with variables from the example data property of

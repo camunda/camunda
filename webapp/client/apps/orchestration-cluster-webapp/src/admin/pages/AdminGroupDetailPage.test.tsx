@@ -33,6 +33,7 @@ const RETRY_BUDGET = {timeout: 10_000};
 
 // Hovering or focusing a tab prefetches its first page, and the pointer position survives between tests.
 const mockEmptyRoles = () => mockQueryRolesByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
+const mockEmptyUsers = () => mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
 
 async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
 	const onTabChange = vi.fn();
@@ -527,6 +528,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should not offer roles that are already in the group', async ({worker}) => {
 		// given
 		worker.use(
+			mockEmptyUsers(),
 			mockQueryRolesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([{roleId: 'admin-role', name: 'Admin role'}])),
 			}),
@@ -549,6 +551,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should not offer mapping rules that are already in the group', async ({worker}) => {
 		// given
 		worker.use(
+			mockEmptyUsers(),
 			mockQueryMappingRulesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([createMappingRule({mappingRuleId: 'assigned-rule'})])),
 			}),

@@ -21,7 +21,7 @@ service worker.
 - Do not use `@testing-library/react`.
 - Do not use `vi.mock()` for HTTP requests.
 
-The custom `it` fixture starts MSW before each test. It also resets and stops MSW after each test.
+The custom `it` fixture starts MSW once per test file and resets its handlers after each test.
 Import this `it` even when the test does not use the `worker` argument.
 
 ## Rendering

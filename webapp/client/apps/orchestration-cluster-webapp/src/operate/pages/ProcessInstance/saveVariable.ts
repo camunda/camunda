@@ -13,6 +13,7 @@ import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
 import {waitUntilReady} from '#/shared/http/waitUntilReady';
 import {instanceRequest} from './processInstance.queries';
+import {redactValue} from '#/shared/variables/redactedVariable';
 import {variableQuery} from './variables.queries';
 
 type VariableToSave = {
@@ -45,7 +46,7 @@ async function waitForVariableValue(queryClient: QueryClient, variableKey: strin
 		throw new Error('Variable not updated yet');
 	}
 
-	queryClient.setQueryData(variableQuery(variableKey).queryKey, variable);
+	queryClient.setQueryData(variableQuery(variableKey).queryKey, redactValue(variable));
 }
 
 async function saveVariable(

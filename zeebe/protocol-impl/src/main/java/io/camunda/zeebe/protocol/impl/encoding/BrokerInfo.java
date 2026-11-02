@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLe
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
-import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -137,7 +137,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public String brokerIdStr() {
-    return MemberIdUtil.memberIdString(zone, getNodeId());
+    return MemberId.memberIdString(zone, getNodeId());
   }
 
   public int getClusterSize() {

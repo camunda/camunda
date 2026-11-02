@@ -11,7 +11,7 @@ import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi, beforeAll} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
@@ -24,8 +24,7 @@ import {
 	createClusterVariableSearchResult,
 } from '#/shared-test-modules/api-mocks/cluster-variables';
 import {EditClusterVariableModal} from './EditClusterVariableModal';
-
-const MONACO_LOAD = {timeout: 15_000};
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -41,6 +40,8 @@ function getWrapper() {
 }
 
 describe('<EditClusterVariableModal />', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(async () => {
 		await cleanup();
 		toast.dismiss();
@@ -68,7 +69,7 @@ describe('<EditClusterVariableModal />', () => {
 
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('my-variable');
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toBeDisabled();
-		await expect.element(screen.getByText('"the full value"'), MONACO_LOAD).toBeInTheDocument();
+		await expect.element(screen.getByText('"the full value"')).toBeInTheDocument();
 	});
 
 	it('should show an error when the value cannot be loaded', async ({worker}) => {
@@ -95,7 +96,7 @@ describe('<EditClusterVariableModal />', () => {
 			},
 		);
 		const editor = screen.getByRole('textbox', {name: 'Value'});
-		await expect.element(editor, MONACO_LOAD).toBeInTheDocument();
+		await expect.element(editor).toBeInTheDocument();
 
 		await expect.element(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
 
@@ -126,7 +127,7 @@ describe('<EditClusterVariableModal />', () => {
 			wrapper: getWrapper(),
 		});
 		const editor = screen.getByRole('textbox', {name: 'Value'});
-		await expect.element(editor, MONACO_LOAD).toBeInTheDocument();
+		await expect.element(editor).toBeInTheDocument();
 
 		await replaceMonacoValue(editor, '42');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
@@ -147,7 +148,7 @@ describe('<EditClusterVariableModal />', () => {
 			},
 		);
 		const editor = screen.getByRole('textbox', {name: 'Value'});
-		await expect.element(editor, MONACO_LOAD).toBeInTheDocument();
+		await expect.element(editor).toBeInTheDocument();
 
 		await replaceMonacoValue(editor, 'nope');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
@@ -168,7 +169,7 @@ describe('<EditClusterVariableModal />', () => {
 			},
 		);
 		const editor = screen.getByRole('textbox', {name: 'Value'});
-		await expect.element(editor, MONACO_LOAD).toBeInTheDocument();
+		await expect.element(editor).toBeInTheDocument();
 
 		await replaceMonacoValue(editor, 'null');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
@@ -202,7 +203,7 @@ describe('<EditClusterVariableModal />', () => {
 			},
 		);
 		const editor = screen.getByRole('textbox', {name: 'Value'});
-		await expect.element(editor, MONACO_LOAD).toBeInTheDocument();
+		await expect.element(editor).toBeInTheDocument();
 
 		await replaceMonacoValue(editor, '2');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));

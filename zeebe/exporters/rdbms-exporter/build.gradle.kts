@@ -12,6 +12,7 @@ dependencies {
   implementation(project(":camunda-security-protocol"))
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)

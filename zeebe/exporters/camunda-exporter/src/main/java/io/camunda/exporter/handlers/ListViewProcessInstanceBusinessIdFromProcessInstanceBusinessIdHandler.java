@@ -14,6 +14,7 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -76,7 +77,8 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
-        .setBusinessId(emptyToNull(recordValue.getBusinessId()));
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
   }
 
   @Override

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
 import {Modal} from '@carbon/react';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -20,7 +21,7 @@ type Props = {
 const DeleteConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onConfirm, onCancel}) => {
 	const {t} = useTranslation();
 
-	return (
+	return createPortal(
 		<Modal
 			open={open}
 			danger
@@ -35,7 +36,8 @@ const DeleteConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onC
 		>
 			<p>{t('operate.shared.operations.deleteConfirmationModal.body', {processInstanceKey})}</p>
 			<p>{t('operate.shared.operations.deleteConfirmationModal.hint')}</p>
-		</Modal>
+		</Modal>,
+		document.querySelector('main') ?? document.body,
 	);
 };
 

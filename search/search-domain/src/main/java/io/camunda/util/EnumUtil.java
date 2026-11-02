@@ -33,12 +33,12 @@ public final class EnumUtil {
     }
     try {
       if (source.name().equals(UNKNOWN_ENUM_VALUE)) {
-        return E2.valueOf(targetClass, UNKNOWN_DEFAULT_OPEN_API);
+        return Enum.valueOf(targetClass, UNKNOWN_DEFAULT_OPEN_API);
       }
       if (source.name().equals(UNKNOWN_DEFAULT_OPEN_API)) {
-        return E2.valueOf(targetClass, UNKNOWN_ENUM_VALUE);
+        return Enum.valueOf(targetClass, UNKNOWN_ENUM_VALUE);
       }
-      return E2.valueOf(targetClass, source.name());
+      return Enum.valueOf(targetClass, source.name());
     } catch (final IllegalArgumentException e) {
       logUnknownEnumValue(source, source.getClass().getName(), targetClass.getEnumConstants());
       throw new RuntimeException(e);

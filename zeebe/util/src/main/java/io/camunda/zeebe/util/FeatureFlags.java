@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.util;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
 public final class FeatureFlags {
 
   /* To add a new feature toggle, please follow these steps:
@@ -167,6 +164,16 @@ public final class FeatureFlags {
 
   @Override
   public String toString() {
-    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+    return "FeatureFlags["
+        + ("yieldingDueDateChecker=" + yieldingDueDateChecker)
+        + (",enableActorMetrics=" + enableActorMetrics)
+        + (",enableMessageTTLCheckerAsync=" + enableMessageTTLCheckerAsync)
+        + (",enableTimerDueDateCheckerAsync=" + enableTimerDueDateCheckerAsync)
+        + (",enableStraightThroughProcessingLoopDetector="
+            + enableStraightThroughProcessingLoopDetector)
+        + (",enableMessageBodyOnExpired=" + enableMessageBodyOnExpired)
+        + (",evaluateBoundaryEventCorrelationKeyInActivityScope="
+            + evaluateBoundaryEventCorrelationKeyInActivityScope)
+        + "]";
   }
 }

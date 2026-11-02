@@ -49,6 +49,7 @@ const LONG_VALUES_TASK = createUserTask({
 	priority: 90,
 	dueDate: '2024-06-15T17:00:00.000Z',
 	creationDate: '2024-01-10T09:30:00.000Z',
+	isSuspended: true,
 });
 
 const LONG_VALUES_AVAILABLE_TASKS = [
@@ -62,6 +63,7 @@ const LONG_VALUES_AVAILABLE_TASKS = [
 		priority: 10,
 		followUpDate: '2024-06-20T17:00:00.000Z',
 		creationDate: '2024-01-11T09:30:00.000Z',
+		isSuspended: true,
 	}),
 	createUserTask({
 		userTaskKey: '2251799813685283',
@@ -480,6 +482,7 @@ test('should match the completed task details snapshot with long values', async 
 				...LONG_VALUES_TASK,
 				state: 'COMPLETED',
 				completionDate: '2024-02-20T16:45:00.000Z',
+				isSuspended: false,
 			}),
 		}),
 	);

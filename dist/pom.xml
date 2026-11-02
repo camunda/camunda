@@ -271,6 +271,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
     </dependency>
 
@@ -491,6 +496,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-secret-store-gcp</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-env</artifactId>
     </dependency>
 
     <dependency>
@@ -1195,6 +1205,9 @@
 
             <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
+
+            <!-- Packaged ahead of its store binding in SecretStoreConfiguration -->
+            <dependency>io.camunda:camunda-secret-store-env</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>

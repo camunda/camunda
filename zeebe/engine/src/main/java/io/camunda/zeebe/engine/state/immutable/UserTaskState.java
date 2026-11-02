@@ -27,6 +27,8 @@ public interface UserTaskState {
 
   boolean isSuspended(long processInstanceKey, long userTaskKey);
 
+  boolean hasSuspendedUserTasks(long processInstanceKey);
+
   /**
    * Visits the keys of the suspended user tasks of the given process instance, in ascending order.
    *

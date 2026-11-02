@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
@@ -47,11 +48,13 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +64,7 @@ import org.mockito.Mockito;
 class RdbmsExporterTest {
 
   private static final String PHYSICAL_TENANT_ID = "mytenant";
+  private static final int RECORD_LENGTH = 123;
   private Controller controller;
   private RdbmsWriters rdbmsWriters;
   private RdbmsExporter exporter;
@@ -75,6 +79,7 @@ class RdbmsExporterTest {
 
   private ScheduledTask flushTask;
   private RdbmsPurger rdbmsPurger;
+  private final AtomicLong nanoTime = new AtomicLong();
 
   @AfterEach
   void tearDown() {
@@ -107,6 +112,24 @@ class RdbmsExporterTest {
     verify(jobHandler).export(record);
     verify(otherJobHandler, never()).export(record);
     verify(piHandler, never()).export(record);
+  }
+
+  @Test
+  void shouldCountExportedRecordsTowardsTheQueueMemoryLimit() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var otherHandler = mockHandler(ValueType.PROCESS_INSTANCE);
+    createExporter(
+        b ->
+            b.withHandler(ValueType.JOB, jobHandler)
+                .withHandler(ValueType.PROCESS_INSTANCE, otherHandler));
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    exporter.export(mockRecord(ValueType.INCIDENT, 2));
+
+    // then
+    verify(executionQueue).addEstimatedBytes(RECORD_LENGTH);
   }
 
   @Test
@@ -521,6 +544,63 @@ class RdbmsExporterTest {
     // then - a new task should still be scheduled (thanks to the finally block)
     verify(controller, times(initialScheduleCount + 1))
         .scheduleCancellableTask(any(Duration.class), any());
+    verify(rdbmsWriters).flush(true);
+  }
+
+  @Test
+  void shouldDelayNextIntervalFlushByFlushDurationWhenFlushIsSlow() {
+    // given - the flush blocks for longer than the 500ms flush interval, as against a
+    // high-latency database
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    doAnswer(
+            invocation -> {
+              advanceClock(Duration.ofMillis(900));
+              return true;
+            })
+        .when(rdbmsWriters)
+        .flush(true);
+    Mockito.clearInvocations(controller);
+
+    // when
+    exporter.flushAndReschedule();
+
+    // then - the actor clock used for the delay was not refreshed during the blocking flush, so
+    // the flush duration is added to keep the next flush flushInterval after this one ended
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(controller).scheduleCancellableTask(delayCaptor.capture(), any());
+    assertThat(delayCaptor.getValue()).isEqualTo(Duration.ofMillis(1400));
+  }
+
+  @Test
+  void shouldDelayNextIntervalFlushByExportDurationWhenRecordTriggersSlowFlush() {
+    // given - a slow handler (e.g. loading a cache from the database) that forces a flush after its
+    // record, and a flush that blocks for longer than the 500ms flush interval
+    final var handler = mockHandler(ValueType.JOB);
+    when(handler.shouldFlushAfterRecordProcessed()).thenReturn(true);
+    doAnswer(
+            invocation -> {
+              advanceClock(Duration.ofMillis(900));
+              return null;
+            })
+        .when(handler)
+        .export(any());
+    createExporter(b -> b.withHandler(ValueType.JOB, handler));
+    doAnswer(
+            invocation -> {
+              advanceClock(Duration.ofMillis(900));
+              return true;
+            })
+        .when(rdbmsWriters)
+        .flush(true);
+    Mockito.clearInvocations(controller);
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+
+    // then - the delay accounts for the whole export, not only the flush
+    final var delayCaptor = ArgumentCaptor.forClass(Duration.class);
+    verify(controller).scheduleCancellableTask(delayCaptor.capture(), any());
+    assertThat(delayCaptor.getValue()).isEqualTo(Duration.ofMillis(2300));
   }
 
   @Test
@@ -795,6 +875,10 @@ class RdbmsExporterTest {
   // mocks and stubs
   // ------------------------------------------------
 
+  private void advanceClock(final Duration duration) {
+    nanoTime.addAndGet(duration.toNanos());
+  }
+
   /**
    * Creates an exporter with an existing RDBMS position already stored, without calling open(). Use
    * this when you need to control the broker and RDBMS positions independently (e.g., to simulate a
@@ -828,9 +912,10 @@ class RdbmsExporterTest {
   }
 
   private Record mockRecord(final ValueType valueType, final long position) {
-    final var record = mock(Record.class);
+    final var record = mock(Record.class, withSettings().extraInterfaces(WrittenRecord.class));
     when(record.getValueType()).thenReturn(valueType);
     when(record.getPosition()).thenReturn(position);
+    when(((WrittenRecord) record).getRawLength()).thenReturn(RECORD_LENGTH);
 
     return record;
   }
@@ -928,7 +1013,8 @@ class RdbmsExporterTest {
             .rdbmsSchemaManagerRegistry(schemaManager)
             .historyCleanupService(historyCleanupService)
             .historyDeletionService(historyDeletionService)
-            .replicationControllerFactory(replicationControllerFactory);
+            .replicationControllerFactory(replicationControllerFactory)
+            .nanoClock(nanoTime::get);
 
     exporter = builderFunction.apply(builder).build();
     if (openExporter) {
@@ -973,6 +1059,11 @@ class RdbmsExporterTest {
     @Override
     public boolean tryMergeWithExistingQueueItem(final QueueItemMerger combiners) {
       return false;
+    }
+
+    @Override
+    public void addEstimatedBytes(final long bytes) {
+      // no-op
     }
 
     @Override

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongPredicate;
 import org.apache.commons.lang3.StringUtils;
@@ -249,6 +250,19 @@ public class DbUserTaskState implements MutableUserTaskState {
     suspendedProcessInstanceKey.wrapLong(processInstanceKey);
     suspendedUserTaskKey.wrapLong(userTaskKey);
     return suspendedUserTasksColumnFamily.exists(processInstanceSuspendedUserTaskKey);
+  }
+
+  @Override
+  public boolean hasSuspendedUserTasks(final long processInstanceKey) {
+    final var found = new AtomicBoolean();
+    forEachSuspendedUserTask(
+        processInstanceKey,
+        -1L,
+        userTaskKey -> {
+          found.set(true);
+          return false;
+        });
+    return found.get();
   }
 
   @Override

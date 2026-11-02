@@ -80,7 +80,12 @@ describe('mapProcessInstancesFilter', () => {
 	});
 
 	it('should combine variable conditions with the URL filters', () => {
-		const search = processesSearchSchema.parse({process: 'orders', tenantId: 'tenant-A', businessId: 'eq_order-123'});
+		const search = processesSearchSchema.parse({
+			process: 'orders',
+			tenantId: 'tenant-A',
+			businessId: 'eq_order-123',
+			active: true,
+		});
 
 		expect(
 			mapProcessInstancesFilter({
@@ -242,6 +247,7 @@ describe('mapProcessInstancesSort', () => {
 				errorMessage: 'Connection timeout',
 				incidentErrorHashCode: -481,
 				active: false,
+				incidents: true,
 				suspended: false,
 			});
 

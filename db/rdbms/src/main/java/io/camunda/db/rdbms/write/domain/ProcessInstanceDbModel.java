@@ -31,7 +31,8 @@ public record ProcessInstanceDbModel(
     OffsetDateTime historyCleanupDate,
     Set<String> tags,
     String businessId,
-    OffsetDateTime suspendedDate)
+    OffsetDateTime suspendedDate,
+    Integer storageOrdinal)
     implements DbModel<ProcessInstanceDbModel> {
 
   @Override
@@ -58,7 +59,8 @@ public record ProcessInstanceDbModel(
                 .historyCleanupDate(historyCleanupDate)
                 .tags(tags)
                 .businessId(businessId)
-                .suspendedDate(suspendedDate))
+                .suspendedDate(suspendedDate)
+                .storageOrdinal(storageOrdinal))
         .build();
   }
 
@@ -83,6 +85,7 @@ public record ProcessInstanceDbModel(
     private Set<String> tags;
     private String businessId;
     private OffsetDateTime suspendedDate;
+    private Integer storageOrdinal;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -184,6 +187,11 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder storageOrdinal(final Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
+      return this;
+    }
+
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -204,7 +212,8 @@ public record ProcessInstanceDbModel(
           historyCleanupDate,
           tags,
           businessId,
-          suspendedDate);
+          suspendedDate,
+          storageOrdinal);
     }
   }
 }

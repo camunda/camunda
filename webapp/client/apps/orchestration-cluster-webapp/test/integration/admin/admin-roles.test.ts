@@ -7,7 +7,8 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockAssignGroupToRoleEndpoint,
 	mockAssignUserToRoleEndpoint,
@@ -377,7 +378,7 @@ test.describe('Admin role detail', () => {
 		await expect(adminRoleDetailPage.cell('jane.doe')).toBeVisible();
 	});
 
-	test('should assign a user to the role', async ({adminRoleDetailPage, network}) => {
+	test('should assign a user to the role', async ({page, adminRoleDetailPage, network}) => {
 		network.use(
 			mockQueryUsersEndpoint({
 				successResponse: HttpResponse.json(createMembersPage([createUser({username: 'new.user'})])),
@@ -389,6 +390,7 @@ test.describe('Admin role detail', () => {
 		await adminRoleDetailPage.button('Assign user').click();
 		await adminRoleDetailPage.dialogCombobox.click();
 		await adminRoleDetailPage.option('new.user').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryUsersByRoleEndpoint({
@@ -404,11 +406,13 @@ test.describe('Admin role detail', () => {
 	});
 
 	test('should not offer users that are already assigned to the role', async ({adminRoleDetailPage, network}) => {
+		// The backend applies the picker's $notIn exclusion, so the mock has to as well.
 		network.use(
-			mockQueryUsersEndpoint({
-				successResponse: HttpResponse.json(
-					createMembersPage([createUser({username: 'jane.doe'}), createUser({username: 'new.user'})]),
-				),
+			http.post(endpoints.queryUsers.getUrl(), async ({request}) => {
+				const {filter} = (await request.json()) as {filter?: {username?: {$notIn?: string[]}}};
+				const excluded = filter?.username?.$notIn ?? [];
+				const users = ['jane.doe', 'new.user'].filter((username) => !excluded.includes(username));
+				return HttpResponse.json(createMembersPage(users.map((username) => createUser({username}))));
 			}),
 		);
 
@@ -510,7 +514,7 @@ test.describe('Admin role detail', () => {
 		await expect(adminRoleDetailPage.cell('john.smith')).toBeVisible();
 	});
 
-	test('should assign a group to the role', async ({adminRoleDetailPage, network}) => {
+	test('should assign a group to the role', async ({page, adminRoleDetailPage, network}) => {
 		network.use(
 			mockQueryGroupsEndpoint({
 				successResponse: HttpResponse.json(createMembersPage([{groupId: 'support', name: 'Support'}])),
@@ -522,6 +526,7 @@ test.describe('Admin role detail', () => {
 		await adminRoleDetailPage.button('Assign group').click();
 		await adminRoleDetailPage.dialogCombobox.click();
 		await adminRoleDetailPage.option('support').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryGroupsByRoleEndpoint({
