@@ -302,8 +302,11 @@ public class ActorTask {
         closeFuture.completeExceptionally(failure);
       }
       case STARTED -> {
-        actor.handleFailure(failure);
-        currentJob.failFuture(failure);
+        try {
+          actor.handleFailure(failure);
+        } finally {
+          currentJob.failFuture(failure);
+        }
       }
       default -> {
         // do nothing

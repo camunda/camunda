@@ -9,14 +9,18 @@ package io.camunda.zeebe.scheduler;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import org.agrona.LangUtil;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public final class ActorErrorHandlingTest {
 
-  @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+  @RegisterExtension
+  public final ControlledActorSchedulerExtension scheduler =
+      new ControlledActorSchedulerExtension();
 
   @Test
   public void shouldCatchThrowable() {
@@ -69,6 +73,50 @@ public final class ActorErrorHandlingTest {
 
     // then
     assertThat(closeFuture.isDone()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  public void shouldCompleteCallFutureWhenFailureHandlingThrows(
+      final boolean failureCleanupThrows) {
+    // given
+    final var callFailure = new RuntimeException("call failed");
+    final var handlerFailure = new IllegalStateException("handler failed");
+    final var actor =
+        new ThrowingActor(callFailure) {
+          @Override
+          protected void handleFailure(final Throwable failure) {
+            throw handlerFailure;
+          }
+
+          @Override
+          public void onActorFailed() {
+            if (failureCleanupThrows) {
+              throw new IllegalStateException("cleanup failed");
+            }
+          }
+        };
+    scheduler.submitActor(actor);
+    scheduler.workUntilDone();
+
+    // when
+    final var callFuture =
+        actor.call(
+            () -> {
+              throw callFailure;
+            });
+    scheduler.workUntilDone();
+    final var closeFuture = actor.closeAsync();
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(closeFuture.isCompletedExceptionally()).isTrue();
+    assertThat(closeFuture.getException()).isSameAs(handlerFailure);
+    assertThat(callFuture.isDone())
+        .as("the failing call's future must complete even when failure handling throws")
+        .isTrue();
+    assertThat(callFuture.isCompletedExceptionally()).isTrue();
+    assertThat(callFuture.getException()).isSameAs(callFailure);
   }
 
   @Test
