@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.configuration.processing.flowcontrol.Limit;
+import io.camunda.configuration.Limit;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -32,6 +32,7 @@ final class ConfigurationPropertiesIT {
       new TestCamundaApplication()
           .withProperty("management.endpoint.configprops.access", "unrestricted")
           .withProperty("management.endpoint.configprops.show-values", "always")
+          .withProperty("camunda.processing.flow-control.request.aimd.initial-limit", 123)
           .withUnifiedConfig(
               config -> {
                 config.getProcessing().setMaxCommandsInBatch(17);
@@ -45,8 +46,7 @@ final class ConfigurationPropertiesIT {
   @ParameterizedTest
   @CsvSource({
     "zeebe.broker, /processing/maxCommandsInBatch, 17",
-    "zeebe.broker, /processing/maxRecoverableRetries, 1000",
-    "zeebe.broker, /processing/maxPendingSideEffects, 1000",
+    "zeebe.broker, /processing/enableAsyncScheduledTasks, true",
     "zeebe.broker, /processing/scheduledTaskCheckInterval, PT1S",
     "camunda, /processing/flowControl/request/enabled, true",
     "camunda, /processing/flowControl/request/windowed, true",
