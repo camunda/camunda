@@ -40,9 +40,18 @@ public final class StaticConfigurationGenerator {
 
   public static StaticConfiguration getStaticConfiguration(
       final BrokerCfg brokerCfg, final MemberId localMemberId) {
+    return getStaticConfiguration(
+        brokerCfg, brokerCfg.getCluster().getPartitionsCount(), localMemberId);
+  }
+
+  /**
+   * The static configuration with the given partition count instead of the configured one, e.g. the
+   * partition count of the backups a fresh cluster is restored from.
+   */
+  public static StaticConfiguration getStaticConfiguration(
+      final BrokerCfg brokerCfg, final int partitionCount, final MemberId localMemberId) {
     final var clusterCfg = brokerCfg.getCluster();
     final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
-    final var partitionCount = clusterCfg.getPartitionsCount();
     final var replicationFactor = clusterCfg.getReplicationFactor();
 
     final var partitionDistributor = getPartitionDistributor(partitioningCfg);

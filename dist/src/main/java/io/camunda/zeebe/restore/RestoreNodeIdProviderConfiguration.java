@@ -123,7 +123,7 @@ public class RestoreNodeIdProviderConfiguration {
 
   private static void validateAfterRestore(
       final BrokerBasedProperties brokerCfg, final PostRestoreActionContext context) {
-    if (!RestoreValidator.validate(brokerCfg)) {
+    if (!RestoreValidator.validate(brokerCfg, context.restoredPartitionCount())) {
       final String message;
       if (context.skippedRestore()) {
         message =

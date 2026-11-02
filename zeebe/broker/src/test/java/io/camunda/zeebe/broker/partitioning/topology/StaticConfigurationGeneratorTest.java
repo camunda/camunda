@@ -65,6 +65,26 @@ class StaticConfigurationGeneratorTest {
     assertThat(actualDistribution).containsExactlyInAnyOrderEntriesOf(expectedDistribution);
   }
 
+  @Test
+  void shouldGenerateTheGivenPartitionCountInsteadOfTheConfiguredOne() {
+    // given
+    final ClusterCfg clusterCfg = new ClusterCfg();
+    clusterCfg.setClusterSize(3);
+    clusterCfg.setPartitionsCount(5);
+    clusterCfg.setReplicationFactor(3);
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.setExporters(Map.of());
+
+    // when
+    final var partitionDistribution =
+        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, 3, MemberId.from("1"))
+            .generatePartitionDistribution();
+
+    // then
+    assertThat(getDistribution(partitionDistribution)).containsOnlyKeys(1, 2, 3);
+  }
+
   private Map<Integer, Set<Integer>> getDistribution(
       final Set<PartitionMetadata> partitionDistribution) {
     return partitionDistribution.stream()
