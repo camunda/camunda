@@ -32,4 +32,15 @@ public interface SignalRecordValue extends RecordValueWithVariables, TenantOwned
    * @return the name of the signal
    */
   String getSignalName();
+
+  /**
+   * @return the run-scope selector that restricts this broadcast to a single run, or an empty
+   *     string for a global broadcast (the default and the behaviour of records written before
+   *     8.11)
+   * @since 8.11
+   */
+  @Value.Default
+  default String getRunScope() {
+    return "";
+  }
 }

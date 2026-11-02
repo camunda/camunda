@@ -72,6 +72,46 @@ public class BroadcastSignalInstructionTest {
   }
 
   @Test
+  void shouldScopeBroadcastToRunWhenIsolationEnabled() {
+    // given
+    final BroadcastSignalInstructionHandler enabledHandler =
+        new BroadcastSignalInstructionHandler(TestRunContext.enabled("run-xyz"));
+    final BroadcastSignalInstruction instruction =
+        ImmutableBroadcastSignalInstruction.builder().signalName(SIGNAL_NAME).build();
+
+    // when
+    enabledHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then the broadcast is scoped to this run and carries no run-id variable
+    final BroadcastSignalCommandStep2 mockCommand =
+        camundaClient
+            .newBroadcastSignalCommand()
+            .signalName(SIGNAL_NAME)
+            .variables(Collections.emptyMap());
+    verify(mockCommand).runScope("run-xyz");
+    verify(mockCommand).send();
+  }
+
+  @Test
+  void shouldNotScopeBroadcastWhenIsolationDisabled() {
+    // given a disabled handler (the field instructionHandler) and an instruction
+    final BroadcastSignalInstruction instruction =
+        ImmutableBroadcastSignalInstruction.builder().signalName(SIGNAL_NAME).build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then runScope is never set (verifyNoMoreInteractions below would fail otherwise)
+    final BroadcastSignalCommandStep2 mockCommand =
+        camundaClient
+            .newBroadcastSignalCommand()
+            .signalName(SIGNAL_NAME)
+            .variables(Collections.emptyMap());
+    verify(mockCommand).send();
+    verifyNoMoreInteractions(mockCommand);
+  }
+
+  @Test
   void shouldSetVariables() {
     // given
     final Map<String, Object> variables = new HashMap<>();

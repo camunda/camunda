@@ -285,7 +285,8 @@ public class RequestMapper {
                 correlationRequest.getCorrelationKey(),
                 correlationRequest.getVariables(),
                 tenantId,
-                correlationRequest.getBusinessId()));
+                correlationRequest.getBusinessId(),
+                correlationRequest.getRunScope()));
   }
 
   public static Either<ProblemDetail, CompleteJobRequest> toJobCompletionRequest(
@@ -581,7 +582,8 @@ public class RequestMapper {
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
                 tenantId,
-                messagePublicationRequest.getBusinessId()));
+                messagePublicationRequest.getBusinessId(),
+                messagePublicationRequest.getRunScope()));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
@@ -606,7 +608,11 @@ public class RequestMapper {
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
-            new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
+            new BroadcastSignalRequest(
+                request.getSignalName(),
+                request.getVariables(),
+                tenantId,
+                request.getRunScope() == null ? "" : request.getRunScope()));
   }
 
   public static <T> Either<ProblemDetail, T> getResult(
@@ -779,7 +785,8 @@ public class RequestMapper {
                 tenantId,
                 getKeyOrDefault(
                     request, ConditionalEvaluationInstruction::getProcessDefinitionKey, -1L),
-                request.getVariables()));
+                request.getVariables(),
+                request.getRunScope() == null ? "" : request.getRunScope()));
   }
 
   private static TenantFilter convertTenantFilter(final TenantFilterEnum gatewayFilter) {
@@ -1021,7 +1028,7 @@ public class RequestMapper {
       @Nullable String jobReservationToken) {}
 
   public record BroadcastSignalRequest(
-      String signalName, Map<String, Object> variables, String tenantId) {}
+      String signalName, Map<String, Object> variables, String tenantId, String runScope) {}
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}

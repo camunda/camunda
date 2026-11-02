@@ -47,6 +47,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
   private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
@@ -69,9 +70,10 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public MessageSubscriptionRecord() {
-    super(16);
+    super(17);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -87,7 +89,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
         .declareProperty(elementTypeProp)
-        .declareProperty(subscriptionKeyProp);
+        .declareProperty(subscriptionKeyProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -107,6 +110,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setStorageOrdinal(record.getStorageOrdinal());
     setElementType(record.getElementType());
     setSubscriptionKey(record.getSubscriptionKey());
+    setRunScope(record.getRunScopeBuffer());
   }
 
   @JsonIgnore
@@ -307,5 +311,30 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   public MessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
     subscriptionKeyProp.setValue(subscriptionKey);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

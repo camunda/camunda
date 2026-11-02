@@ -39,11 +39,12 @@ public class ConditionalServices extends PhysicalTenantScopedApiServices<Conditi
         new BrokerEvaluateConditionalRequest()
             .setProcessDefinitionKey(request.processDefinitionKey())
             .setTenantId(request.tenantId())
-            .setVariables(getDocumentOrEmpty(request.variables()));
+            .setVariables(getDocumentOrEmpty(request.variables()))
+            .setRunScope(request.runScope());
 
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record EvaluateConditionalRequest(
-      String tenantId, Long processDefinitionKey, Map<String, Object> variables) {}
+      String tenantId, Long processDefinitionKey, Map<String, Object> variables, String runScope) {}
 }

@@ -35,6 +35,7 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
   public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   public static final StringValue STARTED_PROCESS_INSTANCES_KEY =
       new StringValue("startedProcessInstances");
+  public static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -43,19 +44,22 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<ConditionalStartedProcessInstance> startedProcessInstancesProp =
       new ArrayProperty<>(STARTED_PROCESS_INSTANCES_KEY, ConditionalStartedProcessInstance::new);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public ConditionalEvaluationRecord() {
-    super(4);
+    super(5);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(startedProcessInstancesProp);
+        .declareProperty(startedProcessInstancesProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final ConditionalEvaluationRecord other) {
     processDefinitionKeyProp.setValue(other.getProcessDefinitionKey());
     variablesProp.setValue(other.getVariablesBuffer());
     tenantIdProp.setValue(other.getTenantId());
+    runScopeProp.setValue(other.getRunScopeBuffer());
 
     startedProcessInstancesProp.reset();
     for (final ConditionalStartedProcessInstance instance : other.startedProcessInstances()) {
@@ -103,6 +107,31 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
   public ConditionalEvaluationRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public ConditionalEvaluationRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public ConditionalEvaluationRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 
   /**

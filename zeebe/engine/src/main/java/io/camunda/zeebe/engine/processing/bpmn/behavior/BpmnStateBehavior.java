@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +61,19 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getElementInstance(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey);
+  }
+
+  /**
+   * Returns the run-scope value (without the reserved prefix) carried by the root instance, or an
+   * empty string when the instance is not run-scoped. The reserved run-scope tag lives on the root
+   * instance record, not on the element instances beneath it, so it must be read at the root (ADR
+   * 0014).
+   */
+  public String getRunScope(final long rootProcessInstanceKey) {
+    final var rootInstance = elementInstanceState.getInstance(rootProcessInstanceKey);
+    return rootInstance != null
+        ? TagUtil.findRunScopeValue(rootInstance.getValue().getTags()).orElse("")
+        : "";
   }
 
   public ElementTreePathProperties getElementTreePath(

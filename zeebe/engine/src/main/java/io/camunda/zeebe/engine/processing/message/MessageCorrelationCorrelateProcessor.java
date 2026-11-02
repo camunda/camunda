@@ -259,6 +259,7 @@ public final class MessageCorrelationCorrelateProcessor
         messageCorrelationRecord.getVariablesBuffer(),
         messageCorrelationRecord.getTenantId(),
         messageCorrelationRecord.getBusinessIdBuffer(),
+        messageCorrelationRecord.getRunScopeBuffer(),
         // Correlate commands carry no TTL and are not buffered; the cross-partition dedup row's
         // deadline therefore defaults to -1 (already expired). This is safe because the pending-ask
         // on P_K is cleared immediately by the message-expire hook, so no retry ever fires.

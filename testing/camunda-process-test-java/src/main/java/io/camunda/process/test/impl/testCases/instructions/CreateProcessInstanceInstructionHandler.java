@@ -62,7 +62,12 @@ public class CreateProcessInstanceInstructionHandler
             .newCreateInstanceCommand()
             .bpmnProcessId(processDefinitionId)
             .latestVersion()
-            .variables(runContext.applyRunId(instruction.getVariables()));
+            .variables(instruction.getVariables());
+
+    if (runContext.isEnabled()) {
+      // stamp the reserved run-scope tag so the engine can isolate signal broadcast to this run
+      command.tags(runContext.getRunScopeTag());
+    }
 
     instruction
         .getStartInstructions()

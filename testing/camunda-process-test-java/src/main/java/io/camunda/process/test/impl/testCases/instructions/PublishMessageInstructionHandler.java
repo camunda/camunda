@@ -56,7 +56,11 @@ public class PublishMessageInstructionHandler
               .withoutCorrelationKey();
     }
 
-    command.variables(runContext.applyRunId(instruction.getVariables()));
+    command.variables(instruction.getVariables());
+
+    if (runContext.isEnabled()) {
+      command.runScope(runContext.getRunId());
+    }
 
     instruction.getTimeToLive().ifPresent(ttl -> command.timeToLive(Duration.ofMillis(ttl)));
 

@@ -24,3 +24,9 @@ process-execution data path). These are module-scoped decisions; see the
 | [0012](0012-810-agent-instance-written-by-agent-runtime.md)         | Agent instance as the anchor for one agent run, written by the agent runtime, engine owns completion          |
 | [0013](0013-810-agent-history-commit-under-job-lease.md)            | Agent history committed per job activation under the job lease, superseded items discarded at commit          |
 
+### 8.11
+
+|                     ADR                      |                                                    Decision                                                    |
+|----------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [0014](0014-811-tag-scoped-run-isolation.md) | Tag-scoped run isolation: run scope rides a reserved instance tag, copied onto subscriptions, filtered locally |
+

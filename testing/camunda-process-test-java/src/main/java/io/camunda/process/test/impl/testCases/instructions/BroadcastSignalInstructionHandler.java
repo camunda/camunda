@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
@@ -38,12 +39,18 @@ public class BroadcastSignalInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    camundaClient
-        .newBroadcastSignalCommand()
-        .signalName(instruction.getSignalName())
-        .variables(runContext.applyRunId(instruction.getVariables()))
-        .send()
-        .join();
+    final BroadcastSignalCommandStep2 command =
+        camundaClient
+            .newBroadcastSignalCommand()
+            .signalName(instruction.getSignalName())
+            .variables(instruction.getVariables());
+
+    if (runContext.isEnabled()) {
+      // scope the broadcast to this run so it only wakes this run's catch and start events
+      command.runScope(runContext.getRunId());
+    }
+
+    command.send().join();
   }
 
   @Override

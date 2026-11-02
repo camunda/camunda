@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
@@ -136,6 +137,15 @@ public final class CatchEventBehavior {
   private String getBusinessId(final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     return processInstance != null ? processInstance.getValue().getBusinessId() : "";
+  }
+
+  private String getRunScope(final long rootProcessInstanceKey) {
+    // the reserved run-scope tag is carried on the root instance record, so read it there rather
+    // than from the catch element instance (whose record does not carry the instance's tags)
+    final var rootInstance = elementInstanceState.getInstance(rootProcessInstanceKey);
+    return rootInstance != null
+        ? TagUtil.findRunScopeValue(rootInstance.getValue().getTags()).orElse("")
+        : "";
   }
 
   /**
@@ -404,6 +414,9 @@ public final class CatchEventBehavior {
     // the process-scope element instance (not the subscribing element's record) so that a Business
     // ID assigned late to a running instance is captured by subscriptions opened afterwards.
     final DirectBuffer businessId = wrapString(getBusinessId(processInstanceKey));
+    // Capture the root instance's reserved run scope the same way, so the message partition can
+    // filter correlation to a single run locally without a cross-partition read of the root's tags.
+    final DirectBuffer runScope = wrapString(getRunScope(rootProcessInstanceKey));
 
     final int subscriptionPartitionId = routingInfo.partitionForCorrelationKey(correlationKey);
 
@@ -420,6 +433,7 @@ public final class CatchEventBehavior {
     subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
     subscription.setStorageOrdinal(storageOrdinal);
     subscription.setBusinessId(businessId);
+    subscription.setRunScope(runScope);
     subscription.setElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
@@ -437,6 +451,7 @@ public final class CatchEventBehavior {
         event.isInterrupting(),
         context.getTenantId(),
         businessId,
+        runScope,
         event.getId(),
         rootProcessInstanceKey,
         storageOrdinal,
@@ -542,7 +557,8 @@ public final class CatchEventBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
-        .setBpmnElementType(event.getElementType());
+        .setBpmnElementType(event.getElementType())
+        .setRunScope(getRunScope(context.getRootProcessInstanceKey()));
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -756,6 +772,7 @@ public final class CatchEventBehavior {
       final boolean closeOnCorrelate,
       final String tenantId,
       final DirectBuffer businessId,
+      final DirectBuffer runScope,
       final DirectBuffer elementId,
       final long rootProcessInstanceKey,
       final int storageOrdinal,
@@ -771,6 +788,7 @@ public final class CatchEventBehavior {
         closeOnCorrelate,
         tenantId,
         businessId,
+        runScope,
         elementId,
         rootProcessInstanceKey,
         storageOrdinal,

@@ -262,7 +262,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             processingState.getVariableState(),
             writers,
-            expressionProcessor);
+            expressionProcessor,
+            stateBehavior);
 
     userTaskBehavior =
         new BpmnUserTaskBehavior(

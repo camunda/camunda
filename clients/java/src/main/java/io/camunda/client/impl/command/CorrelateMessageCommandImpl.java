@@ -78,6 +78,12 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   }
 
   @Override
+  public CorrelateMessageCommandStep3 runScope(final String runScope) {
+    request.setRunScope(runScope);
+    return this;
+  }
+
+  @Override
   public CorrelateMessageCommandStep3 withoutCorrelationKey() {
     return this;
   }

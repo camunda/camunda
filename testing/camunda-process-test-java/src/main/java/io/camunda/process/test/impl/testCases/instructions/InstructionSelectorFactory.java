@@ -38,7 +38,6 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.testCases.TestRunContext;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -60,7 +59,7 @@ final class InstructionSelectorFactory {
 
   /**
    * Builds a process instance selector, scoping it to the current test run when isolation is
-   * enabled. The run scope is added as a variable filter on the instance search, so it narrows the
+   * enabled. The run scope is added as a tag filter on the instance search, so it narrows the
    * search in the backend rather than post-filtering a page of results.
    *
    * @param dslSelector the DSL process instance selector
@@ -78,9 +77,7 @@ final class InstructionSelectorFactory {
   }
 
   private static ProcessInstanceSelector byRunId(final String runId) {
-    // The variable search matches the JSON-encoded stored value, so a string must be passed quoted
-    // (e.g. "\"<uuid>\""). An unquoted value matches no instance.
-    final String runIdFilterValue = "\"" + runId + "\"";
+    final String runScopeTag = TestRunContext.RUN_SCOPE_TAG_PREFIX + runId;
     return new ProcessInstanceSelector() {
       @Override
       public boolean test(final ProcessInstance processInstance) {
@@ -89,13 +86,12 @@ final class InstructionSelectorFactory {
 
       @Override
       public void applyFilter(final ProcessInstanceFilter filter) {
-        filter.variables(
-            Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, runIdFilterValue));
+        filter.tags(runScopeTag);
       }
 
       @Override
       public String describe() {
-        return String.format("%s: '%s'", TestRunContext.RUN_ID_VARIABLE_NAME, runId);
+        return runScopeDescription(runId);
       }
     };
   }
@@ -301,14 +297,14 @@ final class InstructionSelectorFactory {
     return selector;
   }
 
-  // --- Run isolation (phase 2) ---------------------------------------------------------------
-  // Jobs, user tasks and incidents cannot be filtered by the run-ID variable (their search has no
-  // variable filter). So when isolation is on, resolve the instances the run started (by the run-ID
-  // variable alone — the selector need not name a process definition) and scope the search to their
-  // process instance keys. The selector's own job type / element id still narrows to the right job
-  // within those instances. Instances the run did not tag (timer or external starts,
-  // non-propagating
-  // child processes) cannot be resolved this way and will not match.
+  // --- Run isolation -------------------------------------------------------------------------
+  // User tasks inherit their instance's tags and expose a tag filter, so they are scoped directly
+  // by
+  // the reserved run-scope tag. Jobs and incidents have no tag filter on their search, so for those
+  // the run's instances are resolved by tag first and the search is scoped to their process
+  // instance
+  // keys; the selector's own job type / element id still narrows within those instances. Instances
+  // the run did not tag (external starts, non-propagating child processes) will not match.
 
   static JobSelector buildJobSelector(
       final io.camunda.process.test.api.testCases.JobSelector dslSelector,
@@ -349,6 +345,7 @@ final class InstructionSelectorFactory {
     if (!isScoped(runContext)) {
       return selector;
     }
+    final String runScopeTag = TestRunContext.RUN_SCOPE_TAG_PREFIX + runContext.getRunId();
     return selector.and(
         new UserTaskSelector() {
           @Override
@@ -358,11 +355,7 @@ final class InstructionSelectorFactory {
 
           @Override
           public void applyFilter(final UserTaskFilter filter) {
-            applyRunInstanceKeys(
-                client,
-                runContext.getRunId(),
-                filter::processInstanceKey,
-                filter::processInstanceKey);
+            filter.tags(runScopeTag);
           }
 
           @Override
@@ -424,13 +417,10 @@ final class InstructionSelectorFactory {
   }
 
   private static List<Long> resolveRunInstanceKeys(final CamundaClient client, final String runId) {
-    final String runIdValue = "\"" + runId + "\"";
+    final String runScopeTag = TestRunContext.RUN_SCOPE_TAG_PREFIX + runId;
     return client
         .newProcessInstanceSearchRequest()
-        .filter(
-            f ->
-                f.variables(
-                    Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, runIdValue)))
+        .filter(f -> f.tags(runScopeTag))
         .send()
         .join()
         .items()
@@ -440,6 +430,6 @@ final class InstructionSelectorFactory {
   }
 
   private static String runScopeDescription(final String runId) {
-    return String.format("%s: '%s'", TestRunContext.RUN_ID_VARIABLE_NAME, runId);
+    return String.format("%s%s", TestRunContext.RUN_SCOPE_TAG_PREFIX, runId);
   }
 }

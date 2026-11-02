@@ -57,8 +57,16 @@ public final class BufferedStartMessageEventStateApplier {
     final var correlationKey = messageState.getProcessInstanceCorrelationKey(processInstanceKey);
 
     if (correlationKey != null) {
+      // Read the run scope (if any) before removing the reverse entries. For an unscoped (legacy)
+      // instance this is null and the behaviour is byte-for-byte identical to before the run-scope
+      // prototype; for a run-scoped instance it selects the scoped lock to free (ADR 0014, D7).
+      final var runScope = messageState.getProcessInstanceRunScope(processInstanceKey);
       messageState.removeProcessInstanceCorrelationKey(processInstanceKey);
-      messageState.removeActiveProcessInstance(record.getBpmnProcessIdBuffer(), correlationKey);
+      if (runScope != null && runScope.capacity() > 0) {
+        messageState.removeProcessInstanceRunScope(processInstanceKey);
+      }
+      messageState.removeActiveProcessInstance(
+          record.getBpmnProcessIdBuffer(), correlationKey, runScope);
     }
   }
 }

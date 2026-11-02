@@ -38,6 +38,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -55,9 +56,10 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
       new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public SignalSubscriptionRecord() {
-    super(10);
+    super(11);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(signalNameProp)
         .declareProperty(catchEventIdProp)
@@ -67,7 +69,8 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(bpmnElementTypeProp);
+        .declareProperty(bpmnElementTypeProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final SignalSubscriptionRecord record) {
@@ -81,6 +84,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     storageOrdinalProp.setValue(record.getStorageOrdinal());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
+    runScopeProp.setValue(record.getRunScopeBuffer());
   }
 
   @JsonIgnore
@@ -214,5 +218,30 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   public SignalSubscriptionRecord setBpmnElementType(final BpmnElementType bpmnElementType) {
     bpmnElementTypeProp.setValue(bpmnElementType);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public SignalSubscriptionRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public SignalSubscriptionRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

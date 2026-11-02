@@ -142,7 +142,8 @@ public class ConditionalEvaluationEvaluateProcessor
               processInstanceKey,
               match.startEventId(),
               record.getVariablesBuffer(),
-              record.getTenantId());
+              record.getTenantId(),
+              record.getRunScope());
 
       if (activated) {
         // Only report instances that were actually started; a draining definition is skipped and

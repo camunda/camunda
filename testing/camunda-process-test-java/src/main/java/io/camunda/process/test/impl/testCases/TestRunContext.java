@@ -15,23 +15,24 @@
  */
 package io.camunda.process.test.impl.testCases;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
  * Holds the isolation state of a single test-case run. When isolation is enabled, every process
- * instance started during the run is tagged with a unique run ID (as a process variable) so that
- * later assertions and instructions can be scoped to that run's instances instead of selecting the
- * oldest instance of a process definition.
+ * instance started during the run is tagged with a unique run ID (as a reserved instance tag) so
+ * that later assertions and instructions can be scoped to that run's instances instead of selecting
+ * the oldest instance of a process definition.
  *
  * <p>Enabled with the system property {@value #ENABLED_PROPERTY}. Off by default.
  */
 public final class TestRunContext {
 
-  /** Variable name under which the run ID is stored on every started instance. */
-  public static final String RUN_ID_VARIABLE_NAME = "__camundaProcessTestRunId";
+  /**
+   * Reserved tag prefix that marks the run-scope tag. Must match the engine's {@code
+   * TagUtil.RUN_SCOPE_TAG_PREFIX}. The engine treats only a tag with this prefix as the run scope
+   * for signal broadcast (and, later, message correlation).
+   */
+  public static final String RUN_SCOPE_TAG_PREFIX = "camunda:runScope:";
 
   /** System property that enables run-ID based test isolation. */
   public static final String ENABLED_PROPERTY = "camunda.process-test.run-isolation.enabled";
@@ -67,17 +68,8 @@ public final class TestRunContext {
     return runId;
   }
 
-  /**
-   * Returns the given variables with the run ID added, or the variables unchanged when isolation is
-   * disabled. The returned map is a copy; the input is never mutated.
-   */
-  public Map<String, Object> applyRunId(final Map<String, Object> variables) {
-    if (!enabled) {
-      return variables;
-    }
-    final Map<String, Object> merged =
-        new LinkedHashMap<>(variables == null ? Collections.emptyMap() : variables);
-    merged.put(RUN_ID_VARIABLE_NAME, runId);
-    return merged;
+  /** Returns the reserved run-scope tag ({@code camunda:runScope:<runId>}) for this run. */
+  public String getRunScopeTag() {
+    return RUN_SCOPE_TAG_PREFIX + runId;
   }
 }

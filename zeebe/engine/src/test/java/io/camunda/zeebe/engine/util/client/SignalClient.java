@@ -72,6 +72,11 @@ public class SignalClient {
     return this;
   }
 
+  public SignalClient withRunScope(final String runScope) {
+    signalRecord.setRunScope(runScope);
+    return this;
+  }
+
   public SignalClient expectRejection() {
     expectation = REJECTION_EXPECTATION;
     return this;

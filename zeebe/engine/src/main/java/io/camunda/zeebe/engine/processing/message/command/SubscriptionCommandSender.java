@@ -69,6 +69,7 @@ public class SubscriptionCommandSender {
       final boolean closeOnCorrelate,
       final String tenantId,
       final DirectBuffer businessId,
+      final DirectBuffer runScope,
       final DirectBuffer elementId,
       final long rootProcessInstanceKey,
       final int storageOrdinal,
@@ -88,6 +89,7 @@ public class SubscriptionCommandSender {
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
             .setBusinessId(businessId)
+            .setRunScope(runScope)
             .setElementId(elementId)
             .setRootProcessInstanceKey(rootProcessInstanceKey)
             .setStorageOrdinal(storageOrdinal)
@@ -110,6 +112,9 @@ public class SubscriptionCommandSender {
    * @param businessId the business id captured from the subscribing process instance at open time;
    *     used as a post-routing local filter on the subscription partition. May be an empty buffer
    *     when the process instance has no business id.
+   * @param runScope the run scope captured from the subscribing process instance at open time; used
+   *     as a post-routing local filter on the subscription partition. May be an empty buffer when
+   *     the process instance has no run scope.
    * @param elementId the BPMN element id of the catch element that opened the subscription
    * @param rootProcessInstanceKey the key of the root process instance in the hierarchy
    * @param storageOrdinal the storage ordinal for the subscription
@@ -126,6 +131,7 @@ public class SubscriptionCommandSender {
       final boolean closeOnCorrelate,
       final String tenantId,
       final DirectBuffer businessId,
+      final DirectBuffer runScope,
       final DirectBuffer elementId,
       final long rootProcessInstanceKey,
       final int storageOrdinal,
@@ -145,6 +151,7 @@ public class SubscriptionCommandSender {
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
             .setBusinessId(businessId)
+            .setRunScope(runScope)
             .setElementId(elementId)
             .setRootProcessInstanceKey(rootProcessInstanceKey)
             .setStorageOrdinal(storageOrdinal)
@@ -159,6 +166,7 @@ public class SubscriptionCommandSender {
       final boolean closeOnCorrelate,
       final String tenantId,
       final DirectBuffer businessId,
+      final DirectBuffer runScope,
       final long subscriptionKey,
       final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
@@ -176,6 +184,7 @@ public class SubscriptionCommandSender {
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
             .setBusinessId(businessId)
+            .setRunScope(runScope)
             .setSubscriptionKey(subscriptionKey));
   }
 

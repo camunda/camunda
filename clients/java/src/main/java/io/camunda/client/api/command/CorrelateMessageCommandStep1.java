@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.CorrelateMessageResponse;
 import java.io.InputStream;
 import java.util.Map;
@@ -73,6 +74,21 @@ public interface CorrelateMessageCommandStep1 {
      *     it to the broker.
      */
     CorrelateMessageCommandStep3 businessId(String businessId);
+
+    /**
+     * Restrict the message to a single run. When set, the message is scoped to instances belonging
+     * to this run (identified by a reserved run-scope tag). When not set, the message is correlated
+     * globally. Used for run isolation.
+     *
+     * <p>This is an alpha feature for run isolation, excluded from the backward-compatibility
+     * guarantee until run-scope coverage is complete; it may change or be removed at any time.
+     *
+     * @param runScope the run-scope selector (the run id)
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @ExperimentalApi("https://github.com/camunda/camunda/pull/66932")
+    CorrelateMessageCommandStep3 runScope(String runScope);
 
     /**
      * Set the variables of the message.

@@ -84,6 +84,59 @@ public class CreateProcessInstanceInstructionTest {
   }
 
   @Test
+  void shouldStampRunScopeTagWhenIsolationEnabled() {
+    // given
+    final CreateProcessInstanceInstructionHandler enabledHandler =
+        new CreateProcessInstanceInstructionHandler(
+            new CreatedProcessInstanceRegistry(), TestRunContext.enabled("run-xyz"));
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .build();
+
+    // when
+    enabledHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then the created instance is stamped with the reserved run-scope tag and no run-id variable
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+    verify(mockCommand).tags("camunda:runScope:run-xyz");
+    verify(mockCommand).send();
+  }
+
+  @Test
+  void shouldNotStampRunScopeTagWhenIsolationDisabled() {
+    // given the disabled field handler and an instruction
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then no tag is stamped (verifyNoMoreInteractions would fail otherwise)
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+    verify(mockCommand).send();
+    verifyNoMoreInteractions(mockCommand);
+  }
+
+  @Test
   void shouldReserveJobsAndStubCallActivities() {
     // given
     final String token = "cpt-1234";
@@ -232,10 +285,9 @@ public class CreateProcessInstanceInstructionTest {
     // when
     isolatingHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-    // then
+    // then the user variables pass through untouched and the run scope rides the reserved tag
     final Map<String, Object> expectedVariables = new HashMap<>();
     expectedVariables.put("a", 1);
-    expectedVariables.put(TestRunContext.RUN_ID_VARIABLE_NAME, runId);
 
     final CreateProcessInstanceCommandStep3 mockCommand =
         camundaClient
@@ -244,6 +296,7 @@ public class CreateProcessInstanceInstructionTest {
             .latestVersion()
             .variables(expectedVariables);
 
+    verify(mockCommand).tags("camunda:runScope:" + runId);
     verify(mockCommand).send();
   }
 

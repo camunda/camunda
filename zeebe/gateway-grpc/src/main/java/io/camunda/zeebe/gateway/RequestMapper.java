@@ -145,7 +145,8 @@ public final class RequestMapper extends RequestUtil {
         .setTimeToLive(grpcRequest.getTimeToLive())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()))
-        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
+        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()))
+        .setRunScope(grpcRequest.getRunScope());
 
     return brokerRequest;
   }
@@ -508,7 +509,8 @@ public final class RequestMapper extends RequestUtil {
       final BroadcastSignalRequest grpcRequest) {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()))
+        .setRunScope(grpcRequest.getRunScope());
   }
 
   public static BrokerEvaluateConditionalRequest toEvaluateConditionalRequest(
@@ -521,7 +523,8 @@ public final class RequestMapper extends RequestUtil {
 
     return brokerRequest
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("EvaluateConditional", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("EvaluateConditional", grpcRequest.getTenantId()))
+        .setRunScope(grpcRequest.getRunScope());
   }
 
   public static JobActivationProperties toJobActivationProperties(

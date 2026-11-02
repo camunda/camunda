@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.EvaluateConditionalCommandStep1.EvaluateConditionalCommandStep2;
 import io.camunda.client.api.response.EvaluateConditionalResponse;
 
@@ -38,5 +39,20 @@ public interface EvaluateConditionalCommandStep1
      * @return the builder for this command
      */
     EvaluateConditionalCommandStep2 processDefinitionKey(long processDefinitionKey);
+
+    /**
+     * Restrict the evaluation to a single run. When set, the process instances started by this
+     * evaluation are stamped with a reserved run-scope tag so they belong to this run. When not
+     * set, the evaluation behaves globally. Used for run isolation.
+     *
+     * <p>This is an alpha feature for run isolation and is excluded from the API
+     * backward-compatibility guarantee until run-scope coverage is complete; it may change or be
+     * removed at any time.
+     *
+     * @param runScope the run-scope selector (the run id)
+     * @return the builder for this command
+     */
+    @ExperimentalApi("https://github.com/camunda/camunda/pull/66932")
+    EvaluateConditionalCommandStep2 runScope(String runScope);
   }
 }

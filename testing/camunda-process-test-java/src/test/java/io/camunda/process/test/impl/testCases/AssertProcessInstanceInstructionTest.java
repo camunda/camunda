@@ -30,7 +30,6 @@ import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceI
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceInstructionHandler;
-import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -107,9 +106,7 @@ public class AssertProcessInstanceInstructionTest {
 
     processInstanceSelectorCaptor.getValue().applyFilter(processInstanceFilter);
     verify(processInstanceFilter).processDefinitionId(PROCESS_DEFINITION_ID);
-    verify(processInstanceFilter)
-        .variables(
-            Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, "\"" + runId + "\""));
+    verify(processInstanceFilter).tags("camunda:runScope:" + runId);
   }
 
   @ParameterizedTest(name = "{0}")

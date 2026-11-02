@@ -243,7 +243,9 @@ public final class MessageCorrelateBehavior {
           }
 
           if (businessIdMatches(
-              messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())) {
+                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())
+              && runScopeMatches(
+                  messageData.runScope(), subscription.getRecord().getRunScopeBuffer())) {
 
             final var correlatingSubscription =
                 subscription
@@ -261,7 +263,7 @@ public final class MessageCorrelateBehavior {
             LOG.atTrace()
                 .addKeyValue("messageKey", messageData.messageKey())
                 .addKeyValue("subscriptionKey", subscription.getKey())
-                .log("Skipping subscription: business ID mismatch");
+                .log("Skipping subscription: business ID or run scope mismatch");
           }
 
           return true;
@@ -285,7 +287,9 @@ public final class MessageCorrelateBehavior {
               && !correlatingSubscriptions.contains(
                   subscription.getRecord().getBpmnProcessIdBuffer())
               && businessIdMatches(
-                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())) {
+                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())
+              && runScopeMatches(
+                  messageData.runScope(), subscription.getRecord().getRunScopeBuffer())) {
 
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscription.getRecord());
@@ -329,6 +333,21 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
+   * Asymmetric run-scope matching rule, mirroring {@link #businessIdMatches}: a message published
+   * without a run scope (empty buffer) correlates regardless of the subscription's stored run
+   * scope; a message with a run scope only correlates to subscriptions whose stored run scope
+   * matches exactly. Reading from the local {@code MessageSubscription} (not from PI state on
+   * another partition) is what keeps this a constant-time, on-partition check.
+   */
+  private boolean runScopeMatches(
+      final DirectBuffer messageRunScope, final DirectBuffer subscriptionRunScope) {
+    if (messageRunScope == null || messageRunScope.capacity() == 0) {
+      return true;
+    }
+    return BufferUtil.equals(messageRunScope, subscriptionRunScope);
+  }
+
+  /**
    * Evaluates whether this start-event subscription may correlate for the given message. Returns
    * {@link Either#right} when it may — only one instance per (process definition, correlation key)
    * is created (an empty correlation key allows multiple instances) and, when the businessId
@@ -359,7 +378,8 @@ public final class MessageCorrelateBehavior {
         && messageState.existActiveProcessInstance(
             messageData.tenantId(),
             subscriptionRecord.getBpmnProcessIdBuffer(),
-            messageData.correlationKey());
+            messageData.correlationKey(),
+            messageData.runScope());
   }
 
   /**
@@ -439,7 +459,8 @@ public final class MessageCorrelateBehavior {
         messageData.messageName(),
         messageData.correlationKey(),
         messageData.variables(),
-        messageData.businessId());
+        messageData.businessId(),
+        messageData.runScope());
   }
 
   /**
@@ -511,6 +532,7 @@ public final class MessageCorrelateBehavior {
       DirectBuffer variables,
       String tenantId,
       DirectBuffer businessId,
+      DirectBuffer runScope,
       long messageDeadline,
       long messageTtl) {}
 }

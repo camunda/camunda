@@ -31,8 +31,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.TagUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -225,7 +227,8 @@ public final class EventHandle {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final DirectBuffer variables,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer runScope) {
 
     // Validate before generating a key so we neither waste a key nor emit a CORRELATED event when
     // no instance will be created (definition draining or already removed).
@@ -247,7 +250,8 @@ public final class EventHandle {
         .setBusinessId(businessId)
         .setVariables(variables)
         .setTenantId(subscription.getTenantId())
-        .setStorageOrdinal(storageOrdinal);
+        .setStorageOrdinal(storageOrdinal)
+        .setRunScope(runScope);
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey,
@@ -261,6 +265,7 @@ public final class EventHandle {
         variables,
         subscription.getTenantId(),
         businessId,
+        BufferUtil.bufferAsString(runScope),
         storageOrdinal);
 
     return Tuple.of(newProcessInstanceKey, storageOrdinal);
@@ -273,7 +278,35 @@ public final class EventHandle {
       final DirectBuffer variablesBuffer,
       final String tenantId) {
     return activateProcessInstanceForStartEvent(
-        processDefinitionKey, processInstanceKey, targetElementId, variablesBuffer, tenantId, null);
+        processDefinitionKey,
+        processInstanceKey,
+        targetElementId,
+        variablesBuffer,
+        tenantId,
+        (DirectBuffer) null);
+  }
+
+  /**
+   * Activates a new root process instance for a run-scoped start event. When {@code runScope} is
+   * non-empty the new root instance is stamped with the reserved run-scope tag so that the run it
+   * belongs to is carried forward (see ADR 0014).
+   */
+  public boolean activateProcessInstanceForStartEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer,
+      final String tenantId,
+      final String runScope) {
+    return activateProcessInstanceForStartEvent(
+        processDefinitionKey,
+        processInstanceKey,
+        targetElementId,
+        variablesBuffer,
+        tenantId,
+        null,
+        runScope,
+        storageOrdinalProvider.getStorageOrdinal());
   }
 
   public boolean activateProcessInstanceForStartEvent(
@@ -290,6 +323,7 @@ public final class EventHandle {
         variablesBuffer,
         tenantId,
         businessId,
+        "",
         storageOrdinalProvider.getStorageOrdinal());
   }
 
@@ -308,6 +342,26 @@ public final class EventHandle {
       final DirectBuffer variablesBuffer,
       final String tenantId,
       final DirectBuffer businessId,
+      final int storageOrdinal) {
+    return activateProcessInstanceForStartEvent(
+        processDefinitionKey,
+        processInstanceKey,
+        targetElementId,
+        variablesBuffer,
+        tenantId,
+        businessId,
+        "",
+        storageOrdinal);
+  }
+
+  public boolean activateProcessInstanceForStartEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer,
+      final String tenantId,
+      final DirectBuffer businessId,
+      final String runScope,
       final int storageOrdinal) {
 
     if (!canCreateInstanceForStartEvent(processDefinitionKey, tenantId)) {
@@ -349,6 +403,13 @@ public final class EventHandle {
       recordForPICreation.setBusinessId("");
     }
 
+    // Stamp the reserved run-scope tag on the new root instance so the run it belongs to is carried
+    // forward to its children, jobs, and subscriptions (ADR 0014). Reset to empty when unscoped so
+    // a
+    // stale value from a previous invocation of this reused record cannot leak through.
+    recordForPICreation.setTags(
+        runScope == null || runScope.isEmpty() ? Set.of() : Set.of(TagUtil.runScopeTag(runScope)));
+
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
 
@@ -372,6 +433,9 @@ public final class EventHandle {
     } else {
       recordForPICreationEvent.setBusinessId("");
     }
+
+    recordForPICreationEvent.setTags(
+        runScope == null || runScope.isEmpty() ? Set.of() : Set.of(TagUtil.runScopeTag(runScope)));
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceCreationIntent.CREATED, recordForPICreationEvent);

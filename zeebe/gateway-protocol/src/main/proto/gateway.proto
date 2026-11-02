@@ -717,6 +717,9 @@ message PublishMessageRequest {
   // rejects starting a new process instance when another root process instance with the same
   // business id is already active for the same process definition.
   optional string businessId = 7;
+  // optional run-scope selector; when set, the message is scoped to instances belonging to this run
+  // (run isolation). When empty, the message is published globally.
+  string runScope = 8;
 }
 
 message PublishMessageResponse {
@@ -1052,6 +1055,9 @@ message BroadcastSignalRequest {
   string variables = 2;
   // the id of the tenant that owns the signal.
   string tenantId = 3;
+  // optional run-scope selector; when set, the broadcast only reaches catch and start events of
+  // instances belonging to this run (run isolation). When empty, the signal is broadcast globally.
+  string runScope = 4;
 }
 
 message BroadcastSignalResponse {
@@ -1069,6 +1075,10 @@ message EvaluateConditionalRequest {
   optional int64 processDefinitionKey = 2;
   // Serialised JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
   string variables = 3;
+  // optional run-scope selector; when set, the process instances started by this evaluation are
+  // stamped with a reserved run-scope tag so they belong to this run (run isolation). When empty,
+  // the evaluation behaves globally.
+  string runScope = 4;
 }
 
 message ProcessInstanceReference {

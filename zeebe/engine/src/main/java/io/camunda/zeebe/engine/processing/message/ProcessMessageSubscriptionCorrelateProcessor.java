@@ -178,7 +178,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         // persisted on the subscription.
         // Copy it onto the CORRELATED event so the correlated-message read path can expose the
         // businessId for catch / boundary / intermediate correlations too.
-        .setBusinessId(subscriptionRecord.getBusinessIdBuffer());
+        .setBusinessId(subscriptionRecord.getBusinessIdBuffer())
+        .setRunScope(subscriptionRecord.getRunScopeBuffer());
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);

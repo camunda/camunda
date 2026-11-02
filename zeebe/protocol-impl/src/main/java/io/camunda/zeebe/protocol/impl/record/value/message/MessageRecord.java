@@ -32,6 +32,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private static final StringValue MESSAGE_ID_KEY = new StringValue("messageId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -43,9 +44,10 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public MessageRecord() {
-    super(8);
+    super(9);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
@@ -53,7 +55,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(messageIdProp)
         .declareProperty(deadlineProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final MessageRecord record) {
@@ -65,6 +68,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     setMessageId(record.getMessageIdBuffer());
     setTenantId(record.getTenantId());
     setBusinessId(record.getBusinessIdBuffer());
+    setRunScope(record.getRunScopeBuffer());
   }
 
   public boolean hasMessageId() {
@@ -194,5 +198,30 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   public MessageRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public MessageRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public MessageRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

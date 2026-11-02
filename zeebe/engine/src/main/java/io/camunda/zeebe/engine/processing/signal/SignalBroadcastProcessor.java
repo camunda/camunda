@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.TagUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -137,6 +138,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             command, RejectionType.INVALID_ARGUMENT, reason);
         return;
       }
+    }
+
+    final var runScope = signalRecord.getRunScope();
+    if (!runScope.isEmpty() && !TagUtil.isValidTag(TagUtil.runScopeTag(runScope))) {
+      final var reason =
+          "Expected a run scope that forms a valid tag, but '%s' does not. %s"
+              .formatted(runScope, TagUtil.TAG_FORMAT_DESCRIPTION);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, reason);
+      return;
     }
 
     triggerSignal(command, eventKey, isAuthNeeded);
@@ -235,9 +247,24 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  private static boolean matchesRunScope(
+      final String selector,
+      final SignalSubscriptionRecord subscriptionRecord,
+      final boolean isStartEvent) {
+    if (selector.isEmpty()) {
+      // unset selector keeps today's global fan-out
+      return true;
+    }
+    // start-event subscriptions have no instance yet, so no stored scope; let them through and
+    // stamp the new instance with the selector's scope (ADR 0014 D4)
+    return isStartEvent || selector.equals(subscriptionRecord.getRunScope());
+  }
+
   private void triggerSignal(
       final TypedRecord<SignalRecord> command, final long eventKey, final boolean isAuthNeeded) {
     final var signalRecord = command.getValue();
+
+    final var runScopeSelector = signalRecord.getRunScope();
 
     final List<SignalSubscription> subscriptions = new ArrayList<>();
     signalSubscriptionState.visitBySignalName(
@@ -246,6 +273,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
+          if (!matchesRunScope(runScopeSelector, subscriptionRecord, isStartEvent)) {
+            return;
+          }
           if (isAuthNeeded) {
             checkAuthorization(command, isStartEvent, subscriptionRecord);
           }
@@ -266,7 +296,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 keyGenerator.nextKey(),
                 subscriptionRecord.getCatchEventIdBuffer(),
                 signalRecord.getVariablesBuffer(),
-                signalRecord.getTenantId());
+                signalRecord.getTenantId(),
+                runScopeSelector);
           } else {
             activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
           }

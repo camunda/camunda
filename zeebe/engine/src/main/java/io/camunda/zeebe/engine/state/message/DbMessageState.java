@@ -137,6 +137,32 @@ public final class DbMessageState implements MutableMessageState {
       activeProcessInstancesByCorrelationKeyColumnFamily;
 
   /**
+   * <pre> (bpmn process id | correlation key) | run scope -> []
+   *
+   * Run-scoped variant of {@link #activeProcessInstancesByCorrelationKeyColumnFamily} (ADR 0014, D7
+   * parallel-CF prototype). Written only when a message-start carries a run scope, so two runs that
+   * share a correlation key get independent start-uniqueness locks. The two-part CF above is left
+   * byte-for-byte unchanged for unscoped (legacy) starts.
+   */
+  private final DbString runScope;
+
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>
+      bpmnProcessIdCorrelationKeyRunScope;
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbNil>
+      activeProcessInstancesByCorrelationKeyAndRunScopeColumnFamily;
+
+  /**
+   * <pre> process instance key -> run scope
+   *
+   * reverse lookup so the run-scoped start lock can be removed on completion/termination without the
+   * run scope being present on the completing ProcessInstanceRecord. Present only for run-scoped
+   * message-start instances.
+   */
+  private final DbString processInstanceRunScope;
+
+  private final ColumnFamily<DbLong, DbString> processInstanceRunScopeColumnFamily;
+
+  /**
    * <pre> bpmn process id | correlation key -> (holder processInstanceKey, tenantId)
    *
    * Parallel marker CF that flags a process-correlation-key lock entry as cross-partition: the
@@ -260,6 +286,16 @@ public final class DbMessageState implements MutableMessageState {
             bpmnProcessIdCorrelationKey,
             DbNil.INSTANCE);
 
+    runScope = new DbString();
+    bpmnProcessIdCorrelationKeyRunScope =
+        new DbCompositeKey<>(bpmnProcessIdCorrelationKey, runScope);
+    activeProcessInstancesByCorrelationKeyAndRunScopeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY_AND_RUN_SCOPE,
+            transactionContext,
+            bpmnProcessIdCorrelationKeyRunScope,
+            DbNil.INSTANCE);
+
     crossPartitionStartLock = new CrossPartitionMessageStartLock();
     crossPartitionStartLockColumnFamily =
         zeebeDb.createColumnFamily(
@@ -275,6 +311,14 @@ public final class DbMessageState implements MutableMessageState {
             transactionContext,
             processInstanceKey,
             correlationKey);
+
+    processInstanceRunScope = new DbString();
+    processInstanceRunScopeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_PROCESS_INSTANCE_RUN_SCOPE,
+            transactionContext,
+            processInstanceKey,
+            processInstanceRunScope);
 
     crossPartitionStartHolderOrigin = new CrossPartitionMessageStartHolderOrigin();
     crossPartitionStartHolderOriginColumnFamily =
@@ -382,6 +426,44 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
+  public void putActiveProcessInstance(
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final DirectBuffer runScope) {
+    if (runScope == null || runScope.capacity() == 0) {
+      putActiveProcessInstance(bpmnProcessId, correlationKey);
+      return;
+    }
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    this.runScope.wrapBuffer(runScope);
+    activeProcessInstancesByCorrelationKeyAndRunScopeColumnFamily.insert(
+        bpmnProcessIdCorrelationKeyRunScope, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removeActiveProcessInstance(
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final DirectBuffer runScope) {
+    if (runScope == null || runScope.capacity() == 0) {
+      removeActiveProcessInstance(bpmnProcessId, correlationKey);
+      return;
+    }
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    this.runScope.wrapBuffer(runScope);
+    activeProcessInstancesByCorrelationKeyAndRunScopeColumnFamily.deleteIfExists(
+        bpmnProcessIdCorrelationKeyRunScope);
+  }
+
+  @Override
   public void putCrossPartitionStartLock(
       final DirectBuffer bpmnProcessId,
       final DirectBuffer correlationKey,
@@ -479,6 +561,25 @@ public final class DbMessageState implements MutableMessageState {
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
+  }
+
+  @Override
+  public void putProcessInstanceRunScope(
+      final long processInstanceKey, final DirectBuffer runScope) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+    ensureNotNullOrEmpty("run scope", runScope);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    processInstanceRunScope.wrapBuffer(runScope);
+    processInstanceRunScopeColumnFamily.insert(this.processInstanceKey, processInstanceRunScope);
+  }
+
+  @Override
+  public void removeProcessInstanceRunScope(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    processInstanceRunScopeColumnFamily.deleteIfExists(this.processInstanceKey);
   }
 
   @Override
@@ -613,6 +714,28 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
+  public boolean existActiveProcessInstance(
+      final String tenantId,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final DirectBuffer runScope) {
+    // OR semantics: a run-scoped start is blocked if its own run already holds the key, or if an
+    // unscoped (legacy / cross-partition) instance holds it — so the guarantee is never weaker than
+    // today, while two different runs no longer collide.
+    if (existActiveProcessInstance(tenantId, bpmnProcessId, correlationKey)) {
+      return true;
+    }
+    if (runScope == null || runScope.capacity() == 0) {
+      return false;
+    }
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    this.runScope.wrapBuffer(runScope);
+    return activeProcessInstancesByCorrelationKeyAndRunScopeColumnFamily.exists(
+        bpmnProcessIdCorrelationKeyRunScope);
+  }
+
+  @Override
   public DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
@@ -621,6 +744,15 @@ public final class DbMessageState implements MutableMessageState {
         processInstanceCorrelationKeyColumnFamily.get(this.processInstanceKey);
 
     return correlationKey != null ? correlationKey.getBuffer() : null;
+  }
+
+  @Override
+  public DirectBuffer getProcessInstanceRunScope(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    final var storedRunScope = processInstanceRunScopeColumnFamily.get(this.processInstanceKey);
+    return storedRunScope != null ? storedRunScope.getBuffer() : null;
   }
 
   @Override

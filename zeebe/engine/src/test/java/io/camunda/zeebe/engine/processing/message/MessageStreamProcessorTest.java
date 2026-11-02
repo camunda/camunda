@@ -156,6 +156,7 @@ public final class MessageStreamProcessorTest {
             anyBoolean(),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
             any(),
+            any(),
             anyLong(),
             anyInt());
   }

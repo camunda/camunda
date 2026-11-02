@@ -32,6 +32,13 @@ public final class BrokerBroadcastSignalRequest extends BrokerExecuteCommand<Sig
     return this;
   }
 
+  public BrokerBroadcastSignalRequest setRunScope(final String runScope) {
+    if (runScope != null) {
+      requestDto.setRunScope(runScope);
+    }
+    return this;
+  }
+
   @Override
   public SignalRecord getRequestWriter() {
     return requestDto;

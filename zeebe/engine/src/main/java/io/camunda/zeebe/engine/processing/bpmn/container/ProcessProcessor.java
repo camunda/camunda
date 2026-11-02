@@ -296,11 +296,14 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
       final var processInstanceKey = context.getProcessInstanceKey();
       final var correlationKey =
           bufferedMessageStartEventBehavior.findCorrelationKey(context).orElse(null);
+      // Capture the run scope too (ADR 0014, D7), before the transition removes it, so the pick-up
+      // is limited to this run's buffered messages.
+      final var runScope = bufferedMessageStartEventBehavior.findRunScope(context).orElse(null);
       final var businessId = context.getBusinessId();
 
       return postTransitionContext -> {
         bufferedMessageStartEventBehavior.correlateNextBufferedMessagesOnCompletion(
-            postTransitionContext, correlationKey, businessId);
+            postTransitionContext, correlationKey, runScope, businessId);
         // If this instance is a cross-partition message-start holder, push its completion to P_K so
         // the correlation-key lock there is freed without waiting for a poll (a no-op point read
         // for every non-holder instance).

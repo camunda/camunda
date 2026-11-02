@@ -25,6 +25,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "runScope": {
+              "type": "keyword"
+            },
             "tenantId": {
               "type": "keyword"
             },

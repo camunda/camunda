@@ -36,8 +36,10 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class BpmnStateTransitionBehavior {
@@ -714,6 +716,14 @@ public final class BpmnStateTransitionBehavior {
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(businessId);
+
+    // Propagate only the reserved run-scope tag (not general tags) so a run's child instances, and
+    // the jobs/user-tasks/subscriptions beneath them, stay within the run's scope (ADR 0014 D6).
+    // The tag lives on the root instance record, not the call-activity element, so read it there.
+    final var runScope = stateBehavior.getRunScope(context.getRootProcessInstanceKey());
+    if (!runScope.isEmpty()) {
+      childInstanceRecord.setTags(Set.of(TagUtil.runScopeTag(runScope)));
+    }
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);

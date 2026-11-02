@@ -18,7 +18,27 @@ public interface MessageState {
   boolean existActiveProcessInstance(
       final String tenantId, DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
+  /**
+   * Run-scoped variant of {@link #existActiveProcessInstance(String, DirectBuffer, DirectBuffer)}
+   * (ADR 0014, D7 parallel-CF prototype). When {@code runScope} is empty, behaves exactly like the
+   * three-argument form. When set, returns {@code true} if an active instance holds the key in that
+   * run's scoped lock <em>or</em> in the unscoped lock — so a run never relaxes the guarantee below
+   * today's, while two different runs sharing a key no longer collide.
+   */
+  boolean existActiveProcessInstance(
+      final String tenantId,
+      DirectBuffer bpmnProcessId,
+      DirectBuffer correlationKey,
+      DirectBuffer runScope);
+
   DirectBuffer getProcessInstanceCorrelationKey(long processInstanceKey);
+
+  /**
+   * Returns the run scope recorded for a message-start process instance, or {@code null} when the
+   * instance carries none (an unscoped, legacy start). Used on completion/termination to remove the
+   * run-scoped start-uniqueness lock.
+   */
+  DirectBuffer getProcessInstanceRunScope(long processInstanceKey);
 
   void visitMessages(
       final String tenantId,

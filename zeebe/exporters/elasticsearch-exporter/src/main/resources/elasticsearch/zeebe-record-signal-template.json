@@ -22,6 +22,9 @@
             "signalName": {
               "type": "keyword"
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "variables": {
               "enabled": false
             },

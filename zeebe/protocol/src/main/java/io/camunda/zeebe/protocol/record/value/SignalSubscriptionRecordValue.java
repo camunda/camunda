@@ -103,4 +103,15 @@ public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned,
   default long getElementInstanceKey() {
     return getCatchEventInstanceKey();
   }
+
+  /**
+   * @return the run scope copied from the root instance's reserved run-scope tag at subscribe time,
+   *     or an empty string when the instance is not run-scoped (the default and the behaviour of
+   *     records written before 8.11)
+   * @since 8.11
+   */
+  @Value.Default
+  default String getRunScope() {
+    return "";
+  }
 }

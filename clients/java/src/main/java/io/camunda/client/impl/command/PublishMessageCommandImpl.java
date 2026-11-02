@@ -127,6 +127,13 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 runScope(final String runScope) {
+    grpcRequestObjectBuilder.setRunScope(runScope);
+    httpRequestObject.setRunScope(runScope);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<PublishMessageResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);

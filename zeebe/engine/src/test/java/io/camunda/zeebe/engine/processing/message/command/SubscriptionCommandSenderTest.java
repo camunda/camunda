@@ -60,6 +60,7 @@ public class SubscriptionCommandSenderTest {
   private static final long DEFAULT_PROCESS_DEFINITION_KEY = 222;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
   private static final DirectBuffer DEFAULT_BUSINESS_ID = BufferUtil.wrapString("");
+  private static final DirectBuffer DEFAULT_RUN_SCOPE = BufferUtil.wrapString("");
   private static final DirectBuffer DEFAULT_ELEMENT_ID = BufferUtil.wrapString("catch-1");
   private static final long DEFAULT_ROOT_PROCESS_INSTANCE_KEY = 100L;
   private static final BpmnElementType DEFAULT_ELEMENT_TYPE = BpmnElementType.RECEIVE_TASK;
@@ -276,6 +277,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
         DEFAULT_STORAGE_ORDINAL,
@@ -302,6 +304,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
         DEFAULT_STORAGE_ORDINAL,
@@ -328,6 +331,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
         DEFAULT_STORAGE_ORDINAL,
@@ -355,6 +359,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
         DEFAULT_STORAGE_ORDINAL,
@@ -384,6 +389,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         -1L,
         DEFAULT_STORAGE_ORDINAL);
 
@@ -476,6 +482,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         DEFAULT_ELEMENT_ID,
         DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
         DEFAULT_STORAGE_ORDINAL,
@@ -505,6 +512,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         -1L,
         DEFAULT_STORAGE_ORDINAL);
 
@@ -526,6 +534,7 @@ public class SubscriptionCommandSenderTest {
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         DEFAULT_BUSINESS_ID,
+        DEFAULT_RUN_SCOPE,
         -1L,
         DEFAULT_STORAGE_ORDINAL);
 
