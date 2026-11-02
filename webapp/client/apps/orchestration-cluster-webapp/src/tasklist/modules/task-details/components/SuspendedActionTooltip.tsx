@@ -28,7 +28,7 @@ const SuspendedActionTooltip: React.FC<Props> = ({isSuspended, children}) => {
 					{children}
 				</span>
 			</TooltipTrigger>
-			<TooltipContent>{t('tasklist.taskSuspendedActionsDisabledDescription')}</TooltipContent>
+			<TooltipContent className="max-w-60">{t('tasklist.taskSuspendedActionsDisabledDescription')}</TooltipContent>
 		</Tooltip>
 	);
 };

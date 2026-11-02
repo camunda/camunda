@@ -32,6 +32,7 @@ import {Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
+import {SuspendedActionTooltip} from '#/tasklist/modules/task-details/components/SuspendedActionTooltip';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
 import type {VariablesFormValues} from '#/tasklist/modules/task-details-variables/types';
 import {
@@ -163,18 +164,21 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								{t('tasklist.variablesTitle')}
 							</Heading>
 							{isCompleted ? null : (
-								<Button
-									className="ml-auto"
-									variant="secondary"
-									type="button"
-									size="sm"
-									onClick={() => form.mutators.push?.('newVariables')}
-									disabled={!isEditingAllowed || isEditingDisabled}
-									title={isEditingAllowed || isSuspended ? undefined : t('tasklist.variablesAddVariableTooltip')}
-								>
-									<Plus aria-hidden />
-									{t('tasklist.taskVariablesAddVariable')}
-								</Button>
+								<div className="ml-auto">
+									<SuspendedActionTooltip isSuspended={isSuspended}>
+										<Button
+											variant="secondary"
+											type="button"
+											size="sm"
+											onClick={() => form.mutators.push?.('newVariables')}
+											disabled={!isEditingAllowed || isEditingDisabled}
+											title={isEditingAllowed || isSuspended ? undefined : t('tasklist.variablesAddVariableTooltip')}
+										>
+											<Plus aria-hidden />
+											{t('tasklist.taskVariablesAddVariable')}
+										</Button>
+									</SuspendedActionTooltip>
+								</div>
 							)}
 						</div>
 						<div

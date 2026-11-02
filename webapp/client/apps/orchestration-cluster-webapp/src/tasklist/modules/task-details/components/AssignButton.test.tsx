@@ -600,7 +600,9 @@ describe('<AssignButton />', () => {
 
 		await expect
 			.element(
-				screen.getByRole('tooltip', {name: 'This action is disabled because the process instance is suspended.'}),
+				screen.getByRole('tooltip', {
+					name: 'Process instance suspended. Available again when it resumes.',
+				}),
 			)
 			.toBeVisible();
 	});

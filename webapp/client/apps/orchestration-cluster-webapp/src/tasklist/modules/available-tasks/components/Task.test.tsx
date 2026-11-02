@@ -111,9 +111,19 @@ describe('<Task />', () => {
 		await expect.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice (suspended)'})).toBeVisible();
 		await expect.element(screen.getByText('Suspended', {exact: true})).not.toBeInTheDocument();
 
-		await userEvent.hover(screen.getByRole('img', {name: 'Process instance suspended'}));
+		await userEvent.hover(
+			screen.getByRole('img', {
+				name: 'Process instance suspended. Available again when it resumes.',
+			}),
+		);
 
-		await expect.element(screen.getByRole('tooltip', {name: 'Process instance suspended'})).toBeVisible();
+		await expect
+			.element(
+				screen.getByRole('tooltip', {
+					name: 'Process instance suspended. Available again when it resumes.',
+				}),
+			)
+			.toBeVisible();
 	});
 
 	it('should not render the suspended icon', async () => {
@@ -123,7 +133,13 @@ describe('<Task />', () => {
 		});
 
 		await expect.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'})).toBeVisible();
-		await expect.element(screen.getByRole('img', {name: 'Process instance suspended'})).not.toBeInTheDocument();
+		await expect
+			.element(
+				screen.getByRole('img', {
+					name: 'Process instance suspended. Available again when it resumes.',
+				}),
+			)
+			.not.toBeInTheDocument();
 	});
 
 	it.for([

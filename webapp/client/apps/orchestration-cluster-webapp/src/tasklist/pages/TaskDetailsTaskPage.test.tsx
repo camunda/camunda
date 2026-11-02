@@ -119,6 +119,16 @@ describe('<TaskDetailsTaskPage />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeDisabled();
+
+		await userEvent.hover(screen.getByRole('button', {name: 'Add Variable'}), {force: true});
+
+		await expect
+			.element(
+				screen.getByRole('tooltip', {
+					name: 'Process instance suspended. Available again when it resumes.',
+				}),
+			)
+			.toBeVisible();
 	});
 
 	it('should hide completion for a completed task', async () => {

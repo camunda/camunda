@@ -19,7 +19,7 @@ const SuspendedBadge: React.FC<Props> = ({isIconOnly = false}) => {
 
 	if (!isIconOnly) {
 		return (
-			<Badge variant="accent" className="shrink-0">
+			<Badge variant="neutral" className="shrink-0">
 				<CirclePause aria-hidden />
 				{t('tasklist.taskSuspendedLabel')}
 			</Badge>
@@ -31,11 +31,17 @@ const SuspendedBadge: React.FC<Props> = ({isIconOnly = false}) => {
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Badge variant="accent" role="img" aria-label={description} className="size-5 shrink-0 px-0">
-					<CirclePause aria-hidden />
-				</Badge>
+				<span
+					role="img"
+					aria-label={description}
+					className="inline-flex size-5 shrink-0 items-center justify-center text-neutral-foreground-subtle"
+				>
+					<CirclePause aria-hidden className="size-4" />
+				</span>
 			</TooltipTrigger>
-			<TooltipContent side="top">{description}</TooltipContent>
+			<TooltipContent side="top" className="max-w-60">
+				{description}
+			</TooltipContent>
 		</Tooltip>
 	);
 };
