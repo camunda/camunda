@@ -126,6 +126,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -685,6 +686,11 @@ public final class RecordingExporter implements Exporter {
 
   public static UserTaskRecordStream userTaskRecords(final UserTaskIntent intent) {
     return userTaskRecords().withIntent(intent);
+  }
+
+  public static UserTaskLookupRecordStream userTaskLookupRecords() {
+    return new UserTaskLookupRecordStream(
+        records(ValueType.USER_TASK_LOOKUP, UserTaskLookupRecordValue.class));
   }
 
   public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {

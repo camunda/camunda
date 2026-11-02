@@ -140,6 +140,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -3145,11 +3146,49 @@ final class JsonSerializableToJsonTest {
             () ->
                 new UserTaskLookupRecord()
                     .setFetchVariables(List.of("foo", "bar"))
-                    .setTenantId("tenant-1"),
+                    .setTenantId("tenant-1")
+                    .setUserTask(
+                        new UserTaskRecord()
+                            .setUserTaskKey(123)
+                            .setElementId("task")
+                            .setAssignee("demo")
+                            .setVariables(
+                                new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':1}"))))
+                    .setLifecycleState(UserTaskLifecycleState.CREATED),
         """
                 {
                   "fetchVariables": ["foo", "bar"],
-                  "tenantId": "tenant-1"
+                  "tenantId": "tenant-1",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "task",
+                    "elementInstanceKey": -1,
+                    "assignee": "demo",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {"foo": 1},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": 123,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "CREATED"
                 }
                 """
       },
@@ -3159,7 +3198,37 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "fetchVariables": [],
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "",
+                    "elementInstanceKey": -1,
+                    "assignee": "",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": -1,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "UNSPECIFIED"
                 }
                 """
       },

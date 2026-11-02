@@ -23,8 +23,9 @@ import org.immutables.value.Value;
 /**
  * A read of an active user task and its variables from the engine state.
  *
- * <p>Every read is written to the log, so the record only identifies what to read. It never carries
- * variable values. The user task to read is the record's key.
+ * <p>The user task to read is the record's key. Every read is written to the log, so the record on
+ * the log only identifies what to read; the user task and its variables are only set on the
+ * command's response.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableUserTaskLookupRecordValue.Builder.class)
@@ -35,4 +36,21 @@ public interface UserTaskLookupRecordValue extends RecordValue, TenantOwned {
    *     task
    */
   List<String> getFetchVariables();
+
+  /**
+   * Only set on the command's response; empty on the record on the log.
+   *
+   * @return the user task as stored in the engine, with the variables visible to it (filtered by
+   *     {@link #getFetchVariables()}) as its variables
+   */
+  UserTaskRecordValue getUserTask();
+
+  /**
+   * Only set on the command's response; {@link UserTaskLifecycleState#UNSPECIFIED} on the record on
+   * the log.
+   *
+   * @return the user task's lifecycle state in the engine; while a change is in progress, {@link
+   *     #getUserTask()} still holds the values from before it
+   */
+  UserTaskLifecycleState getLifecycleState();
 }

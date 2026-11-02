@@ -60,6 +60,7 @@ import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
+import io.camunda.zeebe.engine.util.client.UserTaskLookupClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -584,6 +585,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public UserTaskLookupClient userTaskLookup() {
+    return new UserTaskLookupClient(environmentRule);
   }
 
   public UserClient user() {
