@@ -14220,10 +14220,10 @@ rolldown@~1.2.14:
     "@rolldown/binding-win32-arm64-msvc" "1.2.15"
     "@rolldown/binding-win32-x64-msvc" "1.2.15"
 
-rollup-plugin-sbom@4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/rollup-plugin-sbom/-/rollup-plugin-sbom-4.0.1.tgz#6ddc87bbb38a78d7a38fd61158aa34265bdfa7bc"
-  integrity sha512-gRzuUXt/9MFhQ8+Pf6W/yNmBvUYM7CxgXpO3x4xJOQ3l6c/7O7D/oFPIRsDvqHvxg5DDjlSYkqwshDbv7eMiCQ==
+rollup-plugin-sbom@5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-sbom/-/rollup-plugin-sbom-5.0.1.tgz#7f3552d76e7bf0d5246a02c21e08bc90350da456"
+  integrity sha512-EoEIjOv8S7CsGZ4h3mIDu9x6VP/pE5sXBeCKd43u9imvAYLRGdcnvPsegFiRN+1WsTfHt05zZvfmURfmQ7S0+g==
   dependencies:
     "@cyclonedx/cyclonedx-library" "10.3.0"
     normalize-package-data "9.0.0"
