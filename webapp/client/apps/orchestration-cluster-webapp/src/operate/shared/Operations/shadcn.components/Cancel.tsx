@@ -12,6 +12,8 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {OperationItem} from '#/operate/shared/OperationItem/shadcn.components/OperationItem';
 import {CancelConfirmationModal} from './CancelConfirmationModal';
 
+const getRootInstancePath = (rootInstanceId: string) => `/operate/processes/${rootInstanceId}`;
+
 type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];
 	onExecute: () => void;
@@ -39,6 +41,7 @@ const Cancel: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 						setIsCancellationModalVisible(false);
 						onExecute();
 					}}
+					getRootInstancePath={getRootInstancePath}
 					onCancel={() => setIsCancellationModalVisible(false)}
 				/>
 			)}

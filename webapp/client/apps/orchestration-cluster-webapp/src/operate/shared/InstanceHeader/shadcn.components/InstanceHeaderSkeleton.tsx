@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Skeleton, typographyVariants} from '@camunda/design-system';
-import {cn} from '#/shared/cn';
+import {Skeleton} from '@camunda/design-system';
+import {mutedTitle} from '#/operate/shared/mutedTitle';
 
 type Props = {
 	headerColumns: {name: string; skeletonWidth: string}[];
@@ -27,7 +27,7 @@ const InstanceHeaderSkeleton: React.FC<Props> = ({headerColumns}) => {
 				<thead>
 					<tr>
 						{headerColumns.map(({name}, index) => (
-							<th key={index} className={cn('truncate text-left', typographyVariants({variant: 'label-sm'}))}>
+							<th key={index} className={mutedTitle('label-sm', 'text-left')}>
 								{name}
 							</th>
 						))}

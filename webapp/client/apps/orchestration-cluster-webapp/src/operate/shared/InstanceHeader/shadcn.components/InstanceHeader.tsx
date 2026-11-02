@@ -7,8 +7,9 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {typographyVariants} from '@camunda/design-system';
+import {Badge, typographyVariants} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
+import {mutedTitle} from '#/operate/shared/mutedTitle';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 
 type Column = {
@@ -46,6 +47,8 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 	return (
 		<header
 			data-testid="instance-header"
+			role="group"
+			aria-label={t('operate.shared.instanceHeader.label')}
 			className={cn(
 				'flex min-w-0 items-center gap-4 border-b border-border px-4 py-1',
 				hideBottomBorder && 'border-b-0',
@@ -54,14 +57,7 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 			<StateIcon state={state} size={24} />
 
 			<div title={instanceName} className="mr-4 flex min-w-24 shrink flex-col gap-0.5">
-				<span
-					className={cn(
-						'truncate text-neutral-foreground',
-						typographyVariants({variant: hasSubtitleRow ? 'label-sm' : 'label-md'}),
-					)}
-				>
-					{instanceName}
-				</span>
+				<span className={mutedTitle(hasSubtitleRow ? 'label-sm' : 'label-md')}>{instanceName}</span>
 				{hasSubtitleRow && (
 					<div className="flex min-w-0 items-center gap-2">
 						{incidentsCount > 0 && (
@@ -69,17 +65,7 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 								{t('operate.shared.instanceHeader.incidentsCount', {count: incidentsCount})}
 							</span>
 						)}
-						{nameSubtitle && (
-							<span
-								className={cn(
-									'inline-flex shrink-0 items-center self-start rounded-full bg-warning-background-strong px-3 py-1 whitespace-nowrap text-black',
-									typographyVariants({variant: 'label-sm'}),
-									'font-semibold',
-								)}
-							>
-								{nameSubtitle}
-							</span>
-						)}
+						{nameSubtitle && <Badge variant="warning">{nameSubtitle}</Badge>}
 					</div>
 				)}
 			</div>
@@ -88,7 +74,7 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 				<thead>
 					<tr>
 						{headerColumns.map((column, index) => (
-							<th key={index} className={cn('truncate text-left', typographyVariants({variant: 'label-sm'}))}>
+							<th key={index} className={mutedTitle('label-sm', 'text-left')}>
 								{column}
 							</th>
 						))}
