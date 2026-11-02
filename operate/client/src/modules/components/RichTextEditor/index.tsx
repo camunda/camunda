@@ -11,8 +11,8 @@ import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
-import {type editor, KeyCode} from 'monaco-editor';
-import {useEffect, useMemo, useRef, type ReactNode} from 'react';
+import {type editor, json, KeyCode} from 'monaco-editor';
+import {useEffect, useMemo, type ReactNode} from 'react';
 
 type EditorHandle = {
   showMarkers: () => void;
@@ -61,25 +61,15 @@ const RichTextEditor: React.FC<Props> = observer(
         schemaUri: `inmemory://rich-text-editor/${id}.schema.json`,
       };
     }, []);
-    const monacoRef = useRef<
-      | Parameters<
-          NonNullable<React.ComponentProps<typeof Editor>['onMount']>
-        >[1]
-      | null
-    >(null);
-
     useEffect(() => {
       return () => {
-        const monaco = monacoRef.current;
-        if (!monaco) {
+        const current = json.jsonDefaults.diagnosticsOptions;
+        if (!current.schemas?.some((s) => s.uri === schemaUri)) {
           return;
         }
-        const current = monaco.languages.json.jsonDefaults.diagnosticsOptions;
-        monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+        json.jsonDefaults.setDiagnosticsOptions({
           ...current,
-          schemas: (current.schemas ?? []).filter(
-            (s: {uri: string}) => s.uri !== schemaUri,
-          ),
+          schemas: current.schemas.filter((s) => s.uri !== schemaUri),
         });
       };
     }, [schemaUri]);
@@ -99,19 +89,15 @@ const RichTextEditor: React.FC<Props> = observer(
           onChange={(value) => {
             onChange?.(value ?? '');
           }}
-          onMount={(editor, monaco) => {
+          onMount={(editor) => {
             editor.focus();
-            monacoRef.current = monaco;
 
             if (jsonSchema && language === 'json') {
-              const current =
-                monaco.languages.json.jsonDefaults.diagnosticsOptions;
-              monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+              const current = json.jsonDefaults.diagnosticsOptions;
+              json.jsonDefaults.setDiagnosticsOptions({
                 ...current,
                 schemas: [
-                  ...(current.schemas ?? []).filter(
-                    (s: {uri: string}) => s.uri !== schemaUri,
-                  ),
+                  ...(current.schemas ?? []).filter((s) => s.uri !== schemaUri),
                   {
                     uri: schemaUri,
                     fileMatch: [modelPath],
