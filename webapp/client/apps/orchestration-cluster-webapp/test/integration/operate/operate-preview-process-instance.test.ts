@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
@@ -21,7 +22,9 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -33,6 +36,7 @@ test.beforeEach(async ({network, page}) => {
 		}),
 	);
 	network.use(
+		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
 		}),
@@ -59,7 +63,7 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(operatePreviewProcessInstancePage.heading).toBeAttached();
-		await expect(operatePreviewProcessInstancePage.headerPlaceholder).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.header).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.diagramPanelPlaceholder).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.bottomPanelPlaceholder).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.variablesTab).toBeVisible();
@@ -126,5 +130,36 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
 		expect(statisticsRequests).toHaveLength(0);
+	});
+
+	test('should not render a breadcrumb for a root instance', async ({network, operatePreviewProcessInstancePage}) => {
+		network.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(operatePreviewProcessInstancePage.header).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.breadcrumb).toHaveCount(0);
+	});
+
+	test('should render the ancestors in the breadcrumb of a called instance', async ({
+		network,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json([
+					createCallHierarchy({processInstanceKey: '1', processDefinitionName: 'Parent Process'}),
+					createCallHierarchy({processInstanceKey: PROCESS_INSTANCE_ID, processDefinitionName: 'Child Process'}),
+				]),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(
+			operatePreviewProcessInstancePage.breadcrumb.getByRole('link', {
+				name: 'View Process Parent Process - Instance 1',
+			}),
+		).toBeVisible();
 	});
 });

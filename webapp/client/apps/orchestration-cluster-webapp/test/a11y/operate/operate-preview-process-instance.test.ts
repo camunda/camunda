@@ -22,6 +22,7 @@ import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/o
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -31,6 +32,7 @@ test('should have no accessibility violations in the process instance placeholde
 	makeAxeBuilder,
 }) => {
 	network.use(
+		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
 		}),
@@ -52,7 +54,7 @@ test('should have no accessibility violations in the process instance placeholde
 	);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await expect(operatePreviewProcessInstancePage.headerPlaceholder).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.header).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

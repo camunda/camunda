@@ -68,6 +68,7 @@ describe('<InstanceHeader />', () => {
 		);
 
 		await expect.element(screen.getByText('Waiting')).toBeVisible();
+		await expect.element(screen.getByText('Waiting')).toHaveAttribute('data-slot', 'badge');
 		// a subtitle row (nameSubtitle) switches the instance name to the smaller "label-sm" typography
 		await expect.element(screen.getByText('orderProcess')).toHaveClass('text-xs');
 	});

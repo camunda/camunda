@@ -22,8 +22,12 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.page.getByRole('heading', {name: 'Operate Process Instance'});
 	}
 
-	get headerPlaceholder() {
-		return this.page.getByText('Header placeholder');
+	get header() {
+		return this.page.getByRole('group', {name: 'Instance header'});
+	}
+
+	get breadcrumb() {
+		return this.page.getByRole('navigation', {name: 'breadcrumb'});
 	}
 
 	get diagramPanelPlaceholder() {
