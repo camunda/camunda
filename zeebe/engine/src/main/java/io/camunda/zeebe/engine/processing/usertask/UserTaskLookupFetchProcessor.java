@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 /**
@@ -93,32 +94,32 @@ public final class UserTaskLookupFetchProcessor
   private void acceptCommand(
       final TypedRecord<UserTaskLookupRecord> command, final UserTaskRecord userTask) {
     final long userTaskKey = command.getKey();
-    final var request = command.getValue();
+    final List<String> fetchVariables = command.getValue().getFetchVariables();
 
     // built from scratch, so response fields sent with the command never reach the FETCHED event
     final var fetched =
         new UserTaskLookupRecord()
-            .setFetchVariables(request.getFetchVariables())
+            .setFetchVariables(fetchVariables)
             .setTenantId(userTask.getTenantId());
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskLookupIntent.FETCHED, fetched);
 
     final UserTaskLookupRecord response =
         new UserTaskLookupRecord()
-            .setFetchVariables(request.getFetchVariables())
+            .setFetchVariables(fetchVariables)
             .setTenantId(userTask.getTenantId())
             .setUserTask(userTask)
             .setLifecycleState(toProtocol(userTaskState.getLifecycleState(userTaskKey)));
     // copied: the variable state reuses this buffer on its next read
     final DirectBuffer variables =
-        BufferUtil.cloneBuffer(collectVariables(userTask.getElementInstanceKey(), request));
+        BufferUtil.cloneBuffer(collectVariables(userTask.getElementInstanceKey(), fetchVariables));
     response.getUserTask().setVariables(variables);
     responseWriter.writeAcceptedResponseOnCommand(
         userTaskKey, UserTaskLookupIntent.FETCHED, response, command);
   }
 
   private DirectBuffer collectVariables(
-      final long elementInstanceKey, final UserTaskLookupRecord request) {
-    final var names = request.getFetchVariables().stream().map(BufferUtil::wrapString).toList();
+      final long elementInstanceKey, final List<String> fetchVariables) {
+    final var names = fetchVariables.stream().map(BufferUtil::wrapString).toList();
     return names.isEmpty()
         ? variableState.getVariablesAsDocument(elementInstanceKey)
         : variableState.getVariablesAsDocument(elementInstanceKey, names);
