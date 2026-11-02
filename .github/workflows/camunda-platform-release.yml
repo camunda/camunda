@@ -1435,6 +1435,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
+      contents: read  # needed to check out the extraction script
     steps:
       - name: Import Secrets
         id: secrets
@@ -1450,7 +1451,9 @@ jobs:
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/actions/mask-camunda-client-config
+          sparse-checkout: |
+            .github/actions/mask-camunda-client-config
+            .github/scripts/extract-maven-central-deployment-id.sh
       - name: Mask Camunda client credentials
         id: mask-camunda-credentials
         continue-on-error: true
@@ -1465,56 +1468,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
-        run: |
-          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
-          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
-          # It is not persisted to disk by the plugin, so we fetch the release job's log archive
-          # from the GHA API (the release job has completed by this point) and grep it.
-          api="https://api.github.com/repos/${{ github.repository }}"
-
-          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
-          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
-          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
-          # Match both forms and disambiguate matrix invocations via the release version,
-          # which callers conventionally embed in their job display name.
-          job_id=$(curl -fsSL \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
-            | jq -r --arg rv "$RELEASE_VERSION" '
-                .jobs[]
-                | select(.name == "Maven Release"
-                         or ((.name | endswith(" / Maven Release"))
-                             and (.name | contains($rv))))
-                | .id
-              ' \
-            | tail -1 || true)
-
-          if [[ -z "${job_id}" ]]; then
-            echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
-          else
-            job_logs=$(curl -fsSL \
-                -H "Authorization: Bearer ${GH_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
-          fi
-
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
-
-          if [[ -n "${deployment_id}" ]]; then
-            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
-            echo "::notice::Maven Central deployment ID: ${deployment_id}"
-          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
-            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ Dry run — emitting placeholder deployment ID"
-          else
-            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
-          fi
+        run: .github/scripts/extract-maven-central-deployment-id.sh
       - name: Report release success to C8
         if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
@@ -1602,6 +1556,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
+      contents: read  # needed to check out the extraction script
     steps:
       - name: Import Secrets
         id: secrets
@@ -1618,7 +1573,9 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/actions/mask-camunda-client-config
+          sparse-checkout: |
+            .github/actions/mask-camunda-client-config
+            .github/scripts/extract-maven-central-deployment-id.sh
 
       - name: Mask Camunda client credentials
         id: mask-camunda-credentials
@@ -1635,57 +1592,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
-        run: |
-          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
-          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
-          # It is not persisted to disk by the plugin, so we fetch the release job's log archive
-          # from the GHA API (the release job has completed by this point) and grep it.
-          api="https://api.github.com/repos/${{ github.repository }}"
-
-          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
-          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
-          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
-          # Match both forms and disambiguate matrix invocations via the release version,
-          # which callers conventionally embed in their job display name.
-          job_id=$(curl -fsSL \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
-            | jq -r --arg rv "$RELEASE_VERSION" '
-                .jobs[]
-                | select(.name == "Maven Release"
-                         or ((.name | endswith(" / Maven Release"))
-                             and (.name | contains($rv))))
-                | .id
-              ' \
-            | tail -1 || true)
-
-          if [[ -z "${job_id}" ]]; then
-            echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
-          else
-            job_logs=$(curl -fsSL \
-                -H "Authorization: Bearer ${GH_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
-          fi
-
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
-
-          if [[ -n "${deployment_id}" ]]; then
-            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
-            echo "::notice::Maven Central deployment ID: ${deployment_id}"
-          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
-            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ Dry run — emitting placeholder deployment ID"
-          else
-            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
-          fi
-
+        run: .github/scripts/extract-maven-central-deployment-id.sh
       - name: Report release failure to C8
         if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
