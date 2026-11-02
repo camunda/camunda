@@ -300,6 +300,69 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
             tuple("USER:" + NEW_USER_ID, NEW_USER_ID, IdentityType.USER, RoleType.VIEWER));
   }
 
+  @Test
+  void shouldIgnoreMissingAndUnknownPermissionsWhenMergingRoles() {
+    // given - [old: no permission, old: unknown permission, new:viewer]
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Odd Permissions Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "noPermission",
+                    Map.of(
+                        "id",
+                        "USER:" + OLD_USER_ID,
+                        "identity",
+                        Map.of("id", OLD_USER_ID, "type", "user")),
+                "unknownPermission",
+                    Map.of(
+                        "id",
+                        "USER:" + OLD_USER_ID,
+                        "identity",
+                        Map.of("id", OLD_USER_ID, "type", "user"),
+                        "role",
+                        "superuser"),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.VIEWER)),
+            "ctx._source.data.roles.add(params.noPermission);"
+                + "ctx._source.data.roles.add(params.unknownPermission);"
+                + "ctx._source.data.roles.add(params.newRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(repository.hasDocumentsWithUserId(OLD_USER_ID)).isFalse();
+    // read the raw document: the DTO cannot hold an unknown permission
+    final Map<?, ?> document =
+        databaseIntegrationTestExtension
+            .getDatabaseEntryById(COLLECTION_INDEX_NAME, collectionId, Map.class)
+            .orElseThrow();
+    final List<?> roles = (List<?>) ((Map<?, ?>) document.get("data")).get("roles");
+    assertThat(roles)
+        .map(Map.class::cast)
+        .extracting(
+            role -> role.get("id"),
+            role -> ((Map<?, ?>) role.get("identity")).get("id"),
+            role -> role.get("role"))
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, RoleType.MANAGER.getId()),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, RoleType.VIEWER.getId()));
+  }
+
   private static Map<String, Object> roleDocument(final String userId, final RoleType role) {
     return Map.of(
         "id", "USER:" + userId,
