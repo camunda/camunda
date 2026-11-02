@@ -57,7 +57,7 @@ public class UpdateVariableHandlerTest {
 
   private final String operationId = "123";
   private final Long scopeKey = 456L;
-  private final Long processInstanceKey = 456L;
+  private final Long processInstanceKey = scopeKey;
   private final Long variableDocumentKey = 995L;
   private final String variableName = "x";
   private final int variableValue = 1;
