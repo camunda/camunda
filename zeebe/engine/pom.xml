@@ -158,6 +158,12 @@
 
     <!-- TEST DEPENDENCIES -->
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
       <scope>test</scope>
