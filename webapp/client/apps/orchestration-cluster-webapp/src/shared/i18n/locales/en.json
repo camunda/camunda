@@ -2119,7 +2119,12 @@
 					"parentEntity": "Parent entity",
 					"details": "Details",
 					"actor": "Actor",
-					"date": "Date"
+					"date": "Date",
+					"result": "Result",
+					"actions": "Actions",
+					"tableLabel": "Operations log",
+					"loadingPreviousPage": "Loading previous operations log entries",
+					"loadingNextPage": "Loading next operations log entries"
 				},
 				"emptyState": {
 					"noItemsTitle": "No operation log items yet",
