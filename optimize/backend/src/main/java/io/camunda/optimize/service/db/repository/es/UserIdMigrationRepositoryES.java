@@ -139,12 +139,18 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
             q.bool(
                 b ->
                     b.must(m -> m.term(t -> t.field("data.roles.identity.id").value(userId)))
-                        .must(
-                            m ->
-                                m.term(
-                                    t ->
-                                        t.field("data.roles.identity.type")
-                                            .value(IdentityType.USER.getId())))));
+                        .must(m -> m.bool(UserIdMigrationRepositoryES::userOrMissingType))));
+  }
+
+  private static BoolQuery.Builder userOrMissingType(final BoolQuery.Builder type) {
+    return type.should(
+            s -> s.term(t -> t.field("data.roles.identity.type").value(IdentityType.USER.getId())))
+        .should(
+            s ->
+                s.bool(
+                    missing ->
+                        missing.mustNot(n -> n.exists(e -> e.field("data.roles.identity.type")))))
+        .minimumShouldMatch("1");
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {

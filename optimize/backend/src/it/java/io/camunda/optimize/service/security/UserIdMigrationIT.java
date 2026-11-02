@@ -255,6 +255,51 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
             tuple("GROUP:" + OLD_USER_ID, OLD_USER_ID, IdentityType.GROUP, RoleType.EDITOR));
   }
 
+  @Test
+  void shouldMigrateARoleWithoutAType() {
+    // given - a viewer role for the old ID that was stored without an identity type
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Typeless Role Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "typelessRole",
+                Map.of(
+                    "id", "USER:" + OLD_USER_ID,
+                    "identity", Map.of("id", OLD_USER_ID),
+                    "role", RoleType.VIEWER.getId())),
+            "ctx._source.data.roles.add(params.typelessRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(repository.hasDocumentsWithUserId(OLD_USER_ID)).isFalse();
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .extracting(
+            role -> role.getId(),
+            role -> role.getIdentity().getId(),
+            role -> role.getIdentity().getType(),
+            role -> role.getRole())
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, IdentityType.USER, RoleType.MANAGER),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, IdentityType.USER, RoleType.VIEWER));
+  }
+
   private static Map<String, Object> roleDocument(final String userId, final RoleType role) {
     return Map.of(
         "id", "USER:" + userId,
