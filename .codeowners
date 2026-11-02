@@ -350,6 +350,7 @@ optimize.Dockerfile         @camunda/core-features
 
 # Agents skills
 /.agents/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/mutation-testing/ @camunda/zeebe-distributed-platform
 
 ################################
 ## @camunda/data-layer

@@ -192,6 +192,7 @@
 /.agents/skills/create-issue/ @camunda/orchestration-cluster
 /.agents/skills/grill-me/    @camunda/orchestration-cluster
 /.agents/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/mutation-testing/ @camunda/zeebe-distributed-platform
 
 # CI skills
 /.agents/skills/act-testing/**                   @camunda/engineering-operations
