@@ -38,14 +38,10 @@ class TaskPanelPage {
     });
     this.taskCards = this.availableTasks.locator('article');
     this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
-    // The old Carbon expandable filter sidebar (`[aria-label="Filter
-    // controls"]`, "Expand to show filters") no longer exists. Filtering is
-    // now a single dropdown-trigger button (id="filter-select") whose
-    // accessible name is the `taskFiltersHeaderAria` string ("Filters: "
-    // followed by the selected filter); clicking it opens a Radix
-    // DropdownMenu of filter options.
+    // "Filters" on older images, "Filters: <selected filter>" on newer ones;
+    // this suite runs against the published image, which can lag behind.
     this.filterSelectButton = page.getByRole('button', {
-      name: /^Filters:/,
+      name: /^Filters(:|$)/,
     });
     this.taskListPageBanner = page.getByRole('link', {
       name: 'Camunda logo',
