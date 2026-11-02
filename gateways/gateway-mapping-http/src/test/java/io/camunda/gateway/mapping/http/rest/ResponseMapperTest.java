@@ -50,6 +50,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -920,8 +921,8 @@ class ResponseMapperTest {
       assertThat(result.getAssignee()).isEqualTo("previous-assignee");
       assertThat(result.getCandidateGroups()).containsExactly("underwriters");
       assertThat(result.getCandidateUsers()).containsExactly("jane");
-      assertThat(result.getDueDate()).isEqualTo("2026-11-10T10:00:00Z");
-      assertThat(result.getFollowUpDate()).isEqualTo("2026-11-05T10:00:00Z");
+      assertThat(result.getDueDate()).isEqualTo("2026-11-10T10:00:00.000Z");
+      assertThat(result.getFollowUpDate()).isEqualTo("2026-11-05T10:00:00.000Z");
       assertThat(result.getFormKey()).isEqualTo("7");
       assertThat(result.getExternalFormReference()).isEqualTo("external-form");
       assertThat(result.getCustomHeaders()).containsExactly(Map.entry("k", "v"));
@@ -954,6 +955,32 @@ class ResponseMapperTest {
       assertThat(result.getCandidateGroups()).isEmpty();
       assertThat(result.getCandidateUsers()).isEmpty();
       assertThat(result.getVariables()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      // as the engine stores them (ZonedDateTime::toString): seconds omitted, region appended
+      "2026-11-10T10:00Z, 2026-11-10T10:00:00.000Z",
+      "2026-11-10T10:00+01:00[Europe/Berlin], 2026-11-10T10:00:00.000+01:00",
+      "2026-11-10T10:00:30.5-03:00, 2026-11-10T10:00:30.500-03:00"
+    })
+    void shouldMapUserTaskDatesToRfc3339(final String engineDate, final String expected) {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.CREATED)
+              .setUserTask(
+                  new UserTaskRecord()
+                      .setUserTaskKey(1L)
+                      .setDueDate(engineDate)
+                      .setFollowUpDate(engineDate));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getDueDate()).isEqualTo(expected);
+      assertThat(result.getFollowUpDate()).isEqualTo(expected);
     }
 
     @ParameterizedTest

@@ -146,6 +146,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
@@ -971,8 +972,8 @@ public final class ResponseMapper {
         .assignee(emptyToNull(userTask.getAssignee()))
         .candidateGroups(userTask.getCandidateGroupsList())
         .candidateUsers(userTask.getCandidateUsersList())
-        .dueDate(emptyToNull(userTask.getDueDate()))
-        .followUpDate(emptyToNull(userTask.getFollowUpDate()))
+        .dueDate(toUserTaskDateOrNull(userTask.getDueDate()))
+        .followUpDate(toUserTaskDateOrNull(userTask.getFollowUpDate()))
         .formKey(formKey > 0 ? keyToString(formKey) : null)
         .externalFormReference(emptyToNull(userTask.getExternalFormReference()))
         .customHeaders(userTask.getCustomHeaders())
@@ -985,6 +986,18 @@ public final class ResponseMapper {
                     Instant.ofEpochMilli(userTask.getCreationTimestamp()), ZoneOffset.UTC)))
         .variables(userTask.getVariables())
         .build();
+  }
+
+  /**
+   * The engine stores user task dates with {@link ZonedDateTime#toString()}, which may omit the
+   * seconds or append a region (e.g. {@code [Europe/Berlin]}), so they're not always RFC 3339.
+   */
+  private static @Nullable String toUserTaskDateOrNull(final String date) {
+    if (date.isEmpty()) {
+      return null;
+    }
+    return formatDate(
+        ZonedDateTime.parse(date, DateTimeFormatter.ISO_ZONED_DATE_TIME).toOffsetDateTime());
   }
 
   private static UserTaskLookupStateEnum toUserTaskLookupState(
