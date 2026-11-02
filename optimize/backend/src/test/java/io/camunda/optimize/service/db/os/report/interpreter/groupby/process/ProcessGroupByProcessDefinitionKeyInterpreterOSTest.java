@@ -15,14 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.optimize.dto.optimize.DefinitionType;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
@@ -33,7 +30,6 @@ import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +49,6 @@ class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
   @Mock private OpenSearchConfiguration openSearchConfiguration;
   @Mock private ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   @Mock private ProcessViewInterpreterFacadeOS viewInterpreter;
-  @Mock private DefinitionService definitionService;
 
   @SuppressWarnings("rawtypes")
   @Mock
@@ -65,7 +60,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
   void setUp() {
     underTest =
         new ProcessGroupByProcessDefinitionKeyInterpreterOS(
-            configurationService, distributedByInterpreter, viewInterpreter, definitionService);
+            configurationService, distributedByInterpreter, viewInterpreter);
   }
 
   @Test
@@ -158,13 +153,9 @@ class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
                 stringTermsAggregate("order-fulfilment-v2", "invoice-process")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "order-fulfilment-v2"))
-        .thenReturn(Optional.of(definitionWithName("Order fulfilment")));
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "invoice-process"))
-        .thenReturn(Optional.of(definitionWithName("Invoice approval")));
-    givenReportIsBusinessValueReport();
+    givenReportIsBusinessValueReport(
+        definition("order-fulfilment-v2", "Order fulfilment"),
+        definition("invoice-process", "Invoice approval"));
 
     // when
     final CompositeCommandResult result =
@@ -184,17 +175,14 @@ class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldFallBackToProcessIdWhenNameIsUnresolvable() {
-    // given a business value report whose definition is not in the cache
+    // given a business value report whose definitions do not include the key
     final SearchResponse<RawResult> response = mock(SearchResponse.class);
     when(response.aggregations())
         .thenReturn(
             Map.of(PROCESS_DEFINITION_KEY_AGGREGATION, stringTermsAggregate("orphan-process")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
-    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
-            DefinitionType.PROCESS, "orphan-process"))
-        .thenReturn(Optional.empty());
-    givenReportIsBusinessValueReport();
+    givenReportIsBusinessValueReport(definition("other-process", "Other process"));
 
     // when
     final CompositeCommandResult result =
@@ -216,32 +204,37 @@ class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
                 PROCESS_DEFINITION_KEY_AGGREGATION, stringTermsAggregate("order-fulfilment-v2")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
-    givenReportIsNotBusinessValueReport();
+    givenReportIsNotBusinessValueReport(definition("order-fulfilment-v2", "Order fulfilment"));
 
     // when
     final CompositeCommandResult result =
         new CompositeCommandResult(new ProcessReportDataDto(), ViewProperty.FREQUENCY);
     underTest.addQueryResult(result, response, context);
 
-    // then the label stays the process id and no definition lookup happens
+    // then the label stays the process id even though the report knows the name
     assertThat(result.getGroups().get(0).getLabel()).isEqualTo("order-fulfilment-v2");
-    verifyNoInteractions(definitionService);
   }
 
   @SuppressWarnings("unchecked")
-  private void givenReportIsBusinessValueReport() {
+  private void givenReportIsBusinessValueReport(final ReportDataDefinitionDto... definitions) {
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setBusinessValueReport(true);
+    reportData.setDefinitions(List.of(definitions));
     when(context.getReportData()).thenReturn(reportData);
   }
 
   @SuppressWarnings("unchecked")
-  private void givenReportIsNotBusinessValueReport() {
-    when(context.getReportData()).thenReturn(new ProcessReportDataDto());
+  private void givenReportIsNotBusinessValueReport(final ReportDataDefinitionDto... definitions) {
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setDefinitions(List.of(definitions));
+    when(context.getReportData()).thenReturn(reportData);
   }
 
-  private static ProcessDefinitionOptimizeDto definitionWithName(final String name) {
-    return ProcessDefinitionOptimizeDto.builder().key("ignored").version("1").name(name).build();
+  private static ReportDataDefinitionDto definition(final String key, final String displayName) {
+    final ReportDataDefinitionDto definition = new ReportDataDefinitionDto(key);
+    definition.setName(key);
+    definition.setDisplayName(displayName);
+    return definition;
   }
 
   private static Aggregate stringTermsAggregate(final String... keys) {

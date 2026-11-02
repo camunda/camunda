@@ -825,7 +825,7 @@ public class DefinitionReaderES implements DefinitionReader {
                         VERSION_FOR_SORTING_AGGREGATION,
                         Aggregation.of(
                             a1 ->
-                                a1.min(
+                                a1.max(
                                     m ->
                                         m.script(
                                             createDefaultScript(
