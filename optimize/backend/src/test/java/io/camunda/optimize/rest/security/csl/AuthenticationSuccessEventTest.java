@@ -108,7 +108,8 @@ class AuthenticationSuccessEventTest {
     assertThat(SecurityContextHolder.getContext().getAuthentication())
         .describedAs("login must have succeeded for the success event to be published")
         .isNotNull();
-    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+    verify(userIdMigrationService)
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, "originalUserId claim");
   }
 
   @Test
