@@ -113,6 +113,11 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void activatedJobWorker(@Variable final String var1, final ActivatedJob activatedJob) {}
 
   @JobWorker
+  void legacyActivatedJobWorker(
+      @Variable final String var1,
+      final io.camunda.zeebe.client.api.response.ActivatedJob activatedJob) {}
+
+  @JobWorker
   void sampleWorkerWithJsonProperty(@VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
 
   @JobWorker
@@ -137,6 +142,20 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     customizer.customize(jobWorkerValue);
     // then
     assertThat(jobWorkerValue.getFetchVariables()).containsExactly("a", "var1", "b");
+  }
+
+  @Test
+  void shouldNotAdjustVariableFilterVariablesAsLegacyActivatedJobIsInjected() {
+    // given
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties());
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setFetchVariables(List.of());
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "legacyActivatedJobWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getFetchVariables()).isEmpty();
   }
 
   @Test

@@ -96,7 +96,12 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
 
   private boolean hasActivatedJobInjected(final JobWorkerValue jobWorkerValue) {
     return jobWorkerValue.getMethodInfo().getParameters().stream()
-        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
+        .anyMatch(
+            p ->
+                p.getParameter().getType().isAssignableFrom(ActivatedJob.class)
+                    || p.getParameter()
+                        .getType()
+                        .isAssignableFrom(io.camunda.zeebe.client.api.response.ActivatedJob.class));
   }
 
   private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
