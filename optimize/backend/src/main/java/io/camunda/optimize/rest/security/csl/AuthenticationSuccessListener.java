@@ -11,6 +11,7 @@ import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,6 +37,9 @@ import org.springframework.stereotype.Component;
  * the user is now authenticated as, stored entity ownership is rewritten so the user keeps their
  * entities. Repeated logins are safe: {@link UserIdMigrationService#migrateUserIdIfNeeded} owns the
  * deduplication and no-ops once an old id has been migrated.
+ *
+ * <p>SaaS provisioning resolved users by email on early 8.10 clusters, so entities created there
+ * are owned by the email. The listener moves them to the current id for the same reason.
  */
 @Component
 @Conditional(CCSaaSCondition.class)
@@ -47,6 +51,9 @@ public final class AuthenticationSuccessListener {
 
   /** Auth0 claim carrying the user's previous SaaS identity, absent unless it changed. */
   static final String ORIGINAL_USER_ID_CLAIM = "https://camunda.com/originalUserId";
+
+  static final String CAMUNDA_META_CLAIM = "https://camunda.com/meta";
+  static final String CAMUNDA_META_EMAIL = "email";
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessListener.class);
 
@@ -89,12 +96,13 @@ public final class AuthenticationSuccessListener {
 
   private void migrateIfIdentityChanged(final OidcUser oidcUser) {
     final String originalUserId = oidcUser.getClaimAsString(ORIGINAL_USER_ID_CLAIM);
-    if (originalUserId == null || originalUserId.isBlank()) {
+    final String emailUserId = emailClaim(oidcUser);
+    if (isBlank(originalUserId) && isBlank(emailUserId)) {
       return;
     }
 
     final String currentUserId = resolveCurrentUserId();
-    if (currentUserId == null || currentUserId.isBlank()) {
+    if (isBlank(currentUserId)) {
       // Fail safe rather than guess: migrating onto the wrong id would reassign entity ownership.
       LOG.warn(
           "Skipping user-id migration for subject [{}]: CSL resolved no authenticated username."
@@ -102,11 +110,26 @@ public final class AuthenticationSuccessListener {
           oidcUser.getSubject());
       return;
     }
-    if (originalUserId.equals(currentUserId)) {
-      return;
-    }
 
-    userIdMigrationService.migrateUserIdIfNeeded(currentUserId, originalUserId);
+    migrateIfDifferent(originalUserId, currentUserId);
+    migrateIfDifferent(emailUserId, currentUserId);
+  }
+
+  private void migrateIfDifferent(final String previousUserId, final String currentUserId) {
+    if (!isBlank(previousUserId) && !previousUserId.equals(currentUserId)) {
+      userIdMigrationService.migrateUserIdIfNeeded(currentUserId, previousUserId);
+    }
+  }
+
+  private static String emailClaim(final OidcUser oidcUser) {
+    final Map<String, Object> meta = oidcUser.getClaimAsMap(CAMUNDA_META_CLAIM);
+    return meta != null && meta.get(CAMUNDA_META_EMAIL) instanceof final String email
+        ? email
+        : null;
+  }
+
+  private static boolean isBlank(final String value) {
+    return value == null || value.isBlank();
   }
 
   /**

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.rest.security.csl.AuthenticationSuccessListener.CAMUNDA_META_CLAIM;
+import static io.camunda.optimize.rest.security.csl.AuthenticationSuccessListener.CAMUNDA_META_EMAIL;
 import static io.camunda.optimize.rest.security.csl.AuthenticationSuccessListener.ORIGINAL_USER_ID_CLAIM;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +55,7 @@ class AuthenticationSuccessListenerTest {
 
   private static final String CURRENT_USER_ID = "auth0|new-identity";
   private static final String PREVIOUS_USER_ID = "auth0|old-identity";
+  private static final String EMAIL = "user@example.com";
 
   @Mock private UserIdMigrationService userIdMigrationService;
   @Mock private CamundaAuthenticationProvider camundaAuthenticationProvider;
@@ -141,11 +144,62 @@ class AuthenticationSuccessListenerTest {
     verify(userIdMigrationService, never()).migrateUserIdIfNeeded(anyString(), any());
   }
 
+  @Test
+  void shouldMigrateEntitiesOwnedByTheEmailToTheCurrentUserId() {
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWith(null, EMAIL));
+
+    // then
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL);
+  }
+
+  @Test
+  void shouldNotMigrateTheEmailWhileItIsTheCurrentUserId() {
+    // given - provisioning still resolves users by email
+    when(camundaAuthentication.authenticatedUsername()).thenReturn(EMAIL);
+
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWith(null, EMAIL));
+
+    // then
+    verifyNoInteractions(userIdMigrationService);
+  }
+
+  @Test
+  void shouldMigrateBothThePreviousIdentityAndTheEmail() {
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID, EMAIL));
+
+    // then
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL);
+  }
+
+  @Test
+  void shouldNotMigrateTheEmailWhenCslResolvesNoAuthenticatedUsername() {
+    // given
+    when(camundaAuthentication.authenticatedUsername()).thenReturn(null);
+
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWith(null, EMAIL));
+
+    // then
+    verifyNoInteractions(userIdMigrationService);
+  }
+
   private static InteractiveAuthenticationSuccessEvent loginEventWith(final String originalUserId) {
+    return loginEventWith(originalUserId, null);
+  }
+
+  private static InteractiveAuthenticationSuccessEvent loginEventWith(
+      final String originalUserId, final String email) {
     final Map<String, Object> claims = new HashMap<>();
     claims.put("sub", CURRENT_USER_ID);
     if (originalUserId != null) {
       claims.put(ORIGINAL_USER_ID_CLAIM, originalUserId);
+    }
+    if (email != null) {
+      claims.put(CAMUNDA_META_CLAIM, Map.of(CAMUNDA_META_EMAIL, email));
     }
     final OidcIdToken idToken =
         new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(300), claims);
