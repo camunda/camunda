@@ -47,7 +47,8 @@ public class JobVariablesCollector {
 
     final DirectBuffer jobVariables =
         switch (jobRecord.getJobKind()) {
-          case BPMN_ELEMENT, EXECUTION_LISTENER, AD_HOC_SUB_PROCESS -> processVariables;
+          case BPMN_ELEMENT, EXECUTION_LISTENER, AD_HOC_SUB_PROCESS, CALL_ACTIVITY_STUB ->
+              processVariables;
           case TASK_LISTENER -> {
             final var taskVariablesMap = getTaskVariables(requestedVariables, elementInstanceKey);
 

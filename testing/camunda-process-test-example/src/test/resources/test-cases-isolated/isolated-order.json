@@ -31,8 +31,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_COMPLETE",
-          "elementSelector": {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "CallActivity_ShipOrder"
           },
           "variables": {
@@ -105,8 +106,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_COMPLETE",
-          "elementSelector": {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "CallActivity_NotifyCustomer"
           }
         },
@@ -161,8 +163,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_THROW_ERROR",
-          "elementSelector": {
+          "type": "THROW_BPMN_ERROR_FROM_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "CallActivity_ShipOrder"
           },
           "errorCode": "SHIPPING_DECLINED",
@@ -214,8 +217,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_COMPLETE",
-          "elementSelector": {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "CallActivity_ShipOrder"
           },
           "variables": {
@@ -270,8 +274,9 @@
           ]
         },
         {
-          "type": "STUB_CALL_ACTIVITY_COMPLETE",
-          "elementSelector": {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "CallActivity_ShipOrder"
           },
           "variables": {

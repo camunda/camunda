@@ -46,8 +46,6 @@ import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstruction
 import io.camunda.process.test.impl.testCases.instructions.ResolveIncidentInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.RunCalledProcessInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.StubCallActivityCompleteInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.StubCallActivityThrowErrorInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.TriggerTimerInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.UpdateVariablesInstructionHandler;
@@ -114,8 +112,6 @@ public class TestCaseInstructionHandlerRegistry {
     register(new ResolveIncidentInstructionHandler(runContext));
     register(new RunCalledProcessInstructionHandler());
     register(new SetTimeInstructionHandler());
-    register(new StubCallActivityCompleteInstructionHandler());
-    register(new StubCallActivityThrowErrorInstructionHandler());
     register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));
     register(new TriggerTimerInstructionHandler(createdProcessInstances));
     register(new UpdateVariablesInstructionHandler(runContext));

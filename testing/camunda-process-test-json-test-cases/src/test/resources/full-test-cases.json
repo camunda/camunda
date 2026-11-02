@@ -123,8 +123,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_COMPLETE",
-          "elementSelector": {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "review-order"
           },
           "variables": {
@@ -138,8 +139,9 @@
           }
         },
         {
-          "type": "STUB_CALL_ACTIVITY_THROW_ERROR",
-          "elementSelector": {
+          "type": "THROW_BPMN_ERROR_FROM_JOB",
+          "jobSelector": {
+            "jobKind": "CALL_ACTIVITY_STUB",
             "elementId": "collect-payment"
           },
           "errorCode": "PAYMENT_DECLINED",

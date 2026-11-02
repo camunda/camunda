@@ -440,7 +440,7 @@ public final class BpmnJobBehavior {
     writeJobCreatedEvent(
         context,
         new JobProperties().type(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).retries(1L).priority(0),
-        JobKind.BPMN_ELEMENT,
+        JobKind.CALL_ACTIVITY_STUB,
         JobListenerEventType.UNSPECIFIED,
         headers,
         Map.of(),
@@ -719,7 +719,7 @@ public final class BpmnJobBehavior {
   private BpmnElementType getBpmnElementTypeForLogging(
       final JobKind jobKind, final BpmnElementContext context) {
     return switch (jobKind) {
-      case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
+      case BPMN_ELEMENT, EXECUTION_LISTENER, CALL_ACTIVITY_STUB -> context.getBpmnElementType();
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
     };

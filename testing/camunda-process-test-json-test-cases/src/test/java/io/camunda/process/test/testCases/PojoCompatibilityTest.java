@@ -71,8 +71,6 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncide
 import io.camunda.process.test.api.testCases.instructions.ImmutableRunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityCompleteInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityThrowErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableTriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
@@ -478,37 +476,49 @@ public class PojoCompatibilityTest {
                     .elementSelector(
                         ImmutableElementSelector.builder().elementId("ship-order").build())
                     .build())),
-        // ===== STUB_CALL_ACTIVITY_COMPLETE =====
+        // ===== COMPLETE_JOB: call activity stub =====
         Arguments.of(
-            "stub call activity complete: minimal",
+            "complete job: call activity stub minimal",
             singleTestCase(
-                ImmutableStubCallActivityCompleteInstruction.builder()
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("ship-order").build())
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("ship-order")
+                            .build())
                     .build())),
         Arguments.of(
-            "stub call activity complete: with variables",
+            "complete job: call activity stub with variables",
             singleTestCase(
-                ImmutableStubCallActivityCompleteInstruction.builder()
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("ship-order").build())
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("ship-order")
+                            .build())
                     .putVariables("approved", true)
                     .build())),
-        // ===== STUB_CALL_ACTIVITY_THROW_ERROR =====
+        // ===== THROW_BPMN_ERROR_FROM_JOB: call activity stub =====
         Arguments.of(
-            "stub call activity throw error: minimal",
+            "throw bpmn error from job: call activity stub minimal",
             singleTestCase(
-                ImmutableStubCallActivityThrowErrorInstruction.builder()
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("collect-payment").build())
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("collect-payment")
+                            .build())
                     .errorCode("PAYMENT_DECLINED")
                     .build())),
         Arguments.of(
-            "stub call activity throw error: full",
+            "throw bpmn error from job: call activity stub full",
             singleTestCase(
-                ImmutableStubCallActivityThrowErrorInstruction.builder()
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("collect-payment").build())
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("collect-payment")
+                            .build())
                     .errorCode("PAYMENT_DECLINED")
                     .errorMessage("The card was declined.")
                     .putVariables("declineCode", 51)

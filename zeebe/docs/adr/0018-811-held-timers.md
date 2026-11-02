@@ -69,3 +69,4 @@ access.
 
 - Deterministic process tests — internal design doc (claude.ai artifact) (internal)
 - [ADR 0015 — Per-instance recording switches](0015-811-per-instance-recording-switches.md)
+

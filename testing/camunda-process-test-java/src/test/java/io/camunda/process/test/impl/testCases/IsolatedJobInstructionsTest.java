@@ -19,19 +19,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableJobSelector;
+import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableRunCalledProcessInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityCompleteInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityThrowErrorInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.impl.testCases.instructions.CompleteJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.RunCalledProcessInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.StubCallActivityCompleteInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.StubCallActivityThrowErrorInstructionHandler;
+import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class IsolatedJobInstructionsTest {
 
   private static final String ELEMENT_ID = "ship-order";
-  private static final String STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
 
   @Mock private CamundaProcessTestContext processTestContext;
 
@@ -58,6 +58,9 @@ public class IsolatedJobInstructionsTest {
 
   private final io.camunda.process.test.api.testCases.JobSelector byElementId =
       ImmutableJobSelector.builder().elementId(ELEMENT_ID).build();
+
+  private final io.camunda.process.test.api.testCases.JobSelector stubJobOfElement =
+      ImmutableJobSelector.builder().jobKind("CALL_ACTIVITY_STUB").elementId(ELEMENT_ID).build();
 
   @Test
   void shouldReleaseJob() {
@@ -94,10 +97,10 @@ public class IsolatedJobInstructionsTest {
   @Test
   void shouldStandInForCallActivityByCompletingItsStubJob() {
     // when
-    new StubCallActivityCompleteInstructionHandler()
+    new CompleteJobInstructionHandler(TestRunContext.disabled())
         .execute(
-            ImmutableStubCallActivityCompleteInstruction.builder()
-                .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            ImmutableCompleteJobInstruction.builder()
+                .jobSelector(stubJobOfElement)
                 .putVariables("trackingCode", "TRK-1")
                 .build(),
             processTestContext,
@@ -114,10 +117,10 @@ public class IsolatedJobInstructionsTest {
   @Test
   void shouldThrowBpmnErrorFromCallActivityStubJob() {
     // when
-    new StubCallActivityThrowErrorInstructionHandler()
+    new ThrowBpmnErrorFromJobInstructionHandler(TestRunContext.disabled())
         .execute(
-            ImmutableStubCallActivityThrowErrorInstruction.builder()
-                .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                .jobSelector(stubJobOfElement)
                 .errorCode("SHIPPING_DECLINED")
                 .build(),
             processTestContext,
@@ -138,7 +141,7 @@ public class IsolatedJobInstructionsTest {
 
   private void assertSelectsStubJobOfElement() {
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
-    verify(jobFilter).type(STUB_JOB_TYPE);
+    verify(jobFilter).kind(JobKind.CALL_ACTIVITY_STUB);
     verify(jobFilter).elementId(ELEMENT_ID);
   }
 }

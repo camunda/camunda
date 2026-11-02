@@ -135,12 +135,6 @@
           "$ref": "#/definitions/RunCalledProcessInstruction"
         },
         {
-          "$ref": "#/definitions/StubCallActivityCompleteInstruction"
-        },
-        {
-          "$ref": "#/definitions/StubCallActivityThrowErrorInstruction"
-        },
-        {
           "$ref": "#/definitions/TriggerTimerInstruction"
         },
         {
@@ -824,6 +818,10 @@
           "description": "The type of the job.",
           "type": "string"
         },
+        "jobKind": {
+          "description": "The kind of the job, e.g. CALL_ACTIVITY_STUB to select the stand-in job of a stubbed call activity.",
+          "type": "string"
+        },
         "elementId": {
           "description": "The ID of the BPMN element.",
           "type": "string"
@@ -837,6 +835,11 @@
         {
           "required": [
             "jobType"
+          ]
+        },
+        {
+          "required": [
+            "jobKind"
           ]
         },
         {
@@ -1537,65 +1540,6 @@
       "required": [
         "type",
         "elementSelector"
-      ],
-      "additionalProperties": false
-    },
-    "StubCallActivityCompleteInstruction": {
-      "description": "An instruction to stand in for the process a call activity calls, completing it with the given variables.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "description": "The type of the instruction.",
-          "type": "string",
-          "const": "STUB_CALL_ACTIVITY_COMPLETE"
-        },
-        "elementSelector": {
-          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
-          "$ref": "#/definitions/ElementSelector"
-        },
-        "variables": {
-          "description": "The variables to complete the call activity with. Optional.",
-          "type": "object",
-          "additionalProperties": true
-        }
-      },
-      "required": [
-        "type",
-        "elementSelector"
-      ],
-      "additionalProperties": false
-    },
-    "StubCallActivityThrowErrorInstruction": {
-      "description": "An instruction to stand in for the process a call activity calls, making it raise a BPMN error.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "description": "The type of the instruction.",
-          "type": "string",
-          "const": "STUB_CALL_ACTIVITY_THROW_ERROR"
-        },
-        "elementSelector": {
-          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
-          "$ref": "#/definitions/ElementSelector"
-        },
-        "errorCode": {
-          "description": "The error code to throw.",
-          "type": "string"
-        },
-        "errorMessage": {
-          "description": "The error message to throw. Optional.",
-          "type": "string"
-        },
-        "variables": {
-          "description": "The variables to set when throwing the error. Optional.",
-          "type": "object",
-          "additionalProperties": true
-        }
-      },
-      "required": [
-        "type",
-        "elementSelector",
-        "errorCode"
       ],
       "additionalProperties": false
     }

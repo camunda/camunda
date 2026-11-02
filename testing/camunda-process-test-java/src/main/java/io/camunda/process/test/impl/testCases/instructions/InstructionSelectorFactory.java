@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -45,9 +46,6 @@ import java.util.stream.Collectors;
 
 /** Factory for creating selector instances from DSL selectors. */
 final class InstructionSelectorFactory {
-
-  /** Mirrors {@code Protocol.CALL_ACTIVITY_STUB_JOB_TYPE}, which is not on this module's path. */
-  private static final String CALL_ACTIVITY_STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
 
   // Impossible process instance key, applied when the run's instance is not visible yet so the
   // job/user-task/incident search matches nothing and its surrounding await retries.
@@ -162,6 +160,12 @@ final class InstructionSelectorFactory {
       selector = JobSelectors.byJobType(dslSelector.getJobType().get());
     }
 
+    if (dslSelector.getJobKind().isPresent()) {
+      final JobSelector jobKindSelector =
+          JobSelectors.byJobKind(JobKind.valueOf(dslSelector.getJobKind().get()));
+      selector = selector != null ? selector.and(jobKindSelector) : jobKindSelector;
+    }
+
     if (dslSelector.getElementId().isPresent()) {
       final JobSelector elementIdSelector =
           JobSelectors.byElementId(dslSelector.getElementId().get());
@@ -176,7 +180,7 @@ final class InstructionSelectorFactory {
 
     if (selector == null) {
       throw new IllegalArgumentException(
-          "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
+          "Missing required property: at least one of jobType, jobKind, elementId, or processDefinitionId must be set");
     }
 
     return selector;
@@ -193,7 +197,7 @@ final class InstructionSelectorFactory {
   static JobSelector buildCallActivityStubJobSelector(
       final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
     if (dslSelector.getElementId().isPresent()) {
-      return JobSelectors.byJobType(CALL_ACTIVITY_STUB_JOB_TYPE)
+      return JobSelectors.byJobKind(JobKind.CALL_ACTIVITY_STUB)
           .and(JobSelectors.byElementId(dslSelector.getElementId().get()));
     }
     throw new IllegalArgumentException(

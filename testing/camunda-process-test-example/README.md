@@ -21,15 +21,15 @@ recording switches, which ride on a `CONFIGURE_EXECUTION` runtime instruction of
   `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` rather than `MOCK_JOB_WORKER_*`, or
   release them with `RELEASE_JOB`.
 - `stubCallActivities` — each call activity activates without starting the process it calls and
-  waits on a job instead. Drive it by the call activity's element with `STUB_CALL_ACTIVITY_COMPLETE`
-  to stand in for the called process, `STUB_CALL_ACTIVITY_THROW_ERROR` to make it go wrong, or
-  `RUN_CALLED_PROCESS` to run the called process for real. The switch is inherited, so a call
-  activity nested at any depth is stubbed too.
+  waits on a stand-in job instead. Complete that job with `COMPLETE_JOB` to stand in for the called
+  process, or `THROW_BPMN_ERROR_FROM_JOB` to make it go wrong — selecting it by
+  `jobKind: CALL_ACTIVITY_STUB` and the call activity's `elementId` — or use `RUN_CALLED_PROCESS` to
+  run the called process for real. The switch is inherited, so a call activity nested at any depth is
+  stubbed too.
 
-These call-activity instructions select the element, not the job, so they read as what they do to
-the call activity. Under the hood each drives the job the stub waits on — a job that shares its
-element ID with the element's listener jobs and is hidden by reservation too — but you never name
-that job. The call activity is identified by its `elementId`.
+`COMPLETE_JOB` and `THROW_BPMN_ERROR_FROM_JOB` select the stand-in job directly, by its
+`CALL_ACTIVITY_STUB` kind and the call activity's `elementId` — the job the stub waits on, hidden by
+reservation too. `RUN_CALLED_PROCESS` selects the call activity by its `elementId`.
 
 The processes are `isolated-order` → `shipping` → `notification`, so the nesting and the error
 boundary event on the call activity are both covered.

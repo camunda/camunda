@@ -398,8 +398,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
    */
   @JsonIgnore
   public boolean isCallActivityStub() {
-    return getJobKind() == JobKind.BPMN_ELEMENT
-        && getElementType() == BpmnElementType.CALL_ACTIVITY;
+    return getJobKind() == JobKind.CALL_ACTIVITY_STUB;
   }
 
   @Override

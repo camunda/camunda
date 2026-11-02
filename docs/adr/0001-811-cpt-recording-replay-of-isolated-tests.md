@@ -39,12 +39,15 @@ for an assertion, wrong for a mutation that must hit exactly one instance (it co
 case's instance, another user's, or a second instance the case created on purpose). The runtime records
 every instance it creates and resolves triggers and teardown cancels from that registry.
 
-**D4. New instructions are added alongside the existing `MOCK_*` instructions, not replacing them, and
-stub actions are element-selected.** Re-pointing a published instruction is a breaking change, so the
-isolated instructions are added beside `mockChildProcess` / `mockJobWorker`. The call-activity stub
-actions select the element (`STUB_CALL_ACTIVITY_COMPLETE`, `STUB_CALL_ACTIVITY_THROW_ERROR`,
-`RUN_CALLED_PROCESS`) rather than adding a flag to `JobSelector` whose meaning would silently depend on
-a create-time switch.
+**D4. Stub completion and error reuse the generic job instructions; only `RUN_CALLED_PROCESS` is
+dedicated.** A stubbed call activity waits on an ordinary job carrying `JobKind.CALL_ACTIVITY_STUB`
+(see [ADR 0017](../../zeebe/docs/adr/0017-811-stubbed-call-activities.md)), so standing in for the
+called process is a `COMPLETE_JOB` and failing it a `THROW_BPMN_ERROR_FROM_JOB`, each selecting the
+stand-in job by `{ jobKind: CALL_ACTIVITY_STUB, elementId }`. No stub-specific completion instruction is
+added. `RUN_CALLED_PROCESS` stays dedicated because it starts the real child rather than completing a
+job. Selecting by `jobKind` — a concrete, visible property of the job — avoids the invisible coupling of
+a create-time boolean flag (see the rejected alternative). The existing cluster-wide `MOCK_*`
+instructions remain unchanged beside these.
 
 **D5. A reserve-plus-mock-worker conflict warns rather than rejects.** A reserved job is hidden from
 CPT's own mock worker, so a case that both reserves and registers a `MOCK_JOB_WORKER_*` starves. CPT
@@ -56,9 +59,12 @@ run, because one case may legitimately reserve one instance while a mock worker 
 - **A per-instance reservation token.** Matches the engine's "one token per instance" shape, but forces
   CPT to resolve each job's token back from the job before every command, for no isolation gain over one
   token per run. Rejected for the run-level token (D1).
-- **Reuse `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` with a `callActivityStub` flag on `JobSelector`.**
-  The flag only means anything when the instance was created with `stubCallActivities` — an invisible
-  coupling nothing in the schema expresses. Dedicated element-selected instructions (D4) drop it.
+- **Dedicated `STUB_CALL_ACTIVITY_COMPLETE` / `STUB_CALL_ACTIVITY_THROW_ERROR` instructions.** First
+  shipped on the prototype, then dropped (D4): a stub is an ordinary job, so the generic job
+  instructions complete or fail it once the stand-in job is selectable by `jobKind`. A separate
+  `callActivityStub` *boolean flag* on `JobSelector` was also rejected — its meaning would depend
+  invisibly on the create-time switch — but selecting by the job's own `CALL_ACTIVITY_STUB` kind carries
+  no such coupling.
 
 ## Consequences
 
@@ -80,3 +86,4 @@ run, because one case may legitimately reserve one instance while a mock worker 
 - Deterministic process tests — internal design doc (claude.ai artifact) (internal)
 - [Hosted Camunda Process Test (product-hub #3546)](https://github.com/camunda/product-hub/issues/3546) (internal)
 - [Public non-JUnit CPT runner API (camunda/camunda#65574)](https://github.com/camunda/camunda/issues/65574)
+

@@ -26,8 +26,8 @@ import org.immutables.value.Value;
  *
  * <p>The selected element is a call activity of a process instance created with {@code
  * stubCallActivities}, which starts no called process on its own and waits on a job instead.
- * Standing in for the called process with {@link StubCallActivityCompleteInstruction} completes
- * that job; this instruction runs the called process for real.
+ * Standing in for the called process is a {@code COMPLETE_JOB} instruction selecting the {@code
+ * CALL_ACTIVITY_STUB} job; this instruction runs the called process for real.
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableRunCalledProcessInstruction.Builder.class)

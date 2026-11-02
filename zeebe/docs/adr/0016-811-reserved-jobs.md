@@ -68,3 +68,4 @@ so a timeout or retry backoff keeps the job released and the caller must stop se
 - Deterministic process tests — internal design doc (claude.ai artifact) (internal)
 - [ADR 0005 — Job lease](0005-810-job-lease.md)
 - [ADR 0015 — Per-instance recording switches](0015-811-per-instance-recording-switches.md)
+

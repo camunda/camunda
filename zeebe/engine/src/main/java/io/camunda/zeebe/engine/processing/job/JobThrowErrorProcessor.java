@@ -70,7 +70,7 @@ public class JobThrowErrorProcessor
       "Cannot throw BPMN error from %s job with key '%d', type '%s' and processInstanceKey '%d'";
 
   public static final Set<JobKind> SUPPORTED_JOB_KINDS =
-      Set.of(JobKind.BPMN_ELEMENT, JobKind.AD_HOC_SUB_PROCESS);
+      Set.of(JobKind.BPMN_ELEMENT, JobKind.AD_HOC_SUB_PROCESS, JobKind.CALL_ACTIVITY_STUB);
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;

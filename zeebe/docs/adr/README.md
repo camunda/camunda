@@ -26,11 +26,11 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.11
 
-|                     ADR                      |                                                    Decision                                                    |
-|----------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| [0014](0014-811-tag-scoped-run-isolation.md) | Tag-scoped run isolation: run scope rides a reserved instance tag, copied onto subscriptions, filtered locally |
-| [0015](0015-811-per-instance-recording-switches.md) | Per-instance recording switches set at create time via one `CONFIGURE_EXECUTION` instruction, read at root, withheld from workers, REST-only |
-| [0016](0016-811-reserved-jobs.md) | Reserved jobs: a caller-chosen token hides an instance's jobs from workers; token separate from the lease token; one-way release |
-| [0017](0017-811-stubbed-call-activities.md) | Stubbed call activities: activate without a child and wait on a stand-in job; no new `JobKind`; `runCalledProcess` escape hatch |
-| [0018](0018-811-held-timers.md) | Held timers: kept out of the due-date scheduler, fired on demand by `(instance, elementId)`, authorized not tokened |
+|                         ADR                         |                                                                          Decision                                                                           |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [0014](0014-811-tag-scoped-run-isolation.md)        | Tag-scoped run isolation: run scope rides a reserved instance tag, copied onto subscriptions, filtered locally                                              |
+| [0015](0015-811-per-instance-recording-switches.md) | Per-instance recording switches set at create time via one `CONFIGURE_EXECUTION` instruction, read at root, withheld from workers, REST-only                |
+| [0016](0016-811-reserved-jobs.md)                   | Reserved jobs: a caller-chosen token hides an instance's jobs from workers; token separate from the lease token; one-way release                            |
+| [0017](0017-811-stubbed-call-activities.md)         | Stubbed call activities: activate without a child and wait on a stand-in job carrying its own `JobKind.CALL_ACTIVITY_STUB`; `runCalledProcess` escape hatch |
+| [0018](0018-811-held-timers.md)                     | Held timers: kept out of the due-date scheduler, fired on demand by `(instance, elementId)`, authorized not tokened                                         |
 

@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -125,6 +126,9 @@ public final class StubbedCallActivityTest {
     assertThat(job.getValue().getElementType())
         .describedAs("the stub job belongs to the call activity")
         .isEqualTo(BpmnElementType.CALL_ACTIVITY);
+    assertThat(job.getValue().getJobKind())
+        .describedAs("the stub job carries its own job kind")
+        .isEqualTo(JobKind.CALL_ACTIVITY_STUB);
     assertThat(job.getValue().getCustomHeaders())
         .describedAs("the stub job names the process it stands in for")
         .containsEntry(Protocol.CALLED_PROCESS_ID_HEADER_NAME, childProcessId);
@@ -333,6 +337,62 @@ public final class StubbedCallActivityTest {
                 .exists())
         .describedAs("the boundary event takes over and the instance finishes")
         .isTrue();
+  }
+
+  @Test
+  public void shouldThrowBpmnErrorFromStubJob() {
+    // given a stubbed call activity with an interrupting error boundary event
+    final String errorCode = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+                .boundaryEvent("boundary", b -> b.error(errorCode))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withStubbedCallActivities()
+            .create();
+    final long jobKey = stubJob(processInstanceKey).getKey();
+
+    // when
+    ENGINE.job().withKey(jobKey).withErrorCode(errorCode).throwError();
+
+    // then
+    assertThat(
+            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("throwing a BPMN error from the stub job drives the error boundary event")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenStubJobFailsWithoutRetries() {
+    // given
+    deployParentAndChild(c -> {});
+    final long processInstanceKey = createStubbedInstance();
+    final long jobKey = stubJob(processInstanceKey).getKey();
+
+    // when
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
+
+    // then
+    final var incident =
+        incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incident.getValue().getErrorType())
+        .describedAs("failing the stub job with no retries raises the ordinary job incident")
+        .isEqualTo(ErrorType.JOB_NO_RETRIES);
   }
 
   @Test

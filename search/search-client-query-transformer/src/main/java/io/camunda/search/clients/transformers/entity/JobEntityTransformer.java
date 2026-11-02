@@ -77,6 +77,7 @@ public class JobEntityTransformer
       case "EXECUTION_LISTENER" -> JobKind.EXECUTION_LISTENER;
       case "TASK_LISTENER" -> JobKind.TASK_LISTENER;
       case "AD_HOC_SUB_PROCESS" -> JobKind.AD_HOC_SUB_PROCESS;
+      case "CALL_ACTIVITY_STUB" -> JobKind.CALL_ACTIVITY_STUB;
       default -> throw new IllegalArgumentException("Unknown job kind: " + value);
     };
   }

@@ -1588,6 +1588,7 @@ components:
         - EXECUTION_LISTENER
         - TASK_LISTENER
         - AD_HOC_SUB_PROCESS
+        - CALL_ACTIVITY_STUB
 
     JobListenerEventTypeEnum:
       example: UNSPECIFIED

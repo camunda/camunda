@@ -113,3 +113,4 @@ cross-partition message-start `REQUEST` carries the scope so the remotely create
 - Signal mechanics and tag proposal — internal design doc (claude.ai artifact) (internal)
 - [ADR 0001 — Business ID message correlation cross-partition](0001-810-message-correlation-business-id-cross-partition.md)
 - [ADR 0003 — Business ID call activity propagation](0003-810-business-id-call-activity-propagation.md)
+
