@@ -278,7 +278,6 @@ public class FlowNodeInstanceReader extends AbstractReader
   @Override
   public Set<Long> findFlowNodeInstanceKeysOwnedBy(
       final Long processInstanceKey, final Set<Long> candidateKeys) {
-    final var keysAggName = "flowNodeInstanceKeys";
     final var query =
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
@@ -287,28 +286,15 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     final var searchRequest =
         new SearchRequest.Builder()
-            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ONLY_RUNTIME))
             .query(query)
-            // A key is one bucket however many documents carry it, so as many buckets as keys
-            // return every match. The hits are not needed.
-            .aggregations(
-                keysAggName,
-                new Aggregation.Builder()
-                    .terms(t -> t.field(FlowNodeInstanceTemplate.KEY).size(candidateKeys.size()))
-                    .build())
-            .size(0)
+            .size(candidateKeys.size())
+            .source(s -> s.filter(f -> f.includes(FlowNodeInstanceTemplate.KEY)))
             .build();
 
     try {
-      return esClient
-          .search(searchRequest, Void.class)
-          .aggregations()
-          .get(keysAggName)
-          .lterms()
-          .buckets()
-          .array()
-          .stream()
-          .map(LongTermsBucket::key)
+      return esClient.search(searchRequest, FlowNodeInstanceEntity.class).hits().hits().stream()
+          .map(hit -> hit.source().getKey())
           .collect(Collectors.toSet());
     } catch (final IOException e) {
       throw new OperateRuntimeException(
