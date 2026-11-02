@@ -69,6 +69,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
@@ -353,6 +354,40 @@ public class FlowNodeInstanceReader extends AbstractReader
           searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
+    }
+  }
+
+  @Override
+  public Set<Long> findFlowNodeInstanceKeysOwnedBy(
+      final Long processInstanceKey, final Set<Long> candidateKeys) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate, QueryType.ONLY_RUNTIME)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(
+                            joinWithAnd(
+                                termQuery(
+                                    FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
+                                    processInstanceKey),
+                                termsQuery(FlowNodeInstanceTemplate.KEY, candidateKeys))))
+                    .size(candidateKeys.size())
+                    .fetchSource(FlowNodeInstanceTemplate.KEY, null));
+    try {
+      return Arrays.stream(
+              esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getHits())
+          .map(
+              hit ->
+                  ElasticsearchUtil.fromSearchHit(
+                          hit.getSourceAsString(), objectMapper, FlowNodeInstanceEntity.class)
+                      .getKey())
+          .collect(Collectors.toSet());
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Could not retrieve the flow node instances of process instance %s.",
+              processInstanceKey),
+          e);
     }
   }
 
