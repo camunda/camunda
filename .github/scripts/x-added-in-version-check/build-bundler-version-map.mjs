@@ -15,6 +15,7 @@ import 'dotenv/config';
 import { writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { fetchAndBundle, specDirForRef } from 'camunda-schema-bundler';
 import YAML from 'yaml';
+import { collapseSiblingVariants } from './sibling-variant-collapse.mjs';
 
 const yaml = { load: (source) => YAML.parse(source) };
 
@@ -445,6 +446,8 @@ async function main() {
 
   let previousOps = null;
   let previousProps = null;
+  // The bundled spec of the last (newest) version, for the sibling-variant collapse.
+  let latestSpec = null;
 
   for (const version of VERSIONS) {
     const ref = VERSION_REFS[version] ?? `${version}.0`;
@@ -546,6 +549,7 @@ async function main() {
     }
 
     const spec = result.spec;
+    latestSpec = spec;
     console.log(`    Bundled: ${result.stats.pathCount} paths, ${result.stats.schemaCount} schemas`);
 
     // Build operation → source file map, schema → source file map,
@@ -824,9 +828,10 @@ async function main() {
   // entry. Collapse to the MIN version across the (endpoint, location,
   // property) triple ONLY when a fully-tagless ancestor exists — i.e. the
   // property had a pre-polymorphic-split flat form. Without a tagless
-  // ancestor (e.g. discriminator-wrapper child re-declaring the discriminator),
-  // each branch keeps its own version because it represents a genuinely-new
-  // YAML location.
+  // ancestor, the sibling-variant collapse further down still collapses
+  // occurrences whose schema is identical on every branch; occurrences with
+  // different schemas (e.g. a discriminator-wrapper child pinning the
+  // discriminator to its own value) keep their own version.
   {
     const cmp = (a, b) => {
       const [aMaj, aMin] = a.split('.').map(Number);
@@ -855,6 +860,21 @@ async function main() {
         if (cmp(bucket.min, val.version) < 0) val.version = bucket.min;
       }
     }
+  }
+
+  // Sibling-variant collapse: a property repeated on sibling oneOf/anyOf
+  // branches of the same request or response, with an identical schema, gets
+  // the earliest version among them, even without a tagless ancestor. See
+  // sibling-variant-collapse.mjs and camunda/camunda#67987.
+  {
+    const { collapsed, skipped } = collapseSiblingVariants(versionMap, latestSpec);
+    for (const c of collapsed) {
+      console.log(`  sibling-variant collapse: ${c.propKey}  ${c.from} -> ${c.to}`);
+    }
+    console.log(
+      `  sibling-variant collapse: ${collapsed.length} collapsed, ` +
+      `${skipped.length} groups kept apart because their schemas differ`,
+    );
   }
 
   // ─── Summary ───────────────────────────────────────────────────────────────
