@@ -12,6 +12,7 @@ import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverri
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import feign.FeignException;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
@@ -483,6 +485,97 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     assertRestoredTheBackupsPartitions();
   }
 
+  @Test
+  void shouldRestoreTheBackupsPartitionsOfATimeRangeAfterAScaleUp() throws Exception {
+    // given - backups of the 2 partitions within the time range, covering the exported positions
+    final List<Long> backedUp = new ArrayList<>();
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+    final Instant to = currentTime(broker);
+
+    // and - the cluster is scaled up to 3 partitions, with a later backup holding all 3
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+    }
+    takeAndAwaitBackup();
+
+    // and - the RDBMS is restored to the backup's point, so it only holds exported positions for
+    // the backup's 2 partitions, not for the one added by the scale up
+    deleteExportedPositionsOfScaledUpPartitions();
+
+    // when - the time range ends before the scale up, so its last backup holds only 2 partitions
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.timeRange(from, to));
+
+    // then - only the backup's partitions are restored, up to `to`
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredTheBackupsPartitions();
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionPastItsExportedPositionAndResumeExporting() throws Exception {
+    // given - backups covering what the RDBMS holds, and an exporter that is stopped, so the
+    // exported positions stay where they are
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstancesOnEveryPartition(client);
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+    final var exportedBeforeRestore = exportedPositions();
+
+    // when
+    restore(RestoreTarget.latest());
+
+    // then - the restored log of every partition reaches at least what the RDBMS holds
+    final var partitions = PartitionsActuator.of(broker);
+    await("every partition is restored past its exported position")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                assertThat(partitions.query())
+                    .hasSize(PARTITION_COUNT)
+                    .allSatisfy(
+                        (partitionId, status) ->
+                            assertThat(status.processedPosition())
+                                .describedAs("processed position of partition %d", partitionId)
+                                .isGreaterThanOrEqualTo(exportedBeforeRestore.get(partitionId))));
+
+    // and - exporting resumes: the RDBMS positions only move forward from where they were. The
+    // standalone restore starts the exporter enabled, the in-process one keeps it disabled
+    try {
+      ExportersActuator.of(broker).enableExporter(RDBMS_EXPORTER_NAME);
+    } catch (final FeignException.BadRequest e) {
+      assertThat(e.contentUTF8()).contains("already enabled");
+    }
+    try (final var client = broker.newClientBuilder().build()) {
+      createInstancesOnEveryPartition(client);
+    }
+    await("the RDBMS exported position advances on every partition")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              // the exporter flushes on a timer of the pinned broker clock
+              progressClock(broker, 1000);
+              assertThat(exportedPositions())
+                  .allSatisfy(
+                      (partitionId, position) ->
+                          assertThat(position)
+                              .describedAs("exported position of partition %d", partitionId)
+                              .isGreaterThan(exportedBeforeRestore.get(partitionId)));
+            });
+  }
+
   /**
    * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
@@ -609,6 +702,21 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * restore the broker takes the routing state from the restored data once it is up, so it settles
    * shortly after.
    */
+  /**
+   * The RDBMS' last exported position of every partition. Read through the broker's current mapper,
+   * as a standalone restore starts the broker again with a new application context.
+   */
+  private Map<Integer, Long> exportedPositions() {
+    final Map<String, RdbmsMapperBundle> bundles = broker.bean("rdbmsMapperBundles");
+    final var mapper = bundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+    return IntStream.rangeClosed(1, PARTITION_COUNT)
+        .boxed()
+        .collect(
+            Collectors.toMap(
+                partitionId -> partitionId,
+                partitionId -> mapper.findOne(partitionId).lastExportedPosition()));
+  }
+
   private void assertRestoredTheBackupsPartitions() {
     InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
         broker.getWorkingDirectory(),
