@@ -378,4 +378,8 @@ public class RaftPartitionServer implements HealthMonitorable {
   public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
     return server.getContext().getTailSegments(index);
   }
+
+  public RaftServer getServer() {
+    return server;
+  }
 }
