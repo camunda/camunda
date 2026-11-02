@@ -253,10 +253,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var files = directory.toFile().listFiles();
-    try {
-      Objects.requireNonNull(files, "No chunks have been applied yet");
-    } catch (final Exception e) {
-      future.completeExceptionally(e);
+    if (files == null) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Cannot persist snapshot '%s': directory %s is missing or unreadable (the snapshot was aborted, no chunk was applied yet, or an I/O error occurred)",
+                  snapshotId.getSnapshotIdAsString(), directory)));
       return;
     }
 
