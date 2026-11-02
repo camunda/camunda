@@ -97,9 +97,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.moveAllButtononPopup = page
       .getByTestId('popover')
       .getByRole('button', {name: /Move all/i});
-    this.cancelButtonPopup = page.getByRole('button', {
-      name: /Cancel selected instance in this (flow node|element)/i,
-    });
+    this.cancelButtonPopup = page.getByTitle(
+      /Cancel selected instance in this (flow node|element)/i,
+    );
     this.reviewModificationsButton = page.getByRole('button', {
       name: /Apply Modifications|Review Modifications/,
     });
@@ -138,9 +138,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
       name: 'Add single element instance',
     });
-    this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: /Move selected instance in this (flow node|element) to another target/,
-    });
+    this.moveSelectedInstanceButton = page.getByTitle(
+      /Move selected instance in this (flow node|element) to another target/,
+    );
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
     );
