@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
 import java.util.function.Function;
@@ -187,6 +188,48 @@ public final class TimedActionsTest {
 
       // then
       verify(action, times(0)).run();
+    }
+
+    @Test
+    public void shouldNotCancelOtherTimerWhenCancellingExpiredTimer() {
+      // given
+      final var closingBlocked = new CompletableActorFuture<Void>();
+      final var closingActor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.runAtFixedRate(Duration.ofMillis(10), () -> {});
+            }
+
+            @Override
+            protected void onActorClosing() {
+              actor.runOnCompletionBlockingCurrentPhase(closingBlocked, (v, t) -> {});
+            }
+          };
+      final Runnable action = mock(Runnable.class);
+      final var otherActor = new Actor() {};
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(closingActor);
+      actorScheduler.submitActor(otherActor);
+      actorScheduler.workUntilDone();
+
+      closingActor.closeAsync();
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+
+      // with a 128ms delay and 128 ticks per wheel, this timer gets the expired timer's id
+      otherActor.run(() -> otherActor.schedule(Duration.ofMillis(128), action));
+      actorScheduler.workUntilDone();
+
+      // when
+      closingBlocked.complete(null);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(128));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(1)).run();
     }
   }
 
