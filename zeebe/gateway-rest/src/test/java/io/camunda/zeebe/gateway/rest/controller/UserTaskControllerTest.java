@@ -67,12 +67,11 @@ public class UserTaskControllerTest extends RestControllerTest {
       CompletableFuture.completedFuture(new UserTaskRecord());
   static final String TEST_TIME =
       OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
+  static final String USER_TASKS_V2_URL = "/v2/user-tasks";
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
-
-  static final String USER_TASKS_V2_URL = "/v2/user-tasks";
 
   static Stream<String> urls() {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
