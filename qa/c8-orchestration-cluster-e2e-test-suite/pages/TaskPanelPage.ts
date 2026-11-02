@@ -36,12 +36,13 @@ class TaskPanelPage {
     this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
     // The old Carbon expandable filter sidebar (`[aria-label="Filter
     // controls"]`, "Expand to show filters") no longer exists. Filtering is
-    // now a single dropdown-trigger button (id="filter-select") whose
-    // accessible name is the `taskFiltersHeaderAria` string ("Filters: "
-    // followed by the selected filter); clicking it opens a Radix
-    // DropdownMenu of filter options.
+    // now a single dropdown-trigger button (id="filter-select"); clicking it
+    // opens a Radix DropdownMenu of filter options. Its accessible name is
+    // "Filters" on older builds and "Filters: <selected filter>" on newer
+    // ones, so match both: this suite runs against the published image,
+    // which can lag behind the page objects.
     this.filterSelectButton = page.getByRole('button', {
-      name: /^Filters:/,
+      name: /^Filters(:|$)/,
     });
     // The header logo's accessible name is now just "Camunda logo" (the old
     // Carbon header appended the product name, "Camunda logo Tasklist").
