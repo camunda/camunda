@@ -410,6 +410,7 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
             () ->
                 assertThat(backupActuator.status(backupId).getState())
                     .isEqualTo(StateCode.COMPLETED));
+    InProcessRestoreTestUtil.awaitBackupInMetadata(backupActuator, backupId);
     return backupId;
   }
 
