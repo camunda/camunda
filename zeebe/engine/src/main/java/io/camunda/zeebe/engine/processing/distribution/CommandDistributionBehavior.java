@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -170,6 +171,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final Intent intent,
       final T value,
       final AuthInfo authInfo,
+      final long operationReference,
       final Set<Integer> partitions) {
     if (partitions.isEmpty()
         || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
@@ -184,7 +186,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setPartitionId(currentPartitionId)
             .setValueType(valueType)
             .setIntent(intent)
-            .setCommandValue(value);
+            .setCommandValue(value)
+            .setOperationReference(operationReference);
 
     if (authInfo != null) {
       distributionRecord.setAuthInfo(authInfo);
@@ -308,7 +311,13 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       sideEffectWriter.appendSideEffect(
           () -> {
             interPartitionCommandSender.sendCommand(
-                partition, valueType, intent, distributionKey, commandValue, authInfo);
+                partition,
+                valueType,
+                intent,
+                distributionKey,
+                commandValue,
+                authInfo,
+                distributionRecord.getOperationReference());
           });
     }
   }
@@ -432,7 +441,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             distributionRecord.getIntent(),
             distributionKey,
             distributionRecord.getCommandValue(),
-            distributionRecord.getAuthInfo());
+            distributionRecord.getAuthInfo(),
+            distributionRecord.getOperationReference());
   }
 
   public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
@@ -544,6 +554,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           command.getIntent(),
           command.getValue(),
           command.getAuthInfo(),
+          command.getOperationReference(),
           partitions);
     }
 
@@ -557,6 +568,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
           authInfo,
+          RecordMetadataDecoder.operationReferenceNullValue(),
           partitions);
     }
 

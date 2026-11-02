@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -94,6 +97,18 @@ public class SignalClient {
 
   public Record<SignalRecordValue> broadcast(final AuthInfo authorizations) {
     final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord, authorizations);
+    return expectation.apply(position);
+  }
+
+  /**
+   * Broadcasts the signal, allowing customization of the written command's metadata (e.g. the
+   * operation reference).
+   */
+  public Record<SignalRecordValue> broadcast(final UnaryOperator<FluentLogWriter> builder) {
+    final long position =
+        writer.writeCommandOnPartition(
+            Protocol.DEPLOYMENT_PARTITION,
+            r -> builder.apply(r.intent(SignalIntent.BROADCAST).event(signalRecord)));
     return expectation.apply(position);
   }
 }

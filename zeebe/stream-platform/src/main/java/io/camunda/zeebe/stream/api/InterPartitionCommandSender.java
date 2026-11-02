@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.jspecify.annotations.Nullable;
@@ -22,21 +23,28 @@ public interface InterPartitionCommandSender {
    * Sends a command without a specific record key or authentication info to the given partition.
    *
    * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
-   *     AuthInfo)
+   *     AuthInfo, long)
    */
   default void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
       final UnifiedRecordValue command) {
-    sendCommand(receiverPartitionId, valueType, intent, null, command, null);
+    sendCommand(
+        receiverPartitionId,
+        valueType,
+        intent,
+        null,
+        command,
+        null,
+        RecordMetadataDecoder.operationReferenceNullValue());
   }
 
   /**
    * Sends a command without authentication info to the given partition.
    *
    * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
-   *     AuthInfo)
+   *     AuthInfo, long)
    */
   default void sendCommand(
       final int receiverPartitionId,
@@ -44,7 +52,37 @@ public interface InterPartitionCommandSender {
       final Intent intent,
       final @Nullable Long recordKey,
       final UnifiedRecordValue command) {
-    sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
+    sendCommand(
+        receiverPartitionId,
+        valueType,
+        intent,
+        recordKey,
+        command,
+        null,
+        RecordMetadataDecoder.operationReferenceNullValue());
+  }
+
+  /**
+   * Sends a command without an operation reference to the given partition.
+   *
+   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
+   *     AuthInfo, long)
+   */
+  default void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final @Nullable Long recordKey,
+      final UnifiedRecordValue command,
+      final @Nullable AuthInfo authInfo) {
+    sendCommand(
+        receiverPartitionId,
+        valueType,
+        intent,
+        recordKey,
+        command,
+        authInfo,
+        RecordMetadataDecoder.operationReferenceNullValue());
   }
 
   /**
@@ -56,6 +94,10 @@ public interface InterPartitionCommandSender {
    *     from which partition as the key encodes the partition id). May be null, in which case it is
    *     ignored.
    * @param authInfo May be null if authentication at the receiving partition is not required.
+   * @param operationReference The operation reference of the command that caused this command to be
+   *     sent, so that the receiving partition can propagate it to the records it writes. Use {@code
+   *     RecordMetadataDecoder.operationReferenceNullValue()} when there is no operation reference
+   *     to propagate.
    */
   void sendCommand(
       final int receiverPartitionId,
@@ -63,5 +105,6 @@ public interface InterPartitionCommandSender {
       final Intent intent,
       final @Nullable Long recordKey,
       final UnifiedRecordValue command,
-      final @Nullable AuthInfo authInfo);
+      final @Nullable AuthInfo authInfo,
+      final long operationReference);
 }

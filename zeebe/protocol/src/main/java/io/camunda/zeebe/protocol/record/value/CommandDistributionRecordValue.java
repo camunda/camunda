@@ -49,4 +49,13 @@ public interface CommandDistributionRecordValue extends RecordValue {
    * @return the wrapped record value
    */
   RecordValue getCommandValue();
+
+  /**
+   * @return the operation reference of the command that started this distribution, or {@code -1}
+   *     when the originating command carried no operation reference
+   */
+  @Value.Default
+  default long getOperationReference() {
+    return -1L;
+  }
 }

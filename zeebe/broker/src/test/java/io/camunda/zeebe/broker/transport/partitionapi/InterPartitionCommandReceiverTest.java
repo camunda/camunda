@@ -27,6 +27,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -145,6 +146,79 @@ final class InterPartitionCommandReceiverTest {
     assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertThat(metadata.getValueType()).isEqualTo(valueType);
     assertThat(metadata.getIntent()).isEqualTo(intent);
+  }
+
+  @Test
+  void shouldWriteOperationReferenceToCommandMetadata() {
+    // given
+    final var receiverBrokerId = 1;
+    final var receiverPartitionId = 5;
+    final var operationReference = 123456789L;
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            null,
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1),
+            null,
+            operationReference);
+
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
+    final var metadataWriter = entryCaptor.getValue().recordMetadata();
+    final var metadataBuffer = new ExpandableArrayBuffer();
+    final var metadata = new RecordMetadata();
+    metadataWriter.write(metadataBuffer, 0);
+    metadata.wrap(metadataBuffer, 0, metadataWriter.getLength());
+
+    assertThat(metadata.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
+  void shouldWriteNullOperationReferenceWhenNotSent() {
+    // given
+    final var receiverBrokerId = 1;
+    final var receiverPartitionId = 5;
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
+
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
+    final var metadataWriter = entryCaptor.getValue().recordMetadata();
+    final var metadataBuffer = new ExpandableArrayBuffer();
+    final var metadata = new RecordMetadata();
+    metadataWriter.write(metadataBuffer, 0);
+    metadata.wrap(metadataBuffer, 0, metadataWriter.getLength());
+
+    assertThat(metadata.getOperationReference())
+        .isEqualTo(RecordMetadataDecoder.operationReferenceNullValue());
   }
 
   @Test
@@ -353,6 +427,26 @@ final class InterPartitionCommandReceiverTest {
       final Long recordKey,
       final UnifiedRecordValue recordValue,
       final AuthInfo authInfo) {
+    return sendCommand(
+        receiverBrokerId,
+        receiverPartitionId,
+        valueType,
+        intent,
+        recordKey,
+        recordValue,
+        authInfo,
+        RecordMetadataDecoder.operationReferenceNullValue());
+  }
+
+  private byte[] sendCommand(
+      final Integer receiverBrokerId,
+      final Integer receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final UnifiedRecordValue recordValue,
+      final AuthInfo authInfo,
+      final long operationReference) {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
@@ -360,7 +454,9 @@ final class InterPartitionCommandReceiverTest {
         new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
     sender.setCurrentLeader(receiverPartitionId, MemberId.from(String.valueOf(receiverBrokerId)));
 
-    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo);
+    sender.sendCommand(
+        receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo,
+        operationReference);
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)

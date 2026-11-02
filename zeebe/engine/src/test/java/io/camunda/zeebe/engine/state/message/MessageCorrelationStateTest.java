@@ -20,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class MessageCorrelationStateTest {
+  private static final long OPERATION_REFERENCE = 42L;
+
   private MutableProcessingState processingState;
 
   private MutableMessageCorrelationState state;
@@ -37,12 +39,15 @@ public class MessageCorrelationStateTest {
     final var requestStreamId = 3;
 
     // when
-    state.putMessageCorrelation(messageKey, requestId, requestStreamId);
+    state.putMessageCorrelation(messageKey, requestId, requestStreamId, OPERATION_REFERENCE);
 
     // then
     assertThat(state.getRequestData(messageKey))
-        .extracting(RequestData::getRequestId, RequestData::getRequestStreamId)
-        .containsExactly(requestId, requestStreamId);
+        .extracting(
+            RequestData::getRequestId,
+            RequestData::getRequestStreamId,
+            RequestData::getOperationReference)
+        .containsExactly(requestId, requestStreamId, OPERATION_REFERENCE);
   }
 
   @Test
@@ -51,13 +56,13 @@ public class MessageCorrelationStateTest {
     final var messageKey = 1L;
     final var requestId = 2L;
     final var requestStreamId = 3;
-    state.putMessageCorrelation(messageKey, requestId, requestStreamId);
+    state.putMessageCorrelation(messageKey, requestId, requestStreamId, OPERATION_REFERENCE);
 
     // when - then
     final var exception =
         assertThatExceptionOfType(ZeebeDbInconsistentException.class)
             .as("Expected to insert new element, but element with key '1' already exists")
-            .isThrownBy(() -> state.putMessageCorrelation(messageKey, requestId, requestStreamId))
+            .isThrownBy(() -> state.putMessageCorrelation(messageKey, requestId, requestStreamId, OPERATION_REFERENCE))
             .actual();
     assertThat(exception)
         .hasMessage("Key DbLong{1} in ColumnFamily MESSAGE_CORRELATION already exists");
@@ -71,7 +76,7 @@ public class MessageCorrelationStateTest {
     final var requestStreamId = 3;
 
     // when
-    state.putMessageCorrelation(messageKey, requestId, requestStreamId);
+    state.putMessageCorrelation(messageKey, requestId, requestStreamId, OPERATION_REFERENCE);
 
     // then
     assertThat(state.existsRequestDataForMessageKey(messageKey)).isTrue();
@@ -89,7 +94,7 @@ public class MessageCorrelationStateTest {
     final var messageKey = 1L;
     final var requestId = 2L;
     final var requestStreamId = 3;
-    state.putMessageCorrelation(messageKey, requestId, requestStreamId);
+    state.putMessageCorrelation(messageKey, requestId, requestStreamId, OPERATION_REFERENCE);
 
     // when
     state.removeMessageCorrelation(messageKey);
@@ -121,8 +126,8 @@ public class MessageCorrelationStateTest {
     // given
     final var key1 = 1L;
     final var key2 = 2L;
-    state.putMessageCorrelation(key1, 1L, 1);
-    state.putMessageCorrelation(key2, 1L, 1);
+    state.putMessageCorrelation(key1, 1L, 1, OPERATION_REFERENCE);
+    state.putMessageCorrelation(key2, 1L, 1, OPERATION_REFERENCE);
 
     // when
     final var requestData1 = state.getRequestData(key1);

@@ -229,6 +229,7 @@ final class InterPartitionCommandReceiverImpl {
       final var recordMetadata = new RecordMetadata();
       final var value = decodeCommand(messageDecoder, recordMetadata);
       decodeAuthInfo(messageDecoder, recordMetadata);
+      recordMetadata.operationReference(messageDecoder.operationReference());
 
       // Default to MANUAL_BACKUP if no checkpoint type is set for backward compatibility
       final CheckpointType checkpointType;

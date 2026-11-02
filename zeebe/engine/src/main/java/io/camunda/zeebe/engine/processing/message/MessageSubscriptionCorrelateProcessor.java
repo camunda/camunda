@@ -152,7 +152,10 @@ public final class MessageSubscriptionCorrelateProcessor
               .setProcessDefinitionKey(messageSubscription.getProcessDefinitionKey());
 
       stateWriter.appendFollowUpEvent(
-          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+          messageKey,
+          MessageCorrelationIntent.CORRELATED,
+          messageCorrelationRecord,
+          m -> m.operationReference(requestData.getOperationReference()));
       responseWriter.writeAcceptedResponse(
           record.getValue().getMessageKey(),
           MessageCorrelationIntent.CORRELATED,

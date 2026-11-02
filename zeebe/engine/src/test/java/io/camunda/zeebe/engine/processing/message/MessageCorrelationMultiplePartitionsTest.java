@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.Strings;
@@ -366,6 +367,105 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 .count())
         .describedAs("Expected to correlate 10 messages exactly")
         .isEqualTo(10);
+  }
+
+  @Test
+  public void shouldPropagateOperationReferenceOnCrossPartitionCorrelation() {
+    // given a process instance waiting on a message subscription on a different partition than the
+    // one receiving the correlate command
+    final var operationReference = 123456789L;
+    final var correlationKey = CORRELATION_KEYS.get(START_PARTITION_ID + 1);
+    final var tenantId = TENANT_IDS.get(START_PARTITION_ID + 1);
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .withTenantId(tenantId)
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when correlating the message with an operation reference, sending the correlate command to a
+    // partition other than the subscription's partition so the correlation crosses partitions
+    final var subscriptionPartition = getPartitionId(correlationKey);
+    final var senderPartition =
+        subscriptionPartition == START_PARTITION_ID ? START_PARTITION_ID + 1 : START_PARTITION_ID;
+    engine
+        .messageCorrelation()
+        .onPartition(senderPartition)
+        .withName("message")
+        .withCorrelationKey(correlationKey)
+        .withTenantId(tenantId)
+        .expectNothing()
+        .correlate(
+            r ->
+                r.authorizations(tenantId)
+                    .requestId(1L)
+                    .requestStreamId(1)
+                    .operationReference(operationReference));
+
+    // then the terminal CORRELATED event written on the sender partition carries the reference
+    RecordingExporter.await()
+        .untilAsserted(
+            () -> {
+              final var all =
+                  RecordingExporter.messageCorrelationRecords()
+                      .withCorrelationKey(correlationKey)
+                      .limit(100)
+                      .asList();
+              System.out.println(
+                  "DEBUG MSG_CORR: "
+                      + all.stream()
+                          .map(
+                              r ->
+                                  r.getIntent()
+                                      + "@p"
+                                      + r.getPartitionId()
+                                      + " "
+                                      + r.getRecordType()
+                                      + " "
+                                      + r.getRejectionType()
+                                      + " "
+                                      + r.getRejectionReason()
+                                      + " tenant="
+                                      + r.getValue().getTenantId())
+                          .toList());
+              final var subs =
+                  RecordingExporter.messageSubscriptionRecords()
+                      .limit(100)
+                      .asList();
+              System.out.println(
+                  "DEBUG MSG_SUB: "
+                      + subs.stream()
+                          .map(
+                              r ->
+                                  r.getIntent()
+                                      + "@p"
+                                      + r.getPartitionId()
+                                      + " tenant="
+                                      + r.getValue().getTenantId()
+                                      + " corrKey="
+                                      + r.getValue().getCorrelationKey())
+                          .toList());
+              assertThat(
+                      RecordingExporter.messageCorrelationRecords(
+                              MessageCorrelationIntent.CORRELATED)
+                          .withCorrelationKey(correlationKey)
+                          .findFirst())
+                  .isPresent();
+            });
+
+    assertThat(
+            RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATED)
+                .withCorrelationKey(correlationKey)
+                .findFirst()
+                .orElseThrow()
+                .getOperationReference())
+        .describedAs("Expected the CORRELATED event to carry the command's operationReference")
+        .isEqualTo(operationReference);
   }
 
   private int getPartitionId(final String correlationKey) {

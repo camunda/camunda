@@ -120,7 +120,7 @@ public class CommandRedistributionSchedulerTest {
     // then
     verify(mockCommandSender, times(1))
         .sendCommand(
-            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
   }
 
   private CommandRedistributionScheduler getCommandRedistributor(
@@ -177,13 +177,13 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
     }
 
     @Test
@@ -197,13 +197,13 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
 
       // then
       // Partition 3 is now scaled up, so it should be redistributed to
@@ -214,7 +214,7 @@ public class CommandRedistributionSchedulerTest {
       commandRedistributor.runRetryCycle();
       verify(mockCommandSender, times(1))
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
     }
   }
 
@@ -274,10 +274,10 @@ public class CommandRedistributionSchedulerTest {
 
       verify(mockCommandSender, times(4))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
       verify(mockCommandSender, times(4))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY, -1L);
     }
   }
 }
