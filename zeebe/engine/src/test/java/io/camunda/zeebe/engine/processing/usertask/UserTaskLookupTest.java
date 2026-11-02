@@ -443,12 +443,15 @@ public final class UserTaskLookupTest {
   private static UserTaskLookupRecord lookup(
       final long userTaskKey, final String... fetchVariables) {
     final long requestId = REQUEST_IDS.incrementAndGet();
-    ENGINE
-        .userTaskLookup()
-        .withKey(userTaskKey)
-        .withFetchVariables(fetchVariables)
-        .withRequestId(requestId)
-        .fetch();
+    final var fetched =
+        ENGINE
+            .userTaskLookup()
+            .withKey(userTaskKey)
+            .withFetchVariables(fetchVariables)
+            .withRequestId(requestId)
+            .fetch();
+    // checked on every lookup: the variables are only in the response, never on the log
+    assertThat(fetched.getValue().getUserTask().getVariables()).isEmpty();
     return RESPONSES.awaitResponse(requestId);
   }
 }
