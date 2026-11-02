@@ -395,6 +395,43 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRestoreFromTheRangeOfBackupsThatContainsFrom() throws Exception {
+    // given - two ranges of backups, split by deleting the backup between them. Both start
+    // before `from`, but only the second one reaches it, and it covers the exported positions
+    final List<Long> backedUp = new ArrayList<>();
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      final long firstBackup = takeAndAwaitBackup().getBackupId();
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      final long deletedBackup = takeAndAwaitBackup().getBackupId();
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      final long thirdBackup = takeAndAwaitBackup().getBackupId();
+      from = currentTime(broker);
+
+      // the restore starts from the first backup after `from`, so the RDBMS has to have exported
+      // past it to resume exporting where it stopped
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      final var firstBackupAfterFrom = takeAndAwaitBackup();
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+      awaitExportedPast(firstBackupAfterFrom);
+      disableRdbmsExporter();
+      awaitBackupCoversExportedPositionsOnEveryPartition();
+      createInstancesOnEveryPartition(client);
+
+      InProcessRestoreTestUtil.deleteBackupSplittingItsRange(
+          backupActuator, PARTITION_COUNT, firstBackup, deletedBackup, thirdBackup);
+    }
+
+    // when
+    restore(RestoreTarget.timeRange(from, null));
+
+    // then - every partition ends at the latest backup of the second range
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
   void shouldRestoreTheBackupsPartitionsOfABackupAfterAScaleUp() throws Exception {
     // given - a backup covering the exported positions of the 2 partitions
     final List<Long> backedUp;
@@ -531,6 +568,28 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
                         assertThat(details.getCheckpointPosition())
                             .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
                       });
+            });
+  }
+
+  /** Waits until the RDBMS has exported past the given backup on every partition. */
+  private void awaitExportedPast(final BackupInfo backup) {
+    Awaitility.await("the RDBMS exported past backup %d".formatted(backup.getBackupId()))
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              // the exporter flushes on a timer of the pinned broker clock
+              progressClock(broker, 1000);
+              assertThat(backup.getDetails())
+                  .allSatisfy(
+                      details ->
+                          assertThat(
+                                  exporterPositionMapper
+                                      .findOne(details.getPartitionId())
+                                      .lastExportedPosition())
+                              .describedAs(
+                                  "exported position of partition %d", details.getPartitionId())
+                              .isGreaterThanOrEqualTo(details.getCheckpointPosition()));
             });
   }
 
