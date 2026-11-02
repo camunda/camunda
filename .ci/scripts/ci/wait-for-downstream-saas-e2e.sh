@@ -67,7 +67,7 @@ gh_api_with_retry() {
     # as transient. `abuse detection` is the same family: GitHub's
     # older wording for the secondary limit, served as 403 and
     # self-clearing, so it retries for the same reason.
-    if echo "$out" | grep -Eqi 'HTTP 429|rate limit|abuse detection|HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|tls: failed to verify certificate|x509: certificate|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
+    if echo "$out" | grep -Eqi 'HTTP 429|rate limit|abuse detection|HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|unexpected end of JSON input|tls: failed to verify certificate|x509: certificate|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
       if (( attempt >= max_attempts )); then
         echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
         echo "$out" >&2
