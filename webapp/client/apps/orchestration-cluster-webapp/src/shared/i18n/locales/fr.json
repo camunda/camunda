@@ -2210,7 +2210,8 @@
 				"pageSelectLabel": "Page sur {{count}} pages",
 				"pageSelectLabel_one": "Page sur {{count}} page",
 				"pageSelectLabel_other": "Page sur {{count}} pages",
-				"pageText": "page {{page}}"
+				"pageText": "page {{page}}",
+				"pageOf": "Page {{page}} sur {{count}}"
 			},
 			"batchOperation": {
 				"title": "Opérations par lots",

@@ -2207,7 +2207,8 @@
 				"pageSelectLabel": "Seite von {{count}} Seiten",
 				"pageSelectLabel_one": "Seite von {{count}} Seite",
 				"pageSelectLabel_other": "Seite von {{count}} Seiten",
-				"pageText": "Seite {{page}}"
+				"pageText": "Seite {{page}}",
+				"pageOf": "Seite {{page}} von {{count}}"
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",
