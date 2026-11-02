@@ -793,7 +793,7 @@ final class ElasticsearchArchiverRepositoryIT {
     // indexName2. Wait for the future to complete rather than only for the interaction: the
     // applied-policy cache is populated when the request completes, so resetting the spy or
     // issuing the second round any earlier would race with the cache update.
-    repository.setIndexLifeCycle(indexName2).join();
+    assertThat(repository.setIndexLifeCycle(indexName2)).succeedsWithin(Duration.ofSeconds(30));
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
@@ -808,8 +808,8 @@ final class ElasticsearchArchiverRepositoryIT {
     // setting policy first time for indexName1 but second time for indexName2, it
     // should have cached the fact that indexName2 already has a policy and not be included in
     // the request.
-    repository.setIndexLifeCycle(indexName1).join();
-    repository.setIndexLifeCycle(indexName2).join();
+    assertThat(repository.setIndexLifeCycle(indexName1)).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.setIndexLifeCycle(indexName2)).succeedsWithin(Duration.ofSeconds(30));
 
     // then
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
