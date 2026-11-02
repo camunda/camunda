@@ -34,6 +34,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -42,9 +43,16 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskLookupRequest;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -712,6 +720,67 @@ public class UserTaskServiceTest {
           .singleElement()
           .extracting(UserTaskEntity::processDefinitionVersion)
           .isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class LookupUserTask {
+
+    private StubbedBrokerClient brokerClient;
+    private UserTaskServices lookupServices;
+
+    @BeforeEach
+    void setUp() {
+      brokerClient = new StubbedBrokerClient();
+      final var executorProvider = mock(ApiServicesExecutorProvider.class);
+      when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+      lookupServices =
+          new UserTaskServices(
+              PHYSICAL_TENANT_ID,
+              brokerClient,
+              mock(SecurityContextProvider.class),
+              client,
+              formServices,
+              elementInstanceServices,
+              variableServices,
+              auditLogServices,
+              processCache,
+              executorProvider,
+              mock(BrokerRequestAuthorizationConverter.class));
+    }
+
+    @Test
+    void shouldSendLookupRequestForTheUserTask() {
+      // given
+      brokerClient.registerHandler(
+          BrokerUserTaskLookupRequest.class,
+          request -> new BrokerResponse<>(new UserTaskLookupRecord()));
+
+      // when
+      lookupServices.lookupUserTask(123L, List.of("recommendation"), authentication).join();
+
+      // then
+      final BrokerUserTaskLookupRequest request = brokerClient.getSingleBrokerRequest();
+      assertThat(request.getKey()).isEqualTo(123L);
+      assertThat(request.getRequestWriter().getFetchVariables()).containsExactly("recommendation");
+    }
+
+    @Test
+    void shouldReturnTheLookupResponseOfTheEngine() {
+      // given
+      final var response =
+          new UserTaskLookupRecord()
+              .setUserTask(new UserTaskRecord().setUserTaskKey(123L))
+              .setLifecycleState(UserTaskLifecycleState.CREATED);
+      brokerClient.registerHandler(
+          BrokerUserTaskLookupRequest.class, request -> new BrokerResponse<>(response));
+
+      // when
+      final var result = lookupServices.lookupUserTask(123L, List.of(), authentication).join();
+
+      // then
+      assertThat(result.getUserTask().getUserTaskKey()).isEqualTo(123L);
+      assertThat(result.getLifecycleState()).isEqualTo(UserTaskLifecycleState.CREATED);
     }
   }
 }
