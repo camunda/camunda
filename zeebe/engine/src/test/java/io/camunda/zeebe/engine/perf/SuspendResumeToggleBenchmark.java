@@ -51,9 +51,8 @@ public class SuspendResumeToggleBenchmark {
   private static final Logger LOG =
       LoggerFactory.getLogger(SuspendResumeToggleBenchmark.class.getName());
 
-  // capped at 4000: each cycle suspends a PI with jobCount activatable jobs, and SUSPEND writes
-  // Job.SUSPENDED for all of them in one command - beyond ~4000 that batch exceeds the 4MB
-  // record-size limit and SUSPEND is rejected (see SuspensionBatchLimitTest, 5000 rejected).
+  // capped at 4000, the limit before jobs were suspended one per batch by the element instance
+  // walk (see SuspensionBatchSizeTest); kept so results stay comparable with earlier runs.
   @Param({"10", "1000", "4000"})
   private int jobCount;
 

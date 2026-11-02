@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
  * command's own batch, so the subscription sizes guard that batch against a regression.
  */
 @Tag("performance")
-class SuspensionBatchLimitTest {
+class SuspensionBatchSizeTest {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(SuspensionBatchLimitTest.class.getName());
+      LoggerFactory.getLogger(SuspensionBatchSizeTest.class.getName());
 
   private static final long GENEROUS_WAIT_TIME_MS = Duration.ofSeconds(30).toMillis();
 
