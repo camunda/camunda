@@ -26,8 +26,6 @@ dependencies {
   api(libs.io.github.resilience4j.resilience4j.retry)
   api(libs.io.github.resilience4j.resilience4j.core)
   api(libs.com.google.guava.guava)
-  implementation(libs.com.esotericsoftware.kryo)
-  implementation(libs.commons.io.commons.io)
   testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
   testImplementation(libs.junit.junit)
   testImplementation(libs.org.junit.vintage.junit.vintage.engine)
