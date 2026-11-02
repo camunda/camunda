@@ -6,10 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, notFound} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
+import {BatchOperation, BatchOperationSkeleton} from '#/operate/pages/BatchOperation/shadcn.components/BatchOperation';
+import {getBatchOperationOptions} from '#/operate/pages/BatchOperation/batchOperation.queries';
+import {formatOperationType} from '#/operate/pages/BatchOperation/utils';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/batch-operations/$batchOperationKey')({
-	beforeLoad: () => {
-		throw notFound({routeId: '/_shadcn/_auth/operate-preview'});
+	loader: async ({context: {queryClient}, params: {batchOperationKey}}) => {
+		try {
+			return await queryClient.ensureQueryData(getBatchOperationOptions(batchOperationKey));
+		} catch {
+			return undefined;
+		}
+	},
+	head: ({loaderData}) => ({
+		meta: loaderData
+			? [{title: t('operate.batchOperation.pageTitle', {name: formatOperationType(loaderData.batchOperationType)})}]
+			: [],
+	}),
+	pendingComponent: () => <BatchOperationSkeleton />,
+	component: function BatchOperationRoute() {
+		const {batchOperationKey} = Route.useParams();
+		return <BatchOperation batchOperationKey={batchOperationKey} />;
 	},
 });
