@@ -39,6 +39,11 @@ public final class ActorJob {
   @Async.Execute
   void execute(final ActorThread runner) {
     observeSchedulingLatency(runner.getActorMetrics());
+    execute();
+  }
+
+  /** Recovery jobs bypass latency recording, which may itself have caused the failure. */
+  void execute() {
     try {
       invoke();
     } catch (final Throwable e) {
@@ -47,8 +52,10 @@ public final class ActorJob {
         task.onFailure(e);
       } catch (final Throwable failureHandlingError) {
         FATAL_ERROR_HANDLER.handleError(failureHandlingError);
-        failureHandlingError.addSuppressed(e);
-        task.fail(failureHandlingError);
+        if (failureHandlingError != e) {
+          failureHandlingError.addSuppressed(e);
+        }
+        throw failureHandlingError;
       }
     } finally {
       // in any case, success or exception, decide if the job should be resubmitted
