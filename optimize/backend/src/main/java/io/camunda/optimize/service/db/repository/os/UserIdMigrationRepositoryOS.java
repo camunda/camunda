@@ -70,7 +70,7 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
       throw new OptimizeRuntimeException(
           "Failed to check for documents with user ID: "
               + UserIdMigrationRepository.maskForLog(userId),
-          e);
+          UserIdMigrationRepository.sanitize(e, userId));
     }
   }
 

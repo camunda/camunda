@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.service.db.repository.UserIdMigrationRepository.maskForLog;
+import static io.camunda.optimize.service.db.repository.UserIdMigrationRepository.sanitize;
+
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -76,7 +79,8 @@ public final class AuthenticationSuccessListener {
         || !(oauthToken.getPrincipal() instanceof final OidcUser oidcUser)) {
       return;
     }
-    LOG.debug("CSL OIDC login success for subject [{}]", oidcUser.getSubject());
+    final String subject = maskForLog(oidcUser.getSubject());
+    LOG.debug("CSL OIDC login success for subject [{}]", subject);
 
     try {
       migrateIfIdentityChanged(oidcUser);
@@ -90,8 +94,12 @@ public final class AuthenticationSuccessListener {
       LOG.warn(
           "User-id migration failed for subject [{}]; the login itself is unaffected and entities"
               + " owned by the previous identity stay with it until a later login retries.",
-          oidcUser.getSubject(),
-          e);
+          subject,
+          sanitize(
+              e,
+              oidcUser.getSubject(),
+              oidcUser.getClaimAsString(ORIGINAL_USER_ID_CLAIM),
+              emailClaim(oidcUser)));
     }
   }
 
@@ -108,7 +116,7 @@ public final class AuthenticationSuccessListener {
       LOG.warn(
           "Skipping user-id migration for subject [{}]: CSL resolved no authenticated username."
               + " Entities owned by the previous identity stay with it until the next login.",
-          oidcUser.getSubject());
+          maskForLog(oidcUser.getSubject()));
       return;
     }
 

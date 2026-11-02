@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -47,8 +48,10 @@ class UserIdMigrationRepositoryFailureTest {
     assertThatThrownBy(() -> repository.migrateUserId(EMAIL, NEW_USER_ID))
         .isInstanceOf(OptimizeRuntimeException.class)
         .hasMessageContaining("u***@example.com")
-        .hasMessageNotContaining(EMAIL)
-        .hasNoCause();
+        .satisfies(UserIdMigrationRepositoryFailureTest::assertNoEmailInCauseChain)
+        .rootCause()
+        .hasMessageContaining(OptimizeRuntimeException.class.getName())
+        .hasMessageContaining("[term: u***@example.com]");
   }
 
   @Test
@@ -62,7 +65,15 @@ class UserIdMigrationRepositoryFailureTest {
     assertThatThrownBy(() -> repository.migrateUserId(EMAIL, NEW_USER_ID))
         .isInstanceOf(OptimizeRuntimeException.class)
         .hasMessageContaining("u***@example.com")
-        .hasMessageNotContaining(EMAIL)
-        .hasNoCause();
+        .satisfies(UserIdMigrationRepositoryFailureTest::assertNoEmailInCauseChain)
+        .rootCause()
+        .hasMessageContaining(OptimizeRuntimeException.class.getName())
+        .hasMessageContaining("[term: u***@example.com]");
+  }
+
+  private static void assertNoEmailInCauseChain(final Throwable failure) {
+    for (Throwable current = failure; current != null; current = current.getCause()) {
+      assertThat(current.getMessage()).doesNotContain(EMAIL);
+    }
   }
 }
