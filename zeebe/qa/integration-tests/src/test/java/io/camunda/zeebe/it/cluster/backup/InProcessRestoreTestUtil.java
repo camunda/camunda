@@ -17,6 +17,8 @@ import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.client.protocol.rest.ClusterRestoreResponse;
 import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
+import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionBackupRange;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -547,6 +550,39 @@ public final class InProcessRestoreTestUtil {
               assertThat(status.statusCode()).isEqualTo(200);
               assertThat(OBJECT_MAPPER.readTree(status.body()).path("state").asText())
                   .isEqualTo("COMPLETED");
+            });
+  }
+
+  /**
+   * Waits until the backup store's metadata of every partition of the backup holds it, as a
+   * time-range restore resolves the backups to restore from that metadata. A backup is reported
+   * completed once it is saved, but a partition only writes the metadata after it confirms the
+   * backup, so a restore started right after could resolve to an earlier backup. Syncing the
+   * metadata on every poll waits for the confirmation alone, not for the write that follows it.
+   */
+  static void awaitBackupInMetadata(final BackupActuator backupActuator, final long backupId) {
+    final var partitions =
+        backupActuator.status(backupId).getDetails().stream()
+            .map(PartitionBackupInfo::getPartitionId)
+            .toList();
+    Awaitility.await("backup %d is in the backup metadata of every partition".formatted(backupId))
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final Map<Integer, Long> lastBackupByPartition =
+                  backupActuator.syncMetadata().getRanges().stream()
+                      .collect(
+                          Collectors.toMap(
+                              PartitionBackupRange::getPartitionId,
+                              range -> range.getEnd().getCheckpointId(),
+                              Math::max));
+              assertThat(partitions)
+                  .allSatisfy(
+                      partition ->
+                          assertThat(lastBackupByPartition.get(partition))
+                              .describedAs("last backup in the metadata of partition %d", partition)
+                              .isGreaterThanOrEqualTo(backupId));
             });
   }
 
