@@ -14,7 +14,8 @@ public interface UserIdMigrationScriptFactory {
    * through the user search before the migration. Earlier migrations renamed roles in place and can
    * have left several roles for one ID. Two roles for one user break role updates, so the script
    * keeps one role with the highest permission of all user roles of both IDs. A group can have the
-   * same ID as a user, so group roles stay as they are.
+   * same ID as a user, so group roles stay as they are. A role without a type counts as a user
+   * role, because the migration covered it before the type check.
    */
   static String createMigrateCollectionRolesScript() {
     return "def roles = ctx._source.data.roles;"
@@ -22,7 +23,7 @@ public interface UserIdMigrationScriptFactory {
         + "def kept = null;"
         + "def best = null;"
         + "for (def role : roles) {"
-        + "  if (role.identity.type == 'user'"
+        + "  if ((role.identity.type == 'user' || role.identity.type == null)"
         + "      && (role.identity.id == params.oldId || role.identity.id == params.newId)) {"
         + "    if (kept == null) { kept = role; }"
         + "    if (best == null"
@@ -35,8 +36,10 @@ public interface UserIdMigrationScriptFactory {
         + "  def keep = kept;"
         + "  keep.identity.id = params.newId;"
         + "  keep.id = 'USER:' + params.newId;"
+        + "  keep.identity.type = 'user';"
         + "  keep.role = best;"
-        + "  roles.removeIf(role -> role !== keep && role.identity.type == 'user'"
+        + "  roles.removeIf(role -> role !== keep"
+        + "      && (role.identity.type == 'user' || role.identity.type == null)"
         + "      && (role.identity.id == params.oldId || role.identity.id == params.newId));"
         + "}";
   }

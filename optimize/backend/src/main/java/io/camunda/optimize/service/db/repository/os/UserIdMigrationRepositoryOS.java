@@ -15,7 +15,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
@@ -126,7 +128,9 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
   private static Query userRoleQuery(final String userId) {
     return and(
         term("data.roles.identity.id", userId),
-        term("data.roles.identity.type", IdentityType.USER.getId()));
+        or(
+            term("data.roles.identity.type", IdentityType.USER.getId()),
+            not(exists("data.roles.identity.type"))));
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {
