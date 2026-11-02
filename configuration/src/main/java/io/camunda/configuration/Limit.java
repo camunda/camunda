@@ -114,12 +114,12 @@ public class Limit {
   private String algorithm = DEFAULT_ALGORITHM;
 
   // Algorithm-specific configurations
-  @NestedConfigurationProperty private final Aimd aimd = new Aimd();
-  @NestedConfigurationProperty private final Fixed fixed = new Fixed();
-  @NestedConfigurationProperty private final Vegas vegas = new Vegas();
-  @NestedConfigurationProperty private final Gradient gradient = new Gradient();
-  @NestedConfigurationProperty private final Gradient2 gradient2 = new Gradient2();
-  @NestedConfigurationProperty private final LegacyVegas legacyVegas = new LegacyVegas();
+  @NestedConfigurationProperty private Aimd aimd = new Aimd();
+  @NestedConfigurationProperty private Fixed fixed = new Fixed();
+  @NestedConfigurationProperty private Vegas vegas = new Vegas();
+  @NestedConfigurationProperty private Gradient gradient = new Gradient();
+  @NestedConfigurationProperty private Gradient2 gradient2 = new Gradient2();
+  @NestedConfigurationProperty private LegacyVegas legacyVegas = new LegacyVegas();
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -164,24 +164,48 @@ public class Limit {
     return aimd;
   }
 
+  public void setAimd(final Aimd aimd) {
+    this.aimd = aimd;
+  }
+
   public Fixed getFixed() {
     return fixed;
+  }
+
+  public void setFixed(final Fixed fixed) {
+    this.fixed = fixed;
   }
 
   public Vegas getVegas() {
     return vegas;
   }
 
+  public void setVegas(final Vegas vegas) {
+    this.vegas = vegas;
+  }
+
   public Gradient getGradient() {
     return gradient;
+  }
+
+  public void setGradient(final Gradient gradient) {
+    this.gradient = gradient;
   }
 
   public Gradient2 getGradient2() {
     return gradient2;
   }
 
+  public void setGradient2(final Gradient2 gradient2) {
+    this.gradient2 = gradient2;
+  }
+
   public LegacyVegas getLegacyVegas() {
     return legacyVegas;
+  }
+
+  public void setLegacyVegas(final LegacyVegas legacyVegas) {
+    this.legacyVegas = legacyVegas;
   }
 
   // Legacy property getters for backward compatibility validation

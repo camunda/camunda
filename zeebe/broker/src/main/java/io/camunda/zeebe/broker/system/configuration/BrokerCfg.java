@@ -154,7 +154,7 @@ public class BrokerCfg {
     return processingCfg;
   }
 
-  public void setProcessingCfg(final ProcessingCfg cfg) {
+  public void setProcessing(final ProcessingCfg cfg) {
     processingCfg = cfg;
   }
 
