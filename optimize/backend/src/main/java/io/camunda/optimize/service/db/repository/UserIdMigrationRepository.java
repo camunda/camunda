@@ -25,4 +25,22 @@ public interface UserIdMigrationRepository {
    * collection role membership, owner, and lastModifier fields.
    */
   void migrateUserId(String oldUserId, String newUserId);
+
+  /**
+   * Masks the local part of an email, so log lines and exception messages do not carry it. A user
+   * ID can be an email address, for example after a username claim change.
+   */
+  static String maskForLog(final String userId) {
+    if (userId == null) {
+      return null;
+    }
+    final int at = userId.lastIndexOf('@');
+    if (at < 0) {
+      return userId;
+    }
+    final int localStart = userId.lastIndexOf('|', at) + 1;
+    final String visible =
+        at > localStart ? userId.substring(0, localStart + 1) : userId.substring(0, localStart);
+    return visible + "***" + userId.substring(at);
+  }
 }

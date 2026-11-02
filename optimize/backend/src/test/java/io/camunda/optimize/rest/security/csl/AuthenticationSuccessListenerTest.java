@@ -19,6 +19,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.security.UserIdMigrationService;
@@ -56,6 +57,8 @@ class AuthenticationSuccessListenerTest {
   private static final String CURRENT_USER_ID = "auth0|new-identity";
   private static final String PREVIOUS_USER_ID = "auth0|old-identity";
   private static final String EMAIL = "user@example.com";
+  private static final String ORIGINAL_ID_TRIGGER = "originalUserId claim";
+  private static final String EMAIL_TRIGGER = "email claim";
 
   @Mock private UserIdMigrationService userIdMigrationService;
   @Mock private CamundaAuthenticationProvider camundaAuthenticationProvider;
@@ -75,7 +78,8 @@ class AuthenticationSuccessListenerTest {
   void shouldMigrateOnFirstLoginAfterIdentityChange() {
     listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID));
 
-    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+    verify(userIdMigrationService)
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, ORIGINAL_ID_TRIGGER);
   }
 
   @Test
@@ -86,7 +90,7 @@ class AuthenticationSuccessListenerTest {
     listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID));
 
     verify(userIdMigrationService, times(2))
-        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, ORIGINAL_ID_TRIGGER);
   }
 
   @ParameterizedTest
@@ -126,7 +130,7 @@ class AuthenticationSuccessListenerTest {
   void shouldNotPropagateWhenTheMigrationItselfThrows() {
     doThrow(new IllegalStateException("boom"))
         .when(userIdMigrationService)
-        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, ORIGINAL_ID_TRIGGER);
 
     assertThatNoException()
         .isThrownBy(
@@ -141,7 +145,7 @@ class AuthenticationSuccessListenerTest {
     listener.onInteractiveAuthenticationSuccess(
         new InteractiveAuthenticationSuccessEvent(authentication, getClass()));
 
-    verify(userIdMigrationService, never()).migrateUserIdIfNeeded(anyString(), any());
+    verify(userIdMigrationService, never()).migrateUserIdIfNeeded(anyString(), any(), any());
   }
 
   @Test
@@ -150,7 +154,7 @@ class AuthenticationSuccessListenerTest {
     listener.onInteractiveAuthenticationSuccess(loginEventWith(null, EMAIL));
 
     // then
-    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL);
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL, EMAIL_TRIGGER);
   }
 
   @Test
@@ -171,8 +175,9 @@ class AuthenticationSuccessListenerTest {
     listener.onInteractiveAuthenticationSuccess(loginEventWith(PREVIOUS_USER_ID, EMAIL));
 
     // then
-    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID);
-    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL);
+    verify(userIdMigrationService)
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, ORIGINAL_ID_TRIGGER);
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL, EMAIL_TRIGGER);
   }
 
   @Test
@@ -187,6 +192,50 @@ class AuthenticationSuccessListenerTest {
     verifyNoInteractions(userIdMigrationService);
   }
 
+  @Test
+  void shouldStillMigrateThePreviousIdentityWhenTheMetaClaimIsMalformed() {
+    // given
+    final Map<String, Object> claims = new HashMap<>();
+    claims.put(ORIGINAL_USER_ID_CLAIM, PREVIOUS_USER_ID);
+    claims.put(CAMUNDA_META_CLAIM, "not-a-map");
+
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWithClaims(claims));
+
+    // then
+    verify(userIdMigrationService)
+        .migrateUserIdIfNeeded(CURRENT_USER_ID, PREVIOUS_USER_ID, ORIGINAL_ID_TRIGGER);
+    verifyNoMoreInteractions(userIdMigrationService);
+  }
+
+  @Test
+  void shouldNotMigrateTheEmailWhenTheTokenMarksItUnverified() {
+    // given
+    final Map<String, Object> claims = new HashMap<>();
+    claims.put(CAMUNDA_META_CLAIM, Map.of(CAMUNDA_META_EMAIL, EMAIL));
+    claims.put("email_verified", false);
+
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWithClaims(claims));
+
+    // then
+    verifyNoInteractions(userIdMigrationService);
+  }
+
+  @Test
+  void shouldMigrateTheEmailWhenTheTokenMarksItVerified() {
+    // given
+    final Map<String, Object> claims = new HashMap<>();
+    claims.put(CAMUNDA_META_CLAIM, Map.of(CAMUNDA_META_EMAIL, EMAIL));
+    claims.put("email_verified", true);
+
+    // when
+    listener.onInteractiveAuthenticationSuccess(loginEventWithClaims(claims));
+
+    // then
+    verify(userIdMigrationService).migrateUserIdIfNeeded(CURRENT_USER_ID, EMAIL, EMAIL_TRIGGER);
+  }
+
   private static InteractiveAuthenticationSuccessEvent loginEventWith(final String originalUserId) {
     return loginEventWith(originalUserId, null);
   }
@@ -194,13 +243,19 @@ class AuthenticationSuccessListenerTest {
   private static InteractiveAuthenticationSuccessEvent loginEventWith(
       final String originalUserId, final String email) {
     final Map<String, Object> claims = new HashMap<>();
-    claims.put("sub", CURRENT_USER_ID);
     if (originalUserId != null) {
       claims.put(ORIGINAL_USER_ID_CLAIM, originalUserId);
     }
     if (email != null) {
       claims.put(CAMUNDA_META_CLAIM, Map.of(CAMUNDA_META_EMAIL, email));
     }
+    return loginEventWithClaims(claims);
+  }
+
+  private static InteractiveAuthenticationSuccessEvent loginEventWithClaims(
+      final Map<String, Object> customClaims) {
+    final Map<String, Object> claims = new HashMap<>(customClaims);
+    claims.put("sub", CURRENT_USER_ID);
     final OidcIdToken idToken =
         new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(300), claims);
     final OAuth2AuthenticationToken authentication =
