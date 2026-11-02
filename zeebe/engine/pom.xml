@@ -131,16 +131,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
-      <artifactId>dmn-engine</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
