@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -166,6 +168,29 @@ public final class MessageCorrelationClient {
                     .authorizations(authorizations)
                     .requestId(1L)
                     .requestStreamId(1));
+    return expectation.apply(
+        new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
+  }
+
+  /**
+   * Correlates the message, allowing customization of the written command's metadata (e.g. the
+   * operation reference).
+   */
+  public Record<MessageCorrelationRecordValue> correlate(
+      final UnaryOperator<FluentLogWriter> builder) {
+
+    if (partitionId == NOT_SET) {
+      partitionId =
+          SubscriptionUtil.getSubscriptionPartitionId(
+              messageCorrelationRecord.getCorrelationKeyBuffer(), partitionCount);
+    }
+
+    final var position =
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                builder.apply(
+                    r.intent(MessageCorrelationIntent.CORRELATE).event(messageCorrelationRecord)));
     return expectation.apply(
         new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
   }

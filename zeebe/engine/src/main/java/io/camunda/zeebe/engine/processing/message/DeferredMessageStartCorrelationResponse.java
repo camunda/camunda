@@ -105,7 +105,10 @@ final class DeferredMessageStartCorrelationResponse {
         .setRequestStreamId(requestData.getRequestStreamId());
 
     stateWriter.appendFollowUpEvent(
-        messageKey, MessageCorrelationIntent.CORRELATED, correlationRecord);
+        messageKey,
+        MessageCorrelationIntent.CORRELATED,
+        correlationRecord,
+        m -> m.operationReference(requestData.getOperationReference()));
     responseWriter.writeAcceptedResponse(
         messageKey,
         MessageCorrelationIntent.CORRELATED,
@@ -155,7 +158,10 @@ final class DeferredMessageStartCorrelationResponse {
         .setRequestStreamId(requestData.getRequestStreamId());
 
     stateWriter.appendFollowUpEvent(
-        messageKey, MessageCorrelationIntent.NOT_CORRELATED, correlationRecord);
+        messageKey,
+        MessageCorrelationIntent.NOT_CORRELATED,
+        correlationRecord,
+        m -> m.operationReference(requestData.getOperationReference()));
     responseWriter.writeRejectedResponse(
         messageKey,
         MessageCorrelationIntent.CORRELATE,

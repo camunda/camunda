@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -155,9 +156,9 @@ class CommandDistributionBehaviorTest {
     // then command is sent to all other partitions
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -194,9 +195,9 @@ class CommandDistributionBehaviorTest {
     // then command is sent to partitions 1 and 3
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -244,10 +245,110 @@ class CommandDistributionBehaviorTest {
     // then command is sent to all other partitions
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldDistributeCommandWithOperationReference() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics,
+            clock);
+
+    // given a command carrying an operation reference
+    final var operationReference = 123456789L;
+    final var key = keyGenerator.nextKey();
+    final var command =
+        new MockTypedRecord<>(
+            key,
+            new RecordMetadata()
+                .valueType(valueType)
+                .intent(intent)
+                .authorization(authInfo)
+                .operationReference(operationReference),
+            new DeploymentRecord());
+
+    // when distributing to all partitions
+    behavior.withKey(key).unordered().distribute(command);
+
+    // then the STARTED record carries the operation reference
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .filteredOn(r -> r.getIntent() == CommandDistributionIntent.STARTED)
+        .hasSize(1)
+        .allSatisfy(
+            r ->
+                Assertions.assertThat(r.getValue().getOperationReference())
+                    .isEqualTo(operationReference));
+
+    // then the command is sent to all other partitions with the operation reference
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(
+            eq(2),
+            eq(valueType),
+            eq(intent),
+            eq(key),
+            any(),
+            eq(authInfo),
+            eq(operationReference));
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(
+            eq(3),
+            eq(valueType),
+            eq(intent),
+            eq(key),
+            any(),
+            eq(authInfo),
+            eq(operationReference));
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldRedistributeCommandWithPersistedOperationReference() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics,
+            clock);
+
+    // given a pending distribution of a command that carried an operation reference
+    final var operationReference = 123456789L;
+    final var key = keyGenerator.nextKey();
+    final var distributionRecord =
+        new CommandDistributionRecord()
+            .setPartitionId(2)
+            .setValueType(valueType)
+            .setIntent(intent)
+            .setCommandValue(new DeploymentRecord())
+            .setOperationReference(operationReference);
+
+    // when the distribution is retried
+    behavior.onScheduledRetry(key, distributionRecord);
+
+    // then the command is resent with the persisted operation reference
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(
+            eq(2),
+            eq(valueType),
+            eq(intent),
+            eq(key),
+            any(),
+            any(),
+            eq(operationReference));
   }
 
   @Test
@@ -281,9 +382,9 @@ class CommandDistributionBehaviorTest {
     // then command is sent immediately to partitions 2 and 3
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo), anyLong());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -327,9 +428,9 @@ class CommandDistributionBehaviorTest {
     // then first distribution is sent out immediately, second distribution isn't
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo));
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo), anyLong());
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo));
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo), anyLong());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 

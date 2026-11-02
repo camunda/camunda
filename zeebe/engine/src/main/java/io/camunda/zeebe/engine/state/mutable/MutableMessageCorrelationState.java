@@ -15,5 +15,6 @@ public interface MutableMessageCorrelationState
 
   void removeMessageCorrelation(long messageKey);
 
-  void putMessageCorrelation(long messageKey, long requestId, int requestStreamId);
+  void putMessageCorrelation(
+      long messageKey, long requestId, int requestStreamId, long operationReference);
 }

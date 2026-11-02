@@ -2928,11 +2928,13 @@ final class JsonSerializableToJsonTest {
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
                   .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
-                  .setStartTime(123L);
+                  .setStartTime(123L)
+                  .setOperationReference(456L);
             },
         """
                 {
                   "startTime": 123,
+                  "operationReference": 456,
                   "partitionId": 1,
                   "queueId": "totally-random-queue-id",
                   "valueType": "DEPLOYMENT",
@@ -2976,6 +2978,7 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "startTime": -1,
+                  "operationReference": -1,
                   "partitionId": 1,
                   "queueId": null,
                   "valueType": "NULL_VAL",
@@ -3590,7 +3593,8 @@ final class JsonSerializableToJsonTest {
                   "requestStreamId": 4,
                   "processDefinitionKey": 5,
                   "businessId": "biz-42",
-                  "storageOrdinal": 6
+                  "storageOrdinal": 6,
+                  "operationReference": -1
                 }
                 """
       },
@@ -3848,7 +3852,8 @@ final class JsonSerializableToJsonTest {
                   "requestStreamId": -1,
                   "processDefinitionKey": -1,
                   "businessId": "",
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "operationReference": -1
                 }
                 """
       },

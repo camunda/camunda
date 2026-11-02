@@ -55,6 +55,16 @@ public interface MessageCorrelationRecordValue
   int getRequestStreamId();
 
   /**
+   * @return the operation reference of the initial correlate command, or {@code -1} when the
+   *     command carried no operation reference
+   * @since 8.10
+   */
+  @Value.Default
+  default long getOperationReference() {
+    return -1L;
+  }
+
+  /**
    * The optional business id used to additionally constrain message correlation. When non-empty, a
    * correlation only succeeds against subscriptions whose stored business id matches. When empty,
    * business id is not used as a constraint and the message correlates regardless of the

@@ -408,6 +408,7 @@ public final class ProtocolFactory {
               .withValueType(valueType)
               .withIntent(random.nextObject(typeInfo.getIntentClass()))
               .withCommandValue(generateObject(typeInfo.getValueClass()))
+              .withOperationReference(random.nextLong())
               .build();
         });
 

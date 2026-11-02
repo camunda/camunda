@@ -25,6 +25,9 @@ class MessageCorrelationCorrelatingApplier
   @Override
   public void applyState(final long key, final MessageCorrelationRecord value) {
     messageCorrelationState.putMessageCorrelation(
-        value.getMessageKey(), value.getRequestId(), value.getRequestStreamId());
+        value.getMessageKey(),
+        value.getRequestId(),
+        value.getRequestStreamId(),
+        value.getOperationReference());
   }
 }

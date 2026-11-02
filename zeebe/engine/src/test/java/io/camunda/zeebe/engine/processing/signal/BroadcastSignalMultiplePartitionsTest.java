@@ -104,6 +104,40 @@ public class BroadcastSignalMultiplePartitionsTest {
   }
 
   @Test
+  public void shouldPropagateOperationReferenceToReceivingPartitions() {
+    // given
+    final var operationReference = 123456789L;
+    final String signalName = newRandomSignal();
+    final SignalClient signalClient = ENGINE.signal().withSignalName(signalName);
+
+    // when broadcasting a signal with an operation reference
+    final long signalKey =
+        signalClient
+            .broadcast(
+                r ->
+                    r.operationReference(operationReference)
+                        .usernameAuthorizations(DEFAULT_USER.getUsername()))
+            .getKey();
+
+    // then the BROADCASTED events on all partitions carry the operation reference
+    final var broadcastedRecords =
+        RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
+            .withRecordKey(signalKey)
+            .limit(PARTITION_COUNT)
+            .asList();
+
+    assertThat(broadcastedRecords)
+        .hasSize(PARTITION_COUNT)
+        .allSatisfy(
+            r ->
+                assertThat(r.getOperationReference())
+                    .describedAs(
+                        "Expected BROADCASTED record on partition %d to carry the operationReference",
+                        r.getPartitionId())
+                    .isEqualTo(operationReference));
+  }
+
+  @Test
   public void shouldTriggerMultipleSignalCatchEvent() {
     // given
     final String signalName = newRandomSignal();

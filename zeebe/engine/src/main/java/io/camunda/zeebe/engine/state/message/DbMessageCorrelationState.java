@@ -39,9 +39,15 @@ public class DbMessageCorrelationState implements MutableMessageCorrelationState
 
   @Override
   public void putMessageCorrelation(
-      final long messageKey, final long requestId, final int requestStreamId) {
+      final long messageKey,
+      final long requestId,
+      final int requestStreamId,
+      final long operationReference) {
     this.messageKey.wrapLong(messageKey);
-    requestData.setRequestIdProp(requestId).setRequestStreamIdProp(requestStreamId);
+    requestData
+        .setRequestIdProp(requestId)
+        .setRequestStreamIdProp(requestStreamId)
+        .setOperationReferenceProp(operationReference);
     messageCorrelationColumnFamily.insert(this.messageKey, requestData);
   }
 
