@@ -110,7 +110,7 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
-    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+    when(mockFlowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(123L, Set.of(456L)))
         .thenReturn(Set.of(456L));
 
     // simulate existing variable
@@ -140,7 +140,7 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
-    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+    when(mockFlowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(123L, Set.of(456L)))
         .thenReturn(Set.of(456L));
 
     // no existing variable
@@ -166,7 +166,7 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
-    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+    when(mockFlowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(123L, Set.of(456L)))
         .thenReturn(Set.of(456L));
 
     // no existing variable
@@ -232,7 +232,7 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableScopeId("456");
     request.setVariableName("name");
     request.setVariableValue("val");
-    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+    when(mockFlowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(123L, Set.of(456L)))
         .thenReturn(Set.of());
 
     // when - then
@@ -261,7 +261,7 @@ public class CreateRequestOperationValidatorTest {
     request.setVariableScopeId("0456");
     request.setVariableName("name");
     request.setVariableValue("val");
-    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysOfProcessInstance(123L, Set.of(456L)))
+    when(mockFlowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(123L, Set.of(456L)))
         .thenReturn(Set.of(456L));
 
     // when - then

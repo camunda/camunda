@@ -45,9 +45,8 @@ public interface FlowNodeInstanceReader {
   List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey);
 
   /**
-   * Returns those of the given flow node instance keys that belong to the process instance, in any
-   * state and including archived flow node instances.
+   * Returns those of the candidate flow node instance keys that belong to the process instance, in
+   * any state and including archived flow node instances.
    */
-  Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
-      Long processInstanceKey, Set<Long> flowNodeInstanceKeys);
+  Set<Long> findFlowNodeInstanceKeysOwnedBy(Long processInstanceKey, Set<Long> candidateKeys);
 }

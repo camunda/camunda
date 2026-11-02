@@ -276,14 +276,14 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   @Override
-  public Set<Long> getFlowNodeInstanceKeysOfProcessInstance(
-      final Long processInstanceKey, final Set<Long> flowNodeInstanceKeys) {
+  public Set<Long> findFlowNodeInstanceKeysOwnedBy(
+      final Long processInstanceKey, final Set<Long> candidateKeys) {
     final var keysAggName = "flowNodeInstanceKeys";
     final var query =
         ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
                 termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-                termsQuery(FlowNodeInstanceTemplate.KEY, flowNodeInstanceKeys)));
+                termsQuery(FlowNodeInstanceTemplate.KEY, candidateKeys)));
 
     final var searchRequest =
         new SearchRequest.Builder()
@@ -294,9 +294,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .aggregations(
                 keysAggName,
                 new Aggregation.Builder()
-                    .terms(
-                        t ->
-                            t.field(FlowNodeInstanceTemplate.KEY).size(flowNodeInstanceKeys.size()))
+                    .terms(t -> t.field(FlowNodeInstanceTemplate.KEY).size(candidateKeys.size()))
                     .build())
             .size(0)
             .build();
