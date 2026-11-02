@@ -134,6 +134,9 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
+
       - name: Checkout main for workflow tooling
         uses: actions/checkout@v7
         with:
@@ -490,6 +493,17 @@ jobs:
             ${{ steps.ws.outputs.suite }}/test-results/
           retention-days: 14
           if-no-files-found: ignore
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: verify/${{ matrix.cell }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   finalize:
     name: Report verification outcome

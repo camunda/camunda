@@ -230,6 +230,11 @@ jobs:
         id: job_start
         run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
 
+      # Deliberately not the first step: "Record job start time" above must stay
+      # first so the agent's deadline is anchored to the job start.
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
+
       - name: Resolve target branch
         id: target
         env:
@@ -1269,3 +1274,13 @@ jobs:
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
             -H 'Content-Type: application/json; charset=utf-8' \
             -d "$payload" | jq '.' || true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -106,6 +106,9 @@ jobs:
       C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: >-
         camunda8-run-${{ inputs.camundaAppsRelease }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
+
       - name: ℹ️ Print workflow inputs ℹ️
         env:
           WORKFLOW_INPUTS: ${{ toJson(inputs) }}
@@ -253,6 +256,17 @@ jobs:
           version: ${{ inputs.camundaAppsRelease }}
           artifact_file: ./c8run/${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
           artifact_subpath: c8run
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: release/${{ matrix.os.id }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   post:
     needs: release
