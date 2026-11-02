@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -104,10 +106,8 @@ final class AzureBackupStoreSaveTest {
     store.save(backup).join();
 
     // then
-    verify(fileSetManager)
-        .save(backup.id(), AzureBackupStore.SNAPSHOT_FILESET_NAME, backup.snapshot());
-    verify(fileSetManager)
-        .save(backup.id(), AzureBackupStore.SEGMENTS_FILESET_NAME, backup.segments());
+    verify(fileSetManager).save(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
+    verify(fileSetManager).save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
     verify(manifestManager).completeManifest(persistedManifest);
   }
 

@@ -8,6 +8,9 @@
 package io.camunda.zeebe.backup.gcs;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -100,7 +103,6 @@ public final class ManifestManager {
    */
   private static final String MANIFEST_PATH_FORMAT = MANIFESTS_ROOT_PATH_FORMAT + "%s/%s/%s/%s";
 
-  private static final String MANIFEST_BLOB_NAME = "manifest.json";
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
@@ -226,7 +228,7 @@ public final class ManifestManager {
               continue;
             }
             final var id =
-                ManifestMetadata.parseIdentifier(blob.getName(), basePath, MANIFEST_BLOB_NAME);
+                ManifestMetadata.parseIdentifier(blob.getName(), basePath, MANIFEST_OBJECT_NAME);
             if (id.isEmpty()) {
               LOG.warn(
                   "Tried interpreting blob {} as a backup manifest but failed", blob.getName());
@@ -251,7 +253,7 @@ public final class ManifestManager {
    * #getManifest} does.
    */
   private CompletableFuture<Optional<BackupStatus>> readStatus(final ManifestBlob manifestBlob) {
-    return ManifestMetadata.toBackupStatus(manifestBlob.blob(), basePath, MANIFEST_BLOB_NAME)
+    return ManifestMetadata.toBackupStatus(manifestBlob.blob(), basePath, MANIFEST_OBJECT_NAME)
         .map(status -> CompletableFuture.completedFuture(Optional.of(status)))
         // Fallback: download the manifest for blobs without metadata
         .orElseGet(() -> downloadManifestStatus(manifestBlob.blob()));
@@ -386,18 +388,14 @@ public final class ManifestManager {
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
-    final var blobName =
-        MANIFEST_PATH_FORMAT.formatted(
-            basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), MANIFEST_BLOB_NAME);
-    return BlobInfo.newBuilder(bucketInfo, blobName).setContentType("application/json").build();
+    return BlobInfo.newBuilder(bucketInfo, manifestPath(basePath, id))
+        .setContentType("application/json")
+        .build();
   }
 
   private BlobInfo manifestBlobInfoWithMetadata(
       final BackupIdentifier id, final Manifest manifest) {
-    final var blobName =
-        MANIFEST_PATH_FORMAT.formatted(
-            basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), MANIFEST_BLOB_NAME);
-    return BlobInfo.newBuilder(bucketInfo, blobName)
+    return BlobInfo.newBuilder(bucketInfo, manifestPath(basePath, id))
         .setContentType("application/json")
         .setMetadata(ManifestMetadata.fromManifest(manifest))
         .build();
@@ -409,8 +407,7 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return MANIFESTS_ROOT_PATH_FORMAT.formatted(basePath)
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(basePath, wildcard);
   }
 
   private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {
@@ -421,7 +418,7 @@ public final class ManifestManager {
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                     wildcard.checkpointPattern().asRegex(),
                     BackupIdentifierWildcard.memberIdRegex(wildcard),
-                    Pattern.quote(MANIFEST_BLOB_NAME)))
+                    Pattern.quote(MANIFEST_OBJECT_NAME)))
             .asMatchPredicate();
     return (blob -> pattern.test(blob.getName()));
   }

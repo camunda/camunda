@@ -18,6 +18,7 @@ import com.google.cloud.storage.StorageBatch;
 import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
@@ -39,23 +40,7 @@ import java.util.stream.Collectors;
 
 final class FileSetManager {
 
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   static final int MAX_DELETE_BATCH_SIZE = 100;
-
-  /**
-   * The path format consists of the following elements:
-   *
-   * <ul>
-   *   <li>{@code basePath}
-   *   <li>{@code "contents"}
-   *   <li>{@code partitionId}
-   *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
-   *   <li>{@code fileSetName}
-   * </ul>
-   */
-  private static final String PATH_FORMAT = "%scontents/%s/%s/%s/%s/";
 
   private final Storage client;
   private final BucketInfo bucketInfo;
@@ -192,8 +177,7 @@ final class FileSetManager {
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return PATH_FORMAT.formatted(
-        basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), fileSetName);
+    return BackupStorePaths.fileSetPath(basePath, id, fileSetName);
   }
 
   private BlobInfo blobInfo(

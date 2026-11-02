@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -55,7 +57,7 @@ final class FileSetManagerTest {
         new FileSetManager(
             storage,
             BucketInfo.of("bucket"),
-            "basePath",
+            "basePath/",
             Executors.newVirtualThreadPerTaskExecutor(),
             50,
             1024 * 1024);
@@ -71,7 +73,7 @@ final class FileSetManagerTest {
         new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
 
     // when
-    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
+    manager.save(backupIdentifier, SNAPSHOT_FILESET_NAME, namedFileSet);
 
     // then - snapshots are uploaded in parallel using the executor
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
@@ -89,7 +91,7 @@ final class FileSetManagerTest {
     Files.write(file2, fileContent);
 
     // when
-    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
+    manager.save(backupIdentifier, SNAPSHOT_FILESET_NAME, namedFileSet);
 
     // then - the file size is used as the upload buffer size
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), eq(1024), any());
@@ -109,8 +111,7 @@ final class FileSetManagerTest {
 
     // when throw
     Assertions.assertThatThrownBy(
-            () ->
-                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
+            () -> manager.save(backupIdentifier, SNAPSHOT_FILESET_NAME, namedFileSet))
         .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
@@ -125,7 +126,7 @@ final class FileSetManagerTest {
         new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
 
     // when
-    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
+    manager.save(backupIdentifier, SEGMENTS_FILESET_NAME, namedFileSet);
 
     // then - segments are uploaded in parallel using the executor
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
@@ -144,8 +145,7 @@ final class FileSetManagerTest {
 
     // when throw
     Assertions.assertThatThrownBy(
-            () ->
-                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
+            () -> manager.save(backupIdentifier, SEGMENTS_FILESET_NAME, namedFileSet))
         .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.azure;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
 
 import com.azure.core.http.rest.Response;
 import com.azure.core.util.BinaryData;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
@@ -178,7 +180,8 @@ public final class ManifestManager {
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
 
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
+    final BlobClient blobClient =
+        blobContainerClient.getBlobClient(BackupStorePaths.manifestPath(manifestId));
     final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
       upload(blobClient, Manifest.createFailed(manifestId, failureReason));
@@ -219,8 +222,7 @@ public final class ManifestManager {
 
     if (manifest != deletedManifest) {
       try {
-        final BlobClient blobClient =
-            blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+        final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
         blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
@@ -229,14 +231,13 @@ public final class ManifestManager {
   }
 
   public void deleteManifest(final Manifest manifest) {
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
     blobClient.delete();
   }
 
   Manifest getManifest(final BackupIdentifier id) {
     assureContainerCreated();
-    return getManifestWithPath(
-        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.brokerId().id()));
+    return getManifestWithPath(BackupStorePaths.manifestPath(id));
   }
 
   private Manifest getManifestWithPath(final String path) {
@@ -302,14 +303,7 @@ public final class ManifestManager {
   }
 
   public static String manifestPath(final Manifest manifest) {
-    return manifestIdPath(manifest.id());
-  }
-
-  private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
-    return MANIFEST_PATH_FORMAT.formatted(
-        backupIdentifier.partitionId(),
-        backupIdentifier.checkpointId(),
-        backupIdentifier.brokerId().id());
+    return BackupStorePaths.manifestPath(manifest.id());
   }
 
   /** Matches the manifest paths of the wildcard and captures the identifier's path segments. */
@@ -349,7 +343,7 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return "manifests/" + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(wildcard);
   }
 
   void assureContainerCreated() {

@@ -42,6 +42,24 @@ final class S3BackupConfigTest {
   }
 
   @Test
+  void shouldSanitizeBasePath() {
+    // when
+    final var config = new Builder().withBucketName("bucket").withBasePath("/tenant/").build();
+
+    // then
+    assertThat(config.basePath()).hasValue("tenant");
+  }
+
+  @Test
+  void shouldTreatEmptyBasePathAsNone() {
+    // when
+    final var config = new Builder().withBucketName("bucket").withBasePath("").build();
+
+    // then
+    assertThat(config.basePath()).isEmpty();
+  }
+
+  @Test
   void shouldRejectBuildWithoutBucketName() {
     // when - then
     assertThatThrownBy(() -> new Builder().build())
