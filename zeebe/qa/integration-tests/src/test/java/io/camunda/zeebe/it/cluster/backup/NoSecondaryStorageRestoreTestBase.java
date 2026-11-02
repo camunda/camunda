@@ -265,6 +265,40 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRestoreFromTheRangeOfBackupsThatContainsFrom() throws Exception {
+    // given - two ranges of backups, split by deleting the backup between them. Both start
+    // before `from`, but only the second one reaches it
+    final List<Long> createdUntilTo = new ArrayList<>();
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createdUntilTo.addAll(createInstances(client));
+      final long firstBackup = takeAndAwaitBackup();
+      createdUntilTo.addAll(createInstances(client));
+      final long deletedBackup = takeAndAwaitBackup();
+      createdUntilTo.addAll(createInstances(client));
+      final long thirdBackup = takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      createdUntilTo.addAll(createInstances(client));
+      takeAndAwaitBackup();
+      to = currentTime(broker);
+      createInstances(client);
+
+      InProcessRestoreTestUtil.deleteBackupSplittingItsRange(
+          backupActuator, PARTITION_COUNT, firstBackup, deletedBackup, thirdBackup);
+    }
+
+    // when
+    restore(RestoreRequest.timeRange(from, to));
+
+    // then - every partition ends at the backup closest to `to` in the second range, not at the
+    // end of the first one
+    assertOnlyInstancesRestored(createdUntilTo);
+  }
+
+  @Test
   void shouldRestoreFromABackup() throws Exception {
     // given
     final List<Long> backedUp;
