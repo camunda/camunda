@@ -438,6 +438,8 @@ public class OpenSearchClientBuilder {
       final ConfigurationService configurationService,
       final HttpRequestInterceptor... requestInterceptors) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
+    // Disable httpclient5 gzip decoding (5.6+), since the OpenSearch transport already decodes
+    httpAsyncClientBuilder.disableContentCompression();
 
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {
       httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
