@@ -83,7 +83,7 @@ jobs:
     # The same image and user the full component suite runs under, because the
     # tests run in a real browser through vitest's playwright provider.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0
+      image: mcr.microsoft.com/playwright:v1.64.1
       options: --user 1001:1000
     steps:
       - name: Checkout the branch under test
