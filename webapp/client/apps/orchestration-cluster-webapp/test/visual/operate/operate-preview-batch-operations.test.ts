@@ -21,6 +21,7 @@ import {
 	createBatchOperation,
 	createQueryBatchOperationsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
+import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -35,7 +36,6 @@ test.beforeEach(({network}) => {
 		}),
 	);
 });
-import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test('should match the DS batch operations page snapshot with items', async ({
 	network,
