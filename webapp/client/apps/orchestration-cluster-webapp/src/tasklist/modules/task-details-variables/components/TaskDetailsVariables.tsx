@@ -96,6 +96,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 	);
 	const isJsonEditorModalOpen = editingVariable !== undefined;
 	const isCompletionBusy = completionStatus === 'active';
+	const isEditingDisabled = isCompletionBusy || isSuspended;
 
 	const fetchFullVariable = useCallback(
 		async (variableKey: string) => {
@@ -168,7 +169,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 									type="button"
 									size="sm"
 									onClick={() => form.mutators.push?.('newVariables')}
-									disabled={!isEditingAllowed || isCompletionBusy}
+									disabled={!isEditingAllowed || isEditingDisabled}
 									title={isEditingAllowed || isSuspended ? undefined : t('tasklist.variablesAddVariableTooltip')}
 								>
 									<Plus aria-hidden />
@@ -224,7 +225,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 												variables={variables}
 												totalVariables={totalVariables}
 												readOnly={!isEditingAllowed}
-												isDisabled={isCompletionBusy}
+												isDisabled={isEditingDisabled}
 												fetchFullVariable={fetchFullVariable}
 												variablesLoadingFullValue={variablesLoadingFullValue}
 												onMaximizeClick={(fieldName) => setEditingVariable(fieldName)}
@@ -270,7 +271,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 										}`}
 										isOpen={isJsonEditorModalOpen}
 										value={isJsonEditorModalOpen ? ((get(values, editingVariable) as string | undefined) ?? '') : ''}
-										isReadOnly={!isEditingAllowed || isCompletionBusy}
+										isReadOnly={!isEditingAllowed || isEditingDisabled}
 										onClose={() => setEditingVariable(undefined)}
 										onSave={(value) => {
 											if (editingVariable !== undefined) {

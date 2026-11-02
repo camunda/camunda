@@ -58,7 +58,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 		isSuspended: task.isSuspended,
 		onComplete,
 	});
-	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED' && !task.isSuspended;
+	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED';
 
 	if (formSchema !== null) {
 		return (
