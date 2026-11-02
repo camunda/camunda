@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
+import io.camunda.zeebe.gateway.rest.controller.TrailingSlashRejectionFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +62,10 @@ public class ApiFiltersConfiguration {
   private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
 
   private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
+
+  // After the API-disabled filters (order 1), so their 403 wins over this 400 on e.g. /v2/groups/
+  // when the groups API is disabled.
+  private static final int TRAILING_SLASH_REJECTION_FILTER_ORDER = 2;
 
   private static List<PathPattern> patterns(final String... patterns) {
     return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
@@ -159,6 +164,21 @@ public class ApiFiltersConfiguration {
             patterns("/v2/tenants/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/tenants/**")));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
+    return registration;
+  }
+
+  /**
+   * Rejects {@code /v2/...} requests with a trailing slash (an empty trailing path parameter) with
+   * a 400, instead of letting them fall through to the static-resource handler's 404.
+   */
+  @ConditionalOnRestGatewayEnabled
+  @Bean
+  public FilterRegistrationBean<TrailingSlashRejectionFilter> trailingSlashRejectionFilter(
+      final ObjectMapper objectMapper) {
+    final FilterRegistrationBean<TrailingSlashRejectionFilter> registration =
+        new FilterRegistrationBean<>(new TrailingSlashRejectionFilter(objectMapper));
+    registration.addUrlPatterns("/v2/*");
+    registration.setOrder(TRAILING_SLASH_REJECTION_FILTER_ORDER);
     return registration;
   }
 

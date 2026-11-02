@@ -446,6 +446,36 @@ public class GroupControllerTest {
     }
 
     @Test
+    void shouldFailOnDeleteGroupWithEmptyGroupId() {
+      // given
+      final var uri = GROUP_BASE_URL + "/";
+
+      // when
+      webClient
+          .delete()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isBadRequest()
+          .expectBody()
+          .json(
+              """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "Missing path parameter: request path '%s' must not end with '/'",
+              "instance": "%s"
+            }"""
+                  .formatted(uri, uri),
+              JsonCompareMode.STRICT);
+
+      // then
+      verifyNoInteractions(groupServices);
+    }
+
+    @Test
     void shouldFailOnCreateGroupWithTooLongGroupId() {
       // given
       final var groupId = "x".repeat(257);
