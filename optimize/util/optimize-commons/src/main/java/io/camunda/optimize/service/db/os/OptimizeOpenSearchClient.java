@@ -1018,11 +1018,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             .conflicts(Conflicts.Proceed)
             .script(updateScript)
             .refresh(Refresh.True);
+    // The query can hold personal data such as a user ID, so only DEBUG logs it.
     final Function<Exception, String> errorMessage =
-        e ->
-            format(
-                "Failed to create updateByQuery task for [%s] with query [%s]!",
-                updateItemIdentifier, filterQuery);
+        e -> {
+          LOG.debug(
+              "Failed updateByQuery task for [{}] had query [{}]",
+              updateItemIdentifier,
+              filterQuery);
+          return format("Failed to create updateByQuery task for [%s]!", updateItemIdentifier);
+        };
 
     final String taskId =
         safe(
