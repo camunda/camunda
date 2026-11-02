@@ -3,6 +3,7 @@ import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.protobuf-conventions")
   id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 // Point to the proto files in resources
@@ -36,3 +37,13 @@ dependencies {
 }
 
 description = "Zeebe Dynamic Cluster Configuration"
+
+mutationTesting {
+  defaultTargetClasses.add("io.camunda.zeebe.dynamic.config.*")
+  excludedClasses.add("io.camunda.zeebe.dynamic.config.impl.protocol.*")
+  crossModuleSourceDirs.from(layout.projectDirectory.dir("../api/src/main/java"))
+}
+
+// The tests of this module cover the api classes better than the api tests do, so PIT mutates them
+// here too (-Ppit.crossModule=false turns this off).
+dependencies { pitMutableCode(project(":zeebe-cluster-config-api")) }
