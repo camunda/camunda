@@ -13,8 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.given;
 
 import io.camunda.optimize.AbstractCCSMIT;
+import io.camunda.optimize.dto.optimize.IdentityDto;
+import io.camunda.optimize.dto.optimize.IdentityType;
+import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.reader.CollectionReader;
@@ -22,6 +26,7 @@ import io.camunda.optimize.service.db.reader.EntitiesReader;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -116,6 +121,43 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
         .extracting(CollectionEntity::getId)
         .containsExactly(reportId);
     assertThat(entitiesReader.getAllPrivateEntitiesForOwnerId(OLD_USER_ID)).isEmpty();
+  }
+
+  @Test
+  void shouldMergeRolesWhenTheCollectionAlreadyHasARoleForTheNewUserId() {
+    // given - a collection owned by the old ID that also has a viewer role for the new ID
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                OLD_USER_ID, new PartialCollectionDefinitionRequestDto("Merge Roles Test"))
+            .getId();
+    collectionWriter.addRoleToCollection(
+        collectionId,
+        List.of(
+            new CollectionRoleRequestDto(
+                new IdentityDto(NEW_USER_ID, IdentityType.USER), RoleType.VIEWER)),
+        OLD_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then - one role for the new ID that keeps the higher permission of the two
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .singleElement()
+        .satisfies(
+            role -> {
+              assertThat(role.getId()).isEqualTo("USER:" + NEW_USER_ID);
+              assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
+              assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
+            });
   }
 
   /**
