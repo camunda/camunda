@@ -32,6 +32,10 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   public void handleWithException(final OperationEntity operation) throws Exception {
     final var scopeKey = operation.getScopeKey();
     final var processInstanceKey = operation.getProcessInstanceKey();
+    if (scopeKey == null) {
+      failOperation(operation, "The scope of the operation is not a number.");
+      return;
+    }
     if (!scopeKey.equals(processInstanceKey)
         && !flowNodeInstanceReader
             .findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(scopeKey))
