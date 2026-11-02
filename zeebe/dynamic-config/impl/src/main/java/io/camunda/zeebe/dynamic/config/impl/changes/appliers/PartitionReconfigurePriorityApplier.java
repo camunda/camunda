@@ -48,6 +48,13 @@ public final class PartitionReconfigurePriorityApplier
   public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
       final GlobalConfiguration currentGlobalConfiguration,
       final PartitionGroupConfiguration currentPartitionGroupConfiguration) {
+    if (newPriority < 1) {
+      return Either.left(
+          new IllegalArgumentException(
+              "Expected to change priority of partition %d to a positive value, but got %d"
+                  .formatted(partitionId, newPriority)));
+    }
+
     final boolean localMemberIsActiveInCluster =
         currentGlobalConfiguration.hasMember(localMemberId)
             && currentGlobalConfiguration.getMember(localMemberId).state()
