@@ -10,6 +10,7 @@ import {Download, LocateFixed, Map, Maximize, Minimize, Minus, Plus} from '@camu
 import {IconButton} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
+import {downloadXml} from '../downloadXml';
 
 type Props = {
 	handleZoomReset: () => void;
@@ -36,19 +37,8 @@ function DiagramControls({
 }: Props) {
 	const {t} = useTranslation();
 	const handleDownload = () => {
-		if (!download) {
-			return;
-		}
-		const url = URL.createObjectURL(new Blob([download.xml], {type: 'application/xml'}));
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = download.filename;
-		document.body.appendChild(link);
-		try {
-			link.click();
-		} finally {
-			link.remove();
-			setTimeout(() => URL.revokeObjectURL(url), 0);
+		if (download) {
+			downloadXml(download);
 		}
 	};
 
