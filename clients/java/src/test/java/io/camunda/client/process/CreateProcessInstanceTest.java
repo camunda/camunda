@@ -68,6 +68,25 @@ public final class CreateProcessInstanceTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(123, "testProcess", 12, 32);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldCreateProcessInstanceByBpmnProcessId() {
     // when
     client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion().send().join();

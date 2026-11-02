@@ -50,7 +50,8 @@ public class AdHocSubProcessActivityServicesTest {
       new AdHocSubProcessActivateActivitiesRequest(
           AD_HOC_SUB_PROCESS_INSTANCE_KEY,
           List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of())),
-          false);
+          false,
+          null);
   private static final BrokerResponse<AdHocSubProcessInstructionRecord> DEFAULT_BROKER_RESPONSE =
       new BrokerResponse<>(new AdHocSubProcessInstructionRecord());
 
@@ -141,7 +142,8 @@ public class AdHocSubProcessActivityServicesTest {
             List.of(
                 new AdHocSubProcessActivateActivityReference("activity1", Map.of()),
                 new AdHocSubProcessActivateActivityReference("activity2", Map.of("var", "value"))),
-            cancelRemainingInstances);
+            cancelRemainingInstances,
+            null);
 
     when(brokerClient.sendRequest(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
@@ -173,7 +175,8 @@ public class AdHocSubProcessActivityServicesTest {
         new AdHocSubProcessActivateActivitiesRequest(
             AD_HOC_SUB_PROCESS_INSTANCE_KEY,
             List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, null)),
-            false);
+            false,
+            null);
 
     when(brokerClient.sendRequest(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
@@ -201,7 +204,8 @@ public class AdHocSubProcessActivityServicesTest {
         new AdHocSubProcessActivateActivitiesRequest(
             Protocol.encodePartitionId(partitionId, AD_HOC_SUB_PROCESS_INSTANCE_KEY),
             List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of())),
-            false);
+            false,
+            null);
 
     when(brokerClient.sendRequest(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));

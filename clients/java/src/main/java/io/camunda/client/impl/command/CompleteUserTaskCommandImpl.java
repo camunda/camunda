@@ -80,6 +80,12 @@ public final class CompleteUserTaskCommandImpl
   }
 
   @Override
+  public CompleteUserTaskCommandStep1 operationReference(final long operationReference) {
+    request.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   protected CompleteUserTaskCommandStep1 setVariablesInternal(final String variables) {
     request.setVariables(objectMapper.fromJsonAsMap(variables));
     return this;

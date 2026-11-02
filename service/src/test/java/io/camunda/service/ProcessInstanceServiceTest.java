@@ -788,7 +788,7 @@ public final class ProcessInstanceServiceTest {
     // when
     services
         .assignProcessInstanceBusinessId(
-            new AssignProcessInstanceBusinessIdRequest(processInstanceKey, businessId),
+            new AssignProcessInstanceBusinessIdRequest(processInstanceKey, businessId, null),
             authentication)
         .join();
 

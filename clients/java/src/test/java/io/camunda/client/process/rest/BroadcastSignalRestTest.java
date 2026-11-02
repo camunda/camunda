@@ -57,6 +57,26 @@ public class BroadcastSignalRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newBroadcastSignalCommand()
+        .signalName("name")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final SignalBroadcastRequest request =
+        gatewayService.getLastRequest(SignalBroadcastRequest.class);
+    Assertions.assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldBroadcastSignalWithInputStreamVariables() {
     // given
     final String variables = "{\"foo\":\"bar\"}";

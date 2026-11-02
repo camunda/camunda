@@ -46,6 +46,20 @@ public class FailJobRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long jobKey = 12;
+    final long operationReference = 456;
+
+    // when
+    client.newFailCommand(jobKey).retries(3).operationReference(operationReference).send().join();
+
+    // then
+    final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldFailJob() {
     // given
     final int newRetries = 23;

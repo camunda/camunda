@@ -124,7 +124,7 @@ public class CustomMcpModelPropertiesTest {
         Arguments.argumentSet(
             "UserTaskAssignmentRequest",
             UserTaskAssignmentRequest.class,
-            Set.of("action", "allowOverride")),
+            Set.of("action", "allowOverride", "operationReference")),
         Arguments.argumentSet(
             "ProcessInstanceCreationInstruction",
             ProcessInstanceCreationInstruction.class,

@@ -81,4 +81,10 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
     request.setAllowOverride(allowOverride);
     return this;
   }
+
+  @Override
+  public AssignUserTaskCommandStep1 operationReference(final long operationReference) {
+    request.setOperationReference(operationReference);
+    return this;
+  }
 }

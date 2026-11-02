@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class SignalRequestValidator {
           if (request.getSignalName() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("signalName"));
           }
+          validateOperationReference(request.getOperationReference(), violations);
         });
   }
 }

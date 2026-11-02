@@ -65,6 +65,27 @@ public final class PublishMessageTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long messageKey = 123L;
+    gatewayService.onPublishMessageRequest(messageKey);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldPublishMessageWithDefaultTtl() {
     // given
     final long messageKey = 123L;
