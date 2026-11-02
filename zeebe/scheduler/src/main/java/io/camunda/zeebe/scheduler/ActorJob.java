@@ -43,7 +43,13 @@ public final class ActorJob {
       invoke();
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
-      task.onFailure(e);
+      try {
+        task.onFailure(e);
+      } catch (final Throwable failureHandlingError) {
+        FATAL_ERROR_HANDLER.handleError(failureHandlingError);
+        failureHandlingError.addSuppressed(e);
+        task.fail(failureHandlingError);
+      }
     } finally {
       // in any case, success or exception, decide if the job should be resubmitted
       if (isTriggeredBySubscription() || runnable == null) {
@@ -171,7 +177,7 @@ public final class ActorJob {
   }
 
   public void failFuture(final Throwable cause) {
-    if (resultFuture != null) {
+    if (resultFuture != null && !resultFuture.isDone()) {
       resultFuture.completeExceptionally(cause);
     }
   }

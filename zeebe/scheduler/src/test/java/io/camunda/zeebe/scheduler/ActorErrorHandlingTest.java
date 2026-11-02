@@ -48,6 +48,54 @@ public final class ActorErrorHandlingTest {
     assertThat(actor.recordedFailure).isEqualTo(exception);
   }
 
+  @Test
+  public void shouldCloseActorWhenFailureHandlingThrows() {
+    // given
+    final var actor =
+        new ThrowingActor(new RuntimeException("expected")) {
+          @Override
+          protected void handleFailure(final Throwable failure) {
+            throw new IllegalStateException("handler failed");
+          }
+        };
+    scheduler.submitActor(actor);
+    scheduler.workUntilDone();
+
+    // when
+    actor.throwError();
+    scheduler.workUntilDone();
+    final var closeFuture = actor.closeAsync();
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(closeFuture.isDone()).isTrue();
+  }
+
+  @Test
+  public void shouldKeepProcessingWhenCompletionCallbackThrows() {
+    // given
+    final var actor = new ThrowingActor(new RuntimeException("unused"));
+    scheduler.submitActor(actor);
+    scheduler.workUntilDone();
+    final var future = actor.call(() -> 1);
+    future.onComplete(
+        (result, error) -> {
+          throw new IllegalStateException("callback failed");
+        },
+        Runnable::run);
+
+    // when
+    scheduler.workUntilDone();
+    final var secondCall = actor.call(() -> 2);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(secondCall.isDone()).isTrue();
+    final var closeFuture = actor.closeAsync();
+    scheduler.workUntilDone();
+    assertThat(closeFuture.isDone()).isTrue();
+  }
+
   private static class ThrowingActor extends Actor {
     public Throwable throwable;
     public Throwable recordedFailure = null;
@@ -56,7 +104,12 @@ public final class ActorErrorHandlingTest {
       this.throwable = throwable;
     }
 
-    private void throwError() {
+    public <T> io.camunda.zeebe.scheduler.future.ActorFuture<T> call(
+        final java.util.concurrent.Callable<T> callable) {
+      return actor.call(callable);
+    }
+
+    void throwError() {
       actor.run(() -> LangUtil.rethrowUnchecked(throwable));
     }
 

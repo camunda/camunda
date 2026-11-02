@@ -530,6 +530,30 @@ public class ActorTask {
     actor.onActorFailed();
   }
 
+  /**
+   * Handles an error which escaped {@link #execute(ActorThread)}. Moves the task out of the {@link
+   * TaskSchedulingState#ACTIVE} state so that it is never stuck, and ensures its close future is
+   * eventually completed.
+   *
+   * @return true if the task should be resubmitted to finish closing, false otherwise
+   */
+  boolean onUnhandledError(final Throwable error) {
+    currentJob = null;
+    final var previousPhase = lifecyclePhase;
+    if (previousPhase == ActorLifecyclePhase.FAILED
+        || previousPhase == ActorLifecyclePhase.CLOSED) {
+      // the error escaped while cleaning up; do not retry to avoid looping forever
+      schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
+      if (!closeFuture.isDone()) {
+        closeFuture.completeExceptionally(error);
+      }
+      return false;
+    }
+
+    fail(error);
+    return true;
+  }
+
   public int estimateQueueLength() {
     if (fastLaneJobs instanceof ClosedQueue || submittedJobs instanceof ClosedQueue) {
       return 0;
