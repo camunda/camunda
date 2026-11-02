@@ -11,26 +11,31 @@ public interface UserIdMigrationScriptFactory {
 
   /**
    * A collection can already hold a role for the new ID, for example when the user was added
-   * through the user search before the migration. Two roles for one user break role updates, so the
-   * script keeps one role with the higher permission.
+   * through the user search before the migration. Earlier migrations renamed roles in place and can
+   * have left several roles for one ID. Two roles for one user break role updates, so the script
+   * keeps one role with the highest permission of all roles of both IDs.
    */
   static String createMigrateCollectionRolesScript() {
     return "def roles = ctx._source.data.roles;"
-        + "def oldRole = null;"
-        + "def newRole = null;"
+        + "def rank = ['viewer': 0, 'editor': 1, 'manager': 2];"
+        + "def kept = null;"
+        + "def best = null;"
         + "for (def role : roles) {"
-        + "  if (role.identity.id == params.oldId) { oldRole = role; }"
-        + "  else if (role.identity.id == params.newId) { newRole = role; }"
-        + "}"
-        + "if (oldRole != null && newRole == null) {"
-        + "  oldRole.identity.id = params.newId;"
-        + "  oldRole.id = 'USER:' + params.newId;"
-        + "} else if (oldRole != null) {"
-        + "  def rank = ['viewer': 0, 'editor': 1, 'manager': 2];"
-        + "  if (rank.getOrDefault(oldRole.role, -1) > rank.getOrDefault(newRole.role, -1)) {"
-        + "    newRole.role = oldRole.role;"
+        + "  if (role.identity.id == params.oldId || role.identity.id == params.newId) {"
+        + "    if (kept == null) { kept = role; }"
+        + "    if (best == null"
+        + "        || rank.getOrDefault(role.role, -1) > rank.getOrDefault(best, -1)) {"
+        + "      best = role.role;"
+        + "    }"
         + "  }"
-        + "  roles.removeIf(role -> role.identity.id == params.oldId);"
+        + "}"
+        + "if (kept != null) {"
+        + "  def keep = kept;"
+        + "  keep.identity.id = params.newId;"
+        + "  keep.id = 'USER:' + params.newId;"
+        + "  keep.role = best;"
+        + "  roles.removeIf(role -> role !== keep"
+        + "      && (role.identity.id == params.oldId || role.identity.id == params.newId));"
         + "}";
   }
 
