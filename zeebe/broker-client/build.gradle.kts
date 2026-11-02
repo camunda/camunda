@@ -2,6 +2,7 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 dependencies {

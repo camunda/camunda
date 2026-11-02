@@ -151,6 +151,10 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("netty", pomVersion("version.netty"))
   version("com-uber-nullaway-nullaway", pomVersion("version.nullaway"))
   version("com-zaxxer-hikaricp", pomVersion("version.hikari-cp"))
+  // PIT mutation testing, applied by buildlogic.mutation-testing-conventions
+  version("pitest", pomVersion("plugin.version.pitest"))
+  version("pitest-junit5-plugin", pomVersion("version.pitest-junit5-plugin"))
+  version("pitest-descartes", pomVersion("version.descartes"))
   version("objenesis", pomVersion("version.objenesis"))
   version("okio-jvm", pomVersion("version.okio-jvm"))
   version("opentelemetry", pomVersion("version.opentelemetry"))

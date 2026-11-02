@@ -1,4 +1,7 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)

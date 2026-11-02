@@ -7,6 +7,7 @@ plugins {
   id("buildlogic.sbe-conventions")
   id("buildlogic.netty-tcnative-runtime-conventions")
   id("buildlogic.test-jar-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 sbe {
