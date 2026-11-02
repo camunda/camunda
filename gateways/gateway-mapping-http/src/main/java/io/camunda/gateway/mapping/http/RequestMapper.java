@@ -966,7 +966,7 @@ public class RequestMapper {
   }
 
   private static <R> List<String> getStringListOrEmpty(
-      final R request, final Function<R, List<String>> valueExtractor) {
+      final @Nullable R request, final NullableExtractor<R, List<String>> valueExtractor) {
     final List<String> value = request == null ? null : valueExtractor.apply(request);
     return value == null ? List.of() : value;
   }
