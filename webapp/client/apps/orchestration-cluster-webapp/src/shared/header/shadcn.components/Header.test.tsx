@@ -8,6 +8,7 @@
 
 import {HttpResponse} from 'msw';
 import {cleanup} from 'vitest-browser-react';
+import {userEvent} from 'vitest/browser';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
@@ -226,6 +227,27 @@ describe('<Header /> (V2)', () => {
 		);
 
 		await expect.element(screen.getByRole('link', {name: 'Decisions'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
+	});
+
+	it('should mark Operations Log as active on the Operations Log preview route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview/operations-log'},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Operations'}));
+
+		await expect.element(screen.getByRole('link', {name: 'Operations Log'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
 	});
 });
