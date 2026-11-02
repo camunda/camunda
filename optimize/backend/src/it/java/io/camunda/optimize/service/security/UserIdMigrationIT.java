@@ -7,21 +7,30 @@
  */
 package io.camunda.optimize.service.security;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.given;
 
 import io.camunda.optimize.AbstractCCSMIT;
+import io.camunda.optimize.dto.optimize.IdentityDto;
+import io.camunda.optimize.dto.optimize.IdentityType;
+import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.reader.CollectionReader;
 import io.camunda.optimize.service.db.reader.EntitiesReader;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
+import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -116,6 +125,249 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
         .extracting(CollectionEntity::getId)
         .containsExactly(reportId);
     assertThat(entitiesReader.getAllPrivateEntitiesForOwnerId(OLD_USER_ID)).isEmpty();
+  }
+
+  @Test
+  void shouldMergeRolesWhenTheCollectionAlreadyHasARoleForTheNewUserId() {
+    // given - a collection owned by the old ID that also has a viewer role for the new ID
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                OLD_USER_ID, new PartialCollectionDefinitionRequestDto("Merge Roles Test"))
+            .getId();
+    collectionWriter.addRoleToCollection(
+        collectionId,
+        List.of(
+            new CollectionRoleRequestDto(
+                new IdentityDto(NEW_USER_ID, IdentityType.USER), RoleType.VIEWER)),
+        OLD_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then - one role for the new ID that keeps the higher permission of the two
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .singleElement()
+        .satisfies(
+            role -> {
+              assertThat(role.getId()).isEqualTo("USER:" + NEW_USER_ID);
+              assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
+              assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
+            });
+  }
+
+  @Test
+  void shouldKeepTheHighestPermissionWhenAnEarlierMigrationLeftDuplicateRoles() {
+    // given - [old:manager, old:viewer, new:viewer], a state the earlier rename-only script left
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                OLD_USER_ID, new PartialCollectionDefinitionRequestDto("Duplicate Roles Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "duplicate", roleDocument(OLD_USER_ID, RoleType.VIEWER),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.VIEWER)),
+            "ctx._source.data.roles.add(params.duplicate);"
+                + "ctx._source.data.roles.add(params.newRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .hasSize(3);
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .singleElement()
+        .satisfies(
+            role -> {
+              assertThat(role.getId()).isEqualTo("USER:" + NEW_USER_ID);
+              assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
+              assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
+            });
+  }
+
+  @Test
+  void shouldTakeALaterHigherRoleAndLeaveOtherRolesUntouched() {
+    // given - [other:manager, old:viewer, new:manager, group named like the old ID:editor]
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Role Order Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "oldRole", roleDocument(OLD_USER_ID, RoleType.VIEWER),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.MANAGER),
+                "groupRole",
+                    Map.of(
+                        "id", "GROUP:" + OLD_USER_ID,
+                        "identity", Map.of("id", OLD_USER_ID, "type", "group"),
+                        "role", RoleType.EDITOR.getId())),
+            "ctx._source.data.roles.add(params.oldRole);"
+                + "ctx._source.data.roles.add(params.newRole);"
+                + "ctx._source.data.roles.add(params.groupRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .extracting(
+            role -> role.getId(),
+            role -> role.getIdentity().getId(),
+            role -> role.getIdentity().getType(),
+            role -> role.getRole())
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, IdentityType.USER, RoleType.MANAGER),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, IdentityType.USER, RoleType.MANAGER),
+            tuple("GROUP:" + OLD_USER_ID, OLD_USER_ID, IdentityType.GROUP, RoleType.EDITOR));
+  }
+
+  @Test
+  void shouldMigrateARoleWithoutAType() {
+    // given - a viewer role for the old ID that was stored without an identity type
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Typeless Role Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "typelessRole",
+                Map.of(
+                    "id", "USER:" + OLD_USER_ID,
+                    "identity", Map.of("id", OLD_USER_ID),
+                    "role", RoleType.VIEWER.getId())),
+            "ctx._source.data.roles.add(params.typelessRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(repository.hasDocumentsWithUserId(OLD_USER_ID)).isFalse();
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .extracting(
+            role -> role.getId(),
+            role -> role.getIdentity().getId(),
+            role -> role.getIdentity().getType(),
+            role -> role.getRole())
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, IdentityType.USER, RoleType.MANAGER),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, IdentityType.USER, RoleType.VIEWER));
+  }
+
+  @Test
+  void shouldIgnoreMissingAndUnknownPermissionsWhenMergingRoles() {
+    // given - [old: no permission, old: unknown permission, new:viewer]
+    final String otherUserId = "other-user-id";
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                otherUserId, new PartialCollectionDefinitionRequestDto("Odd Permissions Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "noPermission",
+                    Map.of(
+                        "id",
+                        "USER:" + OLD_USER_ID,
+                        "identity",
+                        Map.of("id", OLD_USER_ID, "type", "user")),
+                "unknownPermission",
+                    Map.of(
+                        "id",
+                        "USER:" + OLD_USER_ID,
+                        "identity",
+                        Map.of("id", OLD_USER_ID, "type", "user"),
+                        "role",
+                        "superuser"),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.VIEWER)),
+            "ctx._source.data.roles.add(params.noPermission);"
+                + "ctx._source.data.roles.add(params.unknownPermission);"
+                + "ctx._source.data.roles.add(params.newRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(repository.hasDocumentsWithUserId(OLD_USER_ID)).isFalse();
+    // read the raw document: the DTO cannot hold an unknown permission
+    final Map<?, ?> document =
+        databaseIntegrationTestExtension
+            .getDatabaseEntryById(COLLECTION_INDEX_NAME, collectionId, Map.class)
+            .orElseThrow();
+    final List<?> roles = (List<?>) ((Map<?, ?>) document.get("data")).get("roles");
+    assertThat(roles)
+        .map(Map.class::cast)
+        .extracting(
+            role -> role.get("id"),
+            role -> ((Map<?, ?>) role.get("identity")).get("id"),
+            role -> role.get("role"))
+        .containsExactlyInAnyOrder(
+            tuple("USER:" + otherUserId, otherUserId, RoleType.MANAGER.getId()),
+            tuple("USER:" + NEW_USER_ID, NEW_USER_ID, RoleType.VIEWER.getId()));
+  }
+
+  private static Map<String, Object> roleDocument(final String userId, final RoleType role) {
+    return Map.of(
+        "id", "USER:" + userId,
+        "identity", Map.of("id", userId, "type", "user"),
+        "role", role.getId());
   }
 
   /**

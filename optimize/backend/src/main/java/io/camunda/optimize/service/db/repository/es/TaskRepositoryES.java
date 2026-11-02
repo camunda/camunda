@@ -195,10 +195,10 @@ public class TaskRepositoryES extends TaskRepository {
     try {
       taskId = esClient.submitUpdateTask(updateByQueryRequest).task();
     } catch (final IOException e) {
+      // The query can hold personal data such as a user ID, so only DEBUG logs it.
+      LOG.debug("Failed updateBy task for [{}] had query [{}]", updateItemIdentifier, filterQuery);
       final String errorMessage =
-          String.format(
-              "Could not create updateBy task for [%s] with query [%s]!",
-              updateItemIdentifier, filterQuery);
+          String.format("Could not create updateBy task for [%s]!", updateItemIdentifier);
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -234,10 +234,10 @@ public class TaskRepositoryES extends TaskRepository {
     try {
       taskId = esClient.submitDeleteTask(request).task();
     } catch (final IOException e) {
+      // The query can hold personal data such as a user ID, so only DEBUG logs it.
+      LOG.debug("Failed delete task for [{}] had query [{}]", deletedItemIdentifier, query);
       final String errorMessage =
-          String.format(
-              "Could not create delete task for [%s] with query [%s]!",
-              deletedItemIdentifier, query);
+          String.format("Could not create delete task for [%s]!", deletedItemIdentifier);
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

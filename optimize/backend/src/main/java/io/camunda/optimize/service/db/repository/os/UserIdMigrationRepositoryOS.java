@@ -14,11 +14,15 @@ import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_N
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 
+import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.db.repository.script.UserIdMigrationScriptFactory;
@@ -64,35 +68,46 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
       return osClient.count(ALL_ENTITY_INDICES, buildUserIdQuery(userId)) > 0;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(
-          "Failed to check for documents with user ID: " + userId, e);
+          "Failed to check for documents with user ID: "
+              + UserIdMigrationRepository.maskForLog(userId),
+          UserIdMigrationRepository.sanitize(e, userId));
     }
   }
 
   @Override
   public void migrateUserId(final String oldUserId, final String newUserId) {
-    LOG.info("Migrating Optimize entities from user ID [{}] to [{}]", oldUserId, newUserId);
+    LOG.info(
+        "Migrating Optimize entities from user ID [{}] to [{}]",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
     final Map<String, JsonData> params =
         Map.of("oldId", JsonData.of(oldUserId), "newId", JsonData.of(newUserId));
 
     final Script rolesScript =
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateCollectionRolesScript(), params);
-    osClient.updateByQueryTask(
-        "collection roles for user " + oldUserId,
-        rolesScript,
-        buildCollectionRolesQuery(oldUserId),
-        COLLECTION_INDEX_NAME);
-
     final Script ownerScript =
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateOwnerScript(), params);
-    osClient.updateByQueryTask(
-        "owner/lastModifier for user " + oldUserId,
-        ownerScript,
-        buildOwnerLastModifierQuery(oldUserId),
-        ALL_ENTITY_INDICES);
+    try {
+      osClient.updateByQueryTask(
+          "collection roles for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          rolesScript,
+          buildCollectionRolesQuery(oldUserId),
+          COLLECTION_INDEX_NAME);
+      osClient.updateByQueryTask(
+          "owner/lastModifier for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          ownerScript,
+          buildOwnerLastModifierQuery(oldUserId),
+          ALL_ENTITY_INDICES);
+    } catch (final RuntimeException e) {
+      throw UserIdMigrationRepository.maskedFailure(oldUserId, newUserId, e);
+    }
 
-    LOG.info("Migration of entities for user [{}] to [{}] complete", oldUserId, newUserId);
+    LOG.info(
+        "Migration of entities for user [{}] to [{}] complete",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
   }
 
   private Query buildUserIdQuery(final String userId) {
@@ -104,13 +119,21 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
                     n.path("data.roles")
                         .ignoreUnmapped(true)
                         .scoreMode(ChildScoreMode.None)
-                        .query(term("data.roles.identity.id", userId)))
+                        .query(userRoleQuery(userId)))
             .toQuery();
     return or(rolesQuery, term("owner", userId), term("lastModifier", userId));
   }
 
   private Query buildCollectionRolesQuery(final String userId) {
-    return nested("data.roles", term("data.roles.identity.id", userId), ChildScoreMode.None);
+    return nested("data.roles", userRoleQuery(userId), ChildScoreMode.None);
+  }
+
+  private static Query userRoleQuery(final String userId) {
+    return and(
+        term("data.roles.identity.id", userId),
+        or(
+            term("data.roles.identity.type", IdentityType.USER.getId()),
+            not(exists("data.roles.identity.type"))));
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {
