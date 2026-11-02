@@ -13,6 +13,7 @@ import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.FAILED;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.INCIDENT_REASONS;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.LIMITS;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.SUCCEEDED;
+import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.average;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.finite;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.firstKey;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.rate;
@@ -255,7 +256,8 @@ public class AgentDetailReaderES implements AgentDetailReader {
                                         s -> s.avg(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
                                     .aggregations(
                                         DURATION,
-                                        s -> s.avg(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
+                                        s ->
+                                            s.stats(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
                                     .aggregations(SUCCEEDED, AgentRunQueriesES.succeededRuns()))
                         .aggregations(
                             WHERE_USED,
@@ -332,7 +334,7 @@ public class AgentDetailReaderES implements AgentDetailReader {
                     firstKey(bucket.aggregations().get(PROVIDER)),
                     bucket.docCount(),
                     finite(bucket.aggregations().get(TOKENS).avg().value()),
-                    finite(bucket.aggregations().get(DURATION).avg().value()),
+                    average(bucket.aggregations().get(DURATION)),
                     rate(
                         bucket.aggregations().get(SUCCEEDED).filter().docCount(),
                         bucket.docCount())))

@@ -212,14 +212,22 @@ final class AgentRunQueriesES {
     return runs == 0 ? null : (double) count / runs * 100;
   }
 
+  /**
+   * The value of one percentile, or null when no run in the bucket has the field, for example runs
+   * imported before the field was added, for which Elasticsearch returns a null value.
+   */
   static Double percentile(final Aggregate percentiles, final double percent) {
-    final String key = String.valueOf(percent);
-    return percentiles.tdigestPercentiles().values().keyed().entrySet().stream()
-        .filter(entry -> key.equals(entry.getKey()))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .map(value -> value == null || value.isEmpty() ? null : finite(Double.parseDouble(value)))
-        .orElse(null);
+    final String value =
+        percentiles.tdigestPercentiles().values().keyed().get(String.valueOf(percent));
+    return value == null || value.isEmpty() ? null : finite(Double.parseDouble(value));
+  }
+
+  /**
+   * The average of a stats aggregation, or null when no run in the bucket has the field. A plain
+   * avg aggregation can't tell that apart from an average of 0.
+   */
+  static Double average(final Aggregate stats) {
+    return stats.stats().count() == 0 ? null : finite(stats.stats().avg());
   }
 
   static Double finite(final double value) {

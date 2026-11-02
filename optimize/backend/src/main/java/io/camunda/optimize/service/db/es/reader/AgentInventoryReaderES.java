@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
+import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.average;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.finite;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.keys;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.percentile;
@@ -169,7 +170,8 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                                         .percents(50.0, 95.0)))
                                     .aggregations(
                                         DURATION_AVG,
-                                        s -> s.avg(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
+                                        s ->
+                                            s.stats(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
                                     .aggregations(
                                         TOKENS,
                                         s -> s.avg(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
@@ -185,7 +187,7 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                         s -> s.sum(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
                                     .aggregations(
                                         HUMAN_STEPS,
-                                        s -> s.avg(v -> v.field(AgentRunIndex.HUMAN_STEP_COUNT)))
+                                        s -> s.stats(v -> v.field(AgentRunIndex.HUMAN_STEP_COUNT)))
                                     .aggregations(
                                         LAST_RUN,
                                         s -> s.max(v -> v.field(AgentRunIndex.START_DATE)))
@@ -248,9 +250,9 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
         hasRuns ? finite(aggs.get(TOKENS_TOTAL).sum().value()) : null,
         hasRuns ? percentile(aggs.get(TOKENS_P50), 50.0) : null,
         hasRuns ? rate(aggs.get(AgentRunQueriesES.SUCCEEDED).filter().docCount(), runCount) : null,
-        hasRuns ? finite(aggs.get(DURATION_AVG).avg().value()) : null,
+        hasRuns ? average(aggs.get(DURATION_AVG)) : null,
         hasRuns ? percentile(aggs.get(DURATION), 95.0) : null,
-        hasRuns ? finite(aggs.get(HUMAN_STEPS).avg().value()) : null);
+        hasRuns ? average(aggs.get(HUMAN_STEPS)) : null);
   }
 
   private static OffsetDateTime lastRun(final Aggregate max) {
