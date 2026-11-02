@@ -275,10 +275,9 @@ class OperateProcessInstancePage {
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
       name: 'Add single element instance',
     });
-    this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move instance',
-      exact: true,
-    });
+    this.moveSelectedInstanceButton = page.getByTitle(
+      'Move selected instance in this element to another target',
+    );
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');
     this.stateOverlayActive = page.getByTestId('state-overlay-active');

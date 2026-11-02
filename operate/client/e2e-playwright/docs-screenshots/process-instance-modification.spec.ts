@@ -66,14 +66,12 @@ test.describe('process instance modification', () => {
     await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
     await expect(
-      page.getByRole('button', {
-        name: /cancel selected instance in this element/i,
-      }),
+      page.getByTitle(/cancel selected instance in this element/i),
     ).toBeVisible();
 
-    const cancelTokenButton = await page.getByRole('button', {
-      name: /cancel selected instance in this element/i,
-    });
+    const cancelTokenButton = await page.getByTitle(
+      /cancel selected instance in this element/i,
+    );
 
     await commonPage.addRightArrow(cancelTokenButton);
 
@@ -154,15 +152,9 @@ test.describe('process instance modification', () => {
 
     await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
-    await expect(
-      page.getByRole('button', {
-        name: /move selected instance/i,
-      }),
-    ).toBeVisible();
+    await expect(page.getByTitle(/move selected instance/i)).toBeVisible();
 
-    const moveTokenButton = page.getByRole('button', {
-      name: /move selected instance/i,
-    });
+    const moveTokenButton = page.getByTitle(/move selected instance/i);
 
     await commonPage.addLeftArrow(moveTokenButton);
 
