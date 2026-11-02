@@ -18,12 +18,16 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -61,7 +65,14 @@ public class ExporterEnableTest {
 
   private ExporterDescriptor createExporter(
       final String exporterId, final Map<String, Object> arguments) {
-    final var exporter = spy(new ControlledTestExporterWithMetadata());
+    return createExporter(exporterId, arguments, null);
+  }
+
+  private ExporterDescriptor createExporter(
+      final String exporterId,
+      final Map<String, Object> arguments,
+      final Context.RecordFilter filter) {
+    final var exporter = spy(new ControlledTestExporterWithMetadata().withFilter(filter));
 
     final ExporterDescriptor descriptor =
         spy(new ExporterDescriptor(exporterId, exporter.getClass(), arguments));
@@ -189,6 +200,129 @@ public class ExporterEnableTest {
   }
 
   @Test
+  public void shouldExportToAnExporterEnabledOnADirectorStartedWithoutExporters() {
+    // given - a director that started without any exporter, so its event filter was built from none
+    rule.startExporterDirector(List.of());
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // when
+    final var newExporterId = "new-exporter";
+    final var descriptor = createExporter(newExporterId, Collections.singletonMap("x", 1));
+    rule.getDirector()
+        .enableExporter(newExporterId, new ExporterInitializationInfo(1, null), descriptor)
+        .join();
+    rule.writeEvent(JobIntent.CREATED, new JobRecord());
+
+    // then - the records written after enabling reach the new exporter instead of being skipped
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(newExporterId).getExportedRecords())
+                    .extracting(Record::getIntent)
+                    .contains(JobIntent.CREATED));
+  }
+
+  @Test
+  public void shouldPassRecordsOnlyTheEnabledExporterAcceptsToIt() {
+    // given - a director whose only exporter accepts deployments, so its filter rejects jobs
+    exporterDescriptors.clear();
+    createExporter(EXPORTER_ID_1, Map.of(), acceptingOnly(ValueType.DEPLOYMENT));
+    rule.startExporterDirector(exporterDescriptors);
+
+    // when - an exporter accepting jobs is enabled
+    final var descriptor = createExporter(EXPORTER_ID_2, Map.of(), acceptingOnly(ValueType.JOB));
+    rule.getDirector()
+        .enableExporter(EXPORTER_ID_2, new ExporterInitializationInfo(1, null), descriptor)
+        .join();
+    rule.writeEvent(JobIntent.CREATED, jobRecord("job"));
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // then - the filter now covers both exporters: each gets its own kind of record, and only that
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(EXPORTER_ID_2).getExportedRecords())
+                  .extracting(Record::getValueType)
+                  .containsExactly(ValueType.JOB);
+              assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords())
+                  .extracting(Record::getValueType)
+                  .containsExactly(ValueType.DEPLOYMENT);
+            });
+  }
+
+  @Test
+  public void shouldExportOnlyWhileTheExporterIsEnabledWhenItIsEnabledDisabledAndEnabledAgain() {
+    // given - a director whose other exporter rejects jobs, so only the job exporter accepts them
+    exporterDescriptors.clear();
+    createExporter(EXPORTER_ID_1, Map.of(), acceptingOnly(ValueType.DEPLOYMENT));
+    rule.startExporterDirector(exporterDescriptors);
+
+    // when - on, off, on, writing a job after each step
+    rule.getDirector()
+        .enableExporter(
+            EXPORTER_ID_2,
+            new ExporterInitializationInfo(1, null),
+            createExporter(EXPORTER_ID_2, Map.of(), acceptingOnly(ValueType.JOB)))
+        .join();
+    rule.writeEvent(JobIntent.CREATED, jobRecord("while-on-1"));
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(jobTypesExportedTo(EXPORTER_ID_2)).hasSize(1));
+
+    final var firstInstance = exporters.get(EXPORTER_ID_2);
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
+    rule.writeEvent(JobIntent.CREATED, jobRecord("while-off"));
+    // the deployment is read after the job, so seeing it proves the job was already passed over
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords()).hasSize(1));
+
+    rule.getDirector()
+        .enableExporter(
+            EXPORTER_ID_2,
+            new ExporterInitializationInfo(1, null),
+            createExporter(EXPORTER_ID_2, Map.of(), acceptingOnly(ValueType.JOB)))
+        .join();
+    rule.writeEvent(JobIntent.CREATED, jobRecord("while-on-2"));
+
+    // then - the re-enabled exporter gets what is written after it is enabled again, and the
+    // record written while it was disabled reached neither instance
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(jobTypesExportedTo(EXPORTER_ID_2)).containsExactly("while-on-2"));
+    assertThat(
+            firstInstance.getExportedRecords().stream()
+                .map(r -> ((JobRecordValue) r.getValue()).getType()))
+        .containsExactly("while-on-1");
+  }
+
+  @Test
+  public void shouldNotKeepPassingRecordsOnceTheOnlyExporterAcceptingThemIsDisabled() {
+    // given - an exporter accepting deployments, and one accepting jobs that gets disabled again
+    exporterDescriptors.clear();
+    createExporter(EXPORTER_ID_1, Map.of(), acceptingOnly(ValueType.DEPLOYMENT));
+    rule.startExporterDirector(exporterDescriptors);
+    rule.getDirector()
+        .enableExporter(
+            EXPORTER_ID_2,
+            new ExporterInitializationInfo(1, null),
+            createExporter(EXPORTER_ID_2, Map.of(), acceptingOnly(ValueType.JOB)))
+        .join();
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
+
+    // when - a job and then a deployment are written
+    final var disabled = exporters.get(EXPORTER_ID_2);
+    rule.writeEvent(JobIntent.CREATED, jobRecord("after-disable"));
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // then - the disabled exporter sees nothing, however long the director keeps reading
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords()).hasSize(1));
+    assertThat(disabled.getExportedRecords()).isEmpty();
+  }
+
+  @Test
   public void shouldRetryExporterEnableIfCalledWithRetry() {
     // given
     rule.startExporterDirector(exporterDescriptors);
@@ -209,6 +343,30 @@ public class ExporterEnableTest {
         .untilAsserted(() -> verify(exporter, times(2)).open(any()));
   }
 
+  private static Context.RecordFilter acceptingOnly(final ValueType valueType) {
+    return new Context.RecordFilter() {
+      @Override
+      public boolean acceptType(final RecordType recordType) {
+        return true;
+      }
+
+      @Override
+      public boolean acceptValue(final ValueType value) {
+        return value == valueType;
+      }
+    };
+  }
+
+  private static JobRecord jobRecord(final String type) {
+    return new JobRecord().setType(type);
+  }
+
+  private List<String> jobTypesExportedTo(final String exporterId) {
+    return exporters.get(exporterId).getExportedRecords().stream()
+        .map(r -> ((JobRecordValue) r.getValue()).getType())
+        .toList();
+  }
+
   private void waitUntilExportersHaveSeenTheExpectedRecords() {
     Awaitility.await()
         .untilAsserted(
@@ -227,9 +385,22 @@ public class ExporterEnableTest {
     private final List<Record<?>> exportedRecords = new CopyOnWriteArrayList<>();
     private Controller controller;
     private int metadata = 0;
+    private Context.RecordFilter filter;
+
+    public ControlledTestExporterWithMetadata withFilter(final Context.RecordFilter filter) {
+      this.filter = filter;
+      return this;
+    }
 
     public List<Record<?>> getExportedRecords() {
       return exportedRecords;
+    }
+
+    @Override
+    public void configure(final Context context) {
+      if (filter != null) {
+        context.setFilter(filter);
+      }
     }
 
     @Override
