@@ -328,6 +328,21 @@ K10 <-> 2251799813685258
 
 </details>
 
+#### Don't modify the engine state directly from a test
+
+When a test needs the engine to be in a particular state, reach that state by writing the
+commands and events that produce it, not by mutating the state through the state API directly.
+
+The test engine processes records on its own thread. Writing to the state from the test thread
+races with that processing thread, and concurrent access to the underlying RocksDB instance can
+crash the JVM, taking down the whole CI job. Driving the state through records also keeps the test
+exercising the same code paths the engine uses in production, so the resulting state is one the
+engine can actually reach.
+
+- **Don't** call state writers (or otherwise mutate `MutableProcessingState`) from a test.
+- **Do** reach the desired state by writing the relevant commands or events, for example with the
+  test clients exposed by `EngineRule` or by appending an event to the log stream.
+
 ### Follow-up tasks
 
 - Zeebe QA, clients...
