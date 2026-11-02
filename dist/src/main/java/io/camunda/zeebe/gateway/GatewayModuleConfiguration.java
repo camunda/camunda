@@ -132,7 +132,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     // doing it async as potentially slow (messagingService → unicastService →
     // membershipService → communicationService → eventService).
     final CompletableFuture<Void> atomixClusterStartFuture = atomixCluster.start();
-    jobStreamClient.start().join();
+    joinOrAbortOnInterrupt(() -> jobStreamClient.start().join());
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
@@ -164,11 +164,35 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
-    atomixClusterStartFuture.join();
-    gateway.start().join(30, TimeUnit.SECONDS);
+    joinOrAbortOnInterrupt(
+        () -> {
+          atomixClusterStartFuture.join();
+          gateway.start().join(30, TimeUnit.SECONDS);
+        });
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * Spring interrupts the startup thread when the application is closed (e.g. on SIGTERM) while
+   * still starting up. Surface this as an explicit, descriptive failure instead of a bare {@link
+   * InterruptedException}, and preserve the thread's interrupt flag.
+   */
+  private static void joinOrAbortOnInterrupt(final Runnable startup) {
+    try {
+      startup.run();
+    } catch (final Exception e) {
+      if (e instanceof InterruptedException || e.getCause() instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+        LOGGER.info("Standalone gateway startup was interrupted, likely due to shutdown");
+        throw new IllegalStateException(
+            "Standalone gateway startup was interrupted, likely because the application is"
+                + " shutting down",
+            e);
+      }
+      throw e;
+    }
   }
 
   /**
