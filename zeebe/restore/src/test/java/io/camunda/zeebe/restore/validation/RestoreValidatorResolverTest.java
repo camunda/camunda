@@ -558,7 +558,9 @@ final class RestoreValidatorResolverTest {
 
       // when / then
       final var result = validator.validate(request);
-      assertThat(assertInvalid(result)).isInstanceOf(NoSuchElementException.class);
+      assertThat(assertInvalid(result))
+          .isInstanceOf(NoSuchElementException.class)
+          .hasMessage("No completed backup found with backup id 42");
     }
 
     @Test
@@ -1091,6 +1093,302 @@ final class RestoreValidatorResolverTest {
           new TenantRestoreArguments(
               new RestoreParameters(List.of(backupId), null, null), "elasticsearch", false),
           false);
+    }
+  }
+
+  /**
+   * Resolution that has to behave the same whichever secondary storage is configured. Each test
+   * runs for every database type, with an exported-position supplier only where the restore app
+   * wires one: for RDBMS, holding the positions of the backup's partitions.
+   */
+  @Nested
+  final class EveryDatabaseType {
+
+    private static RestoreValidator validatorFor(
+        final String databaseType,
+        final int groupPartitionCount,
+        final int backupPartitionCount,
+        final BackupStore backupStore) {
+      final IntFunction<Long> exportedPositions =
+          "rdbms".equals(databaseType)
+              ? partitionId -> partitionId <= backupPartitionCount ? CHECKPOINT_POSITION : null
+              : null;
+      return new RestoreValidator(groupPartitionCount, backupStore, exportedPositions);
+    }
+
+    private static RestoreRequest backupIdsRequest(
+        final String databaseType, final Long... backupIds) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(backupIds), null, null), databaseType, false),
+          false);
+    }
+
+    private static RestoreRequest timeRangeRequest(
+        final String databaseType, final Instant from, final Instant to) {
+      return new RestoreRequest(
+          "default",
+          new TenantRestoreArguments(
+              new RestoreParameters(List.of(), from.toString(), to == null ? null : to.toString()),
+              databaseType,
+              true),
+          false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms", "elasticsearch", "opensearch"})
+    void shouldBroadcastAnExplicitBackupIdToEveryPartition(final String databaseType) {
+      // given
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 1L));
+
+      // then
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(1L), 2, PartitionRestore.ofBackups(1L)),
+          false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms"})
+    void shouldRestoreFromMultipleBackupIds(final String databaseType) {
+      // given
+      stubBackupPartitionCount(7L, 2);
+      stubBackupExists(1, 5L);
+      stubBackupExists(1, 7L);
+      stubBackupExists(2, 5L);
+      stubBackupExists(2, 7L);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 5L, 7L));
+
+      // then
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(5L, 7L), 2, PartitionRestore.ofBackups(5L, 7L)),
+          false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms", "elasticsearch", "opensearch"})
+    void shouldRestoreOnlyThePartitionsOfTheBackup(final String databaseType) {
+      // given - the group holds 3 partitions, but the backup was taken with 2
+      stubBackupPartitionCount(7L, 2);
+      stubBackupExists(1, 7L);
+      stubBackupExists(2, 7L);
+      final var validator = validatorFor(databaseType, 3, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 7L));
+
+      // then
+      assertValid(
+          result,
+          Map.of(1, PartitionRestore.ofBackups(7L), 2, PartitionRestore.ofBackups(7L)),
+          false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms", "elasticsearch", "opensearch"})
+    void shouldRejectABackupWithMorePartitionsThanTheGroup(final String databaseType) {
+      // given - no broker holds partition 3, so nothing could restore it
+      stubBackupPartitionCount(7L, 3);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 7L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("it has 3 partitions, but the partition group only has 2");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms", "elasticsearch", "opensearch"})
+    void shouldRejectANonExistingBackupId(final String databaseType) {
+      // given
+      stubNoBackupExists();
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 42L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(NoSuchElementException.class)
+          .hasMessage("No completed backup found with backup id 42");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms", "elasticsearch", "opensearch"})
+    void shouldRejectABackupIdMissingOnAPartition(final String databaseType) {
+      // given - partition 2 has no completed backup for the requested id
+      stubBackupPartitionCount(1L, 2);
+      stubBackupExists(1, 1L);
+      stubBackupMissing(2, 1L);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(backupIdsRequest(databaseType, 1L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .hasMessage("No completed backup found for partition 2 with backup id 1");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms"})
+    void shouldResolveATimeRangeToTheCommonCheckpoint(final String databaseType) {
+      // given
+      stubMetadata(1, singleCheckpointMetadata(1));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      stubBackupPartitionCount(1L, 2);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result =
+          validator.validate(
+              timeRangeRequest(
+                  databaseType, CHECKPOINT_TIMESTAMP, CHECKPOINT_TIMESTAMP.plusSeconds(3600)));
+
+      // then
+      assertValid(result, Map.of(1, toSingleCheckpoint(1L), 2, toSingleCheckpoint(1L)), false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms"})
+    void shouldRestoreEveryPartitionToTheResolvedMarker(final String databaseType) {
+      // given - marker 15 is the latest checkpoint common to both partitions, as backup 20 was
+      // never confirmed on partition 2 and backup 25 never on partition 1
+      stubMetadata(
+          1,
+          RdbmsBackupResolution.metadataOf(
+              1,
+              List.of(
+                  RdbmsBackupResolution.backupEntry(10, 100, 1),
+                  RdbmsBackupResolution.markerEntry(15, 150),
+                  RdbmsBackupResolution.backupEntry(20, 200, 101))));
+      stubMetadata(
+          2,
+          RdbmsBackupResolution.metadataOf(
+              2,
+              List.of(
+                  RdbmsBackupResolution.backupEntry(10, 80, 1),
+                  RdbmsBackupResolution.markerEntry(15, 130),
+                  RdbmsBackupResolution.backupEntry(25, 260, 81))));
+      stubBackupPartitionCount(10L, 2);
+      stubBackupPartitionCount(20L, 2);
+      stubBackupPartitionCount(25L, 2);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+      final var request =
+          "rdbms".equals(databaseType)
+              ? rdbmsRequest()
+              : timeRangeRequest(databaseType, CHECKPOINT_TIMESTAMP.plusSeconds(10), null);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then - each partition ends at its own position of the marker, not at its last backup
+      assertValid(
+          result,
+          Map.of(
+              1, new PartitionRestore(new TreeSet<>(List.of(10L, 20L)), OptionalLong.of(150L)),
+              2, new PartitionRestore(new TreeSet<>(List.of(10L, 25L)), OptionalLong.of(130L))),
+          false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms"})
+    void shouldRejectATimeRangeWhenNoCommonCheckpointExistsAcrossPartitions(
+        final String databaseType) {
+      // given - partition 2 only has a checkpoint that partition 1 does not have
+      stubMetadata(1, singleCheckpointMetadata(1, 1L));
+      stubMetadata(2, singleCheckpointMetadata(2, 2L));
+      stubBackupPartitionCount(1L, 2);
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result =
+          validator.validate(
+              timeRangeRequest(
+                  databaseType, CHECKPOINT_TIMESTAMP, CHECKPOINT_TIMESTAMP.plusSeconds(3600)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("Could not find common checkpoint across partitions");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"none", "rdbms"})
+    void shouldRejectATimeRangeWhenBackupMetadataIsMissingForAPartition(final String databaseType) {
+      // given - partitions 1 and 3 have no metadata. With exported positions the error reports
+      // every missing partition; without them the count is read from partition 1 alone first
+      when(backupStore.loadBackupMetadata(1))
+          .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      when(backupStore.loadBackupMetadata(3))
+          .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      stubBackupPartitionCount(1L, 3);
+      final var validator = validatorFor(databaseType, 3, 3, backupStore);
+
+      // when
+      final var result =
+          validator.validate(
+              timeRangeRequest(
+                  databaseType, CHECKPOINT_TIMESTAMP, CHECKPOINT_TIMESTAMP.plusSeconds(3600)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "none".equals(databaseType)
+                  ? "No backup metadata found for partition(s): [1]"
+                  : "No backup metadata found for partition(s): [1, 3]");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldRejectATimeRangeWithoutQueryingTheBackupStore(final String databaseType) {
+      // given
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result =
+          validator.validate(
+              timeRangeRequest(
+                  databaseType, CHECKPOINT_TIMESTAMP, CHECKPOINT_TIMESTAMP.plusSeconds(3600)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
+      verifyNoInteractions(backupStore);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldRejectNoBackupIdWithoutQueryingTheBackupStore(final String databaseType) {
+      // given
+      final var validator = validatorFor(databaseType, 2, 2, backupStore);
+
+      // when
+      final var result = validator.validate(rdbmsRequest(databaseType));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("No backupId specified");
+      verifyNoInteractions(backupStore);
     }
   }
 }
