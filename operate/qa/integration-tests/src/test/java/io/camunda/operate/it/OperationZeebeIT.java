@@ -367,15 +367,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldRejectVariableOperationWithScopeOfOtherProcessInstance() throws Exception {
+  public void shouldRejectVariableOperationWithFlowNodeInstanceScopeOfOtherProcessInstance()
+      throws Exception {
     // given
     final long instanceA = startDemoProcessInstance();
     final long instanceB = startDemoProcessInstance();
+    final long taskAOfB = getFlowNodeInstanceId(instanceB, "taskA");
     final CreateOperationRequestDto request =
         new CreateOperationRequestDto(OperationType.ADD_VARIABLE)
             .setVariableName("injected")
             .setVariableValue("\"value\"")
-            .setVariableScopeId(String.valueOf(instanceB));
+            .setVariableScopeId(String.valueOf(taskAOfB));
 
     // when the operation is created for instance A with a scope of instance B
     postOperation(instanceA, request, 400);
