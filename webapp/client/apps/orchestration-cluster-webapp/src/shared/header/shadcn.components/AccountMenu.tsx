@@ -49,14 +49,9 @@ const AccountMenu: React.FC<Props> = observer(
 		return (
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						className="rounded-full"
-						aria-label={t('headerSettingsLabel')}
-					>
+					<Button type="button" variant="ghost" size="icon" className="rounded-full">
 						<Avatar name={displayName} size="sm" aria-hidden />
+						<span className="sr-only">{t('headerSettingsLabel')}</span>
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-56">

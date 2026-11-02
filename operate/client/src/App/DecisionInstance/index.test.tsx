@@ -176,7 +176,7 @@ describe('<DecisionInstance />', () => {
 
     await user.click(
       within(screen.getByTestId('instance-header')).getByRole('button', {
-        name: /open decision requirements diagram/i,
+        name: 'Open DRD',
       }),
     );
 

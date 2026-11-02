@@ -163,8 +163,10 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
-		await expect.element(screen.getByRole('button', {name: 'Copy customer'})).toHaveTextContent('{ "name": "Jane" }');
+		await expect.element(screen.getByRole('button', {name: /^Copy amount: /})).toHaveTextContent('100');
+		await expect
+			.element(screen.getByRole('button', {name: /^Copy customer: /}))
+			.toHaveTextContent('{ "name": "Jane" }');
 	});
 
 	it('should show [REDACTED] instead of the value of a redacted variable', async ({worker}) => {
@@ -183,10 +185,10 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
+		await expect.element(screen.getByRole('button', {name: /^Copy amount: /})).toHaveTextContent('100');
 		await expect.element(screen.getByText('[REDACTED]')).toBeVisible();
 		await expect.element(screen.getByTestId('variable-password')).not.toHaveTextContent('irrelevant');
-		await expect.element(screen.getByRole('button', {name: 'Copy password'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /^Copy password: /})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Edit variable password'})).not.toBeInTheDocument();
 	});
 
@@ -398,7 +400,7 @@ describe('<ProcessInstanceVariables />', () => {
 		await userEvent.click(dialog.getByRole('button', {name: 'Close'}).first());
 		await expect.element(dialog).not.toBeInTheDocument();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy payload'}));
+		await userEvent.click(screen.getByRole('button', {name: /^Copy payload: /}));
 
 		await expect.poll(() => vi.mocked(navigator.clipboard.writeText).mock.calls).toEqual([['"abcdef"']]);
 	});
@@ -484,7 +486,7 @@ describe('<ProcessInstanceVariables />', () => {
 				);
 			await expect.element(row.getByRole('button', {name: 'Open'})).toBeVisible();
 			await expect.element(row.getByRole('button', {name: 'View documents'})).not.toBeInTheDocument();
-			await expect.element(row.getByRole('button', {name: 'Copy invoice'})).not.toBeInTheDocument();
+			await expect.element(row.getByRole('button', {name: /^Copy invoice: /})).not.toBeInTheDocument();
 		});
 
 		it('should mark an expired document and disable its actions', async ({worker}) => {
@@ -580,7 +582,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 
 			const row = screen.getByTestId('variable-nestedDecoy');
-			await expect.element(row.getByRole('button', {name: 'Copy nestedDecoy'})).toBeVisible();
+			await expect.element(row.getByRole('button', {name: /^Copy nestedDecoy: /})).toBeVisible();
 			await expect.element(row.getByTestId('document-value-cell')).not.toBeInTheDocument();
 			await expect.element(row.getByRole('button', {name: 'Preview'})).not.toBeInTheDocument();
 			await expect.element(row.getByRole('button', {name: 'View documents'})).not.toBeInTheDocument();

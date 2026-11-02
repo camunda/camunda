@@ -47,9 +47,9 @@ const Bar = forwardRef<HTMLDivElement, Props>(
       <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
           {hasIncident ? (
-            <StateIcon state="INCIDENT" size={16} />
+            <StateIcon state="INCIDENT" size={16} aria-hidden />
           ) : (
-            <StateIcon state={elementInstanceState} size={16} />
+            <StateIcon state={elementInstanceState} size={16} aria-hidden />
           )}
           <NodeName>{elementName}</NodeName>
           {isRoot && latestMigrationDate !== null && (

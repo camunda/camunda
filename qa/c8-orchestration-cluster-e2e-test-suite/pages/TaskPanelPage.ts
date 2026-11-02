@@ -36,12 +36,13 @@ class TaskPanelPage {
     this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
     // The old Carbon expandable filter sidebar (`[aria-label="Filter
     // controls"]`, "Expand to show filters") no longer exists. Filtering is
-    // now a single dropdown-trigger button (id="filter-select") whose
-    // accessible name is the `taskFiltersHeaderAria` string ("Filters");
-    // clicking it opens a Radix DropdownMenu of filter options.
+    // now a single dropdown-trigger button (id="filter-select"); clicking it
+    // opens a Radix DropdownMenu of filter options. Its accessible name is
+    // "Filters" on older builds and "Filters: <selected filter>" on newer
+    // ones, so match both: this suite runs against the published image,
+    // which can lag behind the page objects.
     this.filterSelectButton = page.getByRole('button', {
-      name: 'Filters',
-      exact: true,
+      name: /^Filters(:|$)/,
     });
     // The header logo's accessible name is now just "Camunda logo" (the old
     // Carbon header appended the product name, "Camunda logo Tasklist").
@@ -52,11 +53,8 @@ class TaskPanelPage {
     // that assumption dates back to the old Carbon sidebar, where each
     // filter link routed to a page with its own <h1>. FilterSelect.tsx now
     // renders every filter (including "Completed") as plain visible text
-    // inside the filter-select trigger button (id="filter-select"); the
-    // button's accessible name is the static `taskFiltersHeaderAria` string
-    // ("Filters"), not the filter's label, because it carries a static
-    // aria-label, so this has to be a text lookup scoped to that button
-    // rather than an accessible-name lookup.
+    // inside the filter-select trigger button (id="filter-select"), so this
+    // is a text lookup scoped to that button.
     this.completedHeading = this.filterSelectButton.getByText('Completed', {
       exact: true,
     });

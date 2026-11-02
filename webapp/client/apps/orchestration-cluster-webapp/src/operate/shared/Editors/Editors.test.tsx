@@ -49,7 +49,7 @@ describe('Editors', () => {
 			['invalid JSON', 'invalid JSON'],
 		])('should display and copy formatted JSON: %s', async ([value = '', expected = '']) => {
 			const screen = await render(<InlineJsonEditor value={value} label="payload" />);
-			const copy = screen.getByRole('button', {name: 'Copy payload'});
+			const copy = screen.getByRole('button', {name: /^Copy payload: /});
 			expect(copy.element().textContent).toBe(expected);
 			await userEvent.click(copy);
 			expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expected);
@@ -64,7 +64,7 @@ describe('Editors', () => {
 			['{"a":1,', '{\n\t"a": 1\n'],
 		])('should preserve truncated formatting: %s', async ([value = '', expected = '']) => {
 			const screen = await render(<InlineJsonEditor value={value} isTruncatedValue />);
-			expect(screen.getByRole('button', {name: 'Copy value'}).element().textContent).toBe(expected);
+			expect(screen.getByRole('button', {name: /^Copy value: /}).element().textContent).toBe(expected);
 		});
 
 		it('should fetch the full value once and support keyboard copying', async () => {
@@ -74,7 +74,7 @@ describe('Editors', () => {
 			});
 			const onCopy = vi.fn(() => pending);
 			const screen = await render(<InlineJsonEditor value='"truncated' isTruncatedValue onCopy={onCopy} />);
-			const copy = screen.getByRole('button', {name: 'Copy value'});
+			const copy = screen.getByRole('button', {name: /^Copy value: /});
 			await userEvent.tab();
 			await userEvent.keyboard('{Enter}');
 			await expect.element(copy).toHaveAttribute('aria-disabled', 'true');
@@ -96,7 +96,7 @@ describe('Editors', () => {
 					}}
 				/>,
 			);
-			await userEvent.click(screen.getByRole('button', {name: 'Copy value'}));
+			await userEvent.click(screen.getByRole('button', {name: /^Copy value: /}));
 			expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
 			expect(notificationsStore.notifications[0]?.title).toBe('Failed to fetch full value');
 		});
@@ -104,9 +104,9 @@ describe('Editors', () => {
 		it('should report clipboard failure and remain usable', async () => {
 			vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Denied'));
 			const screen = await render(<InlineJsonEditor value="42" />);
-			await userEvent.click(screen.getByRole('button', {name: 'Copy value'}));
+			await userEvent.click(screen.getByRole('button', {name: /^Copy value: /}));
 			expect(notificationsStore.notifications[0]?.title).toBe('Failed to copy value to clipboard');
-			await userEvent.click(screen.getByRole('button', {name: 'Copy value'}));
+			await userEvent.click(screen.getByRole('button', {name: /^Copy value: /}));
 			expect(notificationsStore.notifications[0]?.kind).toBe('success');
 		});
 
@@ -122,7 +122,7 @@ describe('Editors', () => {
 					renderButton={() => <button onClick={showAll}>Show all</button>}
 				/>,
 			);
-			const content = screen.getByRole('button', {name: 'Copy payload'}).element();
+			const content = screen.getByRole('button', {name: /^Copy payload: /}).element();
 			const button = screen.getByRole('button', {name: 'Show all'});
 			expect(content.getBoundingClientRect().height).toBeLessThanOrEqual(60);
 			expect(button.element().getBoundingClientRect().bottom).toBeLessThanOrEqual(

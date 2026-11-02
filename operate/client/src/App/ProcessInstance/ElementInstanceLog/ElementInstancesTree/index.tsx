@@ -184,7 +184,6 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
-          aria-label={elementName}
           renderIcon={renderIcon}
           isExpanded={false}
           onSelect={handleSelect}
@@ -276,7 +275,6 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
-          aria-label={`${elementName}, this element instance is planned to be added`}
           renderIcon={renderIcon}
           isExpanded={false}
           onSelect={handleSelect}
@@ -413,7 +411,6 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
-        'aria-label': `${elementName}, this element instance is planned to be added`,
         renderIcon,
         isExpanded,
         onSelect: handleSelect,
@@ -612,7 +609,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
-        'aria-label': elementName,
         renderIcon,
         isExpanded,
         onSelect: handleSelect,

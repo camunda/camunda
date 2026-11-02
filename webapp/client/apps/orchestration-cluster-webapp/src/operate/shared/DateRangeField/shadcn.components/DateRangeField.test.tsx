@@ -18,12 +18,12 @@ const pad = (value: string | number) => {
 	return String(value).padStart(2, '0');
 };
 
-// react-day-picker labels calendar day buttons with the full formatted date
-// ("Wednesday, October 1st, 2025"), prefixed with "Today, " for the current
+// Calendar day buttons are labelled with the full formatted date
+// ("Wednesday, 1 October 2025"), prefixed with "Today, " for the current
 // day. Matching with an unanchored regex finds the button regardless of that
 // prefix, instead of having to special-case "today" in every test.
 function dayButtonName(date: Date) {
-	return new RegExp(format(date, 'PPPP'));
+	return new RegExp(format(date, 'EEEE, d MMMM yyyy'));
 }
 
 async function pickDateTimeRange({

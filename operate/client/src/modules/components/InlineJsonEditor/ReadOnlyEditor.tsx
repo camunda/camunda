@@ -118,7 +118,9 @@ const ReadOnlyEditor: React.FC<Props> = ({
           }
           tabIndex={0}
           role={isReadOnly ? 'button' : undefined}
-          aria-label={isReadOnly ? `Copy ${label}` : undefined}
+          aria-label={
+            isReadOnly ? `Copy ${label}: ${value || placeholder}` : undefined
+          }
           aria-disabled={isReadOnly && isCopying ? true : undefined}
           onClick={isReadOnly ? handleCopy : undefined}
           onKeyDown={isReadOnly ? handleCopyKeyDown : undefined}

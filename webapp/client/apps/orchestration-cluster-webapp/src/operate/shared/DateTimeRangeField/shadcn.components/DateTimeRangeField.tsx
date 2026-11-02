@@ -25,6 +25,7 @@ import {
 } from '@camunda/design-system';
 import {formatISODate} from '#/operate/shared/DateRangeField/formatDate';
 import {getTimeZoneLabel} from '#/operate/shared/DateRangeField/getTimeZoneLabel';
+import {labelDayButton} from '#/operate/shared/DateRangeField/labelDayButton';
 
 const VALUE_FORMAT = 'yyyy-MM-dd HH:mm:ss';
 // Stored bounds are ISO strings; anything else is malformed text kept so submitting stays blocked
@@ -218,6 +219,7 @@ const DateTimeField: React.FC<DateTimeFieldProps> = ({
 							showOutsideDays
 							fixedWeeks
 							className="p-0"
+							labels={{labelDayButton}}
 						/>
 						<div className="flex flex-col gap-1.5">
 							<Label htmlFor={`${id}-time`}>{t('operate.shared.dateTimeRangeField.time')}</Label>

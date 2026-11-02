@@ -281,7 +281,7 @@ class TaskDetailPage extends BasePage {
 	selectedTask(name: string) {
 		return this.page
 			.getByRole('region', {name: 'Tasks side panel'})
-			.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+			.getByRole('link', {name: new RegExp(`^${name}(\\s|$)`)});
 	}
 }
 

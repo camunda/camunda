@@ -43,7 +43,7 @@ class TasklistIndexPage extends BasePage {
 	}
 
 	get filterSelect() {
-		return this.page.getByRole('button', {name: 'Filters', exact: true});
+		return this.page.getByRole('button', {name: /^Filters:/});
 	}
 
 	filterOption(name: string) {
@@ -99,7 +99,7 @@ class TasklistIndexPage extends BasePage {
 	}
 
 	taskItem(name: string) {
-		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+		return this.page.getByRole('link', {name: new RegExp(`^${name}(\\s|$)`)});
 	}
 
 	taskCard(name: string) {
