@@ -176,15 +176,7 @@ jobs:
 
   deploy-8-11:
     name: Deploy 8.11 Preview Environment
-    # Temporary: 8.11 only runs when someone starts this workflow by hand and
-    # picks version 8.11. We keep it out of the weekly Monday run because the
-    # 8.11 smoke tests (tests/SM-8.11/smoke-tests.spec.ts) don't exist yet in
-    # camunda/c8-cross-component-e2e-tests. With them missing, the scheduled run
-    # failed every Monday with "No tests found" and paged the on-call medic for
-    # nothing they could fix. The team agreed to stick with the 8.10 tests until
-    # 8.11 is released, so we don't add a new version here until its tests exist.
-    # Once QA ships tests/SM-8.11, put "all" and "" back to run it on schedule.
-    if: contains(fromJSON('["8.11"]'), inputs.version) && inputs.existing-host == ''
+    if: contains(fromJSON('["all", "8.11", ""]'), inputs.version) && inputs.existing-host == ''
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
@@ -308,7 +300,7 @@ jobs:
 
       - name: Generate GitHub Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@379e8654a5f25f22566f80c2e99a611fca365263 # generate-github-app-token-from-vault-secrets-1.2.0
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -637,24 +629,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # Classifies the failing smoke-test legs and (once enabled) dispatches the fix
-  # agent, the same way docker-build-helm-integration.yml does; see
-  # .github/scripts/alwaysgreen/README.md. `base_ref: main` here is only the
-  # fallback for a failing job that is not a recognised per-version leg.
+  # Hands the failing smoke-test legs to the central AlwaysGreen triage in
+  # camunda/c8-cross-component-e2e-tests, the same way
+  # docker-build-helm-integration.yml does.
+  #
+  # `base_ref: main` is only the fallback for a failing job that is not a recognised
+  # per-version leg: this workflow deploys four refs in ONE run, and triage maps each
+  # rendered `Run <version> Smoke Tests` job to the branch it actually deployed.
   alwaysgreen-triage:
     name: AlwaysGreen triage and fix dispatch
     if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}
     needs:
     - test
-    # Mirrors alwaysgreen-triage.yml's own block: it reads this run's jobs and
-    # artifacts, and dispatches alwaysgreen-fix.yml (actions: write). Repeated here
-    # because this workflow sets permissions per job rather than at the top level.
     permissions:
-      actions: write
       contents: read
-      pull-requests: read
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    # Local path, not `@main`: on main the two resolve to the same file, and a local
+    # ref is what lets a change to the shim be tested by the PR that makes it.
+    uses: ./.github/workflows/alwaysgreen-triage.yml
     secrets: inherit
     with:
+      # Only the fallback for a failing job that is not a recognised per-version leg;
+      # the central triage maps each leg to the branch it deployed.
       base_ref: main
-      dry_run: false
