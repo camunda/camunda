@@ -412,7 +412,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToEditor(row.getByText('100', {exact: true}), '1');
 		await userEvent.click(row.getByRole('button', {name: 'Exit'}));
 
-		await expect.element(row.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
+		await expect.element(row.getByRole('button', {name: /^Copy amount: /})).toHaveTextContent('100');
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
 		expect(notificationTitles()).toEqual([]);
 	});
@@ -556,7 +556,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await userEvent.click(row.getByRole('button', {name: 'Edit'}));
 
 		await expect.poll(notificationTitles).toEqual(['Variable could not be fetched']);
-		await expect.element(row.getByRole('button', {name: 'Copy payload'})).toBeVisible();
+		await expect.element(row.getByRole('button', {name: /^Copy payload: /})).toBeVisible();
 		await expect.element(row.getByRole('textbox', {name: 'payload'})).not.toBeInTheDocument();
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeDisabled();
 	});

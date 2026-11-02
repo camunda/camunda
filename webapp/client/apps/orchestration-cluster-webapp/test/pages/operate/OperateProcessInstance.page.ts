@@ -55,7 +55,8 @@ class OperateProcessInstancePage extends BasePage {
 	}
 
 	historyItem(label: string) {
-		return this.historyNavigationTree.getByRole('treeitem', {name: label, exact: true});
+		const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		return this.historyNavigationTree.getByRole('treeitem', {name: new RegExp(`^${escapedLabel}(\\s|$)`)});
 	}
 
 	get historyTab() {

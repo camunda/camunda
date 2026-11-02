@@ -478,14 +478,13 @@ function HistoryNode({
 	const treeItem = (
 		<HistoryTreeItem
 			id={id}
-			aria-label={label}
 			tabIndex={id === focusTarget ? 0 : -1}
 			renderIcon={NodeIcon}
 			onSelect={select}
 			{...(isFoldable && {isExpanded: Boolean(window), onToggle: () => history.toggle(key, parent)})}
 			label={
 				<HistoryBar>
-					<HistoryState>
+					<HistoryState aria-hidden>
 						<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
 					</HistoryState>
 					<HistoryName>{label}</HistoryName>

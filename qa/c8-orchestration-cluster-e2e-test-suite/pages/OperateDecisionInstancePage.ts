@@ -26,7 +26,7 @@ class OperateDecisionInstancePage {
       name: /close drd panel/i,
     });
     this.openDrdButton = page.getByRole('button', {
-      name: 'Open Decision Requirements Diagram',
+      name: 'Open DRD',
     });
     this.drd = page.getByTestId('drd');
     this.instanceHeader = page.getByTestId('instance-header');

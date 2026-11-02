@@ -856,14 +856,14 @@ describe('Process instance modification summary', () => {
 			modifications: [cancelToken({elementId: 'task_1', elementInstanceKey: TASK_INSTANCE.elementInstanceKey})],
 			withVariables: true,
 		});
-		await expect.element(screen.getByRole('button', {name: 'Copy count'})).toHaveTextContent('1');
+		await expect.element(screen.getByRole('button', {name: /^Copy count: /})).toHaveTextContent('1');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
 		await userEvent.click(
 			screen.getByRole('dialog', {name: 'Apply Modifications'}).getByRole('button', {name: 'Apply'}),
 		);
 
-		await expect.element(screen.getByRole('button', {name: 'Copy count'})).toHaveTextContent('2');
+		await expect.element(screen.getByRole('button', {name: /^Copy count: /})).toHaveTextContent('2');
 	});
 
 	it('should not apply tokens added inside a sub process that is planned to be cancelled', async ({worker}) => {

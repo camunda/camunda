@@ -73,9 +73,7 @@ describe('<Header />', () => {
     expect(
       screen.getByText(invoiceClassification.decisionDefinitionName),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /open decision requirements diagram/i}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open DRD'})).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /decision instance key/i}),
     ).toBeInTheDocument();

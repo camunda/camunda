@@ -181,7 +181,7 @@ class OperateProcessInstancePage {
       .first();
     this.incidentsTab = page
       .getByLabel('Process Instance Bottom Panel Tabs')
-      .getByRole('link', {name: /^Incidents$/i});
+      .getByRole('link', {name: /^Incidents\s*\d*$/i});
     this.incidentIconsInHistory = this.instanceHistory
       .getByRole('treeitem')
       .getByTestId('INCIDENT-icon');
@@ -276,7 +276,8 @@ class OperateProcessInstancePage {
       name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this element to another target',
+      name: 'Move instance',
+      exact: true,
     });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');

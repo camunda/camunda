@@ -69,7 +69,6 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
       id={item.elementInstanceKey}
       value={item.elementInstanceKey}
       data-testid={`search-result-${item.elementInstanceKey}`}
-      aria-label={item.elementName ?? item.elementId}
       renderIcon={() => (
         <ElementInstanceIcon
           $hasLeftMargin

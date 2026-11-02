@@ -52,31 +52,31 @@ describe('<Task />', () => {
 		await expect.element(screen.getByText('order-123')).toBeVisible();
 	});
 
-	it('should render a link with an accessible label for an unassigned task', async () => {
+	it('should name the link after its visible content for an unassigned task', async () => {
 		const screen = await renderWithRouter(() => <TestTask assignee={null} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
-		await expect.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /^Review invoice Invoice process Unassigned/})).toBeVisible();
 	});
 
-	it('should render an "assigned to me" label', async () => {
+	it('should name the link after its visible content for a task assigned to me', async () => {
 		const screen = await renderWithRouter(() => <TestTask assignee={currentUser.username} />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
-		await expect.element(screen.getByRole('link', {name: 'Task assigned to me: Review invoice'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /^Review invoice Invoice process Me/})).toBeVisible();
 	});
 
-	it('should render an "assigned task" label', async () => {
+	it('should name the link after its visible content for a task assigned to someone else', async () => {
 		const screen = await renderWithRouter(() => <TestTask assignee="john.doe" />, {
 			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
-		await expect.element(screen.getByRole('link', {name: 'Assigned task: Review invoice'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /^Review invoice Invoice process john\.doe/})).toBeVisible();
 	});
 
 	it('should render the priority label', async () => {
@@ -107,9 +107,7 @@ describe('<Task />', () => {
 	])('should mark the task as selected at $initialEntry', async ({path, initialEntry}) => {
 		const screen = await renderWithRouter(() => <TestTask />, {path, initialEntry});
 
-		await expect
-			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
-			.toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: /^Review invoice/})).toHaveAttribute('aria-current', 'page');
 	});
 
 	it('should not mark a different task as selected', async () => {
@@ -118,8 +116,6 @@ describe('<Task />', () => {
 			initialEntry: '/tasklist/other-task/process',
 		});
 
-		await expect
-			.element(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}))
-			.not.toHaveAttribute('aria-current');
+		await expect.element(screen.getByRole('link', {name: /^Review invoice/})).not.toHaveAttribute('aria-current');
 	});
 });

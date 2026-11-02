@@ -636,26 +636,33 @@ describe('InstanceHistory', () => {
 		expect(getComputedStyle(row(second.element()), '::before').width).toBe('4px');
 	});
 	it('should navigate the native tree with a single roving tab stop without selecting on focus', async ({worker}) => {
-		const screen = await renderTree(worker);
-		const tree = screen.getByRole('tree', {name: 'Instance History'});
+		const screen = await renderTree(worker, '', undefined, true);
 		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
 		const subprocessItem = screen.getByRole('treeitem', {name: 'Subprocess', exact: true});
 		const leafItem = screen.getByRole('treeitem', {name: 'Leaf', exact: true});
 		const nestedItem = screen.getByRole('treeitem', {name: 'Nested', exact: true});
+		const buttonAfterTree = screen.getByRole('button', {name: 'Collapse subprocess'});
 		await expect.element(leafItem).toBeVisible();
+		expect(screen.getByRole('treeitem').all()).toHaveLength(3);
 		await expect.element(rootItem).toHaveAttribute('aria-expanded', 'true');
 		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'false');
 		await expect.element(leafItem).not.toHaveAttribute('aria-expanded');
-		const tabStops = () =>
-			Array.from(tree.element().querySelectorAll('[tabindex="0"]'), (element) => element.getAttribute('aria-label'));
-		expect(tabStops()).toEqual(['My Process']);
+		await expect.element(rootItem).toHaveAttribute('tabindex', '0');
+		await expect.element(subprocessItem).toHaveAttribute('tabindex', '-1');
+		await expect.element(leafItem).toHaveAttribute('tabindex', '-1');
 
 		screen.getByRole('button', {name: 'Incidents'}).element().focus();
 		await userEvent.tab();
 		await expect.element(rootItem).toHaveFocus();
+		await userEvent.tab();
+		await expect.element(buttonAfterTree).toHaveFocus();
+		await userEvent.tab({shift: true});
+		await expect.element(rootItem).toHaveFocus();
 		await userEvent.keyboard('{ArrowDown}');
 		await expect.element(subprocessItem).toHaveFocus();
-		expect(tabStops()).toEqual(['Subprocess']);
+		await expect.element(rootItem).toHaveAttribute('tabindex', '-1');
+		await expect.element(subprocessItem).toHaveAttribute('tabindex', '0');
+		await expect.element(leafItem).toHaveAttribute('tabindex', '-1');
 		const focusedRow = row(subprocessItem.element());
 		expect(getComputedStyle(focusedRow).outlineWidth).toBe('2px');
 		expect(getComputedStyle(focusedRow).outlineColor).toBe('rgb(15, 98, 254)');
@@ -689,7 +696,9 @@ describe('InstanceHistory', () => {
 		await expect.element(screen.getByRole('button', {name: 'Incidents'})).toHaveFocus();
 		await userEvent.tab();
 		await expect.element(leafItem).toHaveFocus();
-		expect(tabStops()).toEqual(['Leaf']);
+		await expect.element(rootItem).toHaveAttribute('tabindex', '-1');
+		await expect.element(subprocessItem).toHaveAttribute('tabindex', '-1');
+		await expect.element(leafItem).toHaveAttribute('tabindex', '0');
 
 		await userEvent.keyboard(' ');
 		await expect
@@ -748,7 +757,7 @@ describe('InstanceHistory', () => {
 			),
 			{path, initialEntry: `/operate/processes/${instance.processInstanceKey}/variables`},
 		);
-		const item = screen.getByRole('treeitem', {name: label, exact: true});
+		const item = screen.getByRole('treeitem', {name: new RegExp(`^${label}`)});
 		await expect.element(item).toBeVisible();
 		expect(row(item.element()).getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('End date', {exact: true}));

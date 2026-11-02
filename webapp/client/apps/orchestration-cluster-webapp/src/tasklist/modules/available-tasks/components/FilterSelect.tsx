@@ -73,7 +73,7 @@ const FilterSelect: React.FC<Props> = ({
 					id="filter-select"
 					variant="secondary"
 					disabled={disabled}
-					aria-label={t('tasklist.taskFiltersHeaderAria')}
+					aria-label={t('tasklist.taskFiltersHeaderAria', {filter: getTriggerLabel()})}
 					className="min-w-0 justify-between"
 				>
 					<span className="truncate">{getTriggerLabel()}</span>

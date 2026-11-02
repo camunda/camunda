@@ -33,6 +33,7 @@ const stateIconsMap = {
 type Props = {
   state: ProcessInstanceState | DecisionInstanceState | 'INCIDENT';
   size: React.ComponentProps<CarbonIconType>['size'];
+  'aria-hidden'?: boolean;
 };
 
 const StateIcon: React.FC<Props> = ({state, ...props}) => {
