@@ -1366,49 +1366,53 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
+    name: "Physical Tenant Acceptance Tests / ${{ matrix.database.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - database-type: "h2"
-            database-name: "H2"
+        database:
+          - type: "h2"
+            name: "H2"
             # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that
             # skip RDBMS-incompatible tests.
-            it-database-type: "rdbms_h2"
-            database-image-version: ""
-          - database-type: "elasticsearch"
-            database-name: "ES 8.x"
-            it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            it-type: "rdbms_h2"
+            image-version: ""
+          - type: "elasticsearch"
+            name: "ES 8.x"
+            it-type: "es"
+            image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - database-type: "opensearch"
-            database-name: "OS 3.x"
-            it-database-type: "os"
-            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+          - type: "opensearch"
+            name: "OS 3.x"
+            it-type: "os"
+            image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
             # Points the PT at a genuinely separate OS instance (db/docker-compose.yml's
             # opensearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-opensearch-url: "http://localhost:9201"
+        # Unsharded, the suite took 15-18 of its 20 minutes, so a slow cache restore alone timed
+        # it out. Each shard maps to a physical-tenant-<shard> Maven profile.
+        shard: [ "client", "non-client" ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "${{ matrix.database-type }}"
-      database-name: "${{ matrix.database-name }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      it-database-type: "${{ matrix.it-database-type }}"
+      database-type: "${{ matrix.database.type }}"
+      database-name: "${{ matrix.database.name }}"
+      database-image-version: "${{ matrix.database.image-version }}"
+      it-database-type: "${{ matrix.database.it-type }}"
       physical-tenant: "tenanta"
-      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
-      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
+      physical-tenant-elasticsearch-url: "${{ matrix.database.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.database.physical-tenant-opensearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
-      # physical-tenant profile.
-      maven-profiles: "physical-tenant"
+      # physical-tenant-<shard> profiles.
+      maven-profiles: "physical-tenant-${{ matrix.shard }}"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
       test-suite-name: "acceptance"
+      shard: "${{ matrix.shard }}"
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
