@@ -40,7 +40,6 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runner }}
     env:
-      TEST_OWNER: '@camunda/reliability-testing'
       TEST_TYPE: Smoke
     strategy:
       fail-fast: false
