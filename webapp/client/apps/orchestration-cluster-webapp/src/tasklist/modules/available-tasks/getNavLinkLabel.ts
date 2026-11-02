@@ -8,7 +8,7 @@
 
 import {t} from 'i18next';
 
-function getNavLinkLabel({
+function getAssignmentLabel({
 	displayName,
 	assigneeId,
 	currentUsername,
@@ -28,6 +28,22 @@ function getNavLinkLabel({
 	} else {
 		return t('tasklist.availableTasksNavLinkUnassignedTask', {name: displayName});
 	}
+}
+
+function getNavLinkLabel({
+	displayName,
+	assigneeId,
+	currentUsername,
+	isSuspended,
+}: {
+	displayName: string;
+	assigneeId: string | null | undefined;
+	currentUsername: string;
+	isSuspended: boolean;
+}) {
+	const label = getAssignmentLabel({displayName, assigneeId, currentUsername});
+
+	return isSuspended ? t('tasklist.availableTasksNavLinkSuspendedTask', {label}) : label;
 }
 
 export {getNavLinkLabel};

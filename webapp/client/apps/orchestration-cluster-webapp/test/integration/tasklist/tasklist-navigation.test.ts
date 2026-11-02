@@ -100,7 +100,7 @@ test.describe('Tasks panel', () => {
 	test('should render tasks', async ({network, tasklistIndexPage}) => {
 		const firstPageTasks = [
 			createUserTask({userTaskKey: '1', name: 'Approve purchase order'}),
-			createUserTask({userTaskKey: '2', name: 'Review contract'}),
+			createUserTask({userTaskKey: '2', name: 'Review contract', isSuspended: true}),
 		];
 
 		network.use(
@@ -114,7 +114,9 @@ test.describe('Tasks panel', () => {
 		await tasklistIndexPage.goto();
 
 		await expect(tasklistIndexPage.taskItem('Approve purchase order')).toBeVisible();
-		await expect(tasklistIndexPage.taskItem('Review contract')).toBeVisible();
+		await expect(tasklistIndexPage.taskItem('Review contract')).toHaveAccessibleName(
+			'Unassigned task: Review contract (suspended)',
+		);
 	});
 
 	test('should not auto-select a task on direct navigation when auto-select is enabled', async ({

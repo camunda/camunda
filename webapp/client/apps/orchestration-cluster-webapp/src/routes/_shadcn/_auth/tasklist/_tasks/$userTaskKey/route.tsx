@@ -82,6 +82,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKe
 						key={task.userTaskKey}
 						userTaskKey={task.userTaskKey}
 						taskState={task.state}
+						isSuspended={task.isSuspended}
 						assignee={task.assignee ?? null}
 						currentUser={currentUser.username}
 					/>
