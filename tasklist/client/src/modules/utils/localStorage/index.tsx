@@ -45,7 +45,7 @@ function getStateLocally<Key extends StorageKey>(
 
     const result = validators[storageKey].safeParse(JSON.parse(value));
 
-    return result.success ? result.data : null;
+    return result.success ? (result.data as z.infer<Validators[Key]>) : null;
   } catch {
     return null;
   }
