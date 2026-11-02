@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
@@ -22,6 +23,7 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
+import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
@@ -64,7 +66,9 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+          new StoreBinding<>(
+              "env", "environment variable", Stores::getEnv, SecretStoreConfiguration::envStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -259,11 +263,7 @@ public class SecretStoreConfiguration {
     if (SecretStoreRegistry.DEFAULT_STORE_ID.equals(normalizeStoreId(storeId))) {
       return;
     }
-    final var storesProperty =
-        (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
-                ? "camunda.secrets.stores."
-                : "camunda.physical-tenants." + tenantId + ".secrets.stores.")
-            + storeTypeProperty;
+    final var storesProperty = storesProperty(tenantId, storeTypeProperty);
     throw new IllegalStateException(
         "Physical tenant '%s' configures secret store '%s', but the only supported store id is '%s'; rename %s.%s to %s.%s"
             .formatted(
@@ -274,6 +274,14 @@ public class SecretStoreConfiguration {
                 storeId,
                 storesProperty,
                 SecretStoreRegistry.DEFAULT_STORE_ID));
+  }
+
+  /** The property under which the tenant configures stores of the given type. */
+  private static String storesProperty(final String tenantId, final String storeTypeProperty) {
+    return (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+            ? "camunda.secrets.stores."
+            : "camunda.physical-tenants." + tenantId + ".secrets.stores.")
+        + storeTypeProperty;
   }
 
   private static SecretStore fileStore(
@@ -315,6 +323,23 @@ public class SecretStoreConfiguration {
             config.getContainerSecretId(),
             false,
             config.getCallTimeout()));
+  }
+
+  private static SecretStore envStore(
+      final String storeId, final String tenantId, final EnvStore config) {
+    final var prefix = config.getPrefix();
+    // an empty prefix would match every variable, including the platform's own credentials
+    if (prefix.isBlank()) {
+      throw new IllegalStateException(
+          "Environment-variable store '%s' for physical tenant '%s' has no prefix configured; set %s.%s.prefix"
+              .formatted(storeId, tenantId, storesProperty(tenantId, "env"), storeId));
+    }
+    LOG.info(
+        "Environment-variable secret store '{}' for physical tenant '{}' reads variables prefixed '{}'",
+        storeId,
+        tenantId,
+        prefix);
+    return EnvVarSecretStore.fromSystemEnvironment(prefix);
   }
 
   /**
