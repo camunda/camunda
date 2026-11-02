@@ -84,21 +84,29 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateCollectionRolesScript(), params);
     final Query rolesQuery = buildCollectionRolesQuery(oldUserId);
-    taskRepository.tryUpdateByQueryRequest(
-        "collection roles for user " + UserIdMigrationRepository.maskForLog(oldUserId),
-        rolesScript,
-        rolesQuery,
-        COLLECTION_INDEX_NAME);
+    try {
+      taskRepository.tryUpdateByQueryRequest(
+          "collection roles for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          rolesScript,
+          rolesQuery,
+          COLLECTION_INDEX_NAME);
+    } catch (final RuntimeException e) {
+      throw UserIdMigrationRepository.maskedFailure(oldUserId, newUserId, e);
+    }
 
     final Script ownerScript =
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateOwnerScript(), params);
     final Query ownerQuery = buildOwnerLastModifierQuery(oldUserId);
-    taskRepository.tryUpdateByQueryRequest(
-        "owner/lastModifier for user " + UserIdMigrationRepository.maskForLog(oldUserId),
-        ownerScript,
-        ownerQuery,
-        ALL_ENTITY_INDICES);
+    try {
+      taskRepository.tryUpdateByQueryRequest(
+          "owner/lastModifier for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          ownerScript,
+          ownerQuery,
+          ALL_ENTITY_INDICES);
+    } catch (final RuntimeException e) {
+      throw UserIdMigrationRepository.maskedFailure(oldUserId, newUserId, e);
+    }
 
     LOG.info(
         "Migration of entities for user [{}] to [{}] complete",
