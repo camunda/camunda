@@ -91,4 +91,8 @@ ADR for that domain is written.
   Gradle build stays aligned with Maven as the source of truth, with focused
   Gradle checks on relevant changes, a complete CI path selectable by build tool,
   scheduled Gradle tests (full CI).
+- `0001-811-cpt-recording-replay-of-isolated-tests.md` — how Camunda Process Test
+  and the Java client consume the per-instance recording switches: one reservation
+  token per run, mutations addressed through a registry not a selector, new
+  instructions added alongside the existing mocks, REST-only end to end.
 

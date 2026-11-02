@@ -165,6 +165,9 @@ gap until the job APIs surface activation data at all.
 - The first consumer is the agent-history commit lifecycle
   ([0013](0013-810-agent-history-commit-under-job-lease.md)); the mechanism is generic and carries
   no AI-specific semantics.
+- The job reservation token ([0016](0016-811-reserved-jobs.md)) is a deliberately separate field,
+  not a reuse of this lease token: it is caller-chosen and lives for the instance, where the lease
+  token is engine-minted and fresh per activation.
 
 ## Source
 
