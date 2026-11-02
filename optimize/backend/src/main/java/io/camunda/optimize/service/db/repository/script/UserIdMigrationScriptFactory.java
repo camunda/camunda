@@ -9,12 +9,28 @@ package io.camunda.optimize.service.db.repository.script;
 
 public interface UserIdMigrationScriptFactory {
 
+  /**
+   * A collection can already hold a role for the new ID, for example when the user was added
+   * through the user search before the migration. Two roles for one user break role updates, so the
+   * script keeps one role with the higher permission.
+   */
   static String createMigrateCollectionRolesScript() {
-    return "for (def role : ctx._source.data.roles) {"
-        + "  if (role.identity.id == params.oldId) {"
-        + "    role.identity.id = params.newId;"
-        + "    role.id = 'USER:' + params.newId;"
+    return "def roles = ctx._source.data.roles;"
+        + "def oldRole = null;"
+        + "def newRole = null;"
+        + "for (def role : roles) {"
+        + "  if (role.identity.id == params.oldId) { oldRole = role; }"
+        + "  else if (role.identity.id == params.newId) { newRole = role; }"
+        + "}"
+        + "if (oldRole != null && newRole == null) {"
+        + "  oldRole.identity.id = params.newId;"
+        + "  oldRole.id = 'USER:' + params.newId;"
+        + "} else if (oldRole != null) {"
+        + "  def rank = ['viewer': 0, 'editor': 1, 'manager': 2];"
+        + "  if (rank.getOrDefault(oldRole.role, -1) > rank.getOrDefault(newRole.role, -1)) {"
+        + "    newRole.role = oldRole.role;"
         + "  }"
+        + "  roles.removeIf(role -> role.identity.id == params.oldId);"
         + "}";
   }
 
