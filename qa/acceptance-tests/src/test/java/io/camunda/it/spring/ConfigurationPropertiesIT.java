@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.configuration.processing.flowcontrol.Limit;
+import io.camunda.configuration.Limit;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
