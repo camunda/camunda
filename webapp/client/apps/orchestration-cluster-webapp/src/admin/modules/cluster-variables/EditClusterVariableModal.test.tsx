@@ -115,7 +115,7 @@ describe('<EditClusterVariableModal />', () => {
 				successResponse: HttpResponse.json(createClusterVariable({value: '42'})),
 			}),
 			mockUpdateGlobalClusterVariableEndpoint({
-				schema: z.object({value: z.literal(42)}).strict(),
+				schema: z.object({value: z.literal(42), metadata: z.object({}).strict()}).strict(),
 				successResponse: HttpResponse.json(createClusterVariable({value: '42'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
@@ -126,6 +126,41 @@ describe('<EditClusterVariableModal />', () => {
 		const screen = await render(<EditClusterVariableModal clusterVariable={searchResult} onClose={onClose} />, {
 			wrapper: getWrapper(),
 		});
+		const editor = screen.getByRole('textbox', {name: 'Value'});
+		await expect.element(editor).toBeInTheDocument();
+
+		await replaceMonacoValue(editor, '42');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+	});
+
+	it('should keep the metadata of the cluster variable when updating its value', async ({worker}) => {
+		const metadata = {credentialType: 'api-key', rotationDays: 90};
+		worker.use(
+			mockGetGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(createClusterVariable({value: '1', metadata})),
+				once: true,
+			}),
+			mockGetGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(createClusterVariable({value: '42', metadata})),
+			}),
+			mockUpdateGlobalClusterVariableEndpoint({
+				schema: z
+					.object({
+						value: z.literal(42),
+						metadata: z.object({credentialType: z.literal('api-key'), rotationDays: z.literal(90)}).strict(),
+					})
+					.strict(),
+				successResponse: HttpResponse.json(createClusterVariable({value: '42', metadata})),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const onClose = vi.fn();
+		const screen = await render(
+			<EditClusterVariableModal clusterVariable={createClusterVariable({metadata: {}})} onClose={onClose} />,
+			{wrapper: getWrapper()},
+		);
 		const editor = screen.getByRole('textbox', {name: 'Value'});
 		await expect.element(editor).toBeInTheDocument();
 

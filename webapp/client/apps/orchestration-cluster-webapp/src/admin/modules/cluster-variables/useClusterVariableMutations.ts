@@ -13,6 +13,7 @@ import type {
 	ClusterVariable,
 	ClusterVariableSearchResult,
 	QueryClusterVariablesRequestBody,
+	UpdateClusterVariableRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -24,7 +25,7 @@ import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
 import {isDuplicateClusterVariableError} from './isDuplicateClusterVariableError';
 
 type ClusterVariableIdentity = Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>;
-type ClusterVariableInput = ClusterVariableIdentity & {value: unknown};
+type ClusterVariableInput = ClusterVariableIdentity & Pick<UpdateClusterVariableRequestBody, 'value' | 'metadata'>;
 
 const LIST_QUERY_KEY_PREFIX = ['queryClusterVariables'];
 
