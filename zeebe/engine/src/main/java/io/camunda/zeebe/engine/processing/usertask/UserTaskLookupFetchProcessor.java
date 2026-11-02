@@ -108,9 +108,10 @@ public final class UserTaskLookupFetchProcessor
             .setTenantId(userTask.getTenantId())
             .setUserTask(userTask)
             .setLifecycleState(toProtocol(userTaskState.getLifecycleState(userTaskKey)));
-    response
-        .getUserTask()
-        .setVariables(collectVariables(userTask.getElementInstanceKey(), request));
+    // copied: the variable state reuses this buffer on its next read
+    final DirectBuffer variables =
+        BufferUtil.cloneBuffer(collectVariables(userTask.getElementInstanceKey(), request));
+    response.getUserTask().setVariables(variables);
     responseWriter.writeAcceptedResponseOnCommand(
         userTaskKey, UserTaskLookupIntent.FETCHED, response, command);
   }

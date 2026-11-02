@@ -62,7 +62,7 @@ public final class UserTaskLookupRecord extends UnifiedRecordValue
   }
 
   public UserTaskLookupRecord setUserTask(final UserTaskRecord userTask) {
-    userTaskProperty.getValue().wrap(userTask);
+    userTaskProperty.getValue().copyFrom(userTask);
     return this;
   }
 
