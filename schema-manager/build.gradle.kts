@@ -28,6 +28,7 @@ dependencies {
   api(libs.com.google.guava.guava)
   api(libs.org.agrona.agrona)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.io.micrometer.micrometer.core)
   testImplementation(libs.io.github.resilience4j.resilience4j.core)
   api(libs.org.apache.httpcomponents.httpcore)

@@ -8,6 +8,7 @@ plugins {
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":camunda-security-core"))
   implementation(project(":camunda-security-protocol"))

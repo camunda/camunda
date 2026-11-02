@@ -17,6 +17,7 @@ dependencies {
   implementation(project(":zeebe-scheduler"))
   api(project(":zeebe-transport"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
   testImplementation(project(":zeebe-test-util"))

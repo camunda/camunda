@@ -9,6 +9,7 @@ dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   api(libs.io.micrometer.micrometer.core)
   api(libs.io.micrometer.micrometer.commons)

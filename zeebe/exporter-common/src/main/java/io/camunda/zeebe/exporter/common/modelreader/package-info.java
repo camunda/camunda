@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 @NullMarked
-package io.camunda.zeebe.util.modelreader;
+package io.camunda.zeebe.exporter.common.modelreader;
 
 import org.jspecify.annotations.NullMarked;

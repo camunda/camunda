@@ -15,6 +15,7 @@ dependencies {
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-journal"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.slf4j.slf4j.api)
   api(libs.io.micrometer.micrometer.core)
   api(libs.io.micrometer.micrometer.commons)

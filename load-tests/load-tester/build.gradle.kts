@@ -14,6 +14,7 @@ dependencies {
   implementation(libs.org.springframework.boot.spring.boot.starter.webflux)
   implementation(libs.org.springframework.spring.webflux)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.springframework.boot.spring.boot)
   implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
   implementation(libs.org.springframework.boot.spring.boot.starter.actuator)

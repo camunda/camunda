@@ -6,6 +6,7 @@ plugins {
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)

@@ -328,6 +328,7 @@ dependencies {
     exclude(group = "com.github.vertical-blank", module = "sql-formatter")
   }
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
