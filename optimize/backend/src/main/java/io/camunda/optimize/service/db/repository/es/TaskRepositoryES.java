@@ -234,10 +234,10 @@ public class TaskRepositoryES extends TaskRepository {
     try {
       taskId = esClient.submitDeleteTask(request).task();
     } catch (final IOException e) {
+      // The query can hold personal data such as a user ID, so only DEBUG logs it.
+      LOG.debug("Failed delete task for [{}] had query [{}]", deletedItemIdentifier, query);
       final String errorMessage =
-          String.format(
-              "Could not create delete task for [%s] with query [%s]!",
-              deletedItemIdentifier, query);
+          String.format("Could not create delete task for [%s]!", deletedItemIdentifier);
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
