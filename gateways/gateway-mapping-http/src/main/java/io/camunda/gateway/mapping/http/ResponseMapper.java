@@ -958,7 +958,7 @@ public final class ResponseMapper {
     final long formKey = userTask.getFormKey();
     return UserTaskLookupResult.Builder.create()
         .userTaskKey(keyToString(userTask.getUserTaskKey()))
-        .state(toUserTaskLookupState(lookup.getLifecycleState()))
+        .state(toUserTaskLookupState(lookup.getLifecycleState(), userTask.getUserTaskKey()))
         .elementId(userTask.getElementId())
         .elementInstanceKey(keyToString(userTask.getElementInstanceKey()))
         .processInstanceKey(keyToString(userTask.getProcessInstanceKey()))
@@ -988,7 +988,7 @@ public final class ResponseMapper {
   }
 
   private static UserTaskLookupStateEnum toUserTaskLookupState(
-      final UserTaskLifecycleState lifecycleState) {
+      final UserTaskLifecycleState lifecycleState, final long userTaskKey) {
     return switch (lifecycleState) {
       case CREATING -> UserTaskLookupStateEnum.CREATING;
       case CREATED -> UserTaskLookupStateEnum.CREATED;
@@ -999,8 +999,9 @@ public final class ResponseMapper {
       case CANCELING -> UserTaskLookupStateEnum.CANCELING;
       case UNSPECIFIED ->
           throw new IllegalStateException(
-              "Expected the user task lookup response to carry a lifecycle state, but it was "
-                  + "UNSPECIFIED. This is a bug, please report it.");
+              ("Expected a lifecycle state for user task '%d', but the engine has none stored "
+                      + "(UNSPECIFIED). This is a bug, please report it.")
+                  .formatted(userTaskKey));
     };
   }
 

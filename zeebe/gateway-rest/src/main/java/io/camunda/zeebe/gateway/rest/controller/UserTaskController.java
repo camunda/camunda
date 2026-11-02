@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -297,13 +298,18 @@ public class UserTaskController {
   private CompletableFuture<ResponseEntity<Object>> lookupUserTask(
       final String physicalTenantId, final LookupUserTaskRequest request) {
     final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
+    // Map inside the future: if the mapping fails (e.g. no lifecycle state stored), the future
+    // fails and the error is logged and answered as an unexpected 500, instead of reaching the
+    // catch-all exception handler, which answers 400 and doesn't log.
     return RequestExecutor.executeServiceMethod(
         () ->
-            userTaskServices.lookupUserTask(
-                request.userTaskKey(),
-                request.fetchVariables(),
-                authenticationProvider.getCamundaAuthentication()),
-        ResponseMapper::toUserTaskLookupResult,
+            userTaskServices
+                .lookupUserTask(
+                    request.userTaskKey(),
+                    request.fetchVariables(),
+                    authenticationProvider.getCamundaAuthentication())
+                .thenApply(ResponseMapper::toUserTaskLookupResult),
+        Function.identity(),
         HttpStatus.OK);
   }
 

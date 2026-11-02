@@ -984,6 +984,7 @@ class ResponseMapperTest {
       // when/then
       assertThatThrownBy(() -> ResponseMapper.toUserTaskLookupResult(lookup))
           .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("user task '1'")
           .hasMessageContaining("UNSPECIFIED")
           .hasMessageContaining("This is a bug, please report it.");
     }

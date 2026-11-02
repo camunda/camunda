@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -14,6 +15,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -41,6 +44,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1527,6 +1533,49 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .jsonPath("$.title")
         .isEqualTo("RESOURCE_EXHAUSTED");
+  }
+
+  @Test
+  void shouldYieldInternalServerErrorAndLogWhenLookupHasNoLifecycleState() {
+    // given
+    final var recorder = new RecordingAppender();
+    final var logger = (Logger) LogManager.getLogger(GatewayErrorMapper.class);
+    recorder.start();
+    logger.addAppender(recorder);
+    when(userTaskServices.lookupUserTask(anyLong(), any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new UserTaskLookupRecord().setUserTask(new UserTaskRecord().setUserTaskKey(1L))));
+
+    try {
+      // when
+      webClient
+          .post()
+          .uri(USER_TASKS_V2_URL + "/1/lookup")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          // then
+          .expectStatus()
+          .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+          .expectBody()
+          .jsonPath("$.status")
+          .isEqualTo(500)
+          .jsonPath("$.state")
+          .doesNotExist();
+
+      assertThat(recorder.getAppendedEvents())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(event.getThrown()).hasMessageContaining("UNSPECIFIED");
+              });
+    } finally {
+      logger.removeAppender(recorder);
+      recorder.stop();
+    }
   }
 
   static Stream<Arguments> lookupRejections() {
