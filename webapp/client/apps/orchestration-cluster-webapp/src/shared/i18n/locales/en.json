@@ -248,6 +248,8 @@
 				"members": {
 					"tabsLabel": "Group members",
 					"assignFailed": "Failed to assign",
+					"assignedMany": "{{count}} members assigned",
+					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
 					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
@@ -511,6 +513,8 @@
 				"members": {
 					"tabsLabel": "Role members",
 					"assignFailed": "Failed to assign",
+					"assignedMany": "{{count}} members assigned",
+					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
 					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
@@ -674,6 +678,8 @@
 					}
 				},
 				"assignSuccess": "Assignment saved",
+				"assignedMany": "{{count}} members assigned",
+				"assignedPartial": "{{assigned}} of {{total}} assigned",
 				"assignError": "Failed to assign",
 				"unassignSuccess": "Removed from tenant",
 				"unassignError": "Failed to remove from the tenant",

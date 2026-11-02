@@ -248,6 +248,8 @@
 				"members": {
 					"tabsLabel": "Membres du groupe",
 					"assignFailed": "Échec de l'attribution",
+					"assignedMany": "{{count}} membres attribués",
+					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
 					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
@@ -511,6 +513,8 @@
 				"members": {
 					"tabsLabel": "Membres du rôle",
 					"assignFailed": "Échec de l'attribution",
+					"assignedMany": "{{count}} membres attribués",
+					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
 					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
@@ -674,6 +678,8 @@
 					}
 				},
 				"assignSuccess": "Assignation enregistrée",
+				"assignedMany": "{{count}} membres attribués",
+				"assignedPartial": "{{assigned}} sur {{total}} attribués",
 				"assignError": "Impossible d'assigner",
 				"unassignSuccess": "Retiré du locataire",
 				"unassignError": "Impossible de retirer du locataire",

@@ -18,6 +18,7 @@ import {
 	type MemberKind,
 	type MembersResponse,
 } from './members';
+import {dismissSuperseded, notifyAssigned} from '../shared/notifyAssigned';
 import {request} from '#/shared/http/request';
 import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -70,7 +71,11 @@ function useRoleMemberMutations(roleId: string) {
 			return {kind, ids: succeeded, failed};
 		};
 
-	const reconcile = async (direction: Direction, {kind, ids}: {kind: MemberKind; ids: string[]}) => {
+	const reconcile = async (
+		direction: Direction,
+		{kind, ids}: {kind: MemberKind; ids: string[]},
+		superseded?: Promise<string | number | undefined>,
+	) => {
 		const shouldBeListed = direction === 'assign';
 		let latest: Set<string> | undefined;
 		await waitUntilReady(
@@ -84,6 +89,7 @@ function useRoleMemberMutations(roleId: string) {
 
 		const confirmed = latest === undefined ? [] : ids.filter((id) => latest?.has(id) === shouldBeListed);
 		if (confirmed.length < ids.length) {
+			await dismissSuperseded(superseded);
 			toast.warning(t('admin.roles.changeNotConfirmed'), {
 				description: t('admin.roles.changeNotConfirmedDescription'),
 			});
@@ -96,15 +102,14 @@ function useRoleMemberMutations(roleId: string) {
 	const assign = useMutation({
 		mutationFn: mutate('assign'),
 		onSuccess: (result) => {
-			for (const id of result.ids) {
-				toast.success(t(`admin.roles.members.${result.kind}.assigned`, {id}));
-			}
-			for (const {error} of result.failed) {
-				void getErrorMessage(error).then((description) =>
-					toast.error(t('admin.roles.members.assignFailed'), {description}),
-				);
-			}
-			void reconcile('assign', result);
+			const summary = notifyAssigned({
+				t,
+				scope: 'admin.roles.members',
+				assigned: result.ids.length,
+				errors: result.failed.map(({error}) => error),
+				single: t(`admin.roles.members.${result.kind}.assigned`, {id: result.ids[0]}),
+			});
+			void reconcile('assign', result, summary);
 		},
 		onError: async (error) => {
 			toast.error(t('admin.roles.members.assignFailed'), {description: await getErrorMessage(error)});

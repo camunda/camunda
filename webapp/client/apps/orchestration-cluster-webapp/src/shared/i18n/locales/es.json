@@ -248,6 +248,8 @@
 				"members": {
 					"tabsLabel": "Miembros del grupo",
 					"assignFailed": "No se pudo asignar",
+					"assignedMany": "{{count}} miembros asignados",
+					"assignedPartial": "{{assigned}} de {{total}} asignados",
 					"removeFailed": "No se pudo quitar",
 					"loadError": "No se pudieron cargar los miembros",
 					"candidatesLoadError": "No se pudieron cargar las opciones",
@@ -511,6 +513,8 @@
 				"members": {
 					"tabsLabel": "Miembros del rol",
 					"assignFailed": "No se pudo asignar",
+					"assignedMany": "{{count}} miembros asignados",
+					"assignedPartial": "{{assigned}} de {{total}} asignados",
 					"removeFailed": "No se pudo quitar",
 					"loadError": "No se pudieron cargar los miembros",
 					"candidatesLoadError": "No se pudieron cargar las opciones",
@@ -674,6 +678,8 @@
 					}
 				},
 				"assignSuccess": "Asignación guardada",
+				"assignedMany": "{{count}} miembros asignados",
+				"assignedPartial": "{{assigned}} de {{total}} asignados",
 				"assignError": "No se pudo asignar",
 				"unassignSuccess": "Quitado del inquilino",
 				"unassignError": "No se pudo quitar del inquilino",

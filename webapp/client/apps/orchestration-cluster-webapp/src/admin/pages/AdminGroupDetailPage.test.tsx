@@ -478,8 +478,7 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
-		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
-		await expect.element(screen.getByText('User john.roe assigned')).toBeVisible();
+		await expect.element(screen.getByText('2 members assigned')).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'jane.doe', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
 		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
@@ -518,8 +517,7 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
-		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
-		await expect.element(screen.getByText('Failed to assign')).toBeVisible();
+		await expect.element(screen.getByText('1 of 2 assigned')).toBeVisible();
 		await expect.element(screen.getByRole('dialog').getByText('john.roe')).toBeVisible();
 		await expect.element(screen.getByRole('dialog').getByText('jane.doe')).not.toBeInTheDocument();
 	});

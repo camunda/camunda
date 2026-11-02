@@ -8,6 +8,7 @@
 
 import {QueryClient, QueryClientProvider, QueryObserver, type QueryKey} from '@tanstack/react-query';
 import {http, HttpResponse} from 'msw';
+import {toast} from '@camunda/design-system';
 import {cleanup, renderHook} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
@@ -47,6 +48,7 @@ function setUp(initial: UsersPage) {
 
 describe('useTenantMemberMutations', () => {
 	afterEach(async () => {
+		vi.restoreAllMocks();
 		await cleanup();
 	});
 
@@ -119,7 +121,7 @@ describe('useTenantMemberMutations', () => {
 		unsubscribe();
 	});
 
-	it('should keep the members assigned before a batch failed', async ({worker}) => {
+	it('should keep the members that were assigned when another member of the batch fails', async ({worker}) => {
 		// given
 		const {queryClient, unsubscribe, Wrapper} = setUp({items: [{username: 'carol'}], page: {totalItems: 1}});
 		worker.use(
@@ -139,9 +141,37 @@ describe('useTenantMemberMutations', () => {
 
 		// then
 		expect(queryClient.getQueryData<UsersPage>(LIST_KEY)).toEqual({
-			items: [{username: 'alice'}, {username: 'carol'}],
-			page: {totalItems: 2},
+			items: [{username: 'alice'}, {username: 'carol'}, {username: 'dave'}],
+			page: {totalItems: 3},
 		});
+		unsubscribe();
+	});
+
+	it('should report which members failed when the rest of the batch includes an already assigned one', async ({
+		worker,
+	}) => {
+		// given
+		const {unsubscribe, Wrapper} = setUp({items: [{username: 'carol'}], page: {totalItems: 1}});
+		const warning = vi.spyOn(toast, 'warning').mockImplementation(() => '');
+		const error = vi.spyOn(toast, 'error').mockImplementation(() => '');
+		worker.use(
+			http.all('*/tenants/:tenantId/users/:username', ({params}) =>
+				params.username === 'alice' ? new HttpResponse(null, {status: 409}) : new HttpResponse(null, {status: 500}),
+			),
+			mockQueryUsersByTenantEndpoint({
+				successResponse: HttpResponse.json({items: [{username: 'carol'}], page: {totalItems: 1}}),
+			}),
+		);
+		const {result} = await renderHook(() => useTenantMemberMutations('users', TENANT_ID), {wrapper: Wrapper});
+
+		// when
+		const {failed} = await result.current.assign.mutateAsync([{username: 'alice'}, {username: 'bob'}]);
+
+		// then
+		expect(failed.map(({id}) => id)).toEqual(['bob']);
+		await vi.waitFor(() => expect(warning).toHaveBeenCalledOnce());
+		expect(warning).toHaveBeenCalledWith('1 of 2 assigned', expect.anything());
+		expect(error).not.toHaveBeenCalled();
 		unsubscribe();
 	});
 
@@ -227,6 +257,58 @@ describe('useTenantMemberMutations', () => {
 			}),
 		);
 		await vi.waitFor(() => expect(invalidateQueries).toHaveBeenCalledTimes(2), {timeout: 5_000});
+		unsubscribe();
+	});
+
+	it('should show a single toast when several members are assigned at once', async ({worker}) => {
+		// given
+		const {unsubscribe, Wrapper} = setUp({items: [{username: 'carol'}], page: {totalItems: 1}});
+		const success = vi.spyOn(toast, 'success').mockImplementation(() => '');
+		const warning = vi.spyOn(toast, 'warning').mockImplementation(() => '');
+		const error = vi.spyOn(toast, 'error').mockImplementation(() => '');
+		worker.use(
+			http.put('*/tenants/:tenantId/users/:username', () => new HttpResponse(null, {status: 204})),
+			mockQueryUsersByTenantEndpoint({
+				successResponse: HttpResponse.json({items: [{username: 'carol'}], page: {totalItems: 4}}),
+			}),
+		);
+		const {result} = await renderHook(() => useTenantMemberMutations('users', TENANT_ID), {wrapper: Wrapper});
+
+		// when
+		await result.current.assign.mutateAsync([{username: 'alice'}, {username: 'bob'}, {username: 'dave'}]);
+
+		// then
+		expect(success).toHaveBeenCalledExactlyOnceWith('3 members assigned');
+		expect(warning).not.toHaveBeenCalled();
+		expect(error).not.toHaveBeenCalled();
+		unsubscribe();
+	});
+
+	it('should report several failed assignments in a single toast', async ({worker}) => {
+		// given
+		const {queryClient, unsubscribe, Wrapper} = setUp({items: [{username: 'carol'}], page: {totalItems: 1}});
+		const success = vi.spyOn(toast, 'success').mockImplementation(() => '');
+		const warning = vi.spyOn(toast, 'warning').mockImplementation(() => '');
+		const error = vi.spyOn(toast, 'error').mockImplementation(() => '');
+		worker.use(
+			http.put('*/tenants/:tenantId/users/:username', ({params}) =>
+				params.username === 'alice' ? new HttpResponse(null, {status: 204}) : new HttpResponse(null, {status: 500}),
+			),
+			mockQueryUsersByTenantEndpoint({
+				successResponse: HttpResponse.json({items: [{username: 'carol'}], page: {totalItems: 2}}),
+			}),
+		);
+		const {result} = await renderHook(() => useTenantMemberMutations('users', TENANT_ID), {wrapper: Wrapper});
+
+		// when
+		await result.current.assign.mutateAsync([{username: 'alice'}, {username: 'bob'}, {username: 'dave'}]);
+
+		// then
+		await vi.waitFor(() => expect(warning).toHaveBeenCalledOnce());
+		expect(warning).toHaveBeenCalledWith('1 of 3 assigned', expect.anything());
+		expect(success).not.toHaveBeenCalled();
+		expect(error).not.toHaveBeenCalled();
+		expect(queryClient.getQueryData<UsersPage>(LIST_KEY)?.items).toContainEqual({username: 'alice'});
 		unsubscribe();
 	});
 });
