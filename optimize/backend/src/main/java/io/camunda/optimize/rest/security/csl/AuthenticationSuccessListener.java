@@ -20,6 +20,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 
@@ -111,19 +112,29 @@ public final class AuthenticationSuccessListener {
       return;
     }
 
-    migrateIfDifferent(originalUserId, currentUserId);
-    migrateIfDifferent(emailUserId, currentUserId);
+    migrateIfDifferent(originalUserId, currentUserId, "originalUserId claim");
+    migrateIfDifferent(emailUserId, currentUserId, "email claim");
   }
 
-  private void migrateIfDifferent(final String previousUserId, final String currentUserId) {
+  private void migrateIfDifferent(
+      final String previousUserId, final String currentUserId, final String trigger) {
     if (!isBlank(previousUserId) && !previousUserId.equals(currentUserId)) {
-      userIdMigrationService.migrateUserIdIfNeeded(currentUserId, previousUserId);
+      userIdMigrationService.migrateUserIdIfNeeded(currentUserId, previousUserId, trigger);
     }
   }
 
+  /**
+   * The SaaS token has no standard email_verified claim, because the login asks only for the openid
+   * and profile scopes. The Auth0 post-login flow denies every login with an unverified email
+   * before it sets the meta claim. A token that does carry email_verified must confirm it.
+   */
   private static String emailClaim(final OidcUser oidcUser) {
-    final Map<String, Object> meta = oidcUser.getClaimAsMap(CAMUNDA_META_CLAIM);
-    return meta != null && meta.get(CAMUNDA_META_EMAIL) instanceof final String email
+    final Object emailVerified = oidcUser.getClaims().get(StandardClaimNames.EMAIL_VERIFIED);
+    if (emailVerified != null && !Boolean.TRUE.equals(emailVerified)) {
+      return null;
+    }
+    return oidcUser.getClaims().get(CAMUNDA_META_CLAIM) instanceof final Map<?, ?> meta
+            && meta.get(CAMUNDA_META_EMAIL) instanceof final String email
         ? email
         : null;
   }

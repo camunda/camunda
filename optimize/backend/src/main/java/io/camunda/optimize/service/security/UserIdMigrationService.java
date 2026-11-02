@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.security;
 
+import static io.camunda.optimize.service.db.repository.UserIdMigrationRepository.maskForLog;
+
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.exceptions.UserIdMigrationException;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -96,8 +98,19 @@ public class UserIdMigrationService {
    * running.
    */
   public void migrateUserIdIfNeeded(final String newUserId, final String oldUserId) {
+    migrateUserIdIfNeeded(newUserId, oldUserId, "originalUserId claim");
+  }
+
+  /**
+   * Same as {@link #migrateUserIdIfNeeded(String, String)}. The trigger names the source of the old
+   * ID in the log, so support can tell the migration paths apart.
+   */
+  public void migrateUserIdIfNeeded(
+      final String newUserId, final String oldUserId, final String trigger) {
     if (!handledOldUserIds.add(oldUserId)) {
-      LOG.debug("Old user ID [{}] already migrated or migration in progress, skipping", oldUserId);
+      LOG.debug(
+          "Old user ID [{}] already migrated or migration in progress, skipping",
+          maskForLog(oldUserId));
       return;
     }
     CompletableFuture.supplyAsync(() -> repository.hasDocumentsWithUserId(oldUserId), executor)
@@ -105,9 +118,16 @@ public class UserIdMigrationService {
         .thenCompose(
             hasDocuments -> {
               if (!hasDocuments) {
-                LOG.debug("No documents found for old user ID [{}], skipping migration", oldUserId);
+                LOG.debug(
+                    "No documents found for old user ID [{}], skipping migration",
+                    maskForLog(oldUserId));
                 return CompletableFuture.<Void>completedFuture(null);
               }
+              LOG.info(
+                  "Starting migration of user ID [{}] to [{}], triggered by the {}",
+                  maskForLog(oldUserId),
+                  maskForLog(newUserId),
+                  trigger);
               return runMigrationAttempt(newUserId, oldUserId, 1);
             })
         .whenComplete(
@@ -116,8 +136,8 @@ public class UserIdMigrationService {
                 final Throwable cause = error.getCause() != null ? error.getCause() : error;
                 LOG.error(
                     "Failed to migrate user ID [{}] to [{}]: {}",
-                    oldUserId,
-                    newUserId,
+                    maskForLog(oldUserId),
+                    maskForLog(newUserId),
                     cause.getMessage(),
                     cause);
                 handledOldUserIds.remove(oldUserId);
@@ -136,8 +156,8 @@ public class UserIdMigrationService {
       final String newUserId, final String oldUserId, final int attempt) {
     LOG.info(
         "Old user ID [{}] still referenced in documents, migrating to [{}] (attempt {}/{})",
-        oldUserId,
-        newUserId,
+        maskForLog(oldUserId),
+        maskForLog(newUserId),
         attempt,
         MAX_ATTEMPTS);
     return CompletableFuture.supplyAsync(
@@ -152,19 +172,19 @@ public class UserIdMigrationService {
               if (!stillHasDocuments) {
                 LOG.info(
                     "Migration of user ID [{}] to [{}] complete after {} attempt(s)",
-                    oldUserId,
-                    newUserId,
+                    maskForLog(oldUserId),
+                    maskForLog(newUserId),
                     attempt);
                 return CompletableFuture.<Void>completedFuture(null);
               }
               if (attempt >= MAX_ATTEMPTS) {
                 throw new UserIdMigrationException(
                     "Old user ID ["
-                        + oldUserId
+                        + maskForLog(oldUserId)
                         + "] still referenced in documents after "
                         + MAX_ATTEMPTS
                         + " migration attempts to ["
-                        + newUserId
+                        + maskForLog(newUserId)
                         + "]");
               }
               return afterBackoff(attempt)

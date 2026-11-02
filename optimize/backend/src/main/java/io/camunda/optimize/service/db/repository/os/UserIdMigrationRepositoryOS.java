@@ -66,13 +66,18 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
       return osClient.count(ALL_ENTITY_INDICES, buildUserIdQuery(userId)) > 0;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(
-          "Failed to check for documents with user ID: " + userId, e);
+          "Failed to check for documents with user ID: "
+              + UserIdMigrationRepository.maskForLog(userId),
+          e);
     }
   }
 
   @Override
   public void migrateUserId(final String oldUserId, final String newUserId) {
-    LOG.info("Migrating Optimize entities from user ID [{}] to [{}]", oldUserId, newUserId);
+    LOG.info(
+        "Migrating Optimize entities from user ID [{}] to [{}]",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
     final Map<String, JsonData> params =
         Map.of("oldId", JsonData.of(oldUserId), "newId", JsonData.of(newUserId));
 
@@ -80,7 +85,7 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateCollectionRolesScript(), params);
     osClient.updateByQueryTask(
-        "collection roles for user " + oldUserId,
+        "collection roles for user " + UserIdMigrationRepository.maskForLog(oldUserId),
         rolesScript,
         buildCollectionRolesQuery(oldUserId),
         COLLECTION_INDEX_NAME);
@@ -89,12 +94,15 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateOwnerScript(), params);
     osClient.updateByQueryTask(
-        "owner/lastModifier for user " + oldUserId,
+        "owner/lastModifier for user " + UserIdMigrationRepository.maskForLog(oldUserId),
         ownerScript,
         buildOwnerLastModifierQuery(oldUserId),
         ALL_ENTITY_INDICES);
 
-    LOG.info("Migration of entities for user [{}] to [{}] complete", oldUserId, newUserId);
+    LOG.info(
+        "Migration of entities for user [{}] to [{}] complete",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
   }
 
   private Query buildUserIdQuery(final String userId) {
