@@ -122,7 +122,7 @@ test.describe('Suspended user tasks in Tasklist', () => {
           );
           await expect(
             taskPanelPage.taskLinkByName(task.processDefinitionId),
-          ).toHaveAccessibleName(/^Unassigned task:/);
+          ).toHaveAccessibleName(/^Unassigned task:| Unassigned\b/);
         }
       });
     }
@@ -148,7 +148,7 @@ test.describe('Suspended user tasks in Tasklist', () => {
         );
         await expect(
           taskPanelPage.taskLinkByName(task.processDefinitionId),
-        ).toHaveAccessibleName(/^Task assigned to me:/);
+        ).toHaveAccessibleName(/^Task assigned to me:| Me\b/);
       }
     });
   });

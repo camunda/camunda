@@ -47,7 +47,7 @@ describe('<Decision />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Decision ID / Click to copy',
+        name: 'invoiceClassification (Decision ID / Click to copy)',
       }),
     );
 

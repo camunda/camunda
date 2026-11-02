@@ -54,14 +54,9 @@ const LogoutAwareUserMenu: React.FC<LogoutAwareUserMenuProps> = ({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="rounded-full"
-					aria-label={t('headerUserMenuLabel', {name: userName})}
-					type="button"
-				>
+				<Button variant="ghost" size="icon" className="rounded-full" type="button">
 					<Avatar name={userName} size="sm" aria-hidden="true" />
+					<span className="sr-only">{t('headerUserMenuLabel', {name: userName})}</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-56" align="end">

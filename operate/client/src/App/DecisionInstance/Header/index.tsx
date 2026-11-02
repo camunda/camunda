@@ -181,7 +181,6 @@ const Header: React.FC<HeaderProps> = ({
             size="sm"
             kind="tertiary"
             title="Open Decision Requirements Diagram"
-            aria-label="Open Decision Requirements Diagram"
             onClick={() => {
               onChangeDrdPanelState('minimized');
               tracking.track({

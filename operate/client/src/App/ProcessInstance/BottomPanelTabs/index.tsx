@@ -150,7 +150,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
 
   const tabItems = [
     {
-      label: 'Instance History',
       to: {
         pathname: Paths.processInstanceHistory({processInstanceId}),
       },
@@ -160,7 +159,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: isHistoryTabVisible,
     },
     {
-      label: 'Incidents',
       to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
       key: 'incidents',
       selected: currentPage === 'process-details-incidents',
@@ -170,7 +168,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       tagText: incidentsCount ?? 0,
     },
     {
-      label: 'Details',
       to: {pathname: Paths.processInstanceDetails({processInstanceId})},
       key: 'details',
       selected: currentPage === 'process-details-details',
@@ -180,7 +177,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: hasSelection || isProcessLevelWaiting,
     },
     {
-      label: 'Variables',
       to: {pathname: Paths.processInstanceVariables({processInstanceId})},
       key: 'variables',
       selected: currentPage === 'process-details-variables',
@@ -188,7 +184,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: true,
     },
     {
-      label: 'Input Mappings',
       to: {pathname: Paths.processInstanceInputMappings({processInstanceId})},
       key: 'input-mappings',
       selected: currentPage === 'process-details-input-mappings',
@@ -196,7 +191,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: hasSelection,
     },
     {
-      label: 'Output Mappings',
       to: {
         pathname: Paths.processInstanceOutputMappings({processInstanceId}),
       },
@@ -206,7 +200,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: hasSelection,
     },
     {
-      label: 'Listeners',
       to: {pathname: Paths.processInstanceListeners({processInstanceId})},
       key: 'listeners',
       selected: currentPage === 'process-details-listeners',
@@ -214,7 +207,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: true,
     },
     {
-      label: 'Operations Log',
       to: {pathname: Paths.processInstanceOperationsLog({processInstanceId})},
       key: 'operations-log',
       selected: currentPage === 'process-details-operations-log',

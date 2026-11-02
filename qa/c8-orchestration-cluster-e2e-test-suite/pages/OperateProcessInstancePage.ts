@@ -283,7 +283,8 @@ class OperateProcessInstancePage {
       name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this element to another target',
+      name: 'Move instance',
+      exact: true,
     });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');

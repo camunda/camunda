@@ -35,7 +35,7 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=all-open&sortBy=creation',
 		});
 
-		await expect.element(screen.getByRole('button', {name: 'Filters'})).toHaveTextContent('All open tasks');
+		await expect.element(screen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('All open tasks');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Sort tasks'}));
 
@@ -87,7 +87,7 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=all-open&sortBy=creation',
 		});
 
-		await expect.element(allOpenScreen.getByRole('button', {name: 'Filters'})).toHaveTextContent('All open tasks');
+		await expect.element(allOpenScreen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('All open tasks');
 		await cleanup();
 
 		const assignedScreen = await renderWithRouter(() => <Filters />, {
@@ -95,7 +95,7 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=assigned-to-me&sortBy=creation',
 		});
 
-		await expect.element(assignedScreen.getByRole('button', {name: 'Filters'})).toHaveTextContent('Assigned to me');
+		await expect.element(assignedScreen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('Assigned to me');
 		await cleanup();
 
 		const unassignedScreen = await renderWithRouter(() => <Filters />, {
@@ -103,7 +103,7 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=unassigned&sortBy=creation',
 		});
 
-		await expect.element(unassignedScreen.getByRole('button', {name: 'Filters'})).toHaveTextContent('Unassigned');
+		await expect.element(unassignedScreen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('Unassigned');
 		await cleanup();
 
 		const completedScreen = await renderWithRouter(() => <Filters />, {
@@ -111,7 +111,7 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=completed&sortBy=completion',
 		});
 
-		await expect.element(completedScreen.getByRole('button', {name: 'Filters'})).toHaveTextContent('Completed');
+		await expect.element(completedScreen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('Completed');
 		await cleanup();
 
 		const customScreen = await renderWithRouter(() => <Filters />, {
@@ -119,6 +119,6 @@ describe('<Filters />', () => {
 			initialEntry: '/_shadcn/_auth/tasklist/_tasks?filter=custom&sortBy=creation',
 		});
 
-		await expect.element(customScreen.getByRole('button', {name: 'Filters'})).toHaveTextContent('Custom');
+		await expect.element(customScreen.getByRole('button', {name: /^Filters: /})).toHaveTextContent('Custom');
 	});
 });

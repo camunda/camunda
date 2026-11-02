@@ -13,7 +13,6 @@ import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
-import {getNavLinkLabel} from '#/tasklist/modules/available-tasks/getNavLinkLabel';
 import {getSecondaryDate} from '#/tasklist/modules/available-tasks/getSecondaryDate';
 import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {AssigneeBadge} from './AssigneeBadge';
@@ -77,12 +76,6 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 					search
 					params={{userTaskKey}}
 					aria-current={isActive ? 'page' : undefined}
-					aria-label={getNavLinkLabel({
-						displayName,
-						assigneeId: assignee,
-						currentUsername: currentUser.username,
-						isSuspended,
-					})}
 				>
 					<div className="flex h-full w-full flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
 						<div className="flex items-start justify-between gap-2">

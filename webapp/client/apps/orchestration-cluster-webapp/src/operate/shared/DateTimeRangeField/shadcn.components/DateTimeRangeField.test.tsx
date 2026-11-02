@@ -236,7 +236,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
 
 			await expect
-				.element(screen.getByRole('gridcell', {name: /October 7th, 2026/}))
+				.element(screen.getByRole('gridcell', {name: /\b7 October 2026/}))
 				.toHaveAttribute('aria-selected', 'true');
 		});
 
@@ -245,7 +245,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			const screen = await render(<Harness initialValues={{from: FROM, to: TO}} onSubmit={onSubmit} />);
 
 			await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
-			await userEvent.click(screen.getByRole('button', {name: /October 9th, 2026/}));
+			await userEvent.click(screen.getByRole('button', {name: /\b9 October 2026/}));
 
 			await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveValue('2026-10-09 08:30:15');
 			expect((await submitted(onSubmit, screen)).from).toBe(formatISODate(new Date(2026, 9, 9, 8, 30, 15)));
@@ -452,7 +452,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
 			await userEvent.keyboard('{ArrowDown}');
 
-			await expect.element(screen.getByRole('button', {name: /October 7th, 2026/})).toHaveFocus();
+			await expect.element(screen.getByRole('button', {name: /\b7 October 2026/})).toHaveFocus();
 		});
 
 		it('should let keyboard users reach the time field from the calendar', async () => {

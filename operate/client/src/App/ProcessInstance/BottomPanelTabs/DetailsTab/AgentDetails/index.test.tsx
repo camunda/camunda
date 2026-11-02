@@ -216,7 +216,7 @@ describe('<AgentDetails />', () => {
 
     const section = within(screen.getByTestId('agent-usage-section'));
 
-    const sectionHeader = section.getByRole('button', {name: 'Usage'});
+    const sectionHeader = section.getByRole('button', {name: /^Usage/});
     expect(sectionHeader).toHaveTextContent('3 model calls');
     expect(sectionHeader).toHaveTextContent('180 tokens');
 

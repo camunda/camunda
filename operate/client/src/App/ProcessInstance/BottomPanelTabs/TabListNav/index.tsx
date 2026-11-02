@@ -17,7 +17,6 @@ type Props = {
   items: Array<{
     key: string;
     title: string;
-    label: string;
     selected: boolean;
     to: Partial<Path>;
     visible?: boolean;
@@ -32,14 +31,13 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <Nav className={cn(className, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, to, visible, tagText}) => {
+        {items.map(({key, title, selected, to, visible, tagText}) => {
           const isHidden = visible === false;
           return (
             <Button
               key={key}
               type="button"
               role="link"
-              aria-label={label}
               aria-current={selected ? 'page' : undefined}
               className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
                 hidden: isHidden,
