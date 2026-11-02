@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.security;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,9 +25,11 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.reader.CollectionReader;
 import io.camunda.optimize.service.db.reader.EntitiesReader;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
+import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -158,6 +161,55 @@ public class UserIdMigrationIT extends AbstractCCSMIT {
               assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
               assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
             });
+  }
+
+  @Test
+  void shouldKeepTheHighestPermissionWhenAnEarlierMigrationLeftDuplicateRoles() {
+    // given - [old:manager, old:viewer, new:viewer], a state the earlier rename-only script left
+    final CollectionWriter collectionWriter =
+        embeddedOptimizeExtension.getBean(CollectionWriter.class);
+    final CollectionReader collectionReader =
+        embeddedOptimizeExtension.getBean(CollectionReader.class);
+    final UserIdMigrationRepository repository =
+        embeddedOptimizeExtension.getBean(UserIdMigrationRepository.class);
+    final String collectionId =
+        collectionWriter
+            .createNewCollectionAndReturnId(
+                OLD_USER_ID, new PartialCollectionDefinitionRequestDto("Duplicate Roles Test"))
+            .getId();
+    databaseIntegrationTestExtension.update(
+        COLLECTION_INDEX_NAME,
+        collectionId,
+        new ScriptData(
+            Map.of(
+                "duplicate", roleDocument(OLD_USER_ID, RoleType.VIEWER),
+                "newRole", roleDocument(NEW_USER_ID, RoleType.VIEWER)),
+            "ctx._source.data.roles.add(params.duplicate);"
+                + "ctx._source.data.roles.add(params.newRole);"));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .hasSize(3);
+
+    // when
+    repository.migrateUserId(OLD_USER_ID, NEW_USER_ID);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(collectionReader.getCollection(collectionId).orElseThrow().getData().getRoles())
+        .singleElement()
+        .satisfies(
+            role -> {
+              assertThat(role.getId()).isEqualTo("USER:" + NEW_USER_ID);
+              assertThat(role.getIdentity().getId()).isEqualTo(NEW_USER_ID);
+              assertThat(role.getRole()).isEqualTo(RoleType.MANAGER);
+            });
+  }
+
+  private static Map<String, Object> roleDocument(final String userId, final RoleType role) {
+    return Map.of(
+        "id", "USER:" + userId,
+        "identity", Map.of("id", userId, "type", "user"),
+        "role", role.getId());
   }
 
   /**
