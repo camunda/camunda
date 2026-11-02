@@ -11,11 +11,16 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -117,8 +122,11 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdFromRecordKey() {
+  void shouldExtractIdAndIndexesFromRecordKey() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long key = 12345L;
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -126,10 +134,10 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
             r -> r.withIntent(MessageStartEventSubscriptionIntent.CREATED).withKey(key));
 
     // when
-    final List<String> ids = underTest.generateIds(record);
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(key));
+    assertThat(idAndIndexes).containsExactly(new IdAndIndex(String.valueOf(key), index));
   }
 
   @Test

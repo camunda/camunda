@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
-    extends AbstractEventHandler<MessageStartEventSubscriptionRecordValue>
-    implements MainIndexExporterHandler<
-        MessageSubscriptionEntity, MessageStartEventSubscriptionRecordValue> {
+    extends AbstractEventHandler<MessageStartEventSubscriptionRecordValue> {
 
   static final Set<Intent> STATES =
       Set.of(
