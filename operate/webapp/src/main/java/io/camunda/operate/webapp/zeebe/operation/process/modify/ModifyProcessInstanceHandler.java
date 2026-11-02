@@ -9,11 +9,13 @@ package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type.*;
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.findViolation;
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
@@ -22,6 +24,7 @@ import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +45,7 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
 
   @Autowired private OperationsManager operationsManager;
   @Autowired private OperateServicesAdapter operateServicesAdapter;
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -52,6 +56,20 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
     final Long processInstanceKey =
         Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
     final List<Modification> modifications = modifyProcessInstanceRequest.getModifications();
+
+    if (!processInstanceKey.equals(operation.getProcessInstanceKey())) {
+      failOperation(
+          operation,
+          String.format(
+              "The modifications are for process instance %s, but the operation is for process instance %s.",
+              processInstanceKey, operation.getProcessInstanceKey()));
+      return;
+    }
+    final var foreignKeyMessage = findForeignKeyMessage(processInstanceKey, modifications);
+    if (foreignKeyMessage.isPresent()) {
+      failOperation(operation, foreignKeyMessage.get());
+      return;
+    }
 
     // Process variable modifications
     modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
@@ -67,6 +85,15 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
+  }
+
+  private Optional<String> findForeignKeyMessage(
+      final Long processInstanceKey, final List<Modification> modifications) {
+    try {
+      return findViolation(flowNodeInstanceReader, processInstanceKey, modifications);
+    } catch (final NumberFormatException e) {
+      return Optional.of("The flow node instance key of a modification is not a number.");
+    }
   }
 
   private void updateFinishedInBatchOperation(final OperationEntity operation)
