@@ -103,6 +103,43 @@ RUN addgroup -S -g 1001 camunda && \
 
 COPY --from=tools --chown=1001:1001 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
 
+# CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
+# Sectigo's AAA Certificate Services from the JDK cacerts. Both bases still ship emSign G1 in their
+# ca-certificates. Deselect it in /etc/ca-certificates.conf, so update-ca-certificates drops it from
+# the OS bundle (and from the JVM cacerts on Minimus, which is rebuilt from it) and keeps it out when
+# a derived image runs update-ca-certificates to add its own CA. The build fails if G1, G3 or AAA is
+# left in a store. emSign C1 and C3 are not part of Oracle's removal and stay. POSIX sh without
+# pipes: plain Alpine has no bash, and a failing "! pipeline" would not stop "set -e". Plain Alpine
+# gets ca-certificates for update-ca-certificates and has no JRE, so there is no JVM store to check.
+# hadolint ignore=DL3018
+RUN set -eu; \
+    g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    if ! command -v update-ca-certificates >/dev/null 2>&1; then \
+      apk add --no-cache ca-certificates; \
+      apk add --no-cache --upgrade ca-certificates-bundle; \
+    fi; \
+    sed -i 's#^mozilla/emSign_Root_CA_-_G1\.crt$#!&#' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
+    tmp=$(mktemp -d); \
+    awk -v d="$tmp" '/-----BEGIN CERTIFICATE-----/{n++; f=d"/c"n".b64"; next} /-----END CERTIFICATE-----/{if (f != "") close(f); f=""; next} f != ""{sub(/\r$/, ""); print > f}' /etc/ssl/certs/ca-certificates.crt; \
+    for b in "$tmp"/*.b64; do base64 -d "$b" > "${b%.b64}.der"; done; \
+    sha256sum "$tmp"/*.der > "$tmp/os.sum"; \
+    [ "$(wc -l < "$tmp/os.sum")" -gt 100 ]; \
+    if awk -v a="$g3" -v b="$g1" -v c="$aaa" '{h=toupper($1)} h==a||h==b||h==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/os.sum"; then \
+      echo "forbidden root left in OS bundle" >&2; exit 1; \
+    fi; \
+    if command -v keytool >/dev/null 2>&1; then \
+      keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
+      awk '$1=="SHA256:"{f=$2; gsub(":","",f); print f}' "$tmp/jvm.txt" > "$tmp/jvm.fp"; \
+      [ "$(wc -l < "$tmp/jvm.fp")" -gt 100 ]; \
+      if awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/jvm.fp"; then \
+        echo "forbidden root left in JVM cacerts" >&2; exit 1; \
+      fi; \
+    fi; \
+    rm -rf "$tmp"
+
 WORKDIR /optimize
 USER 1001:1001
 
