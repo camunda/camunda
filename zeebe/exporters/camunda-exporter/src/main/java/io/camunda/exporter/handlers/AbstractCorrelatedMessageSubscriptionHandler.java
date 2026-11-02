@@ -14,11 +14,13 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.time.Instant;
 import java.util.List;
 
-public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends RecordValue>
-    implements ExportHandler<CorrelatedMessageSubscriptionEntity, T> {
+public abstract class AbstractCorrelatedMessageSubscriptionHandler<
+        T extends RecordValue & StorageOrdinalRelated>
+    implements OrdinalIndexExportHandler<CorrelatedMessageSubscriptionEntity, T> {
 
   protected abstract long getMessageKey(T value);
 
