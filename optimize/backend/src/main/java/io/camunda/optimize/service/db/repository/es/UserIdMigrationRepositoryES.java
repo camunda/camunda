@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
+import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.db.repository.script.UserIdMigrationScriptFactory;
@@ -64,13 +65,18 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
       return esClient.count(ALL_ENTITY_INDICES, buildUserIdBoolQuery(userId)) > 0;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(
-          "Failed to check for documents with user ID: " + userId, e);
+          "Failed to check for documents with user ID: "
+              + UserIdMigrationRepository.maskForLog(userId),
+          UserIdMigrationRepository.sanitize(e, userId));
     }
   }
 
   @Override
   public void migrateUserId(final String oldUserId, final String newUserId) {
-    LOG.info("Migrating Optimize entities from user ID [{}] to [{}]", oldUserId, newUserId);
+    LOG.info(
+        "Migrating Optimize entities from user ID [{}] to [{}]",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
     final Map<String, JsonData> params =
         Map.of("oldId", JsonData.of(oldUserId), "newId", JsonData.of(newUserId));
 
@@ -78,17 +84,34 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateCollectionRolesScript(), params);
     final Query rolesQuery = buildCollectionRolesQuery(oldUserId);
-    taskRepository.tryUpdateByQueryRequest(
-        "collection roles for user " + oldUserId, rolesScript, rolesQuery, COLLECTION_INDEX_NAME);
+    try {
+      taskRepository.tryUpdateByQueryRequest(
+          "collection roles for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          rolesScript,
+          rolesQuery,
+          COLLECTION_INDEX_NAME);
+    } catch (final RuntimeException e) {
+      throw UserIdMigrationRepository.maskedFailure(oldUserId, newUserId, e);
+    }
 
     final Script ownerScript =
         createDefaultScriptWithPrimitiveParams(
             UserIdMigrationScriptFactory.createMigrateOwnerScript(), params);
     final Query ownerQuery = buildOwnerLastModifierQuery(oldUserId);
-    taskRepository.tryUpdateByQueryRequest(
-        "owner/lastModifier for user " + oldUserId, ownerScript, ownerQuery, ALL_ENTITY_INDICES);
+    try {
+      taskRepository.tryUpdateByQueryRequest(
+          "owner/lastModifier for user " + UserIdMigrationRepository.maskForLog(oldUserId),
+          ownerScript,
+          ownerQuery,
+          ALL_ENTITY_INDICES);
+    } catch (final RuntimeException e) {
+      throw UserIdMigrationRepository.maskedFailure(oldUserId, newUserId, e);
+    }
 
-    LOG.info("Migration of entities for user [{}] to [{}] complete", oldUserId, newUserId);
+    LOG.info(
+        "Migration of entities for user [{}] to [{}] complete",
+        UserIdMigrationRepository.maskForLog(oldUserId),
+        UserIdMigrationRepository.maskForLog(newUserId));
   }
 
   private BoolQuery.Builder buildUserIdBoolQuery(final String userId) {
@@ -102,9 +125,7 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
                         n.path("data.roles")
                             .ignoreUnmapped(true)
                             .scoreMode(ChildScoreMode.None)
-                            .query(
-                                qq ->
-                                    qq.term(t -> t.field("data.roles.identity.id").value(userId)))))
+                            .query(userRoleQuery(userId))))
         .should(s -> s.term(t -> t.field("owner").value(userId)))
         .should(s -> s.term(t -> t.field("lastModifier").value(userId)))
         .minimumShouldMatch("1");
@@ -117,8 +138,27 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
                 n ->
                     n.path("data.roles")
                         .scoreMode(ChildScoreMode.None)
-                        .query(
-                            qq -> qq.term(t -> t.field("data.roles.identity.id").value(userId)))));
+                        .query(userRoleQuery(userId))));
+  }
+
+  private static Query userRoleQuery(final String userId) {
+    return Query.of(
+        q ->
+            q.bool(
+                b ->
+                    b.must(m -> m.term(t -> t.field("data.roles.identity.id").value(userId)))
+                        .must(m -> m.bool(UserIdMigrationRepositoryES::userOrMissingType))));
+  }
+
+  private static BoolQuery.Builder userOrMissingType(final BoolQuery.Builder type) {
+    return type.should(
+            s -> s.term(t -> t.field("data.roles.identity.type").value(IdentityType.USER.getId())))
+        .should(
+            s ->
+                s.bool(
+                    missing ->
+                        missing.mustNot(n -> n.exists(e -> e.field("data.roles.identity.type")))))
+        .minimumShouldMatch("1");
   }
 
   private Query buildOwnerLastModifierQuery(final String userId) {
