@@ -191,6 +191,22 @@ public class UpdateVariableHandlerTest {
     verifyNoInteractions(operateServicesAdapter);
   }
 
+  @Test
+  void shouldFailOperationWhenScopeIsNotANumber() throws Exception {
+    // given: an operation stored with a scope that was not a number
+    final var operation = createLockedOperation().setScopeKey(null);
+
+    // when
+    handler.handle(operation);
+
+    // then
+    verify(batchOperationWriter).updateOperation(operation);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .isEqualTo("The scope of the operation is not a number.");
+    verifyNoInteractions(operateServicesAdapter, flowNodeInstanceReader);
+  }
+
   /**
    * Creates a locked UPDATE_VARIABLE operation, simulating an operation that was picked up by the
    * executor for processing.
