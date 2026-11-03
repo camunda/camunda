@@ -18,7 +18,7 @@ public final class PhysicalTenantResourceUnavailableException extends RuntimeExc
 
   private final String physicalTenantId;
 
-  PhysicalTenantResourceUnavailableException(
+  public PhysicalTenantResourceUnavailableException(
       final String physicalTenantId, final String resourceName, final Throwable cause) {
     super(
         "The %s of physical tenant '%s' are unavailable: %s"

@@ -15,10 +15,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -27,9 +29,10 @@ import org.junit.jupiter.api.Test;
 class LazyPhysicalTenantResourceTest {
 
   private static final Duration BACKOFF = Duration.ofSeconds(5);
+  private static final Duration IDLE = Duration.ofMinutes(10);
 
   private final AtomicReference<Instant> now = new AtomicReference<>(Instant.EPOCH);
-  private final List<Object> closed = new ArrayList<>();
+  private final List<Object> closed = new CopyOnWriteArrayList<>();
 
   @Test
   void shouldNotCreateTheResourceBeforeItsFirstUse() {
@@ -159,6 +162,129 @@ class LazyPhysicalTenantResourceTest {
     assertThat(creations).hasValue(0);
     assertThat(closed).isEmpty();
     assertThatThrownBy(resource::get).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldReleaseAnIdleResourceAndCreateItAgainOnItsNextUse() {
+    // given
+    final var creations = new AtomicInteger();
+    final var resource = resource(() -> "created-" + creations.incrementAndGet());
+    resource.use(r -> r);
+
+    // when
+    now.set(Instant.EPOCH.plus(IDLE));
+    final var released = resource.releaseIfIdle(IDLE);
+
+    // then
+    assertThat(released).isTrue();
+    assertThat(closed).containsExactly("created-1");
+    assertThat(resource.state()).isEqualTo(State.NOT_CREATED);
+    assertThat(resource.<String>use(r -> r)).isEqualTo("created-2");
+  }
+
+  @Test
+  void shouldNotReleaseAResourceUsedWithinTheIdleTimeout() {
+    // given
+    final var resource = resource(() -> "created");
+    resource.use(r -> r);
+    now.set(Instant.EPOCH.plus(IDLE).minusMillis(1));
+    resource.use(r -> r);
+
+    // when
+    now.set(Instant.EPOCH.plus(IDLE));
+    final var released = resource.releaseIfIdle(IDLE);
+
+    // then
+    assertThat(released).isFalse();
+    assertThat(closed).isEmpty();
+  }
+
+  @Test
+  void shouldNotReleaseAResourceThatIsHeld() {
+    // given
+    final var resource = resource(() -> "created");
+    final var lease = resource.acquire();
+    now.set(Instant.EPOCH.plus(IDLE.multipliedBy(2)));
+
+    // when
+    final var releasedWhileHeld = resource.releaseIfIdle(IDLE);
+    lease.close();
+    now.set(Instant.EPOCH.plus(IDLE.multipliedBy(3)));
+    final var releasedAfter = resource.releaseIfIdle(IDLE);
+
+    // then
+    assertThat(releasedWhileHeld).isFalse();
+    assertThat(releasedAfter).isTrue();
+    assertThat(closed).containsExactly("created");
+  }
+
+  @Test
+  void shouldNotCountBackgroundWorkAsAUse() {
+    // given
+    final var resource = resource(() -> "created");
+    resource.use(r -> r);
+    now.set(Instant.EPOCH.plus(IDLE).minusMillis(1));
+    resource.acquireIfCreated().orElseThrow().close();
+
+    // when
+    now.set(Instant.EPOCH.plus(IDLE));
+    final var released = resource.releaseIfIdle(IDLE);
+
+    // then
+    assertThat(released).isTrue();
+  }
+
+  @Test
+  void shouldNotCreateTheResourceForBackgroundWork() {
+    // given
+    final var creations = new AtomicInteger();
+    final var resource = resource(() -> creations.incrementAndGet());
+
+    // when
+    final var lease = resource.acquireIfCreated();
+
+    // then
+    assertThat(lease).isEmpty();
+    assertThat(creations).hasValue(0);
+  }
+
+  @Test
+  void shouldNeverCloseTheResourceUnderAConcurrentUse() throws Exception {
+    // given
+    final var resource = resource(() -> new AtomicInteger());
+    final var usedAfterClose = new AtomicInteger();
+    final var stop = new AtomicBoolean();
+    now.set(Instant.EPOCH.plus(IDLE));
+
+    // when
+    try (final var executor = Executors.newFixedThreadPool(4)) {
+      final List<Future<?>> users = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        users.add(
+            executor.submit(
+                () -> {
+                  while (!stop.get()) {
+                    resource.use(
+                        r -> {
+                          if (closed.contains(r)) {
+                            usedAfterClose.incrementAndGet();
+                          }
+                          return r;
+                        });
+                  }
+                }));
+      }
+      for (int i = 0; i < 10_000; i++) {
+        resource.releaseIfIdle(Duration.ZERO);
+      }
+      stop.set(true);
+      for (final var user : users) {
+        user.get(10, TimeUnit.SECONDS);
+      }
+    }
+
+    // then
+    assertThat(usedAfterClose).hasValue(0);
   }
 
   private <T> LazyPhysicalTenantResource<T> resource(final Supplier<T> factory) {
