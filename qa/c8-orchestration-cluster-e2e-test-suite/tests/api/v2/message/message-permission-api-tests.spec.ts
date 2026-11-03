@@ -22,11 +22,7 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
-import {
-  createUser,
-  expectStartSubscriptionPresent,
-  grantUserResourceAuthorization,
-} from '@requestHelpers';
+import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
 
 const PUBLISH_FORBIDDEN_DETAIL =
   "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'";
@@ -42,7 +38,6 @@ const CATCH_EVENT_MESSAGE_NAME = 'Message_1j9t80c';
 const CATCH_EVENT_CORRELATION_KEY = '12312';
 const MESSAGE_START_PROCESS_RESOURCE =
   './resources/message_start_business_id_process.bpmn';
-const MESSAGE_START_PROCESS_ID = 'message_start_business_id_process';
 const START_MESSAGE_NAME = 'start_business_id_msg';
 
 // createInstances() returns before the catch event opens its message
@@ -83,12 +78,7 @@ test.describe.serial('Message Permission API - Forbidden', () => {
       processes[0].processInstanceKey as string,
     );
 
-    const startDeployment = await deploy([MESSAGE_START_PROCESS_RESOURCE]);
-    await expectStartSubscriptionPresent(
-      request,
-      MESSAGE_START_PROCESS_ID,
-      startDeployment.processes[0].processDefinitionKey,
-    );
+    await deploy([MESSAGE_START_PROCESS_RESOURCE]);
 
     userWithoutPermissions = await createUser(request);
     await grantUserResourceAuthorization(request, userWithoutPermissions);
@@ -140,13 +130,15 @@ test.describe.serial('Message Permission API - Forbidden', () => {
   }) => {
     // given a message start event subscription and a user without
     // CREATE_PROCESS_INSTANCE on PROCESS_DEFINITION
-    // when the user correlates the start event message
-    const res = await request.post(buildUrl('/messages/correlation'), {
-      headers: jsonHeaders(userWithoutPermissionsToken),
-      data: {name: START_MESSAGE_NAME, correlationKey: ''},
-    });
+    await expect(async () => {
+      // when the user correlates the start event message
+      const res = await request.post(buildUrl('/messages/correlation'), {
+        headers: jsonHeaders(userWithoutPermissionsToken),
+        data: {name: START_MESSAGE_NAME, correlationKey: ''},
+      });
 
-    // then the request is rejected with 403 FORBIDDEN
-    await assertForbiddenRequest(res, CORRELATE_CREATE_FORBIDDEN_DETAIL);
+      // then the request is rejected with 403 FORBIDDEN
+      await assertForbiddenRequest(res, CORRELATE_CREATE_FORBIDDEN_DETAIL);
+    }).toPass(defaultAssertionOptions);
   });
 });
