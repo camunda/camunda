@@ -15,7 +15,7 @@ import 'dotenv/config';
 import { writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { fetchAndBundle, specDirForRef } from 'camunda-schema-bundler';
 import YAML from 'yaml';
-import { collapseSiblingVariants } from './sibling-variant-collapse.mjs';
+import { collapseSiblingVariants, isBranchTagged, normalizeQname } from './sibling-variant-collapse.mjs';
 
 const yaml = { load: (source) => YAML.parse(source) };
 
@@ -838,10 +838,7 @@ async function main() {
       const [bMaj, bMin] = b.split('.').map(Number);
       return aMaj - bMaj || aMin - bMin;
     };
-    const hasLeadingBranch = (qname) => /^[A-Z][^.|]*\./.test(qname);
-    const isTagless = (qname) => !qname.includes('|') && !hasLeadingBranch(qname);
-    const normalizeQname = (qname) =>
-      qname.replace(/\|[^.]+/g, '').replace(/^[A-Z][^.|]*\./, '');
+    const isTagless = (qname) => !isBranchTagged(qname);
     const byTriple = new Map();
     for (const val of Object.values(versionMap.properties)) {
       const k = `${val.endpoint}|||${val.location}|||${normalizeQname(val.qualifiedName)}`;
