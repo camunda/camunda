@@ -132,6 +132,7 @@ runs:
         lookup-only: true
 
     - name: Cache local Maven repository
+      id: cache-full
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
       env:
@@ -165,9 +166,12 @@ runs:
       if: ${{ always() }}
       shell: bash
       env:
-        STEP_OUTCOMES: ${{ steps.cache-lookup.outcome }} ${{ steps.cache-restore.outcome }}
-        CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}${{ steps.cache-restore.outputs.cache-hit }}
-        MATCHED_KEY: ${{ steps.cache-lookup.outputs.cache-matched-key }}${{ steps.cache-restore.outputs.cache-matched-key }}
+        STEP_OUTCOMES: ${{ steps.cache-full.outcome }} ${{ steps.cache-restore.outcome }}
+        FULL_OUTCOME: ${{ steps.cache-full.outcome }}
+        FULL_HIT: ${{ steps.cache-full.outputs.cache-hit }}
+        LOOKUP_KEY: ${{ steps.cache-lookup.outputs.cache-matched-key }}
+        RESTORE_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
+        RESTORE_KEY: ${{ steps.cache-restore.outputs.cache-matched-key }}
         MODIFIER: ${{ inputs.maven-cache-key-modifier }}
         BRANCH_TYPE: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' && 'main-or-stable' || 'pr' }}
       run: |
@@ -176,12 +180,23 @@ runs:
           exit 0
         elif [[ "$STEP_OUTCOMES" != *success* ]]; then
           result=skipped
-        elif [[ -z "$MATCHED_KEY" ]]; then
-          result=miss
-        elif [[ "$CACHE_HIT" == "true" ]]; then
-          result=exact
         else
-          result=fallback
+          # main/stable: classify on the full cache step's own result. The lookup only tells which
+          # key exists, not whether the download then succeeded (it can be aborted by the timeout).
+          if [[ "$FULL_OUTCOME" == "success" ]]; then
+            hit="$FULL_HIT"; MATCHED_KEY="$LOOKUP_KEY"
+          else
+            hit="$RESTORE_HIT"; MATCHED_KEY="$RESTORE_KEY"
+          fi
+          cache_dir="${MAVEN_CACHE_PATH/#\~/$HOME}"
+          if [[ "$hit" == "true" ]]; then
+            result=exact
+          elif [[ -n "$MATCHED_KEY" && -n "$(ls -A "$cache_dir" 2>/dev/null)" ]]; then
+            result=fallback
+          else
+            result=miss
+            MATCHED_KEY=""
+          fi
         fi
 
         {
