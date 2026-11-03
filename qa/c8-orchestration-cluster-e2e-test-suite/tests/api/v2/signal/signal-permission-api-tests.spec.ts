@@ -24,10 +24,15 @@ import {
 } from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {
+  cleanupAuthorizations,
+  createComponentAuthorization,
   createInstanceOnceDeployed,
   createUser,
   grantUserResourceAuthorization,
+  partitionOf,
+  partitionsCount,
   searchElementInstanceByElementIdAndState,
+  searchProcessInstances,
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
@@ -37,14 +42,15 @@ const START_EVENT_FORBIDDEN_DETAIL =
 const CATCH_EVENT_FORBIDDEN_DETAIL =
   "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'";
 
-test.describe.serial('Signal Permission API - Forbidden', () => {
+test.describe.serial('Signal Permission API', () => {
   const prefix = uniquePrefixedId('signal-perm');
   const startProcessDefinitionId = `${prefix}-start`;
   const startSignalName = `${prefix}-StartSignal`;
   const catchProcessDefinitionId = `${prefix}-catch`;
   const catchSignalName = `${prefix}-CatchSignal`;
 
-  let catchProcessInstanceKey: string;
+  const catchProcessInstanceKeys: string[] = [];
+  const grantedAuthorizationKeys: string[] = [];
 
   let userWithoutPermissions: {
     username: string;
@@ -71,19 +77,36 @@ test.describe.serial('Signal Permission API - Forbidden', () => {
         'type="sr-p3-signal-done"': `type="${prefix}-signal-done"`,
       },
     );
-    const instance = await createInstanceOnceDeployed(
-      catchProcessDefinitionId,
-      1,
-    );
-    catchProcessInstanceKey = instance.processInstanceKey;
-    await expect(async () => {
-      await searchElementInstanceByElementIdAndState(
-        request,
-        catchProcessInstanceKey,
-        'catchSignal',
-        'ACTIVE',
+
+    const partitions = await partitionsCount(request);
+    const coveredPartitions = new Set<number>();
+    for (
+      let attempt = 0;
+      attempt < 5 * partitions && coveredPartitions.size < partitions;
+      attempt++
+    ) {
+      const instance = await createInstanceOnceDeployed(
+        catchProcessDefinitionId,
+        1,
       );
-    }).toPass(defaultAssertionOptions);
+      catchProcessInstanceKeys.push(instance.processInstanceKey);
+      coveredPartitions.add(partitionOf(instance.processInstanceKey));
+    }
+    expect(
+      coveredPartitions.size,
+      'no waiting catch instance on some partition',
+    ).toBe(partitions);
+
+    for (const processInstanceKey of catchProcessInstanceKeys) {
+      await expect(async () => {
+        await searchElementInstanceByElementIdAndState(
+          request,
+          processInstanceKey,
+          'catchSignal',
+          'ACTIVE',
+        );
+      }).toPass(defaultAssertionOptions);
+    }
 
     userWithoutPermissions = await createUser(request);
     await grantUserResourceAuthorization(request, userWithoutPermissions);
@@ -93,7 +116,10 @@ test.describe.serial('Signal Permission API - Forbidden', () => {
   });
 
   test.afterAll(async ({request}) => {
-    await cancelProcessInstance(catchProcessInstanceKey);
+    for (const processInstanceKey of catchProcessInstanceKeys) {
+      await cancelProcessInstance(processInstanceKey);
+    }
+    await cleanupAuthorizations(request, grantedAuthorizationKeys);
     await cleanupUsers(request, [userWithoutPermissions.username]);
   });
 
@@ -116,17 +142,17 @@ test.describe.serial('Signal Permission API - Forbidden', () => {
   test('Broadcast signal to intermediate catch event - forbidden without UPDATE_PROCESS_INSTANCE permission', async ({
     request,
   }) => {
-    // given a process instance waiting on a signal catch event and a user
-    // without UPDATE_PROCESS_INSTANCE on PROCESS_DEFINITION
+    // given a process instance waiting on a signal catch event on every
+    // partition and a user without UPDATE_PROCESS_INSTANCE on
+    // PROCESS_DEFINITION
     // when the user broadcasts the matching signal
+    const res = await request.post(buildUrl('/signals/broadcast'), {
+      headers: jsonHeaders(userWithoutPermissionsToken),
+      data: {signalName: catchSignalName},
+    });
+
     // then the request is rejected with 403 FORBIDDEN
-    await expect(async () => {
-      const res = await request.post(buildUrl('/signals/broadcast'), {
-        headers: jsonHeaders(userWithoutPermissionsToken),
-        data: {signalName: catchSignalName},
-      });
-      await assertForbiddenRequest(res, CATCH_EVENT_FORBIDDEN_DETAIL);
-    }).toPass(defaultAssertionOptions);
+    await assertForbiddenRequest(res, CATCH_EVENT_FORBIDDEN_DETAIL);
   });
 
   test('Broadcast signal without matching subscription - succeeds without process permissions', async ({
@@ -143,5 +169,75 @@ test.describe.serial('Signal Permission API - Forbidden', () => {
     // then the request succeeds, as permissions are checked per matching
     // subscription rather than for the broadcast itself
     await assertStatusCode(res, 200);
+  });
+
+  test('Broadcast signal to start event - succeeds once CREATE_PROCESS_INSTANCE is granted', async ({
+    request,
+  }) => {
+    // given the same user, now granted CREATE_PROCESS_INSTANCE on the start
+    // event process definition
+    grantedAuthorizationKeys.push(
+      await createComponentAuthorization(request, {
+        ownerId: userWithoutPermissions.username,
+        ownerType: 'USER',
+        resourceId: startProcessDefinitionId,
+        resourceType: 'PROCESS_DEFINITION',
+        permissionTypes: ['CREATE_PROCESS_INSTANCE'],
+      }),
+    );
+
+    // when the user broadcasts the start signal
+    await expect(async () => {
+      const res = await request.post(buildUrl('/signals/broadcast'), {
+        headers: jsonHeaders(userWithoutPermissionsToken),
+        data: {signalName: startSignalName},
+      });
+      await assertStatusCode(res, 200);
+    }).toPass(defaultAssertionOptions);
+
+    // then the signal starts a process instance
+    await expect(async () => {
+      const instances = await searchProcessInstances(request, {
+        processDefinitionId: startProcessDefinitionId,
+      });
+      expect(instances.length).toBeGreaterThanOrEqual(1);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Broadcast signal to intermediate catch event - succeeds once UPDATE_PROCESS_INSTANCE is granted', async ({
+    request,
+  }) => {
+    // given the same user, now granted UPDATE_PROCESS_INSTANCE on the catch
+    // event process definition
+    grantedAuthorizationKeys.push(
+      await createComponentAuthorization(request, {
+        ownerId: userWithoutPermissions.username,
+        ownerType: 'USER',
+        resourceId: catchProcessDefinitionId,
+        resourceType: 'PROCESS_DEFINITION',
+        permissionTypes: ['UPDATE_PROCESS_INSTANCE'],
+      }),
+    );
+
+    // when the user broadcasts the catch signal
+    await expect(async () => {
+      const res = await request.post(buildUrl('/signals/broadcast'), {
+        headers: jsonHeaders(userWithoutPermissionsToken),
+        data: {signalName: catchSignalName},
+      });
+      await assertStatusCode(res, 200);
+    }).toPass(defaultAssertionOptions);
+
+    // then the signal is caught by the waiting instance on every partition
+    for (const processInstanceKey of catchProcessInstanceKeys) {
+      await expect(async () => {
+        await searchElementInstanceByElementIdAndState(
+          request,
+          processInstanceKey,
+          'catchSignal',
+          'COMPLETED',
+        );
+      }).toPass(defaultAssertionOptions);
+    }
   });
 });
