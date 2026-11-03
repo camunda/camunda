@@ -39,7 +39,8 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
-import {initialModificationState} from '../modifications/modificationReducer';
+import type {Modification} from '../modifications/modificationReducer';
+import {addToken, createModificationState} from '../modifications/mocks';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -55,7 +56,13 @@ function variablesResponse(
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
 
-function renderVariables(search = '', {isModificationModeEnabled: initialModificationMode = false} = {}) {
+function renderVariables(
+	search = '',
+	{
+		isModificationModeEnabled: initialModificationMode = false,
+		modifications = [],
+	}: {isModificationModeEnabled?: boolean; modifications?: Modification[]} = {},
+) {
 	function Variables() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
 		const [isModificationModeEnabled, setIsModificationModeEnabled] = useState(initialModificationMode);
@@ -68,7 +75,7 @@ function renderVariables(search = '', {isModificationModeEnabled: initialModific
 					processInstanceId={PROCESS_INSTANCE_ID}
 					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
 					search={processInstanceSearchSchema.parse(routeSearch)}
-					modification={{state: initialModificationState, isModificationModeEnabled, dispatch: () => {}}}
+					modification={{state: createModificationState(modifications), isModificationModeEnabled, dispatch: () => {}}}
 				>
 					<ProcessInstanceVariables />
 				</ProcessInstancePageProvider>
@@ -590,6 +597,23 @@ describe('<ProcessInstanceVariables />', () => {
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
 			await expect.element(screen.getByRole('tablist', {name: 'Variable filter'})).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
+		});
+
+		it('should render inputs for a new variable added next to a staged token', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			);
+			const screen = await renderVariables('', {
+				isModificationModeEnabled: true,
+				modifications: [addToken({elementId: 'task_1', scopeId: 'scope-1'})],
+			});
+
+			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
+
+			await expect.element(screen.getByRole('textbox', {name: 'Name'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeDisabled();
 		});
 
 		it('should stop filtering by documents when entering modification mode', async ({worker}) => {
