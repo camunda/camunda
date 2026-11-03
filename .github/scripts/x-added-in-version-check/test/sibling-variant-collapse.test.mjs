@@ -169,6 +169,10 @@ test('normalizeQname and schemaShape', () => {
   assert.equal(normalizeQname('page|OffsetPagination.limit'), 'page.limit');
   assert.equal(normalizeQname('oneOf[0].foo'), 'foo');
   assert.equal(normalizeQname('anyOf[2].bar.baz'), 'bar.baz');
+  // Nested root unions carry both tags on the leading segment
+  // (`OldBranch|Inner.foo`, `oneOf[0]|Inner.foo`) and lose them together.
+  assert.equal(normalizeQname('OldBranch|Inner.businessId'), 'businessId');
+  assert.equal(normalizeQname('oneOf[0]|Inner.businessId'), 'businessId');
   assert.equal(normalizeQname('plain'), 'plain');
   // A lowercase leading segment is an ordinary property, not a branch tag.
   assert.equal(normalizeQname('filter.state'), 'filter.state');
@@ -288,6 +292,68 @@ test('paths that cross an intermediate $ref node are followed', () => {
     components: {
       schemas: {
         CreateRequest: { type: 'object', properties: { businessId: BUSINESS_ID } },
+      },
+    },
+  };
+  const { collapsed } = collapseSiblingVariants(vm, spec);
+  assert.deepEqual(collapsed, [{ propKey: `${EP} > request > ${BY_TAG}.businessId`, from: '8.10', to: '8.9' }]);
+});
+
+test('a property repeated on nested root union branches gets the earliest sibling version', () => {
+  // A root oneOf/anyOf branch nested under another root branch carries both
+  // tags on the leading segment (`OldBranch|Inner.businessId`); both tags are
+  // branch attribution, so the siblings collapse onto `businessId`.
+  const nestedRoot = (outer, version) => ({
+    ...entry(outer, 'businessId', version),
+    qualifiedName: `${outer}|Inner.businessId`,
+    path: ['components', 'schemas', 'Inner', 'properties', 'businessId'],
+  });
+  const vm = versionMapOf([nestedRoot('OldBranch', '8.9'), nestedRoot('NewBranch', '8.10')]);
+  const spec = specOf({ Inner: { businessId: BUSINESS_ID } });
+  const { collapsed } = collapseSiblingVariants(vm, spec);
+  assert.equal(vm.properties[`${EP} > request > NewBranch|Inner.businessId`].version, '8.9');
+  assert.deepEqual(collapsed, [
+    { propKey: `${EP} > request > NewBranch|Inner.businessId`, from: '8.10', to: '8.9' },
+  ]);
+});
+
+test('a nested root union qname normalizes to the historical tagless form', () => {
+  // The builder's backwards-compat collapse groups on normalizeQname, so a
+  // nested-root qname must reduce to the same key as the pre-split flat form —
+  // otherwise a historical tagless `businessId` can never match it there.
+  assert.equal(normalizeQname('NewBranch|Inner.businessId'), normalizeQname('businessId'));
+  assert.equal(normalizeQname('oneOf[0]|Inner.businessId'), normalizeQname('businessId'));
+});
+
+test('escaped JSON Pointer segments in $refs are decoded during lookup', () => {
+  // Bundler refs into `#/paths/…` escape `/` as `~1` (path templates, media
+  // types) and `~` as `~0`; the literal keys never match the spec nodes.
+  const viaPath = (branch, version) => ({
+    ...entry(branch, 'businessId', version),
+    path: ['components', 'schemas', 'CreateRequest', 'properties', 'businessId'],
+  });
+  const vm = versionMapOf([viaPath(BY_ID, '8.9'), viaPath(BY_TAG, '8.10')]);
+  const spec = {
+    paths: {
+      '/canonical': {
+        post: {
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: { type: 'object', properties: { businessId: BUSINESS_ID } },
+              },
+            },
+          },
+        },
+      },
+    },
+    components: {
+      schemas: {
+        // The schema node itself is an escaped pointer into `#/paths/…`;
+        // traversal only reaches the real schema if `~1` is decoded.
+        CreateRequest: {
+          $ref: '#/paths/~1canonical/post/requestBody/content/application~1json/schema',
+        },
       },
     },
   };
