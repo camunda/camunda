@@ -514,7 +514,6 @@ describe('<IncidentsTab /> (design system)', () => {
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'RESOLVED'}))}),
 		);
-		// The list also polls, so it empties even if the retry fails; the resolution request proves the job update passed.
 		const resolutions: string[] = [];
 		const onRequest = ({request}: {request: Request}) => {
 			if (request.url.endsWith('/resolution')) {
@@ -568,6 +567,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		const screen = await renderIncidents();
 		await userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 		await expect.element(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();
+		await expect.element(screen.getByRole('status').getByText('Retrying...')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Filter by Incident Type'}));
 		await userEvent.click(screen.getByRole('option', {name: 'IO mapping error.'}));
@@ -631,6 +631,36 @@ describe('<IncidentsTab /> (design system)', () => {
 		const screen = await renderIncidents();
 
 		await expect.element(screen.getByText(/10000\+ results/)).toBeVisible();
+	});
+
+	it('should show the empty state on a first visit to a process instance without incidents', async ({worker}) => {
+		worker.use(...enrichment());
+		const screen = await renderIncidents('', {hasIncident: false});
+
+		await expect.element(screen.getByText('There are no incidents matching this filter set')).toBeVisible();
+	});
+
+	it('should show the full label of a truncated root cause link on hover', async ({worker}) => {
+		worker.use(...enrichment());
+		worker.use(
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: incidentsResponse([
+					createIncident({incidentKey: '2', processInstanceKey: '9001', elementId: 'child-task'}),
+				]),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '9001', processDefinitionName: 'Child Process'})],
+					}),
+				),
+			}),
+		);
+		const screen = await renderIncidents();
+
+		await userEvent.hover(screen.getByRole('link', {name: 'child-task - Child Process - 9001'}));
+
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('child-task - Child Process - 9001');
 	});
 
 	it('should show an error message when the incidents cannot be fetched', async ({worker}) => {
