@@ -8,7 +8,6 @@ dependencies {
   implementation(project(":camunda-service"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-gateway"))
-  implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-broker-client"))

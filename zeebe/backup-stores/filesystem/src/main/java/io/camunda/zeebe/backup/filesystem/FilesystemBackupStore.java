@@ -7,6 +7,12 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.Backup;
@@ -50,13 +56,7 @@ public final class FilesystemBackupStore implements BackupStore {
       "Expected to restore from backup with id '%s', but does not exist.";
   private static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  private static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  private static final String SEGMENTS_FILESET_NAME = "segments";
-  private static final String CONTENTS_PATH = "contents";
-  private static final String MANIFESTS_PATH = "manifests";
   private static final String RANGES_PATH = "ranges";
-  private static final String METADATA_PATH = "metadata";
-  private static final String METADATA_FILE = "metadata.json";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -74,10 +74,10 @@ public final class FilesystemBackupStore implements BackupStore {
     this.config = config;
     this.executor = executor;
 
-    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
-    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_DIRECTORY_NAME);
+    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_DIRECTORY_NAME);
     rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
-    metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_PATH);
+    metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_DIRECTORY_NAME);
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
@@ -208,7 +208,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          final var metadataPath = metadataDir.resolve(METADATA_OBJECT_NAME);
           try {
             FileUtil.ensureDirectoryExists(metadataDir);
             Files.write(
@@ -230,7 +230,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.supplyAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          final var metadataPath = metadataDir.resolve(METADATA_OBJECT_NAME);
           if (!Files.exists(metadataPath)) {
             return Optional.empty();
           }

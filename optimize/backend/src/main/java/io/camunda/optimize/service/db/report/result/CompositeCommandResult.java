@@ -337,55 +337,51 @@ public class CompositeCommandResult {
       return;
     }
 
-    Optional.of(sortingDto)
-        .ifPresent(
-            sorting -> {
-              final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
-              final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.ASC);
+    final String sortBy = sortingDto.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
+    final SortOrder sortOrder = sortingDto.getOrder().orElse(SortOrder.ASC);
 
-              final Function<HyperMapResultEntryDto, Comparable> valueToSortByExtractor;
+    final Function<HyperMapResultEntryDto, Comparable> valueToSortByExtractor;
 
-              switch (sortBy) {
-                case ReportSortingDto.SORT_BY_LABEL:
-                  valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
-                  break;
-                case ReportSortingDto.SORT_BY_KEY:
-                default:
-                  valueToSortByExtractor =
-                      entry -> {
-                        if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
-                          return null;
-                        } else {
-                          try {
-                            return keyIsOfNumericType
-                                ? Double.valueOf(entry.getKey())
-                                : entry.getKey().toLowerCase(Locale.ENGLISH);
-                          } catch (final NumberFormatException exception) {
-                            throw new OptimizeRuntimeException(
-                                "Error sorting numerically for key: " + entry.getKey());
-                          }
-                        }
-                      };
-                  break;
+    switch (sortBy) {
+      case ReportSortingDto.SORT_BY_LABEL:
+        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
+        break;
+      case ReportSortingDto.SORT_BY_KEY:
+      default:
+        valueToSortByExtractor =
+            entry -> {
+              if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
+                return null;
+              } else {
+                try {
+                  return keyIsOfNumericType
+                      ? Double.valueOf(entry.getKey())
+                      : entry.getKey().toLowerCase(Locale.ENGLISH);
+                } catch (final NumberFormatException exception) {
+                  throw new OptimizeRuntimeException(
+                      "Error sorting numerically for key: " + entry.getKey());
+                }
               }
+            };
+        break;
+    }
 
-              final Comparator<HyperMapResultEntryDto> comparator;
-              switch (sortOrder) {
-                case DESC:
-                  comparator =
-                      Comparator.comparing(
-                          valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));
-                  break;
-                default:
-                case ASC:
-                  comparator =
-                      Comparator.comparing(
-                          valueToSortByExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
-                  break;
-              }
+    final Comparator<HyperMapResultEntryDto> comparator;
+    switch (sortOrder) {
+      case DESC:
+        comparator =
+            Comparator.comparing(
+                valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));
+        break;
+      default:
+      case ASC:
+        comparator =
+            Comparator.comparing(
+                valueToSortByExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+        break;
+    }
 
-              data.sort(comparator);
-            });
+    data.sort(comparator);
   }
 
   private String createErrorMessage(final Class<?> resultClass, final Class<?> resultPartClass) {

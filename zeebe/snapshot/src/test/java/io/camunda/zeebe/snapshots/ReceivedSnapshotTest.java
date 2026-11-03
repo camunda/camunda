@@ -79,6 +79,22 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
+  public void shouldReceiveSnapshotForBootstrapAsLatestSnapshot() {
+    // given - a scaled up partition replicates its snapshot for bootstrap to a joining member
+    final var snapshotForBootstrap =
+        ((FileBasedSnapshotStore) senderSnapshotStore)
+            .copyForBootstrap(takePersistedSnapshot(), SnapshotCopyUtil::copyAllFiles)
+            .join();
+
+    // when
+    final var receivedSnapshot = receiveSnapshot(snapshotForBootstrap).persist().join();
+
+    // then
+    assertThat(receivedSnapshot.isBootstrap()).isTrue();
+    assertThat(receiverSnapshotStore.getLatestSnapshot()).hasValue(receivedSnapshot);
+  }
+
+  @Test
   public void shouldNotCommitUntilPersisted() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();

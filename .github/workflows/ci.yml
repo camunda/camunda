@@ -358,7 +358,7 @@ jobs:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
       - name: Set up Helm
-        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -444,7 +444,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Helm
-        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -808,7 +808,7 @@ jobs:
           # ============================================================================
 
           # Zeebe modules owned by @camunda/core-features
-          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp'"
+          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp',':camunda-secret-store-env'"
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
@@ -1366,49 +1366,53 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
+    name: "Physical Tenant Acceptance Tests / ${{ matrix.database.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - database-type: "h2"
-            database-name: "H2"
+        database:
+          - type: "h2"
+            name: "H2"
             # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that
             # skip RDBMS-incompatible tests.
-            it-database-type: "rdbms_h2"
-            database-image-version: ""
-          - database-type: "elasticsearch"
-            database-name: "ES 8.x"
-            it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            it-type: "rdbms_h2"
+            image-version: ""
+          - type: "elasticsearch"
+            name: "ES 8.x"
+            it-type: "es"
+            image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - database-type: "opensearch"
-            database-name: "OS 3.x"
-            it-database-type: "os"
-            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+          - type: "opensearch"
+            name: "OS 3.x"
+            it-type: "os"
+            image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
             # Points the PT at a genuinely separate OS instance (db/docker-compose.yml's
             # opensearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-opensearch-url: "http://localhost:9201"
+        # Unsharded, the suite took 15-18 of its 20 minutes, so a slow cache restore alone timed
+        # it out. Each shard maps to a physical-tenant-<shard> Maven profile.
+        shard: [ "client", "non-client" ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "${{ matrix.database-type }}"
-      database-name: "${{ matrix.database-name }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      it-database-type: "${{ matrix.it-database-type }}"
+      database-type: "${{ matrix.database.type }}"
+      database-name: "${{ matrix.database.name }}"
+      database-image-version: "${{ matrix.database.image-version }}"
+      it-database-type: "${{ matrix.database.it-type }}"
       physical-tenant: "tenanta"
-      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
-      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
+      physical-tenant-elasticsearch-url: "${{ matrix.database.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.database.physical-tenant-opensearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
-      # physical-tenant profile.
-      maven-profiles: "physical-tenant"
+      # physical-tenant-<shard> profiles.
+      maven-profiles: "physical-tenant-${{ matrix.shard }}"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
       test-suite-name: "acceptance"
+      shard: "${{ matrix.shard }}"
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
@@ -2993,6 +2997,7 @@ jobs:
           (cd "${dir}" && grep -F " ${asset}" checksums.txt | sha256sum -c -)
           tar -xzf "${dir}/${asset}" -C "${dir}" oasdiff
       - name: Check for breaking changes
+        id: check
         shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -3006,6 +3011,9 @@ jobs:
           if [ -f "${out}/report.md" ]; then
             cat "${out}/report.md" >> "${GITHUB_STEP_SUMMARY}"
           fi
+          if [ -f "${out}/status" ]; then
+            echo "status=$(cat "${out}/status")" >> "${GITHUB_OUTPUT}"
+          fi
           exit "${rc}"
       - name: Post PR comment
         # Fork PRs have a read-only token and cannot comment; they get the job summary above.
@@ -3018,6 +3026,36 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: bash "${CHECK_DIR}/post-comment.sh"
+      - name: Import Slack webhook secret
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking')
+        timeout-minutes: 3
+        id: slack-secrets
+        continue-on-error: true
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL;
+      # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url, reason), no nested blocks
+      - name: Notify Slack on breaking changes or failure
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking') &&
+          steps.slack-secrets.outcome == 'success'
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "reason": "${{ steps.check.outputs.status == 'breaking' && 'breaking changes found' || 'check errored' }}"}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -3220,7 +3258,7 @@ jobs:
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions

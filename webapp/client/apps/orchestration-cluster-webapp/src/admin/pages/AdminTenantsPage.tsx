@@ -26,6 +26,8 @@ import {EditTenantModal} from '#/admin/modules/tenants/EditTenantModal';
 import {DeleteTenantModal} from '#/admin/modules/tenants/DeleteTenantModal';
 import {isDefaultTenant} from '#/admin/modules/tenants/defaultTenant';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type TenantsSearch} from '#/admin/modules/tenants/searchSchema';
+import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
@@ -39,16 +41,10 @@ type AdminTenantsPageProps = {
 	totalItems: number;
 	search: TenantsSearch;
 	onSearchChange: (next: Partial<TenantsSearch>) => void;
-	onOpenTenant: (tenant: Tenant) => void;
 };
 
-const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({
-	tenants,
-	totalItems,
-	search,
-	onSearchChange,
-	onOpenTenant,
-}) => {
+const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems, search, onSearchChange}) => {
+	const detailPath = useAdminDetailPath();
 	const {t} = useTranslation();
 	const [modal, setModal] = useState<ModalState | null>(null);
 	const appliedSearchTerm = search.search ?? '';
@@ -132,14 +128,14 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({
 					</p>
 				</div>
 				<div className="flex flex-col gap-4">
-					<div className="flex items-end justify-between gap-4">
-						<div className="flex flex-1 flex-col gap-2">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+						<div className="flex flex-col gap-2 sm:flex-1">
 							<Label htmlFor="tenants-search" className="sr-only">
 								{t('admin.tenants.searchByTenantId')}
 							</Label>
 							<SearchInput
 								id="tenants-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.tenants.searchByTenantId')}
 								value={searchDraft}
 								onChange={(event) => setSearchDraft(event.target.value)}
@@ -157,7 +153,8 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({
 						columns={columns}
 						data={tenants}
 						getRowId={(tenant) => tenant.tenantId}
-						onRowClick={onOpenTenant}
+						rowHref={(tenant) => detailPath.tenant(tenant.tenantId)}
+						linkComponent={RouterRowLink}
 						rowActions={rowActions}
 						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
 						pagination={{

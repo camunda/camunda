@@ -15,6 +15,7 @@ import {
 	mockQueryTenantsEndpoint,
 	mockGetTenantEndpoint,
 	mockQueryUsersByTenantEndpoint,
+	mockQueryUsersEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -45,6 +46,12 @@ test.beforeEach(({network}) => {
 		mockQueryUsersByTenantEndpoint({
 			successResponse: HttpResponse.json(createQueryUsersByTenantResponse(['jane', 'john'])),
 		}),
+		mockQueryUsersEndpoint({
+			successResponse: HttpResponse.json({
+				items: [{username: 'new.user'}],
+				page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+			}),
+		}),
 	);
 });
 
@@ -66,6 +73,23 @@ test('should match the create tenant modal snapshot', async ({adminTenantsPage, 
 test('should match the tenant detail page snapshot', async ({adminTenantDetailPage, page}) => {
 	await adminTenantDetailPage.goto('sales');
 	await expect(adminTenantDetailPage.row('jane')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the assign user modal snapshot', async ({adminTenantDetailPage, page}) => {
+	await adminTenantDetailPage.goto('sales');
+	await adminTenantDetailPage.assignButton('Assign user').click();
+	await expect(adminTenantDetailPage.assignUserModal.dialog).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the remove user dialog snapshot', async ({adminTenantDetailPage, page}) => {
+	await adminTenantDetailPage.goto('sales');
+	await adminTenantDetailPage.rowActionsButton('jane').click();
+	await adminTenantDetailPage.removeMenuItem.click();
+	await expect(adminTenantDetailPage.unassignModal.dialog).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

@@ -233,8 +233,8 @@ public class KpiService {
             .filter(
                 processReport ->
                     processReport.getData().getConfiguration().getTargetValue() != null
-                        && processReport.getData().getConfiguration().getTargetValue().getIsKpi()
-                            == Boolean.TRUE)
+                        && Boolean.TRUE.equals(
+                            processReport.getData().getConfiguration().getTargetValue().getIsKpi()))
             // KPI reports should only have a single data source
             .filter(processReport -> processReport.getData().getDefinitions().size() == 1)
             .collect(Collectors.toList());

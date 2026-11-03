@@ -13,12 +13,11 @@ import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -83,14 +82,13 @@ public final class CslAuthorizationCheck {
       LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
       return Either.right(Optional.empty());
     }
-    final var authorizations = command.getAuthorizations();
-    if (CslTenantCheck.isAnonymousCommand(authorizations)) {
+    final var authInfo = command.getAuthInfo();
+    if (authInfo.isAnonymous()) {
       LOG.trace(
           "Skipping authorization check for anonymous user on command {}", command.getIntent());
       return Either.right(Optional.empty());
     }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+    if (!CslTenantCheck.hasPrincipal(authInfo)) {
       if (!securityConfig.isAuthorizationsEnabled()) {
         // Authorizations are disabled; the principal absence is irrelevant (multi-tenancy checks
         // do not require a claim-based identity for non-tenant-owned resources).
@@ -101,7 +99,7 @@ public final class CslAuthorizationCheck {
           command.getIntent());
       return Either.left(noPrincipalRejection);
     }
-    return Either.right(Optional.of(claimsConverter.resolve(authorizations)));
+    return Either.right(Optional.of(claimsConverter.resolve(authInfo.toClaimsMap())));
   }
 
   /**
@@ -180,41 +178,40 @@ public final class CslAuthorizationCheck {
       final RequiredAuthorization<?> required,
       final T value,
       final Rejection noPrincipalRejection) {
-    return checkWithClaims(command.getAuthorizations(), required, value, noPrincipalRejection);
+    return checkWithAuthInfo(command.getAuthInfo(), required, value, noPrincipalRejection);
   }
 
   /**
-   * Authorization check for contexts where no {@link TypedRecord} is available, only the raw claims
-   * map (e.g. job-stream activation where claims come from {@link
+   * Authorization check for contexts where no {@link TypedRecord} is available, only the auth info
+   * (e.g. job-stream activation where claims come from {@link
    * io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties}). Applies the same
    * skip-logic as {@link #checkForDistributedCommand}: anonymous user, no principal.
    */
-  public <T> Either<Rejection, T> checkWithClaims(
-      final Map<String, Object> claims,
+  public <T> Either<Rejection, T> checkWithAuthInfo(
+      final AuthInfo authInfo,
       final RequiredAuthorization<?> required,
       final T value,
       final Rejection noPrincipalRejection) {
-    return checkWithClaims(
-        claims, required, value, noPrincipalRejection, AuthorizationRejectionMapper::toRejection);
+    return checkWithAuthInfo(
+        authInfo, required, value, noPrincipalRejection, AuthorizationRejectionMapper::toRejection);
   }
 
-  private <T> Either<Rejection, T> checkWithClaims(
-      final Map<String, Object> claims,
+  private <T> Either<Rejection, T> checkWithAuthInfo(
+      final AuthInfo authInfo,
       final RequiredAuthorization<?> required,
       final T value,
       final Rejection noPrincipalRejection,
       final Function<AuthorizationRejection, Rejection> denialMapper) {
-    if (CslTenantCheck.isAnonymousCommand(claims)) {
+    if (authInfo.isAnonymous()) {
       return Either.right(value);
     }
-    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
-        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+    if (!CslTenantCheck.hasPrincipal(authInfo)) {
       if (!securityConfig.isAuthorizationsEnabled()) {
         return Either.right(value);
       }
       return Either.left(noPrincipalRejection);
     }
-    final var result = authzService.check(claims, required);
+    final var result = authzService.check(authInfo.toClaimsMap(), required);
     if (result.isLeft()) {
       return Either.left(denialMapper.apply(result.leftValue()));
     }
@@ -224,9 +221,9 @@ public final class CslAuthorizationCheck {
   /**
    * Full authorization check for single-check sites.
    *
-   * <p>Applies the same skip-logic as {@link #checkWithClaims} using the command's claims,
-   * delegating to {@link AuthorizationCheckPort#check(Map, RequiredAuthorization)}. Maps any CSL
-   * rejection to a {@link Rejection} via {@link AuthorizationRejectionMapper#toRejection}.
+   * <p>Applies the same skip-logic as {@link #checkWithAuthInfo} using the command's auth info,
+   * delegating to {@link AuthorizationCheckPort#check(java.util.Map, RequiredAuthorization)}. Maps
+   * any CSL rejection to a {@link Rejection} via {@link AuthorizationRejectionMapper#toRejection}.
    *
    * @param value the value to return on success
    * @param noPrincipalRejection the rejection to use when no principal claim is present and
@@ -264,8 +261,8 @@ public final class CslAuthorizationCheck {
       LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
       return Either.right(value);
     }
-    return checkWithClaims(
-        command.getAuthorizations(),
+    return checkWithAuthInfo(
+        command.getAuthInfo(),
         required,
         value,
         noPrincipalRejection,

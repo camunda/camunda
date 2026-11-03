@@ -10,7 +10,6 @@ import {useCallback, useEffect} from 'react';
 import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import type {Role} from '@camunda/camunda-api-zod-schemas/8.11';
 import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminRolesPage} from '#/admin/pages/AdminRolesPage';
 import {
@@ -74,13 +73,6 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/')({
 			[navigate, search],
 		);
 
-		const handleOpenRole = useCallback(
-			(role: Role) => {
-				navigate({to: '/admin/roles/$roleId', params: {roleId: role.roleId}});
-			},
-			[navigate],
-		);
-
 		return (
 			<AdminRolesPage
 				roles={data.items}
@@ -88,7 +80,6 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/')({
 				defaultRoleIds={clientConfig.defaultRoleIds}
 				search={search}
 				onSearchChange={handleSearchChange}
-				onOpenRole={handleOpenRole}
 			/>
 		);
 	},

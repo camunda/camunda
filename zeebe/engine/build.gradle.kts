@@ -29,8 +29,6 @@ dependencies {
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-auth"))
   api(libs.org.camunda.bpm.model.camunda.xml.model)
-  api(libs.org.camunda.bpm.model.camunda.dmn.model)
-  api(libs.org.camunda.bpm.extension.dmn.scala.dmn.engine)
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.com.cronutils.cron.utils)
   implementation(libs.com.github.ben.manes.caffeine.caffeine)

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,10 +22,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mockito;
 
@@ -71,6 +76,39 @@ public class DbMigratorImplTest {
 
     // then
     verify(mockMigration, never()).runMigration(context);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "3, 0, 'Completed processing of 3/3 migration tasks', 'Executed 3 migration tasks (0 skipped out of 3)'",
+    "0, 3, 'Completed processing of 0/3 migration tasks', 'Executed 0 migration tasks (3 skipped out of 3)'",
+    "1, 2, 'Completed processing of 1/3 migration tasks', 'Executed 1 migration tasks (2 skipped out of 3)'",
+    "0, 0, 'Completed processing of 0/0 migration tasks', 'Executed 0 migration tasks (0 skipped out of 0)'"
+  })
+  void shouldLogExecutedAndTotalMigrationCounts(
+      final int executed,
+      final int skipped,
+      final String expectedInfo,
+      final String expectedDebug) {
+    // given
+    for (int i = 0; i < executed + skipped; i++) {
+      final var migration = mock(MigrationTask.class);
+      when(migration.getIdentifier()).thenReturn("migration-" + i);
+      when(migration.needsToRun(context)).thenReturn(i < executed);
+      migrations.add(migration);
+    }
+
+    try (final var logs =
+        LogCapturer.capturing(DbMigratorImpl.class.getPackageName(), Level.DEBUG)) {
+      // when
+      sut.runMigrations();
+
+      // then
+      assertThat(logs.messagesAt(Level.INFO))
+          .anySatisfy(message -> assertThat(message).startsWith(expectedInfo));
+      assertThat(logs.messagesAt(Level.DEBUG))
+          .anySatisfy(message -> assertThat(message).startsWith(expectedDebug));
+    }
   }
 
   @Test

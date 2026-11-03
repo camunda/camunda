@@ -84,6 +84,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
@@ -144,6 +145,7 @@ public final class EventAppliers implements EventApplier {
     registerResourceAppliers(state);
 
     registerUserTaskAppliers(state);
+    registerUserTaskLookupAppliers();
 
     registerSignalAppliers(state);
 
@@ -314,7 +316,8 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, 1, new ProcessCreatedV1Applier(state));
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
-    register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
+    register(ProcessIntent.DELETED, 1, new ProcessDeletedV1Applier(state));
+    register(ProcessIntent.DELETED, 2, new ProcessDeletedV2Applier(state));
     register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
     register(ProcessIntent.DELETE_COMPLETED, new ProcessDeleteCompletedApplier(state));
     register(ProcessIntent.FULLY_DELETED, NOOP_EVENT_APPLIER);
@@ -937,6 +940,10 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
     register(UserTaskIntent.SUSPENDED, new UserTaskSuspendedApplier(state));
     register(UserTaskIntent.RESUMED, new UserTaskResumedApplier(state));
+  }
+
+  private void registerUserTaskLookupAppliers() {
+    register(UserTaskLookupIntent.FETCHED, NOOP_EVENT_APPLIER);
   }
 
   private void registerCompensationSubscriptionApplier(

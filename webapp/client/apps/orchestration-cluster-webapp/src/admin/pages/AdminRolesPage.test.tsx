@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {TooltipProvider, Toaster, toast} from '@camunda/design-system';
+import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateRoleEndpoint,
 	mockDeleteRoleEndpoint,
@@ -25,22 +25,8 @@ import {AdminRolesPage, type AdminRolesPageProps} from './AdminRolesPage';
 const DEBOUNCED = {timeout: 3000};
 const RETRY_BUDGET = {timeout: 10_000};
 
-function getWrapper() {
-	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-
-	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>{children}</TooltipProvider>
-			<Toaster />
-		</QueryClientProvider>
-	);
-
-	return Wrapper;
-}
-
 async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 	const onSearchChange = vi.fn();
-	const onOpenRole = vi.fn();
 	const screen = await render(
 		<AdminRolesPage
 			roles={[createRole()]}
@@ -48,13 +34,12 @@ async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 			defaultRoleIds={[]}
 			search={{}}
 			onSearchChange={onSearchChange}
-			onOpenRole={onOpenRole}
 			{...overrides}
 		/>,
-		{wrapper: getWrapper()},
+		{wrapper: createAdminPageWrapper()},
 	);
 
-	return {screen, onSearchChange, onOpenRole};
+	return {screen, onSearchChange};
 }
 
 describe('<AdminRolesPage />', () => {
@@ -91,13 +76,11 @@ describe('<AdminRolesPage />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Delete role'})).toBeDisabled();
 	});
 
-	it('should open a role when a row is clicked', async () => {
-		const role = createRole({roleId: 'ops'});
-		const {screen, onOpenRole} = await renderPage({roles: [role]});
+	it('should link each row to its role', async () => {
+		const role = createRole({roleId: 'ops/1'});
+		const {screen} = await renderPage({roles: [role]});
 
-		await userEvent.click(screen.getByRole('cell', {name: 'ops'}));
-
-		expect(onOpenRole).toHaveBeenCalledWith(role);
+		await expect.element(screen.getByRole('link', {name: 'ops/1'})).toHaveAttribute('href', '/admin/roles/ops%2F1');
 	});
 
 	it('should search by role ID once the reader stops typing', async () => {

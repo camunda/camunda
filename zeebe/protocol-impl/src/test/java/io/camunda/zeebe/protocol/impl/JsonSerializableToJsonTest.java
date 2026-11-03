@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -102,6 +103,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
@@ -216,7 +218,7 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AuthInfo authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
               recordMetadata
                   .intent(intent)
@@ -279,7 +281,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "fails",
                   "brokerVersion": "1.2.3",
                   "authorizations": {
-                    "foo" : "bar"
+                    "authorized_username" : "foo"
                   },
                   "agent": {
                     "elementId": "agent-element"
@@ -2925,7 +2927,7 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")))
+                  .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
                   .setStartTime(123L);
             },
         """
@@ -2958,7 +2960,7 @@ final class JsonSerializableToJsonTest {
                     "tenantId": "<default>",
                     "deploymentKey": -1
                   },
-                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{"authorized_username": "foo"}}
                 }
                 """
       },
@@ -2979,7 +2981,7 @@ final class JsonSerializableToJsonTest {
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
                   "commandValue": null,
-                  "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{}}
                 }
                 """
       },
@@ -3130,6 +3132,34 @@ final class JsonSerializableToJsonTest {
                   "parentKey": -1,
                   "index": -1,
                   "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// UserTaskLookupRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new UserTaskLookupRecord()
+                    .setFetchVariables(List.of("foo", "bar"))
+                    .setTenantId("tenant-1"),
+        """
+                {
+                  "fetchVariables": ["foo", "bar"],
+                  "tenantId": "tenant-1"
+                }
+                """
+      },
+      {
+        "Empty UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
+        """
+                {
+                  "fetchVariables": [],
+                  "tenantId": "<default>"
                 }
                 """
       },

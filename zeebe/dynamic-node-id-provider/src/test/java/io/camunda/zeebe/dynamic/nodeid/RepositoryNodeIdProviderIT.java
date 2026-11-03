@@ -17,9 +17,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberConfig;
-import io.atomix.cluster.NodeId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
@@ -33,13 +31,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,6 +74,7 @@ class RepositoryNodeIdProviderIT {
   private int clusterSize;
   private String taskId;
   private volatile boolean leaseFailed = false;
+  private @Nullable String zone;
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
 
   @BeforeAll
@@ -303,7 +302,7 @@ class RepositoryNodeIdProviderIT {
 
     // when
     final var expectedMappings = Map.of(1, Version.of(2), 2, Version.of(2), 3, Version.of(1));
-    nodeIdProvider.setMembers(getMembers(expectedMappings));
+    nodeIdProvider.setMemberVersions(collectMemberVersions(expectedMappings));
     // move the clock forward
     clock.setInstant(clock.instant().plusSeconds(2));
 
@@ -316,15 +315,38 @@ class RepositoryNodeIdProviderIT {
         .containsExactlyInAnyOrderEntriesOf(expectedMappings);
   }
 
-  private Set<Member> getMembers(final Map<Integer, Version> nodeIdVersions) {
+  @Test
+  void shouldOnlyKnowVersionsOfMembersInOwnZone() {
+    // given
+    clusterSize = 2;
+    zone = "zone-a";
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    final var firstLease = nodeIdProvider.getCurrentLease();
+
+    // when members of two zones share the same nodeIdx
+    nodeIdProvider.setMemberVersions(
+        Map.of(
+            MemberId.from("zone-a", 0), Version.of(2),
+            MemberId.from("zone-a", 1), Version.of(3),
+            MemberId.from("zone-b", 0), Version.of(5)));
+    clock.setInstant(clock.instant().plusSeconds(2));
+
+    // then only the members of zone-a are known
+    Awaitility.await("until lease is renewed")
+        .untilAsserted(() -> assertThat(nodeIdProvider.getCurrentLease()).isNotEqualTo(firstLease));
+    final StoredLease.Initialized renewedLease =
+        (StoredLease.Initialized) repository.getLease(firstLease.node().id());
+    assertThat(renewedLease.lease().knownVersionMappings().mappingsByNodeId())
+        .containsExactlyInAnyOrderEntriesOf(Map.of(0, Version.of(2), 1, Version.of(3)));
+  }
+
+  private Map<MemberId, Version> collectMemberVersions(final Map<Integer, Version> nodeIdVersions) {
     return nodeIdVersions.entrySet().stream()
-        .map(
-            entry ->
-                new Member(
-                    new MemberConfig()
-                        .setId(NodeId.from(entry.getKey().toString()))
-                        .setNodeVersion(entry.getValue().version())))
-        .collect(Collectors.toSet());
+        .collect(Collectors.toMap(e -> MemberId.from(e.getKey()), Map.Entry::getValue));
   }
 
   @Test
@@ -470,8 +492,8 @@ class RepositoryNodeIdProviderIT {
       final NodeInstance nodeInstance = nodeIdProvider.currentNodeInstance();
       // Only the version of this node is updated in all other nodes for this node to be ready
       final var expectedMappings = Map.of(nodeInstance.id(), nodeInstance.version());
-      nodeIdProviderOtherOne.setMembers(getMembers(expectedMappings));
-      nodeIdProviderOtherTwo.setMembers(getMembers(expectedMappings));
+      nodeIdProviderOtherOne.setMemberVersions(collectMemberVersions(expectedMappings));
+      nodeIdProviderOtherTwo.setMemberVersions(collectMemberVersions(expectedMappings));
 
       // then
       assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION).isEqualTo(true);
@@ -516,6 +538,7 @@ class RepositoryNodeIdProviderIT {
             Duration.ofSeconds(60),
             expiredLeaseThreshold,
             taskId,
+            zone,
             () -> leaseFailed = true);
     resourcesToClose.add(provider);
     final var future = provider.initialize(clusterSize);

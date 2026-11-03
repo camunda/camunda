@@ -41,8 +41,9 @@ public class Gcs {
 
   /**
    * When set, all blobs in the bucket will use this prefix. Useful for using the same bucket for
-   * multiple Zeebe clusters. In this case, basePath must be unique. Should not start or end with
-   * '/' character. Must be non-empty and not consist of only '/' characters.
+   * multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/'
+   * characters are removed, and a blank value or a single '/' means no prefix. A value consisting
+   * only of '/' characters is rejected.
    */
   private String basePath;
 

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -86,6 +87,7 @@ public final class ElementInstanceWalkSuspendProcessor
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
       final UserTaskState userTaskState,
+      final JobState jobState,
       final SuspensionMetrics suspensionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -94,7 +96,9 @@ public final class ElementInstanceWalkSuspendProcessor
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
     visitors =
-        List.of(new UserTaskSuspensionVisitor(stateWriter, userTaskState, suspensionMetrics));
+        List.of(
+            new UserTaskSuspensionVisitor(stateWriter, userTaskState, suspensionMetrics),
+            new JobSuspensionVisitor(stateWriter, jobState, suspensionMetrics));
   }
 
   @Override
@@ -126,9 +130,9 @@ public final class ElementInstanceWalkSuspendProcessor
 
   /**
    * Without this, follow-up commands keep processing inline in the same batch, up to {@code
-   * maxCommandsInBatch}. Each walk step can write sizeable records — {@code UserTask.SUSPENDED}
-   * carries the full user task record, and the buffered {@code RESUME} command embeds it again — so
-   * a wide tree would push the batch past the max record batch size, throwing {@code
+   * maxCommandsInBatch}. Each walk step can write sizeable records — {@code UserTask.SUSPENDED} and
+   * {@code Job.SUSPENDED} carry the full user task or job record, including variables — so a wide
+   * tree would push the batch past the max record batch size, throwing {@code
    * ExceededBatchRecordSizeException} and forcing a rollback and retry one command at a time.
    * Separate batches also let other partition work interleave with a long walk.
    */

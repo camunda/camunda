@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -49,12 +50,13 @@ public class UpdateJobBatchOperationExecutor implements BatchOperationExecutor {
     record.setChangedAttributes(changedAttributes);
 
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     commandWriter.appendFollowUpCommand(
         jobKey,
         JobIntent.UPDATE,
         record,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

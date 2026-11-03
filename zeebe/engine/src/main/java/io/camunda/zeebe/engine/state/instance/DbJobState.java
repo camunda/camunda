@@ -32,7 +32,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
@@ -414,34 +413,22 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void restoreBackoff() {
-    final var jobsWithBackoff = new LongHashSet();
+  public void removeInvalidBackoffs(final LongPredicate canBackOff) {
     backoffColumnFamily.forEachKey(
         (key) -> {
+          final long backoff = backoffKey.getValue();
+          final long backedOffJobKey = jobKey.getValue();
           final var jobRecord = jobsColumnFamily.get(jobKey);
           if (jobRecord == null
+              || jobRecord.getRecord().getRecurringTime() != backoff
               || jobRecord.getRecord().getRetries() <= 0
-              || jobRecord.getRecord().getRetryBackoff() <= 0) {
-            backoffColumnFamily.deleteExisting(key);
-          } else {
-            jobsWithBackoff.add(jobKey.getValue());
-          }
-        });
-
-    statesJobColumnFamily.forEach(
-        value -> {
-          if (!State.FAILED.equals(value.getState())) {
-            return;
-          }
-          if (jobsWithBackoff.contains(jobKey.getValue())) {
-            return;
-          }
-          final var jobRecord = jobsColumnFamily.get(jobKey);
-          final var backoff = jobRecord.getRecord().getRecurringTime();
-          final var retries = jobRecord.getRecord().getRetries();
-          if (backoff > 0 && retries > 0) {
+              || jobRecord.getRecord().getRetryBackoff() <= 0
+              || getState(backedOffJobKey) != State.FAILED
+              || !canBackOff.test(backedOffJobKey)) {
+            // canBackOff may read the job state, which reuses the key of this entry
             backoffKey.wrapLong(backoff);
-            backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+            jobKey.wrapLong(backedOffJobKey);
+            backoffColumnFamily.deleteExisting(key);
           }
         });
   }

@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {TooltipProvider, Toaster, toast} from '@camunda/design-system';
+import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateUserEndpoint,
 	mockDeleteUserEndpoint,
@@ -26,35 +26,14 @@ import {AdminUsersPage, type AdminUsersPageProps} from './AdminUsersPage';
 const DEBOUNCED = {timeout: 3000};
 const RETRY_BUDGET = {timeout: 10_000};
 
-function getWrapper() {
-	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-
-	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>{children}</TooltipProvider>
-			<Toaster />
-		</QueryClientProvider>
-	);
-
-	return Wrapper;
-}
-
 async function renderPage(overrides: Partial<AdminUsersPageProps> = {}) {
 	const onSearchChange = vi.fn();
-	const onOpenUser = vi.fn();
 	const screen = await render(
-		<AdminUsersPage
-			users={[createUser()]}
-			totalItems={1}
-			search={{}}
-			onSearchChange={onSearchChange}
-			onOpenUser={onOpenUser}
-			{...overrides}
-		/>,
-		{wrapper: getWrapper()},
+		<AdminUsersPage users={[createUser()]} totalItems={1} search={{}} onSearchChange={onSearchChange} {...overrides} />,
+		{wrapper: createAdminPageWrapper()},
 	);
 
-	return {screen, onSearchChange, onOpenUser};
+	return {screen, onSearchChange};
 }
 
 describe('<AdminUsersPage />', () => {
@@ -73,13 +52,11 @@ describe('<AdminUsersPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'john.doe@example.com'})).toBeVisible();
 	});
 
-	it('should open a user when a row is clicked', async () => {
-		const user = createUser({username: 'john.doe'});
-		const {screen, onOpenUser} = await renderPage({users: [user]});
+	it('should link each row to its user', async () => {
+		const user = createUser({username: 'ops/1'});
+		const {screen} = await renderPage({users: [user]});
 
-		await userEvent.click(screen.getByRole('cell', {name: 'john.doe'}));
-
-		expect(onOpenUser).toHaveBeenCalledWith(user);
+		await expect.element(screen.getByRole('link', {name: 'ops/1'})).toHaveAttribute('href', '/admin/users/ops%2F1');
 	});
 
 	it('should search by username once the reader stops typing', async () => {
@@ -103,7 +80,6 @@ describe('<AdminUsersPage />', () => {
 				totalItems={1}
 				search={{search: 'previous'}}
 				onSearchChange={onSearchChange}
-				onOpenUser={vi.fn()}
 			/>,
 		);
 
@@ -119,13 +95,7 @@ describe('<AdminUsersPage />', () => {
 
 		// when
 		await screen.rerender(
-			<AdminUsersPage
-				users={[createUser()]}
-				totalItems={1}
-				search={{search: 'previous'}}
-				onSearchChange={vi.fn()}
-				onOpenUser={vi.fn()}
-			/>,
+			<AdminUsersPage users={[createUser()]} totalItems={1} search={{search: 'previous'}} onSearchChange={vi.fn()} />,
 		);
 
 		// then

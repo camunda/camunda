@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.gcs;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
@@ -51,29 +52,11 @@ public record GcsBackupConfig(
   }
 
   private static String sanitizeBasePath(final String basePath) {
-    if (basePath == null) {
-      return null;
+    try {
+      return BackupStorePaths.sanitizeBasePath(basePath).orElse(null);
+    } catch (final IllegalArgumentException e) {
+      throw new ConfigurationException(e.getMessage(), e);
     }
-
-    var sanitized = basePath.trim();
-    if (sanitized.isEmpty() || sanitized.equals("/")) {
-      return null;
-    }
-
-    // Remove one leading and one trailing slash if present.
-    while (sanitized.startsWith("/")) {
-      sanitized = sanitized.substring(1);
-    }
-    while (sanitized.endsWith("/")) {
-      sanitized = sanitized.substring(0, sanitized.length() - 1);
-    }
-
-    if (sanitized.isBlank()) {
-      throw new ConfigurationException(
-          "After removing leading and trailing '/' characters from basePath '%s', the remainder is empty and not a valid base path"
-              .formatted(basePath));
-    }
-    return sanitized;
   }
 
   public static final class Builder {

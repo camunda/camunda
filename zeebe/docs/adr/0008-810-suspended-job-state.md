@@ -54,24 +54,28 @@ process instance, or fails the partition on replay. The precondition is enforced
 documented as a caller obligation.
 
 **D2. Suspend walks the element instance tree; resume searches the jobs-by-process-instance index
-(D5). Both write one job event per affected job.** Both use
-`ProcessInstanceSuspensionJobBehavior`; suspend's tree walk follows the same `ArrayDeque` pattern as
-migration. Cost is paid once per suspend, and once per resume cycle, not on every poll.
+(D5). Both write one job event per affected job.** Suspend suspends jobs in the element instance
+walk (D6), one element instance per batch; resume uses `ProcessInstanceSuspensionJobBehavior`. Cost
+is paid once per walk step, and once per resume cycle, not on every poll.
 
 - **Suspend:** `ProcessInstanceSuspendProcessor` validates the command, appends
-  `ProcessInstance.SUSPENDING`, responds `SUSPENDING`, closes subscriptions, appends
-  `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job except jobs of a
-  terminating element (see D3 notes), and starts the element instance walk (D6). The walk appends
-  `ProcessInstance.SUSPENDED` once it is done. The walk's first step is processed inline in
+  `ProcessInstance.SUSPENDING`, responds `SUSPENDING`, closes subscriptions, and starts the
+  element instance walk (D6). For each visited element instance, the walk appends `Job.SUSPENDED`
+  for its job if the job is `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` and the element is not
+  terminating (see D3 notes). The walk appends `ProcessInstance.SUSPENDED` once it is done. The walk's first step is processed inline in
   `SUSPEND`'s own batch, so a root with no children finishes there too; a deeper tree usually
   finishes `SUSPENDED` in a later batch. Commands targeting the `SUSPENDING` marker are treated as
   if the instance were `SUSPENDED`, so they cannot change state that the walk is still visiting. A
   `RESUME` sent while `SUSPENDING` is rejected with `INVALID_STATE`; callers must wait for
   `SUSPENDED`.
   `Job.SUSPENDED` carries the job's own record, including its variables, so it is not fixed-size,
-  but it is the only record suspend writes per job — no activation record alongside it. The
-  `SUSPEND` batch's size scales with the aggregate serialized size of every job it suspends, since
-  job suspension does not chunk (see Consequences).
+  but it is the only record suspend writes per job — no activation record alongside it. Each walk
+  step suspends at most one job, so no batch grows with the number of jobs (see Consequences).
+- **Hand-out while `SUSPENDING`:** a job the walk has not reached yet is still in the activatable
+  index, so a worker can activate it. Its `CompleteJob` or `FailJob` is then rejected by the gate,
+  and once it times out, `JobTimeOut` suspends it (D3). This window lasts only as long as the walk.
+  Skipping such jobs while collecting an activation batch was rejected for the same per-poll cost
+  as in the alternatives below.
 - **Resume:** a `RESUME_JOBS` command searches `JOBS_BY_PROCESS_INSTANCE` (see D5) from the resume
   cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and calls
   `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again, before
@@ -145,7 +149,7 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
   removes the entry (`deleteIfExists`), covering completion, cancellation, and error-thrown alike.
   The deprecated `create()` path (replaying pre-8.10 log events) does not populate the index —
   pre-8.10 jobs that have never been suspended have no entry, but that is acceptable because the
-  `SUSPENDED` transition backfills each one the moment it is suspended. `suspendJobs` (D2) does not
+  `SUSPENDED` transition backfills each one the moment it is suspended. Suspend (D2) does not
   read this index to find jobs to suspend — it still walks the tree once per suspend, because
   suspending is what determines which jobs need to be suspended in the first place; the index cannot
   help find jobs that are not yet known to be suspended. Only the resume-side lookup,
@@ -181,12 +185,12 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
   suspension, was rejected as an action in the hottest path of the engine.
 
 **D6. Suspend walks the element instance tree depth-first (post-order), one element instance per
-command, and emits a user task event for every user task it suspends.**
+command, and emits a user task or job event for every user task or job it suspends.**
 `ElementInstanceWalkSuspendProcessor` handles a single command intent,
 `ElementInstanceWalk.SUSPEND`. Its cursor — `elementInstanceKey`, `parentKey`, and
 `index` — is carried on the command, not persisted in state. For the element instance at
 `elementInstanceKey`, the command descends into the next child after `index` if one exists
-(writing only a follow-up command, no event); otherwise it runs the user-task visitor and writes
+(writing only a follow-up command, no event); otherwise it runs the user task and job visitors and writes
 `ElementInstanceWalk.SUSPENDED`. After suspending an element instance, the walk moves straight on to
 its next sibling under the same parent (`index = -1`, so the sibling's own children are visited
 from the start); only once there is no sibling left does it ascend to the parent, with `index` set
@@ -207,6 +211,9 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   (D7), the walk appends `UserTask.SUSPENDED` with the current task record, whatever its lifecycle
   state (`CREATING`, `ASSIGNING`, and so on). All `UserTask.SUSPENDED` events come before
   `ProcessInstance.SUSPENDED`.
+- **Job contract.** For each visited element instance with a suspendable job, the walk appends
+  `Job.SUSPENDED` (D2). The job's state check skips jobs that are already `SUSPENDED`, so
+  overlapping or restarted walks suspend each job once.
 - **Resume.** See D7.
 - **No state change.** Neither user task event changes user task state. A user task command sent
   while the instance is suspending or suspended is rejected by the gate.
@@ -262,19 +269,19 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
 
 ## Consequences
 
-- One `Job.SUSPENDED` event per affected job in the same batch as the `SUSPENDING` instance
-  marker. A very large instance can still hit the max record batch size on suspend (same limit as
-  migration); job suspension does not chunk. The element instance walk (D6) does not share this
-  limit, since it visits one element instance per batch. Resume does not share this limit: one job
-  per `RESUME_JOBS` cycle keeps each cycle's batch bounded to that job's own activation cost.
+- One `Job.SUSPENDED` event per affected job, written by the element instance walk (D6) one
+  element instance per batch. Suspend no longer hits the max record batch size however many jobs
+  an instance has. Resume does not either: one job per `RESUME_JOBS` cycle keeps each cycle's batch
+  bounded to that job's own activation cost.
+- Jobs the walk has not reached yet can still be handed out while the instance is `SUSPENDING`
+  (D2). Such a job is rejected on completion and suspended once it times out.
 - Resume no longer re-walks the tree per cycle: `JOBS_BY_PROCESS_INSTANCE` (D5) lets each
   `RESUME_JOBS` cycle search from the resume cursor, so a large instance's total resume cost across
   its whole chain is O(n) — one search continuing where the last cycle left off — rather than
   quadratic in its suspended job count. This closes
   [#60323](https://github.com/camunda/camunda/issues/60323), the follow-up filed to track that cost.
-- Suspend's job tree walk visits every active element of the instance, not only job-backed ones,
-  and blocks the partition while it runs. The D6 walk visits every element instance again, one per
-  command, so it interleaves with other work on the partition. Accepted because suspend is rare;
+- Suspend's walk (D6) visits every active element of the instance, not only job-backed ones, one
+  per command, so it interleaves with other work on the partition. Accepted because suspend is rare;
   the same cost on activation would not be. We run on the same path as process instance migration
   which is fine so far.
 - No downgrade after suspension: older brokers fail on the new `ProcessInstance.SUSPENDING` intent
@@ -286,8 +293,7 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   is written, so a batch resume operation item stays open
   ([#66736](https://github.com/camunda/camunda/issues/66736)). The drain skips the user task step
   when no task is tracked, so it adds no cycle there.
-- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
-  job suspension.
+- Out of scope: child-instance suspension, export to secondary storage/Operate.
 
 ## Open questions
 

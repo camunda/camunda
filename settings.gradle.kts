@@ -407,6 +407,8 @@ registerProject(":camunda-secret-store-aws", "secret-store/secret-store-aws")
 
 registerProject(":camunda-secret-store-gcp", "secret-store/secret-store-gcp")
 
+registerProject(":camunda-secret-store-env", "secret-store/secret-store-env")
+
 registerProject(":zeebe-rebalance", "zeebe/rebalance")
 
 registerProject(":zeebe-test-util", "zeebe/test-util")

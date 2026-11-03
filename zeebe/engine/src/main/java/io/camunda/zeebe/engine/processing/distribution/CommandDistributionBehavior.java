@@ -303,9 +303,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // mutable object, and it is somehow modified before the side effect is executed. Instead, we
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
-
-      final var authInfo = new AuthInfo();
-      authInfo.copyFrom(distributionRecord.getAuthInfo());
+      final var authInfo = distributionRecord.getAuthInfo();
 
       sideEffectWriter.appendSideEffect(
           () -> {

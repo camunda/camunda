@@ -106,8 +106,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      final var authorizedTenants =
-          tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+      final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
       final var tenantCheckResult =
           tenantCheck.checkTenantsRequiringPrincipal(
               List.of(signalRecord.getTenantId()),
@@ -147,8 +146,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (isAuthNeeded) {
       commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
     } else {
-      final var authInfo = new AuthInfo();
-      authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+      final var authInfo = AuthInfo.EMPTY.withFormat(AuthDataFormat.PRE_AUTHORIZED);
       commandDistributionBehavior
           .withKey(eventKey)
           .unordered()

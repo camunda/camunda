@@ -142,7 +142,7 @@ describe('<AdminTenantDetailPage />', () => {
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Groups'}), 'external-group');
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign group'}));
 
 		// then
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
@@ -170,7 +170,7 @@ describe('<AdminTenantDetailPage />', () => {
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Client ID'}), 'constructor');
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign client'}));
 
 		// then
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
@@ -232,7 +232,7 @@ describe('<AdminTenantDetailPage />', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Users'}));
 		await userEvent.click(screen.getByRole('option', {name: 'jane'}));
 		await userEvent.click(screen.getByRole('heading', {name: 'Assign user'}));
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign user'}));
 
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
 	});
@@ -302,8 +302,8 @@ describe('<AdminTenantDetailPage />', () => {
 		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: /row actions/i}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Remove'}));
-		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Remove'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Remove user'}));
+		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Remove user'}));
 
 		await expect.element(screen.getByText('Removed from tenant')).toBeVisible();
 	});

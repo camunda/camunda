@@ -40,6 +40,7 @@ public final class ValueTypes {
           ValueType.PROCESS_INSTANCE_BATCH,
           ValueType.RESOURCE_DELETION,
           ValueType.USER_TASK,
+          ValueType.USER_TASK_LOOKUP,
           ValueType.PROCESS_INSTANCE_MIGRATION,
           ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
           ValueType.COMPENSATION_SUBSCRIPTION,

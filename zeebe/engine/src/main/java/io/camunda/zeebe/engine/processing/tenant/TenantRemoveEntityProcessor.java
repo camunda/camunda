@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
@@ -134,7 +133,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!isEntityPresent(entityType, entityId)) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
@@ -145,10 +144,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return true;
   }
 
-  private boolean isEntityPresent(
-      final Map<String, Object> authorizations,
-      final EntityType entityType,
-      final String entityId) {
+  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
     return entityType != MAPPING_RULE || mappingRuleState.get(entityId).isPresent();
   }
 

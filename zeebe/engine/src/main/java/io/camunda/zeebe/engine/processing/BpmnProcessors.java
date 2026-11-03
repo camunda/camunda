@@ -246,6 +246,7 @@ public final class BpmnProcessors {
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
             processingState.getUserTaskState(),
+            processingState.getJobState(),
             suspensionMetrics));
   }
 

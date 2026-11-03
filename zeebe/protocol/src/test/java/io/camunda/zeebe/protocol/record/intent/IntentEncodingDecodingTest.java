@@ -182,6 +182,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(UsageMetricIntent.class, UsageMetricIntent::from));
     result.addAll(buildParameterSets(UserIntent.class, UserIntent::from));
     result.addAll(buildParameterSets(UserTaskIntent.class, UserTaskIntent::from));
+    result.addAll(buildParameterSets(UserTaskLookupIntent.class, UserTaskLookupIntent::from));
     result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
     result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
 

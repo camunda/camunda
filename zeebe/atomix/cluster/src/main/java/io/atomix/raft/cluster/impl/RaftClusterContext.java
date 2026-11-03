@@ -490,8 +490,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       raft.transition(localMember.getType());
     }
 
-    // Store the configuration if it's already committed.
-    if (raft.getCommitIndex() >= configuration.index()) {
+    // Store the configuration if it's already committed. A forced configuration has no log entry
+    // that could commit it, so it is stored right away. Otherwise a restart forgets a force that
+    // already succeeded.
+    if (configuration.force() || raft.getCommitIndex() >= configuration.index()) {
       commitCurrentConfiguration();
     }
   }
@@ -598,9 +600,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // Members kept alive as replication targets while the configuration was appended but not yet
     // committed (see updateConfiguration) can finally be shut down now (raft.pdf §6). This is
     // idempotent reconciliation: a forced configuration is already pruned by the time this runs,
-    // and every caller (the commit-index hook, an already-committed configure(), the initial
-    // config, PassiveRole/InactiveRole onConfigure, force-configure) may invoke this repeatedly for
-    // the same configuration.
+    // and every caller (the commit-index hook, an already-committed or forced configure(), the
+    // initial config, PassiveRole/InactiveRole onConfigure) may invoke this repeatedly for the same
+    // configuration.
     pruneMembersNotInConfiguration();
 
     // Apply the configuration to the local server state.

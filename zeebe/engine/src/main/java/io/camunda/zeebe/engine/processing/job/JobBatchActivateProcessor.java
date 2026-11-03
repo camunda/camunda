@@ -100,8 +100,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    final var authorizedTenantIds =
-        tenantCheck.resolveAuthorizedTenants(record.getAuthorizations());
+    final var authorizedTenantIds = tenantCheck.resolveAuthorizedTenants(record.getAuthInfo());
     final var value = record.getValue();
 
     final var validationResult = validateRequest(record, authorizedTenantIds);

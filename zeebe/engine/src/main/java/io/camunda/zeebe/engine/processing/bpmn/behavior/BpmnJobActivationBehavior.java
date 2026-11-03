@@ -385,12 +385,12 @@ public class BpmnJobActivationBehavior {
   private boolean isAuthorized(
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
 
+    final var authInfo = jobActivationProperties.authInfo();
     final var ownerTenantId = jobRecord.getTenantId();
     final var isTenantAuthorized =
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
-            final var authorizedTenants =
-                tenantCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
+            final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(authInfo);
             yield !authorizedTenants.wildcard()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
@@ -402,14 +402,13 @@ public class BpmnJobActivationBehavior {
       return false;
     }
 
-    final var claims = jobActivationProperties.claims();
     final var bpmnProcessId = jobRecord.getBpmnProcessId();
     final var cslPermType = AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE);
     final var cslResourceType =
         AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION);
     final var authorizationResult =
-        cslCheck.checkWithClaims(
-            claims,
+        cslCheck.checkWithAuthInfo(
+            authInfo,
             RequiredAuthorization.of(
                 b ->
                     b.resourceType(cslResourceType)

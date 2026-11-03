@@ -25,6 +25,7 @@
     <module>secret-store-file</module>
     <module>secret-store-aws</module>
     <module>secret-store-gcp</module>
+    <module>secret-store-env</module>
   </modules>
 
 </project>

@@ -130,13 +130,14 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     // then
     final var metadata = jobStreamer.getStreamMetadata(jobType);
     assertThat(metadata).isNotNull();
-    assertThat(metadata.claims()).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
-    assertThat(metadata.claims()).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
+    final var claims = metadata.authInfo().toClaimsMap();
+    assertThat(claims).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
+    assertThat(claims).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
   }
 
   private void assertNoAuthorizationClaims() {
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    final var claims = brokerRequest.getAuthorization().toDecodedMap();
+    final var claims = brokerRequest.getAuthorization().toClaimsMap();
     assertThat(claims).doesNotContainKey(Authorization.USER_TOKEN_CLAIMS);
     assertThat(claims).doesNotContainKey(Authorization.USER_GROUPS_CLAIMS);
   }

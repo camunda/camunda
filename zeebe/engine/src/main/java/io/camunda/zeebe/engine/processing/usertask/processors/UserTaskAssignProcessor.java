@@ -12,7 +12,6 @@ import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAut
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -144,7 +143,6 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   }
 
   private Optional<String> getCurrentUsername(final TypedRecord<?> command) {
-    return Optional.ofNullable(
-        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
+    return Optional.ofNullable(command.getAuthInfo().getUsername());
   }
 }

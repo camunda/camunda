@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,7 +39,8 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   public void shouldExecuteBatchOperationForCancelProcessInstance() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
     final var batchOperationKey =
         createNewCancelProcessInstanceBatchOperation(processInstanceKeys, claims);
 

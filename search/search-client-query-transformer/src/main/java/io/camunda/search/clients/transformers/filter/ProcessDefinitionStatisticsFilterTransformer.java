@@ -96,10 +96,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
+    queries.addAll(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(value -> queries.add(term(INCIDENT, value)));
 
@@ -110,26 +108,18 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    Optional.of(longOperations(KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(
-            longOperations(
-                PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(
-            longOperations(
-                PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(dateTimeOperations(START_DATE, filter.startDateOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(dateTimeOperations(END_DATE, filter.endDateOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(
+            PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
+    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
+    queries.addAll(stringOperations(STATE, filter.stateOperations()));
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
-    Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(stringOperations(BUSINESS_ID, filter.businessIdOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    queries.addAll(stringOperations(BUSINESS_ID, filter.businessIdOperations()));
     Optional.ofNullable(
             stringMatchPhraseInSingleHasChildOrSelf(
                 ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))

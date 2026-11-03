@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -103,9 +104,13 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return tenantFilterProp.getValue();
   }
 
-  @Override
   public Map<String, Object> claims() {
     return MsgPackConverter.convertToMap(claimsProp.getValue());
+  }
+
+  @Override
+  public AuthInfo authInfo() {
+    return AuthInfo.ofClaims(claims());
   }
 
   @Override

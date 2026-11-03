@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,6 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 class CircularBufferInputStreamTest {
+
+  private static final int MAX_BUFFER_LENGTH = Integer.MAX_VALUE - 8;
+  private static final int KIB = 1024;
+  private static final int MIB = 1024 * KIB;
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
@@ -98,5 +103,88 @@ class CircularBufferInputStreamTest {
     assertThat(data).containsExactly(1, 2, 3);
     assertThat(stream.read()).isEqualTo(-1);
     assertThat(stream.read()).isEqualTo(-1);
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldFailReaderWhenThereIsNotEnoughMemoryToGrowBuffer() {
+    // given
+    final CircularBufferInputStream stream =
+        new CircularBufferInputStream(
+            4,
+            length -> {
+              if (length > 4) {
+                throw new OutOfMemoryError("Java heap space");
+              }
+              return new byte[length];
+            });
+
+    // when
+    final Throwable writeFailure = catchThrowable(() -> stream.write(ByteBuffer.wrap(new byte[8])));
+
+    // then
+    assertThat(writeFailure)
+        .isInstanceOf(IOException.class)
+        .hasCauseInstanceOf(OutOfMemoryError.class);
+    // the reader gets the failure instead of waiting for data that will never come
+    assertThatThrownBy(stream::read).isSameAs(writeFailure);
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldGrowBufferToRequiredLengthWhenLargerBufferCannotBeAllocated() throws IOException {
+    // given
+    final CircularBufferInputStream stream =
+        new CircularBufferInputStream(
+            4,
+            length -> {
+              if (length > 8) {
+                throw new OutOfMemoryError("Java heap space");
+              }
+              return new byte[length];
+            });
+
+    // when
+    stream.write(ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8}));
+    stream.endOfStream();
+
+    // then
+    final byte[] data = new byte[8];
+    assertThat(stream.read(data, 0, 8)).isEqualTo(8);
+    assertThat(data).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+  }
+
+  @Test
+  void shouldGrowSlightlyPastCapacityWhenFirstOverrun() throws IOException {
+    // an overrun by one read of the I/O layer
+    assertThat(CircularBufferInputStream.grownLength(5 * MIB, 5 * MIB, 5 * MIB + 32 * KIB))
+        .isEqualTo(5 * MIB + 64 * KIB);
+  }
+
+  @Test
+  void shouldDoublePartBeyondCapacityWhenGrowingAgain() throws IOException {
+    assertThat(
+            CircularBufferInputStream.grownLength(5 * MIB, 5 * MIB + 64 * KIB, 5 * MIB + 65 * KIB))
+        .isEqualTo(5 * MIB + 128 * KIB);
+  }
+
+  @Test
+  void shouldGrowAtLeastToRequiredLength() throws IOException {
+    assertThat(CircularBufferInputStream.grownLength(8, 8, 1_000_000)).isEqualTo(1_000_000);
+  }
+
+  @Test
+  void shouldNotGrowBufferPastLargestArray() throws IOException {
+    // doubling the part beyond the capacity is more than an int can hold
+    assertThat(CircularBufferInputStream.grownLength(8, 1_500_000_000, 1_500_000_001L))
+        .isEqualTo(MAX_BUFFER_LENGTH);
+  }
+
+  @Test
+  void shouldFailWhenUnreadDataDoesNotFitIntoLargestArray() {
+    assertThatThrownBy(
+            () ->
+                CircularBufferInputStream.grownLength(8, MAX_BUFFER_LENGTH, MAX_BUFFER_LENGTH + 1L))
+        .isInstanceOf(IOException.class);
   }
 }

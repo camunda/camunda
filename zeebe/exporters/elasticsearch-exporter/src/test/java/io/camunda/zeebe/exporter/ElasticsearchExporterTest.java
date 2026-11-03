@@ -164,6 +164,21 @@ final class ElasticsearchExporterTest {
           .isTrue();
     }
 
+    @Test
+    void shouldNeverAcceptUserTaskLookup() {
+      // given
+      TestSupport.provideValueTypes()
+          .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
+
+      // when
+      exporter.configure(context);
+
+      // then
+      assertThat(context.getRecordFilter().acceptValue(ValueType.USER_TASK_LOOKUP))
+          .as("user task lookups change no state and are never exported")
+          .isFalse();
+    }
+
     @ParameterizedTest(name = "{0}")
     @EnumSource(
         value = RecordType.class,

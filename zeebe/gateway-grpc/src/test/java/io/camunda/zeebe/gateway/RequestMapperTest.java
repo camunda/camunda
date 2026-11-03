@@ -626,7 +626,7 @@ public class RequestMapperTest {
       final var properties = RequestMapper.toJobActivationProperties(request, claims);
 
       // then
-      assertThat(properties.claims()).containsEntry("authorized_username", "test-user");
+      assertThat(properties.authInfo().getUsername()).isEqualTo("test-user");
     }
 
     @Test

@@ -161,9 +161,10 @@ public class S3 {
   private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
 
   /**
-   * When set, all objects in the bucket will use this prefix. Must be non-empty and not start or
-   * end with '/'. Useful for using the same bucket for multiple Zeebe clusters. In this case,
-   * basePath must be unique.
+   * When set, all objects in the bucket will use this prefix. Useful for using the same bucket for
+   * multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/'
+   * characters are removed, and a blank value or a single '/' means no prefix. A value consisting
+   * only of '/' characters is rejected.
    */
   private String basePath;
 
