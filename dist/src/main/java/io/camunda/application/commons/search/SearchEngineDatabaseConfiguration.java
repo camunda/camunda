@@ -12,7 +12,6 @@ import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatew
 import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
-import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
@@ -81,11 +80,11 @@ public class SearchEngineDatabaseConfiguration {
    */
   @Bean
   public HealthContributor searchEngineStatusHealthIndicator(
-      final SearchClients searchClients,
+      final PhysicalTenantSearchClientResources searchClientResources,
       @Qualifier("searchEngineConfigurationsByTenant")
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
     return SearchEngineStatusHealthIndicator.forPhysicalTenants(
-        searchClients, searchEngineConfigurationsByTenant);
+        searchClientResources, searchEngineConfigurationsByTenant);
   }
 
   /**

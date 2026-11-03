@@ -21,6 +21,7 @@ import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
@@ -34,11 +35,28 @@ import org.springframework.context.annotation.Configuration;
 public class PhysicalTenantSearchClientReadersConfiguration {
 
   @Bean
-  public SearchClients searchClients(final PhysicalTenantResolver physicalTenantResolver) {
-    return SearchClients.from(
+  public PhysicalTenantSearchClientResources physicalTenantSearchClientResources(
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return PhysicalTenantSearchClientResources.create(
         physicalTenantResolver.mapValues(
             physicalTenantCfg ->
-                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
+                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()),
+        tenantId -> idleReleaseTimeoutOf(physicalTenantResolver, tenantId));
+  }
+
+  /** The clients are owned, and closed, by {@link PhysicalTenantSearchClientResources}. */
+  @Bean(destroyMethod = "")
+  public SearchClients searchClients(final PhysicalTenantSearchClientResources resources) {
+    return resources.searchClients();
+  }
+
+  private static Duration idleReleaseTimeoutOf(
+      final PhysicalTenantResolver physicalTenantResolver, final String tenantId) {
+    final var secondaryStorage =
+        physicalTenantResolver.forPhysicalTenant(tenantId).getData().getSecondaryStorage();
+    return secondaryStorage.getType() == SecondaryStorageType.opensearch
+        ? secondaryStorage.getOpensearch().getIdleReleaseTimeout()
+        : secondaryStorage.getElasticsearch().getIdleReleaseTimeout();
   }
 
   @Bean

@@ -16,6 +16,7 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.springframework.boot.health.contributor.AbstractHealthIndicator;
 import org.springframework.boot.health.contributor.CompositeHealthContributor;
@@ -51,6 +52,31 @@ public final class SearchEngineStatusHealthIndicator extends AbstractHealthIndic
   public static HealthContributor forPhysicalTenants(
       final SearchClients searchClients,
       final Map<String, SearchEngineConfiguration> configurationsByTenant) {
+    return forPhysicalTenants(searchClients, configurationsByTenant, (tenantId, check) -> check);
+  }
+
+  /**
+   * As {@link #forPhysicalTenants(SearchClients, Map)}, but each tenant is checked only while this
+   * node has its client open: a check would otherwise open the client of every tenant the node does
+   * not use.
+   */
+  public static HealthContributor forPhysicalTenants(
+      final PhysicalTenantSearchClientResources resources,
+      final Map<String, SearchEngineConfiguration> configurationsByTenant) {
+    return forPhysicalTenants(
+        resources.searchClients(),
+        configurationsByTenant,
+        (tenantId, check) ->
+            () ->
+                resources
+                    .whileCreated(tenantId, check::health)
+                    .orElseGet(() -> Health.up().withDetail("state", "NOT_CREATED").build()));
+  }
+
+  private static HealthContributor forPhysicalTenants(
+      final SearchClients searchClients,
+      final Map<String, SearchEngineConfiguration> configurationsByTenant,
+      final BiFunction<String, HealthIndicator, HealthIndicator> decorator) {
     final var indicators = new LinkedHashMap<String, HealthIndicator>();
     searchClients
         .esClients()
@@ -58,18 +84,22 @@ public final class SearchEngineStatusHealthIndicator extends AbstractHealthIndic
             (tenantId, client) ->
                 indicators.put(
                     tenantId,
-                    indicatorFor(
-                        configurationsByTenant.get(tenantId),
-                        objectMapper -> new ElasticsearchEngineClient(client, objectMapper))));
+                    decorator.apply(
+                        tenantId,
+                        indicatorFor(
+                            configurationsByTenant.get(tenantId),
+                            objectMapper -> new ElasticsearchEngineClient(client, objectMapper)))));
     searchClients
         .osClients()
         .forEach(
             (tenantId, client) ->
                 indicators.put(
                     tenantId,
-                    indicatorFor(
-                        configurationsByTenant.get(tenantId),
-                        objectMapper -> new OpensearchEngineClient(client, objectMapper))));
+                    decorator.apply(
+                        tenantId,
+                        indicatorFor(
+                            configurationsByTenant.get(tenantId),
+                            objectMapper -> new OpensearchEngineClient(client, objectMapper)))));
     if (indicators.size() == 1) {
       return indicators.values().iterator().next();
     }
