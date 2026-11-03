@@ -36,9 +36,13 @@ public interface BatchOperationChunkRecordValue extends BatchOperationRelated, R
    */
   List<BatchOperationItemValue> getItems();
 
+  /**
+   * One item of a chunk. Each item carries its own {@link #getStorageOrdinal() storage ordinal}
+   * because they may live under different ordinals.
+   */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableBatchOperationItemValue.Builder.class)
-  interface BatchOperationItemValue {
+  interface BatchOperationItemValue extends StorageOrdinalRelated {
     long getItemKey();
 
     long getProcessInstanceKey();
