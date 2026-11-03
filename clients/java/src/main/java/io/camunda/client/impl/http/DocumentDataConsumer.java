@@ -67,8 +67,17 @@ public class DocumentDataConsumer<T>
   private final JsonApiEntityConsumer<InputStream> problemDetailConsumer;
 
   public DocumentDataConsumer(final int bufferCapacity, final ObjectMapper json) {
+    this(bufferCapacity, json, () -> {});
+  }
+
+  /**
+   * @param abortDownload ends the download; runs when the application closes the stream before the
+   *     end of the document
+   */
+  DocumentDataConsumer(
+      final int bufferCapacity, final ObjectMapper json, final Runnable abortDownload) {
     maxCapacity = bufferCapacity;
-    inputStream = new CircularBufferInputStream(bufferCapacity);
+    inputStream = new CircularBufferInputStream(bufferCapacity, abortDownload);
     try {
       problemDetailConsumer = new JsonApiEntityConsumer<>(json, InputStream.class, false);
     } catch (final IOException e) {

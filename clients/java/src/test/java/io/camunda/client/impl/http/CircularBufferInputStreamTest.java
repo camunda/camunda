@@ -25,7 +25,9 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -154,6 +156,62 @@ class CircularBufferInputStreamTest {
   }
 
   @Test
+  void shouldAbortDownloadOnceWhenClosedBeforeEndOfStream() throws IOException {
+    // given
+    final AtomicReference<CircularBufferInputStream> streamRef = new AtomicReference<>();
+    final AtomicInteger aborts = new AtomicInteger();
+    final AtomicBoolean abortedWhileLocked = new AtomicBoolean();
+    final CircularBufferInputStream stream =
+        new CircularBufferInputStream(
+            16,
+            () -> {
+              aborts.incrementAndGet();
+              abortedWhileLocked.set(Thread.holdsLock(streamRef.get()));
+            });
+    streamRef.set(stream);
+    stream.write(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+
+    // when
+    stream.close();
+    stream.close();
+
+    // then, it runs without the lock, so the I/O thread is not blocked while the connection closes
+    assertThat(aborts.get()).isOne();
+    assertThat(abortedWhileLocked.get()).isFalse();
+  }
+
+  @Test
+  void shouldNotAbortDownloadWhenClosedAfterEndOfStream() throws IOException {
+    // given
+    final AtomicInteger aborts = new AtomicInteger();
+    final CircularBufferInputStream stream =
+        new CircularBufferInputStream(16, aborts::incrementAndGet);
+    stream.write(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+    stream.endOfStream();
+
+    // when
+    stream.close();
+
+    // then, the connection can be reused
+    assertThat(aborts.get()).isZero();
+  }
+
+  @Test
+  void shouldNotAbortDownloadWhenClosedAfterAnError() {
+    // given
+    final AtomicInteger aborts = new AtomicInteger();
+    final CircularBufferInputStream stream =
+        new CircularBufferInputStream(16, aborts::incrementAndGet);
+    stream.signalError(new IOException("connection reset"));
+
+    // when
+    stream.close();
+
+    // then, the download has failed already
+    assertThat(aborts.get()).isZero();
+  }
+
+  @Test
   void shouldReadBufferedDataAndEndOfStream() throws IOException {
     // given
     final CircularBufferInputStream stream = new CircularBufferInputStream(16);
@@ -209,6 +267,7 @@ class CircularBufferInputStreamTest {
     final CircularBufferInputStream stream =
         new CircularBufferInputStream(
             4,
+            () -> {},
             length -> {
               if (length > 4) {
                 throw new OutOfMemoryError("Java heap space");
@@ -234,6 +293,7 @@ class CircularBufferInputStreamTest {
     final CircularBufferInputStream stream =
         new CircularBufferInputStream(
             4,
+            () -> {},
             length -> {
               if (length > 8) {
                 throw new OutOfMemoryError("Java heap space");
