@@ -21,12 +21,11 @@ function createCurrentUser(overrides?: Partial<AuthenticatedCurrentUser>): Authe
 		tenants: [],
 		groups: [],
 		canLogout: true,
-		anonymous: false,
+		isAnonymous: false,
 		...overrides,
 	};
 }
 
-/** What an unprotected API answers a caller without a session with. */
 function createAnonymousCurrentUser(): CurrentUser {
 	return {
 		username: null,
@@ -39,7 +38,7 @@ function createAnonymousCurrentUser(): CurrentUser {
 		tenants: [],
 		groups: [],
 		canLogout: false,
-		anonymous: true,
+		isAnonymous: true,
 	};
 }
 

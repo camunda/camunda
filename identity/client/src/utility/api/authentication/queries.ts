@@ -22,7 +22,7 @@ export const authenticationQueries = {
         );
         // An unprotected API answers a caller without a session with an anonymous user instead
         // of a 401, because no credentials can authenticate it there. Handle it like the 401.
-        if ("anonymous" in currentUser && currentUser.anonymous === true) {
+        if ("isAnonymous" in currentUser && currentUser.isAnonymous === true) {
           throw new ApiError(401, null);
         }
         return currentUser;

@@ -119,7 +119,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "salesPlanType": null,
                   "c8Links": {},
                   "canLogout": true,
-                  "anonymous": false
+                  "isAnonymous": false
                 }""",
             JsonCompareMode.STRICT);
 
@@ -146,7 +146,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
         .json(
             """
                 {
-                  "anonymous": true,
+                  "isAnonymous": true,
                   "username": null,
                   "displayName": null,
                   "email": null,

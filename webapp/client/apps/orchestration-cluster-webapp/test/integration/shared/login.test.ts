@@ -189,7 +189,6 @@ test('should show the Admin heading when redirected from the Admin app', async (
 });
 
 test('should redirect to login when the API answers with an anonymous user', async ({network, page, loginPage}) => {
-	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createAnonymousCurrentUser()),
