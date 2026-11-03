@@ -28,6 +28,6 @@ for hit in hits:
     )
     print(f"    per tool:     {tools or '-'}")
     print(
-        f"    enrichment:   process {r.get('processInstanceState')}, "
-        f"incident {r.get('hasIncident')}, user tasks {r.get('processUserTaskCount')}"
+        f"    enrichment:   enriched {r.get('enriched')}, end state {r.get('endState')}, "
+        f"failed {r.get('failed')}, incident {r.get('hasIncident')}, type {r.get('agentType')}"
     )

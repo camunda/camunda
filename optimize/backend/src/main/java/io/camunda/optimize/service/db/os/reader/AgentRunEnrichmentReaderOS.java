@@ -43,4 +43,10 @@ public class AgentRunEnrichmentReaderOS implements AgentRunEnrichmentReader {
   public Map<String, String> getProcessDefinitionKeys(final Collection<String> processInstanceIds) {
     throw new UnsupportedOperationException("Agent run enrichment is not supported on OpenSearch");
   }
+
+  @Override
+  public Map<String, String> getAgentTypes(final Collection<String> agentDefinitionDocumentIds) {
+    // prototype: ES only
+    throw new UnsupportedOperationException("Agent run enrichment is not supported on OpenSearch");
+  }
 }

@@ -12,7 +12,7 @@ import {t} from 'translation';
 
 import type {FailureReason} from './service';
 
-const KNOWN_LIMITS = ['maxModelCalls', 'maxToolCalls', 'maxTokens'];
+const KNOWN_LIMITS = ['MODEL_CALLS', 'TOOL_CALLS', 'TOKENS'];
 
 export function limitLabel(limit: string | null): string {
   if (limit && KNOWN_LIMITS.includes(limit)) {

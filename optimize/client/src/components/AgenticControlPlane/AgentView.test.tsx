@@ -27,11 +27,11 @@ const agent: AgentDetail = {
   runs: 100,
   failedRuns: 6,
   avgModelCalls: 4.2,
-  limitHits: [{limit: 'maxModelCalls', runs: 4}],
+  limitHits: [{limit: 'MODEL_CALLS', runs: 4}],
   failureReasons: [
     {
       kind: 'LIMIT',
-      limit: 'maxModelCalls',
+      limit: 'MODEL_CALLS',
       flowNodeId: null,
       toolName: null,
       errorType: null,

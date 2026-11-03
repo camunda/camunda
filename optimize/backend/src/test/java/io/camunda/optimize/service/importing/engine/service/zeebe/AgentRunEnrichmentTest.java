@@ -172,14 +172,101 @@ class AgentRunEnrichmentTest {
         .containsExactly(tuple("searchTask", "search", 2L));
     assertThat(enriched.getFailureReasons())
         .extracting(
+            FailureReasonDto::getKind,
             FailureReasonDto::getFlowNodeId,
             FailureReasonDto::getToolName,
             FailureReasonDto::getErrorType,
             FailureReasonDto::getMessage,
             FailureReasonDto::getCount)
         .containsExactly(
-            tuple("searchTask", "search", "JOB_NO_RETRIES", "bearer token expired", 2L),
-            tuple("review", null, "EXTRACT_VALUE_ERROR", "bad output", 1L));
+            tuple(
+                "TOOL_INCIDENT",
+                "searchTask",
+                "search",
+                "JOB_NO_RETRIES",
+                "bearer token expired",
+                2L),
+            tuple("AGENT_INCIDENT", "review", null, "EXTRACT_VALUE_ERROR", "bad output", 1L));
+    assertThat(enriched.getFailed()).isTrue();
+  }
+
+  @Test
+  void shouldAddOneLimitReasonPerReachedLimitAndFailTheRun() {
+    // given a run that reached two limits and had no incident
+    final AgentRunDto run = runWithTools();
+    run.setHitLimit(true);
+    run.setLimitHit(List.of("MODEL_CALLS", "TOKENS"));
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(run, processInstance(), NOW);
+
+    // then
+    assertThat(enriched.getFailureReasons())
+        .extracting(
+            FailureReasonDto::getKind, FailureReasonDto::getLimit, FailureReasonDto::getCount)
+        .containsExactly(tuple("LIMIT", "MODEL_CALLS", 1L), tuple("LIMIT", "TOKENS", 1L));
+    assertThat(enriched.getHasIncident()).isFalse();
+    assertThat(enriched.getFailed()).isTrue();
+  }
+
+  @Test
+  void shouldNotFailARunWithoutIncidentOrLimit() {
+    // given
+    final AgentRunDto run = runWithTools();
+    run.setHitLimit(false);
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(run, processInstance(), NOW);
+
+    // then
+    assertThat(enriched.getFailed()).isFalse();
+    assertThat(enriched.getFailureReasons()).isEmpty();
+  }
+
+  @Test
+  void shouldFailARunWithOnlyAToolIncident() {
+    // given
+    final ProcessInstanceDto processInstance = processInstance();
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("124", "review", "adHocSubProcess"), 0, 100));
+    processInstance
+        .getFlowNodeInstances()
+        .add(timed(node("201", "searchTask", "serviceTask"), 5, 6));
+    processInstance.getIncidents().add(incident("201", "JOB_NO_RETRIES", "down", 6));
+
+    // when
+    final AgentRunDto enriched = AgentRunEnrichment.compute(runWithTools(), processInstance, NOW);
+
+    // then
+    assertThat(enriched.getHasIncident()).isFalse();
+    assertThat(enriched.getToolIncidentCount()).isEqualTo(1L);
+    assertThat(enriched.getFailed()).isTrue();
+  }
+
+  @Test
+  void shouldMarkTheRunEnrichedWithAgentTypeAndEndState() {
+    // given
+    final ProcessInstanceDto completed = processInstance();
+    completed.setState("COMPLETED");
+    final ProcessInstanceDto canceled = processInstance();
+    canceled.setState("EXTERNALLY_TERMINATED");
+    final ProcessInstanceDto running = processInstance();
+    running.setState("ACTIVE");
+
+    // when
+    final AgentRunDto fromCompleted =
+        AgentRunEnrichment.compute(run(), completed, null, "AI_AGENT_SUB_PROCESS", NOW);
+    final AgentRunDto fromCanceled = AgentRunEnrichment.compute(run(), canceled, NOW);
+    final AgentRunDto fromRunning = AgentRunEnrichment.compute(run(), running, NOW);
+
+    // then
+    assertThat(fromCompleted.getEnriched()).isTrue();
+    assertThat(fromCompleted.getAgentType()).isEqualTo("AI_AGENT_SUB_PROCESS");
+    assertThat(fromCompleted.getEndState()).isEqualTo("COMPLETED");
+    assertThat(fromCanceled.getAgentType()).isNull();
+    assertThat(fromCanceled.getEndState()).isEqualTo("CANCELED");
+    assertThat(fromRunning.getEndState()).isNull();
   }
 
   @Test
@@ -215,9 +302,10 @@ class AgentRunEnrichmentTest {
     calledRun.setRootProcessInstanceId("99");
 
     // when
-    final AgentRunDto own = AgentRunEnrichment.compute(ownRoot, processInstance, "ignored", NOW);
+    final AgentRunDto own =
+        AgentRunEnrichment.compute(ownRoot, processInstance, "ignored", null, NOW);
     final AgentRunDto called =
-        AgentRunEnrichment.compute(calledRun, processInstance, "parent-process", NOW);
+        AgentRunEnrichment.compute(calledRun, processInstance, "parent-process", null, NOW);
 
     // then
     assertThat(own.getRootProcessDefinitionKey()).isEqualTo("child-process");

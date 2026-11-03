@@ -97,9 +97,9 @@
       "runs": "{runs} runs"
     },
     "limits": {
-      "maxModelCalls": "max model calls",
-      "maxToolCalls": "max tool calls",
-      "maxTokens": "max tokens"
+      "MODEL_CALLS": "max model calls",
+      "TOOL_CALLS": "max tool calls",
+      "TOKENS": "max tokens"
     },
     "agentView": {
       "process": "Process",

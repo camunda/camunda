@@ -25,6 +25,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String AGENT_INSTANCE_ID = AgentRunDto.Fields.agentInstanceId;
   public static final String AGENT_DEFINITION_ID = AgentRunDto.Fields.agentDefinitionId;
   public static final String AGENT_ID = AgentRunDto.Fields.agentId;
+  public static final String AGENT_TYPE = AgentRunDto.Fields.agentType;
   public static final String FLOW_NODE_ID = AgentRunDto.Fields.flowNodeId;
   public static final String FLOW_NODE_INSTANCE_IDS = AgentRunDto.Fields.flowNodeInstanceIds;
   public static final String PROCESS_DEFINITION_KEY = AgentRunDto.Fields.processDefinitionKey;
@@ -43,6 +44,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String LAST_ACTIVITY_DATE = AgentRunDto.Fields.lastActivityDate;
   public static final String END_DATE = AgentRunDto.Fields.endDate;
   public static final String STATUS = AgentRunDto.Fields.status;
+  public static final String END_STATE = AgentRunDto.Fields.endState;
   public static final String INPUT_TOKENS = AgentRunDto.Fields.inputTokens;
   public static final String OUTPUT_TOKENS = AgentRunDto.Fields.outputTokens;
   public static final String REASONING_TOKENS = AgentRunDto.Fields.reasoningTokens;
@@ -64,10 +66,14 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String LAST_RECORD_POSITION = AgentRunDto.Fields.lastRecordPosition;
   public static final String LAST_METRIC_TOTALS = AgentRunDto.Fields.lastMetricTotals;
   public static final String ENRICHED_AT = AgentRunDto.Fields.enrichedAt;
+  public static final String ENRICHED = AgentRunDto.Fields.enriched;
   public static final String ACTIVE_DURATION_MS = AgentRunDto.Fields.activeDurationMs;
   public static final String TOOL_INCIDENT_COUNT = AgentRunDto.Fields.toolIncidentCount;
+  public static final String FAILED = AgentRunDto.Fields.failed;
   public static final String TOOL_INCIDENTS_BY_TOOL = AgentRunDto.Fields.toolIncidentsByTool;
   public static final String FAILURE_REASONS = AgentRunDto.Fields.failureReasons;
+  public static final String FAILURE_REASON_KIND = AgentRunDto.FailureReasonDto.Fields.kind;
+  public static final String FAILURE_REASON_LIMIT = AgentRunDto.FailureReasonDto.Fields.limit;
   public static final String FAILURE_REASON_FLOW_NODE_ID =
       AgentRunDto.FailureReasonDto.Fields.flowNodeId;
   public static final String FAILURE_REASON_TOOL_NAME =
@@ -95,6 +101,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(AGENT_INSTANCE_ID, p -> p.keyword(k -> k))
         .properties(AGENT_DEFINITION_ID, p -> p.keyword(k -> k))
         .properties(AGENT_ID, p -> p.keyword(k -> k))
+        .properties(AGENT_TYPE, p -> p.keyword(k -> k))
         .properties(FLOW_NODE_ID, p -> p.keyword(k -> k))
         .properties(FLOW_NODE_INSTANCE_IDS, p -> p.keyword(k -> k))
         .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
@@ -112,6 +119,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(LAST_ACTIVITY_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(END_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(STATUS, p -> p.keyword(k -> k))
+        .properties(END_STATE, p -> p.keyword(k -> k))
         .properties(INPUT_TOKENS, p -> p.long_(k -> k))
         .properties(OUTPUT_TOKENS, p -> p.long_(k -> k))
         .properties(REASONING_TOKENS, p -> p.long_(k -> k))
@@ -164,8 +172,10 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         // Import bookkeeping only, never queried.
         .properties(LAST_METRIC_TOTALS, p -> p.object(o -> o.enabled(false)))
         .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(ENRICHED, p -> p.boolean_(k -> k))
         .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))
         .properties(TOOL_INCIDENT_COUNT, p -> p.long_(k -> k))
+        .properties(FAILED, p -> p.boolean_(k -> k))
         .properties(
             TOOL_INCIDENTS_BY_TOOL,
             p ->
@@ -179,7 +189,9 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
             p ->
                 p.nested(
                     n ->
-                        n.properties(FAILURE_REASON_FLOW_NODE_ID, np -> np.keyword(k -> k))
+                        n.properties(FAILURE_REASON_KIND, np -> np.keyword(k -> k))
+                            .properties(FAILURE_REASON_LIMIT, np -> np.keyword(k -> k))
+                            .properties(FAILURE_REASON_FLOW_NODE_ID, np -> np.keyword(k -> k))
                             .properties(FAILURE_REASON_TOOL_NAME, np -> np.keyword(k -> k))
                             .properties(FAILURE_REASON_ERROR_TYPE, np -> np.keyword(k -> k))
                             // Truncated by the enrichment, so it fits a keyword for grouping.

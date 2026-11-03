@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.reader;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
@@ -18,11 +19,13 @@ import co.elastic.clients.elasticsearch.core.mget.MultiGetOperation;
 import co.elastic.clients.elasticsearch.core.mget.MultiGetResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.AgentRunEnrichmentReader;
+import io.camunda.optimize.service.db.schema.index.AgentDefinitionIndex;
 import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -163,6 +166,38 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not look up root process instances", e);
     }
+  }
+
+  @Override
+  public Map<String, String> getAgentTypes(final Collection<String> agentDefinitionDocumentIds) {
+    if (agentDefinitionDocumentIds.isEmpty()) {
+      return Map.of();
+    }
+    final String index =
+        DatabaseClient.convertToPrefixedAliasName(AGENT_DEFINITION_INDEX_NAME, esClient);
+    final List<MultiGetOperation> docs =
+        agentDefinitionDocumentIds.stream()
+            .distinct()
+            .map(
+                id ->
+                    MultiGetOperation.of(
+                        m ->
+                            m.index(index)
+                                .id(id)
+                                .source(
+                                    s ->
+                                        s.filter(
+                                            f -> f.includes(AgentDefinitionIndex.AGENT_TYPE)))))
+            .toList();
+    final Map<String, String> types = new HashMap<>();
+    multiGet(docs, AgentDefinitionDto.class)
+        .forEach(
+            (id, definition) -> {
+              if (definition.getAgentType() != null) {
+                types.put(id, definition.getAgentType());
+              }
+            });
+    return types;
   }
 
   private <T> Map<String, T> multiGet(final List<MultiGetOperation> docs, final Class<T> type) {

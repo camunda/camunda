@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentIds;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.AgentRunEnrichmentReader;
@@ -144,6 +145,8 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
                 .filter(Objects::nonNull)
                 .filter(root -> !processInstances.containsKey(root))
                 .collect(Collectors.toSet()));
+    final Map<String, String> agentTypes =
+        reader.getAgentTypes(runs.stream().map(AgentRunEnrichmentService::definitionId).toList());
     final OffsetDateTime now = OffsetDateTime.now();
     final List<AgentRunDto> enriched =
         runs.stream()
@@ -155,6 +158,7 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
                             processInstances.get(run.getProcessInstanceId()),
                             rootProcessDefinitionKey(
                                 run, processInstances, rootProcessDefinitionKeys),
+                            agentTypes.get(definitionId(run)),
                             now)
                         : null)
             .filter(Objects::nonNull)
@@ -167,6 +171,11 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
         agentRunWriter.generateEnrichmentImports(enriched),
         configurationService.getSkipDataAfterNestedDocLimitReached());
     LOG.debug("Enriched {} of {} agent runs.", enriched.size(), runs.size());
+  }
+
+  private static String definitionId(final AgentRunDto run) {
+    return AgentIds.agentDefinitionDocumentId(
+        run.getTenantId(), run.getProcessDefinitionKey(), run.getFlowNodeId());
   }
 
   private static String rootProcessDefinitionKey(

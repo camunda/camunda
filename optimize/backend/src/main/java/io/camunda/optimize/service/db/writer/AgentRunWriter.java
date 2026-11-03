@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
+import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunDerivedFields;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunRecordFolder.FoldResult;
 import java.util.List;
 import java.util.Map;
@@ -145,15 +146,19 @@ public class AgentRunWriter {
       if (anyToken) { doc.totalTokens = tokenSum; } else { doc.totalTokens = null; }
 
       def hit = new ArrayList();
-      if (reached(doc.modelCalls, doc.maxModelCalls)) { hit.add('maxModelCalls'); }
-      if (reached(doc.toolCalls, doc.maxToolCalls)) { hit.add('maxToolCalls'); }
-      if (reached(doc.totalTokens, doc.maxTokens)) { hit.add('maxTokens'); }
+      if (reached(doc.modelCalls, doc.maxModelCalls)) { hit.add(params.limits[0]); }
+      if (reached(doc.toolCalls, doc.maxToolCalls)) { hit.add(params.limits[1]); }
+      if (reached(doc.totalTokens, doc.maxTokens)) { hit.add(params.limits[2]); }
       doc.limitHit = hit;
       doc.hitLimit = !hit.isEmpty();
       """;
 
   private static final Set<String> ENRICHMENT_FIELDS =
       Set.of(
+          AgentRunDto.Fields.agentType,
+          AgentRunDto.Fields.endState,
+          AgentRunDto.Fields.failed,
+          AgentRunDto.Fields.enriched,
           AgentRunDto.Fields.hasIncident,
           AgentRunDto.Fields.toolCallsByTool,
           AgentRunDto.Fields.enrichedAt,
@@ -191,7 +196,9 @@ public class AgentRunWriter {
                                 "latestFields",
                                 LATEST_FIELDS,
                                 "tokenFields",
-                                TOKEN_FIELDS),
+                                TOKEN_FIELDS,
+                                "limits",
+                                AgentRunDerivedFields.LIMITS),
                             objectMapper))
                     .build())
         .toList();

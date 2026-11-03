@@ -81,6 +81,8 @@ public final class AgentRunRecordFolder {
 
     applyTokensByModel(run, observations);
     AgentRunDerivedFields.apply(run);
+    // The merge script never copies it, so only a first insert stores it.
+    run.setEnriched(false);
     return new FoldResult(run, observations);
   }
 

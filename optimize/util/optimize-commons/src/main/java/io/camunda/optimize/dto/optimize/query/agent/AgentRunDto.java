@@ -26,6 +26,7 @@ public class AgentRunDto implements OptimizeDto {
   private String agentInstanceId;
   private String agentDefinitionId;
   private String agentId;
+  private String agentType;
   private String flowNodeId;
   private List<String> flowNodeInstanceIds = new ArrayList<>();
   private String processDefinitionKey;
@@ -43,6 +44,7 @@ public class AgentRunDto implements OptimizeDto {
   private OffsetDateTime lastActivityDate;
   private OffsetDateTime endDate;
   private String status;
+  private String endState;
   private Long inputTokens;
   private Long outputTokens;
   private Long reasoningTokens;
@@ -60,8 +62,10 @@ public class AgentRunDto implements OptimizeDto {
   private Long lastRecordPosition;
   private MetricTotalsDto lastMetricTotals;
   private OffsetDateTime enrichedAt;
+  private Boolean enriched;
   private Long activeDurationMs;
   private Long toolIncidentCount;
+  private Boolean failed;
   private List<ToolCallsDto> toolIncidentsByTool = new ArrayList<>();
   private List<FailureReasonDto> failureReasons = new ArrayList<>();
   private String rootProcessDefinitionKey;
@@ -90,6 +94,14 @@ public class AgentRunDto implements OptimizeDto {
 
   public void setAgentId(final String agentId) {
     this.agentId = agentId;
+  }
+
+  public String getAgentType() {
+    return agentType;
+  }
+
+  public void setAgentType(final String agentType) {
+    this.agentType = agentType;
   }
 
   public String getFlowNodeId() {
@@ -228,6 +240,14 @@ public class AgentRunDto implements OptimizeDto {
     this.status = status;
   }
 
+  public String getEndState() {
+    return endState;
+  }
+
+  public void setEndState(final String endState) {
+    this.endState = endState;
+  }
+
   public Long getInputTokens() {
     return inputTokens;
   }
@@ -364,6 +384,14 @@ public class AgentRunDto implements OptimizeDto {
     this.enrichedAt = enrichedAt;
   }
 
+  public Boolean getEnriched() {
+    return enriched;
+  }
+
+  public void setEnriched(final Boolean enriched) {
+    this.enriched = enriched;
+  }
+
   public Long getActiveDurationMs() {
     return activeDurationMs;
   }
@@ -378,6 +406,14 @@ public class AgentRunDto implements OptimizeDto {
 
   public void setToolIncidentCount(final Long toolIncidentCount) {
     this.toolIncidentCount = toolIncidentCount;
+  }
+
+  public Boolean getFailed() {
+    return failed;
+  }
+
+  public void setFailed(final Boolean failed) {
+    this.failed = failed;
   }
 
   public List<ToolCallsDto> getToolIncidentsByTool() {
@@ -413,6 +449,7 @@ public class AgentRunDto implements OptimizeDto {
     return Objects.equals(agentInstanceId, that.agentInstanceId)
         && Objects.equals(agentDefinitionId, that.agentDefinitionId)
         && Objects.equals(agentId, that.agentId)
+        && Objects.equals(agentType, that.agentType)
         && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(flowNodeInstanceIds, that.flowNodeInstanceIds)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
@@ -430,6 +467,7 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(lastActivityDate, that.lastActivityDate)
         && Objects.equals(endDate, that.endDate)
         && Objects.equals(status, that.status)
+        && Objects.equals(endState, that.endState)
         && Objects.equals(inputTokens, that.inputTokens)
         && Objects.equals(outputTokens, that.outputTokens)
         && Objects.equals(reasoningTokens, that.reasoningTokens)
@@ -447,8 +485,10 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(lastRecordPosition, that.lastRecordPosition)
         && Objects.equals(lastMetricTotals, that.lastMetricTotals)
         && Objects.equals(enrichedAt, that.enrichedAt)
+        && Objects.equals(enriched, that.enriched)
         && Objects.equals(activeDurationMs, that.activeDurationMs)
         && Objects.equals(toolIncidentCount, that.toolIncidentCount)
+        && Objects.equals(failed, that.failed)
         && Objects.equals(toolIncidentsByTool, that.toolIncidentsByTool)
         && Objects.equals(failureReasons, that.failureReasons)
         && Objects.equals(rootProcessDefinitionKey, that.rootProcessDefinitionKey);
@@ -460,6 +500,7 @@ public class AgentRunDto implements OptimizeDto {
         agentInstanceId,
         agentDefinitionId,
         agentId,
+        agentType,
         flowNodeId,
         flowNodeInstanceIds,
         processDefinitionKey,
@@ -477,6 +518,7 @@ public class AgentRunDto implements OptimizeDto {
         lastActivityDate,
         endDate,
         status,
+        endState,
         inputTokens,
         outputTokens,
         reasoningTokens,
@@ -494,8 +536,10 @@ public class AgentRunDto implements OptimizeDto {
         lastRecordPosition,
         lastMetricTotals,
         enrichedAt,
+        enriched,
         activeDurationMs,
         toolIncidentCount,
+        failed,
         toolIncidentsByTool,
         failureReasons,
         rootProcessDefinitionKey);
@@ -510,6 +554,8 @@ public class AgentRunDto implements OptimizeDto {
         + agentDefinitionId
         + ", agentId="
         + agentId
+        + ", agentType="
+        + agentType
         + ", flowNodeId="
         + flowNodeId
         + ", flowNodeInstanceIds="
@@ -544,6 +590,8 @@ public class AgentRunDto implements OptimizeDto {
         + endDate
         + ", status="
         + status
+        + ", endState="
+        + endState
         + ", inputTokens="
         + inputTokens
         + ", outputTokens="
@@ -578,10 +626,14 @@ public class AgentRunDto implements OptimizeDto {
         + lastMetricTotals
         + ", enrichedAt="
         + enrichedAt
+        + ", enriched="
+        + enriched
         + ", activeDurationMs="
         + activeDurationMs
         + ", toolIncidentCount="
         + toolIncidentCount
+        + ", failed="
+        + failed
         + ", toolIncidentsByTool="
         + toolIncidentsByTool
         + ", failureReasons="
@@ -597,6 +649,7 @@ public class AgentRunDto implements OptimizeDto {
     public static final String agentInstanceId = "agentInstanceId";
     public static final String agentDefinitionId = "agentDefinitionId";
     public static final String agentId = "agentId";
+    public static final String agentType = "agentType";
     public static final String flowNodeId = "flowNodeId";
     public static final String flowNodeInstanceIds = "flowNodeInstanceIds";
     public static final String processDefinitionKey = "processDefinitionKey";
@@ -614,6 +667,7 @@ public class AgentRunDto implements OptimizeDto {
     public static final String lastActivityDate = "lastActivityDate";
     public static final String endDate = "endDate";
     public static final String status = "status";
+    public static final String endState = "endState";
     public static final String inputTokens = "inputTokens";
     public static final String outputTokens = "outputTokens";
     public static final String reasoningTokens = "reasoningTokens";
@@ -631,8 +685,10 @@ public class AgentRunDto implements OptimizeDto {
     public static final String lastRecordPosition = "lastRecordPosition";
     public static final String lastMetricTotals = "lastMetricTotals";
     public static final String enrichedAt = "enrichedAt";
+    public static final String enriched = "enriched";
     public static final String activeDurationMs = "activeDurationMs";
     public static final String toolIncidentCount = "toolIncidentCount";
+    public static final String failed = "failed";
     public static final String toolIncidentsByTool = "toolIncidentsByTool";
     public static final String failureReasons = "failureReasons";
     public static final String rootProcessDefinitionKey = "rootProcessDefinitionKey";
@@ -952,11 +1008,13 @@ public class AgentRunDto implements OptimizeDto {
   }
 
   /**
-   * Why a run failed on one element: the first incident message seen for that element and error
-   * type, and how many incidents of the run share them.
+   * Why a run failed: a limit it reached, or an incident on the agent element or one of its tools
+   * with the first message seen for that element and error type and how many incidents share them.
    */
   public static class FailureReasonDto {
 
+    private String kind;
+    private String limit;
     private String flowNodeId;
     private String toolName;
     private String errorType;
@@ -964,6 +1022,24 @@ public class AgentRunDto implements OptimizeDto {
     private Long count;
 
     public FailureReasonDto() {}
+
+    /** {@code LIMIT}, {@code AGENT_INCIDENT} or {@code TOOL_INCIDENT}. */
+    public String getKind() {
+      return kind;
+    }
+
+    public void setKind(final String kind) {
+      this.kind = kind;
+    }
+
+    /** The limit reached, for a {@code LIMIT} reason. */
+    public String getLimit() {
+      return limit;
+    }
+
+    public void setLimit(final String limit) {
+      this.limit = limit;
+    }
 
     public String getFlowNodeId() {
       return flowNodeId;
@@ -1012,7 +1088,9 @@ public class AgentRunDto implements OptimizeDto {
         return false;
       }
       final FailureReasonDto that = (FailureReasonDto) o;
-      return Objects.equals(flowNodeId, that.flowNodeId)
+      return Objects.equals(kind, that.kind)
+          && Objects.equals(limit, that.limit)
+          && Objects.equals(flowNodeId, that.flowNodeId)
           && Objects.equals(toolName, that.toolName)
           && Objects.equals(errorType, that.errorType)
           && Objects.equals(message, that.message)
@@ -1021,13 +1099,17 @@ public class AgentRunDto implements OptimizeDto {
 
     @Override
     public int hashCode() {
-      return Objects.hash(flowNodeId, toolName, errorType, message, count);
+      return Objects.hash(kind, limit, flowNodeId, toolName, errorType, message, count);
     }
 
     @Override
     public String toString() {
       return "FailureReasonDto("
-          + "flowNodeId="
+          + "kind="
+          + kind
+          + ", limit="
+          + limit
+          + ", flowNodeId="
           + flowNodeId
           + ", toolName="
           + toolName
@@ -1043,6 +1125,8 @@ public class AgentRunDto implements OptimizeDto {
     @SuppressWarnings("checkstyle:ConstantName")
     public static final class Fields {
 
+      public static final String kind = "kind";
+      public static final String limit = "limit";
       public static final String flowNodeId = "flowNodeId";
       public static final String toolName = "toolName";
       public static final String errorType = "errorType";

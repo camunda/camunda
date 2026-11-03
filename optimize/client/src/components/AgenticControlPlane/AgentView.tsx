@@ -103,17 +103,17 @@ function AgentHeader({agent}: {agent: AgentDetail}) {
     agent.maxModelCalls != null &&
       t('agenticControlPlane.agentView.limitValue', {
         value: formatCount(agent.maxModelCalls),
-        limit: limitLabel('maxModelCalls'),
+        limit: limitLabel('MODEL_CALLS'),
       }),
     agent.maxToolCalls != null &&
       t('agenticControlPlane.agentView.limitValue', {
         value: formatCount(agent.maxToolCalls),
-        limit: limitLabel('maxToolCalls'),
+        limit: limitLabel('TOOL_CALLS'),
       }),
     agent.maxTokens != null &&
       t('agenticControlPlane.agentView.limitValue', {
         value: formatCount(agent.maxTokens),
-        limit: limitLabel('maxTokens'),
+        limit: limitLabel('TOKENS'),
       }),
   ].filter(Boolean);
 

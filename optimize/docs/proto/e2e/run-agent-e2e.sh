@@ -61,7 +61,7 @@ es_count() { # index pattern, query json
 
 RECORD_QUERY=$(python3 -I -c 'import json,sys; print(json.dumps({"query": {"terms": {"value.processInstanceKey": json.loads(sys.argv[1])}}}))' "$KEYS_JSON")
 RUN_QUERY=$(python3 -I -c 'import json,sys; print(json.dumps({"query": {"terms": {"processInstanceId": json.loads(sys.argv[1])}}}))' "$KEYS_JSON")
-DONE_QUERY=$(python3 -I -c 'import json,sys; print(json.dumps({"query": {"bool": {"filter": [{"terms": {"processInstanceId": json.loads(sys.argv[1])}}, {"exists": {"field": "endDate"}}, {"exists": {"field": "processInstanceState"}}]}}}))' "$KEYS_JSON")
+DONE_QUERY=$(python3 -I -c 'import json,sys; print(json.dumps({"query": {"bool": {"filter": [{"terms": {"processInstanceId": json.loads(sys.argv[1])}}, {"exists": {"field": "endDate"}}, {"term": {"enriched": True}}]}}}))' "$KEYS_JSON")
 
 bold "Watching (up to ${TIMEOUT_S}s). Columns: engine agent records | Optimize runs | completed + enriched runs"
 start=$(date +%s)

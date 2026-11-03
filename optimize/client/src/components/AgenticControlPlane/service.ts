@@ -84,7 +84,7 @@ export async function loadAgentInventory(
   return response.json();
 }
 
-export type AgentLimit = 'maxModelCalls' | 'maxToolCalls' | 'maxTokens';
+export type AgentLimit = 'MODEL_CALLS' | 'TOOL_CALLS' | 'TOKENS';
 
 export interface FailureReason {
   kind: 'LIMIT' | 'INCIDENT';

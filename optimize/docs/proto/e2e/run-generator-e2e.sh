@@ -68,7 +68,7 @@ NEW=$(( AFTER_ZEEBE - BEFORE_ZEEBE ))
 echo "  generator wrote $NEW new agent runs ($AFTER_ZEEBE total in Zeebe records)"
 
 bold "Watching the import (up to ${TIMEOUT_S}s)"
-ENRICHED_QUERY='{"query":{"exists":{"field":"processInstanceState"}}}'
+ENRICHED_QUERY='{"query":{"term":{"enriched":true}}}'
 start=$(date +%s)
 while :; do
   runs=$(optimize_count '{"query":{"match_all":{}}}')

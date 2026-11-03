@@ -141,8 +141,23 @@ class AgentRunRecordFolderTest {
 
     // then
     assertThat(run.getHitLimit()).isTrue();
-    assertThat(run.getLimitHit()).containsExactly("maxModelCalls");
+    assertThat(run.getLimitHit()).containsExactly("MODEL_CALLS");
     assertThat(run.getMaxTokens()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldNameEveryReachedLimitAndStoreTheRunAsNotEnriched() {
+    // given
+    final var created = record(1, AgentInstanceIntent.CREATED, START, "openai", "gpt");
+    metrics(created, 10, 10, 0, 0, 0, 5, 3);
+    limits(created, 20L, 5, 3);
+
+    // when
+    final AgentRunDto run = AgentRunRecordFolder.fold(List.of(created)).run();
+
+    // then
+    assertThat(run.getLimitHit()).containsExactlyElementsOf(AgentRunDerivedFields.LIMITS);
+    assertThat(run.getEnriched()).isFalse();
   }
 
   @Test

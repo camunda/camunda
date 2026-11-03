@@ -34,4 +34,10 @@ public interface AgentRunEnrichmentReader {
    * process instances whose definition isn't known. Instances not found are left out.
    */
   Map<String, String> getProcessDefinitionKeys(Collection<String> processInstanceIds);
+
+  /**
+   * Real-time read of the agent type of each given agent definition document ID ({@code
+   * tenant:process:element}). Agents without a definition are left out.
+   */
+  Map<String, String> getAgentTypes(Collection<String> agentDefinitionDocumentIds);
 }

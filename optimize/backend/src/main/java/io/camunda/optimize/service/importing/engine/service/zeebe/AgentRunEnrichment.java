@@ -9,6 +9,7 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
+import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
@@ -33,6 +34,12 @@ import java.util.stream.Stream;
  */
 public final class AgentRunEnrichment {
 
+  public static final String KIND_LIMIT = "LIMIT";
+  public static final String KIND_AGENT_INCIDENT = "AGENT_INCIDENT";
+  public static final String KIND_TOOL_INCIDENT = "TOOL_INCIDENT";
+  public static final String END_STATE_COMPLETED = "COMPLETED";
+  public static final String END_STATE_CANCELED = "CANCELED";
+
   /** Incident messages are kept for grouping failure reasons, so they are cut to a keyword size. */
   static final int MAX_MESSAGE_LENGTH = 500;
 
@@ -40,22 +47,27 @@ public final class AgentRunEnrichment {
 
   public static AgentRunDto compute(
       final AgentRunDto run, final ProcessInstanceDto processInstance, final OffsetDateTime now) {
-    return compute(run, processInstance, null, now);
+    return compute(run, processInstance, null, null, now);
   }
 
   /**
    * Returns a run carrying only the enrichment fields, ready for a partial update.
    *
+   * @param run the stored run, so its {@code hitLimit} and {@code limitHit} are final
    * @param rootProcessDefinitionKey the definition key of the run's root process instance when it
    *     is not the run's own process instance; null when unknown
+   * @param agentType the type from the agent's definition; null when it has none
    */
   public static AgentRunDto compute(
       final AgentRunDto run,
       final ProcessInstanceDto processInstance,
       final String rootProcessDefinitionKey,
+      final String agentType,
       final OffsetDateTime now) {
     final AgentRunDto enriched = new AgentRunDto();
     enriched.setAgentInstanceId(run.getAgentInstanceId());
+    enriched.setAgentType(agentType);
+    enriched.setEndState(endState(processInstance.getState()));
 
     final List<IncidentDto> agentIncidents =
         processInstance.getIncidents().stream()
@@ -83,11 +95,17 @@ public final class AgentRunEnrichment {
             .toList();
     enriched.setToolIncidentCount((long) toolIncidents.size());
     enriched.setToolIncidentsByTool(countToolIncidents(run, toolIncidents, processInstance));
-    enriched.setFailureReasons(
+    final List<FailureReasonDto> reasons = new ArrayList<>(limitReasons(run));
+    reasons.addAll(
         failureReasons(
             run,
             Stream.concat(agentIncidents.stream(), toolIncidents.stream()).toList(),
             processInstance));
+    enriched.setFailureReasons(reasons);
+    enriched.setFailed(
+        !agentIncidents.isEmpty()
+            || !toolIncidents.isEmpty()
+            || Boolean.TRUE.equals(run.getHitLimit()));
 
     enriched.setRootProcessDefinitionKey(
         run.getRootProcessInstanceId() == null
@@ -95,7 +113,34 @@ public final class AgentRunEnrichment {
             ? processInstance.getProcessDefinitionKey()
             : rootProcessDefinitionKey);
     enriched.setEnrichedAt(now);
+    enriched.setEnriched(true);
     return enriched;
+  }
+
+  /** {@code COMPLETED} or {@code CANCELED}; null while the process instance is running. */
+  static String endState(final String processInstanceState) {
+    if (ProcessInstanceConstants.COMPLETED_STATE.equals(processInstanceState)) {
+      return END_STATE_COMPLETED;
+    }
+    if (ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE.equals(processInstanceState)
+        || ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE.equals(processInstanceState)) {
+      return END_STATE_CANCELED;
+    }
+    return null;
+  }
+
+  /** One reason per limit the run reached. */
+  static List<FailureReasonDto> limitReasons(final AgentRunDto run) {
+    return run.getLimitHit().stream()
+        .map(
+            limit -> {
+              final FailureReasonDto reason = new FailureReasonDto();
+              reason.setKind(KIND_LIMIT);
+              reason.setLimit(limit);
+              reason.setCount(1L);
+              return reason;
+            })
+        .toList();
   }
 
   /**
@@ -210,12 +255,11 @@ public final class AgentRunEnrichment {
                   reasons.computeIfAbsent(
                       Arrays.asList(flowNodeId, errorType),
                       key -> {
+                        final boolean onTool = run.getToolFlowNodeIds().contains(flowNodeId);
                         final FailureReasonDto created = new FailureReasonDto();
+                        created.setKind(onTool ? KIND_TOOL_INCIDENT : KIND_AGENT_INCIDENT);
                         created.setFlowNodeId(flowNodeId);
-                        created.setToolName(
-                            run.getToolFlowNodeIds().contains(flowNodeId)
-                                ? toolName(run, flowNodeId)
-                                : null);
+                        created.setToolName(onTool ? toolName(run, flowNodeId) : null);
                         created.setErrorType(errorType);
                         created.setMessage(truncate(incident.getIncidentMessage()));
                         created.setCount(0L);

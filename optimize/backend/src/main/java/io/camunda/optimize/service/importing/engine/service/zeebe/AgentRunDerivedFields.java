@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
-import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -18,6 +17,14 @@ import java.util.stream.Stream;
  * for runs that already exist, so both must change together.
  */
 public final class AgentRunDerivedFields {
+
+  public static final String LIMIT_MODEL_CALLS = "MODEL_CALLS";
+  public static final String LIMIT_TOOL_CALLS = "TOOL_CALLS";
+  public static final String LIMIT_TOKENS = "TOKENS";
+
+  /** In the order the writer's merge script checks them, which passes them in as a parameter. */
+  public static final List<String> LIMITS =
+      List.of(LIMIT_MODEL_CALLS, LIMIT_TOOL_CALLS, LIMIT_TOKENS);
 
   private AgentRunDerivedFields() {}
 
@@ -51,13 +58,13 @@ public final class AgentRunDerivedFields {
   static List<String> limitsHit(final AgentRunDto run) {
     final List<String> hit = new ArrayList<>();
     if (reached(run.getModelCalls(), run.getMaxModelCalls())) {
-      hit.add(AgentRunIndex.MAX_MODEL_CALLS);
+      hit.add(LIMIT_MODEL_CALLS);
     }
     if (reached(run.getToolCalls(), run.getMaxToolCalls())) {
-      hit.add(AgentRunIndex.MAX_TOOL_CALLS);
+      hit.add(LIMIT_TOOL_CALLS);
     }
     if (reached(run.getTotalTokens(), run.getMaxTokens())) {
-      hit.add(AgentRunIndex.MAX_TOKENS);
+      hit.add(LIMIT_TOKENS);
     }
     return hit;
   }
