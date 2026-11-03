@@ -30,11 +30,17 @@ final class CostReport {
 
   private final String label;
   private final Path directory;
+  private final List<String> instanceColumns;
   private final List<Sample> samples = new ArrayList<>();
 
-  CostReport(final String label, final Path directory) {
+  /**
+   * @param instanceColumns the headers of the three instance counts of a sample, which depend on
+   *     the secondary storage
+   */
+  CostReport(final String label, final Path directory, final List<String> instanceColumns) {
     this.label = label;
     this.directory = directory;
+    this.instanceColumns = List.copyOf(instanceColumns);
   }
 
   synchronized void add(final Sample sample) throws IOException {
@@ -51,8 +57,9 @@ final class CostReport {
     final var out = new StringBuilder();
     out.append("# Physical tenant cost: ").append(label).append("\n\n");
     out.append(
-        "| phase | brokers | tenants | startup s | heap MiB | threads | connections | Hikari pools"
-            + " | MyBatis configurations | mapped statements |\n");
+        "| phase | brokers | tenants | startup s | heap MiB | threads | connections | "
+            + String.join(" | ", instanceColumns)
+            + " |\n");
     out.append("|---|---|---|---|---|---|---|---|---|---|\n");
     samples.forEach(s -> out.append(s.toMarkdownRow()).append('\n'));
     out.append("\n## Fitted cost per tenant (least squares over the tenant count)\n\n");
