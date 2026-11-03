@@ -34,11 +34,16 @@ import javax.annotation.Nonnull;
  * <p>The buffer space is freed up as the reading thread reads the data from the buffer. The reading
  * thread consumes data using the standard {@link InputStream} API, blocking if no data is
  * available.
+ *
+ * <p>Closing the stream before the end of the data makes every later write fail, which makes the
+ * I/O layer abort the download.
  */
 public class CircularBufferInputStream extends InputStream {
 
   /** The largest array the JVM can reliably allocate; {@code ArrayList} uses the same limit. */
   private static final int MAX_BUFFER_LENGTH = Integer.MAX_VALUE - 8;
+
+  private static final byte[] NO_BUFFER = new byte[0];
 
   /** About two pieces of the data the I/O layer hands over at once. */
   private static final int MIN_GROWTH = 64 * 1024;
@@ -51,6 +56,7 @@ public class CircularBufferInputStream extends InputStream {
   private int availableData = 0;
   private long unreportedSpace = 0;
   private boolean endOfStream = false;
+  private boolean closed = false;
   private IOException exception = null;
   private CapacityCallback capacityCallback;
 
@@ -79,8 +85,15 @@ public class CircularBufferInputStream extends InputStream {
   /**
    * Writes the data into the buffer without blocking the calling thread. Data beyond the space
    * reported to the {@link CapacityCallback} grows the buffer instead of being rejected.
+   *
+   * @throws DocumentStreamClosedException if the stream was closed, so the I/O layer ends the
+   *     download
    */
   public synchronized void write(final ByteBuffer data) throws IOException {
+    if (closed) {
+      // fails the exchange, after which httpclient5 closes the connection
+      throw new DocumentStreamClosedException();
+    }
     if (exception != null) {
       throw exception;
     }
@@ -131,6 +144,31 @@ public class CircularBufferInputStream extends InputStream {
     }
     exception = e;
     notifyAll();
+  }
+
+  /**
+   * Drops the buffered data and wakes up a blocked reader; every later read fails.
+   *
+   * <p>If the data has not been fully received yet, the next write fails, which aborts the
+   * download. The dropped data is reported as free space, so the I/O layer reads again even if the
+   * buffer was full, and that write happens.
+   */
+  @Override
+  public synchronized void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    final int droppedData = availableData;
+    buffer = NO_BUFFER;
+    readPos = 0;
+    writePos = 0;
+    availableData = 0;
+    notifyAll();
+
+    if (!endOfStream && exception == null) {
+      reportFreedSpace(droppedData);
+    }
   }
 
   @Override
@@ -191,13 +229,16 @@ public class CircularBufferInputStream extends InputStream {
   }
 
   private boolean canConsumeData() throws IOException {
-    while (availableData == 0 && exception == null && !endOfStream) {
+    while (availableData == 0 && exception == null && !endOfStream && !closed) {
       try {
         wait();
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IOException("Interrupted while reading", e);
       }
+    }
+    if (closed) {
+      throw new IOException("Stream closed");
     }
     if (exception != null) {
       // the error is sticky: callers that read again after a failure must fail again instead of
