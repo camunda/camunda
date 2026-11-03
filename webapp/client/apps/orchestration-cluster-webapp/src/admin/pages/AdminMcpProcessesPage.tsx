@@ -27,7 +27,7 @@ type SortingState = NonNullable<SortingConfig['sortState']>;
 
 const EMPTY_CELL = '-';
 const SORTED_COLUMN_ID = 'toolName';
-const MCP_PROCESSES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/';
+const MCP_PROCESSES_GUIDE_URL = 'https://docs.camunda.io/docs/next/apis-tools/processes-mcp/processes-mcp-overview/';
 
 type AdminMcpProcessesPageProps = {
 	tools: McpProcessTool[];
