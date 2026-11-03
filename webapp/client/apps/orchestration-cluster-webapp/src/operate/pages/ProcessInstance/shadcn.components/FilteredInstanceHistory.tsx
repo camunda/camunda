@@ -8,7 +8,7 @@
 
 import {useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {EmptyState, Skeleton, TreeView, type TreeNodeDef} from '@camunda/design-system';
+import {Button, EmptyState, Skeleton, TreeView, type TreeNodeDef} from '@camunda/design-system';
 import {Search} from '@camunda/design-system/icons';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -31,11 +31,26 @@ function countRowsAbove(items: ElementInstance[] | undefined, elementInstanceKey
 	return items?.findIndex((item) => item.elementInstanceKey === elementInstanceKey) ?? -1;
 }
 
-function emptyStateKey(searchText: string, statusFilter?: ElementStatusFilter) {
+const EMPTY_STATE_KEYS = {
+	noMatches: {
+		heading: 'operate.processInstance.history.search.noMatches.heading',
+		description: 'operate.processInstance.history.search.noMatches.description',
+	},
+	noActive: {
+		heading: 'operate.processInstance.history.search.noActive.heading',
+		description: 'operate.processInstance.history.search.noActive.description',
+	},
+	noIncidents: {
+		heading: 'operate.processInstance.history.search.noIncidents.heading',
+		description: 'operate.processInstance.history.search.noIncidents.description',
+	},
+} as const;
+
+function emptyStateKeys(searchText: string, statusFilter?: ElementStatusFilter) {
 	if (searchText !== '') {
-		return 'noMatches';
+		return EMPTY_STATE_KEYS.noMatches;
 	}
-	return statusFilter === 'active' ? 'noActive' : 'noIncidents';
+	return statusFilter === 'active' ? EMPTY_STATE_KEYS.noActive : EMPTY_STATE_KEYS.noIncidents;
 }
 
 type Props = {
@@ -70,7 +85,14 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 	}
 
 	if (query.isError) {
-		return <ErrorMessage message={t('operate.processInstance.history.search.error')} className="p-4" />;
+		return (
+			<div className="flex flex-col items-start gap-2 p-2">
+				<ErrorMessage message={t('operate.processInstance.history.search.error')} />
+				<Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
+					{t('errorGenericErrorPageButtonLabel')}
+				</Button>
+			</div>
+		);
 	}
 
 	if (query.isPending) {
@@ -103,7 +125,7 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 	}
 
 	if (items.length === 0) {
-		const emptyKey = emptyStateKey(searchText, statusFilter);
+		const emptyKeys = emptyStateKeys(searchText, statusFilter);
 		return (
 			<>
 				{count}
@@ -111,8 +133,8 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 					<EmptyState
 						size="sm"
 						icon={<Search aria-hidden="true" />}
-						heading={t(`operate.processInstance.history.search.${emptyKey}.heading`)}
-						description={t(`operate.processInstance.history.search.${emptyKey}.description`)}
+						heading={t(emptyKeys.heading)}
+						description={t(emptyKeys.description)}
 					/>
 				</div>
 			</>
@@ -128,14 +150,17 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 			.map((item) => `${RESULT_ID_PREFIX}${item.elementInstanceKey}`),
 	);
 
+	const revision = `${items[0]?.elementInstanceKey}:${items.length}`;
 	const data: TreeNodeDef[] = [
 		...(query.hasPreviousPage
 			? [
 					{
 						id: PREVIOUS_SENTINEL_ID,
+						disabled: true,
 						label: (
 							<HistoryPagingSentinel
 								scrollRef={scrollRef}
+								revision={revision}
 								onReach={() => {
 									if (!isPaging) {
 										void fetchPreviousPage();
@@ -154,9 +179,11 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 			? [
 					{
 						id: NEXT_SENTINEL_ID,
+						disabled: true,
 						label: (
 							<HistoryPagingSentinel
 								scrollRef={scrollRef}
+								revision={revision}
 								onReach={() => {
 									if (!isPaging) {
 										void fetchNextPage();

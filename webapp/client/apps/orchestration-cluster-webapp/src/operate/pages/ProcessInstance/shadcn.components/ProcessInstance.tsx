@@ -11,12 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
-import {useMatchMedia, isWidthAboveBreakpoint} from '#/operate/shared/useMatchMedia';
 import {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, type ProcessInstanceTab} from './processInstanceTabs';
 import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
+	isDesktop?: boolean;
 	visibleTabs: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
@@ -28,6 +28,7 @@ type Props = {
 
 const ProcessInstance: React.FC<Props> = ({
 	activeTab,
+	isDesktop = true,
 	visibleTabs,
 	onTabChange,
 	breadcrumb,
@@ -40,7 +41,6 @@ const ProcessInstance: React.FC<Props> = ({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
 	const panelMinHeight = clientHeight / 4;
-	const isDesktop = useMatchMedia(isWidthAboveBreakpoint('lg'));
 	const [bottomWidth, setBottomWidth] = useState(0);
 
 	useEffect(() => {
@@ -51,7 +51,7 @@ const ProcessInstance: React.FC<Props> = ({
 			return;
 		}
 		const observer = new ResizeObserver(() => {
-			setBottomWidth(container.clientWidth);
+			setBottomWidth((current) => (current === container.clientWidth ? current : container.clientWidth));
 		});
 		observer.observe(container);
 		return () => observer.disconnect();

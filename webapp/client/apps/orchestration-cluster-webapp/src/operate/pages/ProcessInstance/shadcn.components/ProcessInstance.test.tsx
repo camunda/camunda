@@ -106,4 +106,51 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		await expect.element(screen.getByRole('tab', {name: 'Operations Log'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Input Mappings'})).not.toBeInTheDocument();
 	});
+
+	it('should render the history panel next to the tabs on desktop', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance
+						activeTab="variables"
+						header={HEADER}
+						visibleTabs={PROCESS_INSTANCE_TABS}
+						historyPanel={<p>Instance history</p>}
+					/>
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByText('Instance history')).toBeVisible();
+	});
+
+	it('should render the history as a tab instead of a panel on mobile', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance
+						activeTab="history"
+						header={HEADER}
+						isDesktop={false}
+						visibleTabs={['history', 'variables']}
+						historyPanel={<p>History panel</p>}
+					>
+						<p>History tab content</p>
+					</ProcessInstance>
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByRole('tab', {name: 'Instance History'})).toHaveAttribute('aria-selected', 'true');
+		await expect.element(screen.getByText('History tab content')).toBeVisible();
+		await expect.element(screen.getByText('History panel')).not.toBeInTheDocument();
+	});
 });

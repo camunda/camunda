@@ -8,6 +8,7 @@
 
 import {afterEach, describe, expect, it} from 'vitest';
 import {cleanup, render} from 'vitest-browser-react';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
 
 afterEach(async () => {
@@ -18,14 +19,25 @@ describe('ElementInstanceIcon (design system)', () => {
 	it('should render a decorative svg icon for the process root', async () => {
 		const screen = await render(<ElementInstanceIcon root />);
 
-		const icon = screen.getByTestId('element-instance-icon');
-		await expect.element(icon).toHaveAttribute('aria-hidden', 'true');
-		await expect.element(icon).toHaveAttribute('data-icon', 'process-root');
+		expect(screen.container.querySelector('[data-icon="process-root"][aria-hidden="true"] svg')).not.toBeNull();
 	});
 
 	it('should render the generic task icon when the element is unknown', async () => {
 		const screen = await render(<ElementInstanceIcon />);
 
-		await expect.element(screen.getByTestId('element-instance-icon')).toBeInTheDocument();
+		expect(screen.container.querySelector('[data-icon="task-undefined"] svg')).not.toBeNull();
+	});
+
+	it('should render the template icon image instead of the svg when the element defines one', async () => {
+		const businessObject = {
+			$type: 'bpmn:ServiceTask',
+			$instanceOf: (type: string) => type === 'bpmn:Activity',
+			get: () => 'data:image/svg+xml;base64,PHN2Zy8+',
+		} as unknown as BusinessObject;
+
+		const screen = await render(<ElementInstanceIcon businessObject={businessObject} />);
+
+		expect(screen.container.querySelector('img')).toHaveAttribute('src', 'data:image/svg+xml;base64,PHN2Zy8+');
+		expect(screen.container.querySelector('svg')).toBeNull();
 	});
 });
