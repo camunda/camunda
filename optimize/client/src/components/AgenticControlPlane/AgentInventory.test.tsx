@@ -40,7 +40,6 @@ function entry(overrides: Partial<AgentInventoryEntry>): AgentInventoryEntry {
     durationAvgMs: 1200,
     durationP50Ms: 1000,
     durationP95Ms: 3000,
-    avgHumanSteps: 0.5,
     incidentRate: 10,
     limitHitRate: 0,
     lastRunDate: '2026-10-20T10:00:00.000Z',

@@ -43,7 +43,6 @@ public class AgentRunDto implements OptimizeDto {
   private OffsetDateTime lastActivityDate;
   private OffsetDateTime endDate;
   private String status;
-  private Long durationMs;
   private Long inputTokens;
   private Long outputTokens;
   private Long reasoningTokens;
@@ -57,18 +56,11 @@ public class AgentRunDto implements OptimizeDto {
   private List<String> toolFlowNodeIds = new ArrayList<>();
   private List<ToolCallsDto> toolCallsByTool = new ArrayList<>();
   private List<ModelTokensDto> tokensByModel = new ArrayList<>();
-  private String processInstanceState;
-  private OffsetDateTime processInstanceEndDate;
   private Boolean hasIncident;
-  private Long incidentCount;
-  private List<String> incidentFlowNodeIds = new ArrayList<>();
-  private Long processUserTaskCount;
   private Long lastRecordPosition;
   private MetricTotalsDto lastMetricTotals;
   private OffsetDateTime enrichedAt;
   private Long activeDurationMs;
-  private Long humanWaitDurationMs;
-  private Long humanStepCount;
   private Long toolIncidentCount;
   private List<ToolCallsDto> toolIncidentsByTool = new ArrayList<>();
   private List<FailureReasonDto> failureReasons = new ArrayList<>();
@@ -236,14 +228,6 @@ public class AgentRunDto implements OptimizeDto {
     this.status = status;
   }
 
-  public Long getDurationMs() {
-    return durationMs;
-  }
-
-  public void setDurationMs(final Long durationMs) {
-    this.durationMs = durationMs;
-  }
-
   public Long getInputTokens() {
     return inputTokens;
   }
@@ -348,52 +332,12 @@ public class AgentRunDto implements OptimizeDto {
     this.tokensByModel = tokensByModel;
   }
 
-  public String getProcessInstanceState() {
-    return processInstanceState;
-  }
-
-  public void setProcessInstanceState(final String processInstanceState) {
-    this.processInstanceState = processInstanceState;
-  }
-
-  public OffsetDateTime getProcessInstanceEndDate() {
-    return processInstanceEndDate;
-  }
-
-  public void setProcessInstanceEndDate(final OffsetDateTime processInstanceEndDate) {
-    this.processInstanceEndDate = processInstanceEndDate;
-  }
-
   public Boolean getHasIncident() {
     return hasIncident;
   }
 
   public void setHasIncident(final Boolean hasIncident) {
     this.hasIncident = hasIncident;
-  }
-
-  public Long getIncidentCount() {
-    return incidentCount;
-  }
-
-  public void setIncidentCount(final Long incidentCount) {
-    this.incidentCount = incidentCount;
-  }
-
-  public List<String> getIncidentFlowNodeIds() {
-    return incidentFlowNodeIds;
-  }
-
-  public void setIncidentFlowNodeIds(final List<String> incidentFlowNodeIds) {
-    this.incidentFlowNodeIds = incidentFlowNodeIds;
-  }
-
-  public Long getProcessUserTaskCount() {
-    return processUserTaskCount;
-  }
-
-  public void setProcessUserTaskCount(final Long processUserTaskCount) {
-    this.processUserTaskCount = processUserTaskCount;
   }
 
   public Long getLastRecordPosition() {
@@ -426,22 +370,6 @@ public class AgentRunDto implements OptimizeDto {
 
   public void setActiveDurationMs(final Long activeDurationMs) {
     this.activeDurationMs = activeDurationMs;
-  }
-
-  public Long getHumanWaitDurationMs() {
-    return humanWaitDurationMs;
-  }
-
-  public void setHumanWaitDurationMs(final Long humanWaitDurationMs) {
-    this.humanWaitDurationMs = humanWaitDurationMs;
-  }
-
-  public Long getHumanStepCount() {
-    return humanStepCount;
-  }
-
-  public void setHumanStepCount(final Long humanStepCount) {
-    this.humanStepCount = humanStepCount;
   }
 
   public Long getToolIncidentCount() {
@@ -502,7 +430,6 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(lastActivityDate, that.lastActivityDate)
         && Objects.equals(endDate, that.endDate)
         && Objects.equals(status, that.status)
-        && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(inputTokens, that.inputTokens)
         && Objects.equals(outputTokens, that.outputTokens)
         && Objects.equals(reasoningTokens, that.reasoningTokens)
@@ -516,18 +443,11 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(toolFlowNodeIds, that.toolFlowNodeIds)
         && Objects.equals(toolCallsByTool, that.toolCallsByTool)
         && Objects.equals(tokensByModel, that.tokensByModel)
-        && Objects.equals(processInstanceState, that.processInstanceState)
-        && Objects.equals(processInstanceEndDate, that.processInstanceEndDate)
         && Objects.equals(hasIncident, that.hasIncident)
-        && Objects.equals(incidentCount, that.incidentCount)
-        && Objects.equals(incidentFlowNodeIds, that.incidentFlowNodeIds)
-        && Objects.equals(processUserTaskCount, that.processUserTaskCount)
         && Objects.equals(lastRecordPosition, that.lastRecordPosition)
         && Objects.equals(lastMetricTotals, that.lastMetricTotals)
         && Objects.equals(enrichedAt, that.enrichedAt)
         && Objects.equals(activeDurationMs, that.activeDurationMs)
-        && Objects.equals(humanWaitDurationMs, that.humanWaitDurationMs)
-        && Objects.equals(humanStepCount, that.humanStepCount)
         && Objects.equals(toolIncidentCount, that.toolIncidentCount)
         && Objects.equals(toolIncidentsByTool, that.toolIncidentsByTool)
         && Objects.equals(failureReasons, that.failureReasons)
@@ -557,7 +477,6 @@ public class AgentRunDto implements OptimizeDto {
         lastActivityDate,
         endDate,
         status,
-        durationMs,
         inputTokens,
         outputTokens,
         reasoningTokens,
@@ -571,18 +490,11 @@ public class AgentRunDto implements OptimizeDto {
         toolFlowNodeIds,
         toolCallsByTool,
         tokensByModel,
-        processInstanceState,
-        processInstanceEndDate,
         hasIncident,
-        incidentCount,
-        incidentFlowNodeIds,
-        processUserTaskCount,
         lastRecordPosition,
         lastMetricTotals,
         enrichedAt,
         activeDurationMs,
-        humanWaitDurationMs,
-        humanStepCount,
         toolIncidentCount,
         toolIncidentsByTool,
         failureReasons,
@@ -632,8 +544,6 @@ public class AgentRunDto implements OptimizeDto {
         + endDate
         + ", status="
         + status
-        + ", durationMs="
-        + durationMs
         + ", inputTokens="
         + inputTokens
         + ", outputTokens="
@@ -660,18 +570,8 @@ public class AgentRunDto implements OptimizeDto {
         + toolCallsByTool
         + ", tokensByModel="
         + tokensByModel
-        + ", processInstanceState="
-        + processInstanceState
-        + ", processInstanceEndDate="
-        + processInstanceEndDate
         + ", hasIncident="
         + hasIncident
-        + ", incidentCount="
-        + incidentCount
-        + ", incidentFlowNodeIds="
-        + incidentFlowNodeIds
-        + ", processUserTaskCount="
-        + processUserTaskCount
         + ", lastRecordPosition="
         + lastRecordPosition
         + ", lastMetricTotals="
@@ -680,10 +580,6 @@ public class AgentRunDto implements OptimizeDto {
         + enrichedAt
         + ", activeDurationMs="
         + activeDurationMs
-        + ", humanWaitDurationMs="
-        + humanWaitDurationMs
-        + ", humanStepCount="
-        + humanStepCount
         + ", toolIncidentCount="
         + toolIncidentCount
         + ", toolIncidentsByTool="
@@ -718,7 +614,6 @@ public class AgentRunDto implements OptimizeDto {
     public static final String lastActivityDate = "lastActivityDate";
     public static final String endDate = "endDate";
     public static final String status = "status";
-    public static final String durationMs = "durationMs";
     public static final String inputTokens = "inputTokens";
     public static final String outputTokens = "outputTokens";
     public static final String reasoningTokens = "reasoningTokens";
@@ -732,18 +627,11 @@ public class AgentRunDto implements OptimizeDto {
     public static final String toolFlowNodeIds = "toolFlowNodeIds";
     public static final String toolCallsByTool = "toolCallsByTool";
     public static final String tokensByModel = "tokensByModel";
-    public static final String processInstanceState = "processInstanceState";
-    public static final String processInstanceEndDate = "processInstanceEndDate";
     public static final String hasIncident = "hasIncident";
-    public static final String incidentCount = "incidentCount";
-    public static final String incidentFlowNodeIds = "incidentFlowNodeIds";
-    public static final String processUserTaskCount = "processUserTaskCount";
     public static final String lastRecordPosition = "lastRecordPosition";
     public static final String lastMetricTotals = "lastMetricTotals";
     public static final String enrichedAt = "enrichedAt";
     public static final String activeDurationMs = "activeDurationMs";
-    public static final String humanWaitDurationMs = "humanWaitDurationMs";
-    public static final String humanStepCount = "humanStepCount";
     public static final String toolIncidentCount = "toolIncidentCount";
     public static final String toolIncidentsByTool = "toolIncidentsByTool";
     public static final String failureReasons = "failureReasons";

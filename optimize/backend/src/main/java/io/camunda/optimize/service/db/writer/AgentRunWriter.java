@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -145,12 +144,6 @@ public class AgentRunWriter {
       }
       if (anyToken) { doc.totalTokens = tokenSum; } else { doc.totalTokens = null; }
 
-      if (doc.startDate != null && doc.lastActivityDate != null) {
-        def formatter = new SimpleDateFormat(params.dateFormatPattern);
-        doc.durationMs = formatter.parse(doc.lastActivityDate).getTime()
-            - formatter.parse(doc.startDate).getTime();
-      }
-
       def hit = new ArrayList();
       if (reached(doc.modelCalls, doc.maxModelCalls)) { hit.add('maxModelCalls'); }
       if (reached(doc.toolCalls, doc.maxToolCalls)) { hit.add('maxToolCalls'); }
@@ -161,17 +154,10 @@ public class AgentRunWriter {
 
   private static final Set<String> ENRICHMENT_FIELDS =
       Set.of(
-          AgentRunDto.Fields.processInstanceState,
-          AgentRunDto.Fields.processInstanceEndDate,
           AgentRunDto.Fields.hasIncident,
-          AgentRunDto.Fields.incidentCount,
-          AgentRunDto.Fields.incidentFlowNodeIds,
-          AgentRunDto.Fields.processUserTaskCount,
           AgentRunDto.Fields.toolCallsByTool,
           AgentRunDto.Fields.enrichedAt,
           AgentRunDto.Fields.activeDurationMs,
-          AgentRunDto.Fields.humanWaitDurationMs,
-          AgentRunDto.Fields.humanStepCount,
           AgentRunDto.Fields.toolIncidentCount,
           AgentRunDto.Fields.toolIncidentsByTool,
           AgentRunDto.Fields.failureReasons,
@@ -205,9 +191,7 @@ public class AgentRunWriter {
                                 "latestFields",
                                 LATEST_FIELDS,
                                 "tokenFields",
-                                TOKEN_FIELDS,
-                                "dateFormatPattern",
-                                OPTIMIZE_DATE_FORMAT),
+                                TOKEN_FIELDS),
                             objectMapper))
                     .build())
         .toList();

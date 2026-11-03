@@ -57,7 +57,6 @@ export interface AgentInventoryEntry {
   durationAvgMs: number | null;
   durationP50Ms: number | null;
   durationP95Ms: number | null;
-  avgHumanSteps: number | null;
   incidentRate: number | null;
   limitHitRate: number | null;
   lastRunDate: string | null;

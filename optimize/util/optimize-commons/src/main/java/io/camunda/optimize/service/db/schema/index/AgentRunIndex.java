@@ -20,7 +20,7 @@ import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
  */
 public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String AGENT_INSTANCE_ID = AgentRunDto.Fields.agentInstanceId;
   public static final String AGENT_DEFINITION_ID = AgentRunDto.Fields.agentDefinitionId;
@@ -43,7 +43,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String LAST_ACTIVITY_DATE = AgentRunDto.Fields.lastActivityDate;
   public static final String END_DATE = AgentRunDto.Fields.endDate;
   public static final String STATUS = AgentRunDto.Fields.status;
-  public static final String DURATION_MS = AgentRunDto.Fields.durationMs;
   public static final String INPUT_TOKENS = AgentRunDto.Fields.inputTokens;
   public static final String OUTPUT_TOKENS = AgentRunDto.Fields.outputTokens;
   public static final String REASONING_TOKENS = AgentRunDto.Fields.reasoningTokens;
@@ -61,18 +60,11 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String TOOL_CALLS_TOOL_NAME = AgentRunDto.ToolCallsDto.Fields.toolName;
   public static final String TOOL_CALLS_COUNT = AgentRunDto.ToolCallsDto.Fields.count;
   public static final String TOKENS_BY_MODEL = AgentRunDto.Fields.tokensByModel;
-  public static final String PROCESS_INSTANCE_STATE = AgentRunDto.Fields.processInstanceState;
-  public static final String PROCESS_INSTANCE_END_DATE = AgentRunDto.Fields.processInstanceEndDate;
   public static final String HAS_INCIDENT = AgentRunDto.Fields.hasIncident;
-  public static final String INCIDENT_COUNT = AgentRunDto.Fields.incidentCount;
-  public static final String INCIDENT_FLOW_NODE_IDS = AgentRunDto.Fields.incidentFlowNodeIds;
-  public static final String PROCESS_USER_TASK_COUNT = AgentRunDto.Fields.processUserTaskCount;
   public static final String LAST_RECORD_POSITION = AgentRunDto.Fields.lastRecordPosition;
   public static final String LAST_METRIC_TOTALS = AgentRunDto.Fields.lastMetricTotals;
   public static final String ENRICHED_AT = AgentRunDto.Fields.enrichedAt;
   public static final String ACTIVE_DURATION_MS = AgentRunDto.Fields.activeDurationMs;
-  public static final String HUMAN_WAIT_DURATION_MS = AgentRunDto.Fields.humanWaitDurationMs;
-  public static final String HUMAN_STEP_COUNT = AgentRunDto.Fields.humanStepCount;
   public static final String TOOL_INCIDENT_COUNT = AgentRunDto.Fields.toolIncidentCount;
   public static final String TOOL_INCIDENTS_BY_TOOL = AgentRunDto.Fields.toolIncidentsByTool;
   public static final String FAILURE_REASONS = AgentRunDto.Fields.failureReasons;
@@ -120,7 +112,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(LAST_ACTIVITY_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(END_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(STATUS, p -> p.keyword(k -> k))
-        .properties(DURATION_MS, p -> p.long_(k -> k))
         .properties(INPUT_TOKENS, p -> p.long_(k -> k))
         .properties(OUTPUT_TOKENS, p -> p.long_(k -> k))
         .properties(REASONING_TOKENS, p -> p.long_(k -> k))
@@ -168,19 +159,12 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
                             .properties(
                                 AgentRunDto.ModelTokensDto.Fields.totalTokens,
                                 np -> np.long_(k -> k))))
-        .properties(PROCESS_INSTANCE_STATE, p -> p.keyword(k -> k))
-        .properties(PROCESS_INSTANCE_END_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(HAS_INCIDENT, p -> p.boolean_(k -> k))
-        .properties(INCIDENT_COUNT, p -> p.long_(k -> k))
-        .properties(INCIDENT_FLOW_NODE_IDS, p -> p.keyword(k -> k))
-        .properties(PROCESS_USER_TASK_COUNT, p -> p.long_(k -> k))
         .properties(LAST_RECORD_POSITION, p -> p.long_(k -> k))
         // Import bookkeeping only, never queried.
         .properties(LAST_METRIC_TOTALS, p -> p.object(o -> o.enabled(false)))
         .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))
-        .properties(HUMAN_WAIT_DURATION_MS, p -> p.long_(k -> k))
-        .properties(HUMAN_STEP_COUNT, p -> p.long_(k -> k))
         .properties(TOOL_INCIDENT_COUNT, p -> p.long_(k -> k))
         .properties(
             TOOL_INCIDENTS_BY_TOOL,

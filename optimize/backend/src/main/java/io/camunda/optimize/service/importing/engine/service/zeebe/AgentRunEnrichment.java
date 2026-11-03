@@ -56,25 +56,12 @@ public final class AgentRunEnrichment {
       final OffsetDateTime now) {
     final AgentRunDto enriched = new AgentRunDto();
     enriched.setAgentInstanceId(run.getAgentInstanceId());
-    enriched.setProcessInstanceState(processInstance.getState());
-    enriched.setProcessInstanceEndDate(processInstance.getEndDate());
 
     final List<IncidentDto> agentIncidents =
         processInstance.getIncidents().stream()
             .filter(incident -> isOnAgentElement(incident, run, processInstance))
             .toList();
-    enriched.setIncidentCount((long) agentIncidents.size());
     enriched.setHasIncident(!agentIncidents.isEmpty());
-    enriched.setIncidentFlowNodeIds(
-        agentIncidents.stream()
-            .map(incident -> resolveFlowNodeId(incident.getActivityId(), processInstance))
-            .distinct()
-            .toList());
-
-    enriched.setProcessUserTaskCount(
-        processInstance.getFlowNodeInstances().stream()
-            .filter(node -> FLOW_NODE_TYPE_USER_TASK.equals(node.getFlowNodeType()))
-            .count());
 
     enriched.setToolCallsByTool(
         run.getToolCallsByTool().stream()
@@ -88,13 +75,6 @@ public final class AgentRunEnrichment {
             .filter(node -> run.getToolFlowNodeIds().contains(node.getFlowNodeId()))
             .filter(node -> window.contains(node.getStartDate()))
             .toList();
-    enriched.setHumanStepCount((long) userTaskTools.size());
-    enriched.setHumanWaitDurationMs(
-        userTaskTools.stream()
-            .map(FlowNodeInstanceDto::getTotalDurationInMs)
-            .filter(Objects::nonNull)
-            .mapToLong(Long::longValue)
-            .sum());
     enriched.setActiveDurationMs(activeDuration(run, processInstance, userTaskTools));
 
     final List<IncidentDto> toolIncidents =

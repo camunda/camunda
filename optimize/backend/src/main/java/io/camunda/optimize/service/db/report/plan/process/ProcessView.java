@@ -13,8 +13,6 @@ import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.CACHE_WRITE_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
-import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.HUMAN_STEPS;
-import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.HUMAN_WAIT;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INCIDENT_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.LIMIT_HIT_RATE;
@@ -63,7 +61,6 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_RUN_DURATION(new ProcessViewDto(AGENT_RUN, DURATION)),
   PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS(new ProcessViewDto(AGENT_RUN, TOTAL_TOKENS)),
   PROCESS_VIEW_AGENT_RUN_MODEL_CALLS(new ProcessViewDto(AGENT_RUN, MODEL_CALLS)),
-  PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS(new ProcessViewDto(AGENT_RUN, HUMAN_STEPS)),
   PROCESS_VIEW_AGENT_RUN_TOOL_CALLS(new ProcessViewDto(AGENT_RUN, TOOL_CALLS)),
   PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE(new ProcessViewDto(AGENT_RUN, INCIDENT_RATE)),
   PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE(new ProcessViewDto(AGENT_RUN, LIMIT_HIT_RATE)),
@@ -73,8 +70,7 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS(new ProcessViewDto(AGENT_RUN, OUTPUT_TOKENS)),
   PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS(new ProcessViewDto(AGENT_RUN, CACHE_WRITE_TOKENS)),
   PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS(new ProcessViewDto(AGENT_RUN, CACHE_READ_TOKENS)),
-  PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS(new ProcessViewDto(AGENT_RUN, REASONING_TOKENS)),
-  PROCESS_VIEW_AGENT_RUN_HUMAN_WAIT(new ProcessViewDto(AGENT_RUN, HUMAN_WAIT));
+  PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS(new ProcessViewDto(AGENT_RUN, REASONING_TOKENS));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;

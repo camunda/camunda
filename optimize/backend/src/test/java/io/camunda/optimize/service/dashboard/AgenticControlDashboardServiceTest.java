@@ -17,9 +17,6 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_WAIT_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_REPORT_ID;
@@ -129,7 +126,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(12);
+    assertThat(saved.getTiles()).hasSize(11);
   }
 
   @Test
@@ -213,7 +210,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(12))
+    verify(reportWriter, times(11))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -303,7 +300,7 @@ public class AgenticControlDashboardServiceTest {
                 Collectors.groupingBy(
                     tile -> configOf(tile).get("section"), Collectors.counting()));
     assertThat(tilesPerSection)
-        .containsExactlyInAnyOrderEntriesOf(Map.of("kpi", 6L, "trends", 3L, "agentTrends", 3L));
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kpi", 5L, "trends", 3L, "agentTrends", 3L));
   }
 
   @Test
@@ -357,7 +354,7 @@ public class AgenticControlDashboardServiceTest {
 
     // then
     assertThat(reports)
-        .hasSize(12)
+        .hasSize(11)
         .allSatisfy(
             report -> {
               assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
@@ -386,8 +383,6 @@ public class AgenticControlDashboardServiceTest {
             new AggregationDto(AggregationType.AVERAGE),
             new AggregationDto(AggregationType.PERCENTILE, 50.0),
             new AggregationDto(AggregationType.PERCENTILE, 95.0));
-    assertReport(reports, AGENT_HUMAN_WAIT_REPORT_ID, ViewProperty.HUMAN_WAIT, NONE)
-        .containsExactly(new AggregationDto(AggregationType.AVERAGE));
     assertReport(reports, AGENT_LIMIT_HIT_RATE_REPORT_ID, ViewProperty.LIMIT_HIT_RATE, NONE);
     assertReport(reports, AGENT_ITERATIONS_REPORT_ID, ViewProperty.MODEL_CALLS, NONE)
         .containsExactly(new AggregationDto(AggregationType.AVERAGE));
@@ -433,15 +428,13 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldFormatRatesAsPercentagesAndWaitTimeAsDuration() {
+  void shouldFormatRatesAsPercentages() {
     // when
     final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
 
     // then
     assertThat(reports.get(AGENT_SUCCESS_RATE_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("percentage");
-    assertThat(reports.get(AGENT_HUMAN_WAIT_REPORT_ID).getConfiguration().getValueFormat())
-        .isEqualTo("duration");
     assertThat(reports.get(AGENT_ITERATIONS_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("frequency");
     assertThat(reports.get(AGENT_DURATION_REPORT_ID).getConfiguration().getValueFormat()).isNull();
@@ -466,8 +459,6 @@ public class AgenticControlDashboardServiceTest {
               AGENT_SUCCESS_RATE_DESCRIPTION,
               AGENT_DURATION_NAME,
               AGENT_DURATION_DESCRIPTION,
-              AGENT_HUMAN_WAIT_NAME,
-              AGENT_HUMAN_WAIT_DESCRIPTION,
               AGENT_TOKEN_BREAKDOWN_NAME,
               AGENT_TOKEN_BREAKDOWN_DESCRIPTION,
               AGENT_TOKENS_PER_RUN_BY_MODEL_NAME,
@@ -513,7 +504,7 @@ public class AgenticControlDashboardServiceTest {
     final ArgumentCaptor<ProcessReportDataDto> data =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
     underTest.reconcile();
-    verify(reportWriter, times(12))
+    verify(reportWriter, times(11))
         .createOrUpdateSingleProcessReport(
             ids.capture(), isNull(), data.capture(), any(), any(), isNull());
     final Map<String, ProcessReportDataDto> byId = new LinkedHashMap<>();

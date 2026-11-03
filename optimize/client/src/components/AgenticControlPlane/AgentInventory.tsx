@@ -24,13 +24,7 @@ import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
-import {
-  formatCount,
-  formatDecimal,
-  formatDuration,
-  formatPercentage,
-  formatTokens,
-} from './MetricTable';
+import {formatCount, formatDuration, formatPercentage, formatTokens} from './MetricTable';
 import {
   loadAgentInventory,
   type AgentInventory as Inventory,
@@ -48,7 +42,6 @@ type SortKey =
   | 'successRate'
   | 'durationP50Ms'
   | 'durationP95Ms'
-  | 'avgHumanSteps'
   | 'lastRunDate';
 
 interface Column {
@@ -121,12 +114,6 @@ const COLUMNS: Column[] = [
     sortKey: 'durationP95Ms',
     numeric: true,
     render: ({durationP95Ms}) => formatDuration(durationP95Ms),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.humanSteps',
-    sortKey: 'avgHumanSteps',
-    numeric: true,
-    render: ({avgHumanSteps}) => formatDecimal(avgHumanSteps),
   },
   {
     titleKey: 'agenticControlPlane.inventory.lastRun',

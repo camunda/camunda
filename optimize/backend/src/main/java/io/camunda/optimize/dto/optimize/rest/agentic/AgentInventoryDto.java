@@ -38,8 +38,7 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
       Double p50Tokens,
       Double successRate,
       Double durationAvgMs,
-      Double durationP95Ms,
-      Double avgHumanSteps) {
+      Double durationP95Ms) {
 
     public AgentInventoryEntry withProcessDefinitionName(final String processDefinitionName) {
       return new AgentInventoryEntry(
@@ -60,8 +59,7 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
           p50Tokens,
           successRate,
           durationAvgMs,
-          durationP95Ms,
-          avgHumanSteps);
+          durationP95Ms);
     }
   }
 }

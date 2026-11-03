@@ -124,7 +124,6 @@ class AgentInventoryServiceTest {
         null,
         null,
         null,
-        null,
         null);
   }
 }

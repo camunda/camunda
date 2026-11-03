@@ -23,11 +23,6 @@ public final class AgentRunDerivedFields {
 
   public static void apply(final AgentRunDto run) {
     run.setTotalTokens(totalTokens(run));
-    run.setDurationMs(
-        run.getStartDate() == null || run.getLastActivityDate() == null
-            ? null
-            : run.getLastActivityDate().toInstant().toEpochMilli()
-                - run.getStartDate().toInstant().toEpochMilli());
     final List<String> limitsHit = limitsHit(run);
     run.setLimitHit(limitsHit);
     run.setHitLimit(!limitsHit.isEmpty());

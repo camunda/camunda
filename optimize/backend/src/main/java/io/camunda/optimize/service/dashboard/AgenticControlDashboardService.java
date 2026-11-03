@@ -207,10 +207,6 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-run-iterations".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String AGENT_ITERATIONS_NAME = "agenticRunIterationsName";
   public static final String AGENT_ITERATIONS_DESCRIPTION = "agenticRunIterationsDescription";
-  public static final String AGENT_HUMAN_STEPS_REPORT_ID =
-      UUID.nameUUIDFromBytes("agentic-run-human-steps".getBytes(StandardCharsets.UTF_8)).toString();
-  public static final String AGENT_HUMAN_STEPS_NAME = "agenticRunHumanStepsName";
-  public static final String AGENT_HUMAN_STEPS_DESCRIPTION = "agenticRunHumanStepsDescription";
   public static final String AGENT_RUNS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-run-count".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String AGENT_RUNS_NAME = "agenticRunCountName";
@@ -270,10 +266,6 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-run-duration".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String AGENT_DURATION_NAME = "agenticRunDurationName";
   public static final String AGENT_DURATION_DESCRIPTION = "agenticRunDurationDescription";
-  public static final String AGENT_HUMAN_WAIT_REPORT_ID =
-      UUID.nameUUIDFromBytes("agentic-run-human-wait".getBytes(StandardCharsets.UTF_8)).toString();
-  public static final String AGENT_HUMAN_WAIT_NAME = "agenticRunHumanWaitName";
-  public static final String AGENT_HUMAN_WAIT_DESCRIPTION = "agenticRunHumanWaitDescription";
   public static final String AGENT_TOKEN_BREAKDOWN_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-run-token-breakdown".getBytes(StandardCharsets.UTF_8))
           .toString();
@@ -1020,17 +1012,6 @@ public class AgenticControlDashboardService {
             List.of(new AggregationDto(AggregationType.PERCENTILE, 95.0)),
             TILE_SECTION_AGENT_HEALTH,
             new PositionDto(6, 2),
-            new DimensionDto(6, 2)),
-        agentRunTile(
-            AGENT_HUMAN_STEPS_REPORT_ID,
-            AGENT_HUMAN_STEPS_NAME,
-            AGENT_HUMAN_STEPS_DESCRIPTION,
-            ViewProperty.HUMAN_STEPS,
-            new NoneGroupByDto(),
-            ProcessVisualization.NUMBER,
-            List.of(new AggregationDto(AggregationType.AVERAGE)),
-            TILE_SECTION_AGENT_HEALTH,
-            new PositionDto(12, 2),
             new DimensionDto(6, 2)));
   }
 
@@ -1284,21 +1265,6 @@ public class AgenticControlDashboardService {
                 new DimensionDto(6, 2)),
             TILE_SECTION_KPI,
             null,
-            levels),
-        v2Tile(
-            agentRunTile(
-                AGENT_HUMAN_WAIT_REPORT_ID,
-                AGENT_HUMAN_WAIT_NAME,
-                AGENT_HUMAN_WAIT_DESCRIPTION,
-                ViewProperty.HUMAN_WAIT,
-                new NoneGroupByDto(),
-                ProcessVisualization.NUMBER,
-                List.of(new AggregationDto(AggregationType.AVERAGE)),
-                TILE_SECTION_KPI,
-                new PositionDto(12, 2),
-                new DimensionDto(6, 2)),
-            TILE_SECTION_KPI,
-            null,
             levels));
   }
 
@@ -1502,9 +1468,6 @@ public class AgenticControlDashboardService {
         || ViewProperty.ADOPTION_RATE.equals(viewProperty)
         || ViewProperty.SUCCESS_RATE.equals(viewProperty)) {
       return "percentage";
-    }
-    if (ViewProperty.HUMAN_WAIT.equals(viewProperty)) {
-      return "duration";
     }
     if (ViewProperty.DURATION.equals(viewProperty)) {
       return null;

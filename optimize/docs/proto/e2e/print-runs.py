@@ -16,7 +16,7 @@ for hit in hits:
     print(f"  run {r['agentInstanceId']}  process instance {r['processInstanceId']}")
     print(f"    agent:        {r.get('agentId')}  model: {r.get('provider')}/{r.get('model')}")
     print(f"    status:       {r.get('status')}  started {r.get('startDate')}  ended {r.get('endDate')}")
-    print(f"    duration ms:  {r.get('durationMs')}")
+    print(f"    active ms:    {r.get('activeDurationMs')}")
     print(
         f"    tokens:       total {r.get('totalTokens')} (in {r.get('inputTokens')}, "
         f"out {r.get('outputTokens')}, cache write {r.get('cacheCreationTokens')}, "

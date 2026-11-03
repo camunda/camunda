@@ -73,7 +73,6 @@ class AgentRunRecordFolderTest {
     assertThat(run.getStartDate().toInstant().toEpochMilli()).isEqualTo(START);
     assertThat(run.getLastActivityDate().toInstant().toEpochMilli()).isEqualTo(START + 5_000);
     assertThat(run.getEndDate().toInstant().toEpochMilli()).isEqualTo(START + 60_000);
-    assertThat(run.getDurationMs()).isEqualTo(5_000L);
     assertThat(run.getStatus()).isEqualTo("COMPLETED");
   }
 

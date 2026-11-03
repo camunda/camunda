@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.agentrun;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_DURATION_GROUP_BY_NONE;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_HUMAN_STEPS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_MODEL_CALLS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOOL_CALLS_GROUP_BY_TOOL;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_MODEL;
@@ -26,8 +25,6 @@ class AgentRunViewInterpretersTest {
         .isEqualTo("activeDurationMs");
     assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_MODEL_CALLS_GROUP_BY_NONE))
         .isEqualTo("modelCalls");
-    assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_HUMAN_STEPS_GROUP_BY_NONE))
-        .isEqualTo("humanStepCount");
     assertThat(
             ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE))
         .isEqualTo("totalTokens");

@@ -60,7 +60,6 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
   private static final String TOKENS = "tokens";
   private static final String TOKENS_P50 = "tokensP50";
   private static final String TOKENS_TOTAL = "tokensTotal";
-  private static final String HUMAN_STEPS = "humanSteps";
   private static final String LAST_RUN = "lastRun";
   private static final String MODELS = "models";
   private static final String PROCESS = "process";
@@ -186,9 +185,6 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                         TOKENS_TOTAL,
                                         s -> s.sum(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
                                     .aggregations(
-                                        HUMAN_STEPS,
-                                        s -> s.stats(v -> v.field(AgentRunIndex.HUMAN_STEP_COUNT)))
-                                    .aggregations(
                                         LAST_RUN,
                                         s -> s.max(v -> v.field(AgentRunIndex.START_DATE)))
                                     .aggregations(
@@ -251,8 +247,7 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
         hasRuns ? percentile(aggs.get(TOKENS_P50), 50.0) : null,
         hasRuns ? rate(aggs.get(AgentRunQueriesES.SUCCEEDED).filter().docCount(), runCount) : null,
         hasRuns ? average(aggs.get(DURATION_AVG)) : null,
-        hasRuns ? percentile(aggs.get(DURATION), 95.0) : null,
-        hasRuns ? average(aggs.get(HUMAN_STEPS)) : null);
+        hasRuns ? percentile(aggs.get(DURATION), 95.0) : null);
   }
 
   private static OffsetDateTime lastRun(final Aggregate max) {

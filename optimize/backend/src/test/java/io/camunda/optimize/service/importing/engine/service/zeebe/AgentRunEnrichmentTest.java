@@ -27,23 +27,12 @@ class AgentRunEnrichmentTest {
   private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-10-23T10:00:00Z");
 
   @Test
-  void shouldCopyProcessStateAndCountUserTasksOfTheWholeProcessInstance() {
-    // given
-    final ProcessInstanceDto processInstance = processInstance();
-    processInstance.setState("COMPLETED");
-    processInstance.setEndDate(NOW);
-    processInstance.getFlowNodeInstances().add(node("10", "approve", "userTask"));
-    processInstance.getFlowNodeInstances().add(node("11", "review-by-hand", "userTask"));
-    processInstance.getFlowNodeInstances().add(node("12", "notify", "serviceTask"));
-
+  void shouldStampTheEnrichmentTime() {
     // when
-    final AgentRunDto enriched = AgentRunEnrichment.compute(run(), processInstance, NOW);
+    final AgentRunDto enriched = AgentRunEnrichment.compute(run(), processInstance(), NOW);
 
     // then
     assertThat(enriched.getAgentInstanceId()).isEqualTo("700");
-    assertThat(enriched.getProcessInstanceState()).isEqualTo("COMPLETED");
-    assertThat(enriched.getProcessInstanceEndDate()).isEqualTo(NOW);
-    assertThat(enriched.getProcessUserTaskCount()).isEqualTo(2L);
     assertThat(enriched.getEnrichedAt()).isEqualTo(NOW);
   }
 
@@ -61,8 +50,9 @@ class AgentRunEnrichmentTest {
 
     // then
     assertThat(enriched.getHasIncident()).isTrue();
-    assertThat(enriched.getIncidentCount()).isEqualTo(1L);
-    assertThat(enriched.getIncidentFlowNodeIds()).containsExactly("review");
+    assertThat(enriched.getFailureReasons())
+        .extracting(FailureReasonDto::getFlowNodeId)
+        .containsExactly("review");
   }
 
   @Test
@@ -75,8 +65,10 @@ class AgentRunEnrichmentTest {
     final AgentRunDto enriched = AgentRunEnrichment.compute(run(), processInstance, NOW);
 
     // then
-    assertThat(enriched.getIncidentCount()).isEqualTo(1L);
-    assertThat(enriched.getIncidentFlowNodeIds()).containsExactly("review");
+    assertThat(enriched.getHasIncident()).isTrue();
+    assertThat(enriched.getFailureReasons())
+        .extracting(FailureReasonDto::getFlowNodeId)
+        .containsExactly("review");
   }
 
   @Test
@@ -86,7 +78,6 @@ class AgentRunEnrichmentTest {
 
     // then
     assertThat(enriched.getHasIncident()).isFalse();
-    assertThat(enriched.getIncidentCount()).isZero();
   }
 
   @Test
@@ -134,8 +125,6 @@ class AgentRunEnrichmentTest {
 
     // then
     assertThat(enriched.getActiveDurationMs()).isEqualTo(90_000L);
-    assertThat(enriched.getHumanWaitDurationMs()).isEqualTo(30_000L);
-    assertThat(enriched.getHumanStepCount()).isEqualTo(1L);
   }
 
   @Test

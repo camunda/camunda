@@ -50,7 +50,6 @@
       "tokensPerRun": "Tokens pro Lauf",
       "successRate": "Erfolgsrate",
       "durationP95": "Dauer (P95)",
-      "humanSteps": "Menschliche Schritte pro Lauf",
       "noMatch": "Keine Agenten passen zu \"{query}\".",
       "selectHint": "Wählen Sie einen Agenten aus, um Details zu sehen."
     },
@@ -463,15 +462,13 @@
       "outputTokens": "Ausgabe-Tokens",
       "toolCalls": "Tool-Aufrufe",
       "modelCalls": "Model calls",
-      "humanSteps": "Human steps",
       "incidentRate": "Incident rate",
       "limitHitRate": "Limit hit rate",
       "adoptionRate": "Adoption rate",
       "successRate": "Erfolgsquote",
       "cacheWriteTokens": "Cache-Schreib-Tokens",
       "cacheReadTokens": "Cache-Lese-Tokens",
-      "reasoningTokens": "davon Reasoning-Tokens",
-      "humanWait": "Wartezeit auf Personen"
+      "reasoningTokens": "davon Reasoning-Tokens"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1769,8 +1766,6 @@
       "agenticRunDurationP95Description": "95th percentile of the time from an agent run’s start to its last activity.",
       "agenticRunIterationsName": "Avg iterations per run",
       "agenticRunIterationsDescription": "Average number of model calls per agent run.",
-      "agenticRunHumanStepsName": "Human steps per run",
-      "agenticRunHumanStepsDescription": "Average number of user tasks in the process instance of each agent run.",
       "agenticRunCountName": "Agent runs",
       "agenticRunCountDescription": "Number of agent runs in completed process instances.",
       "agenticRunCountOverTimeName": "Agent runs over time",
@@ -1789,8 +1784,6 @@
       "agenticRunSuccessRateDescription": "Share of agent runs without an incident on the agent or its tools and without a limit hit.",
       "agenticRunDurationName": "Agent run duration",
       "agenticRunDurationDescription": "Sum of the agent's element instance durations, without time spent in user-task tools. Average, P50 and P95. For an AI Agent Task, tool time is not included.",
-      "agenticRunHumanWaitName": "Human wait per run",
-      "agenticRunHumanWaitDescription": "Average time agents waited on user-task tools. Excluded from the agent run duration.",
       "agenticRunTokenBreakdownName": "Token breakdown",
       "agenticRunTokenBreakdownDescription": "Input, output, cache write and cache read tokens. Reasoning is part of output, shown separately.",
       "agenticRunTokensPerRunByModelName": "Median tokens per run by model",
