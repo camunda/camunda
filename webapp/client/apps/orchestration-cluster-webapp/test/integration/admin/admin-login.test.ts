@@ -129,7 +129,6 @@ test('should redirect to Admin login when the API answers with an anonymous user
 	page,
 	adminLoginPage,
 }) => {
-	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
 	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createAnonymousCurrentUser())}));
 
 	await adminLoginPage.gotoAdmin();

@@ -34,7 +34,7 @@ describe('getMe', () => {
     // An unprotected API answers a caller without a session with an anonymous user, not a 401.
     mockServer.use(
       http.get('/v2/authentication/me', () =>
-        HttpResponse.json({...createUser(), username: null, anonymous: true}),
+        HttpResponse.json({...createUser(), username: null, isAnonymous: true}),
       ),
     );
 
@@ -48,7 +48,7 @@ describe('getMe', () => {
 
 describe('isAnonymousCurrentUser', () => {
   it('should detect an anonymous current user', async () => {
-    expect(await isAnonymousCurrentUser(Response.json({anonymous: true}))).toBe(
+    expect(await isAnonymousCurrentUser(Response.json({isAnonymous: true}))).toBe(
       true,
     );
   });
