@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.Duration;
 
 public interface ReadonlyStreamProcessorContext {
 
@@ -21,4 +22,11 @@ public interface ReadonlyStreamProcessorContext {
   int getPartitionId();
 
   StreamClock getClock();
+
+  /**
+   * How often the schedule service checks for due tasks. A task due at least half of it away runs
+   * at the next check after it is due, so it may run up to this long late; a task due sooner runs
+   * on time.
+   */
+  Duration getScheduledTaskCheckInterval();
 }

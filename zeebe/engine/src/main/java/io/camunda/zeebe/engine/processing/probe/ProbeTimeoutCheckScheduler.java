@@ -18,33 +18,53 @@ import java.time.InstantSource;
 /**
  * Times out probes at their deadline. A probe lives for seconds, so the checker runs at the next
  * deadline rather than polling, as {@code JobBackoffCheckScheduler} does for backed-off jobs.
+ *
+ * <p>Unlike for jobs, a client waits for the time-out, and the gateway gives up shortly after the
+ * deadline. The schedule service runs a task due at least half its check interval away only at the
+ * next check after it is due, up to a whole interval late; so while probes are pending, the checker
+ * runs at most {@link #hop} ahead, which the schedule service times exactly.
  */
 public final class ProbeTimeoutCheckScheduler implements StreamProcessorLifecycleAware {
 
   static final long TIMEOUT_RESOLUTION = Duration.ofMillis(100).toMillis();
+  private static final long MAX_HOP = Duration.ofMillis(400).toMillis();
 
   private final DueDateCheckScheduler dueDateChecker;
+  private final InstantSource clock;
+  private long hop = MAX_HOP;
 
   public ProbeTimeoutCheckScheduler(final InstantSource clock, final ProbeState probeState) {
+    this.clock = clock;
     dueDateChecker =
         new DueDateCheckScheduler(
             TIMEOUT_RESOLUTION,
             false,
-            taskResultBuilder ->
-                probeState.findTimedOutProbes(
-                    clock.millis(),
-                    (key, probe) ->
-                        taskResultBuilder.appendCommandRecord(
-                            key, ProbeIntent.TIME_OUT, ProbeBehavior.withoutInput(probe))),
+            taskResultBuilder -> {
+              final long nextDeadline =
+                  probeState.findTimedOutProbes(
+                      clock.millis(),
+                      (key, probe) ->
+                          taskResultBuilder.appendCommandRecord(
+                              key, ProbeIntent.TIME_OUT, ProbeBehavior.withoutInput(probe)));
+              return nextDeadline > 0 ? hopTowards(nextDeadline) : nextDeadline;
+            },
             clock);
   }
 
   public void schedule(final long deadline) {
-    dueDateChecker.schedule(deadline);
+    dueDateChecker.schedule(hopTowards(deadline));
+  }
+
+  private long hopTowards(final long deadline) {
+    return Math.min(deadline, clock.millis() + hop);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    // below half the check interval, with headroom for the time between scheduling and the schedule
+    // service measuring the delay
+    final long halfInterval = context.getScheduledTaskCheckInterval().toMillis() / 2;
+    hop = Math.max(TIMEOUT_RESOLUTION, Math.min(MAX_HOP, halfInterval - TIMEOUT_RESOLUTION));
     dueDateChecker.onRecovered(context);
   }
 
