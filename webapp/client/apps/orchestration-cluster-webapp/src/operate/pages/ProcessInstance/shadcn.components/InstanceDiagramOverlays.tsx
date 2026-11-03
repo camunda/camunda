@@ -17,6 +17,7 @@ import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay} from '#/operate/shared/StateOverlay/shadcn.components/StateOverlay';
 import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 import {cn} from '#/shared/cn';
+import {ModificationBadgeOverlay} from '#/operate/pages/Processes/shadcn.components/ModificationBadgeOverlay';
 
 type StatePayload = {elementState: React.ComponentProps<typeof StateOverlay>['state']; count?: number};
 type WaitingPayload = {waitingCount: number; centered: boolean};
@@ -123,6 +124,17 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 		if (type === 'instance-agent-shine') {
 			const {agentInstanceKey} = payload as AgentPayload;
 			return <AgentShineOverlay key={`${agentInstanceKey}-shine`} container={container} elementId={elementId} />;
+		}
+		if (type === 'instance-modification') {
+			const {newTokenCount, cancelledTokenCount} = payload as {newTokenCount: number; cancelledTokenCount: number};
+			return (
+				<ModificationBadgeOverlay
+					key={`modification-${elementId}`}
+					container={container}
+					newTokenCount={newTokenCount}
+					cancelledTokenCount={cancelledTokenCount}
+				/>
+			);
 		}
 		return null;
 	});

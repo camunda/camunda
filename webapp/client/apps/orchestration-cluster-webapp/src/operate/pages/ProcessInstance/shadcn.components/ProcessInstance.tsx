@@ -8,7 +8,8 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
+import {Heading, PageLayout, SpinnerIcon, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
+import {Frame} from '#/operate/shared/Frame/shadcn.components/Frame';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, type ProcessInstanceTab} from './processInstanceTabs';
@@ -23,6 +24,9 @@ type Props = {
 	header: React.ReactNode;
 	topPanel?: React.ReactNode;
 	historyPanel?: React.ReactNode;
+	footer?: React.ReactNode;
+	isModificationModeEnabled?: boolean;
+	isApplyingModifications?: boolean;
 	children?: React.ReactNode;
 };
 
@@ -35,6 +39,9 @@ const ProcessInstance: React.FC<Props> = ({
 	header,
 	topPanel,
 	historyPanel,
+	footer,
+	isModificationModeEnabled = false,
+	isApplyingModifications = false,
 	children,
 }) => {
 	const {t} = useTranslation();
@@ -103,33 +110,55 @@ const ProcessInstance: React.FC<Props> = ({
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<Heading as="h1" className="sr-only">
-				{t('operate.processInstance.title')}
+				{t(
+					isModificationModeEnabled
+						? 'operate.processInstance.modification.pageHeading'
+						: 'operate.processInstance.title',
+				)}
 			</Heading>
-			<div className="flex min-h-0 flex-1 flex-col">
-				{breadcrumb}
-				{header}
-				<div className="flex min-h-0 flex-1 overflow-hidden">
-					<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
-						<ResizablePanel
-							panelId="process-instance-vertical-panel"
-							direction={SplitDirection.Vertical}
-							minHeights={[panelMinHeight, panelMinHeight]}
-						>
-							<section className="flex h-full min-h-0 flex-col">
-								{topPanel ?? (
-									<>
-										<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
-										<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-											{t('operate.processInstance.scaffold.diagramPanelPlaceholder')}
-										</Text>
-									</>
-								)}
-							</section>
-							{bottomPanel}
-						</ResizablePanel>
-					</div>
+			<span role="status" className="sr-only">
+				{isApplyingModifications ? t('operate.processInstance.modification.applying') : ''}
+			</span>
+			{isApplyingModifications && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60">
+					<SpinnerIcon />
 				</div>
-			</div>
+			)}
+			<Frame
+				frame={{
+					isVisible: isModificationModeEnabled,
+					headerTitle: t('operate.processInstance.modification.frameTitle'),
+				}}
+			>
+				<div className="flex h-full min-h-0 flex-col">
+					<div className="flex min-h-0 flex-1 flex-col">
+						{breadcrumb}
+						{header}
+						<div className="flex min-h-0 flex-1 overflow-hidden">
+							<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
+								<ResizablePanel
+									panelId="process-instance-vertical-panel"
+									direction={SplitDirection.Vertical}
+									minHeights={[panelMinHeight, panelMinHeight]}
+								>
+									<section className="flex h-full min-h-0 flex-col">
+										{topPanel ?? (
+											<>
+												<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
+												<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
+													{t('operate.processInstance.scaffold.diagramPanelPlaceholder')}
+												</Text>
+											</>
+										)}
+									</section>
+									{bottomPanel}
+								</ResizablePanel>
+							</div>
+						</div>
+					</div>
+					{footer}
+				</div>
+			</Frame>
 		</PageLayout>
 	);
 };
