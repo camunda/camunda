@@ -110,6 +110,34 @@ describe('<SortableTable />', () => {
 		await expect.element(screen.getByText('row-1')).toBeVisible();
 	});
 
+	it('should call onRowClick with the clicked row', async () => {
+		// given
+		const onRowClick = vi.fn();
+		const screen = await renderTable({onRowClick});
+
+		// when
+		await screen.getByText('Shipping process').click();
+
+		// then
+		expect(onRowClick).toHaveBeenCalledExactlyOnceWith(ROWS[1]);
+	});
+
+	it('should reveal the expansion content of a row when its toggle is clicked', async () => {
+		// given
+		const screen = await renderTable({
+			expansion: (row) => <div>{`Details of ${row.name}`}</div>,
+			expandRowLabel: 'Expand row',
+			collapseRowLabel: 'Collapse row',
+		});
+
+		// when
+		await screen.getByRole('button', {name: 'Expand row'}).first().click();
+
+		// then
+		await expect.element(screen.getByText('Details of Order process')).toBeVisible();
+		await expect.element(screen.getByText('Details of Shipping process')).not.toBeInTheDocument();
+	});
+
 	it('should expose ariaLabel as an accessible name on the table', async () => {
 		// given / when
 		const screen = await renderTable({ariaLabel: 'Process instances'});
