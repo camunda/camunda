@@ -330,6 +330,7 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-backup"))

@@ -73,6 +73,7 @@ dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))

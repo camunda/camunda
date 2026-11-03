@@ -295,6 +295,8 @@ registerProject(":zeebe-atomix-cluster", "zeebe/atomix/cluster")
 
 registerProject(":zeebe-atomix-messaging-api", "zeebe/atomix/messaging-api")
 
+registerProject(":zeebe-atomix-membership-api", "zeebe/atomix/membership-api")
+
 registerProject(":zeebe-msgpack-value", "zeebe/msgpack-value")
 
 registerProject(":zeebe-qa-util", "zeebe/qa/util")
