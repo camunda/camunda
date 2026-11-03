@@ -32,15 +32,15 @@ finally switches every partition to the new version.
 
 **D1. Partition 1 coordinates every policy update of its physical tenant.**
 - The Hub client runs on the leader of partition 1 and hands each change set to a cluster internal
-  transformer component, which maps the hub DTO to records
+transformer component, which maps the hub DTO to records
 - it which rejects the update unless the broker leads partition 1. Policy update records are
-  processed only on partition 1; the other partitions receive identity commands and the version
-  switch.
+processed only on partition 1; the other partitions receive identity commands and the version
+switch.
 - One coordinator gives the update a single order without cross-partition agreement.
 
 **D2. The broker splits a change set into chunks of whole entities in apply order.**
 - the transformer splits each chunk up to a configurable byte budget to avoid the 4MB record size
-  limit, estimated from the msgpack length plus a margin.
+limit, estimated from the msgpack length plus a margin.
 - An entity is never split, single entity is assumed to stay below the 4 MB limit.
 
 **D3. All chunks are buffered before any of them is applied.**
@@ -54,9 +54,11 @@ commands, written as follow-up commands at the update's policy version.
 - The commands are internal, without request metadata, so they bypass the requesting user's authorization check.
 
 **D5. Identity state is versioned, and reads only see the committed version.**
-- The identity column families keep every version of an entity, with the policy version as the last
+- The identity column families keep multiple versions of an entity, with the policy version as the last
 part of the key.
-- Deletes are tombstones, and aggregates (an owner's authorization keys, the permissions) are copied on write.
+- Deletes are tombstones. Lookup rows that combine several authorizations (an owner's
+authorization keys, the permissions per owner and resource type) are copied to the new version
+before they change.
 - A read returns the latest version that is not newer than `max(current policy version, policyVersion of the command)`. Authorization checks carry no
 version, so they see only the committed state
 
@@ -67,6 +69,12 @@ version, so they see only the committed state
 version 0.**
 - with using the policy version as last part of column family keys, the new versioned keys are byte-compatible to the existing non-versioned keys
 - no rocksDb data migration should be necessary, and local mode can continue to use the unversioned layout (default version 0)
+
+**D8. The Hub polling sequence is part of the replicated policy state.**
+- The policy update record carries the Hub sequence that the change set was polled up to.
+- The commit stores it in the `POLICY` state together with `policyId` and `policyVersion`, so the
+polling cursor advances in the same step as the version.
+- After a restart or leader change, the Hub client resumes polling from the stored sequence.
 
 ## Alternatives considered
 
@@ -86,6 +94,38 @@ version 0.**
 - In hub-managed mode, reads seek the latest visible version instead of reading one row.
 - Old versions and tombstones accumulate until a cleanup removes them.
 - Partitions switch independently, so they can authorize with different versions for a short time.
+
+## Open questions
+
+- **Rejected identity commands.** An update applies its chunks as follow-up commands, and the
+  identity processors may reject one of them, for example a membership whose role does not exist.
+  The update does not see the rejection and would still be committed. Options:
+  - Normalize the change set while applying, so that a valid delta cannot cause a rejection: an
+    upsert of an existing entity becomes an update, a delete of a missing entity is skipped.
+  - Record any remaining rejection of a command that belongs to an update, and fail the update
+    instead of committing it. The failure is reported back to Hub through `errorMessage`.
+- **Secondary storage.** The exporters see the identity records of a version as soon as they are
+  written, not when the version is committed, so secondary storage shows uncommitted data and
+  applies deletes early. The engine does not control secondary storage. Options:
+  - RDBMS and Elasticsearch store the policy version with each identity row, and reads filter by the
+    committed version, which the exporters take from the commit record.
+  - The exporters hold back the identity records of a version until its commit, and write them then.
+    That is not atomic for Elasticsearch.
+- **Leader change during an update.** Applying is safe: the follow-up commands are on the log, and a
+  new leader continues where the old one stopped. Receiving is not: if the leader fails before all
+  chunks are written, the update stays incomplete. The new leader polls again and may receive a
+  differently aggregated change set with a new update ID. Proposed rule: an update that is still
+  receiving chunks is replaced by a new one; an update that is applying runs to completion.
+- **Pausing the polling until a version is applied.** The Hub client must not poll the next change
+  set while an update is open, but the client runs outside the stream processor, and the engine
+  processes the update asynchronously. Options:
+  - The client polls only when the policy state of partition 1 has no open update, and takes its
+    cursor from that state (see D8). It also remembers the update it has handed over itself, until
+    the update appears in the state.
+  - The engine notifies the client after it has processed the commit or a failure, for example
+    through a side effect on partition 1.
+
+  Partition 1 committing a version does not mean that the other partitions have switched yet.
 
 ## Source
 

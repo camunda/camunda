@@ -5,19 +5,24 @@ This document describes how Hub distributes identity data to OCs and how the eng
 The decisions behind the engine design are recorded in
 [ADR 0014](../../zeebe/docs/adr/0014-811-hub-managed-identity-policy-updates.md).
 
+The overall architecture of the identity fan-out from Hub is described in the
+[arc42 documentation of centralized IAM management via Hub](https://github.com/camunda/pdp-initiative-ea-identity--access-at-scale/tree/main/centralized-iam-management-via-hub/arc42)
+(internal, until it has its final place).
+
 ## Solution architecture
 
 ### Terms
 
-| Term            | Meaning                                                                                                                                                                                                             |
+|      Term       |                                                                                                       Meaning                                                                                                       |
 |-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Policy          | The identity data that authorizes access in an OC: tenants, roles, groups, mapping rules, memberships and authorizations. Users and clients are not entities; they appear only as members and authorization owners. |
 | Policy version  | A number Hub assigns to each committed state of a policy. It starts at 1 and only grows.                                                                                                                            |
 | PolicySet       | The complete policy of one target at one policy version, as Hub holds it.                                                                                                                                           |
-| PolicyChangeSet | The unit Hub sends to an OC: `PolicyChangeSet(policyVersion, kind, upserts, deletions)` from the hub-client.                                                                                                        |
+| PolicyChangeSet | The unit Hub sends to an OC through the Hub client: the upserts and deletions up to a target policy version, and the Hub sequence it was polled up to.                                                              |
+| Hub sequence    | The polling cursor of the Hub client. The OC stores it with the committed policy version and resumes polling from it.                                                                                               |
 
-A `PolicyChangeSet` contains always exactly the listed upserts and deletions that turn version `n-x`
-into version `n`. The `PolicyChangeSet` may be an aggregation of more than one version change.
+A `PolicyChangeSet` always contains exactly the upserts and deletions that turn version `n-x` into
+version `n`. It may aggregate more than one version change.
 
 The change set defines a fixed apply order, which the OC follows:
 
@@ -28,14 +33,15 @@ The change set defines a fixed apply order, which the OC follows:
 5. Delete memberships.
 6. Delete mapping rules, groups, roles and tenants.
 
-Applying the same policy version twice is idempotent and must be rejected by the broker.
+A change set for a policy version that is already applied is rejected, so a repeated delivery has
+no effect.
 
 ### Modes
 
 Each physical tenant runs in one of two modes. The modes are not mixed, and switching a running
 physical tenant from one mode to the other is not covered.
 
-| Mode            | Who writes identity data                                                                             | Policy version of the data |
+|      Mode       |                                       Who writes identity data                                       | Policy version of the data |
 |-----------------|------------------------------------------------------------------------------------------------------|----------------------------|
 | **Local**       | The identity APIs of the OC, as without Hub.                                                         | Always 0                   |
 | **Hub managed** | Hub, through policy updates. The OC only projects the policy; it is not the source of identity data. | 1 or more                  |
@@ -46,9 +52,10 @@ leaves version 0, and its state has exactly the layout it had before policy vers
 ### Distribution
 
 Every physical tenant has its own partition set, and each set has its own partition 1. In
-hub-managed mode, the leader of partition 1 uses the Hub client library to long-poll Hub for change
-sets newer than its current policy version. The engine then distributes the result to the other
-partitions of the same physical tenant.
+hub-managed mode, the leader of partition 1 uses the Hub client library to long-poll Hub, starting
+from the stored Hub sequence. While an update is open, the client does not poll the next change
+set; how the client learns that the update is applied is an open question of the ADR. The engine
+distributes each update to the other partitions of the same physical tenant.
 
 ```mermaid
 flowchart LR
@@ -74,10 +81,10 @@ flowchart LR
     end
   end
 
-  A1 -. long - poll PolicyChangeSet .-> Hub
-  B1 -. long - poll PolicyChangeSet .-> Hub
-  C1 -. long - poll PolicyChangeSet .-> Hub
-  D1 -. long - poll PolicyChangeSet .-> Hub
+  A1 -. long-poll PolicyChangeSet .-> Hub
+  B1 -. long-poll PolicyChangeSet .-> Hub
+  C1 -. long-poll PolicyChangeSet .-> Hub
+  D1 -. long-poll PolicyChangeSet .-> Hub
 ```
 
 ## Technical architecture in the OC
@@ -88,10 +95,10 @@ A policy update passes through four steps. Steps 2 to 4 run in the engine of par
 coordinates the update. Policy update records are only ever processed on partition 1; the other
 partitions only receive identity commands and the final version switch.
 
-1. **Receive and split.** The Hub client hands the change set to `PolicyUpdateInPort` in the broker.
-   It accepts the update only while the broker leads partition 1. `PolicyChangeSetSplitter` splits
-   the
-   change set into chunks, and the in-port writes one `APPEND_CHUNK` command per chunk to the log.
+1. **Receive and split.** The Hub client hands the change set to the transformer in the broker,
+   which maps the Hub DTOs to records. It accepts the update only while the broker leads
+   partition 1. The transformer splits the change set into chunks and writes one `APPEND_CHUNK`
+   command per chunk to the log.
 2. **Buffer.** The engine stores each chunk in RocksDB until all chunks of the update are there.
 3. **Apply.** The engine applies the buffered chunks one at a time. Each chunk becomes ordinary
    identity commands, written at the update's policy version. The existing identity processors
@@ -102,9 +109,8 @@ partitions only receive identity commands and the final version switch.
 ```mermaid
 flowchart LR
   Hub[(Hub)] -->|PolicyChangeSet| Client[Hub client]
-  Client --> InPort[PolicyUpdateInPort]
-  InPort --> Splitter[PolicyChangeSetSplitter]
-  Splitter -->|APPEND_CHUNK x n| Log[(Log of partition 1)]
+  Client --> Transformer[Transformer<br/>map and split]
+  Transformer -->|APPEND_CHUNK x n| Log[(Log of partition 1)]
   Log --> Buffer[Chunk buffer<br/>RocksDB]
   Buffer -->|all chunks there| Apply[APPLY one chunk per command]
   Apply -->|identity commands<br/>at version v| Identity[Identity processors]
@@ -116,7 +122,7 @@ flowchart LR
 ### Splitting
 
 A record and the event batch of one command are each limited to 4 MB, while a change set can be far
-larger. The splitter keeps every chunk under a byte budget, initially 1 MiB:
+larger. The transformer keeps every chunk under a configurable byte budget:
 
 - A chunk holds only whole entities; an entity is never split. An entity larger than the budget
   gets a chunk of its own.
@@ -131,13 +137,13 @@ A small change set results in a single chunk.
 
 ```mermaid
 sequenceDiagram
-  participant InPort as PolicyUpdateInPort
+  participant T as Transformer
   participant P1 as Partition 1 engine
   participant DB as RocksDB (partition 1)
   participant Pn as Partitions 2..n
 
   loop every chunk
-    InPort ->> P1: APPEND_CHUNK(i of n, version v)
+    T ->> P1: APPEND_CHUNK(i of n, version v)
     P1 ->> DB: CHUNK_APPENDED: store chunk i
   end
   Note over P1: last chunk received
@@ -152,32 +158,40 @@ sequenceDiagram
   Pn ->> Pn: VERSION_SWITCHED
 ```
 
-- **Buffering.** The chunks are stored on partition 1 under the update's `envelopeId`. They are not
+- **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
   applied before the last chunk arrives, so a partially received update never changes identity
   data. Chunks may arrive in any order; a duplicate chunk is rejected without effect.
 - **One chunk per `APPLY`.** Each `APPLY` command applies exactly one chunk and then writes the next
-  `APPLY`, so the events of one command stay within the chunk budget.
+  `APPLY`. This bounds the batch of the `APPLY` command itself. Each identity command it writes is
+  processed in its own batch, which includes its cascades: deleting a role, for example, also
+  removes its memberships and owned authorizations. The chunk budget does not bound those.
 - **Reuse of identity commands.** A chunk becomes the existing identity commands, for example
   `RoleIntent.CREATE` or `UPDATE`, `GroupIntent.ADD_ENTITY` or `AuthorizationIntent.DELETE`. An
   upsert of an existing entity becomes an update, and an authorization upsert is reconciled to the
   exact permission set of its key. The commands are internal commands without request metadata, so
-  they bypass the authorization check of the requesting user.
+  they bypass the authorization check of the requesting user. They carry the update's
+  `policyVersion`, so every exported identity record shows which policy version it belongs to.
 - **Distribution.** The identity processors distribute each command to all other partitions on the
   `IDENTITY` distribution queue, as they do for commands from the identity APIs. A queue delivers in
   order to each partition.
-- **Superseding.** Only one update is open at a time. A chunk of a newer version aborts an open
-  update of an older version (`ABORTED`) and discards its buffered chunks. A chunk of the current
-  version is rejected as already applied; a chunk of an older version, or of a version that is not
-  newer than the open update, is rejected as invalid.
+- **One update at a time.** The Hub client does not hand over a new change set while an update is
+  open.
+
+The buffer uses two column families on partition 1:
+
+|      Column family       |         Key         |                                   Value                                    |
+|--------------------------|---------------------|----------------------------------------------------------------------------|
+| `POLICY_UPDATE_ASSEMBLY` | `updateId`          | The open update: policy version, chunk count, received and applied chunks. |
+| `POLICY_UPDATE_CHUNK`    | (`updateId`, index) | A buffered chunk.                                                          |
 
 ### Version switch
 
 The last `APPLY` writes the `SWITCH_VERSION` command. Partition 1 processes it first and writes
-`VERSION_SWITCHED`, which sets its current policy version and removes the update's buffered chunks.
-It then distributes the command on the `IDENTITY` queue. Because the update's identity commands were
-distributed on the same queue before, every partition switches only after it has applied the whole
-update. A partition that is already at that version or a newer one rejects the switch and still
-acknowledges the distribution.
+`VERSION_SWITCHED`, which sets its current policy version and Hub sequence and removes the update's
+buffered chunks. It then distributes the command on the `IDENTITY` queue. Because the update's
+identity commands were distributed on the same queue before, every partition switches only after it
+has applied the whole update. A partition that is already at that version or a newer one rejects
+the switch and still acknowledges the distribution.
 
 Partitions switch independently, so for a short time some partitions may still authorize with the
 old policy while others already use the new one.
@@ -185,13 +199,16 @@ old policy while others already use the new one.
 ## Records and intents
 
 All policy update records share one value type, `ValueType.POLICY_UPDATE`, with the record value
-`PolicyUpdateRecordValue`.
+`PolicyUpdateRecordValue`. Only `APPEND_CHUNK` transports policy data: it carries one chunk. The
+other intents control the update and carry only its identifiers.
 
-| Property                   | Content                                                                                                                  |
+|          Property          |                                                         Content                                                          |
 |----------------------------|--------------------------------------------------------------------------------------------------------------------------|
 | `policyId`                 | The ID of the policy.                                                                                                    |
 | `policyVersion`            | The version the update establishes.                                                                                      |
-| `updateId`                 | A grouping identifier for related chunks, defined by the splitter.                                                       |
+| `basePolicyVersion`        | The base version this update is derived from.                                                                            |
+| `seqNo`                    | The Hub sequence the change set was polled up to.                                                                        |
+| `updateId`                 | A grouping identifier for the chunks of one update, defined by the transformer.                                          |
 | `chunkIndex`, `chunkCount` | Position of the chunk and the total number of chunks.                                                                    |
 | Upserts                    | `tenants`, `roles`, `groups`, `mappingRules`, `authorizations` (the existing identity record values), and `memberships`. |
 | Deletes                    | `deletes` (entity type and ID), `membershipDeletes` and `authorizationDeletes`.                                          |
@@ -200,15 +217,15 @@ All policy update records share one value type, `ValueType.POLICY_UPDATE`, with 
 A membership is a `PolicyMembershipEntryValue`: target type and ID (tenant, role or group), member
 type and ID.
 
-| Intent             | Kind    | Usage                                                                                           |
+|       Intent       |  Kind   |                                              Usage                                              |
 |--------------------|---------|-------------------------------------------------------------------------------------------------|
-| `APPEND_CHUNK`     | Command | Written by `PolicyUpdateInPort`, one per chunk. Validated and buffered.                         |
+| `APPEND_CHUNK`     | Command | Written by the transformer, one per chunk. Validated and buffered.                              |
 | `CHUNK_APPENDED`   | Event   | A chunk is stored. After the last chunk, the processor writes the first `APPLY`.                |
 | `APPLY`            | Command | Internal follow-up. Applies the next buffered chunk.                                            |
-| `APPLIED`          | Event   | A chunk is applied; `lastPage` marks the last one.                                              |
+| `APPLIED`          | Event   | A chunk is applied.                                                                             |
 | `SWITCH_VERSION`   | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
 | `VERSION_SWITCHED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
-| `ABORTED`          | Event   | An open update was superseded by a newer version; its buffered chunks are removed.              |
+| `ABORTED`          | Event   | An open update was discarded; its buffered chunks are removed.                                  |
 
 The identity record values (`TenantRecordValue`, `RoleRecordValue`, `GroupRecordValue`,
 `MappingRuleRecordValue`, `AuthorizationRecordValue`) carry an optional `policyVersion`, default 0.
@@ -225,7 +242,7 @@ per partition (phase 2).
 The identity column families keep every version of an entity side by side. The policy version is
 the last part of the key:
 
-| Column family                                 | Key                                               |
+|                 Column family                 |                        Key                        |
 |-----------------------------------------------|---------------------------------------------------|
 | `ROLES`, `TENANTS`, `GROUPS`                  | (ID, version)                                     |
 | `MAPPING_RULES`                               | (claim name, claim value, version)                |
@@ -236,8 +253,10 @@ the last part of the key:
 
 - **Deletes are tombstones.** A delete writes a row with `deleted` set, instead of removing the row.
   A removed membership is stored with status `REMOVED`.
-- **Aggregates are copy-on-write.** The authorization keys of an owner and the permissions are
-  copied to the new version before they change.
+- **Lookup rows are copied on write.** `AUTHORIZATION_KEYS_BY_OWNER` (the authorization keys of an
+  owner) and `PERMISSIONS` (the permissions of an owner per resource type) each combine several
+  authorizations in one row. When an authorization changes, the row is copied to the new version
+  first and then changed there.
 - **Backwards compatible.** The key uses `DbVersionedKey`, which writes no suffix for version 0.
   A version-0 key is byte-identical to the key without a version, and the new value properties
   have defaults. A membership row stores `0xFF` for `ACTIVE`, the byte the earlier `DbNil` value
@@ -255,8 +274,11 @@ visible = max(current policy version, policyVersion of the command)
 
 - **Authorization checks** come from commands without a policy version, so they only see the
   committed version. Rows of an update in progress stay invisible to them.
-- **The update's own commands** carry the update's version, so the update reads its own writes, for
-  example a role it created in an earlier chunk.
+- **The update's own commands** carry the update's version, so the update reads its own writes.
+  The identity processors need this for their checks against the state: adding a member to a role
+  that an earlier chunk created, deciding whether an upsert creates or updates an entity,
+  reconciling an authorization with its permissions at version v, and finding the memberships a
+  delete cascades to.
 - **At version 0**, which is always the case in local mode, a read is a point lookup on the
   unversioned key.
 
@@ -266,31 +288,27 @@ visible = max(current policy version, policyVersion of the command)
 partition's state but no authorization check sees them. A version that is never switched stays
 invisible.
 
-### Column families of the update itself
+The committed policy of a partition is stored in the `POLICY` column family under a constant key:
 
-| Column family            | Key                   | Value                                                               |
-|--------------------------|-----------------------|---------------------------------------------------------------------|
-| `POLICY`                 | constant              | The current policy.                                                 |
-| `POLICY_UPDATE_ASSEMBLY` | `envelopeId`          | The open update: version, chunk count, received and applied chunks. |
-| `POLICY_UPDATE_CHUNK`    | (`envelopeId`, index) | A buffered chunk.                                                   |
-
-#### Local Policy state
-
-| Property        | Content                                      |
-|-----------------|----------------------------------------------|
-| `policyId`      | The ID of the policy.                        |
-| `policyVersion` | The current policy version of the partition. |
+|    Property     |                         Content                          |
+|-----------------|----------------------------------------------------------|
+| `policyId`      | The ID of the policy.                                    |
+| `policyVersion` | The current policy version of the partition.             |
+| `seqNo`         | The Hub sequence of that version; polling resumes there. |
 
 ## Open points
 
-- **Hub client.** The polling contract of the Hub client library (long-poll timeout, back-off,
-  gap detection) is defined outside the engine.
-- **Aborted updates.** Aborting an update removes only its buffered chunks. If it had already
-  applied chunks, their rows stay in the state and would become visible with the next switched
-  version, because a read takes the latest version up to the visible one.
+The [ADR](../../zeebe/docs/adr/0014-811-hub-managed-identity-policy-updates.md) tracks these as open
+questions, with options:
+
+- **Rejected identity commands.** An identity processor can reject a command of the update, and the
+  update would still be committed.
+- **Secondary storage.** The exporters see the identity records of a version before it is committed.
+- **Leader change during an update.** An update that is still receiving chunks can stay incomplete.
+- **Pausing the polling.** The Hub client has to learn that an update is applied or has failed.
+
+Also not defined yet:
+
 - **Old versions.** No cleanup of superseded versions and tombstones is defined yet.
 - **Switch window.** Partitions switch independently (see [Version switch](#version-switch)).
-
-The [ADR](../../zeebe/docs/adr/0014-811-hub-managed-identity-policy-updates.md) tracks these as open
-questions.
 
