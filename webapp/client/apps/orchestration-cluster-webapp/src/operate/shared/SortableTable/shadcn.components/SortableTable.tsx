@@ -88,6 +88,7 @@ type BaseProps<TRow> = {
 	 * container, which `DataTable` does not expose.
 	 */
 	className?: string;
+	borderless?: boolean;
 	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	/** Content shown below a row once its expand toggle is opened; return `null` for rows without details. */
 	expansion?: (row: TRow) => React.ReactNode;
@@ -95,6 +96,7 @@ type BaseProps<TRow> = {
 	collapseRowLabel?: string;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
+	onRowClick?: (row: TRow) => void;
 	'data-testid'?: string;
 };
 
@@ -600,12 +602,14 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		emptyState,
 		hideHeaderWhenEmpty = false,
 		className,
+		borderless,
 		onSort,
 		expansion,
 		expandRowLabel,
 		collapseRowLabel,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
+		onRowClick,
 		'data-testid': dataTestId,
 	} = props;
 	const selection = props.selectionType === 'checkbox' ? props : undefined;
@@ -845,6 +849,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 	}
 
 	const dataTable = (
+		// oxlint-disable-next-line camunda-ds/prefer-link-props -- row click selects the row, it does not navigate
 		<DataTable<DisplayRow<TRow>>
 			columns={dataColumns}
 			data={displayRows}
@@ -868,6 +873,15 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			batchActionsCancelLabel={selection?.batchActionsCancelLabel}
 			selectionCountLabel={selection?.selectionCountLabel}
 			getSelectedRows={selection === undefined ? undefined : getSelectedDisplayRows}
+			onRowClick={
+				onRowClick === undefined
+					? undefined
+					: (displayRow) => {
+							if (displayRow.kind === 'row') {
+								onRowClick(displayRow.row);
+							}
+						}
+			}
 			expansion={
 				expansion === undefined
 					? undefined
@@ -880,6 +894,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			}
 			expandRowLabel={expandRowLabel}
 			collapseRowLabel={collapseRowLabel}
+			borderless={borderless}
 			sorting={
 				hasSortableColumns && !isCompactLoad
 					? {manual: true, sortState, onSortingChange: handleSortingChange}
