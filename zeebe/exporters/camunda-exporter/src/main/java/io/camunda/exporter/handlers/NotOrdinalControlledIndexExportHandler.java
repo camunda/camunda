@@ -32,7 +32,10 @@ public interface NotOrdinalControlledIndexExportHandler<
   default List<IdAndIndex> extractIdAndIndexes(
       final TargetIndexLocator indexLocator, final Record<R> record) {
     // just add some extra checking to ensure it's definitely not ordinal controlled
-    if (record.getValue().getStorageOrdinal() != StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED) {
+    final int storageOrdinal = record.getValue().getStorageOrdinal();
+    if (storageOrdinal != StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED
+        // allow main_index too as records from older broker version will have this set
+        && storageOrdinal != StorageOrdinalRelated.MAIN_INDEX) {
       throw new IllegalStateException(
           "Received record with key: "
               + record.getKey()
