@@ -15,7 +15,6 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatch
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +30,6 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -740,22 +738,29 @@ public class BatchOperationIT {
   public void shouldFindAllBatchOperationsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final BatchOperationType operationType = randomEnum(BatchOperationType.class);
-    createAndSaveRandomBatchOperations(
-        rdbmsService.createWriter(0), b -> b.operationType(operationType));
+    final var batchOperationKeys =
+        createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).stream()
+            .map(BatchOperationDbModel::batchOperationKey)
+            .toList();
 
     final var searchResult =
         rdbmsService
             .getBatchOperationReader()
             .search(
                 new BatchOperationQuery(
-                    new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeyOperations(
+                            List.of(mapDefaultToOperation(batchOperationKeys)))
+                        .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.items()).hasSize(5);
+    assertThat(searchResult.items())
+        .hasSize(5)
+        .extracting(BatchOperationEntity::batchOperationKey)
+        .isSubsetOf(batchOperationKeys);
   }
 
   @TestTemplate
