@@ -33,6 +33,7 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
@@ -419,7 +420,9 @@ public final class HttpClient implements AutoCloseable {
     }
     request.setConfig(requestConfig);
 
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer = createEntityConsumer(responseType);
+    final HttpClientContext context = HttpClientContext.create();
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+        createEntityConsumer(responseType, context);
 
     if (apiCallback.get() == null) {
       apiCallback.set(
@@ -436,13 +439,15 @@ public final class HttpClient implements AutoCloseable {
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
+            context,
             apiCallback.get()));
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
-      final Class<HttpT> responseType) {
+      final Class<HttpT> responseType, final HttpClientContext context) {
     if (responseType == InputStream.class) {
-      return new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
+      return new DocumentDataConsumer<>(
+          maxMessageSize, jsonMapper, () -> ExchangeAbortChainHandler.abort(context));
     } else {
       return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
