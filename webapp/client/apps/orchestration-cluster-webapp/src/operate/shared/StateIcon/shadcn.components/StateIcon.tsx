@@ -9,10 +9,10 @@
 import {
 	CircleAlert,
 	CircleCheck,
-	CircleDot,
 	CircleHelp,
 	CirclePause,
 	CircleX,
+	Disc,
 	TriangleAlert,
 } from '@camunda/design-system/icons';
 import type {DecisionInstanceState, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -25,8 +25,11 @@ type Props = React.ComponentProps<typeof CircleAlert> & {
 
 const stateIconsMap: Record<Props['state'], {Icon: typeof TriangleAlert; className?: string}> = {
 	FAILED: {Icon: TriangleAlert, className: 'text-danger-foreground-subtle'},
-	INCIDENT: {Icon: CircleAlert, className: 'text-danger-foreground-subtle'},
-	ACTIVE: {Icon: CircleDot, className: 'text-success-foreground-subtle'},
+	INCIDENT: {
+		Icon: CircleAlert,
+		className: 'text-danger-foreground-subtle [&_circle]:fill-current [&_line]:stroke-[color:var(--background)]',
+	},
+	ACTIVE: {Icon: Disc, className: 'text-success-foreground-subtle [&_circle:last-child]:fill-current'},
 	COMPLETED: {Icon: CircleCheck, className: 'text-neutral-foreground-strong'},
 	EVALUATED: {Icon: CircleCheck, className: 'text-neutral-foreground-strong'},
 	SUSPENDED: {Icon: CirclePause, className: 'text-neutral-foreground-subtle'},

@@ -9,6 +9,8 @@
 import {createFileRoute, stripSearchParams} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {Processes} from '#/operate/pages/Processes/shadcn.components/Processes';
+import {latestDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {
 	processesSearchDefaults,
 	processesSearchSchema,
@@ -18,6 +20,10 @@ import {
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/')({
 	validateSearch: processesSearchSchema,
 	search: {middlewares: [stripLegacyProcessFilters, stripSearchParams(processesSearchDefaults)]},
+	loaderDeps: ({search: {tenantId}}) => ({tenantId: isSpecificTenant(tenantId) ? tenantId : undefined}),
+	loader: ({context: {queryClient}, deps: {tenantId}}) => queryClient.ensureQueryData(latestDefinitionsQuery(tenantId)),
 	head: () => ({meta: [{title: t('operate.processes.pageTitle')}]}),
-	component: Processes,
+	component: function ProcessesRoute() {
+		return <Processes search={Route.useSearch()} />;
+	},
 });

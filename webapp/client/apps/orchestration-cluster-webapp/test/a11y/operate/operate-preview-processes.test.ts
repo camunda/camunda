@@ -11,8 +11,10 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -32,10 +34,13 @@ test('should have no accessibility violations in the processes placeholder shell
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
 	);
 
 	await operatePreviewProcessesPage.goto();
-	await expect(operatePreviewProcessesPage.filtersPanelPlaceholder).toBeVisible();
+	await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

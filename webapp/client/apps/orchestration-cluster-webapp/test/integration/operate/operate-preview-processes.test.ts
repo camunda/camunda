@@ -35,6 +35,9 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
 	);
 });
 
@@ -43,7 +46,7 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 		await operatePreviewProcessesPage.goto();
 
 		await expect(operatePreviewProcessesPage.heading).toBeAttached();
-		await expect(operatePreviewProcessesPage.filtersPanelPlaceholder).toBeVisible();
+		await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
 		await expect(operatePreviewProcessesPage.diagramPanelPlaceholder).toBeVisible();
 		await expect(operatePreviewProcessesPage.instancesTablePlaceholder).toBeVisible();
 	});
