@@ -13,6 +13,7 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
@@ -66,8 +67,8 @@ final class ElasticsearchClientFactory {
     final HttpHost[] httpHosts = parseUrl(config);
     final Header[] defaultHeaders =
         new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=9"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=9")
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
         };
     final Rest5ClientBuilder builder =
         Rest5Client.builder(httpHosts)
@@ -76,7 +77,10 @@ final class ElasticsearchClientFactory {
                 b ->
                     b.setConnectTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs))
                         .setSocketTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs)))
-            .setHttpClientConfigCallback(b -> configureHttpClient(config, b, interceptors));
+            .setHttpClientConfigCallback(
+                b ->
+                    configureHttpClient(config, b, interceptors)
+                        .addRequestInterceptorLast(ElasticsearchCompatibilityInterceptor.INSTANCE));
 
     return builder.build();
   }
