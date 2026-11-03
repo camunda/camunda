@@ -6,9 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const PROCESS_INSTANCE_TABS = ['variables', 'incidents', 'listeners', 'details'] as const;
+const PROCESS_INSTANCE_TABS = [
+	'variables',
+	'input-mappings',
+	'output-mappings',
+	'incidents',
+	'listeners',
+	'operations-log',
+	'details',
+] as const;
 
 type ProcessInstanceTab = (typeof PROCESS_INSTANCE_TABS)[number];
+
+const TAB_LABEL_KEYS = {
+	variables: 'operate.processInstance.history.variables',
+	'input-mappings': 'operate.processInstance.history.inputMappings',
+	'output-mappings': 'operate.processInstance.history.outputMappings',
+	incidents: 'operate.processInstance.history.incidents',
+	listeners: 'operate.processInstance.history.listeners',
+	'operations-log': 'operate.processInstance.history.operationsLog',
+	details: 'operate.processInstance.history.details',
+} as const satisfies Record<ProcessInstanceTab, string>;
+
+const SELECTION_ONLY_TABS: readonly ProcessInstanceTab[] = ['input-mappings', 'output-mappings'];
+
+function getVisibleProcessInstanceTabs(hasSelection: boolean): readonly ProcessInstanceTab[] {
+	return PROCESS_INSTANCE_TABS.filter((tab) => hasSelection || !SELECTION_ONLY_TABS.includes(tab));
+}
 
 function getProcessInstanceTabFromPath(pathname: string): ProcessInstanceTab {
 	const segment = pathname.split('/').filter(Boolean).pop();
@@ -16,5 +40,5 @@ function getProcessInstanceTabFromPath(pathname: string): ProcessInstanceTab {
 	return PROCESS_INSTANCE_TABS.find((tab) => tab === segment) ?? 'variables';
 }
 
-export {PROCESS_INSTANCE_TABS, getProcessInstanceTabFromPath};
+export {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, getProcessInstanceTabFromPath, getVisibleProcessInstanceTabs};
 export type {ProcessInstanceTab};

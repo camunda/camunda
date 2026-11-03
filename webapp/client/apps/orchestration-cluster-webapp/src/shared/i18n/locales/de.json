@@ -1726,8 +1726,10 @@
 					"table": {
 						"operationType": "Vorgangstyp",
 						"entityType": "Entitätstyp",
-						"entityKey": "Entitätsschlüssel"
-					}
+						"entityKey": "Entitätsschlüssel",
+						"result": "Ergebnis"
+					},
+					"list": "Operationsprotokoll-Liste"
 				},
 				"variables": {
 					"search": "Variablen nach Namen suchen",
@@ -1933,7 +1935,8 @@
 					"time": "Zeit",
 					"emptyAll": "Dieses Element hat weder Ausführungs-Listener noch Benutzeraufgaben-Listener",
 					"emptyTask": "Dieses Element hat keine Benutzeraufgaben-Listener",
-					"emptyExecution": "Dieses Element hat keine Ausführungs-Listener"
+					"emptyExecution": "Dieses Element hat keine Ausführungs-Listener",
+					"loading": "Listener werden geladen"
 				},
 				"modification": {
 					"pageHeading": "Operate Prozessinstanz - Änderungsmodus",
