@@ -22,9 +22,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.util.StringUtils;
 
 public class WebappsConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -92,11 +94,13 @@ public class WebappsConfigurationInitializer
         }
 
         // Operate links to Tasklist only when both UIs are served by this application; as a
-        // default property source, an explicit camunda.operate.tasklist-url still takes precedence
+        // default property source, an explicit camunda.operate.tasklist-url still takes precedence.
+        // Spring Boot treats a context path of "/" as root, so a plain join would give //tasklist
         if (activeProfiles.contains(OPERATE.getId())
             && WebappsHelper.isOperateUiEnabled(environment)) {
           propertyMap.put(
-              OPERATE_TASKLIST_URL_PROPERTY, "${server.servlet.context-path:}/tasklist");
+              OPERATE_TASKLIST_URL_PROPERTY,
+              operateTasklistUrl(environment.getProperty("server.servlet.context-path")));
         }
       }
     }
@@ -119,6 +123,13 @@ public class WebappsConfigurationInitializer
       propertyMap.put("camunda.webapps.default-app", defaultWebapp);
     }
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
+  }
+
+  private static String operateTasklistUrl(@Nullable final String contextPath) {
+    if (contextPath == null) {
+      return "/tasklist";
+    }
+    return StringUtils.trimTrailingCharacter(contextPath.strip(), '/') + "/tasklist";
   }
 
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
