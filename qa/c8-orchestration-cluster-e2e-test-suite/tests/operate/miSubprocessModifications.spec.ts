@@ -25,6 +25,7 @@ type ProcessInstance = {
 let seqMiInstance: ProcessInstance;
 let parMiInstance: ProcessInstance;
 let restrictionInstance: ProcessInstance;
+let miSubprocessTargetInstance: ProcessInstance;
 let crossMiInstance: ProcessInstance;
 let outwardMoveInstance: ProcessInstance;
 let moveAllInstance: ProcessInstance;
@@ -49,6 +50,14 @@ test.beforeAll(async () => {
   });
 
   restrictionInstance = await createSingleInstance(
+    'miSubprocessRestriction',
+    1,
+    {
+      items: ['itemA', 'itemB'],
+    },
+  );
+
+  miSubprocessTargetInstance = await createSingleInstance(
     'miSubprocessRestriction',
     1,
     {
@@ -96,6 +105,7 @@ test.afterAll(async () => {
     seqMiInstance,
     parMiInstance,
     restrictionInstance,
+    miSubprocessTargetInstance,
     crossMiInstance,
     outwardMoveInstance,
     moveAllInstance,
@@ -382,6 +392,72 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     });
 
     await test.step('Verify the cross-boundary move was rejected: target selection prompt remains active', async () => {
+      await expect(
+        operateProcessInstanceViewModificationModePage.moveTokensMessage,
+      ).toBeVisible();
+    });
+  });
+
+  // Skipped due to bug #67592: https://github.com/camunda/camunda/issues/67592
+  test.skip('Should prevent moving an element from outside onto the multi-instance subprocess itself', async ({
+    page,
+    operateProcessInstancePage,
+    operateProcessInstanceViewModificationModePage,
+  }) => {
+    await test.step('Navigate to the move restriction process instance', async () => {
+      await operateProcessInstancePage.gotoProcessInstancePage({
+        id: miSubprocessTargetInstance.processInstanceKey,
+      });
+    });
+
+    await test.step('Wait for Outer Task and Inner Task to be simultaneously active', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /mi subprocess \(multi instance\)/i,
+          );
+          await operateProcessInstancePage.expandTreeItemInHistory(
+            /^mi subprocess$/i,
+          );
+          await expect(
+            operateProcessInstancePage.findTreeItemInHistory(/outer task/i),
+          ).toBeVisible();
+          await expect(
+            operateProcessInstancePage.findTreeItemInHistory(/inner task/i),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await hideHelperModals(page);
+        },
+      });
+    });
+
+    await test.step('Enter modification mode', async () => {
+      await operateProcessInstancePage.enterModificationMode();
+      await expect(
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
+      ).toBeVisible();
+    });
+
+    await test.step('Select Outer Task and initiate a move', async () => {
+      await operateProcessInstanceViewModificationModePage.clickFlowNode(
+        'OuterTask_restriction',
+      );
+      await operateProcessInstanceViewModificationModePage.clickMoveInstanceButtononPopup();
+      await expect(
+        operateProcessInstanceViewModificationModePage.moveTokensMessage,
+      ).toBeVisible();
+    });
+
+    await test.step('Attempt to select the MI subprocess itself as move target', async () => {
+      await operateProcessInstanceViewModificationModePage.clickTargetFlowNode(
+        'MISubprocess_restriction',
+        {x: 15, y: 15},
+      );
+    });
+
+    await test.step('Verify the move onto the MI subprocess was rejected: target selection prompt remains active', async () => {
       await expect(
         operateProcessInstanceViewModificationModePage.moveTokensMessage,
       ).toBeVisible();
