@@ -35,8 +35,9 @@ import javax.annotation.Nonnull;
  * thread consumes data using the standard {@link InputStream} API, blocking if no data is
  * available.
  *
- * <p>Closing the stream before the end of the data makes every later write fail, which makes the
- * I/O layer abort the download.
+ * <p>Closing the stream before the end of the data aborts the download through the action given to
+ * the constructor, which ends it even if the server sends nothing more. Every later write fails as
+ * well, which makes the I/O layer abort the download if no such action is given.
  */
 public class CircularBufferInputStream extends InputStream {
 
@@ -49,6 +50,7 @@ public class CircularBufferInputStream extends InputStream {
   private static final int MIN_GROWTH = 64 * 1024;
 
   private final int capacity;
+  private final Runnable abortDownload;
   private final IntFunction<byte[]> arrayAllocator;
   private byte[] buffer;
   private int readPos = 0;
@@ -61,11 +63,21 @@ public class CircularBufferInputStream extends InputStream {
   private CapacityCallback capacityCallback;
 
   public CircularBufferInputStream(final int capacity) {
-    this(capacity, byte[]::new);
+    this(capacity, () -> {});
   }
 
-  CircularBufferInputStream(final int capacity, final IntFunction<byte[]> arrayAllocator) {
+  /**
+   * @param abortDownload ends the download; runs when the stream is closed before the end of the
+   *     data
+   */
+  CircularBufferInputStream(final int capacity, final Runnable abortDownload) {
+    this(capacity, abortDownload, byte[]::new);
+  }
+
+  CircularBufferInputStream(
+      final int capacity, final Runnable abortDownload, final IntFunction<byte[]> arrayAllocator) {
     this.capacity = capacity;
+    this.abortDownload = abortDownload;
     this.arrayAllocator = arrayAllocator;
     buffer = arrayAllocator.apply(capacity);
   }
@@ -149,25 +161,34 @@ public class CircularBufferInputStream extends InputStream {
   /**
    * Drops the buffered data and wakes up a blocked reader; every later read fails.
    *
-   * <p>If the data has not been fully received yet, the next write fails, which aborts the
-   * download. The dropped data is reported as free space, so the I/O layer reads again even if the
+   * <p>If the data has not been fully received yet, the download is aborted. The next write fails
+   * too, and the dropped data is reported as free space, so the I/O layer reads again even if the
    * buffer was full, and that write happens.
    */
   @Override
-  public synchronized void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-    final int droppedData = availableData;
-    buffer = NO_BUFFER;
-    readPos = 0;
-    writePos = 0;
-    availableData = 0;
-    notifyAll();
+  public void close() {
+    final boolean beforeEnd;
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      final int droppedData = availableData;
+      buffer = NO_BUFFER;
+      readPos = 0;
+      writePos = 0;
+      availableData = 0;
+      notifyAll();
 
-    if (!endOfStream && exception == null) {
-      reportFreedSpace(droppedData);
+      beforeEnd = !endOfStream && exception == null;
+      if (beforeEnd) {
+        reportFreedSpace(droppedData);
+      }
+    }
+    // Aborting closes the connection, which takes locks of its own. Holding this lock meanwhile
+    // could deadlock with the I/O thread, which takes this lock to write.
+    if (beforeEnd) {
+      abortDownload.run();
     }
   }
 
