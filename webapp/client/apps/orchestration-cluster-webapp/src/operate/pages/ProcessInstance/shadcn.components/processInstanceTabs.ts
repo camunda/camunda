@@ -7,6 +7,7 @@
  */
 
 const PROCESS_INSTANCE_TABS = [
+	'history',
 	'variables',
 	'input-mappings',
 	'output-mappings',
@@ -19,6 +20,7 @@ const PROCESS_INSTANCE_TABS = [
 type ProcessInstanceTab = (typeof PROCESS_INSTANCE_TABS)[number];
 
 const TAB_LABEL_KEYS = {
+	history: 'operate.processInstance.history.title',
 	variables: 'operate.processInstance.history.variables',
 	'input-mappings': 'operate.processInstance.history.inputMappings',
 	'output-mappings': 'operate.processInstance.history.outputMappings',
@@ -30,8 +32,10 @@ const TAB_LABEL_KEYS = {
 
 const SELECTION_ONLY_TABS: readonly ProcessInstanceTab[] = ['input-mappings', 'output-mappings'];
 
-function getVisibleProcessInstanceTabs(hasSelection: boolean): readonly ProcessInstanceTab[] {
-	return PROCESS_INSTANCE_TABS.filter((tab) => hasSelection || !SELECTION_ONLY_TABS.includes(tab));
+function getVisibleProcessInstanceTabs(hasSelection: boolean, isMobile = false): readonly ProcessInstanceTab[] {
+	return PROCESS_INSTANCE_TABS.filter(
+		(tab) => (hasSelection || !SELECTION_ONLY_TABS.includes(tab)) && (isMobile || tab !== 'history'),
+	);
 }
 
 function getProcessInstanceTabFromPath(pathname: string): ProcessInstanceTab {

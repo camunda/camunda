@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import {useState} from 'react';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {getElementIconSvg, getTemplateIconSource, resolveElementIcon} from '../elementIcons';
