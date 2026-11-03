@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.secondarystorage;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,13 @@ public abstract class SecondaryStorageDatabase<T> {
   /** Password for the database configured as secondary storage. */
   private String password = "";
 
+  /**
+   * How long a node keeps the clients, connections and mappers it created for this database after
+   * their last use. After that, it closes them and creates them again on the next use. Set to 0 to
+   * keep them until the node stops.
+   */
+  private Duration idleReleaseTimeout = Duration.ofMinutes(10);
+
   public String getUrl() {
     return url;
   }
@@ -68,6 +76,14 @@ public abstract class SecondaryStorageDatabase<T> {
 
   public void setPassword(final String password) {
     this.password = password;
+  }
+
+  public Duration getIdleReleaseTimeout() {
+    return idleReleaseTimeout;
+  }
+
+  public void setIdleReleaseTimeout(final Duration idleReleaseTimeout) {
+    this.idleReleaseTimeout = idleReleaseTimeout;
   }
 
   public abstract T getHistory();

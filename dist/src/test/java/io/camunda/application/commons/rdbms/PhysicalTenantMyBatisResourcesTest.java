@@ -10,13 +10,16 @@ package io.camunda.application.commons.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.pt.PhysicalTenantResourceUnavailableException;
 import io.camunda.configuration.data.secondarystorage.Rdbms;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -131,6 +134,34 @@ class PhysicalTenantMyBatisResourcesTest {
     assertThatThrownBy(() -> bundleA.tableMetricsMapper().countSingleTableRows("X"))
         .isInstanceOf(IllegalStateException.class)
         .isNotInstanceOf(PhysicalTenantResourceUnavailableException.class);
+  }
+
+  @Test
+  void shouldLetAReleasedTenantsMyBatisAndPoolBeCollected() throws Exception {
+    // given
+    configs.put(tenantA, h2(tenantA));
+    create();
+    final var bundle = resources.mapperBundleFor(tenantA);
+    bundle.tableMetricsMapper().countSingleTableRows("INFORMATION_SCHEMA.USERS");
+    final var myBatis =
+        new WeakReference<>(resources.myBatisOf(tenantA).getIfCreated().orElseThrow());
+    final var pool =
+        new WeakReference<>(dataSources.dataSourceFor(tenantA).unwrap(HikariDataSource.class));
+
+    // when
+    assertThat(resources.myBatisOf(tenantA).releaseIfIdle(Duration.ZERO)).isTrue();
+
+    // then
+    Awaitility.await("the released MyBatis and pool are collected")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              System.gc();
+              assertThat(myBatis.get()).as("MyBatis").isNull();
+              assertThat(pool.get()).as("pool").isNull();
+            });
+    assertThat(bundle.tableMetricsMapper().countSingleTableRows("INFORMATION_SCHEMA.USERS"))
+        .isPositive();
   }
 
   private void create() throws Exception {

@@ -47,7 +47,7 @@ public final class RdbmsDataSources implements AutoCloseable {
       "rewriteBatchedStatements";
   private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
 
-  private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, ReleasablePool> dataSources = new LinkedHashMap<>();
   private final Map<String, DataSource> unpooledDataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
@@ -71,7 +71,9 @@ public final class RdbmsDataSources implements AutoCloseable {
       try {
         final var tenantMeterRegistry =
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
-        final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
+        final var ds =
+            new ReleasablePool(
+                () -> buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry));
         result.dataSources.put(currentPhysicalTenantId, ds);
         final var unpooled = new UnpooledDataSource(rdbms);
         result.unpooledDataSources.put(currentPhysicalTenantId, unpooled);
@@ -188,6 +190,17 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds != null && ds.isRunning();
   }
 
+  /**
+   * Closes the tenant's pool and its connections. The pool starts again on the tenant's next
+   * connection.
+   */
+  public void releasePool(final String physicalTenantId) {
+    final var ds = dataSources.get(physicalTenantId);
+    if (ds != null) {
+      ds.release();
+    }
+  }
+
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
     final var props = vendorProperties.get(physicalTenantId);
     if (props == null) {
@@ -202,7 +215,7 @@ public final class RdbmsDataSources implements AutoCloseable {
     // close each tenant's pool together with its wrapped registry so neither is left dangling
     dataSources.forEach(
         (tenantId, ds) -> {
-          closeQuietly(ds);
+          ds.close();
           MicrometerUtil.close(tenantMeterRegistries.get(tenantId));
         });
   }

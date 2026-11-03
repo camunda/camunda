@@ -750,6 +750,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           # archived.
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
+        # How long a node keeps the clients, connections and mappers it created for this database after
+        # their last use. After that, it closes them and creates them again on the next use. Set to 0 to
+        # keep them until the node stops.
+        idle-release-timeout: "10m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_IDLERELEASETIMEOUT
         incident-notifier: # Type: io.camunda.configuration.data.secondarystorage.documentbased.IncidentNotifier  
           # Defines the domain which the user always sees
           auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
@@ -998,6 +1002,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           # archived.
           wait-period-before-archiving: "1h" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_HISTORY_WAITPERIODBEFOREARCHIVING
         
+        # How long a node keeps the clients, connections and mappers it created for this database after
+        # their last use. After that, it closes them and creates them again on the next use. Set to 0 to
+        # keep them until the node stops.
+        idle-release-timeout: "10m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_IDLERELEASETIMEOUT
         incident-notifier: # Type: io.camunda.configuration.data.secondarystorage.documentbased.IncidentNotifier  
           # Defines the domain which the user always sees
           auth0-domain: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INCIDENTNOTIFIER_AUTH0DOMAIN
@@ -1259,6 +1267,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           # The default time to live for usage metrics. Specified in Java Duration format.
           usage-metrics-t-t-l: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_USAGEMETRICSTTL
         
+        # How long a node keeps the clients, connections and mappers it created for this database after
+        # their last use. After that, it closes them and creates them again on the next use. Set to 0 to
+        # keep them until the node stops.
+        idle-release-timeout: "10m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_IDLERELEASETIMEOUT
         insert-batching: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsInsertBatching  
           max-audit-log-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXAUDITLOGINSERTBATCHSIZE
           max-flow-node-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXFLOWNODEINSERTBATCHSIZE

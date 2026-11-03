@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.service.PhysicalTenantsRdbmsTableRowCountMetrics;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountProvider;
+import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
@@ -87,7 +88,8 @@ public class RdbmsConfiguration {
                       final var executor = rdbmsMetricsRefreshExecutor(e.getKey());
                       executors.add(executor);
                       return new RdbmsTableRowCountProvider(
-                          e.getValue().tableMetricsMapper(),
+                          physicalTenantMyBatisResources.backgroundMapper(
+                              e.getKey(), TableMetricsMapper.class),
                           e.getValue().vendorDatabaseProperties(),
                           rdbms.getPrefix(),
                           cacheDuration,

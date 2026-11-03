@@ -35,7 +35,7 @@ final class PhysicalTenantRdbmsHealthIndicator implements HealthIndicator {
   @Override
   public @Nullable Health health() {
     return switch (myBatis.state()) {
-      case CREATED -> dataSourceHealth.health();
+      case CREATED -> checkWhileHeld();
       case NOT_CREATED -> Health.up().withDetail("state", "NOT_CREATED").build();
       case FAILED ->
           Health.down()
@@ -44,5 +44,18 @@ final class PhysicalTenantRdbmsHealthIndicator implements HealthIndicator {
               .build();
       case CLOSED -> Health.outOfService().withDetail("state", "CLOSED").build();
     };
+  }
+
+  /**
+   * Checks the pool only while the tenant stays created, so a check never restarts a released pool.
+   */
+  private @Nullable Health checkWhileHeld() {
+    final var lease = myBatis.acquireIfCreated();
+    if (lease.isEmpty()) {
+      return Health.up().withDetail("state", "NOT_CREATED").build();
+    }
+    try (final var held = lease.get()) {
+      return dataSourceHealth.health();
+    }
   }
 }

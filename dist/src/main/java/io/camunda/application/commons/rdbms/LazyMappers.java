@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.LazyPhysicalTenantResource;
+import io.camunda.application.commons.pt.PhysicalTenantResourceUnavailableException;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle.MapperSource;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -25,9 +26,21 @@ import org.jspecify.annotations.Nullable;
 final class LazyMappers implements MapperSource {
 
   private final LazyPhysicalTenantResource<PhysicalTenantMyBatis> myBatis;
+  private final boolean background;
 
   LazyMappers(final LazyPhysicalTenantResource<PhysicalTenantMyBatis> myBatis) {
+    this(myBatis, false);
+  }
+
+  /**
+   * @param background whether the mappers are for background work: they then neither build the
+   *     tenant's MyBatis nor count as a use that keeps it from being released, and fail while it is
+   *     not built
+   */
+  LazyMappers(
+      final LazyPhysicalTenantResource<PhysicalTenantMyBatis> myBatis, final boolean background) {
     this.myBatis = myBatis;
+    this.background = background;
   }
 
   @Override
@@ -40,7 +53,6 @@ final class LazyMappers implements MapperSource {
   private final class LazyMapper<T> implements InvocationHandler {
 
     private final Class<T> type;
-    private volatile @Nullable T target;
 
     private LazyMapper(final Class<T> type) {
       this.type = type;
@@ -58,20 +70,25 @@ final class LazyMappers implements MapperSource {
           default -> throw new UnsupportedOperationException(method.getName());
         };
       }
-      try {
-        return method.invoke(target(), args);
+      try (final var lease = lease()) {
+        return method.invoke(lease.resource().mapper(type), args);
       } catch (final InvocationTargetException e) {
         throw e.getCause();
       }
     }
 
-    private T target() {
-      var resolved = target;
-      if (resolved == null) {
-        resolved = myBatis.get().sqlSessionTemplate().getMapper(type);
-        target = resolved;
+    private LazyPhysicalTenantResource.Lease<PhysicalTenantMyBatis> lease() {
+      if (!background) {
+        return myBatis.acquire();
       }
-      return resolved;
+      return myBatis
+          .acquireIfCreated()
+          .orElseThrow(
+              () ->
+                  new PhysicalTenantResourceUnavailableException(
+                      myBatis.physicalTenantId(),
+                      "RDBMS mappers",
+                      new IllegalStateException("not in use on this node")));
     }
   }
 }

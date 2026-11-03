@@ -10,7 +10,9 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.Configuration;
@@ -26,14 +28,22 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 /** One physical tenant's parsed MyBatis configuration and the session it runs statements on. */
 @NullMarked
 record PhysicalTenantMyBatis(
-    SqlSessionFactory sqlSessionFactory, SqlSessionTemplate sqlSessionTemplate) {
+    SqlSessionFactory sqlSessionFactory,
+    SqlSessionTemplate sqlSessionTemplate,
+    Map<Class<?>, Object> mappers) {
+
+  /** The tenant's mapper of the type, built once for this MyBatis and released with it. */
+  <T> T mapper(final Class<T> type) {
+    return type.cast(mappers.computeIfAbsent(type, sqlSessionTemplate::getMapper));
+  }
 
   static PhysicalTenantMyBatis build(
       final DataSource dataSource,
       final VendorDatabaseProperties databaseProperties,
       final @Nullable String prefix) {
     final var factory = buildSqlSessionFactory(dataSource, databaseProperties, prefix);
-    return new PhysicalTenantMyBatis(factory, new SqlSessionTemplate(factory));
+    return new PhysicalTenantMyBatis(
+        factory, new SqlSessionTemplate(factory), new ConcurrentHashMap<>());
   }
 
   private static SqlSessionFactory buildSqlSessionFactory(

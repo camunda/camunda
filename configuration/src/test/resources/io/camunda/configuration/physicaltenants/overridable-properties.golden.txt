@@ -108,6 +108,7 @@ data.secondary-storage.elasticsearch.history.rollover-interval
 data.secondary-storage.elasticsearch.history.usage-metrics-policy-name
 data.secondary-storage.elasticsearch.history.usage-metrics-rollover-interval
 data.secondary-storage.elasticsearch.history.wait-period-before-archiving
+data.secondary-storage.elasticsearch.idle-release-timeout
 data.secondary-storage.elasticsearch.incident-notifier.auth0-domain
 data.secondary-storage.elasticsearch.incident-notifier.auth0-protocol
 data.secondary-storage.elasticsearch.incident-notifier.m2m-audience
@@ -220,6 +221,7 @@ data.secondary-storage.opensearch.history.rollover-interval
 data.secondary-storage.opensearch.history.usage-metrics-policy-name
 data.secondary-storage.opensearch.history.usage-metrics-rollover-interval
 data.secondary-storage.opensearch.history.wait-period-before-archiving
+data.secondary-storage.opensearch.idle-release-timeout
 data.secondary-storage.opensearch.incident-notifier.auth0-domain
 data.secondary-storage.opensearch.incident-notifier.auth0-protocol
 data.secondary-storage.opensearch.incident-notifier.m2m-audience
@@ -340,6 +342,7 @@ data.secondary-storage.rdbms.history.max-history-cleanup-usage
 data.secondary-storage.rdbms.history.min-history-cleanup-interval
 data.secondary-storage.rdbms.history.usage-metrics-cleanup
 data.secondary-storage.rdbms.history.usage-metrics-t-t-l
+data.secondary-storage.rdbms.idle-release-timeout
 data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-flow-node-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-job-insert-batch-size

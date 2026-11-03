@@ -110,6 +110,41 @@ final class PhysicalTenantLazyRdbmsResourcesIT {
   }
 
   @Test
+  void shouldReleaseATenantsResourcesOnAGatewayThatStopsServingIt() {
+    // given
+    cluster
+        .brokers()
+        .values()
+        .forEach(
+            broker ->
+                broker.withProperty(
+                    "camunda.data.secondary-storage.rdbms.idle-release-timeout", "3s"));
+    cluster.start().await(TestHealthProbe.READY);
+    awaitEveryTenantCreatedOnExactlyOneBroker();
+    final var gateway = brokerThatDidNotCreate(tenantA);
+    try (final var client = restClient(gateway, tenantA)) {
+      Awaitility.await("a query of " + tenantA + " succeeds on the other gateway")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> assertThat(client.newProcessInstanceSearchRequest().send().join()).isNotNull());
+    }
+    assertThat(myBatisOf(gateway).isCreated(tenantA)).isTrue();
+
+    // when
+    Awaitility.await("the gateway releases " + tenantA)
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> !myBatisOf(gateway).isCreated(tenantA));
+
+    // then
+    assertThat(gateway.bean(RdbmsDataSources.class).isPoolStarted(tenantA)).isFalse();
+    try (final var client = restClient(gateway, tenantA)) {
+      assertThat(client.newProcessInstanceSearchRequest().send().join()).isNotNull();
+    }
+    assertThat(myBatisOf(gateway).isCreated(tenantA)).isTrue();
+  }
+
+  @Test
   void shouldExportAndQueryEveryTenantThroughAGatewayThatDoesNotExportIt() {
     // given
     cluster.start().await(TestHealthProbe.READY);
