@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
+import io.camunda.zeebe.engine.processing.timer.TimerFailures;
 import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.DateTimeException;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
@@ -335,13 +337,23 @@ public final class CatchEventBehavior {
     if (!event.isTimer()) {
       return Either.right(evaluation);
     }
+    final long scopeKey = context.getElementInstanceKey();
     return event
         .getTimerFactory()
-        .apply(
-            evaluation.expressionProcessor(),
-            context.getElementInstanceKey(),
-            context.getTenantId())
-        .map(timer -> evaluation.recordTimer(timer, timer.getDueDate(clock.millis())));
+        .apply(evaluation.expressionProcessor(), scopeKey, context.getTenantId())
+        .flatMap(
+            timer ->
+                calculateDueDate(timer, event.getId(), scopeKey)
+                    .map(dueDate -> evaluation.recordTimer(timer, dueDate)));
+  }
+
+  private Either<Failure, Long> calculateDueDate(
+      final Timer timer, final DirectBuffer timerId, final long scopeKey) {
+    try {
+      return Either.right(timer.getDueDate(clock.millis()));
+    } catch (final ArithmeticException | DateTimeException e) {
+      return Either.left(TimerFailures.dueDateOutOfRange(timerId, scopeKey));
+    }
   }
 
   private Either<Failure, OngoingEvaluation> evaluateSignalName(
