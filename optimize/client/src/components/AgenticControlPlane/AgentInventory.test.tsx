@@ -8,9 +8,9 @@
 
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
-import {Search} from '@carbon/react';
+import {ContentSwitcher, Search} from '@carbon/react';
 
-import {AgentInventory, sortInventory} from './AgentInventory';
+import {AgentInventory, inventoryColumns, sortInventory} from './AgentInventory';
 import {loadAgentInventory, type AgentInventoryEntry} from './service';
 
 jest.mock('hooks', () => ({
@@ -31,16 +31,12 @@ function entry(overrides: Partial<AgentInventoryEntry>): AgentInventoryEntry {
     processDefinitionKey: 'loan',
     processDefinitionName: 'Loan Approval',
     models: ['gpt-4o'],
-    maxModelCalls: 5,
     runs: 10,
     totalTokens: 5000,
     avgTokens: 500,
-    p50Tokens: 450,
-    durationAvgMs: 1200,
     durationP50Ms: 1000,
     durationP95Ms: 3000,
     incidentRate: 10,
-    limitHitRate: 0,
     lastRunDate: '2026-10-20T10:00:00.000Z',
     ...overrides,
   };
@@ -148,4 +144,37 @@ it('should open the agent of a clicked row', async () => {
   node.find('.drillable').at(0).simulate('click');
 
   expect(onSelectAgent).toHaveBeenCalledWith('c');
+});
+
+it('should show one duration column that switches between P50 and P95', async () => {
+  const node = render();
+  await runAllEffects();
+
+  const headers = () => node.find('TableHeader').map((header) => header.prop('children'));
+  expect(headers()).toContain('Duration (P50)');
+  expect(headers()).not.toContain('Duration (P95)');
+
+  node.find(ContentSwitcher).simulate('change', {name: 'P95'});
+
+  expect(headers()).toContain('Duration (P95)');
+  expect(headers()).not.toContain('Duration (P50)');
+});
+
+it('should show the columns of the inventory with the model most runs used', () => {
+  const columns = inventoryColumns('P50');
+
+  expect(columns.map(({titleKey}) => titleKey)).toEqual([
+    'agenticControlPlane.inventory.agent',
+    'agenticControlPlane.inventory.process',
+    'agenticControlPlane.inventory.source',
+    'agenticControlPlane.inventory.model',
+    'agenticControlPlane.inventory.runs',
+    'agenticControlPlane.inventory.totalTokens',
+    'agenticControlPlane.inventory.tokensPerRun',
+    'agenticControlPlane.inventory.incidentRate',
+    'agenticControlPlane.inventory.durationP50',
+    'agenticControlPlane.inventory.lastRun',
+  ]);
+  const model = columns.find(({titleKey}) => titleKey.endsWith('.model'))!;
+  expect(model.render(entry({models: ['claude', 'gpt-4o']}))).toBe('claude');
 });

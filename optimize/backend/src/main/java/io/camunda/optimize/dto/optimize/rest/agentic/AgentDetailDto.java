@@ -10,8 +10,9 @@ package io.camunda.optimize.dto.optimize.rest.agentic;
 import java.util.List;
 
 /**
- * One agent for the single agent view: its configuration as of the latest run and how its runs of
- * completed process instances went in the selected period.
+ * One agent for the single agent view: how its runs of completed process instances went in the
+ * selected period. Tool data only exists for AI Agent Sub-process agents, which {@code
+ * toolsAvailable} tells from the runs' agent type.
  */
 public record AgentDetailDto(
     String agentId,
@@ -19,15 +20,8 @@ public record AgentDetailDto(
     String agentType,
     String processDefinitionKey,
     String processDefinitionName,
-    String processDefinitionVersion,
-    String model,
-    String provider,
-    Long maxModelCalls,
-    Long maxToolCalls,
-    Long maxTokens,
     long runs,
     long failedRuns,
-    Double avgModelCalls,
     List<LimitHit> limitHits,
     List<FailureReason> failureReasons,
     List<ToolUsage> tools,
@@ -43,15 +37,8 @@ public record AgentDetailDto(
         agentType,
         processDefinitionKey,
         processDefinitionName,
-        processDefinitionVersion,
-        model,
-        provider,
-        maxModelCalls,
-        maxToolCalls,
-        maxTokens,
         runs,
         failedRuns,
-        avgModelCalls,
         limitHits,
         failureReasons,
         tools,

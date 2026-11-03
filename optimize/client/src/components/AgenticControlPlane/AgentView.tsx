@@ -26,14 +26,13 @@ import './AgentView.scss';
 
 interface AgentViewProps {
   agent: AgentDetail;
-  // The agent's KPI and trend tiles, rendered between the header and the tables.
+  // The agent's KPI and trend tiles, rendered above the tables.
   children?: ReactNode;
 }
 
 export function AgentView({agent, children}: AgentViewProps) {
   return (
     <div className="AgentView">
-      <AgentHeader agent={agent} />
       {children}
       <Section titleKey="agenticControlPlane.agentView.failureReasons.title">
         <p className="section-description">
@@ -47,6 +46,15 @@ export function AgentView({agent, children}: AgentViewProps) {
           rows={agent.failureReasons}
           rowKey={(_, index) => String(index)}
           emptyKey="agenticControlPlane.agentView.failureReasons.empty"
+        />
+      </Section>
+      <Section titleKey="agenticControlPlane.agentView.limitHits.title">
+        <MetricTable
+          className="limitHits"
+          columns={LIMIT_HIT_COLUMNS}
+          rows={agent.limitHits}
+          rowKey={({limit}) => limit}
+          emptyKey="agenticControlPlane.agentView.limitHits.empty"
         />
       </Section>
       <div className="tableGrid">
@@ -98,88 +106,17 @@ function Section({titleKey, children}: {titleKey: string; children: ReactNode}) 
   );
 }
 
-function AgentHeader({agent}: {agent: AgentDetail}) {
-  const limits = [
-    agent.maxModelCalls != null &&
-      t('agenticControlPlane.agentView.limitValue', {
-        value: formatCount(agent.maxModelCalls),
-        limit: limitLabel('MODEL_CALLS'),
-      }),
-    agent.maxToolCalls != null &&
-      t('agenticControlPlane.agentView.limitValue', {
-        value: formatCount(agent.maxToolCalls),
-        limit: limitLabel('TOOL_CALLS'),
-      }),
-    agent.maxTokens != null &&
-      t('agenticControlPlane.agentView.limitValue', {
-        value: formatCount(agent.maxTokens),
-        limit: limitLabel('TOKENS'),
-      }),
-  ].filter(Boolean);
-
-  const model = agent.model
-    ? agent.provider
-      ? `${agent.model} (${agent.provider})`
-      : agent.model
-    : '–';
-
-  const modelCalls =
-    agent.maxModelCalls != null
-      ? t('agenticControlPlane.agentView.ofLimit', {
-          value: formatDecimal(agent.avgModelCalls),
-          max: formatCount(agent.maxModelCalls),
-        })
-      : formatDecimal(agent.avgModelCalls);
-
-  return (
-    <div className="AgentHeader">
-      <h2 className="agentName">{agent.name}</h2>
-      <dl className="meta">
-        <Meta labelKey="agenticControlPlane.agentView.process">
-          {agent.processDefinitionName ?? agent.processDefinitionKey ?? '–'}
-        </Meta>
-        <Meta labelKey="agenticControlPlane.agentView.version">
-          {agent.processDefinitionVersion ?? '–'}
-        </Meta>
-        <Meta labelKey="agenticControlPlane.agentView.type">
-          {t(`agenticControlPlane.agentView.types.${agent.agentType ?? 'UNKNOWN'}`)}
-        </Meta>
-        <Meta labelKey="agenticControlPlane.agentView.model">{model}</Meta>
-        <Meta labelKey="agenticControlPlane.agentView.limits">
-          {limits.length > 0 ? limits.join(' · ') : t('agenticControlPlane.agentView.noLimits')}
-        </Meta>
-        <Meta labelKey="agenticControlPlane.agentView.modelCallsPerRun">{modelCalls}</Meta>
-        <Meta labelKey="agenticControlPlane.agentView.runs">
-          {t('agenticControlPlane.agentView.runsValue', {
-            runs: formatCount(agent.runs),
-            failed: formatCount(agent.failedRuns),
-          })}
-        </Meta>
-        {agent.limitHits.length > 0 && (
-          <Meta labelKey="agenticControlPlane.agentView.limitHits">
-            {agent.limitHits
-              .map(({limit, runs}) =>
-                t('agenticControlPlane.agentView.limitHitCount', {
-                  runs: formatCount(runs),
-                  limit: limitLabel(limit),
-                })
-              )
-              .join(' · ')}
-          </Meta>
-        )}
-      </dl>
-    </div>
-  );
-}
-
-function Meta({labelKey, children}: {labelKey: string; children: ReactNode}) {
-  return (
-    <div className="metaItem">
-      <dt>{t(labelKey)}</dt>
-      <dd>{children}</dd>
-    </div>
-  );
-}
+const LIMIT_HIT_COLUMNS: MetricColumn<AgentDetail['limitHits'][number]>[] = [
+  {
+    titleKey: 'agenticControlPlane.agentView.limitHits.limit',
+    render: ({limit}) => limitLabel(limit),
+  },
+  {
+    titleKey: 'agenticControlPlane.agentView.limitHits.runs',
+    numeric: true,
+    render: ({runs}) => formatCount(runs),
+  },
+];
 
 const FAILURE_COLUMNS: MetricColumn<FailureReason>[] = [
   {

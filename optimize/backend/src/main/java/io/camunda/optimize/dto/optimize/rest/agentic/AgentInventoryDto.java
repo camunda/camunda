@@ -26,18 +26,15 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
       String agentType,
       String processDefinitionKey,
       String processDefinitionName,
+      // by runs, most used first
       List<String> models,
-      Long maxModelCalls,
       long runs,
-      Double incidentRate,
-      Double limitHitRate,
-      Double durationP50Ms,
-      Double avgTokens,
-      OffsetDateTime lastRunDate,
       Double totalTokens,
-      Double p50Tokens,
-      Double durationAvgMs,
-      Double durationP95Ms) {
+      Double avgTokens,
+      Double incidentRate,
+      Double durationP50Ms,
+      Double durationP95Ms,
+      OffsetDateTime lastRunDate) {
 
     public AgentInventoryEntry withProcessDefinitionName(final String processDefinitionName) {
       return new AgentInventoryEntry(
@@ -47,17 +44,13 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
           processDefinitionKey,
           processDefinitionName,
           models,
-          maxModelCalls,
           runs,
-          incidentRate,
-          limitHitRate,
-          durationP50Ms,
-          avgTokens,
-          lastRunDate,
           totalTokens,
-          p50Tokens,
-          durationAvgMs,
-          durationP95Ms);
+          avgTokens,
+          incidentRate,
+          durationP50Ms,
+          durationP95Ms,
+          lastRunDate);
     }
   }
 }

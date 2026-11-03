@@ -17,8 +17,16 @@
   }
 
   .toolbar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
     margin: 0.75rem 0;
-    max-width: 24rem;
+    max-width: 40rem;
+
+    .durationSwitch {
+      width: 16rem;
+      flex-shrink: 0;
+    }
   }
 
   .tableWrapper {

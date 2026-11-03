@@ -47,17 +47,14 @@ export interface AgentInventoryEntry {
   agentType: AgentType | null;
   processDefinitionKey: string | null;
   processDefinitionName: string | null;
+  // by runs, most used first
   models: string[];
-  maxModelCalls: number | null;
   runs: number;
   totalTokens: number | null;
   avgTokens: number | null;
-  p50Tokens: number | null;
-  durationAvgMs: number | null;
+  incidentRate: number | null;
   durationP50Ms: number | null;
   durationP95Ms: number | null;
-  incidentRate: number | null;
-  limitHitRate: number | null;
   lastRunDate: string | null;
 }
 
@@ -127,15 +124,8 @@ export interface AgentDetail {
   agentType: AgentType | null;
   processDefinitionKey: string | null;
   processDefinitionName: string | null;
-  processDefinitionVersion: string | null;
-  model: string | null;
-  provider: string | null;
-  maxModelCalls: number | null;
-  maxToolCalls: number | null;
-  maxTokens: number | null;
   runs: number;
   failedRuns: number;
-  avgModelCalls: number | null;
   limitHits: {limit: AgentLimit; runs: number}[];
   failureReasons: FailureReason[];
   tools: AgentTool[];

@@ -18,15 +18,8 @@ const agent: AgentDetail = {
   agentType: 'AI_AGENT_SUB_PROCESS',
   processDefinitionKey: 'loan',
   processDefinitionName: 'Loan approval',
-  processDefinitionVersion: '7',
-  model: 'claude-sonnet',
-  provider: 'anthropic',
-  maxModelCalls: 10,
-  maxToolCalls: null,
-  maxTokens: 8000,
   runs: 100,
   failedRuns: 6,
-  avgModelCalls: 4.2,
   limitHits: [{limit: 'MODEL_CALLS', runs: 4}],
   failureReasons: [
     {
@@ -87,17 +80,18 @@ function cells(node: ReturnType<typeof shallow>, className: string, rowIndex: nu
   return columns.map(({render}) => render(rows[rowIndex]));
 }
 
-it('should show the agent header with model, limits and version', () => {
+it('should not repeat the agent configuration in a header', () => {
   const node = shallow(<AgentView agent={agent} />);
-  const header = node.find('AgentHeader').dive();
 
-  expect(header.find('.agentName').text()).toBe('Review agent');
-  const text = header.find('Meta').map((meta) => String(meta.prop('children')));
-  expect(text).toContain('claude-sonnet (anthropic)');
-  expect(text).toContain('7');
-  expect(text).toContain('AI Agent Sub-process');
-  expect(text).toContain('10 max model calls · 8,000 max tokens');
-  expect(text).toContain('4.2 of 10');
+  expect(node.find('AgentHeader')).not.toExist();
+  expect(node.find('dl')).not.toExist();
+});
+
+it('should count runs per limit hit', () => {
+  const node = shallow(<AgentView agent={agent} />);
+
+  expect(table(node, 'limitHits').prop('rows')).toEqual(agent.limitHits);
+  expect(cells(node, 'limitHits', 0)).toEqual(['max model calls', '4']);
 });
 
 it('should render the slot for the agent tiles', () => {

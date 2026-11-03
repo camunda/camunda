@@ -105,25 +105,6 @@
       "TOKENS": "max. Tokens"
     },
     "agentView": {
-      "process": "Prozess",
-      "version": "Prozessversion",
-      "type": "Typ",
-      "model": "Modell",
-      "limits": "Limits",
-      "noLimits": "Keine Limits",
-      "limitValue": "{value} {limit}",
-      "modelCallsPerRun": "Modellaufrufe pro Lauf",
-      "ofLimit": "{value} von {max}",
-      "runs": "Agentenläufe",
-      "runsValue": "{runs} ({failed} fehlgeschlagen)",
-      "limitHits": "An Limits gestoppt",
-      "limitHitCount": "{runs} bei {limit}",
-      "types": {
-        "AI_AGENT_SUB_PROCESS": "AI Agent Sub-process",
-        "AI_AGENT_TASK": "AI Agent Task",
-        "EXTERNAL_AGENT": "Externer Agent",
-        "UNKNOWN": "Unbekannt"
-      },
       "failureReasons": {
         "title": "Warum Agentenläufe fehlschlugen",
         "description": "{failed} fehlgeschlagene Läufe, nach Limit oder nach Incident-Typ und Element, mit der ersten Incident-Meldung.",
@@ -159,6 +140,12 @@
         "tokens": "Tokens",
         "share": "Anteil",
         "empty": "Keine Läufe im Zeitraum."
+      },
+      "limitHits": {
+        "title": "Limit hits per limit",
+        "limit": "Limit",
+        "runs": "Runs",
+        "empty": "No run reached a limit in this period."
       }
     }
   },

@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
-import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.average;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.finite;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.keys;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.percentile;
@@ -50,19 +49,17 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class AgentInventoryReaderES implements AgentInventoryReader {
 
+  static final String INCIDENTS = "incidents";
   private static final int MAX_AGENTS = 1_000;
   private static final int MAX_MODELS_PER_AGENT = 10;
   private static final String AGENTS = "agents";
-  private static final String INCIDENTS = "incidents";
-  private static final String LIMIT_HITS = "limitHits";
   private static final String DURATION = "duration";
-  private static final String DURATION_AVG = "durationAvg";
   private static final String TOKENS = "tokens";
-  private static final String TOKENS_P50 = "tokensP50";
   private static final String TOKENS_TOTAL = "tokensTotal";
   private static final String LAST_RUN = "lastRun";
   private static final String MODELS = "models";
   private static final String PROCESS = "process";
+  private static final String AGENT_TYPE = "agentType";
 
   private final OptimizeElasticsearchClient esClient;
 
@@ -141,15 +138,6 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                 a.terms(t -> t.field(AgentRunIndex.AGENT_ID).size(MAX_AGENTS))
                                     .aggregations(INCIDENTS, AgentRunQueriesES.failedRuns())
                                     .aggregations(
-                                        LIMIT_HITS,
-                                        s ->
-                                            s.filter(
-                                                f ->
-                                                    f.term(
-                                                        t ->
-                                                            t.field(AgentRunIndex.HIT_LIMIT)
-                                                                .value(true))))
-                                    .aggregations(
                                         DURATION,
                                         s ->
                                             s.percentiles(
@@ -157,25 +145,13 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                                     p.field(AgentRunIndex.ACTIVE_DURATION_MS)
                                                         .percents(50.0, 95.0)))
                                     .aggregations(
-                                        DURATION_AVG,
-                                        s ->
-                                            s.stats(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
-                                    .aggregations(
                                         TOKENS,
                                         s -> s.avg(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
-                                    .aggregations(
-                                        TOKENS_P50,
-                                        s ->
-                                            s.percentiles(
-                                                p ->
-                                                    p.field(AgentRunIndex.TOTAL_TOKENS)
-                                                        .percents(50.0)))
                                     .aggregations(
                                         TOKENS_TOTAL,
                                         s -> s.sum(v -> v.field(AgentRunIndex.TOTAL_TOKENS)))
                                     .aggregations(
-                                        LAST_RUN,
-                                        s -> s.max(v -> v.field(AgentRunIndex.START_DATE)))
+                                        LAST_RUN, s -> s.max(v -> v.field(AgentRunIndex.END_DATE)))
                                     .aggregations(
                                         MODELS,
                                         s ->
@@ -183,6 +159,10 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                                 t ->
                                                     t.field(AgentRunIndex.MODEL)
                                                         .size(MAX_MODELS_PER_AGENT)))
+                                    .aggregations(
+                                        AGENT_TYPE,
+                                        s ->
+                                            s.terms(t -> t.field(AgentRunIndex.AGENT_TYPE).size(1)))
                                     .aggregations(
                                         PROCESS,
                                         s ->
@@ -202,15 +182,10 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
     return byAgentId;
   }
 
-  private static AgentInventoryEntry toEntry(
+  static AgentInventoryEntry toEntry(
       final String agentId, final AgentDefinitionDto definition, final StringTermsBucket runs) {
     final long runCount = runs == null ? 0 : runs.docCount();
     final Map<String, Aggregate> aggs = runs == null ? Map.of() : runs.aggregations();
-    final List<String> models = keys(aggs.get(MODELS));
-    final List<String> runModels =
-        models.isEmpty() && definition != null && definition.getModel() != null
-            ? List.of(definition.getModel())
-            : models;
     final boolean hasRuns = runCount > 0;
     return new AgentInventoryEntry(
         agentId,
@@ -219,23 +194,21 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
             : Optional.ofNullable(definition)
                 .map(AgentDefinitionDto::getFlowNodeId)
                 .orElse(agentId),
-        definition == null ? null : definition.getAgentType(),
+        definition != null && definition.getAgentType() != null
+            ? definition.getAgentType()
+            : keys(aggs.get(AGENT_TYPE)).stream().findFirst().orElse(null),
         definition != null
             ? definition.getProcessDefinitionKey()
             : keys(aggs.get(PROCESS)).stream().findFirst().orElse(null),
         null,
-        runModels,
-        definition == null ? null : definition.getMaxModelCalls(),
+        keys(aggs.get(MODELS)),
         runCount,
-        hasRuns ? rate(aggs.get(INCIDENTS).filter().docCount(), runCount) : null,
-        hasRuns ? rate(aggs.get(LIMIT_HITS).filter().docCount(), runCount) : null,
-        hasRuns ? percentile(aggs.get(DURATION), 50.0) : null,
-        hasRuns ? finite(aggs.get(TOKENS).avg().value()) : null,
-        hasRuns ? lastRun(aggs.get(LAST_RUN)) : null,
         hasRuns ? finite(aggs.get(TOKENS_TOTAL).sum().value()) : null,
-        hasRuns ? percentile(aggs.get(TOKENS_P50), 50.0) : null,
-        hasRuns ? average(aggs.get(DURATION_AVG)) : null,
-        hasRuns ? percentile(aggs.get(DURATION), 95.0) : null);
+        hasRuns ? finite(aggs.get(TOKENS).avg().value()) : null,
+        hasRuns ? rate(aggs.get(INCIDENTS).filter().docCount(), runCount) : null,
+        hasRuns ? percentile(aggs.get(DURATION), 50.0) : null,
+        hasRuns ? percentile(aggs.get(DURATION), 95.0) : null,
+        hasRuns ? lastRun(aggs.get(LAST_RUN)) : null);
   }
 
   private static OffsetDateTime lastRun(final Aggregate max) {

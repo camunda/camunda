@@ -18,7 +18,6 @@ import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.finite;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.firstKey;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.rate;
 
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -63,8 +62,10 @@ public class AgentDetailReaderES implements AgentDetailReader {
   private static final int MAX_TOOLS = 100;
   private static final int MAX_MODELS = 20;
   private static final int MAX_ROOT_PROCESSES = 50;
-  private static final String LATEST = "latest";
-  private static final String MODEL_CALLS = "modelCalls";
+  // Tool calls per tool are only recorded for this agent type.
+  private static final String AI_AGENT_SUB_PROCESS = "AI_AGENT_SUB_PROCESS";
+  private static final String AGENT_TYPE = "agentType";
+  private static final String PROCESS = "process";
   private static final String TOOLS = "tools";
   private static final String TOOL_INCIDENTS = "toolIncidents";
   private static final String BY_TOOL = "byTool";
@@ -94,34 +95,26 @@ public class AgentDetailReaderES implements AgentDetailReader {
       if (definition.isEmpty() && runs == 0) {
         return Optional.empty();
       }
-      final Map<String, Object> latest = latestRun(aggs.get(LATEST));
+      final String agentType =
+          definition.map(AgentDefinitionDto::getAgentType).orElse(firstKey(aggs.get(AGENT_TYPE)));
       final List<ToolUsage> tools = tools(aggs, runs);
       return Optional.of(
           new AgentDetailDto(
               agentId,
               definition.map(AgentDetailReaderES::name).orElse(agentId),
-              definition.map(AgentDefinitionDto::getAgentType).orElse(null),
+              agentType,
               definition
                   .map(AgentDefinitionDto::getProcessDefinitionKey)
-                  .orElse(string(latest, AgentRunIndex.PROCESS_DEFINITION_KEY)),
+                  .orElse(firstKey(aggs.get(PROCESS))),
               null,
-              string(latest, AgentRunIndex.PROCESS_DEFINITION_VERSION),
-              Optional.ofNullable(string(latest, AgentRunIndex.MODEL))
-                  .orElse(definition.map(AgentDefinitionDto::getModel).orElse(null)),
-              string(latest, AgentRunIndex.PROVIDER),
-              Optional.ofNullable(limit(latest, AgentRunIndex.MAX_MODEL_CALLS))
-                  .orElse(definition.map(AgentDefinitionDto::getMaxModelCalls).orElse(null)),
-              limit(latest, AgentRunIndex.MAX_TOOL_CALLS),
-              limit(latest, AgentRunIndex.MAX_TOKENS),
               runs,
               aggs.get(FAILED).filter().docCount(),
-              runs == 0 ? null : finite(aggs.get(MODEL_CALLS).avg().value()),
               aggs.get(LIMITS).sterms().buckets().array().stream()
                   .map(bucket -> new LimitHit(bucket.key().stringValue(), bucket.docCount()))
                   .toList(),
               AgentRunQueriesES.failureReasons(aggs),
               tools,
-              !tools.isEmpty(),
+              AI_AGENT_SUB_PROCESS.equals(firstKey(aggs.get(AGENT_TYPE))),
               models(aggs.get(MODELS)),
               whereUsed(aggs.get(WHERE_USED))));
     } catch (final IOException e) {
@@ -199,35 +192,14 @@ public class AgentDetailReaderES implements AgentDetailReader {
                             q -> q.bool(AgentRunQueriesES.completedRuns(endedFrom, null, agentId)))
                         .size(0)
                         .aggregations(
-                            LATEST,
+                            AGENT_TYPE,
+                            a -> a.terms(t -> t.field(AgentRunIndex.AGENT_TYPE).size(1)))
+                        .aggregations(
+                            PROCESS,
                             a ->
-                                a.topHits(
-                                    t ->
-                                        t.size(1)
-                                            .sort(
-                                                s ->
-                                                    s.field(
-                                                        f ->
-                                                            f.field(AgentRunIndex.START_DATE)
-                                                                .order(SortOrder.Desc)))
-                                            .source(
-                                                s ->
-                                                    s.filter(
-                                                        f ->
-                                                            f.includes(
-                                                                AgentRunIndex
-                                                                    .PROCESS_DEFINITION_KEY,
-                                                                AgentRunIndex
-                                                                    .PROCESS_DEFINITION_VERSION,
-                                                                AgentRunIndex.MODEL,
-                                                                AgentRunIndex.PROVIDER,
-                                                                AgentRunIndex.MAX_MODEL_CALLS,
-                                                                AgentRunIndex.MAX_TOOL_CALLS,
-                                                                AgentRunIndex.MAX_TOKENS)))))
+                                a.terms(t -> t.field(AgentRunIndex.PROCESS_DEFINITION_KEY).size(1)))
                         .aggregations(RUNS, AgentRunQueriesES.runs())
                         .aggregations(FAILED, AgentRunQueriesES.failedRuns())
-                        .aggregations(
-                            MODEL_CALLS, a -> a.avg(v -> v.field(AgentRunIndex.MODEL_CALLS)))
                         .aggregations(LIMITS, AgentRunQueriesES.limits())
                         .aggregations(FAILURE_REASONS, AgentRunQueriesES.failureReasons())
                         .aggregations(
@@ -347,28 +319,6 @@ public class AgentDetailReaderES implements AgentDetailReader {
                     bucket.docCount(),
                     finite(bucket.aggregations().get(TOKENS).sum().value())))
         .toList();
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> latestRun(final Aggregate topHits) {
-    return topHits.topHits().hits().hits().stream()
-        .map(Hit::source)
-        .filter(Objects::nonNull)
-        .map(source -> (Map<String, Object>) source.to(Map.class))
-        .findFirst()
-        .orElse(Map.of());
-  }
-
-  private static String string(final Map<String, Object> source, final String field) {
-    final Object value = source.get(field);
-    return value == null ? null : value.toString();
-  }
-
-  /** A limit of 0 or below means the limit is not set. */
-  private static Long limit(final Map<String, Object> source, final String field) {
-    return source.get(field) instanceof final Number value && value.longValue() > 0
-        ? value.longValue()
-        : null;
   }
 
   private Map<String, AgentDefinitionDto> fetchDefinitions(final String field, final String value)

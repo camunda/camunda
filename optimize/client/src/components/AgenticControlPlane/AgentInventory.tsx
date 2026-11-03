@@ -8,7 +8,9 @@
 
 import {useEffect, useState, type KeyboardEvent, type ReactNode} from 'react';
 import {
+  ContentSwitcher,
   Search,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -51,77 +53,83 @@ interface Column {
   render: (entry: AgentInventoryEntry) => ReactNode;
 }
 
-const COLUMNS: Column[] = [
-  {
-    titleKey: 'agenticControlPlane.inventory.agent',
-    sortKey: 'name',
-    render: (entry) => <span className="agentName">{entry.name}</span>,
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.process',
-    sortKey: 'process',
-    render: (entry) => entry.processDefinitionName ?? entry.processDefinitionKey ?? '–',
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.source',
-    render: ({agentType}) =>
-      agentType === 'EXTERNAL_AGENT' ? (
-        <Tag size="sm" type="purple">
-          {t('agenticControlPlane.inventory.sourceExternal')}
-        </Tag>
-      ) : (
-        <Tag size="sm" type="cool-gray">
-          {t('agenticControlPlane.inventory.sourceCamunda')}
-        </Tag>
-      ),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.model',
-    render: ({models}) => (models.length > 0 ? models.join(', ') : '–'),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.runs',
-    sortKey: 'runs',
-    numeric: true,
-    render: ({runs}) => formatCount(runs),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.totalTokens',
-    sortKey: 'totalTokens',
-    numeric: true,
-    render: ({totalTokens}) => formatTokens(totalTokens),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.tokensPerRun',
-    sortKey: 'avgTokens',
-    numeric: true,
-    render: ({avgTokens}) => formatTokens(avgTokens),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.incidentRate',
-    sortKey: 'incidentRate',
-    numeric: true,
-    render: ({incidentRate}) => formatPercentage(incidentRate),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.durationP50',
-    sortKey: 'durationP50Ms',
-    numeric: true,
-    render: ({durationP50Ms}) => formatDuration(durationP50Ms),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.durationP95',
-    sortKey: 'durationP95Ms',
-    numeric: true,
-    render: ({durationP95Ms}) => formatDuration(durationP95Ms),
-  },
-  {
-    titleKey: 'agenticControlPlane.inventory.lastRun',
-    sortKey: 'lastRunDate',
-    numeric: true,
-    render: ({lastRunDate}) => (lastRunDate ? format(parseISO(lastRunDate), 'PP') : '–'),
-  },
-];
+export type DurationPercentile = 'P50' | 'P95';
+
+export function inventoryColumns(percentile: DurationPercentile): Column[] {
+  return [
+    {
+      titleKey: 'agenticControlPlane.inventory.agent',
+      sortKey: 'name',
+      render: (entry) => <span className="agentName">{entry.name}</span>,
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.process',
+      sortKey: 'process',
+      render: (entry) => entry.processDefinitionName ?? entry.processDefinitionKey ?? '–',
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.source',
+      render: ({agentType}) =>
+        agentType === 'EXTERNAL_AGENT' ? (
+          <Tag size="sm" type="purple">
+            {t('agenticControlPlane.inventory.sourceExternal')}
+          </Tag>
+        ) : (
+          <Tag size="sm" type="cool-gray">
+            {t('agenticControlPlane.inventory.sourceCamunda')}
+          </Tag>
+        ),
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.model',
+      // the model most of the agent's runs used
+      render: ({models}) => models[0] ?? '–',
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.runs',
+      sortKey: 'runs',
+      numeric: true,
+      render: ({runs}) => formatCount(runs),
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.totalTokens',
+      sortKey: 'totalTokens',
+      numeric: true,
+      render: ({totalTokens}) => formatTokens(totalTokens),
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.tokensPerRun',
+      sortKey: 'avgTokens',
+      numeric: true,
+      render: ({avgTokens}) => formatTokens(avgTokens),
+    },
+    {
+      titleKey: 'agenticControlPlane.inventory.incidentRate',
+      sortKey: 'incidentRate',
+      numeric: true,
+      render: ({incidentRate}) => formatPercentage(incidentRate),
+    },
+    percentile === 'P50'
+      ? {
+          titleKey: 'agenticControlPlane.inventory.durationP50',
+          sortKey: 'durationP50Ms',
+          numeric: true,
+          render: ({durationP50Ms}) => formatDuration(durationP50Ms),
+        }
+      : {
+          titleKey: 'agenticControlPlane.inventory.durationP95',
+          sortKey: 'durationP95Ms',
+          numeric: true,
+          render: ({durationP95Ms}) => formatDuration(durationP95Ms),
+        },
+    {
+      titleKey: 'agenticControlPlane.inventory.lastRun',
+      sortKey: 'lastRunDate',
+      numeric: true,
+      render: ({lastRunDate}) => (lastRunDate ? format(parseISO(lastRunDate), 'PP') : '–'),
+    },
+  ];
+}
 
 function sortValue(entry: AgentInventoryEntry, key: SortKey): string | number | null {
   if (key === 'process') {
@@ -182,6 +190,7 @@ export function AgentInventory({
   const [sortKey, setSortKey] = useState<SortKey>('runs');
   const [direction, setDirection] = useState<'ASC' | 'DESC'>('DESC');
   const [query, setQuery] = useState('');
+  const [percentile, setPercentile] = useState<DurationPercentile>('P50');
   const {mightFail} = useErrorHandling();
   const endedFromIso = endedFrom.toISOString();
 
@@ -213,6 +222,7 @@ export function AgentInventory({
   }
 
   const {summary} = inventory;
+  const columns = inventoryColumns(percentile);
   const rows = sortInventory(
     inventory.agents.filter(
       (entry) =>
@@ -245,6 +255,21 @@ export function AgentInventory({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
+        <ContentSwitcher
+          className="durationSwitch"
+          size="md"
+          selectedIndex={percentile === 'P50' ? 0 : 1}
+          onChange={({name}: {name?: string | number}) => {
+            const next = name === 'P95' ? 'P95' : 'P50';
+            if (sortKey === 'durationP50Ms' || sortKey === 'durationP95Ms') {
+              setSortKey(next === 'P50' ? 'durationP50Ms' : 'durationP95Ms');
+            }
+            setPercentile(next);
+          }}
+        >
+          <Switch name="P50" text={t('agenticControlPlane.inventory.durationP50') as string} />
+          <Switch name="P95" text={t('agenticControlPlane.inventory.durationP95') as string} />
+        </ContentSwitcher>
       </div>
       {inventory.agents.length === 0 ? (
         <p className="empty">{t('agenticControlPlane.inventory.empty')}</p>
@@ -254,7 +279,7 @@ export function AgentInventory({
             <Table size="md" useZebraStyles={false}>
               <TableHead>
                 <TableRow>
-                  {COLUMNS.map(({titleKey, sortKey: key, numeric}) =>
+                  {columns.map(({titleKey, sortKey: key, numeric}) =>
                     key ? (
                       <TableHeader
                         key={titleKey}
@@ -275,7 +300,7 @@ export function AgentInventory({
               <TableBody>
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={COLUMNS.length} className="empty">
+                    <TableCell colSpan={columns.length} className="empty">
                       {t('agenticControlPlane.inventory.noMatch', {query})}
                     </TableCell>
                   </TableRow>
@@ -292,7 +317,7 @@ export function AgentInventory({
                       }
                     }}
                   >
-                    {COLUMNS.map(({titleKey, numeric, render}) => (
+                    {columns.map(({titleKey, numeric, render}) => (
                       <TableCell key={titleKey} className={numeric ? 'numeric' : undefined}>
                         {render(entry)}
                       </TableCell>
