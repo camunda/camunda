@@ -48,8 +48,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -145,6 +147,41 @@ final class ReconfigurationTest {
               },
               CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
           return result;
+        });
+  }
+
+  /** Delays entry-carrying appends to {@code receiver}, so replication is slow but progressing. */
+  private static void delayEntryAppendsTo(
+      final RaftServer sender, final MemberId receiver, final Duration delay) {
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        VersionedAppendRequest.class,
+        (target, request) ->
+            target.equals(receiver) && !request.entries().isEmpty()
+                ? CompletableFuture.runAsync(
+                    () -> {},
+                    CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS))
+                : CompletableFuture.completedFuture(null));
+  }
+
+  /** Delivers the first {@code allowed} entry-carrying appends to {@code receiver}, then drops. */
+  private static void dropEntryAppendsToAfter(
+      final RaftServer sender, final MemberId receiver, final int allowed) {
+    final var delivered = new AtomicInteger();
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        VersionedAppendRequest.class,
+        (target, request) -> {
+          if (!target.equals(receiver)
+              || request.entries().isEmpty()
+              || delivered.incrementAndGet() <= allowed) {
+            return CompletableFuture.completedFuture(null);
+          }
+          return CompletableFuture.runAsync(
+              () -> {
+                throw new CompletionException(new ConnectException("append dropped"));
+              },
+              CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
         });
   }
 
@@ -1447,6 +1484,87 @@ final class ReconfigurationTest {
                     .isGreaterThanOrEqualTo(configuration.index());
               });
       assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void shouldCompleteJoinWhoseCatchUpOutlastsTimeoutWhileProgressing(@TempDir final Path tmp) {
+      // given
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var joinCatchUpTimeout = Duration.ofSeconds(1);
+
+      final var m1 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id1, id2),
+              config -> {
+                config.setMaxAppendBatchSize(1);
+                config.setMaxAppendsPerFollower(1);
+              });
+      m1.bootstrap(id1).join();
+      final var leader = awaitLeader(m1);
+      for (int i = 0; i < 40; i++) {
+        appendEntry(leader).write().join();
+      }
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(5));
+      delayEntryAppendsTo(m1, id2, Duration.ofMillis(100));
+
+      // when
+      final var m2 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id2, id1),
+              config -> config.setJoinCatchUpTimeout(joinCatchUpTimeout));
+      final var startedAt = System.nanoTime();
+      final var join = m2.join(Type.PROMOTABLE, List.of(id1, id2));
+
+      // then
+      assertThat(join).succeedsWithin(Duration.ofSeconds(30));
+      assertThat(Duration.ofNanos(System.nanoTime() - startedAt))
+          .describedAs("the catch-up outlasted the join catch-up timeout")
+          .isGreaterThan(joinCatchUpTimeout.multipliedBy(2));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.PROMOTABLE);
+    }
+
+    @Test
+    void shouldFailJoinOnceCatchUpStopsProgressingForTimeout(@TempDir final Path tmp) {
+      // given
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var joinCatchUpTimeout = Duration.ofSeconds(2);
+
+      final var m1 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id1, id2),
+              config -> config.setMaxAppendBatchSize(1));
+      m1.bootstrap(id1).join();
+      final var leader = awaitLeader(m1);
+      for (int i = 0; i < 40; i++) {
+        appendEntry(leader).write().join();
+      }
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(5));
+      dropEntryAppendsToAfter(m1, id2, 3);
+
+      // when
+      final var m2 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id2, id1),
+              config -> config.setJoinCatchUpTimeout(joinCatchUpTimeout));
+      final var startedAt = System.nanoTime();
+      final var join = m2.join(Type.PROMOTABLE, List.of(id1, id2));
+
+      // then
+      assertThat(join)
+          .failsWithin(Duration.ofSeconds(30))
+          .withThrowableThat()
+          .havingRootCause()
+          .isInstanceOf(TimeoutException.class)
+          .withMessageContaining("did not advance");
+      assertThat(Duration.ofNanos(System.nanoTime() - startedAt))
+          .describedAs("failed one timeout after the last advance")
+          .isBetween(joinCatchUpTimeout, joinCatchUpTimeout.multipliedBy(8).dividedBy(5));
     }
 
     @Test
