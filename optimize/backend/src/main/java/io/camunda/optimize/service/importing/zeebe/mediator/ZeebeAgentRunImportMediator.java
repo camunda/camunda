@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
+import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import io.camunda.optimize.service.importing.PositionBasedImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAgentRunImportService;
@@ -19,7 +20,9 @@ import io.camunda.optimize.service.importing.zeebe.db.ZeebeAgentInstanceFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeAgentRunImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -31,18 +34,26 @@ public class ZeebeAgentRunImportMediator
         ZeebeAgentRunImportIndexHandler, ZeebeAgentInstanceRecordDto> {
 
   private final ZeebeAgentInstanceFetcher zeebeAgentInstanceFetcher;
+  private final AgentRunImportGate gate;
 
+  /**
+   * @param gatingHandlers the process instance and incident import handlers of the same partition
+   * @param refreshInterval how long a zeebe record takes to become searchable
+   */
   public ZeebeAgentRunImportMediator(
       final ZeebeAgentRunImportIndexHandler importIndexHandler,
       final ZeebeAgentInstanceFetcher zeebeAgentInstanceFetcher,
       final ZeebeAgentRunImportService importService,
       final ConfigurationService configurationService,
-      final BackoffCalculator idleBackoffCalculator) {
+      final BackoffCalculator idleBackoffCalculator,
+      final Supplier<List<PositionBasedImportIndexHandler>> gatingHandlers,
+      final Supplier<Duration> refreshInterval) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeAgentInstanceFetcher = zeebeAgentInstanceFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    gate = new AgentRunImportGate(gatingHandlers, refreshInterval);
   }
 
   @Override
@@ -68,8 +79,21 @@ public class ZeebeAgentRunImportMediator
   private List<ZeebeAgentInstanceRecordDto> getAgentInstances() {
     return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
         .record(
-            () ->
-                zeebeAgentInstanceFetcher.getZeebeRecordsForPrefixAndPartitionFrom(
-                    importIndexHandler.getNextPage()));
+            () -> {
+              final List<ZeebeAgentInstanceRecordDto> fetched =
+                  zeebeAgentInstanceFetcher.getZeebeRecordsForPrefixAndPartitionFrom(
+                      importIndexHandler.getNextPage());
+              final List<ZeebeAgentInstanceRecordDto> admitted =
+                  gate.admit(fetched, importIndexHandler.getLastPageRequestedAt());
+              if (admitted.size() < fetched.size()) {
+                logger.debug(
+                    "Holding back {} agent instance records of partition {} until the process"
+                        + " instance and incident imports pass position {}",
+                    fetched.size() - admitted.size(),
+                    getPartitionId(),
+                    fetched.get(admitted.size()).getPosition());
+              }
+              return admitted;
+            });
   }
 }

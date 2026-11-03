@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -46,8 +48,10 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgentRunEnrichmentReaderES.class);
-  // A process instance rarely has more than a handful of agent runs; this bounds one catch-up page.
+  // A process instance rarely has more than a handful of agent runs; this bounds one lookup.
   private static final int MAX_RUNS_PER_SEARCH = 10_000;
+  private static final int MAX_AGENTIC_PROCESSES = 10_000;
+  private static final String AGENTIC_PROCESSES = "agenticProcesses";
 
   private final OptimizeElasticsearchClient esClient;
 
@@ -70,7 +74,7 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
   }
 
   @Override
-  public List<AgentRunDto> getRunsByProcessInstanceIds(
+  public List<AgentRunDto> getCompletedRunsByProcessInstanceIds(
       final Collection<String> processInstanceIds) {
     if (processInstanceIds.isEmpty()) {
       return List.of();
@@ -81,15 +85,21 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
                 b.optimizeIndex(esClient, AGENT_INSTANCE_INDEX_NAME)
                     .query(
                         q ->
-                            q.terms(
-                                t ->
-                                    t.field(AgentRunIndex.PROCESS_INSTANCE_ID)
-                                        .terms(
-                                            tv ->
-                                                tv.value(
-                                                    processInstanceIds.stream()
-                                                        .map(FieldValue::of)
-                                                        .toList()))))
+                            q.bool(
+                                bq ->
+                                    bq.filter(
+                                            f ->
+                                                f.terms(
+                                                    t ->
+                                                        t.field(AgentRunIndex.PROCESS_INSTANCE_ID)
+                                                            .terms(
+                                                                tv ->
+                                                                    tv.value(
+                                                                        processInstanceIds.stream()
+                                                                            .map(FieldValue::of)
+                                                                            .toList()))))
+                                        .filter(
+                                            f -> f.exists(e -> e.field(AgentRunIndex.END_DATE)))))
                     .size(MAX_RUNS_PER_SEARCH));
     try {
       final var response = esClient.search(request, AgentRunDto.class);
@@ -104,6 +114,31 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
       return response.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not search agent runs by process instance", e);
+    }
+  }
+
+  @Override
+  public Set<String> getAgenticProcessDefinitionKeys() {
+    try {
+      final var response =
+          esClient.search(
+              OptimizeSearchRequestBuilderES.of(
+                  b ->
+                      b.optimizeIndex(esClient, AGENT_DEFINITION_INDEX_NAME)
+                          .size(0)
+                          .aggregations(
+                              AGENTIC_PROCESSES,
+                              a ->
+                                  a.terms(
+                                      t ->
+                                          t.field(AgentDefinitionIndex.PROCESS_DEFINITION_KEY)
+                                              .size(MAX_AGENTIC_PROCESSES)))),
+              Object.class);
+      return response.aggregations().get(AGENTIC_PROCESSES).sterms().buckets().array().stream()
+          .map(bucket -> bucket.key().stringValue())
+          .collect(Collectors.toSet());
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read the agentic processes", e);
     }
   }
 

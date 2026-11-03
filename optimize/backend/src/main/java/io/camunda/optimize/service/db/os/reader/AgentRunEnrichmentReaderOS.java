@@ -14,6 +14,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,9 +29,15 @@ public class AgentRunEnrichmentReaderOS implements AgentRunEnrichmentReader {
   }
 
   @Override
-  public List<AgentRunDto> getRunsByProcessInstanceIds(
+  public List<AgentRunDto> getCompletedRunsByProcessInstanceIds(
       final Collection<String> processInstanceIds) {
     throw new UnsupportedOperationException("Agent run enrichment is not supported on OpenSearch");
+  }
+
+  @Override
+  public Set<String> getAgenticProcessDefinitionKeys() {
+    // prototype: ES only
+    return Set.of();
   }
 
   @Override

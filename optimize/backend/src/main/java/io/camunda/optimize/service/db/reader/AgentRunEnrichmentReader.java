@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Reads what agent run enrichment needs: the runs and their process instances. */
 public interface AgentRunEnrichmentReader {
@@ -19,8 +20,14 @@ public interface AgentRunEnrichmentReader {
   /** Real-time read, so runs written by the same import job are visible. */
   List<AgentRunDto> getRunsByIds(Collection<String> agentInstanceIds);
 
-  /** Search-based, so runs written within the last refresh interval may be missing. */
-  List<AgentRunDto> getRunsByProcessInstanceIds(Collection<String> processInstanceIds);
+  /**
+   * Search-based, so runs written within the last refresh interval may be missing. Only used when
+   * an incident became visible late, long after its runs were written.
+   */
+  List<AgentRunDto> getCompletedRunsByProcessInstanceIds(Collection<String> processInstanceIds);
+
+  /** The processDefinitionKeys of every process with an agent definition. */
+  Set<String> getAgenticProcessDefinitionKeys();
 
   /**
    * Real-time read of process instances by ID, given each instance's process definition key.

@@ -13,63 +13,49 @@ import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.AgentRunEnrichmentReader;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
-import io.camunda.optimize.service.db.writer.ProcessInstanceImportListener;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.zeebe.protocol.record.ValueType;
-import jakarta.annotation.PreDestroy;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 /**
- * Keeps the process-instance-derived fields of agent runs (process state, incidents, user tasks,
- * tool calls) in line with the process instance index. Both paths recompute from the whole process
- * instance document:
+ * Copies what the dashboard needs from a run's process instance onto the run, once the run is
+ * complete.
  *
  * <ul>
- *   <li>Main path: the agent run import enriches the runs it just wrote, by ID (real-time read).
- *   <li>Catch-up path: after any other process-instance import (flow nodes, completion, incidents,
- *       user tasks), the runs of those process instances are re-enriched, once right away and once
- *       more after the index refresh interval. The lookup is a search, so a run written at the same
- *       moment by the agent import is not visible to the first attempt; when both imports land
- *       together, the main path can also read the process instance just before the other data, so
- *       only the delayed attempt is guaranteed to see both.
+ *   <li>Main path: the agent run import enriches the runs whose {@code COMPLETED} record was in the
+ *       page it just wrote. The agent import is gated on the process instance and incident imports
+ *       of the partition, so the process instance is complete when it is read. Runs of running
+ *       process instances are never enriched: the dashboard only shows completed runs.
+ *   <li>Exporter retry path: if the Zeebe exporter retried a partly failed bulk, an incident can
+ *       become visible after the agent import passed its position. The incident import then
+ *       re-enriches the finished runs of that process instance. In normal operation it finds no
+ *       such incident and does nothing.
  * </ul>
  *
- * <p>Failures are logged and swallowed: enrichment must never block the imports that trigger it.
+ * <p>Enrichment always recomputes everything from the process instance, so running it again gives
+ * the same result.
  */
 @Component
-public class AgentRunEnrichmentService implements ProcessInstanceImportListener {
+public class AgentRunEnrichmentService {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgentRunEnrichmentService.class);
-  // Variables never feed agent metrics, and the nested agent import is mirrored by the flat one.
-  // Longer than the default index refresh interval of 1s, so runs written meanwhile are searchable.
-  private static final Duration CATCH_UP_DELAY = Duration.ofSeconds(3);
-  private static final Set<String> IGNORED_RECORD_TYPES =
-      Set.of(ValueType.VARIABLE.name(), ValueType.AGENT_INSTANCE.name());
 
   private final AgentRunEnrichmentReader reader;
   private final AgentRunWriter agentRunWriter;
   private final DatabaseClient databaseClient;
   private final ConfigurationService configurationService;
-  private final ScheduledExecutorService delayedCatchUp =
-      Executors.newSingleThreadScheduledExecutor(
-          runnable -> {
-            final Thread thread = new Thread(runnable, "agent-run-enrichment-catch-up");
-            thread.setDaemon(true);
-            return thread;
-          });
+  // processDefinitionKeys with agents: from the agent definitions, plus keys seen on runs
+  private final Set<String> agenticProcessKeys = java.util.concurrent.ConcurrentHashMap.newKeySet();
+  private volatile boolean agenticProcessKeysLoaded;
 
   public AgentRunEnrichmentService(
       final AgentRunEnrichmentReader reader,
@@ -82,50 +68,66 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
     this.configurationService = configurationService;
   }
 
-  public void enrichRuns(final Collection<String> agentInstanceIds) {
-    try {
-      enrich(reader.getRunsByIds(agentInstanceIds));
-    } catch (final RuntimeException e) {
-      LOG.warn(
-          "Could not enrich {} agent runs; will retry on catch-up", agentInstanceIds.size(), e);
-    }
-  }
-
-  @Override
-  public void onProcessInstancesImported(
-      final String recordType, final List<ProcessInstanceDto> processInstances) {
-    if (IGNORED_RECORD_TYPES.contains(recordType) || processInstances.isEmpty()) {
+  /**
+   * Enriches the given runs, which completed in the import page just written. Failures propagate,
+   * so the import job retries the page.
+   */
+  public void enrichCompletedRuns(final Collection<String> agentInstanceIds) {
+    if (agentInstanceIds.isEmpty()) {
       return;
     }
-    final Set<String> processInstanceIds =
-        processInstances.stream()
+    enrich(reader.getRunsByIds(agentInstanceIds));
+  }
+
+  /** Remembers the processes of imported runs as agentic. */
+  public void addAgenticProcesses(final Collection<String> processDefinitionKeys) {
+    processDefinitionKeys.stream().filter(Objects::nonNull).forEach(agenticProcessKeys::add);
+  }
+
+  /**
+   * Re-enriches the completed runs of finished agentic process instances whose incidents became
+   * visible after the agent import passed them.
+   *
+   * @param processDefinitionKeyByProcessInstanceId process instances of the late incidents
+   */
+  public void reEnrichAfterLateIncidents(
+      final Map<String, String> processDefinitionKeyByProcessInstanceId) {
+    final Map<String, String> agentic =
+        processDefinitionKeyByProcessInstanceId.entrySet().stream()
+            .filter(entry -> isAgentic(entry.getValue()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    if (agentic.isEmpty()) {
+      return;
+    }
+    final Set<String> finished =
+        reader.getProcessInstances(agentic).values().stream()
+            .filter(instance -> instance.getEndDate() != null)
             .map(ProcessInstanceDto::getProcessInstanceId)
             .collect(Collectors.toSet());
-    catchUp(recordType, processInstanceIds);
-    delayedCatchUp.schedule(
-        () -> catchUp(recordType, processInstanceIds),
-        CATCH_UP_DELAY.toMillis(),
-        TimeUnit.MILLISECONDS);
-  }
-
-  @PreDestroy
-  void stopDelayedCatchUp() {
-    delayedCatchUp.shutdownNow();
-  }
-
-  private void catchUp(final String recordType, final Set<String> processInstanceIds) {
-    try {
-      enrich(reader.getRunsByProcessInstanceIds(processInstanceIds));
-    } catch (final RuntimeException e) {
-      LOG.warn(
-          "Could not catch up agent runs of {} process instances after {} import",
-          processInstanceIds.size(),
-          recordType,
-          e);
+    if (finished.isEmpty()) {
+      return;
     }
+    LOG.info(
+        "Re-enriching agent runs of {} finished process instances after late incidents",
+        finished.size());
+    enrich(reader.getCompletedRunsByProcessInstanceIds(finished));
   }
 
-  private void enrich(final List<AgentRunDto> runs) {
+  private boolean isAgentic(final String processDefinitionKey) {
+    if (!agenticProcessKeysLoaded) {
+      synchronized (this) {
+        if (!agenticProcessKeysLoaded) {
+          agenticProcessKeys.addAll(reader.getAgenticProcessDefinitionKeys());
+          agenticProcessKeysLoaded = true;
+        }
+      }
+    }
+    return agenticProcessKeys.contains(processDefinitionKey);
+  }
+
+  private void enrich(final List<AgentRunDto> storedRuns) {
+    final List<AgentRunDto> runs =
+        storedRuns.stream().filter(run -> run.getEndDate() != null).toList();
     if (runs.isEmpty()) {
       return;
     }
@@ -138,29 +140,38 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
                         AgentRunDto::getProcessInstanceId,
                         AgentRunDto::getProcessDefinitionKey,
                         (a, b) -> a)));
+    final Set<String> rootsToLookUp = new HashSet<>();
+    runs.stream()
+        .map(AgentRunDto::getRootProcessInstanceId)
+        .filter(Objects::nonNull)
+        .filter(root -> !processInstances.containsKey(root))
+        .forEach(rootsToLookUp::add);
     final Map<String, String> rootProcessDefinitionKeys =
-        reader.getProcessDefinitionKeys(
-            runs.stream()
-                .map(AgentRunDto::getRootProcessInstanceId)
-                .filter(Objects::nonNull)
-                .filter(root -> !processInstances.containsKey(root))
-                .collect(Collectors.toSet()));
+        reader.getProcessDefinitionKeys(rootsToLookUp);
     final Map<String, String> agentTypes =
         reader.getAgentTypes(runs.stream().map(AgentRunEnrichmentService::definitionId).toList());
     final OffsetDateTime now = OffsetDateTime.now();
     final List<AgentRunDto> enriched =
         runs.stream()
             .map(
-                run ->
-                    processInstances.containsKey(run.getProcessInstanceId())
-                        ? AgentRunEnrichment.compute(
-                            run,
-                            processInstances.get(run.getProcessInstanceId()),
-                            rootProcessDefinitionKey(
-                                run, processInstances, rootProcessDefinitionKeys),
-                            agentTypes.get(definitionId(run)),
-                            now)
-                        : null)
+                run -> {
+                  final ProcessInstanceDto processInstance =
+                      processInstances.get(run.getProcessInstanceId());
+                  if (processInstance == null) {
+                    LOG.warn(
+                        "Process instance {} of completed agent run {} is not imported; the run"
+                            + " stays unenriched",
+                        run.getProcessInstanceId(),
+                        run.getAgentInstanceId());
+                    return null;
+                  }
+                  return AgentRunEnrichment.compute(
+                      run,
+                      processInstance,
+                      rootProcessDefinitionKey(run, processInstances, rootProcessDefinitionKeys),
+                      agentTypes.get(definitionId(run)),
+                      now);
+                })
             .filter(Objects::nonNull)
             .toList();
     if (enriched.isEmpty()) {
@@ -170,7 +181,7 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
         "Agent run enrichment",
         agentRunWriter.generateEnrichmentImports(enriched),
         configurationService.getSkipDataAfterNestedDocLimitReached());
-    LOG.debug("Enriched {} of {} agent runs.", enriched.size(), runs.size());
+    LOG.debug("Enriched {} of {} completed agent runs.", enriched.size(), runs.size());
   }
 
   private static String definitionId(final AgentRunDto run) {

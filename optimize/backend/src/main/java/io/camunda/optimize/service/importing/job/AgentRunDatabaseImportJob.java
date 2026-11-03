@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing.job;
 
+import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
@@ -50,7 +51,15 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
         agentDefinitionWriter.generateAgentRunRollupImports(
             foldedRuns.stream().map(FoldResult::run).toList()),
         configurationService.getSkipDataAfterNestedDocLimitReached());
-    enrichmentService.enrichRuns(
-        foldedRuns.stream().map(folded -> folded.run().getAgentInstanceId()).toList());
+    enrichmentService.addAgenticProcesses(
+        foldedRuns.stream().map(folded -> folded.run().getProcessDefinitionKey()).toList());
+    // Runs whose COMPLETED record was in this page; the import gate makes sure their process
+    // instances are complete.
+    enrichmentService.enrichCompletedRuns(
+        foldedRuns.stream()
+            .map(FoldResult::run)
+            .filter(run -> run.getEndDate() != null)
+            .map(AgentRunDto::getAgentInstanceId)
+            .toList());
   }
 }

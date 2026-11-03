@@ -7,9 +7,14 @@
  */
 package io.camunda.optimize.service.importing.zeebe.mediator.factory;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.reader.ZeebeRecordRefreshIntervalReader;
 import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -20,8 +25,11 @@ import io.camunda.optimize.service.importing.zeebe.db.ZeebeAgentInstanceFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeAgentRunImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +39,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
   private final AgentRunWriter agentRunWriter;
   private final AgentDefinitionWriter agentDefinitionWriter;
   private final AgentRunEnrichmentService enrichmentService;
+  private final ZeebeRecordRefreshIntervalReader refreshIntervalReader;
 
   public ZeebeAgentRunImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -39,6 +48,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
       final AgentRunWriter agentRunWriter,
       final AgentDefinitionWriter agentDefinitionWriter,
       final AgentRunEnrichmentService enrichmentService,
+      final ZeebeRecordRefreshIntervalReader refreshIntervalReader,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
@@ -50,10 +60,13 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
     this.agentRunWriter = agentRunWriter;
     this.agentDefinitionWriter = agentDefinitionWriter;
     this.enrichmentService = enrichmentService;
+    this.refreshIntervalReader = refreshIntervalReader;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
+    final String prefix = configurationService.getConfiguredZeebe().getName() + "-";
     return Collections.singletonList(
         new ZeebeAgentRunImportMediator(
             importIndexHandlerRegistry.getZeebeAgentRunImportIndexHandler(
@@ -72,6 +85,19 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
                 zeebeDataSourceDto.getPartitionId(),
                 databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            // Arrays.asList keeps a handler the registry doesn't have as null, which the gate
+            // skips.
+            () ->
+                Arrays.asList(
+                    importIndexHandlerRegistry.getZeebeProcessInstanceImportIndexHandler(
+                        partitionId),
+                    importIndexHandlerRegistry.getZeebeIncidentImportIndexHandler(partitionId)),
+            Suppliers.memoize(
+                () ->
+                    Stream.of(ZEEBE_PROCESS_INSTANCE_INDEX_NAME, ZEEBE_INCIDENT_INDEX_NAME)
+                        .map(index -> refreshIntervalReader.getRefreshInterval(prefix + index))
+                        .max(Duration::compareTo)
+                        .orElseThrow())));
   }
 }
