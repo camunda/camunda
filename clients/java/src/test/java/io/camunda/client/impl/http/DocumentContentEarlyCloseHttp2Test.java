@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -198,14 +199,45 @@ class DocumentContentEarlyCloseHttp2Test {
 
     // then
     await("the client ends the download").atMost(Duration.ofSeconds(10)).untilTrue(responseFailed);
-    // httpclient5 counts a new try in the same step that drops the connection
-    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
     // the client still works, and did not ask for the document again
     try (final InputStream smallDocument =
         client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
       assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
     }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
+    assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
+  }
+
+  @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void shouldEndDownloadWhenStreamIsClosedWhileServerIsSilent() throws Exception {
+    // given, less than the client buffers, so closing the stream cannot make the server send more
+    sendLimit = 2 * CHUNK_SIZE;
+    final InputStream content =
+        client
+            .newDocumentContentGetRequest(DOCUMENT_ID)
+            .requestTimeout(REQUEST_TIMEOUT)
+            .send()
+            .get(20, TimeUnit.SECONDS);
+    assertThat(requestVersion.get()).isEqualTo(HttpVersion.HTTP_2);
+    new DataInputStream(content).readFully(new byte[(int) sendLimit]);
+
+    // when
+    content.close();
+
+    // then
+    await("the client ends the download").atMost(Duration.ofSeconds(10)).untilTrue(responseFailed);
+    // the client still works, and did not ask for the document again
+    try (final InputStream smallDocument =
+        client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
+      assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
+    }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
   }
 
