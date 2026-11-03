@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -145,5 +148,65 @@ public final class BackupStorePaths {
             id.checkpointId(),
             id.brokerId().id(),
             fileSetName);
+  }
+
+  /**
+   * Returns a pattern matching the keys of the manifests matching the given wildcard. Read the
+   * identifier back from a match with {@link #parseManifestPath(Matcher)}.
+   */
+  public static Pattern manifestPathPattern(final BackupIdentifierWildcard wildcard) {
+    return manifestPathPattern(NO_BASE_PATH, wildcard);
+  }
+
+  /**
+   * Returns a pattern matching the keys of the manifests matching the given wildcard under the
+   * given formatted base path. Read the identifier back from a match with {@link
+   * #parseManifestPath(Matcher)}.
+   */
+  public static Pattern manifestPathPattern(
+      final String basePath, final BackupIdentifierWildcard wildcard) {
+    return Pattern.compile(
+        Pattern.quote(basePath + MANIFESTS_DIRECTORY_NAME + "/") + manifestIdRegex(wildcard));
+  }
+
+  /**
+   * Returns a pattern matching the paths, relative to the manifests directory, of the manifests
+   * matching the given wildcard. Read the identifier back from a match with {@link
+   * #parseManifestPath(Matcher)}.
+   */
+  public static Pattern relativeManifestPathPattern(final BackupIdentifierWildcard wildcard) {
+    return Pattern.compile(manifestIdRegex(wildcard));
+  }
+
+  /**
+   * Parses the backup identifier captured by a successful match of one of the manifest path
+   * patterns. Empty if a segment is not a valid value of its type, e.g. a digit run too long for
+   * the partition id, checkpoint id or node index, or a zone longer than a member id allows — a
+   * foreign or corrupted object rather than one a store wrote, left for the caller to skip instead
+   * of failing the whole listing.
+   */
+  public static Optional<BackupIdentifier> parseManifestPath(final Matcher matchedManifestPath) {
+    try {
+      final int partitionId = Integer.parseInt(matchedManifestPath.group("partitionId"));
+      final var checkpointId = CheckpointIds.tryParse(matchedManifestPath.group("checkpointId"));
+      if (checkpointId.isEmpty()) {
+        return Optional.empty();
+      }
+      final var memberId = BrokerMemberId.from(matchedManifestPath.group("memberId"));
+      return Optional.of(
+          new BackupIdentifierImpl(
+              memberId.nodeIdx(), memberId.zone(), partitionId, checkpointId.getAsLong()));
+    } catch (final IllegalArgumentException | IllegalStateException e) {
+      return Optional.empty();
+    }
+  }
+
+  private static String manifestIdRegex(final BackupIdentifierWildcard wildcard) {
+    return "(?<partitionId>%s)/(?<checkpointId>%s)/(?<memberId>%s)/%s"
+        .formatted(
+            wildcard.partitionId().map(Number::toString).orElse("\\d+"),
+            wildcard.checkpointPattern().asRegex(),
+            BackupIdentifierWildcard.memberIdRegex(wildcard),
+            Pattern.quote(MANIFEST_OBJECT_NAME));
   }
 }

@@ -14,8 +14,10 @@ import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NA
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPathPattern;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -511,11 +513,17 @@ public final class S3BackupStore implements BackupStore {
       final BackupIdentifierWildcard wildcard) {
     final Set<BackupIdentifier> identifiers = ConcurrentHashMap.newKeySet();
     final Set<Long> legacyCheckpointIds = ConcurrentHashMap.newKeySet();
+    final var manifestPathPattern = manifestPathPattern(basePath, wildcard);
     final var current =
         forEachPage(
             wildcardPrefix(wildcard),
             Optional.empty(),
-            page -> collectManifestIdentifiers(page, wildcard, identifiers));
+            page ->
+                collectManifestIdentifiers(
+                    page,
+                    wildcard,
+                    key -> parseManifestKey(manifestPathPattern, key),
+                    identifiers));
     final CompletableFuture<Void> legacy;
     if (wildcard.partitionId().isPresent()) {
       legacy =
@@ -535,7 +543,8 @@ public final class S3BackupStore implements BackupStore {
           forEachPage(
               legacyWildcardPrefix(wildcard),
               Optional.empty(),
-              page -> collectManifestIdentifiers(page, wildcard, identifiers));
+              page ->
+                  collectManifestIdentifiers(page, wildcard, this::tryParseKeyAsId, identifiers));
     }
     return current.thenCombine(
         legacy,
@@ -550,14 +559,27 @@ public final class S3BackupStore implements BackupStore {
   private void collectManifestIdentifiers(
       final ListObjectsV2Response page,
       final BackupIdentifierWildcard wildcard,
+      final Function<String, Optional<BackupIdentifier>> parseKey,
       final Set<BackupIdentifier> identifiers) {
     page.contents().stream()
         .map(S3Object::key)
         .filter(key -> key.endsWith(MANIFEST_OBJECT_NAME))
-        .map(this::tryParseKeyAsId)
+        .map(parseKey)
         .flatMap(Optional::stream)
         .filter(wildcard::matches)
         .forEach(identifiers::add);
+  }
+
+  private Optional<BackupIdentifier> parseManifestKey(final Pattern pattern, final String key) {
+    final var matcher = pattern.matcher(key);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    final var id = parseManifestPath(matcher);
+    if (id.isEmpty()) {
+      LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key);
+    }
+    return id;
   }
 
   private CompletableFuture<List<BackupStatus>> readPage(
