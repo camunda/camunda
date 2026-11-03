@@ -17,11 +17,12 @@ type Props = {
 	item: AuditLog;
 	processDefinitionName?: string | null;
 	decisionDefinitionName?: string | null;
+	tenantId?: string;
 };
 
 const EntityLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
-const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDefinitionName}) => {
+const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDefinitionName, tenantId}) => {
 	const {t} = useTranslation();
 	const {linkLabel, label, name} = mapToCellEntityKeyData(t, item, processDefinitionName, decisionDefinitionName);
 
@@ -43,6 +44,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 				<EntityLink
 					to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 					params={{processInstanceId: item.entityKey}}
+					search={{tenantId}}
 					title={linkLabel}
 					aria-label={linkLabel}
 				>
@@ -67,6 +69,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 				<EntityLink
 					to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
 					params={{decisionInstanceId: item.entityKey}}
+					search={{tenantId}}
 					title={linkLabel}
 					aria-label={linkLabel}
 				>

@@ -26,6 +26,7 @@ type RowProps = {
 type Props = {
 	label: string;
 	headerSize?: 'sm' | 'md';
+	minWidth?: string;
 	headerColumns: Column[];
 	rows: RowProps[];
 	className?: string;
@@ -77,6 +78,7 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding' | 'cel
 const StructuredList: React.FC<Props> = ({
 	label,
 	headerSize = 'md',
+	minWidth,
 	headerColumns,
 	rows,
 	className,
@@ -93,7 +95,16 @@ const StructuredList: React.FC<Props> = ({
 	const scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
 	return (
-		<div className={cn('overflow-y-auto', className)} data-testid={dataTestId} ref={scrollableContentRef}>
+		<div
+			className={cn(
+				'overflow-y-auto',
+				minWidth && '[&_table]:min-w-(--structured-list-min-width) [&_table]:table-fixed',
+				className,
+			)}
+			style={minWidth ? ({'--structured-list-min-width': minWidth} as React.CSSProperties) : undefined}
+			data-testid={dataTestId}
+			ref={scrollableContentRef}
+		>
 			<Table aria-label={label} containerClassName={containerClassName}>
 				<TableHeader className={headerClassName}>
 					<TableRow>
