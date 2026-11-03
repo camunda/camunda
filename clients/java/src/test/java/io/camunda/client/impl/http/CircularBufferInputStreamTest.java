@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.hc.core5.http.HttpStreamResetException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -117,7 +116,7 @@ class CircularBufferInputStreamTest {
 
     // when - then, so that httpcore5 cancels the download instead of filling a closed stream
     assertThatThrownBy(() -> stream.write(ByteBuffer.wrap(new byte[] {1})))
-        .isInstanceOf(HttpStreamResetException.class);
+        .isInstanceOf(DocumentStreamClosedException.class);
   }
 
   @Test

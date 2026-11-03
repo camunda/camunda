@@ -34,11 +34,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.hc.client5.http.async.AsyncExecChain;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,6 +56,12 @@ import org.junit.jupiter.params.provider.EnumSource;
  */
 class DocumentContentEarlyCloseTest {
 
+  private static final String DOCUMENT_ID = "document-id";
+
+  /** A small document that the server sends in full. */
+  private static final String SMALL_DOCUMENT_ID = "small-document-id";
+
+  private static final String SMALL_DOCUMENT_CONTENT = "small document";
   private static final int MAX_MESSAGE_SIZE = 64 * 1024;
   private static final int CHUNK_SIZE = 8 * 1024;
 
@@ -79,6 +88,11 @@ class DocumentContentEarlyCloseTest {
   private final AtomicLong bodyBytesSent = new AtomicLong();
   private final AtomicBoolean connectionDropped = new AtomicBoolean();
   private final CountDownLatch streamClosed = new CountDownLatch(1);
+  private final List<String> requestedDocuments = new CopyOnWriteArrayList<>();
+
+  /** The exchange of the first request, which is the one for the document. */
+  private final AtomicReference<AsyncExecChain.Scope> documentExchange = new AtomicReference<>();
+
   private ServerSocket serverSocket;
   private CamundaClient client;
 
@@ -106,8 +120,8 @@ class DocumentContentEarlyCloseTest {
 
   private void startServer(final BodyFraming framing) throws Exception {
     ThreadLocalRandom.current().nextBytes(chunk);
-    serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
-    final Thread server = new Thread(() -> serveDocument(framing), "endless-document-server");
+    serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
+    final Thread server = new Thread(() -> serve(framing), "endless-document-server");
     server.setDaemon(true);
     server.start();
 
@@ -116,6 +130,11 @@ class DocumentContentEarlyCloseTest {
             .applyEnvironmentVariableOverrides(false)
             .preferRestOverGrpc(true)
             .restAddress(new URI("http://localhost:" + serverSocket.getLocalPort()))
+            .withChainHandlers(
+                (request, entityProducer, scope, chain, callback) -> {
+                  documentExchange.compareAndSet(null, scope);
+                  chain.proceed(request, entityProducer, scope, callback);
+                })
             .maxMessageSize(MAX_MESSAGE_SIZE)
             .build();
   }
@@ -141,7 +160,7 @@ class DocumentContentEarlyCloseTest {
     startServer(framing);
     final InputStream content =
         client
-            .newDocumentContentGetRequest("document-id")
+            .newDocumentContentGetRequest(DOCUMENT_ID)
             .requestTimeout(REQUEST_TIMEOUT)
             .send()
             .get(20, TimeUnit.SECONDS);
@@ -156,44 +175,90 @@ class DocumentContentEarlyCloseTest {
     await("the client drops the connection")
         .atMost(Duration.ofSeconds(10))
         .untilTrue(connectionDropped);
+    // httpclient5 counts a new try in the same step that drops the connection
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
+    // the client still works, and did not ask for the document again
+    try (final InputStream smallDocument =
+        client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
+      assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
+    }
+    assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
+  }
+
+  /** Answers the requests one connection at a time, until the test closes the server socket. */
+  private void serve(final BodyFraming framing) {
+    try {
+      while (true) {
+        try (final Socket socket = serverSocket.accept()) {
+          final String documentId = readRequestedDocumentId(socket.getInputStream());
+          if (documentId == null) {
+            continue;
+          }
+          requestedDocuments.add(documentId);
+          if (SMALL_DOCUMENT_ID.equals(documentId)) {
+            sendSmallDocument(socket.getOutputStream());
+          } else {
+            sendDocument(socket.getOutputStream(), framing);
+          }
+        }
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (final IOException e) {
+      // the server socket is closed when the test finishes
+    }
+  }
+
+  /** Returns the ID of the requested document, or null if the client sent no request. */
+  private static String readRequestedDocumentId(final InputStream request) throws IOException {
+    final ByteArrayOutputStream head = new ByteArrayOutputStream();
+    while (!head.toString("ISO-8859-1").endsWith("\r\n\r\n")) {
+      final int b = request.read();
+      if (b < 0) {
+        return null;
+      }
+      head.write(b);
+    }
+    final String target = head.toString("ISO-8859-1").split(" ")[1];
+    final String path = target.split("\\?")[0];
+    return path.substring(path.lastIndexOf('/') + 1);
+  }
+
+  private static void sendSmallDocument(final OutputStream out) throws IOException {
+    final byte[] content = SMALL_DOCUMENT_CONTENT.getBytes(StandardCharsets.ISO_8859_1);
+    out.write(
+        ("HTTP/1.1 200 OK\r\n"
+                + "Content-Type: application/octet-stream\r\n"
+                + "Content-Length: "
+                + content.length
+                + "\r\n"
+                + "Connection: close\r\n"
+                + "\r\n")
+            .getBytes(StandardCharsets.ISO_8859_1));
+    out.write(content);
+    out.flush();
   }
 
   /**
    * Sends the document as fast as the client accepts it, pausing once at {@link #PAUSE_AT} until
    * the stream is closed, and goes on until the client drops the connection.
    */
-  private void serveDocument(final BodyFraming framing) {
-    try (final Socket socket = serverSocket.accept()) {
-      final InputStream request = socket.getInputStream();
-      final ByteArrayOutputStream head = new ByteArrayOutputStream();
-      while (!head.toString("ISO-8859-1").endsWith("\r\n\r\n")) {
-        final int b = request.read();
-        if (b < 0) {
-          return;
+  private void sendDocument(final OutputStream out, final BodyFraming framing)
+      throws InterruptedException {
+    try {
+      out.write(framing.responseHead().getBytes(StandardCharsets.ISO_8859_1));
+      while (bodyBytesSent.get() < DOCUMENT_SIZE) {
+        framing.writeChunk(out, chunk);
+        if (bodyBytesSent.addAndGet(CHUNK_SIZE) == PAUSE_AT) {
+          out.flush();
+          streamClosed.await();
         }
-        head.write(b);
       }
-
-      final OutputStream out = socket.getOutputStream();
-      try {
-        out.write(framing.responseHead().getBytes(StandardCharsets.ISO_8859_1));
-        while (bodyBytesSent.get() < DOCUMENT_SIZE) {
-          framing.writeChunk(out, chunk);
-          if (bodyBytesSent.addAndGet(CHUNK_SIZE) == PAUSE_AT) {
-            out.flush();
-            streamClosed.await();
-          }
-        }
-        framing.writeEnd(out);
-        out.flush();
-      } catch (final IOException e) {
-        connectionDropped.set(true);
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+      framing.writeEnd(out);
+      out.flush();
     } catch (final IOException e) {
-      // the server socket is closed when the test finishes
+      connectionDropped.set(true);
     }
   }
 
