@@ -367,6 +367,14 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst();
 
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> RESUMING_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.RESUMING)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
+
     public static final Function<Long, Record<ProcessInstanceRecordValue>>
         RESUME_REJECTION_EXPECTATION =
             (processInstanceKey) ->
@@ -413,6 +421,11 @@ public final class ProcessInstanceClient {
 
     public ExistingInstanceClient expectTerminating() {
       expectation = TERMINATING_EXPECTATION;
+      return this;
+    }
+
+    public ExistingInstanceClient expectResuming() {
+      resumeExpectation = RESUMING_EXPECTATION;
       return this;
     }
 
