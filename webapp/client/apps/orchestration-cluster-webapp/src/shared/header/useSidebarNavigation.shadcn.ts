@@ -48,6 +48,7 @@ const tabRoutes = {
 	operateDecisionsPreview: '/operate-preview/decisions',
 	operateOperationsLog: '/operate/operations-log',
 	operateBatchOperations: '/operate/batch-operations',
+	operateBatchOperationsPreview: '/operate-preview/batch-operations',
 	adminIndex: '/admin',
 	adminUsers: '/admin/users',
 	adminGroups: '/admin/groups',
@@ -201,7 +202,9 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
 			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;
 		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
-		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
+		const isOperateBatchOperationsRoute =
+			matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false ||
+			matchRoute({to: tabRoutes['operateBatchOperationsPreview'], fuzzy: true}) !== false;
 
 		return {
 			ariaLabel: t('headerAppBarLabel'),

@@ -2150,7 +2150,8 @@
 				"pageSelectLabel": "Página de {{count}} páginas",
 				"pageSelectLabel_one": "Página de {{count}} página",
 				"pageSelectLabel_other": "Página de {{count}} páginas",
-				"pageText": "página {{page}}"
+				"pageText": "página {{page}}",
+				"pageOf": "Página {{page}} de {{count}}"
 			},
 			"batchOperation": {
 				"title": "Operaciones en lote",
