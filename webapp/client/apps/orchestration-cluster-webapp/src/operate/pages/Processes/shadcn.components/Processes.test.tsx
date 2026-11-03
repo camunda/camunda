@@ -17,11 +17,14 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
+	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {setVariableConditions} from '../VariablesFilter/variableFilterStore';
@@ -58,6 +61,12 @@ describe('<Processes /> (design system)', () => {
 				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [ORDER_V2]})),
 			}),
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: []})),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json({items: [], page: {totalItems: 0}}),
+			}),
 		);
 	});
 
@@ -65,12 +74,12 @@ describe('<Processes /> (design system)', () => {
 		sessionStorage.clear();
 	});
 
-	it('should render the sr-only processes title and the remaining placeholders', async () => {
+	it('should render the sr-only processes title, the diagram placeholder, and the instances table', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await expect.element(screen.getByRole('heading', {name: 'Processes'})).toBeInTheDocument();
 		await expect.element(screen.getByText('Diagram panel placeholder')).toBeVisible();
-		await expect.element(screen.getByText('Instances table placeholder')).toBeVisible();
+		await expect.element(screen.getByRole('region', {name: 'Process Instances Panel'})).toBeVisible();
 	});
 
 	it('should write the selected process to the URL', async () => {
