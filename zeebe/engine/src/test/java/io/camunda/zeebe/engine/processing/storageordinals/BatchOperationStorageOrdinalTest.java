@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.storageordinals;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue.BatchOperationExecutionItemValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -42,6 +45,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -484,6 +488,93 @@ public final class BatchOperationStorageOrdinalTest {
     assertThat(failed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldCarryItemStorageOrdinalToChunkItems() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then the chunk carries the batch operation's ordinal, every item its own, sorted by
+    // ordinal then key
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var chunk =
+          RecordingExporter.batchOperationChunkRecords()
+              .withBatchOperationKey(batchOperationKey)
+              .withPartitionId(partitionId)
+              .withIntent(BatchOperationChunkIntent.CREATED)
+              .getFirst();
+
+      assertThat(chunk.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+      assertThat(chunk.getValue().getItems())
+          .extracting(
+              BatchOperationItemValue::getItemKey, BatchOperationItemValue::getStorageOrdinal)
+          .containsExactly(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
+    }
+  }
+
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldCarryItemStorageOrdinalToExecutionRecords() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var records =
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .limit(
+                record ->
+                    record.getIntent() == BatchOperationExecutionIntent.EXECUTED
+                        && record.getValue().getItems().isEmpty())
+            .collect(Collectors.toList());
+    final var itemRecords =
+        records.stream().filter(record -> !record.getValue().getItems().isEmpty()).toList();
+
+    assertThat(itemRecords).isNotEmpty();
+    assertThat(records)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    assertThat(itemRecords)
+        .flatExtracting(record -> record.getValue().getItems())
+        .extracting(
+            BatchOperationExecutionItemValue::getItemKey,
+            BatchOperationExecutionItemValue::getStorageOrdinal)
+        .containsOnly(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
+  }
+
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldStampItemCommandsWithItemStorageOrdinal() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var commands =
+        RecordingExporter.processInstanceRecords()
+            .withIntent(ProcessInstanceIntent.CANCEL)
+            .onlyCommands()
+            .withPartitionId(1)
+            .filter(record -> record.getBatchOperationReference() == batchOperationKey)
+            .limit(3)
+            .collect(Collectors.toList());
+
+    assertThat(commands)
+        .extracting(
+            record -> record.getValue().getProcessInstanceKey(),
+            record -> record.getValue().getStorageOrdinal())
+        .containsExactlyInAnyOrder(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
+  }
+
   private long createBatchOperation() {
     final long batchOperationKey = createBatchOperationRecord().getValue().getBatchOperationKey();
     for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
@@ -513,6 +604,12 @@ public final class BatchOperationStorageOrdinalTest {
   private void stubProcessInstanceSearch(final Set<Long> processInstanceKeys) {
     when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
         .thenReturn(processInstancePage(processInstanceKeys, processInstanceKeys.size()));
+  }
+
+  // TODO(#57006): place the ordinal on the ProcessInstanceEntity once the item providers read it,
+  // until then the search result carries no ordinal and every item is written with 0.
+  private void stubProcessInstanceSearch(final Map<Long, Integer> processInstanceOrdinals) {
+    stubProcessInstanceSearch(processInstanceOrdinals.keySet());
   }
 
   private SearchQueryResult<ProcessInstanceEntity> processInstancePage(
