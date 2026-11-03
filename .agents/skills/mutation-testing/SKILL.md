@@ -132,8 +132,21 @@ a parallel one. Never weaken, delete or disable an existing test.
 
 ## Report findings
 
-Per mutant: `Class:line`, the mutator and what it changed (one sentence), why it matters
-behaviourally (what silently goes wrong), and a concrete test suggestion (scenario and the
-assertion that fails under the mutation). Group by class, most serious first. State what was run
-(project, target classes, tests, mutant counts, engine) so the result can be reproduced, and list
-what you judged equivalent or low value with the reason, one line each.
+Keep each finding short: one sentence that names the code change the mutant makes and why no test
+notices it, then the tests to add (scenario and the assertion that fails under the mutation). No
+heading, no mutator name, and no restating of what goes wrong under the mutation. For example:
+
+> Changing `newPriority < 1` to `newPriority <= 1` survives: no test calls `init` with
+> `newPriority == 1`, `0`, or a negative value.
+>
+> Suggest adding tests to `PartitionReconfigurePriorityApplierTest` that:
+> - call `init` with `newPriority = 1` and assert the result is `Either.right(...)` (accepted),
+>   killing this boundary mutant, and
+> - call `init` with `newPriority = 0` (or negative) and assert `Either.left` with the
+>   `IllegalArgumentException` message, covering the new guard itself (currently it has no
+>   dedicated test at all).
+
+Outside a line-anchored review comment, prefix each finding with its `Class:line`. Group by
+class, most serious first. State what was run once for the whole report (project, target
+classes, tests, mutant counts, engine) so the result can be reproduced, and list what you judged
+equivalent or low value with the reason, one line each.

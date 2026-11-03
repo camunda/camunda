@@ -146,6 +146,8 @@ backups, scheduling, dynamic configuration), where an unnoticed behaviour change
 - **Inline comments and exactly one review.** Use the `create-pull-request-review-comment` safe
   output on the exact line of each finding, and `submit-pull-request-review` once, summarizing in
   two or three sentences what was run (projects, classes, mutant counts) and what the comments say.
+  Each inline comment is one finding in the skill's report format; the run details go only into
+  the review summary.
 - **`COMMENT` or `REQUEST_CHANGES` is your call.** Request changes when the surviving mutants on
   the changed lines show behaviour that should be tested before this pull request merges;
   otherwise comment. Judge all findings that are still open, including earlier ones you do not
