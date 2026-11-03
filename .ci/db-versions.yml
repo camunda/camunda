@@ -44,6 +44,8 @@ opensearch:
     - '3.7.0'
     # renovate: datasource=docker depName=opensearchproject/opensearch
     - '3.8.0'
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    - '3.9.0'
 
 # ── RDBMS databases ─────────────────────────────────────────────────────────────
 # Each entry is a Docker image tag representing one supported major version.
