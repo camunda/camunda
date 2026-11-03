@@ -30,7 +30,7 @@ outputs:
       e.g. disabled on a PR).
     value: ${{ steps.cache-outcome.outputs.result }}
   cache-matched-key:
-    description: The key of the cache entry that was restored, empty on a miss.
+    description: The key of the cache entry that was restored. Only set on pull request runs, empty otherwise.
     value: ${{ steps.cache-outcome.outputs.matched-key }}
 
 runs:
@@ -110,20 +110,6 @@ runs:
       run: |
         echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
 
-    # The full `actions/cache` action does not emit `cache-matched-key`, and its post-job save
-    # cannot be split out of a composite action. A lookup-only restore (no download) reports the
-    # matched key so main/stable runs can be classified like PR runs.
-    - name: Look up Maven cache entry
-      id: cache-lookup
-      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: ${{ env.MAVEN_CACHE_PATH }}
-        key: ${{ env.MAVEN_CACHE_KEY }}
-        restore-keys: |
-          ${{ env.MAVEN_CACHE_KEY_PREFIX }}
-        lookup-only: true
-
     # `actions/cache` aborts a stalled segment download with a *warning*, not a failure, and
     # then hands the job a cold Maven repository -- so the cost of a slow cache backend is paid
     # by every later Maven step rather than surfacing here. `SEGMENT_DOWNLOAD_TIMEOUT_MINS`
@@ -169,7 +155,6 @@ runs:
         STEP_OUTCOMES: ${{ steps.cache-full.outcome }} ${{ steps.cache-restore.outcome }}
         FULL_OUTCOME: ${{ steps.cache-full.outcome }}
         FULL_HIT: ${{ steps.cache-full.outputs.cache-hit }}
-        LOOKUP_KEY: ${{ steps.cache-lookup.outputs.cache-matched-key }}
         RESTORE_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
         RESTORE_KEY: ${{ steps.cache-restore.outputs.cache-matched-key }}
         MODIFIER: ${{ inputs.maven-cache-key-modifier }}
@@ -181,21 +166,20 @@ runs:
         elif [[ "$STEP_OUTCOMES" != *success* ]]; then
           result=skipped
         else
-          # main/stable: classify on the full cache step's own result. The lookup only tells which
-          # key exists, not whether the download then succeeded (it can be aborted by the timeout).
+          # main/stable: the full `actions/cache` step emits no matched key, so a fallback restore
+          # is told apart from a miss by the restored directory being populated.
           if [[ "$FULL_OUTCOME" == "success" ]]; then
-            hit="$FULL_HIT"; MATCHED_KEY="$LOOKUP_KEY"
+            hit="$FULL_HIT"; MATCHED_KEY=""
           else
             hit="$RESTORE_HIT"; MATCHED_KEY="$RESTORE_KEY"
           fi
           cache_dir="${MAVEN_CACHE_PATH/#\~/$HOME}"
           if [[ "$hit" == "true" ]]; then
             result=exact
-          elif [[ -n "$MATCHED_KEY" && -n "$(ls -A "$cache_dir" 2>/dev/null)" ]]; then
+          elif [[ -n "$(ls -A "$cache_dir" 2>/dev/null)" ]]; then
             result=fallback
           else
             result=miss
-            MATCHED_KEY=""
           fi
         fi
 
