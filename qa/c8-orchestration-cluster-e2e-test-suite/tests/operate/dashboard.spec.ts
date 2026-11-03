@@ -153,7 +153,8 @@ test.describe('Dashboard', () => {
     });
   });
 
-  test('Navigate to processes view (same truncated error message)', async ({
+  // Skipped due to bug #68010: https://github.com/camunda/camunda/issues/68010
+  test.skip('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
