@@ -46,8 +46,12 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
-	get bottomPanelPlaceholder() {
-		return this.page.getByText('Bottom panel placeholder');
+	get variablesList() {
+		return this.page.getByRole('table', {name: 'Variable List'});
+	}
+
+	variableRow(name: string) {
+		return this.variablesList.getByRole('row', {name: new RegExp(`^${name}(?![\\w-])`)});
 	}
 
 	get incidentsTab() {
