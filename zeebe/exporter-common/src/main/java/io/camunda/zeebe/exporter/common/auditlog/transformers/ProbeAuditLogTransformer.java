@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 
 /**
  * Audits a probe when it is created and when it ends, as {@link JobAuditLogTransformer} does for
- * jobs. The description names what was asked of which template; the input is never logged.
+ * jobs. The description is the probe ID; the input is never logged.
  */
 public class ProbeAuditLogTransformer implements AuditLogTransformer<ProbeRecordValue> {
 
@@ -31,6 +31,6 @@ public class ProbeAuditLogTransformer implements AuditLogTransformer<ProbeRecord
   public void transform(final Record<ProbeRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(String.valueOf(record.getKey()));
-    log.setEntityDescription(value.getOperation() + " " + value.getTemplate());
+    log.setEntityDescription(value.getProbeId());
   }
 }

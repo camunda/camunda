@@ -100,17 +100,17 @@ public final class ProbeBehavior {
   }
 
   /**
-   * Returns a stream that may answer the probe: it declares the probe's exact capability, it serves
-   * the probe's tenant, its principal holds {@code PROBE:ANSWER} on the template, and its worker is
-   * not the excluded one (the worker a yielded probe was pushed to).
+   * Returns a stream that may answer the probe: it declares the probe's exact ID, it serves the
+   * probe's tenant, its principal holds {@code PROBE:ANSWER} on the probe ID, and its worker is not
+   * the excluded one (the worker a yielded probe was pushed to).
    */
   public Optional<ProbeStream> findStream(
       final ProbeRecord probe, final @Nullable String excludedWorker) {
-    final var capability = probe.getOperation().name() + ":" + probe.getTemplate();
+    final var probeId = probe.getProbeId();
     return probeStreamer.streamFor(
         PROBE_STREAM_TYPE,
         properties ->
-            properties.capabilities().contains(capability)
+            properties.probeIds().contains(probeId)
                 && !BufferUtil.bufferAsString(properties.worker()).equals(excludedWorker)
                 && isAuthorized(properties, probe));
   }
@@ -259,8 +259,8 @@ public final class ProbeBehavior {
   }
 
   public static String noWorkerMessage(final ProbeRecord probe) {
-    return "No worker can answer %s for template %s. Start a connector runtime that supports it, then retry."
-        .formatted(probe.getOperation(), probe.getTemplate());
+    return "No worker can answer probe '%s'. Start a worker that answers it, then retry."
+        .formatted(probe.getProbeId());
   }
 
   private boolean isAuthorized(
@@ -279,7 +279,7 @@ public final class ProbeBehavior {
       return false;
     }
 
-    final var template = probe.getTemplate();
+    final var probeId = probe.getProbeId();
     return cslCheck
         .checkWithClaims(
             properties.claims(),
@@ -287,8 +287,8 @@ public final class ProbeBehavior {
                 b ->
                     b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROBE))
                         .permissionType(AuthzModelMapper.fromProtocol(PermissionType.ANSWER))
-                        .resourceId(template)),
-            template,
+                        .resourceId(probeId)),
+            probeId,
             AuthorizationRejectionMapper.forbidden(
                 PermissionType.ANSWER, AuthorizationResourceType.PROBE))
         .isRight();

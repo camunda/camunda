@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 /**
- * Keeps one probe stream open for every capability of the worker, opening it again after a failure,
- * hands each pushed probe to the handler of its capability and sends the answer over REST, exactly
+ * Keeps one probe stream open for every probe ID of the worker, opening it again after a failure,
+ * hands each pushed probe to the handler of its probe ID and sends the answer over REST, exactly
  * once.
  */
 public final class ProbeWorkerImpl implements ProbeWorker {
@@ -123,13 +123,12 @@ public final class ProbeWorkerImpl implements ProbeWorker {
 
   private void handle(final ActivatedProbe probe) {
     ProbeAnswer answer;
-    final ProbeHandler handler =
-        handlers.get(capability(probe.getOperation().name(), probe.getTemplate()));
+    final ProbeHandler handler = handlers.get(probe.getProbeId());
     try {
-      // the engine pushes only declared capabilities, so a missing handler is a protocol bug
+      // the engine pushes only declared probe IDs, so a missing handler is a protocol bug
       answer =
           handler == null
-              ? ProbeAnswer.error("The worker has no handler for this capability.")
+              ? ProbeAnswer.error("The worker has no handler for this probe ID.")
               : handler.handle(probe);
       if (answer == null) {
         answer = ProbeAnswer.error("The probe handler returned no answer.");
@@ -162,10 +161,6 @@ public final class ProbeWorkerImpl implements ProbeWorker {
             LOGGER.warn("Failed to answer probe {}", probeKey, error);
           }
         });
-  }
-
-  static String capability(final String operation, final String template) {
-    return operation + ":" + template;
   }
 
   /**

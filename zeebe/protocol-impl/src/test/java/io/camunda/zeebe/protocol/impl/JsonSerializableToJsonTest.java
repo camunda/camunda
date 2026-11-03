@@ -134,7 +134,6 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
@@ -5227,8 +5226,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<ProbeRecord>)
             () ->
                 new ProbeRecord()
-                    .setOperation(ProbeOperation.VALIDATE_CONFIGURATION)
-                    .setTemplate("io.camunda:aws-credential:1")
+                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
                     .setTenantId("tenant-1")
                     .setInputExpression("={accessKey: camunda.secrets.awsKey}")
                     .setInput(VARIABLES_MSGPACK)
@@ -5243,8 +5241,7 @@ final class JsonSerializableToJsonTest {
                     .setEndReason(ProbeEndReason.NO_WORKER),
         """
         {
-          "operation": "VALIDATE_CONFIGURATION",
-          "template": "io.camunda:aws-credential:1",
+          "probeId": "validate-configuration/io.camunda:aws-credential:1",
           "tenantId": "tenant-1",
           "inputExpression": "={accessKey: camunda.secrets.awsKey}",
           "input": {"foo": "bar"},
@@ -5267,8 +5264,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<ProbeRecord>) ProbeRecord::new,
         """
         {
-          "operation": "VALIDATE_CONFIGURATION",
-          "template": "",
+          "probeId": "",
           "tenantId": "<default>",
           "inputExpression": "",
           "input": {},

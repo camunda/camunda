@@ -18,28 +18,25 @@ package io.camunda.client.impl.worker.probe;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.probe.ProbeHandler;
-import io.camunda.client.api.worker.probe.ProbeOperation;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep2;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep3;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProbeCapability;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamProbesRequest;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class ProbeWorkerBuilderImpl
-    implements ProbeWorkerBuilderStep1, ProbeWorkerBuilderStep2 {
+    implements ProbeWorkerBuilderStep1, ProbeWorkerBuilderStep2, ProbeWorkerBuilderStep3 {
 
   private final GatewayStub asyncStub;
   private final HttpClient httpClient;
@@ -47,8 +44,8 @@ public final class ProbeWorkerBuilderImpl
   private final ScheduledExecutorService scheduler;
   private final List<Closeable> closeables;
 
-  private final Map<String, ProbeHandler> handlers = new LinkedHashMap<>();
-  private final List<ProbeCapability> capabilities = new ArrayList<>();
+  private String probeId;
+  private ProbeHandler handler;
   private String workerName;
   private List<String> tenantIds;
   private int maxProbesActive = 4;
@@ -71,47 +68,42 @@ public final class ProbeWorkerBuilderImpl
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 capability(
-      final ProbeOperation operation, final String template, final ProbeHandler handler) {
-    Objects.requireNonNull(operation, "operation");
-    Objects.requireNonNull(template, "template");
-    Objects.requireNonNull(handler, "handler");
-    final String capability = ProbeWorkerImpl.capability(operation.name(), template);
-    if (handlers.putIfAbsent(capability, handler) != null) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected each capability once, but '%s' was registered twice", capability));
-    }
-    capabilities.add(
-        ProbeCapability.newBuilder().setOperation(operation.name()).setTemplate(template).build());
+  public ProbeWorkerBuilderStep2 probeId(final String probeId) {
+    this.probeId = Objects.requireNonNull(probeId, "probeId");
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 name(final String workerName) {
+  public ProbeWorkerBuilderStep3 handler(final ProbeHandler handler) {
+    this.handler = Objects.requireNonNull(handler, "handler");
+    return this;
+  }
+
+  @Override
+  public ProbeWorkerBuilderStep3 name(final String workerName) {
     this.workerName = workerName;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 tenantIds(final List<String> tenantIds) {
+  public ProbeWorkerBuilderStep3 tenantIds(final List<String> tenantIds) {
     this.tenantIds = new ArrayList<>(tenantIds);
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 tenantIds(final String... tenantIds) {
+  public ProbeWorkerBuilderStep3 tenantIds(final String... tenantIds) {
     return tenantIds(Arrays.asList(tenantIds));
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 maxProbesActive(final int maxProbesActive) {
+  public ProbeWorkerBuilderStep3 maxProbesActive(final int maxProbesActive) {
     this.maxProbesActive = maxProbesActive;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 streamRetryDelay(final Duration retryDelay) {
+  public ProbeWorkerBuilderStep3 streamRetryDelay(final Duration retryDelay) {
     this.retryDelay = retryDelay;
     return this;
   }
@@ -120,7 +112,7 @@ public final class ProbeWorkerBuilderImpl
   public ProbeWorker open() {
     final StreamProbesRequest request =
         StreamProbesRequest.newBuilder()
-            .addAllCapabilities(capabilities)
+            .addProbeIds(probeId)
             .setWorker(workerName)
             .addAllTenantIds(tenantIds)
             .build();
@@ -130,7 +122,7 @@ public final class ProbeWorkerBuilderImpl
             httpClient,
             jsonMapper,
             request,
-            Collections.unmodifiableMap(new LinkedHashMap<>(handlers)),
+            Collections.singletonMap(probeId, handler),
             scheduler,
             Executors.newFixedThreadPool(maxProbesActive),
             retryDelay);

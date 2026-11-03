@@ -43,12 +43,12 @@ public final class ProbeTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private String template;
+  private String probeId;
 
   @Before
   public void setUp() {
-    // a template per test keeps the streams of one test from answering the probes of another
-    template = "io.camunda:test-" + UUID.randomUUID() + ":1";
+    // a probeId per test keeps the streams of one test from answering the probes of another
+    probeId = "validate-configuration/io.camunda:test-" + UUID.randomUUID() + ":1";
   }
 
   @Test
@@ -60,7 +60,7 @@ public final class ProbeTest {
     final var created =
         ENGINE
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={region: \"eu-west-1\", nested: {flag: true}}")
             .withRequest(11, 111L)
             .create();
@@ -92,14 +92,14 @@ public final class ProbeTest {
     // then
     assertThat(answered.getIntent()).isEqualTo(ProbeIntent.ANSWERED);
     assertThat(answered.getValue().getOutcome()).isEqualTo(ProbeOutcome.OK);
-    assertThat(answered.getValue().getData()).isEqualTo(Map.of("status", "SUCCESS"));
+    assertThat(answered.getValue().getData()).isEmpty();
     assertThat(answered.getValue().getWorker()).isEqualTo("worker-a");
-    assertThat(
-            RecordingExporter.probeRecords(ProbeIntent.RESPOND)
-                .withRecordKey(probeKey)
-                .onlyCommands()
-                .exists())
-        .isTrue();
+    final var respond =
+        RecordingExporter.probeRecords(ProbeIntent.RESPOND)
+            .withRecordKey(probeKey)
+            .onlyCommands()
+            .getFirst();
+    assertThat(respond.getValue().getData()).isEqualTo(Map.of("status", "SUCCESS"));
     verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(22, 222L);
     verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(11, 111L);
   }
@@ -113,7 +113,7 @@ public final class ProbeTest {
     final var created =
         ENGINE
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={auth: {token: camunda.secrets.apiToken}, region: \"eu\"}")
             .create();
 
@@ -133,31 +133,29 @@ public final class ProbeTest {
   public void shouldRejectCreateWhenNoWorkerSubscribed() {
     // when
     final var rejection =
-        ENGINE.probe().withTemplate(template).withInput("={}").expectRejection().create();
+        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
 
     // then
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "No worker can answer VALIDATE_CONFIGURATION for template %s. Start a connector runtime that supports it, then retry."
-                .formatted(template));
+            "No worker can answer probe '%s'. Start a worker that answers it, then retry."
+                .formatted(probeId));
   }
 
   @Test
-  public void shouldPushProbesForEveryCapabilityTheStreamDeclares() {
-    // given - one worker answers two templates over a single stream
-    final var otherTemplate = template + "-other";
+  public void shouldPushProbesForEveryProbeIdTheStreamDeclares() {
+    // given - one worker answers two probes over a single stream
+    final var otherProbeId = probeId + "-other";
     final var stream =
         STREAMER.addStream(
-            List.of(
-                "VALIDATE_CONFIGURATION:" + template, "VALIDATE_CONFIGURATION:" + otherTemplate),
+            List.of(probeId, otherProbeId),
             "worker-a",
             List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // when
-    final long first = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
-    final long second =
-        ENGINE.probe().withTemplate(otherTemplate).withInput("={}").create().getKey();
+    final long first = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    final long second = ENGINE.probe().withProbeId(otherProbeId).withInput("={}").create().getKey();
 
     // then
     await()
@@ -169,16 +167,14 @@ public final class ProbeTest {
   }
 
   @Test
-  public void shouldRejectCreateWhenNoStreamDeclaresTheTemplate() {
-    // given - a worker is connected, but for another template only
+  public void shouldRejectCreateWhenNoStreamDeclaresTheProbeId() {
+    // given - a worker is connected, but for another probeId only
     STREAMER.addStream(
-        "VALIDATE_CONFIGURATION:" + template + "-other",
-        "worker-a",
-        List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+        probeId + "-other", "worker-a", List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // when
     final var rejection =
-        ENGINE.probe().withTemplate(template).withInput("={}").expectRejection().create();
+        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
@@ -187,11 +183,11 @@ public final class ProbeTest {
   @Test
   public void shouldRejectCreateWhenWorkerServesAnotherTenant() {
     // given
-    STREAMER.addStream("VALIDATE_CONFIGURATION:" + template, "worker-a", List.of("other"));
+    STREAMER.addStream(probeId, "worker-a", List.of("other"));
 
     // when
     final var rejection =
-        ENGINE.probe().withTemplate(template).withInput("={}").expectRejection().create();
+        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
@@ -204,7 +200,7 @@ public final class ProbeTest {
 
     // when
     final var rejection =
-        ENGINE.probe().withTemplate(template).withInput("=\"text\"").expectRejection().create();
+        ENGINE.probe().withProbeId(probeId).withInput("=\"text\"").expectRejection().create();
 
     // then
     Assertions.assertThat(rejection)
@@ -219,7 +215,7 @@ public final class ProbeTest {
 
     // when
     final var rejection =
-        ENGINE.probe().withTemplate(template).withInput("{}").expectRejection().create();
+        ENGINE.probe().withProbeId(probeId).withInput("{}").expectRejection().create();
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
@@ -234,7 +230,7 @@ public final class ProbeTest {
     final var rejection =
         ENGINE
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={tokens: [camunda.secrets.apiToken]}")
             .expectRejection()
             .create();
@@ -250,7 +246,7 @@ public final class ProbeTest {
     final var created =
         ENGINE
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={}")
             .withRequestTimeout(1000)
             .withRequest(33, 333L)
@@ -273,7 +269,7 @@ public final class ProbeTest {
     // given
     final var first = addStream("worker-a");
     final var second = addStream("worker-b");
-    final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
     await().untilAsserted(() -> assertThat(first.getPushedProbes()).hasSize(1));
 
     // when
@@ -301,7 +297,7 @@ public final class ProbeTest {
   public void shouldCancelOnYieldWhenNoOtherWorker() {
     // given
     addStream("worker-a");
-    final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
 
     // when
     final var canceled = ENGINE.probe().yield(probeKey);
@@ -315,7 +311,7 @@ public final class ProbeTest {
   public void shouldRejectAnswerForEndedProbe() {
     // given
     addStream("worker-a");
-    final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
     ENGINE.probe().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
 
     // when
@@ -327,17 +323,14 @@ public final class ProbeTest {
   }
 
   @Test
-  public void shouldRejectAnswerWhoseDataIsNotAValidationResult() {
+  public void shouldRejectAnswerWithoutOutcome() {
     // given
     addStream("worker-a");
-    final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
 
     // when
     final var rejection =
-        ENGINE
-            .probe()
-            .expectRejection()
-            .answer(probeKey, ProbeOutcome.OK, Map.of("status", "SUCCESS", "extra", 1));
+        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSPECIFIED, Map.of());
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
@@ -352,7 +345,7 @@ public final class ProbeTest {
     final var rejection =
         ENGINE
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={}")
             .withRequestTimeout(30_001)
             .expectRejection()
@@ -363,9 +356,6 @@ public final class ProbeTest {
   }
 
   private RecordingProbeStream addStream(final String worker) {
-    return STREAMER.addStream(
-        "VALIDATE_CONFIGURATION:" + template,
-        worker,
-        List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    return STREAMER.addStream(probeId, worker, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 }

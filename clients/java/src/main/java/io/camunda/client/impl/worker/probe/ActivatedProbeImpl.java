@@ -17,7 +17,6 @@ package io.camunda.client.impl.worker.probe;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.probe.ActivatedProbe;
-import io.camunda.client.api.worker.probe.ProbeOperation;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,8 +25,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
 
   private final JsonMapper jsonMapper;
   private final long key;
-  private final ProbeOperation operation;
-  private final String template;
+  private final String probeId;
   private final String worker;
   private final long deadline;
   private final String tenantId;
@@ -38,8 +36,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
       final JsonMapper jsonMapper, final GatewayOuterClass.ActivatedProbe probe) {
     this.jsonMapper = jsonMapper;
     key = probe.getKey();
-    operation = ProbeOperation.valueOf(probe.getOperation());
-    template = probe.getTemplate();
+    probeId = probe.getProbeId();
     worker = probe.getWorker();
     deadline = probe.getDeadline();
     tenantId = probe.getTenantId();
@@ -53,13 +50,8 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   }
 
   @Override
-  public ProbeOperation getOperation() {
-    return operation;
-  }
-
-  @Override
-  public String getTemplate() {
-    return template;
+  public String getProbeId() {
+    return probeId;
   }
 
   @Override
@@ -101,8 +93,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   public String toJson() {
     final Map<String, Object> json = new LinkedHashMap<>();
     json.put("key", key);
-    json.put("operation", operation);
-    json.put("template", template);
+    json.put("probeId", probeId);
     json.put("worker", worker);
     json.put("deadline", deadline);
     json.put("tenantId", tenantId);
@@ -115,8 +106,7 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   @Override
   public String toString() {
     return String.format(
-        "ActivatedProbe{key=%d, operation=%s, template='%s', worker='%s', tenantId='%s',"
-            + " physicalTenantId='%s'}",
-        key, operation, template, worker, tenantId, physicalTenantId);
+        "ActivatedProbe{key=%d, probeId='%s', worker='%s', tenantId='%s', physicalTenantId='%s'}",
+        key, probeId, worker, tenantId, physicalTenantId);
   }
 }

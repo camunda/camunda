@@ -19,38 +19,38 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Builds a probe worker (alpha), as {@code newWorker()} builds a job worker. One worker answers
- * every capability registered on it, each an operation for one template, over a single stream:
- * probes are rare, so a runtime needs one stream, not one per template.
+ * Builds a probe worker (alpha), as {@code newWorker().jobType(type).handler(handler)} builds a job
+ * worker. One probe worker answers one probe ID.
  */
 public interface ProbeWorkerBuilderStep1 {
 
   /**
-   * Answers the operation for the template, by its declared ID, e.g. {@code
-   * io.camunda:aws-credential:1}, with the handler. Each capability can be registered once.
+   * The probe ID to answer, matched exactly. By convention it is {@code <operation>/<template>},
+   * e.g. {@code validate-configuration/io.camunda:aws-credential:1}; the cluster does not enforce
+   * it.
    */
-  ProbeWorkerBuilderStep2 capability(
-      ProbeOperation operation, String template, ProbeHandler handler);
+  ProbeWorkerBuilderStep2 probeId(String probeId);
 
   interface ProbeWorkerBuilderStep2 {
 
-    /** Registers one more capability on the same worker and stream. */
-    ProbeWorkerBuilderStep2 capability(
-        ProbeOperation operation, String template, ProbeHandler handler);
+    ProbeWorkerBuilderStep3 handler(ProbeHandler handler);
+  }
+
+  interface ProbeWorkerBuilderStep3 {
 
     /** The name recorded on the probes pushed to this worker; defaults to the client's. */
-    ProbeWorkerBuilderStep2 name(String workerName);
+    ProbeWorkerBuilderStep3 name(String workerName);
 
     /** The tenants to answer probes for; defaults to the client's default tenant. */
-    ProbeWorkerBuilderStep2 tenantIds(List<String> tenantIds);
+    ProbeWorkerBuilderStep3 tenantIds(List<String> tenantIds);
 
-    ProbeWorkerBuilderStep2 tenantIds(String... tenantIds);
+    ProbeWorkerBuilderStep3 tenantIds(String... tenantIds);
 
     /** How many probes are handled at the same time; further pushes wait for a free slot. */
-    ProbeWorkerBuilderStep2 maxProbesActive(int maxProbesActive);
+    ProbeWorkerBuilderStep3 maxProbesActive(int maxProbesActive);
 
     /** How long to wait before opening the stream again after it failed. */
-    ProbeWorkerBuilderStep2 streamRetryDelay(Duration retryDelay);
+    ProbeWorkerBuilderStep3 streamRetryDelay(Duration retryDelay);
 
     ProbeWorker open();
   }

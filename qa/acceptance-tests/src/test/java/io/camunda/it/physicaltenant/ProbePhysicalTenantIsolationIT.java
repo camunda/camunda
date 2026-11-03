@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.probe.ProbeAnswer;
 import io.camunda.client.api.worker.probe.ProbeHandler;
-import io.camunda.client.api.worker.probe.ProbeOperation;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -42,15 +41,16 @@ import org.junit.jupiter.api.Test;
 
 /**
  * A probe created on one physical tenant is pushed only to that tenant's workers, stamped with that
- * tenant, resolves its secrets from that tenant's secret store, and a template served only on
- * another tenant answers NO_WORKER.
+ * tenant, resolves its secrets from that tenant's secret store, and a probe served only on another
+ * tenant answers NO_WORKER.
  */
 @ZeebeIntegration
 final class ProbePhysicalTenantIsolationIT {
 
   private static final String TENANT_A = "tenanta";
-  private static final String TEMPLATE = "io.camunda:aws-credential:1";
-  private static final String TENANT_A_ONLY_TEMPLATE = "io.camunda:tenant-a-only:1";
+  private static final String PROBE_ID = "validate-configuration/io.camunda:aws-credential:1";
+  private static final String TENANT_A_ONLY_PROBE_ID =
+      "validate-configuration/io.camunda:tenant-a-only:1";
   private static final ObjectMapper JSON = new ObjectMapper();
 
   private static final PhysicalTenantsITHelper TENANTS =
@@ -74,6 +74,7 @@ final class ProbePhysicalTenantIsolationIT {
   private static CamundaClient tenantAClient;
   private static ProbeWorker defaultWorker;
   private static ProbeWorker tenantAWorker;
+  private static ProbeWorker tenantAOnlyWorker;
   private static final HttpClient HTTP = HttpClient.newHttpClient();
 
   @BeforeAll
@@ -83,20 +84,21 @@ final class ProbePhysicalTenantIsolationIT {
         TENANTS.newClientBuilder(BROKER, PhysicalTenantsITHelper.DEFAULT_TENANT_ID).build();
     tenantAClient = TENANTS.newClientBuilder(BROKER, TENANT_A).build();
 
-    defaultWorker = echoWorker(defaultClient, "default-worker", TEMPLATE);
-    // one worker, so one stream, answers both of tenant A's templates
-    tenantAWorker = echoWorker(tenantAClient, "tenant-a-worker", TEMPLATE, TENANT_A_ONLY_TEMPLATE);
+    defaultWorker = echoWorker(defaultClient, "default-worker", PROBE_ID);
+    tenantAWorker = echoWorker(tenantAClient, "tenant-a-worker", PROBE_ID);
+    tenantAOnlyWorker = echoWorker(tenantAClient, "tenant-a-worker", TENANT_A_ONLY_PROBE_ID);
   }
 
   @AfterAll
   static void close() {
-    CloseHelper.quietCloseAll(defaultWorker, tenantAWorker, defaultClient, tenantAClient);
+    CloseHelper.quietCloseAll(
+        defaultWorker, tenantAWorker, tenantAOnlyWorker, defaultClient, tenantAClient);
   }
 
   @Test
   void shouldAnswerFromTheDefaultTenantsWorkerWithTheDefaultTenantsSecret() {
     // when
-    final var envelope = awaitAnswer("", TEMPLATE);
+    final var envelope = awaitAnswer("", PROBE_ID);
 
     // then
     assertThat(envelope.get("worker")).isEqualTo("default-worker");
@@ -114,7 +116,7 @@ final class ProbePhysicalTenantIsolationIT {
   @Test
   void shouldAnswerFromTenantAsWorkerWithTenantAsSecret() {
     // when
-    final var envelope = awaitAnswer("physical-tenants/" + TENANT_A + "/", TEMPLATE);
+    final var envelope = awaitAnswer("physical-tenants/" + TENANT_A + "/", PROBE_ID);
 
     // then
     assertThat(envelope.get("worker")).isEqualTo("tenant-a-worker");
@@ -123,13 +125,13 @@ final class ProbePhysicalTenantIsolationIT {
   }
 
   @Test
-  void shouldAnswerNoWorkerWhenOnlyAnotherTenantServesTheTemplate() throws Exception {
-    // given - tenant A's worker answers the template, from the same stream as its other template
-    final var envelope = awaitAnswer("physical-tenants/" + TENANT_A + "/", TENANT_A_ONLY_TEMPLATE);
+  void shouldAnswerNoWorkerWhenOnlyAnotherTenantServesTheProbeId() throws Exception {
+    // given - tenant A's worker answers the probe
+    final var envelope = awaitAnswer("physical-tenants/" + TENANT_A + "/", TENANT_A_ONLY_PROBE_ID);
     assertThat(envelope.get("worker")).isEqualTo("tenant-a-worker");
 
     // when
-    final var response = createProbe("", TENANT_A_ONLY_TEMPLATE);
+    final var response = createProbe("", TENANT_A_ONLY_PROBE_ID);
 
     // then
     assertThat(response.statusCode()).isEqualTo(404);
@@ -137,7 +139,7 @@ final class ProbePhysicalTenantIsolationIT {
   }
 
   private static ProbeWorker echoWorker(
-      final CamundaClient client, final String name, final String... templates) {
+      final CamundaClient client, final String name, final String probeId) {
     final ProbeHandler echo =
         probe ->
             ProbeAnswer.ok(
@@ -148,17 +150,10 @@ final class ProbePhysicalTenantIsolationIT {
                     probe.getPhysicalTenantId(),
                     "message",
                     String.valueOf(probe.getInputAsMap().get("accessKey"))));
-    var builder =
-        client
-            .newProbeWorker()
-            .capability(ProbeOperation.VALIDATE_CONFIGURATION, templates[0], echo);
-    for (int i = 1; i < templates.length; i++) {
-      builder = builder.capability(ProbeOperation.VALIDATE_CONFIGURATION, templates[i], echo);
-    }
-    return builder.name(name).open();
+    return client.newProbeWorker().probeId(probeId).handler(echo).name(name).open();
   }
 
-  private static Map<?, ?> awaitAnswer(final String tenantPrefix, final String template) {
+  private static Map<?, ?> awaitAnswer(final String tenantPrefix, final String probeId) {
     final var envelope = new AtomicReference<Map<?, ?>>();
     // streams and tenant partitions come up asynchronously, so early probes may find no worker
     Awaitility.await()
@@ -166,22 +161,20 @@ final class ProbePhysicalTenantIsolationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var response = createProbe(tenantPrefix, template);
+              final var response = createProbe(tenantPrefix, probeId);
               assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
               envelope.set(JSON.readValue(response.body(), Map.class));
             });
     return envelope.get();
   }
 
-  private static HttpResponse<String> createProbe(final String tenantPrefix, final String template)
+  private static HttpResponse<String> createProbe(final String tenantPrefix, final String probeId)
       throws Exception {
     final var body =
         JSON.writeValueAsString(
             Map.of(
-                "operation",
-                "VALIDATE_CONFIGURATION",
-                "template",
-                template,
+                "probeId",
+                probeId,
                 "input",
                 "={accessKey: camunda.secrets.awsKey}",
                 "requestTimeout",

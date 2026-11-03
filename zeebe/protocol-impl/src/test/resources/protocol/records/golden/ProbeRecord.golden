@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobSecretReference;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -32,9 +31,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecordValue {
 
-  private final EnumProperty<ProbeOperation> operationProp =
-      new EnumProperty<>("operation", ProbeOperation.class, ProbeOperation.VALIDATE_CONFIGURATION);
-  private final StringProperty templateProp = new StringProperty("template", "");
+  private final StringProperty probeIdProp = new StringProperty("probeId", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final StringProperty inputExpressionProp = new StringProperty("inputExpression", "");
@@ -53,9 +50,8 @@ public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecord
       new EnumProperty<>("endReason", ProbeEndReason.class, ProbeEndReason.UNSPECIFIED);
 
   public ProbeRecord() {
-    super(14);
-    declareProperty(operationProp)
-        .declareProperty(templateProp)
+    super(13);
+    declareProperty(probeIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(inputExpressionProp)
         .declareProperty(inputProp)
@@ -86,22 +82,12 @@ public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecord
   }
 
   @Override
-  public ProbeOperation getOperation() {
-    return operationProp.getValue();
+  public String getProbeId() {
+    return BufferUtil.bufferAsString(probeIdProp.getValue());
   }
 
-  public ProbeRecord setOperation(final ProbeOperation operation) {
-    operationProp.setValue(operation);
-    return this;
-  }
-
-  @Override
-  public String getTemplate() {
-    return BufferUtil.bufferAsString(templateProp.getValue());
-  }
-
-  public ProbeRecord setTemplate(final String template) {
-    templateProp.setValue(template);
+  public ProbeRecord setProbeId(final String probeId) {
+    probeIdProp.setValue(probeId);
     return this;
   }
 

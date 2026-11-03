@@ -34,15 +34,11 @@ import org.immutables.value.Value;
 public interface ProbeRecordValue extends RecordValue, TenantOwned {
 
   /**
-   * @return what is asked
+   * @return what is asked, matched exactly against the probe IDs a worker declares; opaque to the
+   *     engine. By convention it names the kind and the subject, e.g. {@code
+   *     validate-configuration/io.camunda:aws-credential:1}
    */
-  ProbeOperation getOperation();
-
-  /**
-   * @return the ID of the template the probe is about, as declared, e.g. {@code
-   *     io.camunda:aws-credential:1}
-   */
-  String getTemplate();
+  String getProbeId();
 
   /**
    * @return the FEEL expression of the input, as sent by the client; only set on {@code CREATE}

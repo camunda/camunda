@@ -11,7 +11,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
@@ -28,13 +27,8 @@ public final class BrokerProbeCreateRequest extends BrokerExecuteCommand<ProbeRe
     super(ValueType.PROBE, ProbeIntent.CREATE);
   }
 
-  public BrokerProbeCreateRequest setOperation(final ProbeOperation operation) {
-    requestDto.setOperation(operation);
-    return this;
-  }
-
-  public BrokerProbeCreateRequest setTemplate(final String template) {
-    requestDto.setTemplate(template);
+  public BrokerProbeCreateRequest setProbeId(final String probeId) {
+    requestDto.setProbeId(probeId);
     return this;
   }
 

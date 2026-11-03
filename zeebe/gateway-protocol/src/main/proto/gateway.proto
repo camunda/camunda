@@ -80,19 +80,12 @@ enum TenantFilter {
 }
 
 // Opens a stream of probes for one capability: one operation and one template (alpha).
-message ProbeCapability {
-  // the operation the worker answers, e.g. VALIDATE_CONFIGURATION
-  string operation = 1;
-  // the template the worker answers the operation for, e.g. io.camunda:aws-credential:1
-  string template = 2;
-}
-
 message StreamProbesRequest {
-  reserved 1, 2;
-  reserved "operation", "template";
-  // what the worker answers: one stream serves all of them, and a probe is pushed only to a
-  // stream that declares its exact operation and template
-  repeated ProbeCapability capabilities = 6;
+  reserved 1, 2, 6;
+  reserved "operation", "template", "capabilities";
+  // the IDs of the probes the worker answers: one stream serves all of them, and a probe is
+  // pushed only to a stream that declares its exact ID
+  repeated string probeIds = 7;
   // the name of the worker, recorded on the probes pushed to it
   string worker = 3;
   // the tenants for which to stream probes
@@ -105,8 +98,10 @@ message StreamProbesRequest {
 message ActivatedProbe {
   // the key of the probe, used to answer it
   int64 key = 1;
-  string operation = 2;
-  string template = 3;
+  reserved 2, 3;
+  reserved "operation", "template";
+  // the ID of the probe, which selected the handler
+  string probeId = 9;
   string tenantId = 4;
   // the evaluated input, with the secret values injected, as a JSON document
   string input = 5;

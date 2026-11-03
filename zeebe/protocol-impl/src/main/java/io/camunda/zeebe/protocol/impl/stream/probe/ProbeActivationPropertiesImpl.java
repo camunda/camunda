@@ -26,8 +26,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class ProbeActivationPropertiesImpl extends UnpackedObject
     implements ProbeActivationProperties {
   private final StringProperty workerProp = new StringProperty("worker", "");
-  private final ArrayProperty<StringValue> capabilitiesProp =
-      new ArrayProperty<>("capabilities", StringValue::new);
+  private final ArrayProperty<StringValue> probeIdsProp =
+      new ArrayProperty<>("probeIds", StringValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
@@ -38,7 +38,7 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
   public ProbeActivationPropertiesImpl() {
     super(5);
     declareProperty(workerProp)
-        .declareProperty(capabilitiesProp)
+        .declareProperty(probeIdsProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(claimsProp)
         .declareProperty(tenantFilterProp);
@@ -49,10 +49,9 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
     return this;
   }
 
-  public ProbeActivationPropertiesImpl setCapabilities(final Collection<String> capabilities) {
-    capabilitiesProp.reset();
-    capabilities.forEach(
-        capability -> capabilitiesProp.add().wrap(BufferUtil.wrapString(capability)));
+  public ProbeActivationPropertiesImpl setProbeIds(final Collection<String> probeIds) {
+    probeIdsProp.reset();
+    probeIds.forEach(probeId -> probeIdsProp.add().wrap(BufferUtil.wrapString(probeId)));
     return this;
   }
 
@@ -81,8 +80,8 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
   }
 
   @Override
-  public Collection<String> capabilities() {
-    return capabilitiesProp.stream().map(StringValue::toString).toList();
+  public Collection<String> probeIds() {
+    return probeIdsProp.stream().map(StringValue::toString).toList();
   }
 
   @Override

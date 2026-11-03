@@ -25,9 +25,8 @@ public interface ActivatedProbe {
 
   long getKey();
 
-  ProbeOperation getOperation();
-
-  String getTemplate();
+  /** The ID of the probe, which selected the handler. */
+  String getProbeId();
 
   /** The name of the worker the probe was pushed to. */
   String getWorker();

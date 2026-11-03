@@ -11,7 +11,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerProbeAnswerRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerProbeCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import java.time.Duration;
 import java.util.Map;
@@ -58,8 +57,7 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
             : request.requestTimeout();
     final var brokerRequest =
         new BrokerProbeCreateRequest()
-            .setOperation(request.operation())
-            .setTemplate(request.template())
+            .setProbeId(request.probeId())
             .setInputExpression(request.input())
             .setTenantId(request.tenantId())
             .setRequestTimeout(timeout);
@@ -79,11 +77,7 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
   }
 
   public record ProbeCreateRequest(
-      ProbeOperation operation,
-      String template,
-      String input,
-      String tenantId,
-      Long requestTimeout) {}
+      String probeId, String input, String tenantId, Long requestTimeout) {}
 
   public record ProbeAnswerRequest(
       long probeKey, ProbeOutcome outcome, Map<String, Object> data, String message) {}

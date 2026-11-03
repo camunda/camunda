@@ -10,11 +10,9 @@ package io.camunda.zeebe.gateway.impl.stream;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedProbe;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProbeCapability;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.probe.ActivatedProbeImpl;
 import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -25,7 +23,6 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Opens the probe stream of a worker, as {@link StreamJobsHandler} does for one job type. A worker
- * holds one stream for every capability it answers; the stream declares them in its metadata and
+ * holds one stream for every probe it answers; the stream declares their IDs in its metadata and
  * the engine matches each probe against that list.
  */
 public final class StreamProbesHandler extends Actor {
@@ -50,11 +47,11 @@ public final class StreamProbesHandler extends Actor {
   }
 
   public void handle(
-      final List<ProbeCapability> capabilities,
+      final List<String> probeIds,
       final ProbeActivationProperties properties,
       final ServerCallStreamObserver<ActivatedProbe> responseObserver,
       final String physicalTenantId) {
-    final String invalid = validate(capabilities);
+    final String invalid = validate(probeIds);
     if (invalid != null) {
       responseObserver.onError(
           Status.INVALID_ARGUMENT.withDescription(invalid).asRuntimeException());
@@ -84,23 +81,17 @@ public final class StreamProbesHandler extends Actor {
                 }));
   }
 
-  private static @Nullable String validate(final List<ProbeCapability> capabilities) {
-    if (capabilities.isEmpty()) {
-      return "Expected to stream probes for at least one capability, but none was given";
+  private static @Nullable String validate(final List<String> probeIds) {
+    if (probeIds.isEmpty()) {
+      return "Expected to stream probes for at least one probe ID, but none was given";
     }
     final Set<String> seen = new HashSet<>();
-    for (final ProbeCapability capability : capabilities) {
-      final String operation = capability.getOperation();
-      if (Arrays.stream(ProbeOperation.values()).noneMatch(op -> op.name().equals(operation))) {
-        return "Expected to stream probes for one of the operations %s, but it was '%s'"
-            .formatted(Arrays.toString(ProbeOperation.values()), operation);
+    for (final String probeId : probeIds) {
+      if (probeId.isBlank()) {
+        return "Expected to stream probes for non-blank probe IDs, but one was blank";
       }
-      if (capability.getTemplate().isBlank()) {
-        return "Expected to stream probes for a template, but it was blank";
-      }
-      if (!seen.add(operation + ":" + capability.getTemplate())) {
-        return "Expected each capability once, but '%s:%s' was given twice"
-            .formatted(operation, capability.getTemplate());
+      if (!seen.add(probeId)) {
+        return "Expected each probe ID once, but '%s' was given twice".formatted(probeId);
       }
     }
     return null;
@@ -152,8 +143,7 @@ public final class StreamProbesHandler extends Actor {
         activatedProbe =
             ActivatedProbe.newBuilder()
                 .setKey(deserialized.probeKey())
-                .setOperation(record.getOperation().name())
-                .setTemplate(record.getTemplate())
+                .setProbeId(record.getProbeId())
                 .setTenantId(record.getTenantId())
                 .setInput(MsgPackConverter.convertToJson(record.getInputBuffer()))
                 .setDeadline(record.getDeadline())

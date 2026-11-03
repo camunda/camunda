@@ -44,8 +44,8 @@ public final class ProbeClient {
     this.writer = writer;
   }
 
-  public ProbeClient withTemplate(final String template) {
-    probeRecord.setTemplate(template);
+  public ProbeClient withProbeId(final String probeId) {
+    probeRecord.setProbeId(probeId);
     return this;
   }
 

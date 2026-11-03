@@ -36,7 +36,7 @@ import org.junit.Test;
  */
 public final class ProbeSecretTimeoutTest {
 
-  private static final String TEMPLATE = "io.camunda:test-timeout:1";
+  private static final String PROBE_ID = "validate-configuration/io.camunda:test-timeout:1";
 
   private final RecordingProbeStreamer streamer = new RecordingProbeStreamer();
 
@@ -61,14 +61,11 @@ public final class ProbeSecretTimeoutTest {
   @Test
   public void shouldTimeOutWhileWaitingForTheSecret() {
     // given
-    streamer.addStream(
-        "VALIDATE_CONFIGURATION:" + TEMPLATE,
-        "worker-a",
-        List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    streamer.addStream(PROBE_ID, "worker-a", List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     final var created =
         engine
             .probe()
-            .withTemplate(TEMPLATE)
+            .withProbeId(PROBE_ID)
             .withInput("={token: camunda.secrets.apiToken}")
             .withRequestTimeout(1000)
             .withRequest(44, 444L)

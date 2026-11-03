@@ -51,7 +51,8 @@ public final class ProbeSecretTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private final String template = "io.camunda:test-" + UUID.randomUUID() + ":1";
+  private final String probeId =
+      "validate-configuration/io.camunda:test-" + UUID.randomUUID() + ":1";
 
   @Test
   public void shouldParkProbeThenPushItWithTheSecretInjected() {
@@ -62,7 +63,7 @@ public final class ProbeSecretTest {
     final var created =
         engine
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={auth: {token: camunda.secrets.apiToken}}")
             .create();
 
@@ -90,14 +91,14 @@ public final class ProbeSecretTest {
   public void shouldPushRightAwayWhenTheSecretIsCached() {
     // given - a first probe warms the cache
     final var stream = addStream();
-    engine.probe().withTemplate(template).withInput("={token: camunda.secrets.apiToken}").create();
+    engine.probe().withProbeId(probeId).withInput("={token: camunda.secrets.apiToken}").create();
     await().untilAsserted(() -> assertThat(stream.getPushedProbes()).hasSize(1));
 
     // when
     final var second =
         engine
             .probe()
-            .withTemplate(template)
+            .withProbeId(probeId)
             .withInput("={token: camunda.secrets.apiToken}")
             .create();
 
@@ -119,11 +120,7 @@ public final class ProbeSecretTest {
 
     // when
     final var created =
-        engine
-            .probe()
-            .withTemplate(template)
-            .withInput("={token: camunda.secrets.missing}")
-            .create();
+        engine.probe().withProbeId(probeId).withInput("={token: camunda.secrets.missing}").create();
 
     // then
     final var canceled =
@@ -138,9 +135,6 @@ public final class ProbeSecretTest {
   }
 
   private RecordingProbeStream addStream() {
-    return streamer.addStream(
-        "VALIDATE_CONFIGURATION:" + template,
-        "worker-a",
-        List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    return streamer.addStream(probeId, "worker-a", List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 }

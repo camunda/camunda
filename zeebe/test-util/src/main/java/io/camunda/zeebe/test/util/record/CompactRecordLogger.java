@@ -2281,7 +2281,7 @@ public class CompactRecordLogger {
     final var value = (ProbeRecordValue) record.getValue();
     final var result = new StringBuilder();
 
-    result.append(value.getOperation()).append(" \"").append(value.getTemplate()).append("\"");
+    result.append("\"").append(value.getProbeId()).append("\"");
     if (!value.getWorker().isEmpty()) {
       result.append(" worker:").append(value.getWorker());
     }

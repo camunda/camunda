@@ -782,14 +782,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   JobWorkerBuilderStep1 newWorker();
 
   /**
-   * Registers a probe worker (alpha): it answers the probes of every capability registered on it,
-   * each an operation for one template, over a single stream. Probes are pushed over the stream and
-   * answered over REST.
+   * Registers a probe worker (alpha): it answers the probes of one probe ID, which are pushed over
+   * a stream and answered over REST.
    *
    * <pre>
    * client.newProbeWorker()
-   *   .capability(ProbeOperation.VALIDATE_CONFIGURATION, "io.camunda:aws-credential:1", awsHandler)
-   *   .capability(ProbeOperation.VALIDATE_CONFIGURATION, "io.camunda:slack:1", slackHandler)
+   *   .probeId("validate-configuration/io.camunda:aws-credential:1")
+   *   .handler(awsCredentialHandler)
    *   .open();
    * </pre>
    */

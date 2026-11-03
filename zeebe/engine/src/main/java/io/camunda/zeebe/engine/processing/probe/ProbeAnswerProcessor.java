@@ -75,7 +75,7 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
       return;
     }
 
-    final var invalid = ProbeAnswerValidator.validate(probe.getOperation(), command.getValue());
+    final var invalid = ProbeAnswerValidator.validate(command.getValue());
     if (invalid.isPresent()) {
       reject(command, RejectionType.INVALID_ARGUMENT, invalid.get());
       return;
@@ -88,16 +88,20 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
 
     final var answer = command.getValue();
     final var answered = ProbeBehavior.withoutInput(probe).setOutcome(answer.getOutcome());
-    // the envelope carries data only with OK, and a message only with ERROR
-    if (answer.getOutcome() == ProbeOutcome.OK) {
-      answered.setData(answer.getDataBuffer());
-    } else if (answer.getOutcome() == ProbeOutcome.ERROR) {
+    if (answer.getOutcome() == ProbeOutcome.ERROR) {
       answered.setMessage(answer.getMessage());
     }
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.ANSWERED, answered);
     responseWriter.writeAcceptedResponseOnCommand(
         probeKey, ProbeIntent.ANSWERED, answered, command);
-    commandWriter.appendFollowUpCommand(probeKey, ProbeIntent.RESPOND, answered);
+
+    // the data goes to the client only: an answer can be large or carry business data, so it
+    // stays off the exported ANSWERED event, and the exporters skip the RESPOND command
+    final var response = answered.copy();
+    if (answer.getOutcome() == ProbeOutcome.OK) {
+      response.setData(answer.getDataBuffer());
+    }
+    commandWriter.appendFollowUpCommand(probeKey, ProbeIntent.RESPOND, response);
   }
 
   private io.camunda.zeebe.util.Either<Rejection, ProbeRecord> authorize(
@@ -109,7 +113,7 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
             b ->
                 b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROBE))
                     .permissionType(AuthzModelMapper.fromProtocol(PermissionType.ANSWER))
-                    .resourceId(probe.getTemplate())),
+                    .resourceId(probe.getProbeId())),
         probe,
         AuthorizationRejectionMapper.noPrincipal(),
         probe.getTenantId(),

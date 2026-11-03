@@ -101,8 +101,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
     final var value = command.getValue();
     final var probe =
         new ProbeRecord()
-            .setOperation(value.getOperation())
-            .setTemplate(value.getTemplate())
+            .setProbeId(value.getProbeId())
             .setTenantId(value.getTenantId())
             .setInputExpression(value.getInputExpression())
             .setRequestTimeout(value.getRequestTimeout());
@@ -137,10 +136,10 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
   }
 
   private Either<Rejection, ProbeRecord> validate(final ProbeRecord probe) {
-    if (probe.getTemplate().isBlank()) {
+    if (probe.getProbeId().isBlank()) {
       return Either.left(
           new Rejection(
-              RejectionType.INVALID_ARGUMENT, "Expected a template, but none was given."));
+              RejectionType.INVALID_ARGUMENT, "Expected a probe ID, but none was given."));
     }
     if (probe.getRequestTimeout() < 0 || probe.getRequestTimeout() > MAX_REQUEST_TIMEOUT) {
       return Either.left(
@@ -160,7 +159,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
             b ->
                 b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROBE))
                     .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
-                    .resourceId(probe.getTemplate())),
+                    .resourceId(probe.getProbeId())),
         probe,
         AuthorizationRejectionMapper.noPrincipal(),
         probe.getTenantId(),

@@ -27,10 +27,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "operation": {
-              "type": "keyword"
-            },
-            "template": {
+            "probeId": {
               "type": "keyword"
             },
             "tenantId": {

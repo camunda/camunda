@@ -569,10 +569,7 @@ public final class RequestMapper extends RequestUtil {
             : List.of();
     return new ProbeActivationPropertiesImpl()
         .setWorker(request.getWorker())
-        .setCapabilities(
-            request.getCapabilitiesList().stream()
-                .map(capability -> capability.getOperation() + ":" + capability.getTemplate())
-                .toList())
+        .setProbeIds(request.getProbeIdsList())
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter)
         .setClaims(claims);

@@ -15,9 +15,9 @@ import org.agrona.DirectBuffer;
 
 /**
  * Finds the probe stream to push a probe to. A probe stream is the subscription of a probe worker
- * for one capability, i.e. one operation and one template; its type is {@code
- * <operation>:<template>} and is matched exactly. Mirrors {@link JobStreamer}, without the
- * notification for long polling, which probes do not have.
+ * for every probe it answers; its metadata declares their IDs, which the caller's filter matches
+ * exactly. Mirrors {@link JobStreamer}, without the notification for long polling, which probes do
+ * not have.
  */
 public interface ProbeStreamer {
   static ProbeStreamer noop() {

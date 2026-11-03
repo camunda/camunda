@@ -14,21 +14,21 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 /**
- * The metadata of a probe stream, i.e. of one probe worker and every capability it answers. Mirrors
+ * The metadata of a probe stream, i.e. of one probe worker and every probe it answers. Mirrors
  * {@link io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties} without what only jobs
  * need (timeout, fetched variables, lease).
  */
 public interface ProbeActivationProperties extends BufferWriter {
 
   /**
-   * The type of every probe stream. Probes are rare, so a worker holds one stream for all its
-   * capabilities instead of one per capability, and the engine matches a probe against {@link
-   * #capabilities()}.
+   * The type of every probe stream. Probes are rare, so a worker holds one stream for all the
+   * probes it answers instead of one per probe, and the engine matches a probe against {@link
+   * #probeIds()}.
    */
   String STREAM_TYPE = "probes";
 
-  /** Returns what the worker answers, each as {@code <operation>:<template>}. */
-  Collection<String> capabilities();
+  /** Returns the IDs of the probes the worker answers, each matched exactly. */
+  Collection<String> probeIds();
 
   /** Returns the name of the worker, recorded on the probe when it is pushed. */
   DirectBuffer worker();

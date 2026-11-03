@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.probe.ActivatedProbe;
 import io.camunda.client.api.worker.probe.ProbeAnswer;
-import io.camunda.client.api.worker.probe.ProbeOperation;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -42,7 +41,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class ProbeIT {
 
-  private static final String TEMPLATE = "io.camunda:aws-credential:1";
+  private static final String PROBE_ID = "validate-configuration/io.camunda:aws-credential:1";
   private static final String ACCESS_KEY = "AKIA-probe-e2e-secret";
   private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -71,9 +70,8 @@ final class ProbeIT {
     worker =
         client
             .newProbeWorker()
-            .capability(
-                ProbeOperation.VALIDATE_CONFIGURATION,
-                TEMPLATE,
+            .probeId(PROBE_ID)
+            .handler(
                 probe -> {
                   received.set(probe);
                   final var valid = ACCESS_KEY.equals(probe.getInputAsMap().get("accessKey"));
@@ -107,14 +105,14 @@ final class ProbeIT {
         .isEqualTo(
             Map.of("status", "SUCCESS", "code", "OK", "message", "The credential is valid."));
 
-    assertThat(received.get().getTemplate()).isEqualTo(TEMPLATE);
+    assertThat(received.get().getProbeId()).isEqualTo(PROBE_ID);
     assertThat(received.get().getInputAsMap())
         .isEqualTo(Map.of("region", "eu-west-1", "accessKey", ACCESS_KEY));
     assertThat(received.get().toString()).doesNotContain(ACCESS_KEY);
   }
 
   @Test
-  void shouldAnswerNoWorkerWhenNoWorkerAnswersTheTemplate() throws Exception {
+  void shouldAnswerNoWorkerWhenNoWorkerAnswersTheProbeId() throws Exception {
     // when
     final var response = createProbe();
 
@@ -128,10 +126,8 @@ final class ProbeIT {
     final var body =
         JSON.writeValueAsString(
             Map.of(
-                "operation",
-                "VALIDATE_CONFIGURATION",
-                "template",
-                TEMPLATE,
+                "probeId",
+                PROBE_ID,
                 "input",
                 "={region: \"eu-west-1\", accessKey: camunda.secrets.awsKey}",
                 "requestTimeout",

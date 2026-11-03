@@ -18,10 +18,8 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.swagger.v3.oas.annotations.Hidden;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -64,11 +62,7 @@ public class ProbeController {
     }
     final var request =
         new ProbeCreateRequest(
-            ProbeOperation.valueOf(body.operation()),
-            body.template(),
-            body.input(),
-            body.tenantId(),
-            body.requestTimeout());
+            body.probeId(), body.input(), body.tenantId(), body.requestTimeout());
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
             () -> probeServices(physicalTenantId).createProbe(request, authentication),
@@ -117,14 +111,8 @@ public class ProbeController {
   }
 
   private static String validate(final CreateProbeBody body) {
-    if (body.operation() == null
-        || Arrays.stream(ProbeOperation.values())
-            .noneMatch(op -> op.name().equals(body.operation()))) {
-      return "Expected the operation to be one of %s, but it was '%s'."
-          .formatted(Arrays.toString(ProbeOperation.values()), body.operation());
-    }
-    if (body.template() == null || body.template().isBlank()) {
-      return "Expected a template, but none was given.";
+    if (body.probeId() == null || body.probeId().isBlank()) {
+      return "Expected a probe ID, but none was given.";
     }
     if (body.input() == null || body.input().isBlank()) {
       return "Expected an input, but none was given.";
@@ -167,7 +155,7 @@ public class ProbeController {
   }
 
   public record CreateProbeBody(
-      String operation, String template, String input, String tenantId, Long requestTimeout) {}
+      String probeId, String input, String tenantId, Long requestTimeout) {}
 
   public record AnswerProbeBody(String outcome, Map<String, Object> data, String message) {}
 }

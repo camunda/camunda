@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProbeRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProbeOperation;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,8 +35,7 @@ final class ProbeAuditLogTransformerTest {
     final ProbeRecordValue value =
         ImmutableProbeRecordValue.builder()
             .from(factory.generateObject(ProbeRecordValue.class))
-            .withOperation(ProbeOperation.VALIDATE_CONFIGURATION)
-            .withTemplate("io.camunda:aws-credential:1")
+            .withProbeId("validate-configuration/io.camunda:aws-credential:1")
             .build();
     final Record<ProbeRecordValue> record =
         factory.generateRecord(
@@ -57,7 +55,7 @@ final class ProbeAuditLogTransformerTest {
     assertThat(entry.getEntityType()).isEqualTo(AuditLogEntityType.PROBE);
     assertThat(entry.getEntityKey()).isEqualTo("333");
     assertThat(entry.getEntityDescription())
-        .isEqualTo("VALIDATE_CONFIGURATION io.camunda:aws-credential:1");
+        .isEqualTo("validate-configuration/io.camunda:aws-credential:1");
     assertThat(entry.getOperationType()).isEqualTo(operationType);
   }
 }
