@@ -379,11 +379,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
+  public List<ChunkItem> getNextItems(final long batchOperationKey, final int batchSize) {
     final var batch = get(batchOperationKey);
     if (batch.isEmpty()) {
       LOGGER.error(
-          "Batch operation with key {} not found, cannot get next item keys.", batchOperationKey);
+          "Batch operation with key {} not found, cannot get next items.", batchOperationKey);
       return List.of();
     }
 
@@ -391,14 +391,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       return List.of();
     }
 
-    // return the next item keys for the batch operation. This will not return more than batchSize
-    // itemKeys but _can_ return less if the chunk has less than batchSize items. This does not
+    // return the next items for the batch operation. This will not return more than batchSize
+    // items but _can_ return less if the chunk has less than batchSize items. This does not
     // mean, that the batch operation has no more item chunks with items.
     chunkKey.wrapLong(batch.get().getMinChunkKey());
     final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
-    final var chunkKeys = chunk.getItemKeys();
 
-    return chunkKeys.stream().limit(batchSize).toList();
+    return chunk.getItems().stream().limit(batchSize).toList();
   }
 
   /** This deletes everything related to the batch operation. */
