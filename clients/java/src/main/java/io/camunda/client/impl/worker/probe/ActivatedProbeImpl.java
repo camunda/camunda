@@ -17,7 +17,6 @@ package io.camunda.client.impl.worker.probe;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.probe.ActivatedProbe;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -32,16 +31,20 @@ public final class ActivatedProbeImpl implements ActivatedProbe {
   private final String physicalTenantId;
   private final String input;
 
-  public ActivatedProbeImpl(
-      final JsonMapper jsonMapper, final GatewayOuterClass.ActivatedProbe probe) {
+  /** Reads one probe of the {@code POST /v2/probes/activation} response. */
+  public ActivatedProbeImpl(final JsonMapper jsonMapper, final Map<?, ?> probe) {
     this.jsonMapper = jsonMapper;
-    key = probe.getKey();
-    probeId = probe.getProbeId();
-    worker = probe.getWorker();
-    deadline = probe.getDeadline();
-    tenantId = probe.getTenantId();
-    physicalTenantId = probe.getPhysicalTenantId();
-    input = probe.getInput().isEmpty() ? "{}" : probe.getInput();
+    key = Long.parseLong(String.valueOf(probe.get("probeKey")));
+    probeId = text(probe.get("probeId"));
+    worker = text(probe.get("worker"));
+    deadline = probe.get("deadline") == null ? -1 : ((Number) probe.get("deadline")).longValue();
+    tenantId = text(probe.get("tenantId"));
+    physicalTenantId = text(probe.get("physicalTenantId"));
+    input = probe.get("input") == null ? "{}" : jsonMapper.toJson(probe.get("input"));
+  }
+
+  private static String text(final Object value) {
+    return value == null ? "" : String.valueOf(value);
   }
 
   @Override

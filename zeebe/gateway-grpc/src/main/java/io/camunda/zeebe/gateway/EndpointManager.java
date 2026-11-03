@@ -22,13 +22,11 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.impl.stream.StreamProbesHandler;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedProbe;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -69,7 +67,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRespon
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamProbesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
@@ -82,7 +79,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRespo
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
-import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -92,7 +88,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import org.jspecify.annotations.Nullable;
 
 public final class EndpointManager {
 
@@ -101,7 +96,6 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final @Nullable StreamProbesHandler streamProbesHandler;
   private final Map<String, BrokerRequestAuthorizationConverter>
       authorizationConvertersByPhysicalTenant;
 
@@ -115,23 +109,6 @@ public final class EndpointManager {
       final StreamJobsHandler streamJobsHandler,
       final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final int maxVariableNameLength) {
-    this(
-        brokerClient,
-        activateJobsHandler,
-        streamJobsHandler,
-        null,
-        securityConfigurationsByPhysicalTenant,
-        maxVariableNameLength);
-  }
-
-  public EndpointManager(
-      final BrokerClient brokerClient,
-      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
-      final StreamJobsHandler streamJobsHandler,
-      final @Nullable StreamProbesHandler streamProbesHandler,
-      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
-      final int maxVariableNameLength) {
-    this.streamProbesHandler = streamProbesHandler;
     final EngineSecurityConfig securityConfiguration =
         securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     this.brokerClient = brokerClient;
@@ -236,28 +213,6 @@ public final class EndpointManager {
 
       streamJobsHandler.handle(
           request.getType(), brokerRequest, responseObserver, physicalTenantId);
-    } catch (final Exception e) {
-      responseObserver.onError(e);
-    }
-  }
-
-  public void streamProbes(
-      final StreamProbesRequest request,
-      final ServerCallStreamObserver<ActivatedProbe> responseObserver) {
-    if (streamProbesHandler == null) {
-      responseObserver.onError(
-          Status.UNIMPLEMENTED
-              .withDescription("Probe streams are not set up")
-              .asRuntimeException());
-      return;
-    }
-    try {
-      final var properties = RequestMapper.toProbeActivationProperties(request, getClaims());
-      final String physicalTenantId =
-          Objects.requireNonNullElse(
-              getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-      streamProbesHandler.handle(
-          request.getProbeIdsList(), properties, responseObserver, physicalTenantId);
     } catch (final Exception e) {
       responseObserver.onError(e);
     }

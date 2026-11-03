@@ -17,7 +17,6 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
-import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamApiHandler;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamRegistry;
@@ -60,45 +59,19 @@ public final class TransportFactory {
       final RemoteStreamErrorHandler<P> errorHandler,
       final RemoteStreamMetrics metrics,
       final String physicalTenantId) {
-    return createRemoteStreamServer(
-        clusterCommunicationService,
-        metadataFactory,
-        errorHandler,
-        metrics,
-        physicalTenantId,
-        StreamTopicNamespace.DEFAULT);
-  }
-
-  public <M, P extends BufferWriter> RemoteStreamService<M, P> createRemoteStreamServer(
-      final ClusterCommunicationService clusterCommunicationService,
-      final Function<DirectBuffer, M> metadataFactory,
-      final RemoteStreamErrorHandler<P> errorHandler,
-      final RemoteStreamMetrics metrics,
-      final String physicalTenantId,
-      final StreamTopicNamespace namespace) {
     final RemoteStreamRegistry<M> registry = new RemoteStreamRegistry<>(metrics);
     return new RemoteStreamServiceImpl<>(
-        new RemoteStreamerImpl<>(
-            clusterCommunicationService, registry, errorHandler, metrics, namespace),
+        new RemoteStreamerImpl<>(clusterCommunicationService, registry, errorHandler, metrics),
         new RemoteStreamTransport<>(
             clusterCommunicationService,
             new RemoteStreamApiHandler<>(registry, metadataFactory),
-            physicalTenantId,
-            namespace),
+            physicalTenantId),
         registry);
   }
 
   public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
       final ClusterCommunicationService clusterCommunicationService,
       final Function<String, ClientStreamMetrics> metricsFactory) {
-    return createRemoteStreamClient(
-        clusterCommunicationService, metricsFactory, StreamTopicNamespace.DEFAULT);
-  }
-
-  public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
-      final ClusterCommunicationService clusterCommunicationService,
-      final Function<String, ClientStreamMetrics> metricsFactory,
-      final StreamTopicNamespace namespace) {
-    return new ClientStreamServiceImpl<>(clusterCommunicationService, metricsFactory, namespace);
+    return new ClientStreamServiceImpl<>(clusterCommunicationService, metricsFactory);
   }
 }

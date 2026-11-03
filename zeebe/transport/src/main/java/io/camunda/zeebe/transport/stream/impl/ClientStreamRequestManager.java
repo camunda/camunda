@@ -15,7 +15,6 @@ import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
@@ -75,18 +74,9 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
-  private final StreamTopicNamespace namespace;
 
   ClientStreamRequestManager(
       final ClusterCommunicationService communicationService, final ConcurrencyControl executor) {
-    this(communicationService, executor, StreamTopicNamespace.DEFAULT);
-  }
-
-  ClientStreamRequestManager(
-      final ClusterCommunicationService communicationService,
-      final ConcurrencyControl executor,
-      final StreamTopicNamespace namespace) {
-    this.namespace = namespace;
     this.communicationService = communicationService;
     this.executor = executor;
   }
@@ -194,7 +184,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             servers.forEach(
                 serverId -> {
                   communicationService.unicast(
-                      namespace.topic(StreamTopics.REMOVE, physicalTenantId),
+                      StreamTopics.REMOVE.topic(physicalTenantId),
                       payload,
                       Function.identity(),
                       serverId,
@@ -293,7 +283,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final CompletableFuture<Void> primary,
       final String physicalTenantId,
       final Consumer<CompletableFuture<Void>> sendLegacy) {
-    if (!namespace.hasLegacyTopics() || !DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return primary;
     }
 
@@ -353,7 +343,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            namespace.topic(StreamTopics.ADD, registration.physicalTenantId()),
+            StreamTopics.ADD.topic(registration.physicalTenantId()),
             request,
             Function.identity(),
             Function.identity(),
@@ -453,7 +443,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            namespace.topic(StreamTopics.REMOVE, registration.physicalTenantId()),
+            StreamTopics.REMOVE.topic(registration.physicalTenantId()),
             request,
             Function.identity(),
             Function.identity(),
@@ -590,7 +580,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private void doRemoveAll(final MemberId brokerId, final String physicalTenantId) {
     communicationService.unicast(
-        namespace.topic(StreamTopics.REMOVE_ALL, physicalTenantId),
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId),
         REMOVE_ALL_REQUEST,
         Function.identity(),
         brokerId,
@@ -605,7 +595,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final String physicalTenantId,
       final byte[] payload,
       final MemberId serverId) {
-    if (!namespace.hasLegacyTopics() || !DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return;
     }
     communicationService.unicast(topic.legacyTopic(), payload, Function.identity(), serverId, true);

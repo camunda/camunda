@@ -54,7 +54,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamProbesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -68,8 +67,6 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
-import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
-import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -558,21 +555,6 @@ public final class RequestMapper extends RequestUtil {
         .setWithLease(request.getWithLease());
 
     return jobActivationProperties;
-  }
-
-  public static ProbeActivationProperties toProbeActivationProperties(
-      final StreamProbesRequest request, final Map<String, Object> claims) {
-    final var tenantFilter = convertTenantFilter(request.getTenantFilter());
-    final List<String> tenantIds =
-        tenantFilter == TenantFilter.PROVIDED
-            ? ensureTenantIdsSet("StreamProbes", request.getTenantIdsList())
-            : List.of();
-    return new ProbeActivationPropertiesImpl()
-        .setWorker(request.getWorker())
-        .setProbeIds(request.getProbeIdsList())
-        .setTenantIds(tenantIds)
-        .setTenantFilter(tenantFilter)
-        .setClaims(claims);
   }
 
   private static String ensureVersionTagValid(final String versionTag) {

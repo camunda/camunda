@@ -114,10 +114,12 @@ final class ProbeIT {
   @Test
   void shouldAnswerNoWorkerWhenNoWorkerAnswersTheProbeId() throws Exception {
     // when
+    final long start = System.nanoTime();
     final var response = createProbe();
+    final long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
     // then
-    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(response.statusCode()).as(elapsedMs + " ms: " + response.body()).isEqualTo(404);
     final Map<?, ?> problem = JSON.readValue(response.body(), Map.class);
     assertThat(problem.get("title")).isEqualTo("NO_WORKER");
   }

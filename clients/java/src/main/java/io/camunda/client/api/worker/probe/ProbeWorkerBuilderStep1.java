@@ -15,12 +15,13 @@
  */
 package io.camunda.client.api.worker.probe;
 
+import io.camunda.client.api.worker.BackoffSupplier;
 import java.time.Duration;
 import java.util.List;
 
 /**
  * Builds a probe worker (alpha), as {@code newWorker().jobType(type).handler(handler)} builds a job
- * worker. One probe worker answers one probe ID.
+ * worker. One probe worker polls for one probe ID.
  */
 public interface ProbeWorkerBuilderStep1 {
 
@@ -46,11 +47,20 @@ public interface ProbeWorkerBuilderStep1 {
 
     ProbeWorkerBuilderStep3 tenantIds(String... tenantIds);
 
-    /** How many probes are handled at the same time; further pushes wait for a free slot. */
+    /** How many probes are handled at the same time; the worker polls only for free slots. */
     ProbeWorkerBuilderStep3 maxProbesActive(int maxProbesActive);
 
-    /** How long to wait before opening the stream again after it failed. */
-    ProbeWorkerBuilderStep3 streamRetryDelay(Duration retryDelay);
+    /** How long to wait between two polls that returned no probe. */
+    ProbeWorkerBuilderStep3 pollInterval(Duration pollInterval);
+
+    /** How long the gateway holds a poll open when no probe is waiting (long polling). */
+    ProbeWorkerBuilderStep3 requestTimeout(Duration requestTimeout);
+
+    /**
+     * The delay before polling again after a failed poll, including a 404 from a cluster without
+     * probes; exponential by default.
+     */
+    ProbeWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
 
     ProbeWorker open();
   }

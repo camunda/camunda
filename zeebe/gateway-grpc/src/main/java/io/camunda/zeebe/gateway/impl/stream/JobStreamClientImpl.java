@@ -10,14 +10,12 @@ package io.camunda.zeebe.gateway.impl.stream;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
-import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
-import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 
@@ -29,7 +27,6 @@ import java.util.Collection;
 public final class JobStreamClientImpl implements JobStreamClient {
   private final ActorSchedulingService schedulingService;
   private final ClientStreamService<JobActivationProperties> streamService;
-  private final ClientStreamService<ProbeActivationProperties> probeStreamService;
 
   public JobStreamClientImpl(
       final ActorSchedulingService schedulingService,
@@ -41,25 +38,16 @@ public final class JobStreamClientImpl implements JobStreamClient {
             .createRemoteStreamClient(
                 clusterCommunicationService,
                 physicalTenantId -> new JobClientStreamMetrics(meterRegistry, physicalTenantId));
-    probeStreamService =
-        new TransportFactory(schedulingService)
-            .createRemoteStreamClient(
-                clusterCommunicationService,
-                physicalTenantId ->
-                    new JobClientStreamMetrics(meterRegistry, "probe-" + physicalTenantId),
-                StreamTopicNamespace.PROBES);
   }
 
   @Override
   public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
     streamService.onServerJoined(memberId.memberId(), physicalTenantId);
-    probeStreamService.onServerJoined(memberId.memberId(), physicalTenantId);
   }
 
   @Override
   public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
     streamService.onServerRemoved(memberId.memberId(), physicalTenantId);
-    probeStreamService.onServerRemoved(memberId.memberId(), physicalTenantId);
   }
 
   @Override
@@ -68,13 +56,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
   }
 
   @Override
-  public ClientStreamer<ProbeActivationProperties> probeStreamer() {
-    return probeStreamService.streamer();
-  }
-
-  @Override
   public ActorFuture<Void> start() {
-    probeStreamService.start(schedulingService);
     return streamService.start(schedulingService);
   }
 
@@ -85,7 +67,6 @@ public final class JobStreamClientImpl implements JobStreamClient {
 
   @Override
   public void close() {
-    probeStreamService.closeAsync().join();
     streamService.closeAsync().join();
   }
 }

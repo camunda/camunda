@@ -947,12 +947,7 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ProbeWorkerBuilderStep1 newProbeWorker() {
     return new ProbeWorkerBuilderImpl(
-        config,
-        asyncStub,
-        httpClient,
-        jsonMapper,
-        executorResource.scheduledExecutor(),
-        closeables);
+        config, httpClient, jsonMapper, executorResource.scheduledExecutor(), closeables);
   }
 
   @Override

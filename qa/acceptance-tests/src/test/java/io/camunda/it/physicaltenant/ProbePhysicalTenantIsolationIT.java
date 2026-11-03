@@ -134,7 +134,7 @@ final class ProbePhysicalTenantIsolationIT {
     final var response = createProbe("", TENANT_A_ONLY_PROBE_ID);
 
     // then
-    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(response.statusCode()).as(response.body()).isEqualTo(404);
     assertThat(JSON.readValue(response.body(), Map.class).get("title")).isEqualTo("NO_WORKER");
   }
 

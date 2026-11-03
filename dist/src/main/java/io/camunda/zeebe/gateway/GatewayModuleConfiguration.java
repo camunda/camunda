@@ -153,7 +153,6 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            jobStreamClient.probeStreamer(),
             jwtDecoderFactory,
             oidcClaimsProviderFactory,
             userServicesForTenant,

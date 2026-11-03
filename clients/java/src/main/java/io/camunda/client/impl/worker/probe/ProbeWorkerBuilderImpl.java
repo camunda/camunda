@@ -17,19 +17,17 @@ package io.camunda.client.impl.worker.probe;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.probe.ProbeHandler;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep2;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep3;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamProbesRequest;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -38,7 +36,6 @@ import java.util.concurrent.ScheduledExecutorService;
 public final class ProbeWorkerBuilderImpl
     implements ProbeWorkerBuilderStep1, ProbeWorkerBuilderStep2, ProbeWorkerBuilderStep3 {
 
-  private final GatewayStub asyncStub;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final ScheduledExecutorService scheduler;
@@ -49,16 +46,16 @@ public final class ProbeWorkerBuilderImpl
   private String workerName;
   private List<String> tenantIds;
   private int maxProbesActive = 4;
-  private Duration retryDelay = Duration.ofSeconds(1);
+  private Duration pollInterval = Duration.ofMillis(100);
+  private Duration requestTimeout = Duration.ofSeconds(10);
+  private BackoffSupplier backoffSupplier = BackoffSupplier.newBackoffBuilder().build();
 
   public ProbeWorkerBuilderImpl(
       final CamundaClientConfiguration config,
-      final GatewayStub asyncStub,
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final ScheduledExecutorService scheduler,
       final List<Closeable> closeables) {
-    this.asyncStub = asyncStub;
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.scheduler = scheduler;
@@ -103,29 +100,39 @@ public final class ProbeWorkerBuilderImpl
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 streamRetryDelay(final Duration retryDelay) {
-    this.retryDelay = retryDelay;
+  public ProbeWorkerBuilderStep3 pollInterval(final Duration pollInterval) {
+    this.pollInterval = pollInterval;
+    return this;
+  }
+
+  @Override
+  public ProbeWorkerBuilderStep3 requestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public ProbeWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
+    this.backoffSupplier = backoffSupplier;
     return this;
   }
 
   @Override
   public ProbeWorker open() {
-    final StreamProbesRequest request =
-        StreamProbesRequest.newBuilder()
-            .addProbeIds(probeId)
-            .setWorker(workerName)
-            .addAllTenantIds(tenantIds)
-            .build();
     final ProbeWorkerImpl worker =
         new ProbeWorkerImpl(
-            asyncStub,
             httpClient,
             jsonMapper,
-            request,
-            Collections.singletonMap(probeId, handler),
+            probeId,
+            workerName,
+            tenantIds,
+            handler,
             scheduler,
             Executors.newFixedThreadPool(maxProbesActive),
-            retryDelay);
+            maxProbesActive,
+            pollInterval,
+            requestTimeout,
+            backoffSupplier);
     closeables.add(worker::close);
     worker.open();
     return worker;

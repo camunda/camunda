@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
-import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
@@ -21,12 +20,6 @@ public interface JobStreamClient extends BrokerTopologyListener, CloseableSilent
 
   /** Returns the underlying job streamer. */
   ClientStreamer<JobActivationProperties> streamer();
-
-  /**
-   * Returns the probe streamer. Probe streams run next to job streams, on their own topics; they
-   * live here so that every place that sets up job streaming sets up probe streaming too.
-   */
-  ClientStreamer<ProbeActivationProperties> probeStreamer();
 
   /** Asynchronously starts the job stream client. */
   ActorFuture<Void> start();

@@ -59,7 +59,6 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            jobStreamClient.probeStreamer(),
             jwtDecoderFactory,
             oidcClaimsProviderFactory,
             userServicesForTenant,

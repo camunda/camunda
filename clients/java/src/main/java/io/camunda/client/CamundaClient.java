@@ -782,8 +782,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   JobWorkerBuilderStep1 newWorker();
 
   /**
-   * Registers a probe worker (alpha): it answers the probes of one probe ID, which are pushed over
-   * a stream and answered over REST.
+   * Registers a probe worker (alpha): it polls for the probes of one probe ID and answers them,
+   * both over REST.
    *
    * <pre>
    * client.newProbeWorker()

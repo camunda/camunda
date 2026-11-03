@@ -65,36 +65,23 @@ public class ProbeController {
   }
 
   @CamundaPostMapping
-  public CompletableFuture<ResponseEntity<Object>> createProbe(
+  public DeferredResult<ResponseEntity<Object>> createProbe(
       @PhysicalTenantId final String physicalTenantId, @RequestBody final CreateProbeBody body) {
     final var invalid = validate(body);
     if (invalid != null) {
-      return RestErrorMapper.mapProblemToCompletedResponse(
-          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, invalid));
+      return badRequest(invalid);
     }
     final var request =
         new ProbeCreateRequest(
             body.probeId(), body.input(), body.tenantId(), body.requestTimeout());
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    return RequestExecutor.executeServiceMethod(
+    // no async timeout: the request waits for the probe's end, which its deadline bounds, and the
+    // client must get that answer (e.g. 404 NO_WORKER) rather than the servlet container's timeout
+    return RequestExecutor.toDeferredResult(
+        RequestExecutor.executeServiceMethod(
             () -> probeServices(physicalTenantId).createProbe(request, authentication),
-            ProbeController::toResponse)
-        .thenApply(ProbeController::titleNoWorkerRejection);
-  }
-
-  /**
-   * A probe no worker can take at all is rejected at create; the rejection keeps its generic title,
-   * so it is named here as the end of a probe would be.
-   */
-  private static ResponseEntity<Object> titleNoWorkerRejection(
-      final ResponseEntity<Object> response) {
-    if (response.getStatusCode() == HttpStatus.NOT_FOUND
-        && response.getBody() instanceof final ProblemDetail problem
-        && problem.getDetail() != null
-        && problem.getDetail().contains("No worker can answer")) {
-      problem.setTitle(ProbeEndReason.NO_WORKER.name());
-    }
-    return response;
+            ProbeController::toResponse),
+        -1L);
   }
 
   /**

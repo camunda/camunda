@@ -79,40 +79,6 @@ enum TenantFilter {
   ASSIGNED = 1;
 }
 
-// Opens a stream of probes for one capability: one operation and one template (alpha).
-message StreamProbesRequest {
-  reserved 1, 2, 6;
-  reserved "operation", "template", "capabilities";
-  // the IDs of the probes the worker answers: one stream serves all of them, and a probe is
-  // pushed only to a stream that declares its exact ID
-  repeated string probeIds = 7;
-  // the name of the worker, recorded on the probes pushed to it
-  string worker = 3;
-  // the tenants for which to stream probes
-  repeated string tenantIds = 4;
-  // the tenant filtering strategy
-  TenantFilter tenantFilter = 5;
-}
-
-// A probe pushed to a worker; the worker answers it over REST (alpha).
-message ActivatedProbe {
-  // the key of the probe, used to answer it
-  int64 key = 1;
-  reserved 2, 3;
-  reserved "operation", "template";
-  // the ID of the probe, which selected the handler
-  string probeId = 9;
-  string tenantId = 4;
-  // the evaluated input, with the secret values injected, as a JSON document
-  string input = 5;
-  // when the client stops waiting, as a UNIX epoch timestamp
-  int64 deadline = 6;
-  // the name of the worker the probe was pushed to
-  string worker = 7;
-  // the id of the physical tenant whose stream the probe was pushed on
-  string physicalTenantId = 8;
-}
-
 message ActivatedJob {
   // Describes the kind of job.
   enum JobKind {
@@ -1152,12 +1118,6 @@ service Gateway {
       - If multi-tenancy is disabled, and tenantIds is not empty (empty list), or has an ID other than <default>
   */
   rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
-  }
-
-  /*
-    Opens a stream of probes for one capability (alpha). The probes are answered over REST.
-   */
-  rpc StreamProbes (StreamProbesRequest) returns (stream ActivatedProbe) {
   }
 
   /*
