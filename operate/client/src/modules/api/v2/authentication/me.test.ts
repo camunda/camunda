@@ -48,9 +48,9 @@ describe('getMe', () => {
 
 describe('isAnonymousCurrentUser', () => {
   it('should detect an anonymous current user', async () => {
-    expect(await isAnonymousCurrentUser(Response.json({isAnonymous: true}))).toBe(
-      true,
-    );
+    expect(
+      await isAnonymousCurrentUser(Response.json({isAnonymous: true})),
+    ).toBe(true);
   });
 
   it('should not treat a current user without the flag as anonymous', async () => {
