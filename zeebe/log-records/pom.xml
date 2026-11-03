@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.11.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+  <artifactId>zeebe-log-records</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Zeebe Log Records</name>
+  <description>Decodes the records of a partition's replicated log, from journal records and Raft entries down to the log stream's frames</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-journal</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-broker-dependencies</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.camunda:zeebe-logstreams:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-logstreams:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-stream-platform:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-stream-platform:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-journal:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-journal:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-atomix-cluster:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-atomix-cluster:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-scheduler:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-scheduler:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-db:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-db:*:*:runtime</exclude>
+                    <exclude>io.camunda:zeebe-bpmn-model:*:*:compile</exclude>
+                    <exclude>io.camunda:zeebe-bpmn-model:*:*:runtime</exclude>
+                    <exclude>org.rocksdb:rocksdbjni:*:*:compile</exclude>
+                    <exclude>org.rocksdb:rocksdbjni:*:*:runtime</exclude>
+                    <exclude>io.micrometer:*:*:*:compile</exclude>
+                    <exclude>io.micrometer:*:*:*:runtime</exclude>
+                    <exclude>com.google.guava:guava:*:*:compile</exclude>
+                    <exclude>com.google.guava:guava:*:*:runtime</exclude>
+                    <exclude>com.github.ben-manes.caffeine:caffeine:*:*:compile</exclude>
+                    <exclude>com.github.ben-manes.caffeine:caffeine:*:*:runtime</exclude>
+                    <exclude>com.esotericsoftware:kryo:*:*:compile</exclude>
+                    <exclude>com.esotericsoftware:kryo:*:*:runtime</exclude>
+                    <exclude>org.apache.commons:commons-lang3:*:*:compile</exclude>
+                    <exclude>org.apache.commons:commons-lang3:*:*:runtime</exclude>
+                    <exclude>org.camunda.bpm.model:camunda-xml-model:*:*:compile</exclude>
+                    <exclude>org.camunda.bpm.model:camunda-xml-model:*:*:runtime</exclude>
+                    <exclude>com.jayway.jsonpath:json-path:*:*:compile</exclude>
+                    <exclude>com.jayway.jsonpath:json-path:*:*:runtime</exclude>
+                  </excludes>
+                  <message>zeebe-log-records is for reading records outside the broker, so it must not
+                    depend on the broker's storage, stream processing, networking or their libraries.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- the jqwik engine runs the properties -->
+            <dependency>net.jqwik:jqwik</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

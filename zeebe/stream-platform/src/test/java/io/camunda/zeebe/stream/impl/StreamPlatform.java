@@ -17,10 +17,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.log.records.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.log.records.LoggedEvent;
 import io.camunda.zeebe.stream.api.EventFilter;
 import java.util.Set;
 import org.agrona.collections.LongHashSet;

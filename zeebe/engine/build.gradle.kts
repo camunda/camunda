@@ -6,6 +6,7 @@ plugins {
 }
 
 dependencies {
+  testImplementation(project(":zeebe-log-records"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))

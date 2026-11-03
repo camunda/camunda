@@ -39,6 +39,7 @@ This is a small overview of the contents of the different modules:
 * `gateway-protocol-impl` gRPC protocol service definition
 * `gateway-rest` gateway REST API implementation
 * `journal` contains the append-only log used by the consensus algorithm
+* `log-records` decodes the records of a partition's replicated log: journal records, Raft entries and log stream frames
 * `logstreams` is an implementation of an append-only log backed by the filesystem
 * `micrometer` Micrometer helpers: stateful gauges, enum meters and bounded meter caches
 * `msgpack-core` core Message Pack encoding/decoding implementation
