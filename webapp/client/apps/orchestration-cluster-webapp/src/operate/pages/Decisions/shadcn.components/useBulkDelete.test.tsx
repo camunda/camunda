@@ -60,7 +60,7 @@ async function renderHarness(props: Partial<HarnessProps> = {}, basepath = '') {
 				<Notifications />
 			</>
 		),
-		{path: '/operate-preview/decisions', basepath},
+		{path: '/operate/decisions', basepath},
 	);
 	return {screen, onDeleted, onDiscard};
 }
@@ -130,7 +130,7 @@ describe('useBulkDelete (shadcn)', () => {
 				</>
 			);
 		};
-		const screen = await renderWithRouter(() => <ClearableHarness />, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(() => <ClearableHarness />, {path: '/operate/decisions'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await expect.element(screen.getByRole('alertdialog')).toBeVisible();

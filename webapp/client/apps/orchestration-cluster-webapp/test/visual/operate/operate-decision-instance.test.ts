@@ -83,7 +83,7 @@ test('should match the decision instance page snapshot with the matched rule hig
 	operateDecisionInstancePage,
 	page,
 }) => {
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
 
 	await expect(page.getByTestId('instance-header')).toBeVisible();
 	await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
@@ -96,7 +96,7 @@ test('should match the decision instance page snapshot with the DRD maximized', 
 	operateDecisionInstancePage,
 	page,
 }) => {
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
 	await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 
 	await page.getByRole('button', {name: 'Maximize DRD panel'}).click();
@@ -117,7 +117,7 @@ test('should match the decision instance page snapshot when the decision has no 
 		}),
 	);
 
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
 
 	await expect(page.getByText('No diagram available')).toBeVisible();
 	await expect(page).toHaveScreenshot();

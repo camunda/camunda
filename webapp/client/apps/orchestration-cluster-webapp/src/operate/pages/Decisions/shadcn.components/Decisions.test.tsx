@@ -60,14 +60,14 @@ describe('<Decisions />', () => {
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
 
 	it('should focus the page heading when returning from a decision requirements diagram', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 
 		await screen.router.navigate({to: '.', state: {operateDecisionFocus: 'list'}});
@@ -83,7 +83,7 @@ describe('<Decisions />', () => {
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
@@ -93,8 +93,8 @@ describe('<Decisions />', () => {
 	it('should show optional filters that are active in the URL', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1',
 		});
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
@@ -103,8 +103,8 @@ describe('<Decisions />', () => {
 	it('should enable reset when optional filters are active in the URL', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
@@ -123,8 +123,8 @@ describe('<Decisions />', () => {
 			}),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
@@ -133,8 +133,8 @@ describe('<Decisions />', () => {
 	it('should write edited optional filters to the URL and keep unrelated search state', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&tenantId=tenant-a&failed=false',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1&tenantId=tenant-a&failed=false',
 		});
 
 		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
@@ -155,8 +155,8 @@ describe('<Decisions />', () => {
 	it('should clear a removed filter from the URL even when another filter field is invalid', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
 
 		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
@@ -172,8 +172,8 @@ describe('<Decisions />', () => {
 	it('should keep unrelated edits when another filter is removed', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
 
 		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
@@ -185,8 +185,8 @@ describe('<Decisions />', () => {
 	it('should restore URL values when navigating back with a pending draft', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1',
 		});
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
 		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_order-2'})});
@@ -201,7 +201,7 @@ describe('<Decisions />', () => {
 
 	it('should discard an invalid draft when resetting after removing an empty filter', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
@@ -222,7 +222,7 @@ describe('<Decisions />', () => {
 
 	it('should discard an invalid draft when resetting', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
@@ -240,8 +240,8 @@ describe('<Decisions />', () => {
 	it('should enable reset when a sort is applied in the URL', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?sort=evaluationDate%2Basc',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?sort=evaluationDate%2Basc',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Reset filters'})).toBeEnabled();
@@ -249,7 +249,7 @@ describe('<Decisions />', () => {
 
 	it('should render the decision filters with the version disabled until a decision is selected', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByText('Instances states')).toBeVisible();
 		await expect.element(screen.getByLabelText('Name')).toBeVisible();
@@ -258,7 +258,7 @@ describe('<Decisions />', () => {
 
 	it('should write the instance state checkboxes to the URL', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate/decisions'});
 
 		await expect.element(screen.getByLabelText('Failed')).toBeVisible();
 		await (screen.getByLabelText('Failed').element() as HTMLElement).click();
@@ -282,8 +282,8 @@ describe('<Decisions />', () => {
 			}),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice',
 		});
 
 		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
@@ -297,8 +297,8 @@ describe('<Decisions />', () => {
 	it('should remove a single optional filter from the URL when its remove button is clicked', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1&failed=false',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
@@ -316,8 +316,8 @@ describe('<Decisions />', () => {
 		onTestFinished(() => borderBox.remove());
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
@@ -330,8 +330,8 @@ describe('<Decisions />', () => {
 	it('should remove active optional filters when resetting', async ({worker}) => {
 		worker.use(mockInstances());
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?businessId=eq_order-1',
 		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
@@ -356,8 +356,8 @@ describe('<Decisions />', () => {
 		);
 
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
 		await expect.element(screen.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
@@ -377,8 +377,8 @@ describe('<Decisions />', () => {
 		);
 
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice',
 		});
 
 		await expect
@@ -412,8 +412,8 @@ describe('<Decisions />', () => {
 		);
 
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
 		await expect
@@ -437,8 +437,8 @@ describe('<Decisions />', () => {
 		);
 
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
@@ -475,8 +475,8 @@ describe('<Decisions />', () => {
 			}),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
+			path: '/operate/decisions',
+			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
 		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));

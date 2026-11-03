@@ -11,7 +11,7 @@ import {Decisions} from '#/operate/pages/Decisions/shadcn.components/Decisions';
 import {validateDecisionsSearch} from '#/operate/pages/Decisions/decisionsSearch';
 import {decisionsRouteLoader} from '#/operate/pages/Decisions/shadcn.components/decisionsRouteLoader';
 
-export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/')({
+export const Route = createFileRoute('/_shadcn/_auth/operate/decisions/')({
 	validateSearch: validateDecisionsSearch,
 	loaderDeps: ({search: {decisionDefinitionId, decisionDefinitionVersion, tenantId}}) => ({
 		decisionDefinitionId,

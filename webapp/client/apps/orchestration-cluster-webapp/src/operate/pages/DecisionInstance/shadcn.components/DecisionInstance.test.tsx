@@ -33,8 +33,8 @@ const DECISION_INSTANCE = createDecisionInstance({
 	decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
 	decisionDefinitionId: 'invoiceClassification',
 });
-const PATH = '/operate-preview/decisions/$decisionInstanceId';
-const INITIAL_ENTRY = `/operate-preview/decisions/${DECISION_INSTANCE_ID}`;
+const PATH = '/operate/decisions/$decisionInstanceId';
+const INITIAL_ENTRY = `/operate/decisions/${DECISION_INSTANCE_ID}`;
 
 function mockPage(worker: {use: (...handlers: ReturnType<typeof mockGetDecisionInstanceEndpoint>[]) => void}) {
 	worker.use(
