@@ -51,6 +51,35 @@ final class RemoteStreamRegistryTest {
   }
 
   @Test
+  void shouldReportWhetherAddChangedRegistry() {
+    // given
+    final UUID id = UUID.randomUUID();
+
+    // when
+    final var firstAdd = streamRegistry.add(typeFoo, id, gateway, 1);
+    final var secondAdd = streamRegistry.add(typeFoo, id, gateway, 1);
+
+    // then
+    assertThat(firstAdd).isTrue();
+    assertThat(secondAdd).isFalse();
+  }
+
+  @Test
+  void shouldReportWhetherRemoveChangedRegistry() {
+    // given
+    final UUID id = UUID.randomUUID();
+    streamRegistry.add(typeFoo, id, gateway, 1);
+
+    // when
+    final var firstRemove = streamRegistry.remove(id, gateway);
+    final var secondRemove = streamRegistry.remove(id, gateway);
+
+    // then
+    assertThat(firstRemove).isTrue();
+    assertThat(secondRemove).isFalse();
+  }
+
+  @Test
   void shouldTrackAddedStreams() {
     // given
     final UUID removedId = UUID.randomUUID();

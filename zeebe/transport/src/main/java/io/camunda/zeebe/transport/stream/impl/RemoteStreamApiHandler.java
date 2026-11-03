@@ -82,8 +82,10 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
       return failedResponse(sender, errorMessage);
     }
 
-    registry.add(new UnsafeBuffer(request.streamType()), request.streamId(), sender, properties);
-    LOG.debug("Opened stream {} from {}", request.streamId(), sender);
+    if (registry.add(
+        new UnsafeBuffer(request.streamType()), request.streamId(), sender, properties)) {
+      LOG.debug("Opened stream {} from {}", request.streamId(), sender);
+    }
     return addResponseOK;
   }
 
@@ -94,8 +96,9 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
       return failedResponse(sender, errorMessage);
     }
 
-    registry.remove(request.streamId(), sender);
-    LOG.debug("Removed stream {} from {}", request.streamId(), sender);
+    if (registry.remove(request.streamId(), sender)) {
+      LOG.debug("Removed stream {} from {}", request.streamId(), sender);
+    }
     return removeResponseOK;
   }
 
