@@ -431,13 +431,7 @@ public class AgenticControlDashboardService {
                 SingleReportConfigurationDto.builder()
                     .subtitle(KPI_EXECUTION_COMPLETED_DESCRIPTION)
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -467,13 +461,7 @@ public class AgenticControlDashboardService {
                 SingleReportConfigurationDto.builder()
                     .subtitle(KPI_EXECUTION_AVG_DURATION_DESCRIPTION)
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -506,8 +494,6 @@ public class AgenticControlDashboardService {
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
                     .add()
                     .withResolvedIncident()
                     .add()
@@ -570,13 +556,7 @@ public class AgenticControlDashboardService {
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
             .configuration(configuration)
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -620,13 +600,7 @@ public class AgenticControlDashboardService {
                     new LinkedHashSet<>(
                         Collections.singletonList(new AggregationDto(AggregationType.SUM))))
                 .build())
-        .filter(
-            ProcessFilterBuilder.filter()
-                .completedInstancesOnly()
-                .add()
-                .hasAgentInstances()
-                .add()
-                .buildList())
+        .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
         .agenticControlReport(true)
         .build();
   }
@@ -654,13 +628,7 @@ public class AgenticControlDashboardService {
                                 new AggregationDto(AggregationType.PERCENTILE, 50.0),
                                 new AggregationDto(AggregationType.PERCENTILE, 95.0))))
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -714,13 +682,7 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -753,13 +715,7 @@ public class AgenticControlDashboardService {
                                 new AggregationDto(AggregationType.PERCENTILE, 50.0),
                                 new AggregationDto(AggregationType.PERCENTILE, 95.0))))
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -787,8 +743,6 @@ public class AgenticControlDashboardService {
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
                     .add()
                     .withResolvedIncident()
                     .add()
@@ -834,13 +788,7 @@ public class AgenticControlDashboardService {
                             Collections.singletonList(new AggregationDto(AggregationType.SUM))))
                     .subtitle(KPI_TOOL_CALLS_DESCRIPTION)
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -878,13 +826,7 @@ public class AgenticControlDashboardService {
                         new LinkedHashSet<>(
                             Collections.singletonList(new AggregationDto(AggregationType.SUM))))
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -926,13 +868,7 @@ public class AgenticControlDashboardService {
                         new LinkedHashSet<>(
                             Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
                     .build())
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
@@ -1071,13 +1007,7 @@ public class AgenticControlDashboardService {
                 .horizontalBar(true)
                 .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
                 .build())
-        .filter(
-            ProcessFilterBuilder.filter()
-                .completedInstancesOnly()
-                .add()
-                .hasAgentInstances()
-                .add()
-                .buildList())
+        .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
         .agenticControlReport(true)
         .build();
   }
