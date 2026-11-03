@@ -37,10 +37,7 @@ const IncidentOperation: React.FC<Props> = ({incidentKey, jobKey, disabled}) => 
 			<OperationItems>
 				<OperationItem
 					type="RESOLVE_INCIDENT"
-					onClick={(event) => {
-						event.stopPropagation();
-						mutate();
-					}}
+					onClick={() => mutate()}
 					title={t('operate.processInstance.incidents.retryIncident')}
 					disabled={isRetryPending || disabled}
 					size="sm"

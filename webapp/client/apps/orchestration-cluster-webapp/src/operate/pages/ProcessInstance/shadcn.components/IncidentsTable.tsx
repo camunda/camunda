@@ -278,7 +278,7 @@ const IncidentsTable: React.FC<Props> = ({
 				expansion={(incident) => (
 					<dl className="m-0 flex flex-col gap-3">
 						<ExpansionField label={t('operate.processInstance.incidents.jobId')}>
-							<dd className="m-0 text-sm">{incident.jobKey ?? '—'}</dd>
+							<dd className="m-0 text-sm">{incident.jobKey ?? t('operate.processInstance.header.none')}</dd>
 						</ExpansionField>
 						<ExpansionField label={t('operate.processInstance.incidents.errorMessage')}>
 							<dd className="m-0 flex items-start gap-2 text-sm">

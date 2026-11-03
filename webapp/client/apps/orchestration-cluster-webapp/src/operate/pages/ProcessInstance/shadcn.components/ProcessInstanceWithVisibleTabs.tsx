@@ -9,7 +9,7 @@
 import {ProcessInstance} from './ProcessInstance';
 import {useVisibleProcessInstanceTabs} from './useVisibleProcessInstanceTabs';
 
-const ProcessInstanceWithIncidentsCount: React.FC<React.ComponentProps<typeof ProcessInstance>> = ({
+const ProcessInstanceWithVisibleTabs: React.FC<React.ComponentProps<typeof ProcessInstance>> = ({
 	children,
 	...props
 }) => {
@@ -22,4 +22,4 @@ const ProcessInstanceWithIncidentsCount: React.FC<React.ComponentProps<typeof Pr
 	);
 };
 
-export {ProcessInstanceWithIncidentsCount};
+export {ProcessInstanceWithVisibleTabs};

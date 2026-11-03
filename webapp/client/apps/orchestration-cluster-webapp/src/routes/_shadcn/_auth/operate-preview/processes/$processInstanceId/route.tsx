@@ -10,7 +10,7 @@ import {createFileRoute, Outlet, useLocation, useNavigate} from '@tanstack/react
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
-import {ProcessInstanceWithIncidentsCount} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceWithIncidentsCount';
+import {ProcessInstanceWithVisibleTabs} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceWithVisibleTabs';
 import {
 	getProcessInstanceTabFromPath,
 	type ProcessInstanceTab,
@@ -95,7 +95,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				processInstance={processInstance}
 				search={search}
 			>
-				<ProcessInstanceWithIncidentsCount
+				<ProcessInstanceWithVisibleTabs
 					activeTab={getProcessInstanceTabFromPath(pathname)}
 					onTabChange={(tab) => void changeTab(tab)}
 					breadcrumb={
@@ -107,7 +107,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 					header={<ProcessInstanceHeader operations={<ProcessInstanceOperations key={processInstanceId} />} />}
 				>
 					<Outlet />
-				</ProcessInstanceWithIncidentsCount>
+				</ProcessInstanceWithVisibleTabs>
 			</ProcessInstancePageProvider>
 		);
 	},
