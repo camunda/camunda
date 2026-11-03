@@ -118,10 +118,12 @@ class DocumentContentEarlyCloseTest {
     ProxySelector.setDefault(originalProxySelector);
   }
 
-  private void startServer(final BodyFraming framing) throws Exception {
+  private void startServer(
+      final BodyFraming framing, final long pauseAt, final AfterPause afterPause) throws Exception {
     ThreadLocalRandom.current().nextBytes(chunk);
     serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
-    final Thread server = new Thread(() -> serve(framing), "endless-document-server");
+    final Thread server =
+        new Thread(() -> serve(framing, pauseAt, afterPause), "endless-document-server");
     server.setDaemon(true);
     server.start();
 
@@ -157,7 +159,7 @@ class DocumentContentEarlyCloseTest {
   void shouldEndDownloadWhenStreamIsClosedBeforeEndOfDocument(final BodyFraming framing)
       throws Exception {
     // given
-    startServer(framing);
+    startServer(framing, PAUSE_AT, AfterPause.RESUME_WHEN_CLOSED);
     final InputStream content =
         client
             .newDocumentContentGetRequest(DOCUMENT_ID)
@@ -187,11 +189,12 @@ class DocumentContentEarlyCloseTest {
   }
 
   /** Answers the requests one connection at a time, until the test closes the server socket. */
-  private void serve(final BodyFraming framing) {
+  private void serve(final BodyFraming framing, final long pauseAt, final AfterPause afterPause) {
     try {
       while (true) {
         try (final Socket socket = serverSocket.accept()) {
-          final String documentId = readRequestedDocumentId(socket.getInputStream());
+          final InputStream request = socket.getInputStream();
+          final String documentId = readRequestedDocumentId(request);
           if (documentId == null) {
             continue;
           }
@@ -199,7 +202,7 @@ class DocumentContentEarlyCloseTest {
           if (SMALL_DOCUMENT_ID.equals(documentId)) {
             sendSmallDocument(socket.getOutputStream());
           } else {
-            sendDocument(socket.getOutputStream(), framing);
+            sendDocument(request, socket.getOutputStream(), framing, pauseAt, afterPause);
           }
         }
       }
@@ -241,17 +244,26 @@ class DocumentContentEarlyCloseTest {
   }
 
   /**
-   * Sends the document as fast as the client accepts it, pausing once at {@link #PAUSE_AT} until
-   * the stream is closed, and goes on until the client drops the connection.
+   * Sends the document as fast as the client accepts it, pausing once at {@code pauseAt}, and goes
+   * on until the client drops the connection.
    */
-  private void sendDocument(final OutputStream out, final BodyFraming framing)
+  private void sendDocument(
+      final InputStream request,
+      final OutputStream out,
+      final BodyFraming framing,
+      final long pauseAt,
+      final AfterPause afterPause)
       throws InterruptedException {
     try {
       out.write(framing.responseHead().getBytes(StandardCharsets.ISO_8859_1));
       while (bodyBytesSent.get() < DOCUMENT_SIZE) {
         framing.writeChunk(out, chunk);
-        if (bodyBytesSent.addAndGet(CHUNK_SIZE) == PAUSE_AT) {
+        if (bodyBytesSent.addAndGet(CHUNK_SIZE) == pauseAt) {
           out.flush();
+          if (afterPause == AfterPause.STAY_SILENT) {
+            awaitDisconnect(request);
+            return;
+          }
           streamClosed.await();
         }
       }
@@ -260,6 +272,26 @@ class DocumentContentEarlyCloseTest {
     } catch (final IOException e) {
       connectionDropped.set(true);
     }
+  }
+
+  /** Returns once the client drops the connection; the client sends nothing more until then. */
+  private void awaitDisconnect(final InputStream request) {
+    try {
+      while (request.read() >= 0) {
+        // the client sends nothing more after the request
+      }
+    } catch (final IOException e) {
+      // the client reset the connection
+    }
+    connectionDropped.set(true);
+  }
+
+  /** What the server does once it reaches the pause. */
+  private enum AfterPause {
+    /** Waits until the test closes the stream, then sends the rest of the document. */
+    RESUME_WHEN_CLOSED,
+    /** Sends nothing more, without ending the response. */
+    STAY_SILENT
   }
 
   /** How the response marks the end of the document; httpcore5 reads the two kinds differently. */
