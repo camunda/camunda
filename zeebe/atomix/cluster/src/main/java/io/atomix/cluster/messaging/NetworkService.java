@@ -7,8 +7,6 @@
  */
 package io.atomix.cluster.messaging;
 
-import org.jspecify.annotations.NullMarked;
-
 /**
  * The set of transports a cluster node uses to talk to its peers, grouped behind a single owner.
  *
@@ -19,7 +17,6 @@ import org.jspecify.annotations.NullMarked;
  * <p>Expected usage is for the caller to use the accessor (e.g. {@link #messagingService()})
  * depending on the messaging semantics required.
  */
-@NullMarked
 public interface NetworkService {
 
   /**
