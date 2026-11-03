@@ -166,12 +166,12 @@ final class RestoreManagerTest {
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
       // when
-      final var backupIdsByPartition = restoreManager.resolveBackups(new long[] {1, 2});
+      final var partitions = restoreManager.resolveBackups(new long[] {1, 2});
 
       // then - only the backups' partitions are restored
-      assertThat(backupIdsByPartition).containsOnlyKeys(1, 2, 3);
-      assertThat(backupIdsByPartition.values())
-          .allSatisfy(ids -> assertThat(ids).containsExactly(1, 2));
+      assertThat(partitions).containsOnlyKeys(1, 2, 3);
+      assertThat(partitions.values())
+          .allSatisfy(restore -> assertThat(restore.backupIds()).containsExactly(1L, 2L));
     }
   }
 
@@ -210,10 +210,10 @@ final class RestoreManagerTest {
             configuration, backupStore, exporterPositionMapper, new SimpleMeterRegistry())) {
 
       // when
-      final var backupIdsByPartition = restoreManager.resolveBackups(null, null);
+      final var partitions = restoreManager.resolveBackups(null, null);
 
       // then
-      assertThat(backupIdsByPartition).containsOnlyKeys(1, 2, 3);
+      assertThat(partitions).containsOnlyKeys(1, 2, 3);
     }
   }
 
