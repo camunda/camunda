@@ -173,6 +173,11 @@ function useModificationDropdown({
 		clearSelection();
 	};
 
+	const dismiss = () => {
+		clearSelection();
+		selectedElementRef.focus();
+	};
+
 	return {
 		anchorRect,
 		isFetchingElement,
@@ -185,6 +190,7 @@ function useModificationDropdown({
 		cancelAll,
 		moveInstance,
 		moveAll,
+		dismiss,
 	};
 }
 

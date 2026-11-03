@@ -10,6 +10,7 @@ import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo, useState} from 'react';
 import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
 import {
+	ArrowRightLeft,
 	Ban,
 	CircleAlert,
 	CircleCheck,
@@ -18,15 +19,23 @@ import {
 	LoaderCircle,
 	RotateCcw,
 	Trash2,
+	Wrench,
 } from '@camunda/design-system/icons';
 import {useMachine} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
-import {useNavigate} from '@tanstack/react-router';
+import {Link, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {CancelConfirmationModal} from '#/operate/shared/Operations/shadcn.components/CancelConfirmationModal';
 import {DeleteConfirmationModal} from '#/operate/shared/Operations/shadcn.components/DeleteConfirmationModal';
+import {ENABLE_PROCESS_INSTANCE_MODIFICATION, ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
+import {useProcessInstanceModification} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
+import {isModificationHelperHidden} from '#/operate/pages/ProcessInstance/modificationHelperPreference';
+import {MigrationHelperModal} from '#/operate/shared/MigrationHelperModal/shadcn.components/MigrationHelperModal';
+import {isMigrationHelperHidden} from '#/operate/shared/MigrationHelperModal/migrationHelperPreference';
+import {getInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
+import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationHelperModal';
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
 
@@ -61,6 +70,10 @@ const ProcessInstanceOperations: React.FC = () => {
 	const {processInstance} = useProcessInstancePage();
 	const {processInstanceKey, state, hasIncident} = processInstance;
 	const {t} = useTranslation();
+	const {isModificationModeEnabled, enterModificationMode} = useProcessInstanceModification();
+	const [isModificationHelperOpen, setIsModificationHelperOpen] = useState(false);
+	const [isMigrationHelperOpen, setIsMigrationHelperOpen] = useState(false);
+	const navigate = useNavigate();
 	const isCollapsed = useMatchMedia(COLLAPSED_LAYOUT_QUERY);
 	const [confirmation, setConfirmation] = useState<'cancel' | 'delete' | null>(null);
 	const retry = useHeaderOperation('retry', processInstanceKey);
@@ -127,6 +140,33 @@ const ProcessInstanceOperations: React.FC = () => {
 	const activeOperation =
 		operations.find(({status}) => status === 'pending') ?? operations.find(({status}) => status !== 'idle');
 
+	const openModification = () => {
+		if (isModificationHelperHidden()) {
+			enterModificationMode();
+		} else {
+			setIsModificationHelperOpen(true);
+		}
+	};
+	const modifyLabel = t('operate.processInstance.modification.modify');
+	const modifyTitle = t('operate.shared.operations.modifyTitle', {processInstanceKey});
+	const canModify = ENABLE_PROCESS_INSTANCE_MODIFICATION && state === 'ACTIVE';
+
+	const enterMigration = () => void navigate(getInstanceMigrationLocation(processInstance));
+	const openMigration = () => {
+		if (isMigrationHelperHidden()) {
+			enterMigration();
+		} else {
+			setIsMigrationHelperOpen(true);
+		}
+	};
+	const migrateLabel = t('operate.processes.migration.migrate');
+	const migrateTitle = t('operate.shared.operations.migrateTitle', {processInstanceKey});
+	const canMigrate = ENABLE_PROCESS_MIGRATION && state === 'ACTIVE';
+
+	if (isModificationModeEnabled) {
+		return null;
+	}
+
 	return (
 		<>
 			{isCollapsed && isRunning ? (
@@ -147,6 +187,26 @@ const ProcessInstanceOperations: React.FC = () => {
 									</DropdownMenuItem>
 								);
 							})}
+							{canModify && (
+								<DropdownMenuItem onSelect={openModification}>
+									<Wrench aria-hidden="true" />
+									{modifyLabel}
+								</DropdownMenuItem>
+							)}
+							{canMigrate &&
+								(isMigrationHelperHidden() ? (
+									<DropdownMenuItem asChild>
+										<Link {...getInstanceMigrationLocation(processInstance)}>
+											<ArrowRightLeft aria-hidden="true" />
+											{migrateLabel}
+										</Link>
+									</DropdownMenuItem>
+								) : (
+									<DropdownMenuItem onSelect={() => setIsMigrationHelperOpen(true)}>
+										<ArrowRightLeft aria-hidden="true" />
+										{migrateLabel}
+									</DropdownMenuItem>
+								))}
 						</DropdownMenuContent>
 					</DropdownMenu>
 					<span role="status" aria-live="polite" className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -194,6 +254,38 @@ const ProcessInstanceOperations: React.FC = () => {
 						</Button>
 					);
 				})
+			)}
+			{!(isCollapsed && isRunning) && canModify && (
+				<Button variant="ghost" size="sm" title={modifyTitle} aria-label={modifyTitle} onClick={openModification}>
+					<Wrench aria-hidden="true" data-icon="inline-start" />
+					{modifyLabel}
+				</Button>
+			)}
+			{!(isCollapsed && isRunning) && canMigrate && (
+				<Button variant="ghost" size="sm" title={migrateTitle} aria-label={migrateTitle} onClick={openMigration}>
+					<ArrowRightLeft aria-hidden="true" data-icon="inline-start" />
+					{migrateLabel}
+				</Button>
+			)}
+			{isModificationHelperOpen && state === 'ACTIVE' && (
+				<ModificationHelperModal
+					open
+					onClose={() => setIsModificationHelperOpen(false)}
+					onSubmit={() => {
+						setIsModificationHelperOpen(false);
+						enterModificationMode();
+					}}
+				/>
+			)}
+			{isMigrationHelperOpen && canMigrate && (
+				<MigrationHelperModal
+					open
+					onClose={() => setIsMigrationHelperOpen(false)}
+					onSubmit={() => {
+						setIsMigrationHelperOpen(false);
+						enterMigration();
+					}}
+				/>
 			)}
 			{confirmation === 'cancel' && isRunning && (
 				<CancelConfirmationModal

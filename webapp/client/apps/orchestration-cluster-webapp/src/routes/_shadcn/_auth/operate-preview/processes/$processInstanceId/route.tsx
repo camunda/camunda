@@ -23,6 +23,10 @@ import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
+import {ProcessInstanceModificationFooter} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceModificationFooter';
+import {ModificationLeaveDialog} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationLeaveDialog';
+import {useModificationController} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
+import {useModificationLeaveBlocker} from '#/operate/pages/ProcessInstance/useModificationLeaveBlocker';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
@@ -67,6 +71,9 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const {data: processInstance} = useSuspenseQuery(processInstanceQuery(processInstanceId));
 		const {data: hierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
 		const {pathname} = useLocation();
+		const modification = useModificationController(processInstanceId);
+		const {isModificationModeEnabled} = modification;
+		const blocker = useModificationLeaveBlocker({processInstanceId, disabled: !isModificationModeEnabled});
 
 		const withoutTabSearch = <T extends {sort?: string; operationType?: unknown; entityType?: unknown}>(prev: T) => ({
 			...prev,
@@ -143,9 +150,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				processInstanceId={processInstanceId}
 				processInstance={processInstance}
 				search={search}
+				modification={modification}
 			>
 				<ProcessInstanceWithVisibleTabs
 					activeTab={getProcessInstanceTabFromPath(pathname)}
+					isModificationModeEnabled={isModificationModeEnabled}
+					isApplyingModifications={modification.state.status === 'applying-modifications'}
+					footer={isModificationModeEnabled ? <ProcessInstanceModificationFooter /> : undefined}
 					isDesktop={isDesktop}
 					onTabChange={(tab) => void changeTab(tab)}
 					breadcrumb={
@@ -159,6 +170,11 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				>
 					<Outlet />
 				</ProcessInstanceWithVisibleTabs>
+				<ModificationLeaveDialog
+					open={blocker.status === 'blocked'}
+					onStay={() => blocker.reset?.()}
+					onLeave={() => blocker.proceed?.()}
+				/>
 			</ProcessInstancePageProvider>
 		);
 	},
