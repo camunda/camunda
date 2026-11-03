@@ -32,7 +32,7 @@ import type {
 	GetProcessStartFormResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
-import {isAnonymousCurrentUserResponse, type AuthenticatedCurrentUser} from './currentUser';
+import type {AuthenticatedCurrentUser} from './currentUser';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
 
@@ -74,9 +74,7 @@ const queries = {
 		queryOptions({
 			queryKey: queryKeys.currentUser(),
 			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
-				const {response, error} = await request(endpoints.getCurrentUser(), {
-					isUnauthenticated: isAnonymousCurrentUserResponse,
-				});
+				const {response, error} = await request(endpoints.getCurrentUser());
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

@@ -82,7 +82,7 @@ class MeAuthorizationsUnprotectedApiIT {
     // no credentials could resolve, the caller learns that it is anonymous
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     final var responseBody = JSON.readTree(response.body());
-    assertThat(responseBody.path("anonymous").asBoolean()).isTrue();
+    assertThat(responseBody.path("isAnonymous").asBoolean()).isTrue();
     assertThat(responseBody.path("username").isNull()).isTrue();
   }
 
