@@ -125,6 +125,43 @@ description.
 **Target:** follow [frontend-unit-test](../frontend-unit-test/SKILL.md). Put reusable response data in
 `shared-test-modules/api-mocks/` factories rather than constructing large literals in tests.
 
+## Review pitfalls (target)
+
+Recurring review findings from the Process Instance design-system migration. Check your diff
+against this list before requesting review.
+
+**Code**
+
+- Use design-system tokens and `Text`, never raw colors.
+- Make a prop required when the caller must pass it. Don't add placeholder fallbacks.
+- Don't add test-only `data-testid` attributes. Give elements an accessible name, role, or label.
+- Give every spinner and status an accessible name. Use one persistent live region instead of
+  mounting a `role="status"` per update. Mark non-interactive tree nodes as disabled.
+- Use typed router links, not hard-coded path strings.
+
+**Tests**
+
+- Don't branch in tests. No `if` or `throw` guards; split the test or use `it.each`.
+- Match an accessible name exactly when another name contains it (`{name: 'Diagram', exact: true}`).
+  Substring matches fail Playwright strict mode.
+- Don't disable axe rules wholesale. Scope scans with `include` or `exclude`, and link an issue for
+  any temporary exclusion.
+- After a redirect, assert rendered content, not only the URL. Cover error, forbidden, empty, retry,
+  keyboard, and paging paths.
+- Every `operate.*` key must exist in all four locales. Enforce it with a key-existence test rather
+  than relying on untyped `t()` strings.
+
+**Stacks and CI**
+
+- Regenerate `routeTree.gen.ts` instead of hand-merging it. A PR that conflicts with `main` gets no
+  merge ref, so full CI never starts. Check `gh pr view <n> --json mergeable`.
+- Run the Playwright integration and a11y tests locally (after `npm run build`) before pushing.
+  Take Linux visual baselines from CI actuals, not from macOS.
+- Give each PR fresh light and dark screenshots, with a Carbon comparison where one exists, and
+  refresh them after visual changes.
+- When folding review fixes into a stack, autosquash conflicts. Reset to the pre-fix tip, rebase
+  `--onto` the new base, and apply the fix as one commit. Push with `--force-with-lease`.
+
 ## Forms
 
 **Target:** follow `docs/monorepo-docs/frontend/forms.md`.
