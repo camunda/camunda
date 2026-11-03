@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment, useLayoutEffect, useRef} from 'react';
+import {Fragment} from 'react';
 import {createPortal} from 'react-dom';
 import {Trans, useTranslation} from 'react-i18next';
-import {useQueryClient} from '@tanstack/react-query';
 import {useRouter} from '@tanstack/react-router';
 import {
 	Button,
@@ -27,33 +26,17 @@ import {
 	TableRow,
 } from '@carbon/react';
 import type {CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.11';
-import {endpoints} from '#/shared/http/endpoints';
-import {request} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
 import {RichTextEditor} from '#/operate/shared/Editors/RichTextEditor';
 import {DiffEditor} from '#/operate/shared/Editors/DiffEditor';
-import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstancePage} from './useProcessInstancePage';
-import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
-import {useProcessInstanceModification} from './useProcessInstanceModification';
-import {useInstanceStatistics} from './instanceDiagram.queries';
-import {variableQueryKeys} from './variables.queries';
-import {buildModificationInstructions} from './modifications/modificationInstructions';
-import {generateId} from './modifications/modificationOperations';
 import {
-	getElementModifications,
-	getModificationsByElement,
-	getVariableModifications,
-	hasOrphanedVariableModifications,
-	willAllElementsBeCanceled,
-} from './modifications/modificationSelectors';
-import {
-	getRunningInstancesByElement,
-	hasActivationInCanceledScope,
-	withoutMovesFromCanceledScopes,
-} from './modifications/modificationTargets';
+	beautifyJSON,
+	getCallHierarchyLabel,
+	OPERATION_LABEL_KEYS,
+	useChildInstanceErrorProcesses,
+	useModificationSummary,
+} from './useModificationSummary';
 import {
 	SummaryActionCell,
 	SummaryActionableNotification,
@@ -68,39 +51,14 @@ import {
 	TruncatedValueContainer,
 } from './processInstanceModification.styled';
 
-const OPERATION_LABEL_KEYS = {
-	ADD_TOKEN: 'operate.processInstance.modification.add',
-	CANCEL_TOKEN: 'operate.processInstance.modification.cancel',
-	MOVE_TOKEN: 'operate.processInstance.modification.move',
-	ADD_VARIABLE: 'operate.processInstance.modification.add',
-	EDIT_VARIABLE: 'operate.processInstance.modification.edit',
-} as const;
-
-const HTTP_STATUS_FORBIDDEN = 403;
-
 type Props = {
 	onClose: () => void;
 };
 
-function beautifyJSON(value: string) {
-	try {
-		return JSON.stringify(JSON.parse(value), null, '\t');
-	} catch {
-		return value;
-	}
-}
-
 function ChildInstanceError() {
 	const {t} = useTranslation();
-	const {processInstanceId, processInstance} = useProcessInstancePage();
 	const router = useRouter();
-	const {data: callHierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
-	const findInHierarchy = (processInstanceKey: string | null) =>
-		processInstanceKey === null
-			? undefined
-			: callHierarchy?.find((entry) => entry.processInstanceKey === processInstanceKey);
-	const parentProcess = findInHierarchy(processInstance.parentProcessInstanceKey);
-	const rootProcess = findInHierarchy(processInstance.rootProcessInstanceKey);
+	const {parentProcess, rootProcess} = useChildInstanceErrorProcesses();
 
 	if (parentProcess === undefined || rootProcess === undefined) {
 		return (
@@ -117,15 +75,15 @@ function ChildInstanceError() {
 			to: '/operate/processes/$processInstanceId',
 			params: {processInstanceId: processInstanceKey},
 		}).href;
-	const getLabel = ({processDefinitionName, processInstanceKey}: CallHierarchy) =>
-		processDefinitionName === undefined ? processInstanceKey : `${processDefinitionName} - ${processInstanceKey}`;
-
 	return (
 		<SummaryActionableNotification kind="error" inline hideCloseButton lowContrast title="" actionButtonLabel="">
 			<SummaryNotificationText>
 				<Trans
 					i18nKey="operate.processInstance.modification.childInstanceError"
-					values={{parentProcess: getLabel(parentProcess), rootProcess: getLabel(rootProcess)}}
+					values={{
+						parentProcess: getCallHierarchyLabel(parentProcess),
+						rootProcess: getCallHierarchyLabel(rootProcess),
+					}}
 					components={{
 						parentLink: <Link href={getLink(parentProcess)} target="_blank" />,
 						rootLink: <Link href={getLink(rootProcess)} target="_blank" />,
@@ -138,91 +96,24 @@ function ChildInstanceError() {
 
 function ModificationSummaryModal({onClose}: Props) {
 	const {t} = useTranslation();
-	const queryClient = useQueryClient();
 	const {processInstanceId, processInstance} = useProcessInstancePage();
-	const {clearSelection} = useProcessInstanceElementSelection();
-	const {state, dispatch} = useProcessInstanceModification();
-	const {data: diagram} = useDiagramXml(processInstance.processDefinitionKey);
-	const statistics = useInstanceStatistics(processInstance, diagram !== undefined && diagram.xml !== '');
-	const runningInstancesByElement = getRunningInstancesByElement(statistics.data, diagram?.businessObjects);
-	const modificationsByElement = getModificationsByElement(state, {
-		businessObjects: diagram?.businessObjects,
-		totalRunningInstancesByElement: runningInstancesByElement,
-		totalRunningInstancesVisibleByElement: runningInstancesByElement,
-	});
-	const elementModifications = getElementModifications(state);
-	const variableModifications = getVariableModifications(state);
-	const effectiveState = withoutMovesFromCanceledScopes(state, diagram?.businessObjects, modificationsByElement);
-	const isProcessCanceled = willAllElementsBeCanceled(effectiveState, statistics.data, modificationsByElement);
-	const hasParentProcess = Boolean(processInstance.parentProcessInstanceKey);
-	const areModificationsInvalid = isProcessCanceled && hasParentProcess;
-	const hasOrphanedVariables = hasOrphanedVariableModifications(state, processInstanceId);
-	const hasCanceledScopeConflict = hasActivationInCanceledScope(
-		state,
-		diagram?.businessObjects,
+	const {
+		elementModifications,
+		variableModifications,
 		modificationsByElement,
-	);
-	const hasCanceledMoveSource = effectiveState !== state;
-
-	const elementTableRef = useRef<HTMLDivElement>(null);
-	const variableTableRef = useRef<HTMLDivElement>(null);
-
-	useLayoutEffect(() => {
-		const elementTable = elementTableRef.current;
-		const variableTable = variableTableRef.current;
-		if (elementTable === null || variableTable === null) {
-			return;
-		}
-		const variableScrollbarWidth = variableTable.offsetWidth - variableTable.scrollWidth;
-		const elementScrollbarWidth = elementTable.offsetWidth - elementTable.scrollWidth;
-		const isAligned = variableScrollbarWidth === elementScrollbarWidth;
-		elementTable.style.paddingRight = isAligned ? '0px' : `${variableScrollbarWidth}px`;
-		variableTable.style.paddingRight = isAligned ? '0px' : `${elementScrollbarWidth}px`;
-	});
-
-	const showError = (statusCode?: number) =>
-		notificationsStore.displayNotification({
-			kind: 'error',
-			title: t('operate.processInstance.modification.failed'),
-			subtitle: t(
-				statusCode === HTTP_STATUS_FORBIDDEN
-					? 'operate.processInstance.modification.failedNoPermission'
-					: 'operate.processInstance.modification.failedGeneric',
-			),
-			isDismissable: true,
-		});
-
-	const applyModifications = async () => {
-		onClose();
-		clearSelection();
-		const requestId = generateId();
-		const result = buildModificationInstructions(state, processInstanceId);
-		dispatch({type: 'startApplyingModifications', requestId});
-
-		if (result.status === 'missing-root-variable-host') {
-			showError();
-			dispatch({type: 'finishApplyingModifications', requestId});
-			return;
-		}
-
-		const {error} = await request(endpoints.modifyProcessInstance(processInstanceId, result.instructions));
-
-		if (error === null) {
-			void queryClient.invalidateQueries({queryKey: ['elementInstanceWaitStates']});
-			void queryClient.invalidateQueries({queryKey: ['instanceHistory', processInstanceId]});
-			void queryClient.invalidateQueries({queryKey: variableQueryKeys.instanceVariables(processInstanceId)});
-			void queryClient.invalidateQueries({queryKey: variableQueryKeys.variableValues()});
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('operate.processInstance.modification.applied'),
-				isDismissable: true,
-			});
-		} else {
-			showError(error.response?.status);
-		}
-
-		dispatch({type: 'finishApplyingModifications', requestId});
-	};
+		isProcessCanceled,
+		hasParentProcess,
+		areModificationsInvalid,
+		hasOrphanedVariables,
+		hasCanceledScopeConflict,
+		hasCanceledMoveSource,
+		isApplyDisabled,
+		elementTableRef,
+		variableTableRef,
+		applyModifications,
+		removeElementModification,
+		removeVariableModification,
+	} = useModificationSummary(onClose);
 
 	return createPortal(
 		<Modal
@@ -230,13 +121,7 @@ function ModificationSummaryModal({onClose}: Props) {
 			modalHeading={t('operate.processInstance.modification.summaryTitle')}
 			size="lg"
 			primaryButtonText={t('operate.processInstance.modification.apply')}
-			primaryButtonDisabled={
-				areModificationsInvalid ||
-				hasOrphanedVariables ||
-				hasCanceledScopeConflict ||
-				hasCanceledMoveSource ||
-				state.modifications.length === 0
-			}
+			primaryButtonDisabled={isApplyDisabled}
 			secondaryButtonText={t('operate.processes.toolbar.cancel')}
 			onRequestClose={onClose}
 			preventCloseOnClickOutside
@@ -365,7 +250,7 @@ function ModificationSummaryModal({onClose}: Props) {
 												title={t('operate.processInstance.modification.deleteElementModification')}
 												aria-label={t('operate.processInstance.modification.deleteElementModification')}
 												size="sm"
-												onClick={() => dispatch({type: 'removeElementModification', modification})}
+												onClick={() => removeElementModification(modification)}
 											>
 												{t('operate.processInstance.modification.delete')}
 											</Button>
@@ -420,7 +305,7 @@ function ModificationSummaryModal({onClose}: Props) {
 												return null;
 											}
 											const {key, ...rowProps} = getRowProps({row});
-											const {operation, elementName, name, newValue, oldValue, scopeId, id} = modification;
+											const {operation, elementName, name, newValue, oldValue} = modification;
 
 											return (
 												<Fragment key={key}>
@@ -445,15 +330,7 @@ function ModificationSummaryModal({onClose}: Props) {
 																title={t('operate.processInstance.modification.deleteVariableModification')}
 																aria-label={t('operate.processInstance.modification.deleteVariableModification')}
 																size="sm"
-																onClick={() =>
-																	dispatch({
-																		type: 'removeVariableModification',
-																		scopeId,
-																		id,
-																		operation,
-																		source: 'summaryModal',
-																	})
-																}
+																onClick={() => removeVariableModification(modification)}
 															>
 																{t('operate.processInstance.modification.delete')}
 															</Button>
