@@ -206,6 +206,29 @@ test.describe.serial('Decision Definition Permission API - Forbidden', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Get decision definition - allowed with READ_DECISION_DEFINITION on that decision', async ({
+    request,
+  }) => {
+    // given
+    const decisionDefinitionKey = readableDecision.decisionDefinitionKey;
+
+    await expect(async () => {
+      // when
+      const res = await request.get(
+        buildUrl('/decision-definitions/{decisionDefinitionKey}', {
+          decisionDefinitionKey,
+        }),
+        {headers: jsonHeaders(userWithReadPermissionToken)},
+      );
+
+      // then
+      // READ_DECISION_DEFINITION granted on this decision allows reading it.
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      expect(body.decisionDefinitionId).toBe(readableDecisionId);
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Get decision definition - forbidden when READ_DECISION_DEFINITION is granted on another decision only', async ({
     request,
   }) => {
