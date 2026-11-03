@@ -167,6 +167,7 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
+            .setRetryStrategy(new HttpRetryStrategy())
             .useSystemProperties(); // allow users to customize via system properties
 
     // Register a request-level interceptor that injects the Authorization header at the
