@@ -17,7 +17,7 @@ import org.agrona.collections.LongHashSet;
 /**
  * A thread-safe, bounded command cache with light memory footprint, by storing keys in an
  * underlying {@link LongHashSet}. You can roughly estimate the memory usage of the set as the
- * capacity times 8 bytes (i.e. size of long).
+ * number of keys it holds times 8 bytes (i.e. size of long), up to the capacity.
  *
  * <p>Thread-safety is guaranteed via naive locking, to be optimized if need be.
  *
@@ -27,6 +27,7 @@ import org.agrona.collections.LongHashSet;
  */
 public final class BoundedCommandCache {
   private static final int DEFAULT_CAPACITY = 100_000;
+  private static final int INITIAL_CAPACITY = 64;
 
   private final Lock lock = new ReentrantLock();
 
@@ -48,7 +49,8 @@ public final class BoundedCommandCache {
    * primitives, each element takes about 8 bytes. There is some minimal overhead for state
    * management and the likes, which means in the end, amortized, each entry takes about 8.4 bytes.
    *
-   * <p>So the default capacity, 100,000 entries, will use about 840KB of memory, even when full.
+   * <p>So the default capacity, 100,000 entries, will use about 840KB of memory when full. An empty
+   * cache uses about 1KB.
    *
    * @param capacity the maximum capacity of the command cache
    */
@@ -56,11 +58,9 @@ public final class BoundedCommandCache {
     this.capacity = capacity;
     this.sizeReporter = sizeReporter;
 
-    // to avoid resizing, we set a load factor of 0.9, and increase the internal capacity
-    // preemptively
-    final var resizeThreshold = (int) Math.ceil(capacity * 0.9f);
-    final var capacityToPreventResize = 2 * capacity - resizeThreshold;
-    cache = new LongHashSet(capacityToPreventResize, 0.9f, true);
+    // the set starts small and grows with the keys it holds: every partition replica has one of
+    // these per scheduled intent, and most of them stay nearly empty
+    cache = new LongHashSet(Math.min(capacity, INITIAL_CAPACITY), 0.9f, true);
     sizeReporter.accept(0);
   }
 
