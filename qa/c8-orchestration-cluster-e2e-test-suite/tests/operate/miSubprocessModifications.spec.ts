@@ -376,19 +376,15 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     });
 
     await test.step('Attempt to select Inner Task (inside MI body) as move target', async () => {
-      await operateProcessInstanceViewModificationModePage
-        .getFlowNode('SubTaskA_restriction')
-        .first()
-        .click({force: true, timeout: 20000});
+      await operateProcessInstanceViewModificationModePage.clickTargetFlowNode(
+        'SubTaskA_restriction',
+      );
     });
 
     await test.step('Verify the cross-boundary move was rejected: target selection prompt remains active', async () => {
-      // Use a longer timeout: the click on the invalid target can briefly
-      // de-render the prompt before it reappears, which races the default
-      // 5s toBeVisible check on slower runners.
       await expect(
         operateProcessInstanceViewModificationModePage.moveTokensMessage,
-      ).toBeVisible({timeout: 30000});
+      ).toBeVisible();
     });
   });
 
@@ -469,10 +465,9 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     });
 
     await test.step('Attempt to select Cross Task 2 (inside a different MI body) as move target', async () => {
-      await operateProcessInstanceViewModificationModePage
-        .getFlowNode('CrossTask2')
-        .first()
-        .click({force: true, timeout: 20000});
+      await operateProcessInstanceViewModificationModePage.clickTargetFlowNode(
+        'CrossTask2',
+      );
     });
 
     await test.step('Verify the cross-MI move was rejected: target selection prompt remains active', async () => {
