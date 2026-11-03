@@ -219,25 +219,22 @@ test.describe.serial('Signal Permission API', () => {
       }),
     );
 
-    // when the user broadcasts the catch signal
+    // when the user broadcasts the catch signal until every partition accepts it
+    // then the signal is caught by the waiting instance on every partition
     await expect(async () => {
       const res = await request.post(buildUrl('/signals/broadcast'), {
         headers: jsonHeaders(userWithoutPermissionsToken),
         data: {signalName: catchSignalName},
       });
       await assertStatusCode(res, 200);
-    }).toPass(defaultAssertionOptions);
-
-    // then the signal is caught by the waiting instance on every partition
-    for (const processInstanceKey of catchProcessInstanceKeys) {
-      await expect(async () => {
+      for (const processInstanceKey of catchProcessInstanceKeys) {
         await searchElementInstanceByElementIdAndState(
           request,
           processInstanceKey,
           'catchSignal',
           'COMPLETED',
         );
-      }).toPass(defaultAssertionOptions);
-    }
+      }
+    }).toPass(defaultAssertionOptions);
   });
 });
