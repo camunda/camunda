@@ -35,33 +35,99 @@ export function compareVersions(a, b) {
   return aMaj - bMaj || aMin - bMin;
 }
 
-/** Remove a branch tag (`|Branch` segments and a leading `Branch.`) from a qualified name. */
+// A leading branch tag is either a schema name (`Foo.bar` — capitalised, per
+// the repo's PascalCase schema convention) or an indexed inline-branch tag
+// (`oneOf[0].bar`, `anyOf[2].baz`). A lowercase leading segment is an ordinary
+// property (`filter.state`), never a branch tag.
+const LEADING_BRANCH_TAG = /^(?:[A-Z][^.|]*|(?:oneOf|anyOf)\[\d+\])\./;
+
+/**
+ * Remove branch tags (`|Branch` segments and a leading `Branch.`) from a
+ * qualified name. A root inline branch is tagged with its keyword and index
+ * (`oneOf[0].foo`, `anyOf[2].bar`) rather than a schema name.
+ */
 export function normalizeQname(qname) {
-  return qname.replace(/\|[^.]+/g, '').replace(/^[A-Z][^.|]*\./, '');
+  // Decide on the original qname: a leading segment carrying a `|` tag
+  // (`page|OffsetPagination`) is a real property whose tag is stripped below,
+  // not a branch tag itself.
+  const withoutLeading = LEADING_BRANCH_TAG.test(qname)
+    ? qname.replace(LEADING_BRANCH_TAG, '')
+    : qname;
+  return withoutLeading.replace(/\|[^.]+/g, '');
 }
 
 export function isBranchTagged(qname) {
-  return qname.includes('|') || /^[A-Z][^.|]*\./.test(qname);
+  return qname.includes('|') || LEADING_BRANCH_TAG.test(qname);
 }
 
-/** A schema with documentation and vendor extensions removed and keys sorted, as a string. */
+const SCHEMA_CONTAINER_KEYS = new Set([
+  'items',
+  'additionalProperties',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+  'if',
+  'then',
+  'else',
+  'contains',
+  'propertyNames',
+  'patternProperties',
+  'dependentSchemas',
+  '$defs',
+  'definitions',
+]);
+
+/**
+ * A schema with documentation and vendor extensions removed and keys sorted,
+ * as a string. Keywords are stripped only where a schema object is expected:
+ * `properties` maps property *names* to schemas, so a property named
+ * `description` must survive; `enum`/`const`/`default` hold literal data that
+ * may itself be a doc-keyed object (e.g. `default: {description: 'x'}`).
+ */
 export function schemaShape(node) {
-  const strip = (n) => {
-    if (Array.isArray(n)) return n.map(strip);
+  // mode: 'schema' — strip doc keys; 'map' — a name→schema dictionary whose
+  // keys are data; 'literal' — arbitrary data, compared verbatim.
+  const strip = (n, mode) => {
+    if (Array.isArray(n)) {
+      return n.map((e) => strip(e, mode === 'literal' ? 'literal' : 'schema'));
+    }
     if (!n || typeof n !== 'object') return n;
     const out = {};
     for (const k of Object.keys(n).sort()) {
-      if (DOC_KEYS.has(k) || k.startsWith('x-')) continue;
-      out[k] = strip(n[k]);
+      if (mode === 'schema' && (DOC_KEYS.has(k) || k.startsWith('x-'))) continue;
+      const childMode =
+        mode === 'literal'
+          ? 'literal'
+          : mode === 'map'
+            ? 'schema'
+            : k === 'properties'
+              ? 'map'
+              : SCHEMA_CONTAINER_KEYS.has(k)
+                ? 'schema'
+                : 'literal';
+      out[k] = strip(n[k], childMode);
     }
     return out;
   };
-  return node === undefined ? undefined : JSON.stringify(strip(node));
+  return node === undefined ? undefined : JSON.stringify(strip(node, 'schema'));
 }
 
 function nodeAt(root, path) {
   let node = root;
-  for (const seg of path || []) node = node?.[seg];
+  // A leading `*.yaml` segment is the source-file attribution the builder
+  // prefixes to cross-file paths for the verifier; the bundled spec has no
+  // such top-level key, so drop it before traversing.
+  const segments =
+    typeof path?.[0] === 'string' && path[0].endsWith('.yaml') ? path.slice(1) : path;
+  for (const seg of segments || []) {
+    // Follow intermediate $refs: the bundler emits refs into `#/paths/…`,
+    // whose traversal passes through nodes that are themselves `{ $ref }`.
+    while (node?.$ref && typeof node.$ref === 'string' && node.$ref.startsWith('#/')) {
+      node = nodeAt(root, node.$ref.slice(2).split('/'));
+    }
+    node = node?.[seg];
+  }
   return node;
 }
 

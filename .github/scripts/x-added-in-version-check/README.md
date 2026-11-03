@@ -182,6 +182,8 @@ ProcessInstanceCreationInstructionByVersionTag:
 
 If the schemas differ, the occurrences are different properties that happen to share a name, and each keeps its own version. A discriminator that each branch pins to its own value is the typical case.
 
+Schema comparison is keyword-aware, not a blind key filter: documentation keywords (`description`, `example`, …) and `x-` extensions are stripped only where a *schema object* is expected. A property *named* `description` keeps its type as a difference, and literal data inside `default`/`const`/`enum` is compared verbatim — two branches whose `config` property has a different object-valued `default` are different schemas. Inline root branches (tagged `oneOf[0].foo` rather than `SchemaName.foo`) and cross-file paths (which the builder prefixes with the source YAML filename for the verifier) are normalised before grouping and bundle lookup.
+
 Before this rule, the check required `8.10` here, so the only way to keep the truthful `8.9` was to move the shared properties into an `allOf` base. That changed the generated SDK types in a patch release (#67987).
 
 ## Overriding the computed version
