@@ -40,16 +40,8 @@ import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
-import {createFinishAddingTokenAction} from './modifications/modificationOperations';
-import {canBeAddedTokenAncestor, getRunningInstancesByElement} from './modifications/modificationTargets';
-import {getModificationsByElement, hasPendingCancelOrMoveModification} from './modifications/modificationSelectors';
-import {
-	getChildPlaceholders,
-	getModificationPlaceholders,
-	hasChildPlaceholders,
-	type HistoryPlaceholder,
-} from './modifications/historyPlaceholders';
-import {useInstanceStatistics} from './instanceDiagram.queries';
+import {getPlaceholderTreeKey, useHistoryModification} from './useHistoryModification';
+import {getChildPlaceholders, hasChildPlaceholders, type HistoryPlaceholder} from './modifications/historyPlaceholders';
 import {isMultiInstance} from '#/operate/shared/utils/elements';
 import {useInstanceHistory} from './useInstanceHistory';
 import {instanceLastMigrationQuery} from './processInstance.queries';
@@ -87,17 +79,20 @@ const NodeIconContext = createContext<{businessObject?: BusinessObject; root: bo
 	root: false,
 	leaf: false,
 });
-const HistoryModificationContext = createContext<{
-	placeholders: HistoryPlaceholder[];
-	modificationsByElement: ReturnType<typeof getModificationsByElement>;
-	expandedPlaceholders: string[];
-	togglePlaceholder: (key: string) => void;
-}>({placeholders: [], modificationsByElement: {}, expandedPlaceholders: [], togglePlaceholder: () => {}});
+const HistoryModificationContext = createContext<Omit<
+	ReturnType<typeof useHistoryModification>,
+	'isModificationModeEnabled'
+> | null>(null);
+
+function useHistoryModificationContext() {
+	const context = useContext(HistoryModificationContext);
+	if (context === null) {
+		throw new Error('HistoryModificationContext is missing');
+	}
+	return context;
+}
 function isInferredParentScope({state, type}: Pick<ElementInstance, 'state' | 'type'>) {
 	return state === 'ACTIVE' && type !== 'MULTI_INSTANCE_BODY';
-}
-function getPlaceholderTreeKey(placeholderKey: string, parentTreeKey: string) {
-	return `${placeholderKey}@${parentTreeKey}`;
 }
 function nodeId(key: string) {
 	return `instance-history-${key}`;
@@ -123,52 +118,17 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	const {processInstance, processInstanceId, search} = useProcessInstancePage();
 	const {t} = useTranslation();
 	const history = useInstanceHistory();
-	const {isModificationModeEnabled, state: modificationState} = useProcessInstanceModification();
+	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const selection = useProcessInstanceElementSelection();
 	const searchText = (search.elementSearch ?? '').trim();
 	const isFiltered = !isModificationModeEnabled && (searchText !== '' || search.elementStatus !== undefined);
 	const xml = useDiagramXml(processInstance.processDefinitionKey);
 	const businessObjects = xml.data?.businessObjects;
-	const statistics = useInstanceStatistics(
-		processInstance,
-		isModificationModeEnabled && xml.data !== undefined && xml.data.xml !== '',
-	);
-	const {placeholders, modificationsByElement} = useMemo(() => {
-		const runningInstancesByElement = getRunningInstancesByElement(statistics.data, businessObjects);
-		return {
-			placeholders:
-				isModificationModeEnabled && businessObjects !== undefined
-					? getModificationPlaceholders(
-							modificationState,
-							businessObjects,
-							processInstance.processDefinitionId,
-							processInstanceId,
-						)
-					: [],
-			modificationsByElement: getModificationsByElement(modificationState, {
-				businessObjects,
-				totalRunningInstancesByElement: runningInstancesByElement,
-				totalRunningInstancesVisibleByElement: runningInstancesByElement,
-			}),
-		};
-	}, [
-		statistics.data,
+	const historyModification = useHistoryModification({
 		businessObjects,
-		isModificationModeEnabled,
-		modificationState,
-		processInstance.processDefinitionId,
-		processInstanceId,
-	]);
-	const placeholderSession = `${processInstanceId}/${isModificationModeEnabled}`;
-	const [expanded, setExpanded] = useState({session: placeholderSession, keys: [] as string[]});
-	const expandedPlaceholders = expanded.session === placeholderSession ? expanded.keys : [];
-	const togglePlaceholder = (key: string) =>
-		setExpanded({
-			session: placeholderSession,
-			keys: expandedPlaceholders.includes(key)
-				? expandedPlaceholders.filter((expandedKey) => expandedKey !== key)
-				: [...expandedPlaceholders, key],
-		});
+		isXmlLoaded: xml.data !== undefined && xml.data.xml !== '',
+	});
+	const {placeholders, expandedPlaceholders} = historyModification;
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const [tabStop, setTabStop] = useState<TabStop>();
 	const focus = useRef<{within: boolean; element: HTMLElement | null; target: string}>({
@@ -356,9 +316,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 									selected={selected}
 									active={selected[0] ?? ''}
 								>
-									<HistoryModificationContext
-										value={{placeholders, modificationsByElement, expandedPlaceholders, togglePlaceholder}}
-									>
+									<HistoryModificationContext value={historyModification}>
 										<HistoryNode
 											item={root}
 											hierarchy={[processInstanceId]}
@@ -396,20 +354,12 @@ function HistoryNode({
 }) {
 	const history = useInstanceHistory();
 	const selection = useProcessInstanceElementSelection();
-	const {isModificationModeEnabled, state: modificationState, dispatch} = useProcessInstanceModification();
-	const {placeholders, modificationsByElement} = useContext(HistoryModificationContext);
+	const {isModificationModeEnabled} = useProcessInstanceModification();
+	const {placeholders, hasPlannedCancel, handleModificationSelect} = useHistoryModificationContext();
 	const {t} = useTranslation();
 	const key = item.elementInstanceKey;
 	const id = nodeId(key);
-	const hasCancelModification =
-		modificationsByElement[item.elementId]?.areAllTokensCanceled === true ||
-		hierarchy.some((elementInstanceKey) =>
-			hasPendingCancelOrMoveModification(modificationState, {
-				elementId: item.elementId,
-				elementInstanceKey,
-				modificationsByElement,
-			}),
-		);
+	const hasCancelModification = hasPlannedCancel(item, hierarchy);
 	const root = item.type === 'PROCESS';
 	const isFoldable = foldable.has(item.type);
 	const window = isFoldable ? history.windows.get(key) : undefined;
@@ -427,24 +377,8 @@ function HistoryNode({
 	function select() {
 		if (root) {
 			selection.clearSelection();
-		} else if (modificationState.status === 'moving-token') {
+		} else if (handleModificationSelect(item, hasCancelModification)) {
 			return;
-		} else if (modificationState.status === 'adding-token') {
-			const sourceElementId = modificationState.sourceElementIdForAddOperation;
-			if (
-				businessObjects !== undefined &&
-				sourceElementId !== null &&
-				!hasCancelModification &&
-				canBeAddedTokenAncestor(businessObjects, sourceElementId, item)
-			) {
-				dispatch(
-					createFinishAddingTokenAction(modificationState, {
-						businessObjects,
-						ancestorElementId: item.elementId,
-						ancestorElementInstanceKey: key,
-					}),
-				);
-			}
 		} else {
 			void selection.selectElementInstance(
 				item,
@@ -558,9 +492,7 @@ function PlaceholderNode({
 	focusTarget: string;
 	businessObjects?: BusinessObjects;
 }) {
-	const selection = useProcessInstanceElementSelection();
-	const {state: modificationState} = useProcessInstanceModification();
-	const {placeholders, expandedPlaceholders, togglePlaceholder} = useContext(HistoryModificationContext);
+	const {placeholders, expandedPlaceholders, togglePlaceholder, selectPlaceholder} = useHistoryModificationContext();
 	const {t} = useTranslation();
 	const businessObject = businessObjects?.[elementId];
 	const hasChildren = hasChildPlaceholders(placeholders, key);
@@ -572,10 +504,7 @@ function PlaceholderNode({
 	const treeKey = getPlaceholderTreeKey(key, parentTreeKey);
 	const id = nodeId(treeKey);
 	function select() {
-		if (modificationState.status === 'moving-token' || modificationState.status === 'adding-token') {
-			return;
-		}
-		selection.selectPlaceholder(elementId, key, isMultiInstance(businessObject));
+		selectPlaceholder(elementId, key);
 	}
 	return (
 		<NodeIconContext value={icon}>
