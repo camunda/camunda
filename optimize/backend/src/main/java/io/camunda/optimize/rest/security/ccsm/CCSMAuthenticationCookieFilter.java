@@ -12,6 +12,7 @@ import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -29,6 +30,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,7 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CCSMAuthenticationCookieFilter.class);
+  private static final Pattern REST_STATUS_CODE_PATTERN = Pattern.compile("status code '(\\d+)'");
   private final ConfigurationService configurationService;
   private final CCSMTokenService ccsmTokenService;
 
@@ -121,9 +125,30 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
     try {
       ccsmTokenService.verifyToken(token);
     } catch (final Exception e) {
+      LOGGER.debug("Token verification failed: {}", describeVerificationFailure(e));
       return Optional.empty();
     }
     return Optional.ofNullable(token);
+  }
+
+  // Exception messages can carry token claims or Identity response bodies, so only safe parts are
+  // logged.
+  private static String describeVerificationFailure(final Exception e) {
+    final String type = e.getClass().getSimpleName();
+    if (e instanceof NotAuthorizedException) {
+      final Throwable cause = e.getCause();
+      return cause == null
+          ? String.format("%s (%s)", type, e.getMessage())
+          : String.format(
+              "%s (%s, cause: %s)", type, e.getMessage(), cause.getClass().getSimpleName());
+    }
+    if (e instanceof RestException && e.getMessage() != null) {
+      final Matcher matcher = REST_STATUS_CODE_PATTERN.matcher(e.getMessage());
+      if (matcher.find()) {
+        return String.format("%s (status code %s)", type, matcher.group(1));
+      }
+    }
+    return type;
   }
 
   private void tryCookieRenewal(
