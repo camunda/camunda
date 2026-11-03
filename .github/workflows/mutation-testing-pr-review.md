@@ -85,12 +85,18 @@ steps:
     with:
       # Only main pushes warm the shared cache; this workflow only reads it.
       cache-read-only: true
-  # The agent computes the diff itself; this only makes the base commit available for it. The
-  # checkout is shallow, so without the fetch the base is not in the object database.
-  - name: Fetch the base commit
+  # GitHub's own diff of the pull request (merge base to head), which review comments attach to.
+  # A diff against the base branch tip would also show, reversed, whatever landed on main since
+  # the branch was cut. GitHub serves no diff for very large pull requests; the prompt falls back
+  # to the GitHub tool then. /tmp/gh-aw is mounted into the agent sandbox.
+  - name: Save the pull request diff for the agent
     env:
-      BASE_SHA: ${{ github.event.pull_request.base.sha }}
-    run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    run: |
+      mkdir -p /tmp/gh-aw/pr-review
+      gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > /tmp/gh-aw/pr-review/pr.diff || true
+      wc -l /tmp/gh-aw/pr-review/pr.diff
   # The agent sandbox runs as a different user than these steps, so it cannot write the Gradle
   # home setup-gradle created or the checkout (Gradle failed to create its wrapper lock file).
   # Download the distribution and configure the build here, without a daemon the sandbox could not
@@ -119,15 +125,16 @@ backups, scheduling, dynamic configuration), where an unnoticed behaviour change
 
 ## Rules for this workflow
 
-- **Changed lines only.** Report only mutants on lines this pull request changed. Survivors
-  anywhere else are not your business here, however bad: never mention them. The base commit
-  `${{ github.event.pull_request.base.sha }}` has been fetched, so
-  `git diff -U0 ${{ github.event.pull_request.base.sha }} HEAD` shows the changes; the changed
-  line ranges on the new side are in the `@@ -a,b +c,d @@` hunk headers (a hunk with `d = 0` is a
-  pure deletion with no line to report on). If the diff looks larger than the pull request (the
-  base branch moved), trust the pull request's file list from the GitHub tool. Ignore tests, build
-  files, generated code and files outside Distributed Systems ownership. A changed file whose
-  project has no `pitest` task: say so in the review summary instead of guessing.
+- **Changed lines only.** Report only mutants on lines this pull request adds or changes.
+  Survivors anywhere else are not your business here, however bad: never mention them. The
+  checkout is the pull request head, and `/tmp/gh-aw/pr-review/pr.diff` holds the pull request's
+  diff as GitHub shows it (merge base to head). Its `+` lines are the changed lines; their
+  line numbers count up from `c` in each `@@ -a,b +c,d @@` hunk header, skipping `-` lines. If
+  the file is empty (GitHub serves no diff for very large pull requests), use the pull request's
+  files and their patches from the GitHub tool. Do not diff against the base branch yourself:
+  changes merged there since the branch was cut would show up as reversed changes. Ignore tests,
+  build files, generated code and files outside Distributed Systems ownership. A changed file
+  whose project has no `pitest` task: say so in the review summary instead of guessing.
 - **PIT budget of about 15 minutes of wall time in total, on a 4-core runner** (about half the
   speed of the 16-core timings in the skill; pass `-Ppit.threads=4`). The run has a 45 minute budget and is
   cancelled when the pull request is pushed again, so cheap and focused beats thorough. Discover
@@ -141,10 +148,14 @@ backups, scheduling, dynamic configuration), where an unnoticed behaviour change
   two or three sentences what was run (projects, classes, mutant counts) and what the comments say.
 - **`COMMENT` or `REQUEST_CHANGES` is your call.** Request changes when the surviving mutants on
   the changed lines show behaviour that should be tested before this pull request merges;
-  otherwise comment.
+  otherwise comment. Judge all findings that are still open, including earlier ones you do not
+  repeat: a new review dismisses this workflow's earlier change requests.
 - **Prefer `noop` over noise.** If no mutant qualifies after dropping equivalent and low-value ones,
   call `noop` with a one-line reason (for example "no surviving mutants on changed lines in
-  <classes>") and write no review, not even an "all good" one.
+  <classes>") and write no review, not even an "all good" one. One exception: if this workflow
+  has a review in state `CHANGES_REQUESTED` on the pull request and its findings are all resolved
+  now, a `noop` would leave that review blocking the merge. Submit a short `COMMENT` review
+  instead, saying the earlier findings are resolved, which dismisses it.
 - **Read-only.** Do not push to or modify the pull request branch. Changes to test sources while
   experimenting (a draft test to check that a mutant can be killed) are thrown away; do not leave
   edits behind. Do not change production code.
