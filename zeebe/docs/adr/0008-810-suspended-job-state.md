@@ -292,10 +292,10 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
 - A user task canceled by a drained command before `RESUME_USER_TASKS` reaches it gets no
   `UserTask.RESUMED`. Exporters clear its suspended flag on `UserTask.CANCELED`.
-- If a drained command ends the instance before `COMPLETE_RESUMING`, no `ProcessInstance.RESUMED`
-  is written, so a batch resume operation item stays open
-  ([#66736](https://github.com/camunda/camunda/issues/66736)). The drain skips the user task step
-  when no task is tracked, so it adds no cycle there.
+- A drained command or a job completion can end the instance before `COMPLETE_RESUMING` runs, so
+  the rest of the resume chain is rejected. The process then writes `ProcessInstance.RESUMED`
+  itself when it finishes completing or terminating, so every resume ends with exactly one
+  `RESUMED` ([#66736](https://github.com/camunda/camunda/issues/66736)).
 - Out of scope: child-instance suspension, export to secondary storage/Operate.
 
 ## Open questions
