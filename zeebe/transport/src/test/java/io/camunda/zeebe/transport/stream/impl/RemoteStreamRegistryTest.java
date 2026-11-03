@@ -33,10 +33,12 @@ final class RemoteStreamRegistryTest {
     final UUID id2 = UUID.randomUUID();
 
     // when
-    streamRegistry.add(typeFoo, id1, gateway, 1);
-    streamRegistry.add(typeBar, id2, gateway, 2);
+    final var addedFoo = streamRegistry.add(typeFoo, id1, gateway, 1);
+    final var addedBar = streamRegistry.add(typeBar, id2, gateway, 2);
 
     // then
+    assertThat(addedFoo).isTrue();
+    assertThat(addedBar).isTrue();
     final AggregatedRemoteStream<Integer> streamFoo =
         streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
     assertThat(streamFoo.logicalId()).isEqualTo(new LogicalId<>(typeFoo, 1));
@@ -73,11 +75,12 @@ final class RemoteStreamRegistryTest {
     final int properties = 1;
 
     // when
-    streamRegistry.add(typeFoo, id1, gateway, properties);
-    streamRegistry.add(typeFoo, id2, gateway, properties);
+    final var added1 = streamRegistry.add(typeFoo, id1, gateway, properties);
+    final var added2 = streamRegistry.add(typeFoo, id2, gateway, properties);
 
     // then
-
+    assertThat(added1).isTrue();
+    assertThat(added2).isTrue();
     final AggregatedRemoteStream<Integer> streamFoo =
         streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
     assertThat(streamFoo.logicalId()).isEqualTo(new LogicalId<>(typeFoo, properties));
@@ -112,10 +115,50 @@ final class RemoteStreamRegistryTest {
     streamRegistry.add(typeFoo, id, gateway, 1);
 
     // when
-    streamRegistry.remove(id, gateway);
+    final var removed = streamRegistry.remove(id, gateway);
 
     // then
+    assertThat(removed).isTrue();
     assertThat(streamRegistry.get(typeFoo)).isEmpty();
+  }
+
+  @Test
+  void shouldIgnoreDuplicateAdd() {
+    // given
+    final UUID id = UUID.randomUUID();
+    streamRegistry.add(typeFoo, id, gateway, 1);
+
+    // when
+    final var added = streamRegistry.add(typeFoo, id, gateway, 1);
+
+    // then
+    assertThat(added).isFalse();
+    assertThat(metrics.getStreamCount()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldIgnoreDuplicateRemove() {
+    // given
+    final UUID id = UUID.randomUUID();
+    streamRegistry.add(typeFoo, id, gateway, 1);
+    streamRegistry.remove(id, gateway);
+
+    // when
+    final var removed = streamRegistry.remove(id, gateway);
+
+    // then
+    assertThat(removed).isFalse();
+    assertThat(metrics.getStreamCount()).isZero();
+  }
+
+  @Test
+  void shouldIgnoreRemoveOfUnknownStream() {
+    // when
+    final var removed = streamRegistry.remove(UUID.randomUUID(), gateway);
+
+    // then
+    assertThat(removed).isFalse();
+    assertThat(metrics.getStreamCount()).isZero();
   }
 
   @Test
