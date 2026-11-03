@@ -7,6 +7,9 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse} from 'msw';
+import {mockQueryVariablesEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
@@ -37,4 +40,33 @@ test('should match the process instance diagram panel snapshot with a selected e
 
 	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+});
+
+test('should match the process instance variables tab snapshot', async ({
+	network,
+	operatePreviewProcessInstancePage,
+}) => {
+	network.use(
+		mockQueryVariablesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'amount', value: '100', variableKey: '1'}),
+						createVariable({name: 'customer', value: '{"name":"Jane","address":{"city":"Berlin"}}', variableKey: '2'}),
+						createVariable({
+							name: 'password',
+							value: 'secret',
+							variableKey: '3',
+							metadata: {protectionModes: ['REDACT']},
+						}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+	await expect(operatePreviewProcessInstancePage.variableRow('password')).toContainText('[REDACTED]');
+	await expect(operatePreviewProcessInstancePage.variablesList).toHaveScreenshot();
 });
