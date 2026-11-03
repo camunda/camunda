@@ -9,10 +9,12 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process.agentr
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_DURATION_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_MODEL_CALLS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_REASONING_TOKENS_GROUP_BY_END_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOOL_CALLS_GROUP_BY_TOOL;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_END_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_END_DATE_BY_MODEL;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_MODEL;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_START_DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,7 @@ class AgentRunViewInterpretersTest {
         .isEqualTo("totalTokens");
     assertThat(
             ProcessViewAgentRunMetricInterpreterES.fieldFor(
-                AGENT_RUN_TOTAL_TOKENS_GROUP_BY_START_DATE))
+                AGENT_RUN_TOTAL_TOKENS_GROUP_BY_END_DATE))
         .isEqualTo("totalTokens");
   }
 
@@ -43,6 +45,23 @@ class AgentRunViewInterpretersTest {
         .isEqualTo("tokensByModel.totalTokens");
     assertThat(ProcessViewAgentRunMetricInterpreterES.fieldFor(AGENT_RUN_TOOL_CALLS_GROUP_BY_TOOL))
         .isEqualTo("toolCallsByTool.count");
+  }
+
+  @Test
+  void shouldTakeEachRunsTokensOnAModelWhenDistributedByModel() {
+    // The weekly median per model is over what each run spent on that model, not its total.
+    assertThat(
+            ProcessViewAgentRunMetricInterpreterES.fieldFor(
+                AGENT_RUN_TOTAL_TOKENS_GROUP_BY_END_DATE_BY_MODEL))
+        .isEqualTo("tokensByModel.totalTokens");
+  }
+
+  @Test
+  void shouldTrendEachTokenTypeByRunEndDate() {
+    assertThat(
+            ProcessViewAgentRunMetricInterpreterES.fieldFor(
+                AGENT_RUN_REASONING_TOKENS_GROUP_BY_END_DATE))
+        .isEqualTo("reasoningTokens");
   }
 
   @Test

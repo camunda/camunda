@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -33,15 +34,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Splits agent runs by the model of the run, e.g. tokens per run over time with one line per model.
- * Every group gets every model seen in the report, empty where a model had no runs, so the lines of
- * a chart line up.
+ * Splits agent runs by model through the nested per-model token entries, e.g. the median tokens a
+ * run spent on each model over time. A run that switched model counts for each of its models, with
+ * the tokens spent on that model; the view resolves its field inside the nested entries. Every
+ * group gets every model seen in the report, empty where a model had no runs, so the lines of a
+ * chart line up.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByAgentModelInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
 
+  static final String NESTED_AGGREGATION = "agentRunModelNested";
   static final String MODEL_AGGREGATION = "agentRunModel";
   static final String MISSING_MODEL_KEY = "unknown";
 
@@ -68,7 +72,10 @@ public class ProcessDistributedByAgentModelInterpreterES
         new Aggregation.Builder()
             .terms(
                 t ->
-                    t.field(AgentRunIndex.MODEL)
+                    t.field(
+                            AgentRunIndex.TOKENS_BY_MODEL
+                                + "."
+                                + AgentRunDto.ModelTokensDto.Fields.model)
                         .missing(MISSING_MODEL_KEY)
                         .size(
                             configurationService
@@ -77,7 +84,11 @@ public class ProcessDistributedByAgentModelInterpreterES
     viewInterpreter
         .createAggregations(context)
         .forEach((k, v) -> byModel.aggregations(k, v.build()));
-    return Map.of(MODEL_AGGREGATION, byModel);
+    return Map.of(
+        NESTED_AGGREGATION,
+        new Aggregation.Builder()
+            .nested(n -> n.path(AgentRunIndex.TOKENS_BY_MODEL))
+            .aggregations(MODEL_AGGREGATION, byModel.build()));
   }
 
   @Override
@@ -86,7 +97,10 @@ public class ProcessDistributedByAgentModelInterpreterES
       final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Map<String, DistributedByResult> byModel = new TreeMap<>();
-    final Aggregate models = aggregations.get(MODEL_AGGREGATION);
+    final Aggregate models =
+        aggregations.get(NESTED_AGGREGATION) == null
+            ? null
+            : aggregations.get(NESTED_AGGREGATION).nested().aggregations().get(MODEL_AGGREGATION);
     if (models != null) {
       for (final StringTermsBucket bucket : models.sterms().buckets().array()) {
         final String model = bucket.key().stringValue();
@@ -132,6 +146,8 @@ public class ProcessDistributedByAgentModelInterpreterES
                 .array()
                 .forEach(
                     bucket -> models.put(bucket.key().stringValue(), bucket.key().stringValue()));
+          } else if (aggregate.isNested()) {
+            collectModels(aggregate.nested().aggregations(), models);
           } else if (aggregate.isDateHistogram()) {
             aggregate
                 .dateHistogram()

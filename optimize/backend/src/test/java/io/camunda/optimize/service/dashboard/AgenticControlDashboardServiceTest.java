@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.dashboard;
 
+import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.END_DATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.NONE;
-import static io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType.START_DATE;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_AVG_TOKENS_DESCRIPTION;
@@ -396,6 +396,21 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
+  void shouldTrendTokenTypesWeekByWeekByRunEnd() {
+    // when
+    final ProcessReportDataDto report =
+        seedAndCaptureReportsById().get(AGENT_TOKEN_BREAKDOWN_REPORT_ID);
+
+    // then
+    assertThat(report.getGroupBy().getType()).isEqualTo(END_DATE);
+    assertThat(((DateGroupByValueDto) report.getGroupBy().getValue()).getUnit())
+        .isEqualTo(AggregateByDateUnit.WEEK);
+    assertThat(report.getVisualization()).isEqualTo(ProcessVisualization.LINE);
+    assertThat(report.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.SUM));
+  }
+
+  @Test
   void shouldSplitMedianTokensPerRunByModelWeekByWeek() {
     // when
     final ProcessReportDataDto report =
@@ -403,7 +418,7 @@ public class AgenticControlDashboardServiceTest {
 
     // then
     assertThat(report.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
-    assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
+    assertThat(report.getGroupBy().getType()).isEqualTo(END_DATE);
     assertThat(((DateGroupByValueDto) report.getGroupBy().getValue()).getUnit())
         .isEqualTo(AggregateByDateUnit.WEEK);
     assertThat(report.getDistributedBy()).isInstanceOf(AgentModelDistributedByDto.class);
@@ -418,7 +433,7 @@ public class AgenticControlDashboardServiceTest {
     final ProcessReportDataDto report = seedAndCaptureReportsById().get(AGENT_TOKEN_BAND_REPORT_ID);
 
     // then
-    assertThat(report.getGroupBy().getType()).isEqualTo(START_DATE);
+    assertThat(report.getGroupBy().getType()).isEqualTo(END_DATE);
     assertThat(report.getConfiguration().getAggregationTypes())
         .containsExactly(
             new AggregationDto(AggregationType.PERCENTILE, 5.0),

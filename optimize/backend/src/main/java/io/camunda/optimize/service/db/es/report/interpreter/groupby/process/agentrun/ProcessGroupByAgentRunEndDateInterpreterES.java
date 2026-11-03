@@ -8,12 +8,12 @@
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.agentrun;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_START_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_END_DATE;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.date.ProcessGroupByProcessInstanceStartDateInterpreterES;
+import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.date.ProcessGroupByProcessInstanceEndDateInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
 import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
@@ -27,15 +27,16 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Agent runs by run start date. The agent index uses the same {@code startDate} field as the
- * process instance index; only the index used for the date range lookup differs.
+ * Agent runs by run end date, like the trend reports of process instances. The agent index uses the
+ * same {@code endDate} field as the process instance index; only the index used for the date range
+ * lookup differs. Only completed runs have an end date, which is all the dashboard shows.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ProcessGroupByAgentRunStartDateInterpreterES
-    extends ProcessGroupByProcessInstanceStartDateInterpreterES {
+public class ProcessGroupByAgentRunEndDateInterpreterES
+    extends ProcessGroupByProcessInstanceEndDateInterpreterES {
 
-  public ProcessGroupByAgentRunStartDateInterpreterES(
+  public ProcessGroupByAgentRunEndDateInterpreterES(
       final ConfigurationService configurationService,
       final DateAggregationServiceES dateAggregationService,
       final MinMaxStatsServiceES minMaxStatsService,
@@ -53,7 +54,7 @@ public class ProcessGroupByAgentRunStartDateInterpreterES
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
-    return Set.of(PROCESS_GROUP_BY_AGENT_RUN_START_DATE);
+    return Set.of(PROCESS_GROUP_BY_AGENT_RUN_END_DATE);
   }
 
   @Override

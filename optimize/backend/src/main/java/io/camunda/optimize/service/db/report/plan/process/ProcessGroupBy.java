@@ -53,9 +53,9 @@ public enum ProcessGroupBy {
   // Same FlowNodesGroupByDto shape as PROCESS_GROUP_BY_FLOW_NODE, but routes to a dedicated
   // interpreter that aggregates over the agentInstances nested path instead of flowNodeInstances.
   PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto()),
-  // Agent run group-bys read the flat agent-instance index. The start date one shares the DTO with
-  // process instance start date but uses the agent index for its date range.
-  PROCESS_GROUP_BY_AGENT_RUN_START_DATE(new StartDateGroupByDto()),
+  // Agent run group-bys read the flat agent-instance index. The end date one shares the DTO with
+  // process instance end date but uses the agent index for its date range.
+  PROCESS_GROUP_BY_AGENT_RUN_END_DATE(new EndDateGroupByDto()),
   PROCESS_GROUP_BY_AGENT_RUN_AGENT(new AgentGroupByDto()),
   PROCESS_GROUP_BY_AGENT_RUN_MODEL(new ModelGroupByDto()),
   PROCESS_GROUP_BY_AGENT_RUN_TOOL(new ToolGroupByDto()),

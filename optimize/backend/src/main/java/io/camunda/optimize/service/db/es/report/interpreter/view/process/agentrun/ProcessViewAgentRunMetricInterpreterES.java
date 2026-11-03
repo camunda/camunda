@@ -26,6 +26,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.es.report.aggregations.AggregationStrategyES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.AbstractProcessViewMultiAggregationInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
@@ -41,8 +42,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Numeric per-run metrics with the report's aggregation types (avg, sum, percentiles, ...). Under
- * the model and tool group-bys the aggregations run inside the nested per-model and per-tool
- * entries, so the field is resolved from the group-by.
+ * the model and tool group-bys and the model distribution the aggregations run inside the nested
+ * per-model and per-tool entries, so the field is resolved from the group-by or distribution.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -102,6 +103,8 @@ public class ProcessViewAgentRunMetricInterpreterES
       case PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS -> AgentRunIndex.REASONING_TOKENS;
       case PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS ->
           groupBy == ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_MODEL
+                  || plan.getDistributedBy()
+                      == ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_AGENT_MODEL
               ? AgentRunIndex.TOKENS_BY_MODEL + "." + AgentRunDto.ModelTokensDto.Fields.totalTokens
               : AgentRunIndex.TOTAL_TOKENS;
       case PROCESS_VIEW_AGENT_RUN_TOOL_CALLS ->

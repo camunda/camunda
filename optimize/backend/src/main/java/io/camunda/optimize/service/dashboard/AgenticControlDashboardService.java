@@ -40,7 +40,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGr
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ToolGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -1041,7 +1040,7 @@ public class AgenticControlDashboardService {
             AGENT_RUNS_OVER_TIME_NAME,
             AGENT_RUNS_OVER_TIME_DESCRIPTION,
             ViewProperty.FREQUENCY,
-            weeklyStartDate(),
+            weeklyEndDate(),
             ProcessVisualization.LINE,
             List.of(),
             TILE_SECTION_VOLUME,
@@ -1089,7 +1088,7 @@ public class AgenticControlDashboardService {
             AGENT_TOKENS_OVER_TIME_NAME,
             AGENT_TOKENS_OVER_TIME_DESCRIPTION,
             List.of(ViewProperty.TOTAL_TOKENS, ViewProperty.FREQUENCY),
-            weeklyStartDate(),
+            weeklyEndDate(),
             new NoneDistributedByDto(),
             ProcessVisualization.LINE,
             List.of(new AggregationDto(AggregationType.SUM)),
@@ -1212,13 +1211,13 @@ public class AgenticControlDashboardService {
                     ViewProperty.CACHE_WRITE_TOKENS,
                     ViewProperty.CACHE_READ_TOKENS,
                     ViewProperty.REASONING_TOKENS),
-                new NoneGroupByDto(),
+                weeklyEndDate(),
                 new NoneDistributedByDto(),
-                ProcessVisualization.NUMBER,
+                ProcessVisualization.LINE,
                 List.of(new AggregationDto(AggregationType.SUM)),
                 TILE_SECTION_TRENDS,
                 new PositionDto(0, 0),
-                new DimensionDto(6, 4)),
+                new DimensionDto(9, 4)),
             TILE_SECTION_TRENDS,
             null,
             levels),
@@ -1228,13 +1227,13 @@ public class AgenticControlDashboardService {
                 AGENT_TOKENS_PER_RUN_BY_MODEL_NAME,
                 AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION,
                 List.of(ViewProperty.TOTAL_TOKENS),
-                weeklyStartDate(),
+                weeklyEndDate(),
                 new AgentModelDistributedByDto(),
                 ProcessVisualization.LINE,
                 List.of(new AggregationDto(AggregationType.PERCENTILE, 50.0)),
                 TILE_SECTION_TRENDS,
-                new PositionDto(6, 0),
-                new DimensionDto(12, 4)),
+                new PositionDto(9, 0),
+                new DimensionDto(9, 4)),
             TILE_SECTION_TRENDS,
             null,
             levels),
@@ -1263,7 +1262,7 @@ public class AgenticControlDashboardService {
                 AGENT_TOKEN_BAND_NAME,
                 AGENT_TOKEN_BAND_DESCRIPTION,
                 List.of(ViewProperty.TOTAL_TOKENS),
-                weeklyStartDate(),
+                weeklyEndDate(),
                 new NoneDistributedByDto(),
                 ProcessVisualization.LINE,
                 List.of(
@@ -1405,8 +1404,9 @@ public class AgenticControlDashboardService {
     return "frequency";
   }
 
-  private static StartDateGroupByDto weeklyStartDate() {
-    final StartDateGroupByDto groupBy = new StartDateGroupByDto();
+  // Trends group runs by end date, like the process instance trend reports.
+  private static EndDateGroupByDto weeklyEndDate() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
     groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
     return groupBy;
   }
