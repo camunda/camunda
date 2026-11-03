@@ -58,6 +58,10 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.historyTree.getByRole('treeitem', {name});
 	}
 
+	searchResultItem(name: string | RegExp) {
+		return this.historyPanel.getByRole('tree', {name: 'Search results'}).getByRole('treeitem', {name});
+	}
+
 	get variablesList() {
 		return this.page.getByRole('table', {name: 'Variable List'});
 	}
