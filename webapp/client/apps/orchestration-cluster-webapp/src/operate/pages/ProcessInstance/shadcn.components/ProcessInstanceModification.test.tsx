@@ -141,10 +141,6 @@ async function renderModificationPage({
 	return screen;
 }
 
-function getDiagramElement(elementId: string) {
-	return document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`)!;
-}
-
 afterEach(async () => {
 	await cleanup();
 	notificationsStore.reset();
@@ -201,7 +197,7 @@ describe('DS process instance token modifications', () => {
 		);
 		await expect.element(screen.getByText('Select the target element in the diagram')).toBeVisible();
 
-		await userEvent.click(getDiagramElement('task_2'));
+		await userEvent.click(screen.getByRole('button', {name: /Task B/}));
 
 		await expect.element(screen.getByText('Select the target element in the diagram')).not.toBeInTheDocument();
 		await expect
