@@ -414,6 +414,11 @@ const mockQueryMappingRulesEndpoint = createEndpointMock({
 	method: endpoints.queryMappingRules.method,
 });
 
+const mockGetMappingRuleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getMappingRule.getUrl({mappingRuleId: ':mappingRuleId'})),
+	method: endpoints.getMappingRule.method,
+});
+
 const mockCreateMappingRuleEndpoint = createEndpointMock({
 	endpoint: endpoints.createMappingRule.getUrl(),
 	method: endpoints.createMappingRule.method,
@@ -864,6 +869,7 @@ export {
 	mockCreateMappingRuleEndpoint,
 	mockUpdateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
+	mockGetMappingRuleEndpoint,
 	mockQueryUsersEndpoint,
 	mockQueryAuthorizationsEndpoint,
 	mockGetAuthorizationEndpoint,
