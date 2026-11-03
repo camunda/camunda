@@ -151,7 +151,6 @@ test('should redirect to Tasklist login when the API answers with an anonymous u
 	page,
 	tasklistLoginPage,
 }) => {
-	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
 	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createAnonymousCurrentUser())}));
 
 	await tasklistLoginPage.gotoTasklist();

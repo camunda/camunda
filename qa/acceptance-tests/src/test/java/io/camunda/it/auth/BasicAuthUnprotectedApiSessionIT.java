@@ -94,14 +94,14 @@ public class BasicAuthUnprotectedApiSessionIT {
       final HttpResponse<String> response, final String reason) throws IOException {
     assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
     final var currentUser = JSON.readTree(response.body());
-    assertThat(currentUser.path("anonymous").asBoolean(true)).as(reason).isFalse();
+    assertThat(currentUser.path("isAnonymous").asBoolean(true)).as(reason).isFalse();
     assertThat(currentUser.path("username").asText()).as(reason).isEqualTo(DEFAULT_USER_USERNAME);
   }
 
   private static void assertIsAnonymousCurrentUser(
       final HttpResponse<String> response, final String reason) throws IOException {
     assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
-    assertThat(JSON.readTree(response.body()).path("anonymous").asBoolean()).as(reason).isTrue();
+    assertThat(JSON.readTree(response.body()).path("isAnonymous").asBoolean()).as(reason).isTrue();
   }
 
   private static void logOut(final TestLoggedInWebappClient client)

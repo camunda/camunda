@@ -4,7 +4,7 @@
 
 ### 🩹 Fixes
 
-- Accept the anonymous current user of an unprotected API in the 8.10 schema (`anonymous`, and a `null` username, display name and email), and add `isAnonymousCurrentUser` to the 8.10 and 8.11 exports ([#66964](https://github.com/camunda/camunda/pull/66964))
+- Accept the anonymous current user of an unprotected API in the 8.10 schema (`isAnonymous`, and a `null` username, display name and email) ([#66964](https://github.com/camunda/camunda/pull/66964))
 
 ### ❤️ Contributors
 

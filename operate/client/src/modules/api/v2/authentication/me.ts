@@ -23,8 +23,8 @@ async function isAnonymousCurrentUser(response: Response): Promise<boolean> {
     return (
       typeof body === 'object' &&
       body !== null &&
-      'anonymous' in body &&
-      body.anonymous === true
+      'isAnonymous' in body &&
+      body.isAnonymous === true
     );
   } catch {
     return false;

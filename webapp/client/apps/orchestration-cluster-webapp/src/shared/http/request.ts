@@ -9,6 +9,7 @@
 import {reactQueryClient} from './reactQueryClient';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {z} from 'zod';
+import {currentUserSchema, endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type RequestError =
 	| {
@@ -48,18 +49,25 @@ async function requestCsrfToken(input: Request) {
 	}
 }
 
-type RequestOptions = {
-	skipSessionCheck?: boolean;
-	/**
-	 * Tells if a successful response still means that the caller has no session, so it is handled
-	 * like a 401. An unprotected API answers the current user endpoint this way.
-	 */
-	isUnauthenticated?: (response: Response) => Promise<boolean>;
-};
+const anonymousCurrentUserSchema = currentUserSchema.pick({isAnonymous: true});
+
+async function isAnonymousCurrentUser(input: RequestInfo, response: Response) {
+	const url = new URL(typeof input === 'string' ? input : input.url, window.location.origin);
+	if (!url.pathname.endsWith(unifiedAPIEndpoints.getCurrentUser.getUrl())) {
+		return false;
+	}
+
+	try {
+		const result = anonymousCurrentUserSchema.safeParse(await response.json());
+		return result.success && result.data.isAnonymous;
+	} catch {
+		return false;
+	}
+}
 
 async function request(
 	input: RequestInfo,
-	{skipSessionCheck = false, isUnauthenticated}: RequestOptions = {},
+	{skipSessionCheck} = {skipSessionCheck: false},
 ): Promise<
 	| {
 			response: Response;
@@ -82,7 +90,7 @@ async function request(
 
 		const response = await fetch(input);
 		const isUnauthorized =
-			response.status === 401 || (response.ok && (await isUnauthenticated?.(response.clone())) === true);
+			response.status === 401 || (response.ok && (await isAnonymousCurrentUser(input, response.clone())));
 
 		if (response.ok && !isUnauthorized) {
 			authenticationStore.activateSession();
