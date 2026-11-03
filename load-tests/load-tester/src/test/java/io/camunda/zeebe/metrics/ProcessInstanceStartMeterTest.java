@@ -15,6 +15,7 @@ import io.camunda.zeebe.metrics.ProcessInstanceStartMeter.AvailabilityChecker;
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ProcessInstanceStartMeterTest {
+
+  private static final int PAGE_SIZE = 2500;
 
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private SimpleMeterRegistry meterRegistry;
@@ -41,6 +44,7 @@ class ProcessInstanceStartMeterTest {
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
+            PAGE_SIZE,
             (list) -> availabilityChecker.findAvailableInstances(list));
   }
 
@@ -228,6 +232,7 @@ class ProcessInstanceStartMeterTest {
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ZERO,
+            PAGE_SIZE,
             CompletableFuture::completedFuture);
 
     // when
@@ -252,6 +257,7 @@ class ProcessInstanceStartMeterTest {
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ZERO,
+            PAGE_SIZE,
             CompletableFuture::completedFuture);
 
     // when
@@ -277,7 +283,9 @@ class ProcessInstanceStartMeterTest {
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
-            CompletableFuture::completedFuture);
+            PAGE_SIZE,
+            // never find the instance, so it is removed only once the max duration is exceeded
+            (list) -> CompletableFuture.completedFuture(List.of()));
     processInstanceStartMeter.start();
     processInstanceStartMeter.recordProcessInstanceStart(
         Protocol.encodePartitionId(1, 1), System.nanoTime());
@@ -301,6 +309,14 @@ class ProcessInstanceStartMeterTest {
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(Duration.ofSeconds(90).toMillis());
+
+    // and the timeout is counted separately, in addition to the latency recording
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                .counter()
+                .count())
+        .isOne();
   }
 
   @Test
@@ -345,5 +361,64 @@ class ProcessInstanceStartMeterTest {
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(1);
+  }
+
+  @Test
+  void shouldCountCheckWithFullResultPage() {
+    // given - a meter whose page size is 2, so a result of 2 instances is a full page
+    meterRegistry = new SimpleMeterRegistry();
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            System::nanoTime,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            2,
+            (list) -> availabilityChecker.findAvailableInstances(list));
+    availabilityChecker =
+        (list) ->
+            CompletableFuture.completedFuture(
+                List.of(Protocol.encodePartitionId(1, 1), Protocol.encodePartitionId(1, 2)));
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 2), System.nanoTime());
+    processInstanceStartMeter.start();
+
+    // then
+    await()
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_FULL_PAGE.getName())
+                    .counter()
+                    .count(),
+            (count) -> assertThat(count).isGreaterThanOrEqualTo(1));
+  }
+
+  @Test
+  void shouldRescheduleCheckWhenProcessingThrows() throws InterruptedException {
+    // given - the checker returns a null key, which makes processing the response throw
+    final CountDownLatch invocations = new CountDownLatch(2);
+    availabilityChecker =
+        (list) -> {
+          invocations.countDown();
+          final List<Long> withNull = new ArrayList<>();
+          withNull.add(null);
+          return CompletableFuture.completedFuture(withNull);
+        };
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+    processInstanceStartMeter.start();
+
+    // then - the check keeps running even though processing the first response threw
+    assertThat(invocations.await(2, TimeUnit.SECONDS))
+        .describedAs("availability check should be rescheduled even when processing throws")
+        .isTrue();
   }
 }
