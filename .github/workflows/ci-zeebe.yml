@@ -102,7 +102,7 @@ jobs:
           DOCKER_IMAGE_TAG: current-test
         run: >
           ./mvnw -B --no-snapshot-updates
-          -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -DskipUTs -DskipChecks -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
           -D excludedGroups="$EXCLUDED_TEST_GROUPS"
