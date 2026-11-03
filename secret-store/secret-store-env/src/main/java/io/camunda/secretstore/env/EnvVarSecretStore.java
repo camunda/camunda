@@ -45,7 +45,9 @@ import org.slf4j.LoggerFactory;
  * LocallyCachedSecretStore} itself rather than sit behind a second cache: every lookup is local,
  * and the configured cache TTL and maximum size do not apply to it.
  *
- * <p>Listing secret names is not implemented yet: {@link #list()} returns no names.
+ * <p>{@link #list()} returns the names of the prefixed variables with a non-empty value, without
+ * the prefix and without values. It does not filter names outside {@link #NAME_PATTERN}: the
+ * secrets API drops those from what it lists, as it does for every store.
  *
  * <p>The prefix is mandatory, must be a {@link #PREFIX_FORMAT well-formed} variable-name prefix
  * ending in an underscore, and must not start with a {@link #RESERVED_PREFIXES reserved prefix}.
@@ -161,8 +163,8 @@ public final class EnvVarSecretStore implements LocallyCachedSecretStore {
   @Override
   public List<String> list() {
     LOG.debug(
-        "Listing secrets from {} environment variables, prefixed '{}'", secrets.size(), prefix);
-    return List.of();
+        "Listing {} secrets from environment variables prefixed '{}'", secrets.size(), prefix);
+    return List.copyOf(secrets.keySet());
   }
 
   private SecretResolutionResult resolveOne(final String name) {

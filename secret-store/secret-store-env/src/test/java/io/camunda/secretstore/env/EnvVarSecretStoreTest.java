@@ -242,15 +242,70 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
-  void shouldListNoNames() {
+  void shouldListNamesWithoutThePrefixAndWithoutValues() {
     // given
-    final var store = new EnvVarSecretStore(Map.of("SECRET_DB_PASSWORD", "s3cr3t"), "SECRET_");
+    final var store =
+        new EnvVarSecretStore(
+            Map.of("SECRET_API_KEY", "s3cr3t", "SECRET_DB_PASSWORD", "s3cr3t"), "SECRET_");
 
     // when
     final var names = store.list();
 
     // then
-    assertThat(names).isEmpty();
+    assertThat(names).containsExactlyInAnyOrder("API_KEY", "DB_PASSWORD");
+  }
+
+  @Test
+  void shouldNotListVariablesWithoutThePrefix() {
+    // given
+    final var store =
+        new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t", "PATH", "/usr/bin"), "SECRET_");
+
+    // when
+    final var names = store.list();
+
+    // then
+    assertThat(names).containsExactly("API_KEY");
+  }
+
+  @Test
+  void shouldNotListAVariableWithAnEmptyValue() {
+    // given
+    final var store =
+        new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t", "SECRET_EMPTY", ""), "SECRET_");
+
+    // when
+    final var names = store.list();
+
+    // then
+    assertThat(names).containsExactly("API_KEY");
+  }
+
+  @Test
+  void shouldListANameOutsideTheReferenceCharsetForTheSecretsApiToOmit() {
+    // given a variable whose name a secret reference cannot carry; the secrets API omits it from
+    // its listing, as it does for every store
+    final var store =
+        new EnvVarSecretStore(
+            Map.of("SECRET_API_KEY", "s3cr3t", "SECRET_tls.crt", "s3cr3t"), "SECRET_");
+
+    // when
+    final var names = store.list();
+
+    // then
+    assertThat(names).containsExactlyInAnyOrder("API_KEY", "tls.crt");
+  }
+
+  @Test
+  void shouldListADashedName() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_db-password", "s3cr3t"), "SECRET_");
+
+    // when
+    final var names = store.list();
+
+    // then
+    assertThat(names).containsExactly("db-password");
   }
 
   @Test
