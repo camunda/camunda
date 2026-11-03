@@ -4,8 +4,8 @@
 
 **Status**: Proposed (8.11)
 
-**Purpose**: Defines the stubbed-call-activity switch — how a call activity waits instead of starting
-its child, and the escape hatch that runs the real child after all.
+**Purpose**: Defines the stubbed-call-activity switch — how a call activity named by the switch waits
+instead of starting its child, while un-named call activities run their real child.
 
 **Audience**: Zeebe engine engineers working on call activities or job processing, and AI agents
 reasoning about BPMN execution or the CPT recording path.
@@ -20,9 +20,18 @@ poll-index, and REST-only mechanics are defined in [ADR 0015](0015-811-per-insta
 
 ## Decision
 
-**D1. `stubCallActivities` makes each call activity activate, start no child, and wait on a stub job.**
-The called definition is never looked up, so it need not be deployed. Completing the stub job stands in
-for the called process; completing it with a `runCalledProcess` result starts the real child instead.
+**D1. A `STUB_CALL_ACTIVITIES` instruction names the called-process ids to stub; each matching call
+activity activates, starts no child, and waits on a stub job.** The instruction carries a
+`processIds` list, and a call activity is stubbed when the process id it resolves to is in that list;
+call activities calling any other process run their real child. The list is stored on the root
+instance and inherited by the whole tree, so a nested call activity calling a listed process is
+stubbed at any depth. The called definition is never looked up — only the `calledElement` process-id
+expression is evaluated, to test list membership and to tell the stub job's completer which process is
+stood in for — so a stubbed process need not be deployed. Completing the stub job stands in for the
+called process. There is no per-occurrence "run the real child" escape: to run a child for real, omit
+its process id from the list. A call activity whose process id is a FEEL expression is stubbed only
+when its resolved value is listed; a call site whose resolved id cannot be predicted up front cannot be
+targeted by the list (a known limitation — see Alternatives).
 
 **D2. The stub job carries its own `JobKind.CALL_ACTIVITY_STUB`.** A first-class kind makes the
 stand-in job distinguishable everywhere a job surfaces: `isCallActivityStub()` is a single kind check,
@@ -40,17 +49,34 @@ condition, so it never propagates variables the model says to drop and cannot dr
 completion.
 
 **D4. A stub job is not releasable.** No worker can run it, so handing it back would park the call
-activity forever. `runCalledProcess` is the escape hatch instead.
+activity forever. To run a call activity's real child, omit its process id from the stub list rather
+than stub-then-override.
 
-**D5. CPT drives the stub through the generic job instructions, not stub-specific ones.** Standing in
-for the called process is a `COMPLETE_JOB`, and failing it a `THROW_BPMN_ERROR_FROM_JOB`, each selecting
-the stand-in job by `{ jobKind: CALL_ACTIVITY_STUB, elementId }`. Only `RUN_CALLED_PROCESS` stays a
-distinct instruction, because it starts the real child rather than completing a job. The dedicated job
-kind from D2 — not a per-called-process job type — is what lets an element-scoped selector pick exactly
-the stub, since a call activity's execution-listener jobs share its element id.
+**D5. CPT drives the stub entirely through the generic job instructions, with no stub-specific
+instruction.** Standing in for the called process is a `COMPLETE_JOB`, and failing it a
+`THROW_BPMN_ERROR_FROM_JOB`, each selecting the stand-in job by `{ jobKind: CALL_ACTIVITY_STUB,
+elementId }`. The dedicated job kind from D2 — not a per-called-process job type — is what lets an
+element-scoped selector pick exactly the stub, since a call activity's execution-listener jobs share its
+element id. An earlier design added a `RUN_CALLED_PROCESS` instruction to run the real child of a
+stubbed occurrence; it was dropped — running real is expressed by not listing the process, keeping
+mocking explicit rather than mock-all-then-override.
 
 ## Alternatives considered
 
+- **Stub all call activities with a single boolean (`stubCallActivities: true`).** The first design:
+  a boolean on `CONFIGURE_EXECUTION` stubbed every call activity, and the real child was opted back in
+  per occurrence with `runCalledProcess`. Rejected: when a process has many call activities and a test
+  mocks only a few, stub-all forces a `runCalledProcess` for every remaining one. An explicit
+  `processIds` list stubs only the named dependencies, so the un-listed ones run real with no extra
+  instruction, and a recording survives a model gaining a new call activity (it runs real rather than
+  parking forever on replay). The cost is the FEEL limitation in D1 and that selection is per-called-
+  process, not per-occurrence; completing the stub still selects per-occurrence by `elementId`.
+- **Key the list on call-activity element id instead of called-process id.** Element ids are static in
+  the model and would target a FEEL-bound call site, but they collide across nested definitions (a
+  child's `CallActivity_1` is indistinguishable from the root's), so a tree-wide list keyed on element
+  id is ambiguous. Called-process id is globally meaningful across the inherited tree and gives drop-in
+  parity with `mockChildProcess(withProcessId)`. Element-id keying is left as a possible later addition
+  for the FEEL case.
 - **Reuse `mockChildProcess` (deploy a stub definition).** Cluster-global, so it hijacks every
   concurrent instance of the called process. The stub is scoped to one instance instead.
 - **Key the stub on the reservation token.** Would demand that token on every completion and couple the
@@ -65,8 +91,10 @@ the stub, since a call activity's execution-listener jobs share its element id.
 
 - This changes BPMN execution semantics — a call activity activates with no child — so it is a deeper
   change than the other two switches.
-- `runCalledProcess` against an undeployed called process raises a resolvable incident rather than
-  banning the instance.
+- Selection is per called-process id, so a process is mocked everywhere or nowhere within one instance;
+  there is no per-occurrence split (mock process `X` at one call site, run it real at another). Accepted:
+  the explicit list keeps mocking declarative, and the per-occurrence case was not worth a stub-then-
+  override escape hatch.
 - Stub jobs are exported and searchable alongside reserved jobs, giving a recorder one inbox of waiting
   work. `THROW_ERROR` and `FAIL` work on a stub job, so a recording can drive the error boundary event.
 - The new `JobKind.CALL_ACTIVITY_STUB` is not rolling-upgrade-neutral: a broker that predates it cannot
