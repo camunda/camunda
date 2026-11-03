@@ -27,7 +27,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +37,13 @@ public class DecisionEvaluationHandler
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
   private static final String ID_PATTERN = "%s-%d";
   private final String indexName;
+
+  // getEvaluatedDecisions() deep-copies every decision on each call, and this handler is invoked
+  // once per evaluated decision of the same record. Reusing the list for the current record keeps
+  // the export cost linear in the number of decisions instead of quadratic.
+  private int cachedPartitionId = -1;
+  private long cachedPosition = -1;
+  private List<EvaluatedDecisionValue> cachedEvaluatedDecisions = List.of();
 
   public DecisionEvaluationHandler(final String indexName) {
     this.indexName = indexName;
@@ -64,7 +70,7 @@ public class DecisionEvaluationHandler
     // present in the record. If they are, we use them directly. If not,
     // we fall back to the legacy ID generation method.
     final var ids =
-        record.getValue().getEvaluatedDecisions().stream()
+        getEvaluatedDecisions(record).stream()
             .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
             .toList();
     // If none of the IDs are empty, we can safely return the list.
@@ -84,14 +90,15 @@ public class DecisionEvaluationHandler
   public void updateEntity(
       final Record<DecisionEvaluationRecordValue> record, final DecisionInstanceEntity entity) {
     final DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
+    final List<EvaluatedDecisionValue> evaluatedDecisions = getEvaluatedDecisions(record);
     final int decisionIndex =
-        getEvaluatedDecisionValueIndex(decisionEvaluation, record.getKey(), entity.getId());
+        getEvaluatedDecisionValueIndex(
+            evaluatedDecisions, decisionEvaluation, record.getKey(), entity.getId());
 
-    final EvaluatedDecisionValue decision =
-        decisionEvaluation.getEvaluatedDecisions().get(decisionIndex - 1);
+    final EvaluatedDecisionValue decision = evaluatedDecisions.get(decisionIndex - 1);
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
-    final DecisionInstanceState state = getState(record, decisionEvaluation, decisionIndex);
+    final DecisionInstanceState state = getState(record, evaluatedDecisions.size(), decisionIndex);
     entity
         .setKey(record.getKey())
         .setExecutionIndex(decisionIndex)
@@ -144,35 +151,51 @@ public class DecisionEvaluationHandler
     return indexName;
   }
 
+  private List<EvaluatedDecisionValue> getEvaluatedDecisions(
+      final Record<DecisionEvaluationRecordValue> record) {
+    if (record.getPartitionId() != cachedPartitionId || record.getPosition() != cachedPosition) {
+      cachedEvaluatedDecisions = record.getValue().getEvaluatedDecisions();
+      cachedPartitionId = record.getPartitionId();
+      cachedPosition = record.getPosition();
+    }
+    return cachedEvaluatedDecisions;
+  }
+
   private int getEvaluatedDecisionValueIndex(
+      final List<EvaluatedDecisionValue> evaluatedDecisions,
       final DecisionEvaluationRecordValue decisionEvaluation,
       final long key,
       final String entityId) {
-    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final String id = ID_PATTERN.formatted(key, i);
-      if (Objects.equals(entityId, id)) {
-        LOGGER.debug(
-            "Decision evaluation: id {} key {}, decisionId {}",
-            id,
-            key,
-            decisionEvaluation.getDecisionId());
-
-        return i;
+    final String prefix = key + "-";
+    if (entityId != null && entityId.startsWith(prefix)) {
+      final String suffix = entityId.substring(prefix.length());
+      try {
+        final int i = Integer.parseInt(suffix);
+        if (i >= 1 && i <= evaluatedDecisions.size() && suffix.equals(Integer.toString(i))) {
+          LOGGER.debug(
+              "Decision evaluation: id {} key {}, decisionId {}",
+              entityId,
+              key,
+              decisionEvaluation.getDecisionId());
+          return i;
+        }
+      } catch (final NumberFormatException ignored) {
+        // falls through to the warning below
       }
     }
     LOGGER.warn(
         "Decision evaluation: id {} not found in evaluated decisions {}",
         entityId,
-        decisionEvaluation.getEvaluatedDecisions());
+        evaluatedDecisions);
     return 0;
   }
 
   private DecisionInstanceState getState(
       final Record<DecisionEvaluationRecordValue> record,
-      final DecisionEvaluationRecordValue decisionEvaluation,
+      final int evaluatedDecisionsCount,
       final int i) {
     if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name())
-        && i == decisionEvaluation.getEvaluatedDecisions().size()) {
+        && i == evaluatedDecisionsCount) {
       return DecisionInstanceState.FAILED;
     } else {
       return DecisionInstanceState.EVALUATED;
@@ -212,8 +235,8 @@ public class DecisionEvaluationHandler
 
   private List<String> generateIdsLegacy(final Record<DecisionEvaluationRecordValue> record) {
     final var ids = new ArrayList<String>();
-    final var decisionEvaluation = record.getValue();
-    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
+    final int evaluatedDecisionsCount = getEvaluatedDecisions(record).size();
+    for (int i = 1; i <= evaluatedDecisionsCount; i++) {
       ids.add(ID_PATTERN.formatted(record.getKey(), i));
     }
     return ids;
