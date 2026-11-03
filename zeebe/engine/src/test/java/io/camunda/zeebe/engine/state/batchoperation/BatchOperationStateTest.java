@@ -446,6 +446,49 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldKeepItemOrdinalsAfterPartialRemoval() {
+    // given
+    final var batchOperationKey = 1L;
+    final var createRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
+    state.create(batchOperationKey, createRecord);
+    state.addChunk(
+        10L,
+        batchOperationKey,
+        List.of(new ChunkItem(1L, 7), new ChunkItem(2L, 7), new ChunkItem(3L, 9)));
+
+    // when
+    state.removeItemKeys(batchOperationKey, Set.of(1L));
+
+    // then
+    assertThat(state.getNextItems(batchOperationKey, 5))
+        .containsExactly(new ChunkItem(2L, 7), new ChunkItem(3L, 9));
+  }
+
+  @Test
+  void shouldReturnItemsOfNextChunkAfterFirstIsDrained() {
+    // given two chunks under different ordinals
+    final var batchOperationKey = 1L;
+    final var createRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
+    state.create(batchOperationKey, createRecord);
+    state.addChunk(10L, batchOperationKey, List.of(new ChunkItem(1L, 7)));
+    state.addChunk(11L, batchOperationKey, List.of(new ChunkItem(2L, 9)));
+
+    // when the first chunk is drained
+    state.removeItemKeys(batchOperationKey, Set.of(1L));
+
+    // then
+    assertThat(state.getNextItems(batchOperationKey, 5)).containsExactly(new ChunkItem(2L, 9));
+  }
+
+  @Test
   void shouldOnlyGetExistingNextKeys() {
     // given
     final var batchOperationKey = 1L;
