@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.exception.TranslatingMapperProxy;
+import io.camunda.db.rdbms.exception.DatabaseExceptionTranslator;
 import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
@@ -140,6 +140,6 @@ public record RdbmsMapperBundle(
   }
 
   private static <T> T getMapper(final SqlSession sqlSession, final Class<T> type) {
-    return TranslatingMapperProxy.wrap(type, sqlSession.getMapper(type));
+    return DatabaseExceptionTranslator.wrap(type, sqlSession.getMapper(type));
   }
 }

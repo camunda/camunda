@@ -16,7 +16,7 @@ import java.lang.reflect.Proxy;
  * Wraps a MyBatis mapper so that every call, read or write, has its runtime exceptions passed
  * through {@link DatabaseExceptionTranslator#translateIfNeeded(RuntimeException)}.
  */
-public final class TranslatingMapperProxy implements InvocationHandler {
+final class TranslatingMapperProxy implements InvocationHandler {
 
   private final Object delegate;
 
@@ -24,7 +24,7 @@ public final class TranslatingMapperProxy implements InvocationHandler {
     this.delegate = delegate;
   }
 
-  public static <T> T wrap(final Class<T> mapperType, final T delegate) {
+  static <T> T wrap(final Class<T> mapperType, final T delegate) {
     return mapperType.cast(
         Proxy.newProxyInstance(
             mapperType.getClassLoader(),

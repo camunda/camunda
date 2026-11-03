@@ -21,7 +21,7 @@ class TranslatingMapperProxyTest {
   @Test
   void shouldReturnDelegateResult() {
     // given
-    final var mapper = TranslatingMapperProxy.wrap(TestMapper.class, new FailingMapper(null));
+    final var mapper = DatabaseExceptionTranslator.wrap(TestMapper.class, new FailingMapper(null));
 
     // when
     final var result = mapper.read();
@@ -34,7 +34,8 @@ class TranslatingMapperProxyTest {
   void shouldTranslateKnownDatabaseError() {
     // given
     final var failure = new PersistenceException(new SQLException("down", "08001"));
-    final var mapper = TranslatingMapperProxy.wrap(TestMapper.class, new FailingMapper(failure));
+    final var mapper =
+        DatabaseExceptionTranslator.wrap(TestMapper.class, new FailingMapper(failure));
 
     // when / then
     assertThatThrownBy(mapper::read)
@@ -48,7 +49,8 @@ class TranslatingMapperProxyTest {
   void shouldRethrowUnrelatedExceptionUnchanged() {
     // given
     final var failure = new IllegalStateException("boom");
-    final var mapper = TranslatingMapperProxy.wrap(TestMapper.class, new FailingMapper(failure));
+    final var mapper =
+        DatabaseExceptionTranslator.wrap(TestMapper.class, new FailingMapper(failure));
 
     // when / then
     assertThatThrownBy(mapper::read).isSameAs(failure);
