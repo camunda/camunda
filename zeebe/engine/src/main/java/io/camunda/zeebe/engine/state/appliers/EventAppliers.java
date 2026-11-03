@@ -1083,6 +1083,10 @@ public final class EventAppliers implements EventApplier {
         2,
         new BatchOperationCreatedV2Applier(state.getBatchOperationState()));
     register(
+        BatchOperationIntent.CREATED,
+        3,
+        new BatchOperationCreatedV3Applier(state.getBatchOperationState()));
+    register(
         BatchOperationIntent.INITIALIZING,
         new BatchOperationInitializingApplier(state.getBatchOperationState()));
     register(
