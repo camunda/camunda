@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue.BatchOperationExecutionItemValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -236,6 +237,11 @@ public final class BatchOperationStorageOrdinalTest {
     assertThat(records)
         .extracting(record -> record.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+    // the item providers do not supply an ordinal yet, so every item reads 0 = not known
+    assertThat(records)
+        .flatExtracting(record -> record.getValue().getItems())
+        .extracting(BatchOperationExecutionItemValue::getStorageOrdinal)
+        .containsOnly(0);
   }
 
   @Test

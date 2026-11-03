@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -34,10 +35,8 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +141,7 @@ public final class BatchOperationExecutionExecuteProcessor
           command.getPartitionId());
 
       appendBatchOperationExecutionExecutedEvent(
-          batchOperation, Collections.emptySet(), command.getPartitionId());
+          batchOperation, List.of(), command.getPartitionId());
       appendBatchOperationExecutionCompletedEvent(command, batchOperation.getStorageOrdinal());
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
@@ -152,11 +151,8 @@ public final class BatchOperationExecutionExecuteProcessor
     // This is only done for the first batch operation execution iteration
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
-    final var itemKeys =
-        nextItems.stream().map(ChunkItem::itemKey).collect(Collectors.toUnmodifiableSet());
-
     // mark the items as in progress
-    appendBatchOperationExecutionExecutingEvent(batchOperation, itemKeys);
+    appendBatchOperationExecutionExecutingEvent(batchOperation, nextItems);
 
     // retrieve the handler for the batch operation type and execute each item with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
@@ -164,7 +160,7 @@ public final class BatchOperationExecutionExecuteProcessor
         item -> handler.execute(item.itemKey(), item.storageOrdinal(), batchOperation));
 
     // schedule the next EXECUTE command to continue processing the next batch of items
-    appendBatchOperationExecutionExecutedEvent(batchOperation, itemKeys, command.getPartitionId());
+    appendBatchOperationExecutionExecutedEvent(batchOperation, nextItems, command.getPartitionId());
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());
@@ -200,11 +196,11 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutingEvent(
-      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final List<ChunkItem> items) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItems(toExecutionItems(items));
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTING,
@@ -213,7 +209,9 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final PersistedBatchOperation batchOperation, final Set<Long> keys, final int partitionId) {
+      final PersistedBatchOperation batchOperation,
+      final List<ChunkItem> items,
+      final int partitionId) {
     final var batchExecute = new BatchOperationExecutionRecord();
 
     // Occasionally log a heartbeat
@@ -229,12 +227,18 @@ public final class BatchOperationExecutionExecuteProcessor
 
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItems(toExecutionItems(items));
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTED,
         batchExecute,
         FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
+  }
+
+  private static List<BatchOperationExecutionItem> toExecutionItems(final List<ChunkItem> items) {
+    return items.stream()
+        .map(item -> new BatchOperationExecutionItem(item.itemKey(), item.storageOrdinal()))
+        .toList();
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
