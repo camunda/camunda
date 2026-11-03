@@ -9,10 +9,9 @@
 import {ProcessInstance} from './ProcessInstance';
 import {useVisibleProcessInstanceTabs} from './useVisibleProcessInstanceTabs';
 
-const ProcessInstanceWithIncidentsCount: React.FC<React.ComponentProps<typeof ProcessInstance>> = ({
-	children,
-	...props
-}) => {
+type Props = Omit<React.ComponentProps<typeof ProcessInstance>, 'visibleTabs' | 'incidentsCount'>;
+
+const ProcessInstanceWithIncidentsCount: React.FC<Props> = ({children, ...props}) => {
 	const {visibleTabs, incidentsCount, isActiveTabHidden} = useVisibleProcessInstanceTabs(props.activeTab);
 
 	return (

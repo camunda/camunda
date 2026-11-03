@@ -1,0 +1,18 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createFileRoute} from '@tanstack/react-router';
+import {ProcessInstanceOperationsLog} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceOperationsLog';
+import {processInstanceOperationsLogSearchSchema} from '#/operate/pages/ProcessInstance/processInstanceOperationsLog.schema';
+
+export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId/operations-log')({
+	validateSearch: processInstanceOperationsLogSearchSchema,
+	component: function ProcessInstanceOperationsLogRoute() {
+		return <ProcessInstanceOperationsLog search={Route.useSearch()} />;
+	},
+});

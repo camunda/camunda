@@ -1764,8 +1764,10 @@
 					"table": {
 						"operationType": "Operation Type",
 						"entityType": "Entity Type",
-						"entityKey": "Entity Key"
-					}
+						"entityKey": "Entity Key",
+						"result": "Result"
+					},
+					"list": "Operations Log List"
 				},
 				"variables": {
 					"search": "Search variables by name",
@@ -1971,7 +1973,8 @@
 					"time": "Time",
 					"emptyAll": "This element has no execution listeners nor user task listeners",
 					"emptyTask": "This element has no user task listeners",
-					"emptyExecution": "This element has no execution listeners"
+					"emptyExecution": "This element has no execution listeners",
+					"loading": "Loading listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Process Instance - Modification Mode",
@@ -2174,6 +2177,7 @@
 					"processDefinitions": "process definitions",
 					"variables": "variables"
 				},
+				"noActor": "No actor",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "AI Agent on behalf of {{actorType}}",
 					"mcpToolCall": "MCP tool call"
