@@ -40,24 +40,37 @@ export function compareVersions(a, b) {
 // (`oneOf[0].bar`, `anyOf[2].baz`). A lowercase leading segment is an ordinary
 // property (`filter.state`), never a branch tag.
 const LEADING_BRANCH_TAG = /^(?:[A-Z][^.|]*|(?:oneOf|anyOf)\[\d+\])\./;
+// A nested root union tags its inner branches with the outer branch's tag
+// (`OldBranch|Inner.businessId`, `oneOf[0]|Inner.businessId`): the segment
+// before the first `.` then carries a `|` tag yet is itself a branch tag, not
+// a real property like `page|OffsetPagination`. Match the same tag shapes
+// (PascalCase schema name or indexed inline tag) with a `|`-tagged suffix.
+const LEADING_NESTED_ROOT_TAG = /^(?:[A-Z][^.|]*|(?:oneOf|anyOf)\[\d+\])\|[^.]+\./;
 
 /**
  * Remove branch tags (`|Branch` segments and a leading `Branch.`) from a
  * qualified name. A root inline branch is tagged with its keyword and index
- * (`oneOf[0].foo`, `anyOf[2].bar`) rather than a schema name.
+ * (`oneOf[0].foo`, `anyOf[2].bar`) rather than a schema name; a root branch
+ * nested under another root branch carries both tags (`OldBranch|Inner.foo`,
+ * `oneOf[0]|Inner.foo`) and loses them together.
  */
 export function normalizeQname(qname) {
   // Decide on the original qname: a leading segment carrying a `|` tag
   // (`page|OffsetPagination`) is a real property whose tag is stripped below,
-  // not a branch tag itself.
+  // not a branch tag itself — unless the segment is itself a branch tag
+  // (`OldBranch|Inner.`), the nested-root-union case.
   const withoutLeading = LEADING_BRANCH_TAG.test(qname)
     ? qname.replace(LEADING_BRANCH_TAG, '')
-    : qname;
+    : qname.replace(LEADING_NESTED_ROOT_TAG, '');
   return withoutLeading.replace(/\|[^.]+/g, '');
 }
 
 export function isBranchTagged(qname) {
-  return qname.includes('|') || LEADING_BRANCH_TAG.test(qname);
+  return (
+    qname.includes('|') ||
+    LEADING_BRANCH_TAG.test(qname) ||
+    LEADING_NESTED_ROOT_TAG.test(qname)
+  );
 }
 
 const SCHEMA_CONTAINER_KEYS = new Set([
@@ -113,6 +126,16 @@ export function schemaShape(node) {
   return node === undefined ? undefined : JSON.stringify(strip(node, 'schema'));
 }
 
+/**
+ * Decode one RFC 6901 JSON Pointer segment (`~1` -> `/`, `~0` -> `~`).
+ * Bundler-generated refs into `#/paths/...` escape the `/` in path templates
+ * (`#/paths/~1canonical/post`) and media types (`application~1json`), so the
+ * literal key never matches the spec node.
+ */
+function unescapePointerSegment(seg) {
+  return seg.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
 function nodeAt(root, path) {
   let node = root;
   // A leading `*.yaml` segment is the source-file attribution the builder
@@ -124,9 +147,9 @@ function nodeAt(root, path) {
     // Follow intermediate $refs: the bundler emits refs into `#/paths/…`,
     // whose traversal passes through nodes that are themselves `{ $ref }`.
     while (node?.$ref && typeof node.$ref === 'string' && node.$ref.startsWith('#/')) {
-      node = nodeAt(root, node.$ref.slice(2).split('/'));
+      node = nodeAt(root, node.$ref.slice(2).split('/').map(unescapePointerSegment));
     }
-    node = node?.[seg];
+    node = node?.[unescapePointerSegment(seg)];
   }
   return node;
 }
