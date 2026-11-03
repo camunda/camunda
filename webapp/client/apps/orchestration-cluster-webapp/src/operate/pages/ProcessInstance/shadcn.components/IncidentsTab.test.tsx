@@ -514,7 +514,6 @@ describe('<IncidentsTab /> (design system)', () => {
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'RESOLVED'}))}),
 		);
-		// The list also polls, so it empties even if the retry fails; the resolution request proves the job update passed.
 		const resolutions: string[] = [];
 		const onRequest = ({request}: {request: Request}) => {
 			if (request.url.endsWith('/resolution')) {
@@ -568,6 +567,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		const screen = await renderIncidents();
 		await userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 		await expect.element(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();
+		await expect.element(screen.getByRole('status').getByText('Retrying...')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Filter by Incident Type'}));
 		await userEvent.click(screen.getByRole('option', {name: 'IO mapping error.'}));
