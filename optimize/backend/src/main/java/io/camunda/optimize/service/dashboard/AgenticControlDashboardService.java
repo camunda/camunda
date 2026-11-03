@@ -303,6 +303,8 @@ public class AgenticControlDashboardService {
   private static final String TILE_SECTION_KPI = "kpi";
   private static final String TILE_SECTION_TRENDS = "trends";
   private static final String TILE_SECTION_AGENT_TRENDS = "agentTrends";
+  // Process instance tiles of one selected process, read the way main's agentic tiles do.
+  private static final String TILE_SECTION_PROCESS = "process";
   private static final String TILE_CONFIG_COMPARISON_PERIOD = "comparisonPeriod";
   private static final String TILE_CONFIG_DELTA_GOOD_DIRECTION = "deltaGoodDirection";
   // Cross-process or cross-agent comparisons that say nothing once a single agent is selected.
@@ -359,6 +361,7 @@ public class AgenticControlDashboardService {
     tiles.addAll(buildKpiTiles());
     tiles.addAll(buildTrendTiles());
     tiles.addAll(buildAgentTrendTiles());
+    tiles.addAll(buildProcessTiles());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -803,44 +806,21 @@ public class AgenticControlDashboardService {
             KPI_TOOL_CALLS_FOOTNOTE_KEY));
   }
 
-  // Per-flow-node tool-call counts rendered as a process diagram heat map. Only visible when a
-  // single process definition is selected (L1) because heatmaps require BPMN XML from a concrete
-  // definition; the dashboard's process-scope filter supplies that definition + XML at render time.
+  // Tool calls of the agent runs, summed per agent element and shown as a heat map on the
+  // agent element of the diagram. Read from the agent index, the flat equivalent of main's tool
+  // call heat map. Needs the BPMN XML of one process, so it is only shown at the process level.
   private DashboardReportTileDto buildToolCallsHeatmapReport() {
-    final ProcessReportDataDto reportData =
-        ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.TOOL_CALLS))
-            .groupBy(new FlowNodesGroupByDto())
-            .distributedBy(new NoneDistributedByDto())
-            .visualization(ProcessVisualization.HEAT)
-            .configuration(
-                SingleReportConfigurationDto.builder()
-                    .aggregationTypes(
-                        new LinkedHashSet<>(
-                            Collections.singletonList(new AggregationDto(AggregationType.SUM))))
-                    .build())
-            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
-            .agenticControlReport(true)
-            .build();
-    reportWriter.createOrUpdateSingleProcessReport(
+    return agentRunTile(
         TOOL_CALLS_HEATMAP_REPORT_ID,
-        null,
-        reportData,
         TOOL_CALLS_HEATMAP_NAME,
         TOOL_CALLS_HEATMAP_DESCRIPTION,
-        null);
-    return buildTile(
-        TOOL_CALLS_HEATMAP_REPORT_ID,
-        // Top of the reliability-and-tool-calls section: the smallest y in the section, so the
-        // grid's vertical compaction floats it above the number tiles.
+        ViewProperty.TOOL_CALLS,
+        new FlowNodesGroupByDto(),
+        ProcessVisualization.HEAT,
+        List.of(new AggregationDto(AggregationType.SUM)),
+        TILE_SECTION_PROCESS,
         new PositionDto(0, 0),
-        new DimensionDto(18, 4),
-        Map.of(
-            TILE_CONFIG_VISIBLE_IN_L1_ONLY,
-            true,
-            TILE_CONFIG_SECTION,
-            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+        new DimensionDto(18, 4));
   }
 
   // Average duration per flow node rendered as a process diagram heat map, so operators can see
@@ -1301,6 +1281,30 @@ public class AgenticControlDashboardService {
             TILE_SECTION_AGENT_TRENDS,
             null,
             LEVEL_AGENT));
+  }
+
+  /**
+   * The process level's process instance tiles from main, on process instances that ran an agent
+   * element of the selected process (added at evaluation time), and the flat tool call heat map.
+   */
+  private List<DashboardReportTileDto> buildProcessTiles() {
+    return List.of(
+        processTile(buildAvgDurationReport(), 0, 0, 9, 2),
+        processTile(buildIncidentRateReport(), 9, 0, 9, 2),
+        processTile(buildFailureRateByVersionReport(), 0, 2, 18, 3),
+        processTile(buildToolCallsHeatmapReport(), 0, 5, 9, 5),
+        processTile(buildDurationHeatmapReport(), 9, 5, 9, 5));
+  }
+
+  private static DashboardReportTileDto processTile(
+      final DashboardReportTileDto tile,
+      final int x,
+      final int y,
+      final int width,
+      final int height) {
+    tile.setPosition(new PositionDto(x, y));
+    tile.setDimensions(new DimensionDto(width, height));
+    return v2Tile(tile, TILE_SECTION_PROCESS, null, LEVEL_PROCESS);
   }
 
   /** Sets the v2 tile configuration: section, levels and, for KPIs, the period comparison. */

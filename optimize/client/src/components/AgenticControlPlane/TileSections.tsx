@@ -18,7 +18,7 @@ import {TileFooter} from './TileFooter';
 import {getTileTopNLimit} from './tilePagination';
 
 export type TileLevel = 'overview' | 'process' | 'agent';
-export type TileSection = 'kpi' | 'trends' | 'agentTrends';
+export type TileSection = 'kpi' | 'trends' | 'agentTrends' | 'process';
 
 interface AgenticTileConfiguration {
   levels?: TileLevel[];

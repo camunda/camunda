@@ -133,9 +133,12 @@ it('should switch to the process level when a process is selected', async () => 
   await selectProcess(node, 'loan');
   (filterBar(node).prop('onVersionsChange') as (v: string[]) => void)(['3']);
 
-  const sections = node.find(TileSections);
+  const sections = node.find(TileSections).first();
   expect(sections.prop('level')).toBe('process');
   expect(sections.prop('definitions')).toEqual([{key: 'loan', versions: ['3']}]);
+  const processSection = node.find(TileSections).at(1);
+  expect(processSection.prop('sections')).toEqual(['process']);
+  expect(processSection.prop('definitions')).toEqual([{key: 'loan', versions: ['3']}]);
   expect(node.find(ProcessFailures).prop('processDefinitionKey')).toBe('loan');
   expect(breadcrumb(node).prop('processName')).toBe('Loan approval');
   expect(breadcrumb(node).prop('rootLabelKey')).toBe('agenticControlPlane.breadcrumb.allProcesses');
@@ -153,11 +156,15 @@ it('should apply the model filter at the process level', async () => {
   (filterBar(node).prop('onModelsChange') as (v: string[]) => void)(['gpt-4o']);
 
   expect(filterBar(node).prop('showModelFilter')).toBeUndefined();
-  expect(node.find(TileSections).prop('filter')).toContainEqual({
+  expect(node.find(TileSections).first().prop('filter')).toContainEqual({
     type: 'agentRun',
     filterLevel: 'instance',
     data: {agentIds: [], models: ['gpt-4o'], providers: []},
   });
+  // process instance tiles have no agent or model
+  expect(node.find(TileSections).at(1).prop('filter')).not.toContainEqual(
+    expect.objectContaining({type: 'agentRun'})
+  );
 });
 
 it('should reset version, agents and models when the process changes', async () => {
@@ -244,7 +251,7 @@ it('should open the agent view when one agent is picked in the agent filter', as
   await runAllEffects();
 
   expect(node.find(AgentView)).not.toExist();
-  expect(node.find(TileSections).prop('level')).toBe('process');
+  expect(node.find(TileSections).first().prop('level')).toBe('process');
   expect(filterBar(node).prop('versions')).toEqual(['2']);
 });
 

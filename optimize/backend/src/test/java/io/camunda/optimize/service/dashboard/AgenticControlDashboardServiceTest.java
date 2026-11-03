@@ -42,6 +42,11 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOTAL_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,7 +131,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(11);
+    assertThat(saved.getTiles()).hasSize(16);
   }
 
   @Test
@@ -210,7 +215,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(11))
+    verify(reportWriter, times(16))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -300,7 +305,8 @@ public class AgenticControlDashboardServiceTest {
                 Collectors.groupingBy(
                     tile -> configOf(tile).get("section"), Collectors.counting()));
     assertThat(tilesPerSection)
-        .containsExactlyInAnyOrderEntriesOf(Map.of("kpi", 5L, "trends", 3L, "agentTrends", 3L));
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("kpi", 5L, "trends", 3L, "agentTrends", 3L, "process", 5L));
   }
 
   @Test
@@ -348,13 +354,22 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldReadEveryTileFromTheAgentRunIndexForCompletedProcessInstancesOnly() {
+  void shouldReadEveryAgentTileFromTheAgentRunIndexForCompletedProcessInstancesOnly() {
     // when
     final List<ProcessReportDataDto> reports = seedAndCaptureReports();
 
-    // then
+    // then the process instance tiles of the process level are the only others
     assertThat(reports)
-        .hasSize(11)
+        .filteredOn(report -> report.getView().getEntity() != ProcessViewEntity.AGENT_RUN)
+        .extracting(report -> report.getView().getEntity())
+        .containsExactlyInAnyOrder(
+            ProcessViewEntity.PROCESS_INSTANCE,
+            ProcessViewEntity.PROCESS_INSTANCE,
+            ProcessViewEntity.PROCESS_INSTANCE,
+            ProcessViewEntity.FLOW_NODE);
+    assertThat(reports)
+        .filteredOn(report -> report.getView().getEntity() == ProcessViewEntity.AGENT_RUN)
+        .hasSize(12)
         .allSatisfy(
             report -> {
               assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
@@ -364,6 +379,56 @@ public class AgenticControlDashboardServiceTest {
                   .first()
                   .isInstanceOf(CompletedInstancesOnlyFilterDto.class);
             });
+  }
+
+  @Test
+  void shouldShowMainsProcessInstanceTilesOnlyAtTheProcessLevel() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final List<DashboardReportTileDto> processTiles =
+        captureSavedDashboard().getTiles().stream()
+            .filter(tile -> "process".equals(configOf(tile).get("section")))
+            .toList();
+    assertThat(processTiles)
+        .extracting(DashboardReportTileDto::getId)
+        .containsExactlyInAnyOrder(
+            KPI_AVG_DURATION_REPORT_ID,
+            KPI_INCIDENT_RATE_REPORT_ID,
+            FAILURE_RATE_BY_VERSION_REPORT_ID,
+            TOOL_CALLS_HEATMAP_REPORT_ID,
+            DURATION_HEATMAP_REPORT_ID);
+    assertThat(processTiles)
+        .allSatisfy(tile -> assertThat(levelsOf(tile)).containsExactly("process"));
+  }
+
+  @Test
+  void shouldReadProcessTilesLikeMainWithoutTheNestedAgentFilter() {
+    // when
+    final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
+
+    // then the executed agent element filter is added when the tile is evaluated
+    assertThat(reports.get(KPI_AVG_DURATION_REPORT_ID).getFilter())
+        .extracting(filter -> filter.getClass().getSimpleName())
+        .containsExactly("CompletedInstancesOnlyFilterDto");
+    assertThat(reports.get(KPI_INCIDENT_RATE_REPORT_ID).getView().getProperties())
+        .containsExactly(ViewProperty.PERCENTAGE);
+    assertThat(reports.get(KPI_INCIDENT_RATE_REPORT_ID).getFilter())
+        .extracting(filter -> filter.getClass().getSimpleName())
+        .containsExactly("CompletedInstancesOnlyFilterDto", "ResolvedIncidentFilterDto");
+    assertThat(reports.get(FAILURE_RATE_BY_VERSION_REPORT_ID).getGroupBy().getType())
+        .isEqualTo(ProcessGroupByType.PROCESS_DEFINITION_VERSION);
+    final ProcessReportDataDto toolCalls = reports.get(TOOL_CALLS_HEATMAP_REPORT_ID);
+    assertThat(toolCalls.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+    assertThat(toolCalls.getView().getProperties()).containsExactly(ViewProperty.TOOL_CALLS);
+    assertThat(toolCalls.getGroupBy().getType()).isEqualTo(ProcessGroupByType.FLOW_NODES);
+    assertThat(toolCalls.getVisualization()).isEqualTo(ProcessVisualization.HEAT);
+    assertThat(reports.get(DURATION_HEATMAP_REPORT_ID).getView().getEntity())
+        .isEqualTo(ProcessViewEntity.FLOW_NODE);
   }
 
   @Test
@@ -531,7 +596,7 @@ public class AgenticControlDashboardServiceTest {
     final ArgumentCaptor<ProcessReportDataDto> data =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
     underTest.reconcile();
-    verify(reportWriter, times(11))
+    verify(reportWriter, times(16))
         .createOrUpdateSingleProcessReport(
             ids.capture(), isNull(), data.capture(), any(), any(), isNull());
     final Map<String, ProcessReportDataDto> byId = new LinkedHashMap<>();

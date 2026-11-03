@@ -59,6 +59,8 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_AGENT_RUN_AGENT(new AgentGroupByDto()),
   PROCESS_GROUP_BY_AGENT_RUN_MODEL(new ModelGroupByDto()),
   PROCESS_GROUP_BY_AGENT_RUN_TOOL(new ToolGroupByDto()),
+  // Groups runs by their agent element, so a heatmap colours the agent element of the diagram.
+  PROCESS_GROUP_BY_AGENT_RUN_FLOW_NODE(new FlowNodesGroupByDto()),
   // Shares the DTO with the process definition key group-by but reads the agent-instance index.
   PROCESS_GROUP_BY_AGENT_RUN_PROCESS(new ProcessDefinitionKeyGroupByDto());
 

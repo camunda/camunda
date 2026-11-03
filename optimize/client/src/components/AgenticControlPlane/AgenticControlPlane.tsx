@@ -233,6 +233,27 @@ export function AgenticControlPlane() {
         scopeKey={scopeKey}
       />
       {processScope && (
+        <>
+          <h3 className="section-title">
+            {t('agenticControlPlane.overview.processInstances')}
+            <small className="section-subtitle">
+              {t('agenticControlPlane.overview.processInstancesDescription')}
+            </small>
+          </h3>
+          <hr className="section-divider" />
+          <TileSections
+            tiles={tiles}
+            level="process"
+            sections={['process']}
+            definitions={[{key: processScope, versions}]}
+            // Process instance tiles have no agent or model to filter by.
+            filter={buildFilter(selectedPreset, [], [])}
+            groupByDateUnit={groupByDateUnit}
+            scopeKey={scopeKey}
+          />
+        </>
+      )}
+      {processScope && (
         <ProcessFailures
           processDefinitionKey={processScope}
           endedFrom={endedFrom}

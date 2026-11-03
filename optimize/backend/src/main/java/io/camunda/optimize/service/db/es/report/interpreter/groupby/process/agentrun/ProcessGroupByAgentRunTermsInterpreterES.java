@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.age
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_AGENT;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_MODEL;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_TOOL;
@@ -52,9 +53,10 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Groups agent runs by process, by agent, by model or by tool. Model and tool group over the nested
- * per-model token and per-tool call entries, so a run that used two models or several tools
- * contributes to each of them; the view's aggregations then run inside those nested entries.
+ * Groups agent runs by process, by agent, by agent element, by model or by tool. Model and tool
+ * group over the nested per-model token and per-tool call entries, so a run that used two models or
+ * several tools contributes to each of them; the view's aggregations then run inside those nested
+ * entries.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -91,7 +93,8 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
         PROCESS_GROUP_BY_AGENT_RUN_PROCESS,
         PROCESS_GROUP_BY_AGENT_RUN_AGENT,
         PROCESS_GROUP_BY_AGENT_RUN_MODEL,
-        PROCESS_GROUP_BY_AGENT_RUN_TOOL);
+        PROCESS_GROUP_BY_AGENT_RUN_TOOL,
+        PROCESS_GROUP_BY_AGENT_RUN_FLOW_NODE);
   }
 
   @Override
@@ -167,7 +170,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
       final StringTermsBucket bucket,
       final Map<String, String> agentNames) {
     return switch (grouping) {
-      case PROCESS -> key;
+      case PROCESS, FLOW_NODE -> key;
       case AGENT -> agentNames.getOrDefault(key, key);
       case MODEL -> firstLabel(bucket).map(provider -> key + " (" + provider + ")").orElse(key);
       case TOOL -> firstLabel(bucket).orElse(key);
@@ -229,6 +232,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
   private enum Grouping {
     PROCESS(null, AgentRunIndex.PROCESS_DEFINITION_KEY, null),
     AGENT(null, AgentRunIndex.AGENT_ID, null),
+    FLOW_NODE(null, AgentRunIndex.FLOW_NODE_ID, null),
     MODEL(
         AgentRunIndex.TOKENS_BY_MODEL,
         AgentRunIndex.TOKENS_BY_MODEL + "." + AgentRunDto.ModelTokensDto.Fields.model,
@@ -254,6 +258,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
         case PROCESS_GROUP_BY_AGENT_RUN_AGENT -> AGENT;
         case PROCESS_GROUP_BY_AGENT_RUN_MODEL -> MODEL;
         case PROCESS_GROUP_BY_AGENT_RUN_TOOL -> TOOL;
+        case PROCESS_GROUP_BY_AGENT_RUN_FLOW_NODE -> FLOW_NODE;
         default -> throw new IllegalStateException("Unsupported agent run group-by " + groupBy);
       };
     }
