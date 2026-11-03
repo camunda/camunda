@@ -106,6 +106,12 @@ class DocumentContentEarlyCloseHttp2Test {
   /** The exchange of the first request, which is the one for the document. */
   private final AtomicReference<AsyncExecChain.Scope> documentExchange = new AtomicReference<>();
 
+  /**
+   * How much the server sends; it ends the response only if this is the whole document, and goes
+   * silent otherwise.
+   */
+  private volatile long sendLimit = DOCUMENT_SIZE;
+
   private HttpAsyncServer server;
   private CamundaClient client;
 
@@ -236,14 +242,17 @@ class DocumentContentEarlyCloseHttp2Test {
     }
   }
 
-  /** Sends the document as fast as the client allows, until the client ends the download. */
+  /**
+   * Sends the document as fast as the client allows, up to {@link #sendLimit}, until the client
+   * ends the download.
+   */
   private final class EndlessDocumentProducer implements AsyncEntityProducer {
 
     private final ByteBuffer pending = ByteBuffer.wrap(chunk);
 
     @Override
     public void produce(final DataStreamChannel channel) throws IOException {
-      while (bodyBytesSent.get() < DOCUMENT_SIZE) {
+      while (bodyBytesSent.get() < sendLimit) {
         if (!pending.hasRemaining()) {
           pending.rewind();
         }
@@ -254,12 +263,14 @@ class DocumentContentEarlyCloseHttp2Test {
         }
         bodyBytesSent.addAndGet(written);
       }
-      channel.endStream();
+      if (sendLimit == DOCUMENT_SIZE) {
+        channel.endStream();
+      }
     }
 
     @Override
     public int available() {
-      return (int) Math.min(DOCUMENT_SIZE - bodyBytesSent.get(), Integer.MAX_VALUE);
+      return (int) Math.min(sendLimit - bodyBytesSent.get(), Integer.MAX_VALUE);
     }
 
     @Override
