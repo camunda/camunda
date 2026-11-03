@@ -352,7 +352,7 @@ public final class CatchEventBehavior {
             evaluation.expressionProcessor(),
             context.getElementInstanceKey(),
             context.getTenantId())
-        .map(evaluation::recordTimer);
+        .map(timer -> evaluation.recordTimer(timer, timer.getDueDate(clock.millis())));
   }
 
   private Either<Failure, OngoingEvaluation> evaluateSignalName(
@@ -472,7 +472,8 @@ public final class CatchEventBehavior {
                   context.getStorageOrdinal(),
                   BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   context.getBpmnElementType(),
-                  timer);
+                  timer,
+                  result.timerDueDate);
             });
   }
 
@@ -487,7 +488,32 @@ public final class CatchEventBehavior {
       final String bpmnProcessId,
       final BpmnElementType elementType,
       final Timer timer) {
-    final long dueDate = timer.getDueDate(clock.millis());
+    subscribeToTimerEvent(
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        handlerNodeId,
+        tenantId,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        elementType,
+        timer,
+        timer.getDueDate(clock.millis()));
+  }
+
+  private void subscribeToTimerEvent(
+      final long elementInstanceKey,
+      final long processInstanceKey,
+      final long processDefinitionKey,
+      final DirectBuffer handlerNodeId,
+      final String tenantId,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final String bpmnProcessId,
+      final BpmnElementType elementType,
+      final Timer timer,
+      final long dueDate) {
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
@@ -787,6 +813,7 @@ public final class CatchEventBehavior {
     private DirectBuffer messageName;
     private DirectBuffer correlationKey;
     private Timer timer;
+    private long timerDueDate;
     private DirectBuffer signalName;
 
     public OngoingEvaluation(
@@ -820,8 +847,9 @@ public final class CatchEventBehavior {
       return this;
     }
 
-    public OngoingEvaluation recordTimer(final Timer timer) {
+    public OngoingEvaluation recordTimer(final Timer timer, final long timerDueDate) {
       this.timer = timer;
+      this.timerDueDate = timerDueDate;
       return this;
     }
 
@@ -831,7 +859,7 @@ public final class CatchEventBehavior {
     }
 
     EvalResult getResult() {
-      return new EvalResult(event, messageName, correlationKey, timer, signalName);
+      return new EvalResult(event, messageName, correlationKey, timer, timerDueDate, signalName);
     }
   }
 
@@ -840,6 +868,7 @@ public final class CatchEventBehavior {
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       Timer timer,
+      long timerDueDate,
       DirectBuffer signalName) {
 
     public boolean isMessage() {
