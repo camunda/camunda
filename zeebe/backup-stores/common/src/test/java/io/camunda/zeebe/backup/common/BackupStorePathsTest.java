@@ -270,6 +270,27 @@ class BackupStorePathsTest {
   }
 
   @Test
+  void shouldNotParseNodeIdTooLargeForInt() {
+    // when
+    final var id = parse("", ANY, "manifests/1/100/99999999999/manifest.json");
+
+    // then
+    assertThat(id).isEmpty();
+  }
+
+  @Test
+  void shouldNotParseZoneTooLongForMemberId() {
+    // given
+    final var key = "manifests/1/100/%s_2/manifest.json".formatted("a".repeat(64));
+
+    // when
+    final var id = parse("", ANY, key);
+
+    // then
+    assertThat(id).isEmpty();
+  }
+
+  @Test
   void shouldNotMatchManifestOutsideWildcard() {
     // given
     final var wildcard =

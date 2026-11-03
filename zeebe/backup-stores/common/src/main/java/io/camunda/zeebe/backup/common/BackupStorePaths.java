@@ -180,25 +180,25 @@ public final class BackupStorePaths {
 
   /**
    * Parses the backup identifier captured by a successful match of one of the manifest path
-   * patterns. Empty if the partition or checkpoint id segment is a digit run too long for its type
-   * — a foreign or corrupted object rather than one a store wrote, left for the caller to skip
-   * instead of failing the whole listing.
+   * patterns. Empty if a segment is not a valid value of its type, e.g. a digit run too long for
+   * the partition id, checkpoint id or node index, or a zone longer than a member id allows — a
+   * foreign or corrupted object rather than one a store wrote, left for the caller to skip instead
+   * of failing the whole listing.
    */
   public static Optional<BackupIdentifier> parseManifestPath(final Matcher matchedManifestPath) {
-    final var checkpointId = CheckpointIds.tryParse(matchedManifestPath.group("checkpointId"));
-    final int partitionId;
     try {
-      partitionId = Integer.parseInt(matchedManifestPath.group("partitionId"));
-    } catch (final NumberFormatException e) {
+      final int partitionId = Integer.parseInt(matchedManifestPath.group("partitionId"));
+      final var checkpointId = CheckpointIds.tryParse(matchedManifestPath.group("checkpointId"));
+      if (checkpointId.isEmpty()) {
+        return Optional.empty();
+      }
+      final var memberId = BrokerMemberId.from(matchedManifestPath.group("memberId"));
+      return Optional.of(
+          new BackupIdentifierImpl(
+              memberId.nodeIdx(), memberId.zone(), partitionId, checkpointId.getAsLong()));
+    } catch (final IllegalArgumentException | IllegalStateException e) {
       return Optional.empty();
     }
-    if (checkpointId.isEmpty()) {
-      return Optional.empty();
-    }
-    final var memberId = BrokerMemberId.from(matchedManifestPath.group("memberId"));
-    return Optional.of(
-        new BackupIdentifierImpl(
-            memberId.nodeIdx(), memberId.zone(), partitionId, checkpointId.getAsLong()));
   }
 
   private static String manifestIdRegex(final BackupIdentifierWildcard wildcard) {
