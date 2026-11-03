@@ -20,47 +20,55 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Builds a probe worker (alpha), as {@code newWorker().jobType(type).handler(handler)} builds a job
- * worker. One probe worker polls for one probe ID.
+ * Builds a probe worker (alpha). Unlike a job worker, which polls for one job type, one probe
+ * worker answers several probe IDs, each with its own handler, and asks for all of them in one
+ * poll: probes are rare, so a poll per probe ID would mostly come back empty.
  */
 public interface ProbeWorkerBuilderStep1 {
 
   /**
-   * The probe ID to answer, matched exactly. By convention it is {@code <operation>/<template>},
-   * e.g. {@code validate-configuration/io.camunda:aws-credential:1}; the cluster does not enforce
-   * it.
+   * A probe ID to answer, matched exactly, and the handler that answers its probes. By convention
+   * the ID is {@code <operation>/<template>}, e.g. {@code
+   * validate-configuration/io.camunda:aws-credential:1}; the cluster does not enforce it.
+   *
+   * @throws IllegalArgumentException if the probe ID was already added
    */
-  ProbeWorkerBuilderStep2 probeId(String probeId);
+  ProbeWorkerBuilderStep2 probeId(String probeId, ProbeHandler handler);
 
   interface ProbeWorkerBuilderStep2 {
 
-    ProbeWorkerBuilderStep3 handler(ProbeHandler handler);
-  }
+    /**
+     * Another probe ID to answer in the same poll, and its handler.
+     *
+     * @throws IllegalArgumentException if the probe ID was already added
+     */
+    ProbeWorkerBuilderStep2 probeId(String probeId, ProbeHandler handler);
 
-  interface ProbeWorkerBuilderStep3 {
-
-    /** The name recorded on the probes pushed to this worker; defaults to the client's. */
-    ProbeWorkerBuilderStep3 name(String workerName);
+    /** The name recorded on the probes this worker collects; defaults to the client's. */
+    ProbeWorkerBuilderStep2 name(String workerName);
 
     /** The tenants to answer probes for; defaults to the client's default tenant. */
-    ProbeWorkerBuilderStep3 tenantIds(List<String> tenantIds);
+    ProbeWorkerBuilderStep2 tenantIds(List<String> tenantIds);
 
-    ProbeWorkerBuilderStep3 tenantIds(String... tenantIds);
+    ProbeWorkerBuilderStep2 tenantIds(String... tenantIds);
 
-    /** How many probes are handled at the same time; the worker polls only for free slots. */
-    ProbeWorkerBuilderStep3 maxProbesActive(int maxProbesActive);
+    /**
+     * How many probes are handled at the same time, across all probe IDs; the worker polls only for
+     * free slots.
+     */
+    ProbeWorkerBuilderStep2 maxProbesActive(int maxProbesActive);
 
     /** How long to wait between two polls that returned no probe. */
-    ProbeWorkerBuilderStep3 pollInterval(Duration pollInterval);
+    ProbeWorkerBuilderStep2 pollInterval(Duration pollInterval);
 
     /** How long the gateway holds a poll open when no probe is waiting (long polling). */
-    ProbeWorkerBuilderStep3 requestTimeout(Duration requestTimeout);
+    ProbeWorkerBuilderStep2 requestTimeout(Duration requestTimeout);
 
     /**
      * The delay before polling again after a failed poll, including a 404 from a cluster without
      * probes; exponential by default.
      */
-    ProbeWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
+    ProbeWorkerBuilderStep2 backoffSupplier(BackoffSupplier backoffSupplier);
 
     ProbeWorker open();
   }

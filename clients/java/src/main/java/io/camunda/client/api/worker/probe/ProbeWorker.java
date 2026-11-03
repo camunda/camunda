@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.worker.probe;
 
-/** An open probe worker: one stream for one probe ID (alpha). Close it to stop answering. */
+/** An open probe worker, polling for its probe IDs (alpha). Close it to stop answering. */
 public interface ProbeWorker extends AutoCloseable {
 
   boolean isOpen();

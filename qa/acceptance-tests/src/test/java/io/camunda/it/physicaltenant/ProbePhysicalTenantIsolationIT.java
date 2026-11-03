@@ -150,7 +150,7 @@ final class ProbePhysicalTenantIsolationIT {
                     probe.getPhysicalTenantId(),
                     "message",
                     String.valueOf(probe.getInputAsMap().get("accessKey"))));
-    return client.newProbeWorker().probeId(probeId).handler(echo).name(name).open();
+    return client.newProbeWorker().probeId(probeId, echo).name(name).open();
   }
 
   private static Map<?, ?> awaitAnswer(final String tenantPrefix, final String probeId) {

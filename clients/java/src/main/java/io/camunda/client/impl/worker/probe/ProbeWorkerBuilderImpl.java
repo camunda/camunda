@@ -22,27 +22,27 @@ import io.camunda.client.api.worker.probe.ProbeHandler;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep2;
-import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep3;
 import io.camunda.client.impl.http.HttpClient;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class ProbeWorkerBuilderImpl
-    implements ProbeWorkerBuilderStep1, ProbeWorkerBuilderStep2, ProbeWorkerBuilderStep3 {
+    implements ProbeWorkerBuilderStep1, ProbeWorkerBuilderStep2 {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final ScheduledExecutorService scheduler;
   private final List<Closeable> closeables;
 
-  private String probeId;
-  private ProbeHandler handler;
+  private final Map<String, ProbeHandler> handlers = new LinkedHashMap<>();
   private String workerName;
   private List<String> tenantIds;
   private int maxProbesActive = 4;
@@ -65,54 +65,54 @@ public final class ProbeWorkerBuilderImpl
   }
 
   @Override
-  public ProbeWorkerBuilderStep2 probeId(final String probeId) {
-    this.probeId = Objects.requireNonNull(probeId, "probeId");
+  public ProbeWorkerBuilderStep2 probeId(final String probeId, final ProbeHandler handler) {
+    Objects.requireNonNull(probeId, "probeId");
+    Objects.requireNonNull(handler, "handler");
+    if (handlers.containsKey(probeId)) {
+      throw new IllegalArgumentException(
+          "Expected each probe ID once, but '" + probeId + "' was added twice.");
+    }
+    handlers.put(probeId, handler);
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 handler(final ProbeHandler handler) {
-    this.handler = Objects.requireNonNull(handler, "handler");
-    return this;
-  }
-
-  @Override
-  public ProbeWorkerBuilderStep3 name(final String workerName) {
+  public ProbeWorkerBuilderStep2 name(final String workerName) {
     this.workerName = workerName;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 tenantIds(final List<String> tenantIds) {
+  public ProbeWorkerBuilderStep2 tenantIds(final List<String> tenantIds) {
     this.tenantIds = new ArrayList<>(tenantIds);
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 tenantIds(final String... tenantIds) {
+  public ProbeWorkerBuilderStep2 tenantIds(final String... tenantIds) {
     return tenantIds(Arrays.asList(tenantIds));
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 maxProbesActive(final int maxProbesActive) {
+  public ProbeWorkerBuilderStep2 maxProbesActive(final int maxProbesActive) {
     this.maxProbesActive = maxProbesActive;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 pollInterval(final Duration pollInterval) {
+  public ProbeWorkerBuilderStep2 pollInterval(final Duration pollInterval) {
     this.pollInterval = pollInterval;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 requestTimeout(final Duration requestTimeout) {
+  public ProbeWorkerBuilderStep2 requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ProbeWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
+  public ProbeWorkerBuilderStep2 backoffSupplier(final BackoffSupplier backoffSupplier) {
     this.backoffSupplier = backoffSupplier;
     return this;
   }
@@ -123,10 +123,9 @@ public final class ProbeWorkerBuilderImpl
         new ProbeWorkerImpl(
             httpClient,
             jsonMapper,
-            probeId,
+            new LinkedHashMap<>(handlers),
             workerName,
             tenantIds,
-            handler,
             scheduler,
             Executors.newFixedThreadPool(maxProbesActive),
             maxProbesActive,

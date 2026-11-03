@@ -37,9 +37,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 /**
- * Polls {@code POST /v2/probes/activation} for one probe ID, as the job worker polls for one job
- * type, hands each probe to the handler and sends the answer over REST, exactly once. A failed
- * poll, including a 404 from a cluster without probes, is retried with the backoff supplier.
+ * Polls {@code POST /v2/probes/activation} for all its probe IDs at once, hands each probe to the
+ * handler of its probe ID and sends the answer over REST, exactly once. Unlike the job worker, one
+ * poll covers several IDs, and {@code maxProbesActive} is shared across them. A failed poll,
+ * including a 404 from a cluster without probes, is retried with the backoff supplier.
  */
 public final class ProbeWorkerImpl implements ProbeWorker {
 
@@ -51,10 +52,10 @@ public final class ProbeWorkerImpl implements ProbeWorker {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final String probeId;
+  private final Map<String, ProbeHandler> handlers;
+  private final List<String> probeIds;
   private final String workerName;
   private final List<String> tenantIds;
-  private final ProbeHandler handler;
   private final ScheduledExecutorService scheduler;
   private final ExecutorService handlerExecutor;
   private final int maxProbesActive;
@@ -69,10 +70,9 @@ public final class ProbeWorkerImpl implements ProbeWorker {
   ProbeWorkerImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
-      final String probeId,
+      final Map<String, ProbeHandler> handlers,
       final String workerName,
       final List<String> tenantIds,
-      final ProbeHandler handler,
       final ScheduledExecutorService scheduler,
       final ExecutorService handlerExecutor,
       final int maxProbesActive,
@@ -81,10 +81,10 @@ public final class ProbeWorkerImpl implements ProbeWorker {
       final BackoffSupplier backoffSupplier) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
-    this.probeId = probeId;
+    this.handlers = handlers;
+    probeIds = new ArrayList<>(handlers.keySet());
     this.workerName = workerName;
     this.tenantIds = tenantIds;
-    this.handler = handler;
     this.scheduler = scheduler;
     this.handlerExecutor = handlerExecutor;
     this.maxProbesActive = maxProbesActive;
@@ -130,7 +130,7 @@ public final class ProbeWorkerImpl implements ProbeWorker {
     }
 
     final Map<String, Object> body = new LinkedHashMap<>();
-    body.put("probeId", probeId);
+    body.put("probeIds", probeIds);
     body.put("worker", workerName);
     body.put("maxProbesToActivate", capacity);
     body.put("requestTimeout", requestTimeout.toMillis());
@@ -155,7 +155,7 @@ public final class ProbeWorkerImpl implements ProbeWorker {
           if (error != null) {
             retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
             LOGGER.debug(
-                "Failed to poll probes of '{}'; retrying in {} ms", probeId, retryDelay, error);
+                "Failed to poll probes of {}; retrying in {} ms", probeIds, retryDelay, error);
             schedulePoll(retryDelay);
             return;
           }
@@ -184,6 +184,12 @@ public final class ProbeWorkerImpl implements ProbeWorker {
   }
 
   private void handle(final ActivatedProbe probe) {
+    final ProbeHandler handler = handlers.get(probe.getProbeId());
+    if (handler == null) {
+      // the cluster hands out only probes of the polled IDs; answer rather than leave it hanging
+      sendAnswer(probe.getKey(), ProbeAnswer.unsupported());
+      return;
+    }
     ProbeAnswer answer;
     try {
       answer = handler.handle(probe);
