@@ -23,11 +23,8 @@ import java.io.InputStream;
  * Command to get the content of a document from the document store.
  *
  * <p>The document content is returned as an {@link InputStream}. Close the stream when you are done
- * with it. Reading from it after that throws an {@link java.io.IOException}.
- *
- * <p>Closing the stream before the end of the document stops the download the next time data for it
- * arrives. If the server sends nothing more, the download stays open until the server sends more
- * data or the connection ends.
+ * with it. Reading from it after that throws an {@link java.io.IOException}. Closing it before
+ * reaching the end of the document stops the download.
  */
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface DocumentContentGetRequest extends FinalCommandStep<InputStream> {

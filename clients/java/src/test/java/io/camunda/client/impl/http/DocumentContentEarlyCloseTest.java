@@ -20,6 +20,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,6 +79,12 @@ class DocumentContentEarlyCloseTest {
    * client granted for as long as data keeps arriving.
    */
   private static final long PAUSE_AT = MAX_MESSAGE_SIZE + 2 * CHUNK_SIZE;
+
+  /**
+   * How much a server that goes silent sends. It is less than the client buffers, so the client
+   * reads all of it from the socket and closing the stream cannot make the client read more.
+   */
+  private static final long SILENT_AT = 2 * CHUNK_SIZE;
 
   /** Long enough that a timeout cannot be what ends the download within the test. */
   private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(5);
@@ -177,14 +184,48 @@ class DocumentContentEarlyCloseTest {
     await("the client drops the connection")
         .atMost(Duration.ofSeconds(10))
         .untilTrue(connectionDropped);
-    // httpclient5 counts a new try in the same step that drops the connection
-    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
     // the client still works, and did not ask for the document again
     try (final InputStream smallDocument =
         client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
       assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
     }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
+    assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
+  }
+
+  @ParameterizedTest
+  @EnumSource(BodyFraming.class)
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void shouldEndDownloadWhenStreamIsClosedWhileServerIsSilent(final BodyFraming framing)
+      throws Exception {
+    // given
+    startServer(framing, SILENT_AT, AfterPause.STAY_SILENT);
+    final InputStream content =
+        client
+            .newDocumentContentGetRequest(DOCUMENT_ID)
+            .requestTimeout(REQUEST_TIMEOUT)
+            .send()
+            .get(20, TimeUnit.SECONDS);
+    new DataInputStream(content).readFully(new byte[(int) SILENT_AT]);
+
+    // when
+    content.close();
+
+    // then
+    await("the client drops the connection")
+        .atMost(Duration.ofSeconds(10))
+        .untilTrue(connectionDropped);
+    // the client still works, and did not ask for the document again
+    try (final InputStream smallDocument =
+        client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
+      assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
+    }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
   }
 
