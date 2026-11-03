@@ -7,8 +7,8 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
-import {ProcessInstanceTabPlaceholder} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceTabPlaceholder';
+import {ProcessInstanceVariables} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceVariables';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId/variables')({
-	component: ProcessInstanceTabPlaceholder,
+	component: ProcessInstanceVariables,
 });
