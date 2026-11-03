@@ -53,8 +53,10 @@ import java.util.stream.Collectors;
  * rules about what data to generate — those concerns belong to {@link VariableCatalogue} (variable
  * values) and {@link NodeTimingSimulator} (duration distribution).
  *
- * <p>Each record type owns its own monotonically increasing position counter so that the Optimize
- * import position tracker advances correctly per index.
+ * <p>Like the engine's log, all records of the partition share one position counter, in the order
+ * they are created, so an agent run's COMPLETED record has a higher position than every record of
+ * its process instance; the agent run import relies on that. Each record type has its own sequence
+ * counter, as the exporter assigns sequences per value type.
  */
 class ZeebeRecordFactory {
 
@@ -64,6 +66,7 @@ class ZeebeRecordFactory {
   private final VariableCatalogue catalogue;
   private final BpmnProvider bpmnProvider;
 
+  private long position;
   private long pdPosition;
   private long piPosition;
   private long varPosition;
@@ -80,6 +83,7 @@ class ZeebeRecordFactory {
     this.partitionId = partitionId;
     this.catalogue = catalogue;
     this.bpmnProvider = bpmnProvider;
+    position = positionOffset;
     pdPosition = positionOffset;
     piPosition = positionOffset;
     varPosition = positionOffset;
@@ -433,9 +437,10 @@ class ZeebeRecordFactory {
    * operation. All concrete DTO types extend {@link ZeebeRecordDto}, so no instanceof dispatch is
    * needed.
    */
-  private BulkOperation wrap(final ZeebeRecordDto<?, ?> record, final long position) {
+  private BulkOperation wrap(final ZeebeRecordDto<?, ?> record, final long sequence) {
+    final long position = ++this.position;
     record.setPosition(position);
-    record.setSequence(position);
+    record.setSequence(sequence);
     record.setPartitionId(partitionId);
     record.setRecordType(RecordType.EVENT);
     record.setBrokerVersion(BROKER_VERSION);

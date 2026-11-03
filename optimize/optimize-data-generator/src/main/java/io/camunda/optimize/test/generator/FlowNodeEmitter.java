@@ -55,6 +55,9 @@ class FlowNodeEmitter {
   // own element indices, so they never collide with a regular element instance key.
   private static final long TOOL_INSTANCE_KEY_OFFSET = 500L;
   private static final long AGENT_INCIDENT_KEY_OFFSET = 1L;
+  private static final long TOOL_INCIDENT_KEY_OFFSET = 2L;
+  // Share of finished ad-hoc agent runs with an incident on one of their tool calls.
+  private static final double TOOL_INCIDENT_RATE = 0.1;
 
   private final ZeebeRecordFactory factory;
   private final NodeTimingSimulator timingSimulator;
@@ -120,7 +123,7 @@ class FlowNodeEmitter {
 
     final List<BulkOperation> piOps = List.copyOf(walkState.pi());
     final List<BulkOperation> utOps = List.copyOf(walkState.ut());
-    return new FlowNodeOps(piOps, utOps);
+    return new FlowNodeOps(piOps, utOps, List.copyOf(walkState.incidents()));
   }
 
   /**
@@ -301,6 +304,11 @@ class FlowNodeEmitter {
     final int total =
         tools.stream().mapToInt(t -> flowWalkCtx.toolCallsByElement().get(t.id())).sum();
     final long slot = Math.max(1L, (subEndMs - subStartMs) / Math.max(1, total));
+    // A tool call that fails raises an incident on its element instance during the run.
+    final long failingCall =
+        !flowWalkCtx.window().isActive() && total > 0 && rng.nextDouble() < TOOL_INCIDENT_RATE
+            ? rng.nextInt(total)
+            : -1;
     long seq = 0;
     for (final FlowNode tool : tools) {
       for (int call = 0; call < flowWalkCtx.toolCallsByElement().get(tool.id()); call++) {
@@ -321,6 +329,25 @@ class FlowNodeEmitter {
                       ctx,
                       element,
                       new LifecycleEvent(flowWalkCtx.window().endIntent(), toolStart + slot)));
+        }
+        if (seq == failingCall) {
+          final long incKey =
+              ctx.instanceKey() * INCIDENT_KEY_MULTIPLIER + TOOL_INCIDENT_KEY_OFFSET;
+          final long raisedAt = toolStart + slot / 2;
+          walkState
+              .incidents()
+              .add(
+                  factory.incidentOp(
+                      ctx,
+                      new IncidentEvent(incKey, key, tool.id(), raisedAt),
+                      IncidentIntent.CREATED));
+          walkState
+              .incidents()
+              .add(
+                  factory.incidentOp(
+                      ctx,
+                      new IncidentEvent(incKey, key, tool.id(), toolStart + slot),
+                      IncidentIntent.RESOLVED));
         }
         seq++;
       }
@@ -414,15 +441,21 @@ class FlowNodeEmitter {
    * <p>The record holds references to mutable collections; the record itself is not replaced. After
    * the walk completes, {@link #flowNodeOps} seals the lists with {@link List#copyOf}.
    */
-  private record WalkState(List<BulkOperation> pi, List<BulkOperation> ut, Set<Integer> consumed) {
+  private record WalkState(
+      List<BulkOperation> pi,
+      List<BulkOperation> ut,
+      List<BulkOperation> incidents,
+      Set<Integer> consumed) {
 
     static WalkState create() {
-      return new WalkState(new ArrayList<>(), new ArrayList<>(), new HashSet<>());
+      return new WalkState(
+          new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new HashSet<>());
     }
   }
 
   // ── Return type ───────────────────────────────────────────────────────────
 
   /** Immutable pair of process-instance and user-task records produced by one flow-node walk. */
-  record FlowNodeOps(List<BulkOperation> pi, List<BulkOperation> ut) {}
+  record FlowNodeOps(
+      List<BulkOperation> pi, List<BulkOperation> ut, List<BulkOperation> incidents) {}
 }

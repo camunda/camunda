@@ -342,8 +342,10 @@ public class ZeebeProcessDataGenerator {
                 instanceWindow.hasIncident()
                     ? emitter.incidentOps(instanceContext, executionPath, instanceWindow).stream()
                     : Stream.empty(),
-                agentRun.stream()
-                    .flatMap(run -> emitter.agentIncidentOps(instanceContext, run).stream()))
+                Stream.concat(
+                    flowNodeOps.incidents().stream(),
+                    agentRun.stream()
+                        .flatMap(run -> emitter.agentIncidentOps(instanceContext, run).stream())))
             .toList();
 
     final List<BulkOperation> agentInstanceOps =
