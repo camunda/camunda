@@ -529,6 +529,15 @@ Implementation:
 3. Use [setup-yarn-cache](https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache) action, see [usage example in #21607](https://github.com/camunda/camunda/pull/21607).
 4. No implementation since Golang usage is low.
 
+### Maven cache hit reporting
+
+[setup-maven-cache](https://github.com/camunda/camunda/tree/main/.github/actions/setup-maven-cache)
+classifies every restore as `exact` (primary key matched), `fallback` (a `restore-keys` prefix matched an
+older `pom.xml` hash, so most dependencies are present) or `miss` (cold repository), or `skipped` when the
+cache step did not run. The result is printed in the job's step summary and is available as the
+`cache-result` action output. `cache-hit` alone cannot be used for a hit ratio, as it is only `true` on an
+exact match.
+
 ### Bounding a degraded cache backend
 
 `actions/cache` aborts a stalled segment download with a *warning* rather than a failure, then
