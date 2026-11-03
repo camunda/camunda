@@ -27,8 +27,7 @@ import {AddAuthorizationModal} from '#/admin/modules/authorizations/AddAuthoriza
 import {DeleteAuthorizationModal} from '#/admin/modules/authorizations/DeleteAuthorizationModal';
 import {AuthorizationsTable} from '#/admin/modules/authorizations/AuthorizationsTable';
 import type {AuthorizationsSearch} from '#/admin/modules/authorizations/searchSchema';
-
-const AUTHORIZATIONS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/authorization/';
+import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 
 type ModalState = {type: 'create'} | {type: 'delete'; authorization: Authorization} | null;
 
@@ -75,7 +74,7 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 					<p className="text-sm leading-5 text-muted-foreground">
 						{t('admin.authorizations.guideBody')}
 						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
-							<a href={AUTHORIZATIONS_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+							<a href={GUIDE_URLS.authorizations} target="_blank" rel="noopener noreferrer">
 								{t('admin.authorizations.guideLinkLabel')}
 							</a>
 						</Button>

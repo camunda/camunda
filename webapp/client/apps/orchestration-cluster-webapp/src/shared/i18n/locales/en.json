@@ -177,7 +177,9 @@
 				"updateMappingRuleError": "Failed to update mapping rule",
 				"deleteMappingRuleError": "Failed to delete mapping rule",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "mapping rule",
+				"resourcePlural": "mapping rules"
 			},
 			"users": {
 				"username": "Username",
@@ -218,7 +220,9 @@
 				"userDeleted": "User {{username}} deleted",
 				"deleteUserFailed": "Failed to delete user",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "user",
+				"resourcePlural": "users"
 			},
 			"groups": {
 				"guideBody": "For more information, see the ",
@@ -319,7 +323,9 @@
 						"assigned": "Client {{id}} assigned",
 						"removed": "Client {{id}} removed"
 					}
-				}
+				},
+				"resourceSingular": "group",
+				"resourcePlural": "groups"
 			},
 			"clusterVariables": {
 				"closeButton": "Close",
@@ -371,7 +377,9 @@
 				"deleteClusterVariableSuccess": "Cluster variable deleted",
 				"createClusterVariableError": "Failed to create cluster variable",
 				"updateClusterVariableError": "Failed to update cluster variable",
-				"deleteClusterVariableError": "Failed to delete cluster variable"
+				"deleteClusterVariableError": "Failed to delete cluster variable",
+				"resourceSingular": "cluster variable",
+				"resourcePlural": "cluster variables"
 			},
 			"globalTaskListeners": {
 				"guideBody": "For more information, see the ",
@@ -429,7 +437,9 @@
 				"updateGlobalTaskListenerError": "Failed to update global task listener",
 				"deleteGlobalTaskListenerError": "Failed to delete global task listener",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "global task listener",
+				"resourcePlural": "global task listeners"
 			},
 			"authorizations": {
 				"guideBody": "For more information, see the ",
@@ -483,7 +493,9 @@
 				"deleteAuthorizationSuccess": "Authorization deleted",
 				"deleteAuthorizationError": "Failed to delete authorization",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "authorization",
+				"resourcePlural": "authorizations"
 			},
 			"roles": {
 				"guideBody": "For more information, see the ",
@@ -585,7 +597,9 @@
 						"assigned": "Client {{id}} assigned",
 						"removed": "Client {{id}} removed"
 					}
-				}
+				},
+				"resourceSingular": "role",
+				"resourcePlural": "roles"
 			},
 			"tenants": {
 				"guideBody": "For more information, see the ",
@@ -690,7 +704,15 @@
 				"unassignSuccess": "Removed from tenant",
 				"unassignError": "Failed to remove from the tenant",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "tenant",
+				"resourcePlural": "tenants"
+			},
+			"emptyState": {
+				"title": "No {{resources}} created yet",
+				"description": "Start by creating a new {{resource}}.",
+				"createAction": "Create {{resource}}",
+				"learnMore": "Learn more about {{resources}}"
 			}
 		},
 		"tasklist": {

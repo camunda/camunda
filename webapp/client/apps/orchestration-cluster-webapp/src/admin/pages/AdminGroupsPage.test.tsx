@@ -47,17 +47,30 @@ describe('<AdminGroupsPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first group when there are no groups', async () => {
+		const {screen} = await renderPage({groups: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No groups created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about groups'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create group'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no groups', async () => {
+		const {screen} = await renderPage({groups: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No groups created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No groups found.')).toBeVisible();
+	});
+
 	it('should list groups', async () => {
 		const {screen} = await renderPage({groups: [createGroup({groupId: 'ops', name: 'Operations'})]});
 
 		await expect.element(screen.getByRole('cell', {name: 'ops'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Operations'})).toBeVisible();
-	});
-
-	it('should show an empty state when there are no groups', async () => {
-		const {screen} = await renderPage({groups: [], totalItems: 0});
-
-		await expect.element(screen.getByText('No groups found.')).toBeVisible();
 	});
 
 	it('should link each row to its group', async () => {

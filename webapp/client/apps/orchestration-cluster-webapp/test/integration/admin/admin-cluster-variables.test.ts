@@ -222,7 +222,9 @@ test.describe('Admin cluster variables', () => {
 
 	test('should search cluster variables by name', async ({adminClusterVariablesPage, network}) => {
 		network.use(
-			mockQueryClusterVariablesEndpoint({successResponse: HttpResponse.json(createQueryClusterVariablesResponse())}),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json(createQueryClusterVariablesResponse([createClusterVariableSearchResult()])),
+			}),
 		);
 
 		await adminClusterVariablesPage.goto();

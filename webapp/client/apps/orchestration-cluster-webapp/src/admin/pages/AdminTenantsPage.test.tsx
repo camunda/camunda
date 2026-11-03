@@ -39,6 +39,24 @@ describe('<AdminTenantsPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first tenant when there are no tenants', async () => {
+		const {screen} = await renderPage({tenants: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No tenants created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about tenants'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create tenant'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no tenants', async () => {
+		const {screen} = await renderPage({tenants: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No tenants created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list the tenants', async () => {
 		const {screen} = await renderPage({
 			tenants: [createTenant({tenantId: 'tenant-a', name: 'Tenant A'})],

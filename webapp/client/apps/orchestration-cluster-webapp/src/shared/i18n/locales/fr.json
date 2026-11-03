@@ -177,7 +177,9 @@
 				"updateMappingRuleError": "Échec de la mise à jour de la règle de mappage",
 				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "règle de mappage",
+				"resourcePlural": "règles de mappage"
 			},
 			"users": {
 				"username": "Nom d'utilisateur",
@@ -218,7 +220,9 @@
 				"userDeleted": "Utilisateur {{username}} supprimé",
 				"deleteUserFailed": "Échec de la suppression de l'utilisateur",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "utilisateur",
+				"resourcePlural": "utilisateurs"
 			},
 			"groups": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -319,7 +323,9 @@
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "groupe",
+				"resourcePlural": "groupes"
 			},
 			"clusterVariables": {
 				"closeButton": "Fermer",
@@ -371,7 +377,9 @@
 				"deleteClusterVariableSuccess": "Variable de cluster supprimée",
 				"createClusterVariableError": "Impossible de créer la variable de cluster",
 				"updateClusterVariableError": "Impossible de mettre à jour la variable de cluster",
-				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster"
+				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster",
+				"resourceSingular": "variable de cluster",
+				"resourcePlural": "variables de cluster"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -429,7 +437,9 @@
 				"updateGlobalTaskListenerError": "Échec de la mise à jour de l'écouteur global de tâche",
 				"deleteGlobalTaskListenerError": "Échec de la suppression de l'écouteur global de tâche",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "écouteur global de tâches",
+				"resourcePlural": "écouteurs globaux de tâches"
 			},
 			"authorizations": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -483,7 +493,9 @@
 				"deleteAuthorizationSuccess": "Autorisation supprimée",
 				"deleteAuthorizationError": "Échec de la suppression de l'autorisation",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a pris effet",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "autorisation",
+				"resourcePlural": "autorisations"
 			},
 			"roles": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -585,7 +597,9 @@
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "rôle",
+				"resourcePlural": "rôles"
 			},
 			"tenants": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -690,7 +704,15 @@
 				"unassignSuccess": "Retiré du locataire",
 				"unassignError": "Impossible de retirer du locataire",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "locataire",
+				"resourcePlural": "locataires"
+			},
+			"emptyState": {
+				"title": "Aucun élément « {{resources}} » créé pour le moment",
+				"description": "Commencez par créer un élément « {{resource}} ».",
+				"createAction": "Créer : {{resource}}",
+				"learnMore": "En savoir plus sur : {{resources}}"
 			}
 		},
 		"tasklist": {
