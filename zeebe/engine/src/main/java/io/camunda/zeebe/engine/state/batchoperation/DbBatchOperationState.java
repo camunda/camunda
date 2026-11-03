@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk.ChunkItem;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,36 +197,14 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void addChunk(final long key, final long batchOperationKey, final List<ChunkItem> items) {
+    insertChunk(key, batchOperationKey, items.size(), chunk -> chunk.setItems(items));
+  }
+
+  @Override
+  @Deprecated(since = "8.11.0")
   public void addChunk(final long key, final long batchOperationKey, final Set<Long> itemKeys) {
-    final var oBatch = get(batchOperationKey);
-    if (oBatch.isEmpty()) {
-      LOGGER.error(
-          "Batch operation with key {} not found, cannot append chunks to it.", batchOperationKey);
-      return;
-    }
-
-    chunkKey.wrapLong(key);
-    final var existingChunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
-    if (existingChunk != null) {
-      LOGGER.debug(
-          "Chunk with key {} already exists for batch operation {}", key, batchOperationKey);
-      return;
-    }
-
-    LOGGER.trace(
-        "Appending a chunk {} of {} item keys to batch operation with key {}",
-        key,
-        itemKeys.size(),
-        batchOperationKey);
-
-    final var batchChunk = new PersistedBatchOperationChunk();
-    batchChunk.setKey(key).setBatchOperationKey(batchOperationKey).setItemKeys(itemKeys);
-    batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
-
-    final var batch = oBatch.get();
-    batch.addChunkKey(key);
-    batch.setNumTotalItems(batch.getNumTotalItems() + itemKeys.size());
-    batchOperationColumnFamily.update(batchKey, batch);
+    insertChunk(key, batchOperationKey, itemKeys.size(), chunk -> chunk.setItemKeys(itemKeys));
   }
 
   @Override
@@ -327,6 +307,43 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     final var batch = batchOperationColumnFamily.get(batchKey);
     batch.addFinishedPartition(partitionId);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  private void insertChunk(
+      final long key,
+      final long batchOperationKey,
+      final int numItems,
+      final Consumer<PersistedBatchOperationChunk> setItems) {
+    final var oBatch = get(batchOperationKey);
+    if (oBatch.isEmpty()) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot append chunks to it.", batchOperationKey);
+      return;
+    }
+
+    chunkKey.wrapLong(key);
+    final var existingChunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    if (existingChunk != null) {
+      LOGGER.debug(
+          "Chunk with key {} already exists for batch operation {}", key, batchOperationKey);
+      return;
+    }
+
+    LOGGER.trace(
+        "Appending a chunk {} of {} item keys to batch operation with key {}",
+        key,
+        numItems,
+        batchOperationKey);
+
+    final var batchChunk = new PersistedBatchOperationChunk();
+    batchChunk.setKey(key).setBatchOperationKey(batchOperationKey);
+    setItems.accept(batchChunk);
+    batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
+
+    final var batch = oBatch.get();
+    batch.addChunkKey(key);
+    batch.setNumTotalItems(batch.getNumTotalItems() + numItems);
     batchOperationColumnFamily.update(batchKey, batch);
   }
 

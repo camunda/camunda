@@ -8,11 +8,10 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk.ChunkItem;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
-import java.util.stream.Collectors;
 
 public class BatchOperationChunkCreatedV3Applier
     implements TypedEventApplier<BatchOperationChunkIntent, BatchOperationChunkRecord> {
@@ -29,7 +28,8 @@ public class BatchOperationChunkCreatedV3Applier
         chunkKey,
         value.getBatchOperationKey(),
         value.getItems().stream()
-            .map(BatchOperationItemValue::getItemKey)
-            .collect(Collectors.toSet()));
+            .map(item -> new ChunkItem(item.getItemKey(), item.getStorageOrdinal()))
+            .distinct()
+            .toList());
   }
 }

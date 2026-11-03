@@ -16,6 +16,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk.ChunkItem;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -398,6 +399,29 @@ public class BatchOperationStateTest {
     final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
+  }
+
+  @Test
+  void shouldAddChunkOfItems() {
+    // given
+    final var batchOperationKey = 1L;
+    final var createRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
+    state.create(batchOperationKey, createRecord);
+
+    // when
+    state.addChunk(
+        10L, batchOperationKey, List.of(new ChunkItem(1L, 1001), new ChunkItem(2L, 1002)));
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(10);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(10);
+    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(2);
+    assertThat(state.getNextItemKeys(batchOperationKey, 5)).containsExactly(1L, 2L);
   }
 
   @Test
