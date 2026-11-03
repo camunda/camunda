@@ -253,9 +253,9 @@ const MODEL_COLUMNS: MetricColumn<AgentModelUsage>[] = [
     render: ({avgDurationMs}) => formatDuration(avgDurationMs),
   },
   {
-    titleKey: 'agenticControlPlane.agentView.models.successRate',
+    titleKey: 'agenticControlPlane.agentView.models.incidentRate',
     numeric: true,
-    render: ({successRate}) => formatPercentage(successRate),
+    render: ({incidentRate}) => formatPercentage(incidentRate),
   },
 ];
 

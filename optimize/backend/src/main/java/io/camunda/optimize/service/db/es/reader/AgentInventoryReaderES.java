@@ -139,15 +139,7 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                             AGENTS,
                             a ->
                                 a.terms(t -> t.field(AgentRunIndex.AGENT_ID).size(MAX_AGENTS))
-                                    .aggregations(
-                                        INCIDENTS,
-                                        s ->
-                                            s.filter(
-                                                f ->
-                                                    f.term(
-                                                        t ->
-                                                            t.field(AgentRunIndex.HAS_INCIDENT)
-                                                                .value(true))))
+                                    .aggregations(INCIDENTS, AgentRunQueriesES.failedRuns())
                                     .aggregations(
                                         LIMIT_HITS,
                                         s ->
@@ -157,9 +149,6 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
                                                         t ->
                                                             t.field(AgentRunIndex.HIT_LIMIT)
                                                                 .value(true))))
-                                    .aggregations(
-                                        AgentRunQueriesES.SUCCEEDED,
-                                        AgentRunQueriesES.succeededRuns())
                                     .aggregations(
                                         DURATION,
                                         s ->
@@ -245,7 +234,6 @@ public class AgentInventoryReaderES implements AgentInventoryReader {
         hasRuns ? lastRun(aggs.get(LAST_RUN)) : null,
         hasRuns ? finite(aggs.get(TOKENS_TOTAL).sum().value()) : null,
         hasRuns ? percentile(aggs.get(TOKENS_P50), 50.0) : null,
-        hasRuns ? rate(aggs.get(AgentRunQueriesES.SUCCEEDED).filter().docCount(), runCount) : null,
         hasRuns ? average(aggs.get(DURATION_AVG)) : null,
         hasRuns ? percentile(aggs.get(DURATION), 95.0) : null);
   }

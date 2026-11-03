@@ -43,7 +43,7 @@ class AgentRunExecutionPlanInterpreterESTest {
 
     // then
     assertThat(plans)
-        .hasSize(27)
+        .hasSize(26)
         .allSatisfy(
             plan ->
                 assertThat(plan.getView().getProcessViewDto().getEntity())

@@ -39,7 +39,7 @@ const agent: AgentDetail = {
       runs: 4,
     },
     {
-      kind: 'INCIDENT',
+      kind: 'TOOL_INCIDENT',
       limit: null,
       flowNodeId: 'lookup',
       toolName: 'Look up merchant',
@@ -66,7 +66,7 @@ const agent: AgentDetail = {
       runs: 100,
       avgTokens: 5000,
       avgDurationMs: 40000,
-      successRate: 94,
+      incidentRate: 6,
     },
   ],
   whereUsed: [

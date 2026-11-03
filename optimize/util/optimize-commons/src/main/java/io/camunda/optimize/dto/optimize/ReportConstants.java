@@ -35,7 +35,6 @@ public final class ReportConstants {
   public static final String VIEW_INCIDENT_RATE_PROPERTY = "incidentRate";
   public static final String VIEW_LIMIT_HIT_RATE_PROPERTY = "limitHitRate";
   public static final String VIEW_ADOPTION_RATE_PROPERTY = "adoptionRate";
-  public static final String VIEW_SUCCESS_RATE_PROPERTY = "successRate";
   public static final String VIEW_CACHE_WRITE_TOKENS_PROPERTY = "cacheWriteTokens";
   public static final String VIEW_CACHE_READ_TOKENS_PROPERTY = "cacheReadTokens";
   public static final String VIEW_REASONING_TOKENS_PROPERTY = "reasoningTokens";

@@ -17,6 +17,9 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_DESCRIPTION;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_NAME;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_ITERATIONS_REPORT_ID;
@@ -27,9 +30,6 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_RUNS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_DESCRIPTION;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_NAME;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_SUCCESS_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID;
@@ -316,7 +316,7 @@ public class AgenticControlDashboardServiceTest {
         captureSavedDashboard().getTiles().stream()
             .collect(Collectors.toMap(DashboardReportTileDto::getId, tile -> levelsOf(tile)));
     assertThat(levelsById)
-        .containsEntry(AGENT_SUCCESS_RATE_REPORT_ID, List.of("overview", "process", "agent"))
+        .containsEntry(AGENT_INCIDENT_RATE_REPORT_ID, List.of("overview", "process", "agent"))
         .containsEntry(AGENT_TOKENS_PER_RUN_BY_MODEL_REPORT_ID, List.of("overview", "process"))
         .containsEntry(AGENT_TOKEN_BAND_REPORT_ID, List.of("agent"))
         .containsEntry(AGENT_LIMIT_HIT_RATE_REPORT_ID, List.of("overview", "process"))
@@ -344,7 +344,7 @@ public class AgenticControlDashboardServiceTest {
             Map.of(
                 AGENT_TOTAL_TOKENS_REPORT_ID, "down",
                 AGENT_RUNS_REPORT_ID, "up",
-                AGENT_SUCCESS_RATE_REPORT_ID, "up"));
+                AGENT_INCIDENT_RATE_REPORT_ID, "down"));
   }
 
   @Test
@@ -377,7 +377,7 @@ public class AgenticControlDashboardServiceTest {
     assertReport(reports, AGENT_AVG_TOKENS_REPORT_ID, ViewProperty.TOTAL_TOKENS, NONE)
         .containsExactly(new AggregationDto(AggregationType.AVERAGE));
     assertReport(reports, AGENT_RUNS_REPORT_ID, ViewProperty.FREQUENCY, NONE);
-    assertReport(reports, AGENT_SUCCESS_RATE_REPORT_ID, ViewProperty.SUCCESS_RATE, NONE);
+    assertReport(reports, AGENT_INCIDENT_RATE_REPORT_ID, ViewProperty.INCIDENT_RATE, NONE);
     assertReport(reports, AGENT_DURATION_REPORT_ID, ViewProperty.DURATION, NONE)
         .containsExactly(
             new AggregationDto(AggregationType.AVERAGE),
@@ -448,11 +448,23 @@ public class AgenticControlDashboardServiceTest {
     final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
 
     // then
-    assertThat(reports.get(AGENT_SUCCESS_RATE_REPORT_ID).getConfiguration().getValueFormat())
+    assertThat(reports.get(AGENT_INCIDENT_RATE_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("percentage");
     assertThat(reports.get(AGENT_ITERATIONS_REPORT_ID).getConfiguration().getValueFormat())
         .isEqualTo("frequency");
     assertThat(reports.get(AGENT_DURATION_REPORT_ID).getConfiguration().getValueFormat()).isNull();
+  }
+
+  @Test
+  void shouldNotLabelAnyAgenticMetricAsSuccessRate() throws IOException {
+    for (final String locale : new String[] {"en", "de"}) {
+      final String localization =
+          new String(
+              getClass().getResourceAsStream("/localization/" + locale + ".json").readAllBytes(),
+              java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(localization).doesNotContainIgnoringCase("success rate");
+      assertThat(localization).doesNotContain("\"successRate\"");
+    }
   }
 
   @Test
@@ -470,8 +482,8 @@ public class AgenticControlDashboardServiceTest {
               AGENT_AVG_TOKENS_DESCRIPTION,
               AGENT_RUNS_NAME,
               AGENT_RUNS_DESCRIPTION,
-              AGENT_SUCCESS_RATE_NAME,
-              AGENT_SUCCESS_RATE_DESCRIPTION,
+              AGENT_INCIDENT_RATE_NAME,
+              AGENT_INCIDENT_RATE_DESCRIPTION,
               AGENT_DURATION_NAME,
               AGENT_DURATION_DESCRIPTION,
               AGENT_TOKEN_BREAKDOWN_NAME,

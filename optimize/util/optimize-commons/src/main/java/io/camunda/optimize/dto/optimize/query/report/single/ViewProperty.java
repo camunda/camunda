@@ -21,7 +21,6 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_OUTPUT_TOKEN
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_PERCENTAGE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_REASONING_TOKENS_PROPERTY;
-import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_SUCCESS_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOOL_CALLS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOTAL_TOKENS_PROPERTY;
 
@@ -53,7 +52,6 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty INCIDENT_RATE = new ViewProperty(VIEW_INCIDENT_RATE_PROPERTY);
   public static final ViewProperty LIMIT_HIT_RATE = new ViewProperty(VIEW_LIMIT_HIT_RATE_PROPERTY);
   public static final ViewProperty ADOPTION_RATE = new ViewProperty(VIEW_ADOPTION_RATE_PROPERTY);
-  public static final ViewProperty SUCCESS_RATE = new ViewProperty(VIEW_SUCCESS_RATE_PROPERTY);
   public static final ViewProperty CACHE_WRITE_TOKENS =
       new ViewProperty(VIEW_CACHE_WRITE_TOKENS_PROPERTY);
   public static final ViewProperty CACHE_READ_TOKENS =

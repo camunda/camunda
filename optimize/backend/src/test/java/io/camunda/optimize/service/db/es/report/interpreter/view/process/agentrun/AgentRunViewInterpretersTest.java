@@ -17,6 +17,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import org.junit.jupiter.api.Test;
 
 class AgentRunViewInterpretersTest {
@@ -62,6 +63,18 @@ class AgentRunViewInterpretersTest {
             ProcessViewAgentRunMetricInterpreterES.fieldFor(
                 AGENT_RUN_REASONING_TOKENS_GROUP_BY_END_DATE))
         .isEqualTo("reasoningTokens");
+  }
+
+  @Test
+  void shouldCountFailedRunsForTheIncidentRate() {
+    assertThat(
+            ProcessViewAgentRunRateInterpreterES.flagFieldFor(
+                ProcessView.PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE))
+        .isEqualTo("failed");
+    assertThat(
+            ProcessViewAgentRunRateInterpreterES.flagFieldFor(
+                ProcessView.PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE))
+        .isEqualTo("hitLimit");
   }
 
   @Test

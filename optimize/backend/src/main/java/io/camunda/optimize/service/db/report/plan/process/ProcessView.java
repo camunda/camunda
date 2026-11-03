@@ -20,7 +20,6 @@ import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.OUTPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.PERCENTAGE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.REASONING_TOKENS;
-import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.SUCCESS_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOOL_CALLS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOTAL_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_INSTANCE;
@@ -65,7 +64,6 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE(new ProcessViewDto(AGENT_RUN, INCIDENT_RATE)),
   PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE(new ProcessViewDto(AGENT_RUN, LIMIT_HIT_RATE)),
   PROCESS_VIEW_AGENT_RUN_ADOPTION_RATE(new ProcessViewDto(AGENT_RUN, ADOPTION_RATE)),
-  PROCESS_VIEW_AGENT_RUN_SUCCESS_RATE(new ProcessViewDto(AGENT_RUN, SUCCESS_RATE)),
   PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS(new ProcessViewDto(AGENT_RUN, INPUT_TOKENS)),
   PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS(new ProcessViewDto(AGENT_RUN, OUTPUT_TOKENS)),
   PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS(new ProcessViewDto(AGENT_RUN, CACHE_WRITE_TOKENS)),

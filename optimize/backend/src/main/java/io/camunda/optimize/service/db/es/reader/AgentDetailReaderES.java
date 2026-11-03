@@ -10,9 +10,9 @@ package io.camunda.optimize.service.db.es.reader;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.FAILED;
-import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.INCIDENT_REASONS;
+import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.FAILURE_REASONS;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.LIMITS;
-import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.SUCCEEDED;
+import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.RUNS;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.average;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.finite;
 import static io.camunda.optimize.service.db.es.reader.AgentRunQueriesES.firstKey;
@@ -90,8 +90,7 @@ public class AgentDetailReaderES implements AgentDetailReader {
       final Optional<AgentDefinitionDto> definition =
           fetchDefinitions(AgentDefinitionIndex.AGENT_ID, agentId).values().stream().findFirst();
       final Map<String, Aggregate> aggs = fetchAgentRuns(agentId, endedFrom);
-      final long runs =
-          aggs.get(FAILED).filter().docCount() + aggs.get(SUCCEEDED).filter().docCount();
+      final long runs = aggs.get(RUNS).filter().docCount();
       if (definition.isEmpty() && runs == 0) {
         return Optional.empty();
       }
@@ -157,10 +156,9 @@ public class AgentDetailReaderES implements AgentDetailReader {
                                           FAILED,
                                           f ->
                                               f.filter(AgentRunQueriesES.failedRuns().filter())
-                                                  .aggregations(LIMITS, AgentRunQueriesES.limits())
                                                   .aggregations(
-                                                      INCIDENT_REASONS,
-                                                      AgentRunQueriesES.incidentReasons())))),
+                                                      FAILURE_REASONS,
+                                                      AgentRunQueriesES.failureReasons())))),
               Object.class);
       final List<AgentFailures> failures = new ArrayList<>();
       for (final StringTermsBucket agent :
@@ -179,7 +177,7 @@ public class AgentDetailReaderES implements AgentDetailReader {
                     .orElse(agentId),
                 agent.docCount(),
                 failed.docCount(),
-                rate(agent.docCount() - failed.docCount(), agent.docCount()),
+                rate(failed.docCount(), agent.docCount()),
                 reasons.subList(0, Math.min(maxReasonsPerAgent, reasons.size()))));
       }
       failures.sort(Comparator.comparingLong(AgentFailures::failedRuns).reversed());
@@ -226,12 +224,12 @@ public class AgentDetailReaderES implements AgentDetailReader {
                                                                 AgentRunIndex.MAX_MODEL_CALLS,
                                                                 AgentRunIndex.MAX_TOOL_CALLS,
                                                                 AgentRunIndex.MAX_TOKENS)))))
+                        .aggregations(RUNS, AgentRunQueriesES.runs())
                         .aggregations(FAILED, AgentRunQueriesES.failedRuns())
-                        .aggregations(SUCCEEDED, AgentRunQueriesES.succeededRuns())
                         .aggregations(
                             MODEL_CALLS, a -> a.avg(v -> v.field(AgentRunIndex.MODEL_CALLS)))
                         .aggregations(LIMITS, AgentRunQueriesES.limits())
-                        .aggregations(INCIDENT_REASONS, AgentRunQueriesES.incidentReasons())
+                        .aggregations(FAILURE_REASONS, AgentRunQueriesES.failureReasons())
                         .aggregations(
                             TOOLS,
                             a ->
@@ -258,7 +256,7 @@ public class AgentDetailReaderES implements AgentDetailReader {
                                         DURATION,
                                         s ->
                                             s.stats(v -> v.field(AgentRunIndex.ACTIVE_DURATION_MS)))
-                                    .aggregations(SUCCEEDED, AgentRunQueriesES.succeededRuns()))
+                                    .aggregations(FAILED, AgentRunQueriesES.failedRuns()))
                         .aggregations(
                             WHERE_USED,
                             a ->
@@ -335,9 +333,7 @@ public class AgentDetailReaderES implements AgentDetailReader {
                     bucket.docCount(),
                     finite(bucket.aggregations().get(TOKENS).avg().value()),
                     average(bucket.aggregations().get(DURATION)),
-                    rate(
-                        bucket.aggregations().get(SUCCEEDED).filter().docCount(),
-                        bucket.docCount())))
+                    rate(bucket.aggregations().get(FAILED).filter().docCount(), bucket.docCount())))
         .toList();
   }
 

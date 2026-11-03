@@ -48,7 +48,7 @@
       "model": "Model",
       "totalTokens": "Total tokens",
       "tokensPerRun": "Tokens per run",
-      "successRate": "Success rate",
+      "incidentRate": "Incident rate",
       "durationP95": "Duration (P95)",
       "noMatch": "No agents match \"{query}\".",
       "selectHint": "Select an agent to open its details."
@@ -81,14 +81,15 @@
       "agent": "Agent",
       "runs": "Agent runs",
       "failedRuns": "Failed runs",
-      "successRate": "Success rate",
+      "incidentRate": "Incident rate",
       "topReasons": "Top failure reasons",
       "empty": "No failed agent runs in this period."
     },
     "failureReason": {
       "kind": {
         "LIMIT": "Limit",
-        "INCIDENT": "Incident"
+        "AGENT_INCIDENT": "Agent incident",
+        "TOOL_INCIDENT": "Tool incident"
       },
       "limitHit": "Limit hit: {limit}",
       "tool": "Tool: {tool}",
@@ -146,7 +147,7 @@
         "runs": "Runs",
         "tokensPerRun": "Tokens per run",
         "avgDuration": "Avg duration",
-        "successRate": "Success rate",
+        "incidentRate": "Incident rate",
         "empty": "No runs in this period."
       },
       "whereUsed": {
@@ -465,7 +466,6 @@
       "incidentRate": "Incident rate",
       "limitHitRate": "Limit hit rate",
       "adoptionRate": "Adoption rate",
-      "successRate": "Success rate",
       "cacheWriteTokens": "Cache write tokens",
       "cacheReadTokens": "Cache read tokens",
       "reasoningTokens": "Reasoning tokens (of which, in output)"
@@ -1755,9 +1755,9 @@
       "agenticDurationHeatmapName": "Duration per flow node",
       "agenticDurationHeatmapDescription": "Average duration per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
       "agenticRunIncidentRateByProcessName": "Agent incident rate by process",
-      "agenticRunIncidentRateByProcessDescription": "Share of agent runs whose agent element raised an incident, per process.",
-      "agenticRunIncidentRateName": "Agent incident rate",
-      "agenticRunIncidentRateDescription": "Share of agent runs whose agent element raised an incident.",
+      "agenticRunIncidentRateByProcessDescription": "Share of agent runs with an incident on the agent or one of its tools, or a limit hit, per process.",
+      "agenticRunIncidentRateName": "Incident rate",
+      "agenticRunIncidentRateDescription": "Share of agent runs with an incident on the agent or one of its tools, or a limit hit.",
       "agenticRunLimitHitRateName": "Runs hitting a limit",
       "agenticRunLimitHitRateDescription": "Share of agent runs that reached a configured model call, tool call or token limit.",
       "agenticRunDurationP50Name": "Run duration (P50)",
@@ -1780,8 +1780,6 @@
       "agenticRunAvgTokensDescription": "Average tokens per agent run: input, output and cache tokens.",
       "agenticRunTotalTokensName": "Total tokens",
       "agenticRunTotalTokensDescription": "Input, output and cache tokens of all agent runs. Reasoning tokens are part of output.",
-      "agenticRunSuccessRateName": "Success rate",
-      "agenticRunSuccessRateDescription": "Share of agent runs without an incident on the agent or its tools and without a limit hit.",
       "agenticRunDurationName": "Agent run duration",
       "agenticRunDurationDescription": "Sum of the agent's element instance durations, without time spent in user-task tools. Average, P50 and P95. For an AI Agent Task, tool time is not included.",
       "agenticRunTokenBreakdownName": "Token trend",

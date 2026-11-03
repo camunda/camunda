@@ -61,9 +61,9 @@ export function ProcessFailures({
       render: ({failedRuns}) => formatCount(failedRuns),
     },
     {
-      titleKey: 'agenticControlPlane.failures.successRate',
+      titleKey: 'agenticControlPlane.failures.incidentRate',
       numeric: true,
-      render: ({successRate}) => formatPercentage(successRate),
+      render: ({incidentRate}) => formatPercentage(incidentRate),
     },
     {
       titleKey: 'agenticControlPlane.failures.topReasons',

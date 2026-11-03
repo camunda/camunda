@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process.agentr
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_SUCCESS_RATE;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
@@ -31,9 +30,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Share of runs with a flag set, in percent. Numerator and denominator come from the same response,
- * so the rate holds per group as well. A run counts as flagged only when the flag is true; a run
- * not enriched yet counts as not flagged. Success is the reverse: no incident on the agent or its
- * tools and no limit hit (D2), so a run not enriched yet counts as successful.
+ * so the rate holds per group as well. A run counts as flagged only when the flag is true. The
+ * incident rate counts {@code failed} runs: an incident on the agent or its tools, or a limit hit.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -44,10 +42,7 @@ public class ProcessViewAgentRunRateInterpreterES implements ProcessViewInterpre
 
   @Override
   public Set<ProcessView> getSupportedViews() {
-    return Set.of(
-        PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE,
-        PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE,
-        PROCESS_VIEW_AGENT_RUN_SUCCESS_RATE);
+    return Set.of(PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE, PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE);
   }
 
   @Override
@@ -59,10 +54,7 @@ public class ProcessViewAgentRunRateInterpreterES implements ProcessViewInterpre
         new Aggregation.Builder().filter(f -> f.matchAll(m -> m)),
         FLAGGED_RUNS_AGGREGATION,
         new Aggregation.Builder()
-            .filter(
-                view == PROCESS_VIEW_AGENT_RUN_SUCCESS_RATE
-                    ? succeededQuery()
-                    : Query.of(q -> q.term(t -> t.field(flagFieldFor(view)).value(true)))));
+            .filter(Query.of(q -> q.term(t -> t.field(flagFieldFor(view)).value(true)))));
   }
 
   @Override
@@ -89,27 +81,14 @@ public class ProcessViewAgentRunRateInterpreterES implements ProcessViewInterpre
     return ViewResult.builder().viewMeasure(ViewMeasure.builder().value(value).build()).build();
   }
 
-  /** Runs without an incident on the agent or its tools and without a limit hit. */
-  public static Query succeededQuery() {
-    return Query.of(
-        q ->
-            q.bool(
-                b ->
-                    b.mustNot(m -> m.term(t -> t.field(AgentRunIndex.HAS_INCIDENT).value(true)))
-                        .mustNot(m -> m.term(t -> t.field(AgentRunIndex.HIT_LIMIT).value(true)))
-                        .mustNot(
-                            m ->
-                                m.range(
-                                    r ->
-                                        r.number(
-                                            n ->
-                                                n.field(AgentRunIndex.TOOL_INCIDENT_COUNT)
-                                                    .gt(0.0))))));
+  /** Runs with an incident on the agent or its tools, or a limit hit. */
+  public static Query failedQuery() {
+    return Query.of(q -> q.term(t -> t.field(AgentRunIndex.FAILED).value(true)));
   }
 
-  private static String flagFieldFor(final ProcessView view) {
+  static String flagFieldFor(final ProcessView view) {
     return view == PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE
-        ? AgentRunIndex.HAS_INCIDENT
+        ? AgentRunIndex.FAILED
         : AgentRunIndex.HIT_LIMIT;
   }
 }

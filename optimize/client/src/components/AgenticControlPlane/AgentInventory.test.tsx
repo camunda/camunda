@@ -36,7 +36,6 @@ function entry(overrides: Partial<AgentInventoryEntry>): AgentInventoryEntry {
     totalTokens: 5000,
     avgTokens: 500,
     p50Tokens: 450,
-    successRate: 90,
     durationAvgMs: 1200,
     durationP50Ms: 1000,
     durationP95Ms: 3000,
@@ -48,9 +47,9 @@ function entry(overrides: Partial<AgentInventoryEntry>): AgentInventoryEntry {
 }
 
 const entries = [
-  entry({agentId: 'a', name: 'Alpha', runs: 3, successRate: 50, models: ['claude']}),
-  entry({agentId: 'b', name: 'Beta', runs: 0, successRate: null, agentType: 'EXTERNAL_AGENT'}),
-  entry({agentId: 'c', name: 'Gamma', runs: 12, successRate: 95, processDefinitionName: 'Claims'}),
+  entry({agentId: 'a', name: 'Alpha', runs: 3, incidentRate: 50, models: ['claude']}),
+  entry({agentId: 'b', name: 'Beta', runs: 0, incidentRate: null, agentType: 'EXTERNAL_AGENT'}),
+  entry({agentId: 'c', name: 'Gamma', runs: 12, incidentRate: 95, processDefinitionName: 'Claims'}),
 ];
 
 const summary = {agents: 3, processes: 2, externalAgents: 1};
@@ -84,12 +83,12 @@ it('should sort and keep agents without a value last in both directions', () => 
     'a',
     'b',
   ]);
-  expect(sortInventory(entries, 'successRate', 'DESC').map(({agentId}) => agentId)).toEqual([
+  expect(sortInventory(entries, 'incidentRate', 'DESC').map(({agentId}) => agentId)).toEqual([
     'c',
     'a',
     'b',
   ]);
-  expect(sortInventory(entries, 'successRate', 'ASC').map(({agentId}) => agentId)).toEqual([
+  expect(sortInventory(entries, 'incidentRate', 'ASC').map(({agentId}) => agentId)).toEqual([
     'a',
     'c',
     'b',

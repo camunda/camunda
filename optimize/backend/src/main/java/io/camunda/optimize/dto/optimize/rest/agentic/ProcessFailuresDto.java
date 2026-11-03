@@ -19,6 +19,6 @@ public record ProcessFailuresDto(List<AgentFailures> agents) {
       String name,
       long runs,
       long failedRuns,
-      Double successRate,
+      Double incidentRate,
       List<FailureReason> topReasons) {}
 }

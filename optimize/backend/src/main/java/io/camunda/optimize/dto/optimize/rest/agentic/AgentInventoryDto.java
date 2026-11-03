@@ -36,7 +36,6 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
       OffsetDateTime lastRunDate,
       Double totalTokens,
       Double p50Tokens,
-      Double successRate,
       Double durationAvgMs,
       Double durationP95Ms) {
 
@@ -57,7 +56,6 @@ public record AgentInventoryDto(Summary summary, List<AgentInventoryEntry> agent
           lastRunDate,
           totalTokens,
           p50Tokens,
-          successRate,
           durationAvgMs,
           durationP95Ms);
     }

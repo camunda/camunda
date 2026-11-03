@@ -256,11 +256,6 @@ public class AgenticControlDashboardService {
           .toString();
   public static final String AGENT_TOTAL_TOKENS_NAME = "agenticRunTotalTokensName";
   public static final String AGENT_TOTAL_TOKENS_DESCRIPTION = "agenticRunTotalTokensDescription";
-  public static final String AGENT_SUCCESS_RATE_REPORT_ID =
-      UUID.nameUUIDFromBytes("agentic-run-success-rate".getBytes(StandardCharsets.UTF_8))
-          .toString();
-  public static final String AGENT_SUCCESS_RATE_NAME = "agenticRunSuccessRateName";
-  public static final String AGENT_SUCCESS_RATE_DESCRIPTION = "agenticRunSuccessRateDescription";
   public static final String AGENT_DURATION_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-run-duration".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String AGENT_DURATION_NAME = "agenticRunDurationName";
@@ -1164,10 +1159,10 @@ public class AgenticControlDashboardService {
             levels),
         v2Tile(
             agentRunTile(
-                AGENT_SUCCESS_RATE_REPORT_ID,
-                AGENT_SUCCESS_RATE_NAME,
-                AGENT_SUCCESS_RATE_DESCRIPTION,
-                ViewProperty.SUCCESS_RATE,
+                AGENT_INCIDENT_RATE_REPORT_ID,
+                AGENT_INCIDENT_RATE_NAME,
+                AGENT_INCIDENT_RATE_DESCRIPTION,
+                ViewProperty.INCIDENT_RATE,
                 new NoneGroupByDto(),
                 ProcessVisualization.NUMBER,
                 List.of(),
@@ -1175,7 +1170,7 @@ public class AgenticControlDashboardService {
                 new PositionDto(0, 2),
                 new DimensionDto(6, 2)),
             TILE_SECTION_KPI,
-            "up",
+            "down",
             levels),
         v2Tile(
             agentRunTile(
@@ -1394,8 +1389,7 @@ public class AgenticControlDashboardService {
   private static String valueFormatFor(final ViewProperty viewProperty) {
     if (ViewProperty.INCIDENT_RATE.equals(viewProperty)
         || ViewProperty.LIMIT_HIT_RATE.equals(viewProperty)
-        || ViewProperty.ADOPTION_RATE.equals(viewProperty)
-        || ViewProperty.SUCCESS_RATE.equals(viewProperty)) {
+        || ViewProperty.ADOPTION_RATE.equals(viewProperty)) {
       return "percentage";
     }
     if (ViewProperty.DURATION.equals(viewProperty)) {

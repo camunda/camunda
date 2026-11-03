@@ -16,7 +16,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.rest.agentic.AgentDetailDto.FailureReason;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.agentrun.ProcessViewAgentRunRateInterpreterES;
 import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
-import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,16 +30,21 @@ import java.util.Map;
  */
 final class AgentRunQueriesES {
 
+  static final String RUNS = "runs";
   static final String FAILED = "failed";
-  static final String SUCCEEDED = "succeeded";
   static final String LIMITS = "limits";
-  static final String INCIDENT_REASONS = "incidentReasons";
+  static final String FAILURE_REASONS = "failureReasons";
+  private static final String REASON_KINDS = "kinds";
+  private static final String REASON_LIMITS = "limits";
   private static final String REASON_ELEMENTS = "elements";
   private static final String REASON_ERROR_TYPES = "errorTypes";
   private static final String REASON_RUNS = "runs";
   private static final String REASON_MESSAGE = "message";
   private static final String REASON_TOOL_NAME = "toolName";
-  private static final String UNKNOWN_ERROR_TYPE = "unknown";
+  // Stands in for a missing limit, element or error type, so every reason has a bucket.
+  private static final String NONE = "";
+  private static final int MAX_KINDS = 3;
+  private static final int MAX_LIMITS = 3;
   private static final int MAX_REASON_ELEMENTS = 100;
   private static final int MAX_ERROR_TYPES = 10;
   private static final DateTimeFormatter FORMATTER =
@@ -52,7 +56,7 @@ final class AgentRunQueriesES {
   static BoolQuery completedRuns(
       final OffsetDateTime endedFrom, final String processDefinitionKey, final String agentId) {
     final BoolQuery.Builder query = new BoolQuery.Builder();
-    query.filter(f -> f.exists(e -> e.field(ProcessInstanceIndex.END_DATE)));
+    query.filter(f -> f.exists(e -> e.field(AgentRunIndex.END_DATE)));
     if (endedFrom != null) {
       query.filter(
           f ->
@@ -60,7 +64,7 @@ final class AgentRunQueriesES {
                   r ->
                       r.date(
                           d ->
-                              d.field(ProcessInstanceIndex.END_DATE)
+                              d.field(AgentRunIndex.END_DATE)
                                   .gte(FORMATTER.format(endedFrom))
                                   .format(OPTIMIZE_DATE_FORMAT))));
     }
@@ -76,121 +80,106 @@ final class AgentRunQueriesES {
     return query.build();
   }
 
-  static Aggregation succeededRuns() {
-    return Aggregation.of(a -> a.filter(ProcessViewAgentRunRateInterpreterES.succeededQuery()));
+  /** All runs of the bucket; a filter so its doc count reads like the others. */
+  static Aggregation runs() {
+    return Aggregation.of(a -> a.filter(f -> f.matchAll(m -> m)));
   }
 
+  /** Incident runs: an incident on the agent or its tools, or a limit hit. */
   static Aggregation failedRuns() {
-    return Aggregation.of(
-        a ->
-            a.filter(
-                f ->
-                    f.bool(b -> b.mustNot(ProcessViewAgentRunRateInterpreterES.succeededQuery()))));
+    return Aggregation.of(a -> a.filter(ProcessViewAgentRunRateInterpreterES.failedQuery()));
   }
 
   /** Runs per limit hit. */
   static Aggregation limits() {
-    return Aggregation.of(a -> a.terms(t -> t.field(AgentRunIndex.LIMIT_HIT).size(10)));
+    return Aggregation.of(a -> a.terms(t -> t.field(AgentRunIndex.LIMIT_HIT).size(MAX_LIMITS)));
   }
 
-  /** Runs per element and error type of their incidents, with the first message and tool name. */
-  static Aggregation incidentReasons() {
+  /**
+   * Runs per failure reason: by kind, then by limit, element and error type, with the first message
+   * and the tool name.
+   */
+  static Aggregation failureReasons() {
+    final Aggregation byErrorType =
+        terms(AgentRunIndex.FAILURE_REASON_ERROR_TYPE, MAX_ERROR_TYPES)
+            .aggregations(REASON_RUNS, r -> r.reverseNested(rn -> rn))
+            .aggregations(
+                REASON_MESSAGE,
+                m ->
+                    m.terms(
+                        t -> t.field(reasonField(AgentRunIndex.FAILURE_REASON_MESSAGE)).size(1)))
+            .aggregations(
+                REASON_TOOL_NAME,
+                m ->
+                    m.terms(
+                        t -> t.field(reasonField(AgentRunIndex.FAILURE_REASON_TOOL_NAME)).size(1)))
+            .build();
+    final Aggregation byElement =
+        terms(AgentRunIndex.FAILURE_REASON_FLOW_NODE_ID, MAX_REASON_ELEMENTS)
+            .aggregations(REASON_ERROR_TYPES, byErrorType)
+            .build();
+    final Aggregation byLimit =
+        terms(AgentRunIndex.FAILURE_REASON_LIMIT, MAX_LIMITS)
+            .aggregations(REASON_ELEMENTS, byElement)
+            .build();
+    final Aggregation byKind =
+        terms(AgentRunIndex.FAILURE_REASON_KIND, MAX_KINDS)
+            .aggregations(REASON_LIMITS, byLimit)
+            .build();
     return Aggregation.of(
         a ->
             a.nested(n -> n.path(AgentRunIndex.FAILURE_REASONS))
-                .aggregations(
-                    REASON_ELEMENTS,
-                    e ->
-                        e.terms(
-                                t ->
-                                    t.field(
-                                            AgentRunIndex.FAILURE_REASONS
-                                                + "."
-                                                + AgentRunIndex.FAILURE_REASON_FLOW_NODE_ID)
-                                        .size(MAX_REASON_ELEMENTS))
-                            .aggregations(
-                                REASON_ERROR_TYPES,
-                                et ->
-                                    et.terms(
-                                            t ->
-                                                t.field(
-                                                        AgentRunIndex.FAILURE_REASONS
-                                                            + "."
-                                                            + AgentRunIndex
-                                                                .FAILURE_REASON_ERROR_TYPE)
-                                                    .missing(UNKNOWN_ERROR_TYPE)
-                                                    .size(MAX_ERROR_TYPES))
-                                        .aggregations(REASON_RUNS, r -> r.reverseNested(rn -> rn))
-                                        .aggregations(
-                                            REASON_MESSAGE,
-                                            m ->
-                                                m.terms(
-                                                    t ->
-                                                        t.field(
-                                                                AgentRunIndex.FAILURE_REASONS
-                                                                    + "."
-                                                                    + AgentRunIndex
-                                                                        .FAILURE_REASON_MESSAGE)
-                                                            .size(1)))
-                                        .aggregations(
-                                            REASON_TOOL_NAME,
-                                            m ->
-                                                m.terms(
-                                                    t ->
-                                                        t.field(
-                                                                AgentRunIndex.FAILURE_REASONS
-                                                                    + "."
-                                                                    + AgentRunIndex
-                                                                        .FAILURE_REASON_TOOL_NAME)
-                                                            .size(1))))));
+                .aggregations(REASON_KINDS, byKind));
   }
 
-  /** Limit and incident reasons from {@link #limits()} and {@link #incidentReasons()}, by runs. */
+  private static Aggregation.Builder.ContainerBuilder terms(final String field, final int size) {
+    return new Aggregation.Builder()
+        .terms(t -> t.field(reasonField(field)).missing(NONE).size(size));
+  }
+
+  private static String reasonField(final String field) {
+    return AgentRunIndex.FAILURE_REASONS + "." + field;
+  }
+
+  /** The reasons of {@link #failureReasons()}, ranked by runs. */
   static List<FailureReason> failureReasons(final Map<String, Aggregate> aggs) {
     final List<FailureReason> reasons = new ArrayList<>();
-    if (aggs.get(LIMITS) != null) {
-      aggs.get(LIMITS)
-          .sterms()
-          .buckets()
-          .array()
-          .forEach(
-              bucket ->
-                  reasons.add(
-                      new FailureReason(
-                          FailureReason.KIND_LIMIT,
-                          bucket.key().stringValue(),
-                          null,
-                          null,
-                          null,
-                          null,
-                          bucket.docCount())));
+    final Aggregate nested = aggs.get(FAILURE_REASONS);
+    if (nested == null) {
+      return reasons;
     }
-    if (aggs.get(INCIDENT_REASONS) != null) {
-      for (final StringTermsBucket element :
-          aggs.get(INCIDENT_REASONS)
-              .nested()
-              .aggregations()
-              .get(REASON_ELEMENTS)
-              .sterms()
-              .buckets()
-              .array()) {
-        for (final StringTermsBucket errorType :
-            element.aggregations().get(REASON_ERROR_TYPES).sterms().buckets().array()) {
-          final String type = errorType.key().stringValue();
-          reasons.add(
-              new FailureReason(
-                  FailureReason.KIND_INCIDENT,
-                  null,
-                  element.key().stringValue(),
-                  firstKey(errorType.aggregations().get(REASON_TOOL_NAME)),
-                  UNKNOWN_ERROR_TYPE.equals(type) ? null : type,
-                  firstKey(errorType.aggregations().get(REASON_MESSAGE)),
-                  errorType.aggregations().get(REASON_RUNS).reverseNested().docCount()));
-        }
+    for (final StringTermsBucket kind :
+        nested.nested().aggregations().get(REASON_KINDS).sterms().buckets().array()) {
+      for (final StringTermsBucket limit :
+          kind.aggregations().get(REASON_LIMITS).sterms().buckets().array()) {
+        addReasons(kind.key().stringValue(), limit, reasons);
       }
     }
     reasons.sort(Comparator.comparingLong(FailureReason::runs).reversed());
     return reasons;
+  }
+
+  private static void addReasons(
+      final String kind, final StringTermsBucket limit, final List<FailureReason> reasons) {
+    for (final StringTermsBucket element :
+        limit.aggregations().get(REASON_ELEMENTS).sterms().buckets().array()) {
+      for (final StringTermsBucket errorType :
+          element.aggregations().get(REASON_ERROR_TYPES).sterms().buckets().array()) {
+        reasons.add(
+            new FailureReason(
+                kind,
+                orNull(limit.key().stringValue()),
+                orNull(element.key().stringValue()),
+                firstKey(errorType.aggregations().get(REASON_TOOL_NAME)),
+                orNull(errorType.key().stringValue()),
+                firstKey(errorType.aggregations().get(REASON_MESSAGE)),
+                errorType.aggregations().get(REASON_RUNS).reverseNested().docCount()));
+      }
+    }
+  }
+
+  private static String orNull(final String key) {
+    return NONE.equals(key) ? null : key;
   }
 
   static String firstKey(final Aggregate terms) {

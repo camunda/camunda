@@ -39,7 +39,7 @@ type SortKey =
   | 'runs'
   | 'totalTokens'
   | 'avgTokens'
-  | 'successRate'
+  | 'incidentRate'
   | 'durationP50Ms'
   | 'durationP95Ms'
   | 'lastRunDate';
@@ -98,10 +98,10 @@ const COLUMNS: Column[] = [
     render: ({avgTokens}) => formatTokens(avgTokens),
   },
   {
-    titleKey: 'agenticControlPlane.inventory.successRate',
-    sortKey: 'successRate',
+    titleKey: 'agenticControlPlane.inventory.incidentRate',
+    sortKey: 'incidentRate',
     numeric: true,
-    render: ({successRate}) => formatPercentage(successRate),
+    render: ({incidentRate}) => formatPercentage(incidentRate),
   },
   {
     titleKey: 'agenticControlPlane.inventory.durationP50',

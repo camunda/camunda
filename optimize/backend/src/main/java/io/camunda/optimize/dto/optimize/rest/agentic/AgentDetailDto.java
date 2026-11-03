@@ -77,7 +77,8 @@ public record AgentDetailDto(
       long runs) {
 
     public static final String KIND_LIMIT = "LIMIT";
-    public static final String KIND_INCIDENT = "INCIDENT";
+    public static final String KIND_AGENT_INCIDENT = "AGENT_INCIDENT";
+    public static final String KIND_TOOL_INCIDENT = "TOOL_INCIDENT";
   }
 
   /** Calls and incidents of one tool element; the failure rate is incidents per call. */
@@ -96,7 +97,7 @@ public record AgentDetailDto(
       long runs,
       Double avgTokens,
       Double avgDurationMs,
-      Double successRate) {}
+      Double incidentRate) {}
 
   /** Runs reached from one root process, directly or through call activities. */
   public record RootProcessUsage(

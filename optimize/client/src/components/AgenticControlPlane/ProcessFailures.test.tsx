@@ -29,7 +29,7 @@ const agents = [
     name: 'Review agent',
     runs: 100,
     failedRuns: 6,
-    successRate: 94,
+    incidentRate: 6,
     topReasons: [],
   },
 ];

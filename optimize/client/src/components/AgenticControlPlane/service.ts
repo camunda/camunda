@@ -53,7 +53,6 @@ export interface AgentInventoryEntry {
   totalTokens: number | null;
   avgTokens: number | null;
   p50Tokens: number | null;
-  successRate: number | null;
   durationAvgMs: number | null;
   durationP50Ms: number | null;
   durationP95Ms: number | null;
@@ -87,7 +86,7 @@ export async function loadAgentInventory(
 export type AgentLimit = 'MODEL_CALLS' | 'TOOL_CALLS' | 'TOKENS';
 
 export interface FailureReason {
-  kind: 'LIMIT' | 'INCIDENT';
+  kind: 'LIMIT' | 'AGENT_INCIDENT' | 'TOOL_INCIDENT';
   limit: string | null;
   flowNodeId: string | null;
   // null on an incident means the agent element itself failed, not one of its tools
@@ -112,7 +111,7 @@ export interface AgentModelUsage {
   runs: number;
   avgTokens: number | null;
   avgDurationMs: number | null;
-  successRate: number | null;
+  incidentRate: number | null;
 }
 
 export interface AgentUsage {
@@ -157,7 +156,7 @@ export interface AgentFailures {
   name: string;
   runs: number;
   failedRuns: number;
-  successRate: number | null;
+  incidentRate: number | null;
   topReasons: FailureReason[];
 }
 

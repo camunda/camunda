@@ -12,6 +12,12 @@ import {t} from 'translation';
 
 import type {FailureReason} from './service';
 
+const KIND_TAG_TYPES = {
+  LIMIT: 'warm-gray',
+  AGENT_INCIDENT: 'red',
+  TOOL_INCIDENT: 'magenta',
+} as const;
+
 const KNOWN_LIMITS = ['MODEL_CALLS', 'TOOL_CALLS', 'TOKENS'];
 
 export function limitLabel(limit: string | null): string {
@@ -28,15 +34,17 @@ export function failureElement(reason: FailureReason): string {
       limit: limitLabel(reason.limit),
     }) as string;
   }
-  if (reason.toolName) {
-    return t('agenticControlPlane.failureReason.tool', {tool: reason.toolName}) as string;
+  if (reason.kind === 'TOOL_INCIDENT') {
+    return t('agenticControlPlane.failureReason.tool', {
+      tool: reason.toolName ?? reason.flowNodeId ?? '',
+    }) as string;
   }
   return t('agenticControlPlane.failureReason.agentElement') as string;
 }
 
 export function FailureKindTag({kind}: {kind: FailureReason['kind']}) {
   return (
-    <Tag size="sm" type={kind === 'LIMIT' ? 'warm-gray' : 'red'}>
+    <Tag size="sm" type={KIND_TAG_TYPES[kind]}>
       {t(`agenticControlPlane.failureReason.kind.${kind}`)}
     </Tag>
   );
