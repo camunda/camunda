@@ -20,6 +20,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
+import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
@@ -186,8 +187,11 @@ public class ElasticsearchClientBuilder {
     }
 
     restClientBuilder.setHttpClientConfigCallback(
-        httpClientBuilder ->
-            applyHttpClientConfig(httpClientBuilder, configurationService, requestInterceptors));
+        httpClientBuilder -> {
+          applyHttpClientConfig(httpClientBuilder, configurationService, requestInterceptors);
+          httpClientBuilder.addRequestInterceptorLast(
+              ElasticsearchCompatibilityInterceptor.INSTANCE);
+        });
 
     return restClientBuilder;
   }
