@@ -16,6 +16,8 @@ import {
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
 	mockGetIncidentEndpoint,
+	mockQueryAuditLogsEndpoint,
+	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
 	mockGetElementInstanceEndpoint,
@@ -31,6 +33,8 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
+import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -294,6 +298,61 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
 
 		await expect(page).not.toHaveURL(/elementId=/);
+	});
+
+	test('should list the listeners of the process instance in the Listeners tab', async ({
+		network,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockQueryJobsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createListenerJob({jobKey: '100', type: 'audit-listener'})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Listeners').click();
+
+		await expect(operatePreviewProcessInstancePage.listenersList.getByText('audit-listener')).toBeVisible();
+	});
+
+	test('should list the operations of the process instance in the Operations log tab', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Operations Log').click();
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/operations-log`);
+		await expect(
+			operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Create'}),
+		).toBeVisible();
+	});
+
+	test('should only offer the mapping tabs when an element is selected', async ({
+		operatePreviewProcessInstancePage,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(operatePreviewProcessInstancePage.variablesTab).toBeVisible();
+
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeHidden();
+
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.tab('Output Mappings')).toBeVisible();
 	});
 
 	test('should redirect to the default tab and switch tabs through the URL', async ({

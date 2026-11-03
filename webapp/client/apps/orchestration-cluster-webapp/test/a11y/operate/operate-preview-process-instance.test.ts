@@ -15,6 +15,8 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
+	mockQueryAuditLogsEndpoint,
+	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryVariablesEndpoint,
 	mockGetVariableEndpoint,
@@ -26,6 +28,8 @@ import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/o
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
+import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
@@ -210,6 +214,59 @@ test.describe('Incidents tab', () => {
 		await operatePreviewProcessInstancePage.incidentsTable.getByRole('button', {name: 'Expand row'}).click();
 
 		const results = await makeAxeBuilder().exclude(DS_EXPAND_COLUMN_HEADER).analyze();
+		expect(results.violations).toEqual([]);
+	});
+});
+
+test.describe('Listeners tab', () => {
+	test.beforeEach(({network}) => {
+		network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
+	});
+
+	test('should have no accessibility violations with listeners listed', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		network.use(
+			mockQueryJobsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createListenerJob({jobKey: '100', type: 'audit-listener'})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Listeners').click();
+		await expect(operatePreviewProcessInstancePage.listenersList).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+});
+
+test.describe('Operations log tab', () => {
+	test.beforeEach(({network}) => {
+		network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
+	});
+
+	test('should have no accessibility violations with operations listed', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Operations Log').click();
+		await expect(operatePreviewProcessInstancePage.operationsLogTable).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);
 	});
 });
