@@ -33,7 +33,9 @@ import {processInstanceSearchSchema} from '../processInstanceSearch';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const ELEMENT_INSTANCE_KEY = '2251799813685299';
-const BOTH_KINDS = z.object({$in: z.tuple([z.literal('EXECUTION_LISTENER'), z.literal('TASK_LISTENER')])});
+const BOTH_KINDS = z.object({
+	$in: z.tuple([z.literal('BPMN_ELEMENT'), z.literal('EXECUTION_LISTENER'), z.literal('TASK_LISTENER')]),
+});
 
 afterEach(async () => {
 	await cleanup();
@@ -104,7 +106,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners();
 
-		const row = screen.getByTestId('100');
+		const row = screen.getByRole('row', {name: /\b100\b/});
 		await expect.element(row.getByText('Task listener')).toBeVisible();
 		await expect.element(row.getByText('Failed')).toBeVisible();
 		await expect.element(row.getByText('audit-listener')).toBeVisible();
@@ -131,7 +133,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners(search);
 
-		await expect.element(screen.getByTestId('101')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '101', exact: true})).toBeVisible();
 	});
 
 	it('should list the listeners of every instance when the selected element has several', async ({worker}) => {
@@ -153,7 +155,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners('?elementId=task');
 
-		await expect.element(screen.getByTestId('102')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '102', exact: true})).toBeVisible();
 	});
 
 	it('should not list the listeners of every instance when the selected element cannot be resolved', async ({
@@ -168,7 +170,7 @@ describe('<ListenersTab /> (design system)', () => {
 		const screen = await renderListeners('?elementId=task');
 
 		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
-		await expect.element(screen.getByTestId('103')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('cell', {name: '103', exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should drop the previous element listeners when the next selection cannot be resolved', async ({worker}) => {
@@ -178,7 +180,7 @@ describe('<ListenersTab /> (design system)', () => {
 			mockQueryJobsEndpoint({successResponse: jobsResponse([createListenerJob({jobKey: '501'})])}),
 		);
 		const screen = await renderListeners(search);
-		await expect.element(screen.getByTestId('501')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '501', exact: true})).toBeVisible();
 
 		worker.use(
 			mockGetElementInstanceEndpoint({
@@ -188,7 +190,7 @@ describe('<ListenersTab /> (design system)', () => {
 		await screen.router.navigate({to: '.', search: {elementId: 'other', elementInstanceKey: '2251799813685400'}});
 
 		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
-		await expect.element(screen.getByTestId('501')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('cell', {name: '501', exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should show an empty message for an element without listeners', async ({worker}) => {
@@ -214,7 +216,7 @@ describe('<ListenersTab /> (design system)', () => {
 			}),
 		);
 		const screen = await renderListeners(search);
-		await expect.element(screen.getByTestId('202')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '202', exact: true})).toBeVisible();
 
 		worker.use(
 			mockQueryJobsEndpoint({
@@ -229,8 +231,8 @@ describe('<ListenersTab /> (design system)', () => {
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'User task listeners'}));
 
-		await expect.element(screen.getByTestId('201')).not.toBeInTheDocument();
-		await expect.element(screen.getByTestId('202')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '201', exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('cell', {name: '202', exact: true})).toBeVisible();
 	});
 
 	it('should explain which listeners a user task is missing', async ({worker}) => {
@@ -254,7 +256,7 @@ describe('<ListenersTab /> (design system)', () => {
 			mockQueryJobsEndpoint({successResponse: jobsResponse([createListenerJob({jobKey: '301'})])}),
 		);
 		const screen = await renderListeners(search);
-		await expect.element(screen.getByTestId('301')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '301', exact: true})).toBeVisible();
 
 		worker.use(mockQueryJobsEndpoint({successResponse: jobsResponse([])}));
 		await userEvent.click(screen.getByRole('combobox'));
@@ -282,7 +284,7 @@ describe('<ListenersTab /> (design system)', () => {
 			}),
 		);
 		const screen = await renderListeners(userTask.search);
-		await expect.element(screen.getByTestId('401')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '401', exact: true})).toBeVisible();
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'User task listeners'}));
 
@@ -299,7 +301,7 @@ describe('<ListenersTab /> (design system)', () => {
 			search: {elementId: 'service', elementInstanceKey: serviceTask.elementInstanceKey},
 		});
 
-		await expect.element(screen.getByTestId('402')).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: '402', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('combobox')).not.toBeInTheDocument();
 	});
 });

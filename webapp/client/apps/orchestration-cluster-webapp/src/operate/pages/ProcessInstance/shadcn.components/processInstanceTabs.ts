@@ -40,5 +40,33 @@ function getProcessInstanceTabFromPath(pathname: string): ProcessInstanceTab {
 	return PROCESS_INSTANCE_TABS.find((tab) => tab === segment) ?? 'variables';
 }
 
-export {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, getProcessInstanceTabFromPath, getVisibleProcessInstanceTabs};
+type TabRedirectInput = {
+	activeTab: ProcessInstanceTab;
+	visibleTabs: readonly ProcessInstanceTab[];
+	hasSelection: boolean;
+	isProcessLevelWaiting: boolean;
+	isWaitStateLoading: boolean;
+};
+
+function getHiddenTabRedirect({
+	activeTab,
+	visibleTabs,
+	hasSelection,
+	isProcessLevelWaiting,
+	isWaitStateLoading,
+}: TabRedirectInput): 'details' | 'variables' | null {
+	if (visibleTabs.includes(activeTab) || (!hasSelection && isWaitStateLoading)) {
+		return null;
+	}
+
+	return hasSelection || isProcessLevelWaiting ? 'details' : 'variables';
+}
+
+export {
+	PROCESS_INSTANCE_TABS,
+	TAB_LABEL_KEYS,
+	getHiddenTabRedirect,
+	getProcessInstanceTabFromPath,
+	getVisibleProcessInstanceTabs,
+};
 export type {ProcessInstanceTab};

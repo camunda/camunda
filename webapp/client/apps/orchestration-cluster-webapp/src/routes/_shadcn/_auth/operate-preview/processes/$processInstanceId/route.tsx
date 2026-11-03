@@ -12,6 +12,8 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
 import {
+	PROCESS_INSTANCE_TABS,
+	getHiddenTabRedirect,
 	getProcessInstanceTabFromPath,
 	getVisibleProcessInstanceTabs,
 	type ProcessInstanceTab,
@@ -23,10 +25,14 @@ import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/sha
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
-import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
+import {
+	processInstanceQuery,
+	useProcessInstanceWaitStateStatistics,
+} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
 import {loadOperateClientConfig} from '#/operate/shared/queries/loadOperateClientConfig';
-import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {getProcessDefinitionName, isInstanceRunning} from '#/operate/shared/utils/processInstance';
+import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId')({
@@ -47,7 +53,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				]
 			: [],
 	}),
-	pendingComponent: () => <ProcessInstance activeTab="variables" header={<ProcessInstanceHeaderSkeleton />} />,
+	pendingComponent: () => (
+		<ProcessInstance
+			activeTab="variables"
+			visibleTabs={PROCESS_INSTANCE_TABS}
+			header={<ProcessInstanceHeaderSkeleton />}
+		/>
+	),
 	component: function ProcessInstanceRoute() {
 		const {processInstanceId} = Route.useParams();
 		const search = Route.useSearch();
@@ -114,19 +126,29 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const hasSelection = Boolean(search.elementId || search.elementInstanceKey);
 		const visibleTabs = getVisibleProcessInstanceTabs(hasSelection);
 		const activeTab = getProcessInstanceTabFromPath(pathname);
-		const isActiveTabHidden = !visibleTabs.includes(activeTab);
+		const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
+		const redirectTarget = getHiddenTabRedirect({
+			activeTab,
+			visibleTabs,
+			hasSelection,
+			isProcessLevelWaiting: hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId),
+			isWaitStateLoading: isInstanceRunning(processInstance) && waitStateStatistics === undefined,
+		});
 
 		useEffect(() => {
-			if (isActiveTabHidden) {
+			if (redirectTarget !== null) {
 				void navigate({
-					to: '/operate-preview/processes/$processInstanceId/variables',
+					to:
+						redirectTarget === 'details'
+							? '/operate-preview/processes/$processInstanceId/details'
+							: '/operate-preview/processes/$processInstanceId/variables',
 					params: {processInstanceId},
 					search: true,
 					hash: true,
 					replace: true,
 				});
 			}
-		}, [isActiveTabHidden, navigate, processInstanceId]);
+		}, [redirectTarget, navigate, processInstanceId]);
 
 		return (
 			<ProcessInstancePageProvider

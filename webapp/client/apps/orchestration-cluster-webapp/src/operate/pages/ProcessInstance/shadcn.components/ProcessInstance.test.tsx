@@ -10,12 +10,13 @@ import {describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {ProcessInstance} from './ProcessInstance';
+import {PROCESS_INSTANCE_TABS} from './processInstanceTabs';
 
 const HEADER = <p>Instance header content</p>;
 
 const ProcessInstanceWithHeight: React.FC = () => (
 	<div style={{height: '800px'}} className="flex flex-col">
-		<ProcessInstance activeTab="variables" header={HEADER} />
+		<ProcessInstance activeTab="variables" header={HEADER} visibleTabs={PROCESS_INSTANCE_TABS} />
 	</div>
 );
 
@@ -45,7 +46,12 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '800px'}} className="flex flex-col">
-					<ProcessInstance activeTab="variables" header={HEADER} topPanel={<p>Instance diagram</p>} />
+					<ProcessInstance
+						activeTab="variables"
+						header={HEADER}
+						visibleTabs={PROCESS_INSTANCE_TABS}
+						topPanel={<p>Instance diagram</p>}
+					/>
 				</div>
 			),
 			{
@@ -63,7 +69,12 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '800px'}} className="flex flex-col">
-					<ProcessInstance activeTab="incidents" onTabChange={onTabChange} header={HEADER} />
+					<ProcessInstance
+						activeTab="incidents"
+						header={HEADER}
+						visibleTabs={PROCESS_INSTANCE_TABS}
+						onTabChange={onTabChange}
+					/>
 				</div>
 			),
 			{
@@ -83,7 +94,7 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '800px'}} className="flex flex-col">
-					<ProcessInstance activeTab="variables" visibleTabs={['variables', 'operations-log']} />
+					<ProcessInstance activeTab="variables" header={HEADER} visibleTabs={['variables', 'operations-log']} />
 				</div>
 			),
 			{

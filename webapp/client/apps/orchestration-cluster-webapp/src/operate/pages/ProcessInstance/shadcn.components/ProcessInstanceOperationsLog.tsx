@@ -17,7 +17,15 @@ import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
-import {OperationsLogDetailsModal} from '#/operate/shared/OperationsLogDetailsModal/shadcn.components/OperationsLogDetailsModal';
+import {
+	OperationsLogDetailsModal,
+	type DetailsModalState,
+} from '#/operate/shared/OperationsLogDetailsModal/shadcn.components/OperationsLogDetailsModal';
+import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
+import {CellActor} from '#/operate/pages/OperationsLog/Cell/shadcn.components/CellActor';
+import {CellComment} from '#/operate/pages/OperationsLog/Cell/shadcn.components/CellComment';
+import {CellEntityKey} from '#/operate/pages/OperationsLog/Cell/shadcn.components/CellEntityKey';
+import {CellResult} from '#/operate/pages/OperationsLog/Cell/shadcn.components/CellResult';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {useAuditLogs} from '#/operate/pages/OperationsLog/operationsLog.queries';
@@ -26,14 +34,9 @@ import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSe
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import type {ProcessInstanceOperationsLogSearch} from '../processInstanceOperationsLog.schema';
 import {ProcessInstanceOperationsLogFilters} from './ProcessInstanceOperationsLogFilters';
-import {CellActor, CellComment, CellEntityKey, CellResult, type DetailsModalState} from './OperationsLogCells';
 
 const DEFAULT_SORT = {field: 'timestamp', order: 'DESC'} as const;
 const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum);
-
-const Centered: React.FC<{children: React.ReactNode}> = ({children}) => (
-	<div className="flex h-full items-center justify-center text-center">{children}</div>
-);
 
 const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsLogSearch}> = ({search}) => {
 	const {t} = useTranslation();
@@ -89,15 +92,15 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 
 	if (isFetchingElementError) {
 		return (
-			<Centered>
+			<CenteredContent>
 				<ErrorMessage />
-			</Centered>
+			</CenteredContent>
 		);
 	}
 
 	if (hasMultipleInstances || hasNoInstances) {
 		return (
-			<Centered>
+			<CenteredContent>
 				<EmptyMessage
 					message={t(
 						hasMultipleInstances
@@ -105,7 +108,7 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 							: 'operate.processInstance.operationsLog.empty',
 					)}
 				/>
-			</Centered>
+			</CenteredContent>
 		);
 	}
 

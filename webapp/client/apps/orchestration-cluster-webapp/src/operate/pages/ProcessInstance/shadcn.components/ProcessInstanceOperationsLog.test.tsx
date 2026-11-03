@@ -98,7 +98,7 @@ describe('<ProcessInstanceOperationsLog /> (design system)', () => {
 
 		await expect.element(screen.getByRole('cell', {name: 'Cancel'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Process instance'})).toBeVisible();
-		await expect.element(screen.getByRole('cell', {name: 'jane'})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'User jane'})).toBeVisible();
 	});
 
 	it('should scope the operations to the selected element instance', async ({worker}) => {
