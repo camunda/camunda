@@ -18,12 +18,14 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,14 +133,19 @@ public class BatchOperationChunkAppender {
     return false;
   }
 
-  // TODO(#57006): group the items by their storage ordinal before partitioning and set it as
-  // batchItemsStorageOrdinal on every chunk once the item providers expose it. Every chunk must
-  // hold items of a single ordinal, state keeps one ordinal per chunk. Until then every chunk
-  // is written with 0 = not known.
+  // Sorted by storage ordinal, then key, so items of one ordinal sit together within and across
+  // chunks and the execution side can treat them as runs.
   private List<BatchOperationChunkRecord> createChunks(
       final long batchOperationKey, final int storageOrdinal, final List<Item> items) {
-    return Lists.partition(items, chunkSize).stream()
-        .map(chunkItems -> createChunkRecord(batchOperationKey, storageOrdinal, chunkItems))
+    final var sortedItems =
+        items.stream()
+            .map(BatchOperationChunkAppender::mapItem)
+            .sorted(
+                Comparator.comparingInt(BatchOperationItemValue::getStorageOrdinal)
+                    .thenComparingLong(BatchOperationItemValue::getItemKey))
+            .toList();
+    return Lists.partition(sortedItems, chunkSize).stream()
+        .map(chunkedItems -> createChunkRecord(batchOperationKey, storageOrdinal, chunkedItems))
         .toList();
   }
 
@@ -153,20 +160,24 @@ public class BatchOperationChunkAppender {
   }
 
   private static BatchOperationChunkRecord createChunkRecord(
-      final long batchOperationKey, final int storageOrdinal, final List<Item> chunkItems) {
+      final long batchOperationKey,
+      final int storageOrdinal,
+      final List<BatchOperationItemValue> chunkItems) {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
     command.setStorageOrdinal(storageOrdinal);
-    command.setItems(
-        chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
+    command.setItems(chunkItems);
     return command;
   }
 
-  private static BatchOperationItem mapItem(final Item item) {
-    return new BatchOperationItem()
-        .setItemKey(item.itemKey())
-        .setProcessInstanceKey(item.processInstanceKey())
-        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
+  // TODO(#57006): set the storage ordinal of every item from the item provider once it exposes
+  //  it. Until then every item is written with 0 = not known.
+  private static BatchOperationItemValue mapItem(final Item item) {
+    return new BatchOperationItem(
+        item.itemKey(),
+        item.processInstanceKey(),
+        Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L),
+        StorageOrdinalRelated.MAIN_INDEX);
   }
 
   /**
