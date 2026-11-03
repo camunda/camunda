@@ -52,10 +52,22 @@ public final class RdbmsDataSources implements AutoCloseable {
   private final Map<String, DataSource> dataSources = new LinkedHashMap<>();
   private final Map<String, ReleasablePool> pools = new LinkedHashMap<>();
   private final Map<SharedPoolKey, ReleasablePool> sharedPools = new LinkedHashMap<>();
-  private final List<MeterRegistry> sharedMeterRegistries = new ArrayList<>();
   private final Map<String, DataSource> unpooledDataSources = new LinkedHashMap<>();
-  private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
+  private final List<MeterRegistry> tenantMeterRegistries = new ArrayList<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
+
+  /**
+   * HikariCP keeps the connections a thread used in a thread local of that thread. Loaded by the
+   * system class loader, as from the distribution's start scripts, it holds them strongly, so a
+   * released pool stays reachable from every thread that ever used it. Weak references let it go.
+   */
+  private static final String HIKARI_WEAK_REFERENCES = "com.zaxxer.hikari.useWeakReferences";
+
+  static {
+    if (System.getProperty(HIKARI_WEAK_REFERENCES) == null) {
+      System.setProperty(HIKARI_WEAK_REFERENCES, "true");
+    }
+  }
 
   private RdbmsDataSources() {}
 
@@ -81,9 +93,10 @@ public final class RdbmsDataSources implements AutoCloseable {
         if (shared != null) {
           result.dataSources.put(currentPhysicalTenantId, shared);
         } else {
+          final var metrics =
+              new StablePoolMetrics(poolName(currentPhysicalTenantId), tenantMeterRegistry);
           final var ds =
-              new ReleasablePool(
-                  () -> buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry));
+              new ReleasablePool(() -> buildDataSource(currentPhysicalTenantId, rdbms, metrics));
           result.dataSources.put(currentPhysicalTenantId, ds);
           result.pools.put(currentPhysicalTenantId, ds);
         }
@@ -193,11 +206,11 @@ public final class RdbmsDataSources implements AutoCloseable {
       final var registry =
           MicrometerUtil.wrap(
               meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), name));
-      sharedMeterRegistries.add(registry);
+      final var sharedMetrics = new StablePoolMetrics(poolName(name), registry);
       final var pool =
           new ReleasablePool(
               () -> {
-                final var ds = buildDataSource(name, first, registry);
+                final var ds = buildDataSource(name, first, sharedMetrics);
                 ds.setMaximumPoolSize(budget.poolSize());
                 return ds;
               });
@@ -224,7 +237,7 @@ public final class RdbmsDataSources implements AutoCloseable {
     final var tenantMeterRegistry =
         MicrometerUtil.wrap(
             meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
-    tenantMeterRegistries.put(physicalTenantId, tenantMeterRegistry);
+    tenantMeterRegistries.add(tenantMeterRegistry);
     return tenantMeterRegistry;
   }
 
@@ -295,14 +308,13 @@ public final class RdbmsDataSources implements AutoCloseable {
     // close each tenant's pool together with its wrapped registry so neither is left dangling
     pools.values().forEach(ReleasablePool::close);
     sharedPools.values().forEach(ReleasablePool::close);
-    tenantMeterRegistries.values().forEach(MicrometerUtil::close);
-    sharedMeterRegistries.forEach(MicrometerUtil::close);
+    tenantMeterRegistries.forEach(MicrometerUtil::close);
   }
 
   private static HikariDataSource buildDataSource(
-      final String physicalTenantId, final Rdbms rdbms, final MeterRegistry meterRegistry) {
+      final String physicalTenantId, final Rdbms rdbms, final StablePoolMetrics metrics) {
     final var ds = new HikariDataSource();
-    ds.setPoolName("camunda-rdbms-" + physicalTenantId);
+    ds.setPoolName(poolName(physicalTenantId));
     ds.setJdbcUrl(rdbms.getUrl());
     ds.setUsername(rdbms.getUsername());
     ds.setPassword(rdbms.getPassword());
@@ -322,9 +334,13 @@ public final class RdbmsDataSources implements AutoCloseable {
     ds.setLeakDetectionThreshold(pool.getLeakDetectionThreshold().toMillis());
     ds.setKeepaliveTime(pool.getKeepaliveTime().toMillis());
     ds.setValidationTimeout(pool.getValidationTimeout().toMillis());
-    ds.setMetricRegistry(meterRegistry);
+    ds.setMetricsTrackerFactory(metrics);
     ds.setAutoCommit(false);
     return ds;
+  }
+
+  private static String poolName(final String physicalTenantId) {
+    return "camunda-rdbms-" + physicalTenantId;
   }
 
   private static void enableVendorBatchStatements(

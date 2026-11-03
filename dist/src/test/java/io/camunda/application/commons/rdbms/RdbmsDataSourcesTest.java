@@ -323,6 +323,36 @@ class RdbmsDataSourcesTest {
   }
 
   @Test
+  void shouldReportTheCurrentPoolOfATenantAfterARelease() throws Exception {
+    // given
+    final var meters = new SimpleMeterRegistry();
+    final var configs = new LinkedHashMap<String, Rdbms>();
+    configs.put("tenant-a", h2Rdbms());
+    try (final var registry = RdbmsDataSources.of(configs, meters)) {
+      try (final var ignored = registry.dataSourceFor("tenant-a").getConnection()) {
+        // starts the first pool
+      }
+
+      // when
+      registry.releasePool("tenant-a");
+      try (final var ignored = registry.dataSourceFor("tenant-a").getConnection()) {
+
+        // then
+        final var total = meters.find("hikaricp.connections").tag("pool", "camunda-rdbms-tenant-a");
+        assertThat(total.gauges()).hasSize(1);
+        assertThat(total.gauge().value()).isPositive();
+        assertThat(
+                meters
+                    .find("hikaricp.connections.active")
+                    .tag("pool", "camunda-rdbms-tenant-a")
+                    .gauge()
+                    .value())
+            .isEqualTo(1);
+      }
+    }
+  }
+
+  @Test
   void shouldCloseAllDataSourcesOnClose() throws Exception {
     final var configs = new LinkedHashMap<String, Rdbms>();
     configs.put("tenant-a", h2Rdbms());
