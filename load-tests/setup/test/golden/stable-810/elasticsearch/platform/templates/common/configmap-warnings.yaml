@@ -17,8 +17,8 @@ metadata:
     {}
 data:
   warnings: |-
-    [camunda][warning] UNKNOWN VALUES KEY: orchestration.data.secondary-storage. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys.
-    [camunda][warning] UNKNOWN VALUES KEY: postgresql. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys.
+    [camunda][warning] UNKNOWN VALUES KEY: orchestration.data.secondary-storage. Helm ignores this key. Remove or correct it. Starting with chart v17 (Camunda 8.12), unknown keys fail the render by default.
+    [camunda][warning] UNKNOWN VALUES KEY: postgresql. Helm ignores this key. Remove or correct it. Starting with chart v17 (Camunda 8.12), unknown keys fail the render by default.
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.enabled" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.minimumAge" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.policyName" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
