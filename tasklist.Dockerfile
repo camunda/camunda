@@ -78,6 +78,52 @@ RUN addgroup --gid 1001 camunda && \
     chown -R 1001:0 ${TASKLIST_HOME} && \
     chmod -R 0775 ${TASKLIST_HOME}
 
+# CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
+# Sectigo's AAA Certificate Services from the JDK cacerts. Most bases still ship some of them in
+# ca-certificates. Deselect them in /etc/ca-certificates.conf so update-ca-certificates keeps them
+# out of the OS bundle (and out of the JVM cacerts where that is rebuilt from it) even when a derived
+# image runs update-ca-certificates to add its own CA. Temurin keeps a separate JVM cacerts, so also
+# delete the roots from it by fingerprint. The build fails if G1, G3 or AAA is left in either store.
+# emSign C1 and C3 are not part of Oracle's removal and stay. POSIX sh without pipes: plain Alpine
+# has no bash, and a failing "! pipeline" would not stop "set -e". A base without
+# update-ca-certificates and keytool is left as it is.
+RUN set -eu; \
+    g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    if command -v update-ca-certificates >/dev/null 2>&1; then \
+      sed -i -E 's#^mozilla/(emSign_Root_CA_-_G[12]|emSign_ECC_Root_CA_-_G3|AAA_Certificate_Services)\.crt$#!&#' /etc/ca-certificates.conf; \
+      update-ca-certificates; \
+    fi; \
+    for pem in emSign_Root_CA_-_G1 emSign_Root_CA_-_G2 emSign_ECC_Root_CA_-_G3 AAA_Certificate_Services; do \
+      [ ! -e "/etc/ssl/certs/$pem.pem" ]; \
+    done; \
+    if command -v keytool >/dev/null 2>&1; then \
+      tmp=$(mktemp -d); \
+      fingerprints() { awk '/^Alias name: /{a=substr($0,13)} $1=="SHA256:"{f=$2; gsub(":","",f); print f"\t"a}' "$1"; }; \
+      keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
+      fingerprints "$tmp/jvm.txt" > "$tmp/jvm.fp"; \
+      for fp in "$g3" "$g1" "$aaa"; do \
+        alias=$(awk -F'\t' -v fp="$fp" '$1==fp{print $2}' "$tmp/jvm.fp"); \
+        if [ -n "$alias" ]; then keytool -delete -cacerts -storepass changeit -alias "$alias"; fi; \
+      done; \
+      keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
+      fingerprints "$tmp/jvm.txt" > "$tmp/jvm.fp"; \
+      [ "$(wc -l < "$tmp/jvm.fp")" -gt 100 ]; \
+      if awk -F'\t' -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/jvm.fp"; then \
+        echo "forbidden root left in JVM cacerts" >&2; exit 1; \
+      fi; \
+      if [ -f /etc/ssl/certs/ca-certificates.crt ]; then \
+        keytool -printcert -file /etc/ssl/certs/ca-certificates.crt > "$tmp/os.txt"; \
+        awk '$1=="SHA256:"{f=$2; gsub(":","",f); print f}' "$tmp/os.txt" > "$tmp/os.fp"; \
+        [ "$(wc -l < "$tmp/os.fp")" -gt 100 ]; \
+        if awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/os.fp"; then \
+          echo "forbidden root left in OS bundle" >&2; exit 1; \
+        fi; \
+      fi; \
+      rm -rf "$tmp"; \
+    fi
+
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
 
 # rename tasklist-migrate script to migrate (as expected by SaaS)
