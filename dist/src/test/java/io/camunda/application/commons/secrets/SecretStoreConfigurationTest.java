@@ -31,6 +31,7 @@ import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint;
@@ -44,6 +45,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -52,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.MockedConstruction;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -108,6 +112,20 @@ class SecretStoreConfigurationTest {
     assertThatIllegalStateException()
         .isThrownBy(() -> registries(resolver))
         .withMessageContaining("no path configured")
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldThrowWhenEnvStoreHasBlankPrefix() {
+    // given an env store under the only supported id whose prefix is blank, which would match every
+    // variable in the environment
+    final var resolver = resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", " "));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("no prefix configured")
+        .withMessageContaining("camunda.secrets.stores.env.default.prefix")
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
@@ -498,6 +516,86 @@ class SecretStoreConfigurationTest {
     }
   }
 
+  @Test
+  void shouldBuildEnvVarStoreWhenEnvStoreConfigured() {
+    try (var construction = mockEnvStoresListingTheirPrefix()) {
+      // given
+      final var resolver =
+          resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", "APP_SECRET_"));
+
+      // when
+      final var registry =
+          registries(resolver).byPhysicalTenant().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+
+      // then the default store is an environment-variable store built with the configured prefix
+      assertThat(construction.constructed()).hasSize(1);
+      assertThat(registry.getStores()).containsOnlyKeys(SecretStoreRegistry.DEFAULT_STORE_ID);
+      assertThat(registry.getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID).list())
+          .containsExactly("APP_SECRET_");
+    }
+  }
+
+  @Test
+  void shouldBuildEachPhysicalTenantsEnvVarStoreWithItsOwnPrefix() {
+    try (var construction = mockEnvStoresListingTheirPrefix()) {
+      // given two tenants with distinct prefixes
+      final Map<String, Object> properties =
+          new HashMap<>(tenantWithEnvStore("tenanta", "TENANTA_SECRET_"));
+      properties.putAll(tenantWithEnvStore("tenantb", "TENANTB_SECRET_"));
+
+      // when
+      final var registries = registries(resolverFor(properties));
+
+      // then each tenant's store is built with its own prefix
+      assertThat(construction.constructed()).hasSize(2);
+      assertThat(defaultStoreOf(registries, "tenanta").list()).containsExactly("TENANTA_SECRET_");
+      assertThat(defaultStoreOf(registries, "tenantb").list()).containsExactly("TENANTB_SECRET_");
+    }
+  }
+
+  @Test
+  void shouldBuildEnvVarStoreOnlyForThePhysicalTenantThatConfiguresIt() {
+    // given an env store configured for tenanta alone
+    final var resolver = resolverFor(tenantWithEnvStore("tenanta", "TENANTA_SECRET_"));
+
+    // when
+    final var registries = registries(resolver);
+
+    // then tenanta reads from the environment and the default tenant stays on the noop fallback
+    assertThat(defaultStoreOf(registries, "tenanta").is(EnvVarSecretStore.class)).isTrue();
+    assertThatIsNoopStore(defaultStoreOf(registries, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  @Test
+  void shouldThrowWhenFileAndEnvStoresCombinedExceedOne() {
+    // given one file store and one env store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.env.env-store.prefix", "APP_SECRET_"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldThrowWhenEnvStoreIsNotNamedDefault() {
+    // given a single env store under an id no secret reference can address
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.main.prefix", "APP_SECRET_"));
+
+    // when / then — the property named carries the env type segment the operator wrote
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("the only supported store id is 'default'")
+        .withMessageContaining("camunda.secrets.stores.env.main")
+        .withMessageContaining("camunda.secrets.stores.env.default");
+  }
+
   @ParameterizedTest
   @MethodSource("buildFailures")
   void shouldCloseAlreadyBuiltStoresWhenALaterTenantFailsToBuild(final Throwable buildFailure)
@@ -878,6 +976,39 @@ class SecretStoreConfigurationTest {
     assertThat(store.resolve(Set.of("token")))
         .containsEntry(
             "token", new Failed(SecretErrorCode.NOT_FOUND, "No secret store configured", null));
+  }
+
+  /**
+   * Makes every environment-variable store list the prefix it was built with, so a test sees that
+   * prefix through the registry's wrappers without reading the real environment.
+   */
+  private static MockedConstruction<EnvVarSecretStore> mockEnvStoresListingTheirPrefix() {
+    return mockConstruction(
+        EnvVarSecretStore.class,
+        (mock, context) ->
+            when(mock.list()).thenReturn(List.of((String) context.arguments().get(1))));
+  }
+
+  /** A physical tenant with an env store, plus the settings every physical tenant requires. */
+  private static Map<String, Object> tenantWithEnvStore(
+      final String tenantId, final String prefix) {
+    final var tenant = "camunda.physical-tenants." + tenantId;
+    return Map.of(
+        tenant + ".secrets.stores.env.default.prefix",
+        prefix,
+        tenant + ".security.initialization.default-roles.admin.users[0]",
+        tenantId + "-admin",
+        tenant + ".data.secondary-storage.elasticsearch.index-prefix",
+        tenantId);
+  }
+
+  private static SecretStore defaultStoreOf(
+      final SecretStoreRegistries registries, final String tenantId) {
+    return registries
+        .byPhysicalTenant()
+        .get(tenantId)
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID);
   }
 
   private static SecretStoreRegistries registries(final PhysicalTenantResolver resolver) {
