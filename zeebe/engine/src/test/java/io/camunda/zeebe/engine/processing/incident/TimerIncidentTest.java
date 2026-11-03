@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -16,9 +17,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -299,5 +302,38 @@ public final class TimerIncidentTest {
                 .findAny())
         .describedAs("Expect that element was activated")
         .isPresent();
+  }
+
+  @Test
+  public void shouldNotCreateIncidentIfDueDateIsFarInTheFuture() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            // about 317 years: the due date fits into epoch milliseconds, so it must not fail
+            .withVariable(DURATION_VARIABLE, "PT9999999990S")
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(ELEMENT_ID)
+                .findAny())
+        .describedAs("Expect that the timer catch event was activated without an incident")
+        .isPresent();
+
+    final Record<TimerRecordValue> timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(timerCreated.getValue().getDueDate())
+        .isCloseTo(
+            timerCreated.getTimestamp() + Duration.ofSeconds(9_999_999_990L).toMillis(),
+            within(Duration.ofMinutes(1).toMillis()));
   }
 }
