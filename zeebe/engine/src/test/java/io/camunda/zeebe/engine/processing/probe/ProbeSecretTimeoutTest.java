@@ -16,10 +16,8 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordingProbeStreamer;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -38,12 +36,9 @@ public final class ProbeSecretTimeoutTest {
 
   private static final String PROBE_ID = "validate-configuration/io.camunda:test-timeout:1";
 
-  private final RecordingProbeStreamer streamer = new RecordingProbeStreamer();
-
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withProbeStreamer(streamer)
           .withSecretStoreRegistry(
               new SecretStoreRegistry(
                   Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, new UnavailableSecretStore())))
@@ -61,7 +56,6 @@ public final class ProbeSecretTimeoutTest {
   @Test
   public void shouldTimeOutWhileWaitingForTheSecret() {
     // given
-    streamer.addStream(PROBE_ID, "worker-a", List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     final var created =
         engine
             .probe()
@@ -70,6 +64,8 @@ public final class ProbeSecretTimeoutTest {
             .withRequestTimeout(1000)
             .withRequest(44, 444L)
             .create();
+    // the poll finds the secret uncached and parks the probe
+    engine.probe().activate(PROBE_ID, "worker-a", 1);
 
     // when
     engine.increaseTime(Duration.ofSeconds(2));

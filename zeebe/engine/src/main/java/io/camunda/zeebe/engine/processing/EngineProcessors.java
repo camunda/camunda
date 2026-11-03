@@ -94,7 +94,7 @@ import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionSchedu
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -141,7 +141,7 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
-      final ProbeStreamer probeStreamer,
+      final ProbeNotifier probeNotifier,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -407,14 +407,7 @@ public final class EngineProcessors {
 
     final var probeBehavior =
         new ProbeBehavior(
-            probeStreamer,
-            processingState,
-            writers,
-            keyGenerator,
-            cslCheck,
-            tenantCheck,
-            secretStoreRegistry,
-            secretResolutionScheduler);
+            probeNotifier, processingState, writers, keyGenerator, secretResolutionScheduler);
     ProbeEventProcessors.addProbeProcessors(
         typedRecordProcessors,
         processingState,
@@ -424,6 +417,8 @@ public final class EngineProcessors {
         probeBehavior,
         asyncRequestBehavior,
         cslCheck,
+        tenantCheck,
+        secretStoreRegistry,
         clock);
 
     final var userTaskProcessor =

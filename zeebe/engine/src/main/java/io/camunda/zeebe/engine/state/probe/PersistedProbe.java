@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 public final class PersistedProbe extends UnpackedObject implements DbValue {
 
   private final EnumProperty<State> stateProp =
-      new EnumProperty<>("state", State.class, State.CREATED);
+      new EnumProperty<>("state", State.class, State.ACTIVATABLE);
   private final ObjectProperty<ProbeRecord> recordProp =
       new ObjectProperty<>("probeRecord", new ProbeRecord());
 

@@ -49,6 +49,12 @@ public final class DbProbeState implements MutableProbeState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       probesBySecretReferenceColumnFamily;
 
+  // (probeId, probeKey): the probes a poll of the probe ID may collect, oldest first
+  private final DbString activatableProbeId;
+  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> activatableKey;
+  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbNil>
+      activatableColumnFamily;
+
   public DbProbeState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     probeKey = new DbLong();
@@ -80,35 +86,49 @@ public final class DbProbeState implements MutableProbeState {
             transactionContext,
             secretReferenceAndProbe,
             DbNil.INSTANCE);
+
+    activatableProbeId = new DbString();
+    activatableKey = new DbCompositeKey<>(activatableProbeId, fkProbe);
+    activatableColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROBES_ACTIVATABLE,
+            transactionContext,
+            activatableKey,
+            DbNil.INSTANCE);
   }
 
   @Override
   public void create(final long key, final ProbeRecord record) {
     probeKey.wrapLong(key);
     persistedProbe.reset();
-    persistedProbe.setState(State.CREATED).setRecord(record);
+    persistedProbe.setState(State.ACTIVATABLE).setRecord(record);
     probesColumnFamily.insert(probeKey, persistedProbe);
     deadline.wrapLong(record.getDeadline());
     deadlinesColumnFamily.insert(deadlineProbeKey, DbNil.INSTANCE);
+    addActivatable(key, record.getProbeId());
   }
 
   @Override
   public void activate(final long key, final String worker) {
     update(key, State.ACTIVATED, probe -> probe.getRecord().setWorker(worker));
+    removeActivatable(key);
     releaseSecretReferences(key);
   }
 
   @Override
-  public void yield(final long key) {
-    update(
-        key,
-        State.CREATED,
-        probe -> probe.getRecord().setYieldCount(probe.getRecord().getYieldCount() + 1));
+  public void makeActivatable(final long key) {
+    update(key, State.ACTIVATABLE, probe -> {});
+    final var probe = getProbe(key);
+    if (probe != null) {
+      addActivatable(key, probe.getProbeId());
+    }
+    releaseSecretReferences(key);
   }
 
   @Override
   public void park(final long key, final String storeId, final String secretReference) {
-    update(key, State.PARKED, probe -> {});
+    update(key, State.WAITING_FOR_SECRET_RESOLUTION, probe -> {});
+    removeActivatable(key);
     probeKey.wrapLong(key);
     this.storeId.wrapString(storeId);
     this.secretReference.wrapString(secretReference);
@@ -123,8 +143,12 @@ public final class DbProbeState implements MutableProbeState {
     if (probe == null) {
       return;
     }
+    final var probeId = probe.getRecord().getProbeId();
     deadline.wrapLong(probe.getRecord().getDeadline());
     deadlinesColumnFamily.deleteIfExists(deadlineProbeKey);
+    activatableProbeId.wrapString(probeId);
+    probeKey.wrapLong(key);
+    activatableColumnFamily.deleteIfExists(activatableKey);
     probesColumnFamily.deleteExisting(probeKey);
     releaseSecretReferences(key);
   }
@@ -184,6 +208,39 @@ public final class DbProbeState implements MutableProbeState {
             (entry, nil) ->
                 visitor.test(entry.second().first().toString(), entry.second().second().toString());
     secretReferencesByProbeColumnFamily.whileEqualPrefix(probeKey, references);
+  }
+
+  @Override
+  public void visitActivatableProbes(
+      final String probeId, final BiPredicate<Long, ProbeRecord> visitor) {
+    activatableProbeId.wrapString(probeId);
+    final List<Long> keys = new ArrayList<>();
+    final KeyValuePairVisitor<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbNil> collector =
+        (entry, nil) -> keys.add(entry.second().inner().getValue());
+    activatableColumnFamily.whileEqualPrefix(activatableProbeId, collector);
+    // the keys are collected first: the visitor reads the probes, which reuses the key buffers
+    for (final long key : keys) {
+      final var probe = getProbe(key);
+      if (probe != null && !visitor.test(key, probe)) {
+        return;
+      }
+    }
+  }
+
+  private void addActivatable(final long key, final String probeId) {
+    activatableProbeId.wrapString(probeId);
+    probeKey.wrapLong(key);
+    activatableColumnFamily.upsert(activatableKey, DbNil.INSTANCE);
+  }
+
+  private void removeActivatable(final long key) {
+    final var probe = getProbe(key);
+    if (probe == null) {
+      return;
+    }
+    activatableProbeId.wrapString(probe.getProbeId());
+    probeKey.wrapLong(key);
+    activatableColumnFamily.deleteIfExists(activatableKey);
   }
 
   private void releaseSecretReferences(final long key) {

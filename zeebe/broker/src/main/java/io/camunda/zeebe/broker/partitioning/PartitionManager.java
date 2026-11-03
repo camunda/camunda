@@ -13,6 +13,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.probe.RemoteProbeNotifier;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
@@ -81,11 +82,6 @@ public interface PartitionManager {
     // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
     final var partitionListeners = new ArrayList<>(brokerStartupContext.getPartitionListeners());
     partitionListeners.add(jobStreamService.errorHandlerService());
-    final var probeStreamService =
-        Objects.requireNonNull(
-            brokerStartupContext.getProbeStreamService(physicalTenantId),
-            "ProbeStreamService not initialized for tenant " + physicalTenantId);
-    partitionListeners.add(probeStreamService.errorHandlerService());
 
     return new PartitionManagerImpl(
         physicalTenantId,
@@ -103,7 +99,8 @@ public interface PartitionManager {
         physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
         jobStreamService.jobStreamer(),
-        probeStreamService.probeStreamer(),
+        new RemoteProbeNotifier(
+            brokerStartupContext.getClusterServices().getEventService(), physicalTenantId),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),

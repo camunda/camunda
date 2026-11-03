@@ -118,21 +118,17 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
       return;
     }
 
-    final var stream = probeBehavior.findStream(probe, null);
-    if (stream.isEmpty()) {
-      reject(command, new Rejection(RejectionType.NOT_FOUND, ProbeBehavior.noWorkerMessage(probe)));
-      return;
-    }
-
+    // no check for a worker here: one may start polling before the deadline, which alone decides
+    // NO_WORKER (a probe that no poll collected in time)
     final long probeKey = keyGenerator.nextKey();
-    final long timeout =
-        probe.getRequestTimeout() > 0 ? probe.getRequestTimeout() : DEFAULT_REQUEST_TIMEOUT;
-    probe.setDeadline(clock.millis() + timeout);
+    if (probe.getRequestTimeout() == 0) {
+      probe.setRequestTimeout(DEFAULT_REQUEST_TIMEOUT);
+    }
+    probe.setDeadline(clock.millis() + probe.getRequestTimeout());
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.CREATED, probe);
     asyncRequestBehavior.writeAsyncRequestReceived(probeKey, command);
     timeoutChecker.schedule(probe.getDeadline());
-
-    probeBehavior.activate(probeKey, probe, stream.get());
+    probeBehavior.notifyProbesAvailable(probe.getProbeId());
   }
 
   private Either<Rejection, ProbeRecord> validate(final ProbeRecord probe) {

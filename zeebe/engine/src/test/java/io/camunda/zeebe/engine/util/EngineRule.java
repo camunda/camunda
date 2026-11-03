@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -136,7 +136,7 @@ public final class EngineRule extends ExternalResource {
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
-  private ProbeStreamer probeStreamer = ProbeStreamer.noop();
+  private ProbeNotifier probeNotifier = ProbeNotifier.noop();
   private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
@@ -255,8 +255,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withProbeStreamer(final ProbeStreamer probeStreamer) {
-    this.probeStreamer = probeStreamer;
+  public EngineRule withProbeNotifier(final ProbeNotifier probeNotifier) {
+    this.probeNotifier = probeNotifier;
     return this;
   }
 
@@ -390,7 +390,7 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
-                        probeStreamer,
+                        probeNotifier,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
                         secretStoreRegistry)

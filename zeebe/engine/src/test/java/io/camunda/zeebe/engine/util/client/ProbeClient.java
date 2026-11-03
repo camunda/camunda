@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.LongFunction;
@@ -39,6 +43,7 @@ public final class ProbeClient {
   private long requestId = new Random().nextLong(Long.MAX_VALUE);
   private int requestStreamId = new Random().nextInt(Integer.MAX_VALUE);
   private LongFunction<Record<ProbeRecordValue>> expectation = SUCCESS_SUPPLIER;
+  private boolean expectRejection;
 
   public ProbeClient(final CommandWriter writer) {
     this.writer = writer;
@@ -72,6 +77,7 @@ public final class ProbeClient {
 
   public ProbeClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
+    expectRejection = true;
     return this;
   }
 
@@ -93,7 +99,30 @@ public final class ProbeClient {
     return expectation.apply(position);
   }
 
-  /** Yields the probe as the broker does after a failed push; returns its first event. */
+  /**
+   * Polls for the probes of the probe ID as a worker; returns the PROBE_BATCH ACTIVATED event, or
+   * the rejection. The secret values are only in the response, which the event does not carry.
+   */
+  public Record<ProbeBatchRecordValue> activate(
+      final String probeId,
+      final String worker,
+      final int maxProbesToActivate,
+      final String... tenantIds) {
+    final var batch =
+        new ProbeBatchRecord()
+            .setProbeId(probeId)
+            .setWorker(worker)
+            .setMaxProbesToActivate(maxProbesToActivate)
+            .setTenantIds(List.of(tenantIds));
+    final long position =
+        writer.writeCommand(requestStreamId, requestId, ProbeBatchIntent.ACTIVATE, batch);
+    final var records = RecordingExporter.probeBatchRecords().withSourceRecordPosition(position);
+    return expectRejection
+        ? records.onlyCommandRejections().getFirst()
+        : records.onlyEvents().getFirst();
+  }
+
+  /** Yields the probe as the gateway does when it cannot deliver it; returns its first event. */
   public Record<ProbeRecordValue> yield(final long probeKey) {
     final long position = writer.writeCommand(probeKey, ProbeIntent.YIELD, probeRecord);
     return expectation.apply(position);

@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProbeState;
-import io.camunda.zeebe.engine.state.immutable.ProbeState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -23,7 +22,7 @@ import java.time.InstantSource;
 
 /**
  * Ends a probe whose deadline passed, written by {@link ProbeTimeoutCheckScheduler}. The deadline
- * covers waiting for secrets as well as the worker, so the reason says which one ran out.
+ * covers waiting for a poll, for secrets and for the worker, so the reason says which one ran out.
  */
 @ExcludeAuthorizationCheck
 public final class ProbeTimeOutProcessor implements TypedRecordProcessor<ProbeRecord> {
@@ -58,20 +57,30 @@ public final class ProbeTimeOutProcessor implements TypedRecordProcessor<ProbeRe
       return;
     }
 
-    if (probeState.getState(probeKey) == State.PARKED) {
-      probeBehavior.end(
-          probeKey,
-          probe,
-          ProbeIntent.TIMED_OUT,
-          ProbeEndReason.SECRET_RESOLUTION_TIMEOUT,
-          "The secrets of the probe were not resolved before its deadline.");
-    } else {
-      probeBehavior.end(
-          probeKey,
-          probe,
-          ProbeIntent.TIMED_OUT,
-          ProbeEndReason.WORKER_DID_NOT_ANSWER,
-          "The worker '%s' did not answer before the deadline.".formatted(probe.getWorker()));
+    // the state at the deadline says what ran out: no poll collected it, its secrets were not
+    // resolved, or the worker that collected it did not answer
+    switch (probeState.getState(probeKey)) {
+      case ACTIVATABLE ->
+          probeBehavior.end(
+              probeKey,
+              probe,
+              ProbeIntent.TIMED_OUT,
+              ProbeEndReason.NO_WORKER,
+              ProbeBehavior.noWorkerMessage(probe));
+      case WAITING_FOR_SECRET_RESOLUTION ->
+          probeBehavior.end(
+              probeKey,
+              probe,
+              ProbeIntent.TIMED_OUT,
+              ProbeEndReason.SECRET_RESOLUTION_TIMEOUT,
+              "The secrets of the probe were not resolved before its deadline.");
+      default ->
+          probeBehavior.end(
+              probeKey,
+              probe,
+              ProbeIntent.TIMED_OUT,
+              ProbeEndReason.WORKER_DID_NOT_ANSWER,
+              "The worker '%s' did not answer before the deadline.".formatted(probe.getWorker()));
     }
   }
 }

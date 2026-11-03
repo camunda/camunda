@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 
-/** Counts the yield; the probe is dispatched once more, or canceled. */
+/** The gateway could not deliver the probe: it is activatable again for the next poll. */
 public final class ProbeYieldedApplier implements TypedEventApplier<ProbeIntent, ProbeRecord> {
 
   private final MutableProbeState probeState;
@@ -23,6 +23,6 @@ public final class ProbeYieldedApplier implements TypedEventApplier<ProbeIntent,
 
   @Override
   public void applyState(final long key, final ProbeRecord value) {
-    probeState.yield(key);
+    probeState.makeActivatable(key);
   }
 }

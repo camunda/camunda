@@ -22,7 +22,9 @@ import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public final class SecretReferenceResolutionCompleteProcessor
@@ -72,6 +74,12 @@ public final class SecretReferenceResolutionCompleteProcessor
       return;
     }
 
+    // collected before the event: its applier makes the probes activatable and releases their
+    // waiting entries, so they cannot be found by the reference afterwards
+    final List<Long> waitingProbes = new ArrayList<>();
+    probeState.visitProbesBySecretReference(
+        storeId, secretReference, probeKey -> waitingProbes.add(probeKey));
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), SecretReferenceIntent.RESOLUTION_COMPLETED, value);
 
@@ -87,13 +95,15 @@ public final class SecretReferenceResolutionCompleteProcessor
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_REACTIVATE_JOBS, nextRecord);
     }
 
-    // probes are dispatched right here rather than through a batch chain like jobs: a probe lives
-    // for seconds and is created on demand, so only a handful can wait on one reference. The keys
-    // are collected first, since dispatching may park a probe on this reference again
-    final List<Long> waitingProbes = new ArrayList<>();
-    probeState.visitProbesBySecretReference(
-        storeId, secretReference, probeKey -> waitingProbes.add(probeKey));
-    waitingProbes.forEach(probeBehavior::dispatchAfterResolution);
+    // a probe still waiting for another reference stays parked; the others are activatable again,
+    // and the long polls of their probe IDs are told so
+    final Set<String> availableProbeIds = new HashSet<>();
+    for (final long probeKey : waitingProbes) {
+      if (probeState.getState(probeKey) == ProbeState.State.ACTIVATABLE) {
+        availableProbeIds.add(probeState.getProbe(probeKey).getProbeId());
+      }
+    }
+    availableProbeIds.forEach(probeBehavior::notifyProbesAvailable);
   }
 
   private List<Long> buildBatch(final String storeId, final String secretReference) {

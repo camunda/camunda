@@ -13,18 +13,15 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordingProbeStreamer;
-import io.camunda.zeebe.engine.util.RecordingProbeStreamer.RecordingProbeStream;
+import io.camunda.zeebe.engine.util.RecordingProbeNotifier;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -34,10 +31,10 @@ import org.junit.Test;
 
 public final class ProbeTest {
 
-  private static final RecordingProbeStreamer STREAMER = new RecordingProbeStreamer();
+  private static final RecordingProbeNotifier NOTIFIER = new RecordingProbeNotifier();
 
   @ClassRule
-  public static final EngineRule ENGINE = EngineRule.singlePartition().withProbeStreamer(STREAMER);
+  public static final EngineRule ENGINE = EngineRule.singlePartition().withProbeNotifier(NOTIFIER);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -47,40 +44,53 @@ public final class ProbeTest {
 
   @Before
   public void setUp() {
-    // a probeId per test keeps the streams of one test from answering the probes of another
+    // a probe ID per test keeps the polls of one test from collecting the probes of another
     probeId = "validate-configuration/io.camunda:test-" + UUID.randomUUID() + ":1";
   }
 
   @Test
-  public void shouldPushProbeAndAnswerWorkerAndClient() {
-    // given
-    final var stream = addStream("worker-a");
-
+  public void shouldCreateAnActivatableProbeAndAnnounceIt() {
     // when
     final var created =
         ENGINE
             .probe()
             .withProbeId(probeId)
             .withInput("={region: \"eu-west-1\", nested: {flag: true}}")
-            .withRequest(11, 111L)
             .create();
-    final long probeKey = created.getKey();
 
     // then
     assertThat(created.getIntent()).isEqualTo(ProbeIntent.CREATED);
     assertThat(created.getValue().getInput())
         .isEqualTo(Map.of("region", "eu-west-1", "nested", Map.of("flag", true)));
+    assertThat(created.getValue().getRequestTimeout()).isEqualTo(15_000L);
     assertThat(created.getValue().getDeadline()).isPositive();
+    await().untilAsserted(() -> assertThat(NOTIFIER.getNotifiedProbeIds()).contains(probeId));
+  }
 
-    final var activated =
-        RecordingExporter.probeRecords(ProbeIntent.ACTIVATED).withRecordKey(probeKey).getFirst();
-    assertThat(activated.getValue().getWorker()).isEqualTo("worker-a");
-    assertThat(activated.getValue().getInput()).isEmpty();
+  @Test
+  public void shouldHandTheProbeToAPollAndAnswerTheWorkerAndTheClient() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={region: \"eu-west-1\"}")
+            .withRequest(11, 111L)
+            .create()
+            .getKey();
 
-    await().untilAsserted(() -> assertThat(stream.getPushedProbes()).hasSize(1));
-    final var pushed = stream.getPushedProbes().getFirst();
-    assertThat(pushed.probeKey()).isEqualTo(probeKey);
-    assertThat(pushed.record().getInput()).containsEntry("region", "eu-west-1");
+    // when
+    final var activated = ENGINE.probe().activate(probeId, "worker-a", 4);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).containsExactly(probeKey);
+    assertThat(activated.getValue().getProbes())
+        .singleElement()
+        .satisfies(
+            probe -> {
+              assertThat(probe.getWorker()).isEqualTo("worker-a");
+              assertThat(probe.getInput()).isEqualTo(Map.of("region", "eu-west-1"));
+            });
 
     // when
     final var answered =
@@ -92,8 +102,8 @@ public final class ProbeTest {
     // then
     assertThat(answered.getIntent()).isEqualTo(ProbeIntent.ANSWERED);
     assertThat(answered.getValue().getOutcome()).isEqualTo(ProbeOutcome.OK);
-    assertThat(answered.getValue().getData()).isEmpty();
     assertThat(answered.getValue().getWorker()).isEqualTo("worker-a");
+    assertThat(answered.getValue().getData()).isEmpty();
     final var respond =
         RecordingExporter.probeRecords(ProbeIntent.RESPOND)
             .withRecordKey(probeKey)
@@ -105,10 +115,118 @@ public final class ProbeTest {
   }
 
   @Test
-  public void shouldDetectSecretReferencesWithJsonPointers() {
+  public void shouldCollectOnlyProbesOfThePolledProbeId() {
     // given
-    addStream("worker-a");
+    ENGINE.probe().withProbeId(probeId).withInput("={}").create();
 
+    // when
+    final var activated = ENGINE.probe().activate(probeId + "-other", "worker-a", 4);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldCollectOnlyProbesOfThePolledTenants() {
+    // given
+    ENGINE.probe().withProbeId(probeId).withInput("={}").create();
+
+    // when
+    final var activated = ENGINE.probe().activate(probeId, "worker-a", 4, "other-tenant");
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldCollectAtMostTheRequestedNumberOfProbes() {
+    // given
+    final long first = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    final long second = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+
+    // when
+    final var activated = ENGINE.probe().activate(probeId, "worker-a", 1);
+    final var next = ENGINE.probe().activate(probeId, "worker-a", 1);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).containsExactly(first);
+    assertThat(activated.getValue().isTruncated()).isTrue();
+    assertThat(next.getValue().getProbeKeys()).containsExactly(second);
+  }
+
+  @Test
+  public void shouldMakeTheProbeActivatableAgainOnEveryYield() {
+    // given
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    ENGINE.probe().activate(probeId, "worker-a", 1);
+
+    // when - yielded twice: a probe has no yield limit, its deadline bounds it
+    final var yielded = ENGINE.probe().yield(probeKey);
+    final var collectedAgain = ENGINE.probe().activate(probeId, "worker-b", 1);
+    final var yieldedAgain = ENGINE.probe().yield(probeKey);
+    final var collectedOnceMore = ENGINE.probe().activate(probeId, "worker-c", 1);
+
+    // then
+    assertThat(yielded.getIntent()).isEqualTo(ProbeIntent.YIELDED);
+    assertThat(collectedAgain.getValue().getProbeKeys()).containsExactly(probeKey);
+    assertThat(yieldedAgain.getIntent()).isEqualTo(ProbeIntent.YIELDED);
+    assertThat(collectedOnceMore.getValue().getProbes())
+        .singleElement()
+        .satisfies(probe -> assertThat(probe.getWorker()).isEqualTo("worker-c"));
+  }
+
+  @Test
+  public void shouldEndWithNoWorkerWhenNoPollCollectedTheProbe() {
+    // given
+    final var created =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1000)
+            .withRequest(33, 333L)
+            .create();
+
+    // when
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT)
+            .withRecordKey(created.getKey())
+            .getFirst();
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
+    assertThat(timedOut.getValue().getMessage())
+        .isEqualTo(
+            "No worker for '%s' collected the probe within 1000 ms. Start a worker for this probe ID, then retry."
+                .formatted(probeId));
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(33, 333L);
+  }
+
+  @Test
+  public void shouldEndWithWorkerDidNotAnswerWhenTheCollectingWorkerIsSilent() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1000)
+            .create()
+            .getKey();
+    ENGINE.probe().activate(probeId, "worker-a", 1);
+
+    // when
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.WORKER_DID_NOT_ANSWER);
+  }
+
+  @Test
+  public void shouldDetectSecretReferencesWithJsonPointers() {
     // when
     final var created =
         ENGINE
@@ -130,74 +248,7 @@ public final class ProbeTest {
   }
 
   @Test
-  public void shouldRejectCreateWhenNoWorkerSubscribed() {
-    // when
-    final var rejection =
-        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
-
-    // then
-    Assertions.assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "No worker can answer probe '%s'. Start a worker that answers it, then retry."
-                .formatted(probeId));
-  }
-
-  @Test
-  public void shouldPushProbesForEveryProbeIdTheStreamDeclares() {
-    // given - one worker answers two probes over a single stream
-    final var otherProbeId = probeId + "-other";
-    final var stream =
-        STREAMER.addStream(
-            List.of(probeId, otherProbeId),
-            "worker-a",
-            List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-
-    // when
-    final long first = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
-    final long second = ENGINE.probe().withProbeId(otherProbeId).withInput("={}").create().getKey();
-
-    // then
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(stream.getPushedProbes())
-                    .extracting(RecordingProbeStreamer.PushedProbe::probeKey)
-                    .containsExactly(first, second));
-  }
-
-  @Test
-  public void shouldRejectCreateWhenNoStreamDeclaresTheProbeId() {
-    // given - a worker is connected, but for another probeId only
-    STREAMER.addStream(
-        probeId + "-other", "worker-a", List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-
-    // when
-    final var rejection =
-        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
-
-    // then
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldRejectCreateWhenWorkerServesAnotherTenant() {
-    // given
-    STREAMER.addStream(probeId, "worker-a", List.of("other"));
-
-    // when
-    final var rejection =
-        ENGINE.probe().withProbeId(probeId).withInput("={}").expectRejection().create();
-
-    // then
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
   public void shouldRejectInputThatIsNotAContext() {
-    // given
-    addStream("worker-a");
-
     // when
     final var rejection =
         ENGINE.probe().withProbeId(probeId).withInput("=\"text\"").expectRejection().create();
@@ -210,9 +261,6 @@ public final class ProbeTest {
 
   @Test
   public void shouldRejectInputThatIsNotAnExpression() {
-    // given
-    addStream("worker-a");
-
     // when
     final var rejection =
         ENGINE.probe().withProbeId(probeId).withInput("{}").expectRejection().create();
@@ -223,9 +271,6 @@ public final class ProbeTest {
 
   @Test
   public void shouldRejectImpreciseSecretReference() {
-    // given
-    addStream("worker-a");
-
     // when
     final var rejection =
         ENGINE
@@ -240,107 +285,7 @@ public final class ProbeTest {
   }
 
   @Test
-  public void shouldTimeOutWhenWorkerDoesNotAnswer() {
-    // given
-    addStream("worker-a");
-    final var created =
-        ENGINE
-            .probe()
-            .withProbeId(probeId)
-            .withInput("={}")
-            .withRequestTimeout(1000)
-            .withRequest(33, 333L)
-            .create();
-
-    // when
-    ENGINE.increaseTime(Duration.ofSeconds(2));
-
-    // then
-    final var timedOut =
-        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT)
-            .withRecordKey(created.getKey())
-            .getFirst();
-    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.WORKER_DID_NOT_ANSWER);
-    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(33, 333L);
-  }
-
-  @Test
-  public void shouldRedispatchOnceOnYieldThenCancel() {
-    // given
-    final var first = addStream("worker-a");
-    final var second = addStream("worker-b");
-    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
-    await().untilAsserted(() -> assertThat(first.getPushedProbes()).hasSize(1));
-
-    // when
-    final var yielded = ENGINE.probe().yield(probeKey);
-
-    // then
-    assertThat(yielded.getIntent()).isEqualTo(ProbeIntent.YIELDED);
-    await().untilAsserted(() -> assertThat(second.getPushedProbes()).hasSize(1));
-    assertThat(
-            RecordingExporter.probeRecords(ProbeIntent.ACTIVATED)
-                .withRecordKey(probeKey)
-                .limit(2)
-                .map(record -> record.getValue().getWorker()))
-        .containsExactly("worker-a", "worker-b");
-
-    // when
-    final var canceled = ENGINE.probe().yield(probeKey);
-
-    // then
-    assertThat(canceled.getIntent()).isEqualTo(ProbeIntent.CANCELED);
-    assertThat(canceled.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
-  }
-
-  @Test
-  public void shouldCancelOnYieldWhenNoOtherWorker() {
-    // given
-    addStream("worker-a");
-    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
-
-    // when
-    final var canceled = ENGINE.probe().yield(probeKey);
-
-    // then
-    assertThat(canceled.getIntent()).isEqualTo(ProbeIntent.CANCELED);
-    assertThat(canceled.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
-  }
-
-  @Test
-  public void shouldRejectAnswerForEndedProbe() {
-    // given
-    addStream("worker-a");
-    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
-    ENGINE.probe().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
-
-    // when
-    final var rejection =
-        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
-
-    // then
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldRejectAnswerWithoutOutcome() {
-    // given
-    addStream("worker-a");
-    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
-
-    // when
-    final var rejection =
-        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSPECIFIED, Map.of());
-
-    // then
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
-  }
-
-  @Test
   public void shouldRejectRequestTimeoutAboveTheMaximum() {
-    // given
-    addStream("worker-a");
-
     // when
     final var rejection =
         ENGINE
@@ -355,7 +300,54 @@ public final class ProbeTest {
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
-  private RecordingProbeStream addStream(final String worker) {
-    return STREAMER.addStream(probeId, worker, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+  @Test
+  public void shouldRejectAPollWithoutProbeId() {
+    // when
+    final var rejection = ENGINE.probe().expectRejection().activate("", "worker-a", 1);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldRejectAnAnswerBeforeTheProbeIsCollected() {
+    // given
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+
+    // when
+    final var rejection =
+        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldRejectAnswerForEndedProbe() {
+    // given
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    ENGINE.probe().activate(probeId, "worker-a", 1);
+    ENGINE.probe().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
+
+    // when
+    final var rejection =
+        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectAnswerWithoutOutcome() {
+    // given
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    ENGINE.probe().activate(probeId, "worker-a", 1);
+
+    // when
+    final var rejection =
+        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSPECIFIED, Map.of());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 }

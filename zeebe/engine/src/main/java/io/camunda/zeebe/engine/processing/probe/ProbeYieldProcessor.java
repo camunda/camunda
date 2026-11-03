@@ -21,9 +21,9 @@ import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Takes a probe back from a worker it could not be pushed to and pushes it once more, to another
- * worker. Written by the broker when a push fails on every connection of the subscription, as
- * {@code YieldingJobStreamErrorHandler} yields a job. A probe is re-dispatched at most once.
+ * Makes an activated probe activatable again, for the next poll. Written by the gateway when it
+ * could not deliver the activation response to the worker, as it hands back jobs it could not
+ * deliver. There is no limit on yields: the deadline bounds the probe.
  */
 @ExcludeAuthorizationCheck
 public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeRecord> {
@@ -62,20 +62,8 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
     }
 
     final var probe = probeState.getProbe(probeKey);
-    if (probe.getYieldCount() > 0) {
-      probeBehavior.cancelNoWorker(probeKey, probe);
-      return;
-    }
-
-    final var excludedWorker = probe.getWorker();
-    final var stream = probeBehavior.findStream(probe, excludedWorker);
-    if (stream.isEmpty()) {
-      probeBehavior.cancelNoWorker(probeKey, probe);
-      return;
-    }
-
     stateWriter.appendFollowUpEvent(
         probeKey, ProbeIntent.YIELDED, ProbeBehavior.withoutInput(probe));
-    probeBehavior.activate(probeKey, probeState.getProbe(probeKey), stream.get());
+    probeBehavior.notifyProbesAvailable(probe.getProbeId());
   }
 }

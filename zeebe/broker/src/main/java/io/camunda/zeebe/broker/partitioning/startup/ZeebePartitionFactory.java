@@ -64,7 +64,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -103,7 +103,7 @@ public final class ZeebePartitionFactory {
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
-  private final ProbeStreamer probeStreamer;
+  private final ProbeNotifier probeNotifier;
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
@@ -128,7 +128,7 @@ public final class ZeebePartitionFactory {
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
-      final ProbeStreamer probeStreamer,
+      final ProbeNotifier probeNotifier,
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
@@ -148,7 +148,7 @@ public final class ZeebePartitionFactory {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.jobStreamer = jobStreamer;
-    this.probeStreamer = probeStreamer;
+    this.probeNotifier = probeNotifier;
     this.partitionListeners = partitionListeners;
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
@@ -304,7 +304,7 @@ public final class ZeebePartitionFactory {
           partitionCommandSender,
           featureFlags,
           jobStreamer,
-          probeStreamer,
+          probeNotifier,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
           secretStoreRegistry);

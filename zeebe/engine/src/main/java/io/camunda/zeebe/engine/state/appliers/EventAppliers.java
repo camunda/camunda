@@ -201,6 +201,11 @@ public final class EventAppliers implements EventApplier {
         SecretReferenceIntent.RESOLUTION_COMPLETED,
         new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
     register(
+        SecretReferenceIntent.RESOLUTION_COMPLETED,
+        2,
+        new SecretReferenceResolutionCompletedV2Applier(
+            state.getSecretReferenceState(), state.getProbeState()));
+    register(
         SecretReferenceIntent.RESOLUTION_FAILED,
         new SecretReferenceResolutionFailedApplier(state.getSecretReferenceState()));
     register(
@@ -214,13 +219,12 @@ public final class EventAppliers implements EventApplier {
   private void registerProbeAppliers(final MutableProcessingState state) {
     final var probeState = state.getProbeState();
     register(ProbeIntent.CREATED, new ProbeCreatedApplier(probeState));
-    register(ProbeIntent.ACTIVATED, new ProbeActivatedApplier(probeState));
     register(ProbeIntent.YIELDED, new ProbeYieldedApplier(probeState));
     final var endedApplier = new ProbeEndedApplier(probeState);
     register(ProbeIntent.ANSWERED, endedApplier);
     register(ProbeIntent.TIMED_OUT, endedApplier);
     register(ProbeIntent.CANCELED, endedApplier);
-    register(ProbeBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
+    register(ProbeBatchIntent.ACTIVATED, new ProbeBatchActivatedApplier(probeState));
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

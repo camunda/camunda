@@ -7,14 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.probe;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import java.time.InstantSource;
 import java.util.function.Supplier;
@@ -32,6 +35,8 @@ public final class ProbeEventProcessors {
       final ProbeBehavior probeBehavior,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
+      final SecretStoreRegistry secretStoreRegistry,
       final InstantSource clock) {
     final var timeoutChecker =
         new ProbeTimeoutCheckScheduler(clock, scheduledTaskStateFactory.get().getProbeState());
@@ -65,6 +70,17 @@ public final class ProbeEventProcessors {
             ValueType.PROBE,
             ProbeIntent.TIME_OUT,
             new ProbeTimeOutProcessor(processingState, writers, probeBehavior, clock))
+        .onCommand(
+            ValueType.PROBE_BATCH,
+            ProbeBatchIntent.ACTIVATE,
+            new ProbeBatchActivateProcessor(
+                processingState,
+                writers,
+                processingState.getKeyGenerator(),
+                probeBehavior,
+                secretStoreRegistry,
+                cslCheck,
+                tenantCheck))
         .withListener(timeoutChecker);
   }
 }

@@ -22,7 +22,6 @@ package io.camunda.zeebe.protocol.record.intent;
 public enum ProbeIntent implements Intent {
   CREATE(0, false),
   CREATED(1, true),
-  ACTIVATED(2, true),
   YIELD(3, false),
   YIELDED(4, true),
   ANSWER(5, false),

@@ -12,13 +12,17 @@ import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 
 public interface MutableProbeState extends ProbeState {
 
+  /** Adds the probe, activatable: a poll of its probe ID may collect it. */
   void create(long probeKey, ProbeRecord record);
 
-  /** Records the worker the probe was pushed to and marks it activated. */
+  /** Records the worker whose poll collected the probe and marks it activated. */
   void activate(long probeKey, String worker);
 
-  /** Counts the yield and marks the probe as created again, to be dispatched once more. */
-  void yield(long probeKey);
+  /**
+   * Makes the probe activatable again: after a yield, or once the secrets it waited for resolved.
+   * Releases the secret references it was parked on.
+   */
+  void makeActivatable(long probeKey);
 
   /**
    * Parks the probe on the secret reference until it is resolved. A probe can be parked on several

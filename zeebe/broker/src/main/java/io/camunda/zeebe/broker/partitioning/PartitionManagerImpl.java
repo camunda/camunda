@@ -44,7 +44,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -108,7 +108,7 @@ public final class PartitionManagerImpl
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
-      final ProbeStreamer probeStreamer,
+      final ProbeNotifier probeNotifier,
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
@@ -150,7 +150,7 @@ public final class PartitionManagerImpl
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             jobStreamer,
-            probeStreamer,
+            probeNotifier,
             listeners,
             partitionRaftListeners,
             topologyManager,

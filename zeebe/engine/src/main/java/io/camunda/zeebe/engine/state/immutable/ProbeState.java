@@ -39,12 +39,18 @@ public interface ProbeState {
    */
   void visitSecretReferencesByProbe(long probeKey, BiPredicate<String, String> visitor);
 
+  /**
+   * Visits copies of the probes of the probe ID that a poll may collect, oldest first, until the
+   * visitor returns {@code false}.
+   */
+  void visitActivatableProbes(String probeId, BiPredicate<Long, ProbeRecord> visitor);
+
   enum State {
-    /** Created, or yielded and about to be dispatched again. */
-    CREATED,
-    /** Waiting for the resolution of a secret it references. */
-    PARKED,
-    /** Pushed to a worker, waiting for its answer. */
+    /** Waiting for a poll of its probe ID to collect it. */
+    ACTIVATABLE,
+    /** Collected by a poll, but a secret it references was not cached: waiting for it. */
+    WAITING_FOR_SECRET_RESOLUTION,
+    /** Handed to a worker, waiting for its answer. */
     ACTIVATED,
     NOT_FOUND
   }

@@ -29,7 +29,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
-import io.camunda.zeebe.broker.probestream.ProbeStreamService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -78,7 +77,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
-  private final Map<String, ProbeStreamService> probeStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -315,22 +313,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
     jobStreamServices.put(physicalTenantId, service);
-  }
-
-  @Override
-  public ProbeStreamService getProbeStreamService(final String physicalTenantId) {
-    return probeStreamServices.get(physicalTenantId);
-  }
-
-  @Override
-  public void addProbeStreamService(
-      final String physicalTenantId, final ProbeStreamService service) {
-    probeStreamServices.put(physicalTenantId, service);
-  }
-
-  @Override
-  public void removeProbeStreamService(final String physicalTenantId) {
-    probeStreamServices.remove(physicalTenantId);
   }
 
   @Override
