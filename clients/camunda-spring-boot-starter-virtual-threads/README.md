@@ -39,9 +39,9 @@ Virtual-thread job handling is enabled by default when this module is on the cla
 camunda.client.threads.virtual.enabled=false
 ```
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `camunda.client.threads.virtual.enabled` | `boolean` | `true` | Whether job handling uses Java 21 virtual threads. Set to `false` to fall back to the default platform-thread executor of `camunda-spring-boot-starter`, sized by `camunda.client.execution-threads`. |
+|                 Property                 |   Type    | Default |                                                                                              Description                                                                                              |
+|------------------------------------------|-----------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda.client.threads.virtual.enabled` | `boolean` | `true`  | Whether job handling uses Java 21 virtual threads. Set to `false` to fall back to the default platform-thread executor of `camunda-spring-boot-starter`, sized by `camunda.client.execution-threads`. |
 
 The property is client-wide rather than per worker, because the executor is shared by all workers.
 
