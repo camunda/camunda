@@ -9,20 +9,28 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ProbeServices;
+import io.camunda.service.ProbeServices.ProbeActivationRequest;
 import io.camunda.service.ProbeServices.ProbeAnswerRequest;
 import io.camunda.service.ProbeServices.ProbeCreateRequest;
 import io.camunda.service.ProbeServices.ProbeResult;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -30,6 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.context.request.async.DeferredResult;
 
 /**
  * Probes (alpha): a client asks a worker a short question and waits for the answer in the same
@@ -44,12 +53,15 @@ public class ProbeController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final ObjectProvider<LongPollingActivateProbesHandler> activateProbesHandler;
 
   public ProbeController(
       final ServiceRegistry serviceRegistry,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ObjectProvider<LongPollingActivateProbesHandler> activateProbesHandler) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.activateProbesHandler = activateProbesHandler;
   }
 
   @CamundaPostMapping
@@ -83,6 +95,46 @@ public class ProbeController {
       problem.setTitle(ProbeEndReason.NO_WORKER.name());
     }
     return response;
+  }
+
+  /**
+   * A worker's poll (long polling, as job activation): answers with the probes collected for the
+   * probe ID, with their secret values injected, or with none when the request timed out.
+   */
+  @CamundaPostMapping(path = "/activation")
+  public DeferredResult<ResponseEntity<Object>> activateProbes(
+      @PhysicalTenantId final String physicalTenantId, @RequestBody final ActivateProbesBody body) {
+    if (body.probeId() == null || body.probeId().isBlank()) {
+      return badRequest("Expected a probe ID, but none was given.");
+    }
+    if (body.maxProbesToActivate() == null || body.maxProbesToActivate() <= 0) {
+      return badRequest(
+          "Expected to activate at least one probe, but max probes to activate was %s."
+              .formatted(body.maxProbesToActivate()));
+    }
+    final var tenantFilter =
+        body.tenantFilter() == null
+            ? TenantFilter.PROVIDED
+            : TenantFilter.valueOf(body.tenantFilter());
+    final var request =
+        new ProbeActivationRequest(
+            body.probeId(),
+            body.worker() == null ? "" : body.worker(),
+            body.maxProbesToActivate(),
+            body.requestTimeout(),
+            body.tenantIds() == null ? List.of() : body.tenantIds(),
+            tenantFilter);
+
+    final var result = new CompletableFuture<ResponseEntity<Object>>();
+    probeServices(physicalTenantId)
+        .activateProbes(
+            activateProbesHandler.getObject(),
+            request,
+            authenticationProvider.getCamundaAuthentication(),
+            // false when the request already ended: the handler then yields the probes
+            batch -> result.complete(toActivationResponse(batch, physicalTenantId)),
+            error -> result.complete(RestErrorMapper.mapErrorToResponse(error)));
+    return RequestExecutor.toDeferredResult(result, -1L);
   }
 
   @CamundaPostMapping(path = "/{probeKey}/answer")
@@ -158,4 +210,40 @@ public class ProbeController {
       String probeId, String input, String tenantId, Long requestTimeout) {}
 
   public record AnswerProbeBody(String outcome, Map<String, Object> data, String message) {}
+
+  public record ActivateProbesBody(
+      String probeId,
+      String worker,
+      Integer maxProbesToActivate,
+      Long requestTimeout,
+      List<String> tenantIds,
+      String tenantFilter) {}
+
+  private static DeferredResult<ResponseEntity<Object>> badRequest(final String detail) {
+    return RequestExecutor.toDeferredResult(
+        RestErrorMapper.mapProblemToCompletedResponse(
+            ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail)),
+        -1L);
+  }
+
+  /** The activated probes, with the secret values the engine injected into the response. */
+  private static ResponseEntity<Object> toActivationResponse(
+      final ProbeBatchRecord batch, final String physicalTenantId) {
+    final List<Map<String, Object>> probes = new ArrayList<>();
+    int index = 0;
+    for (final ProbeRecord probe : batch.probes()) {
+      final var activated = new LinkedHashMap<String, Object>();
+      activated.put("probeKey", String.valueOf(batch.probeKeys().get(index++).getValue()));
+      activated.put("probeId", probe.getProbeId());
+      activated.put("worker", probe.getWorker());
+      activated.put("deadline", probe.getDeadline());
+      activated.put("tenantId", probe.getTenantId());
+      activated.put("physicalTenantId", physicalTenantId);
+      activated.put("input", probe.getInput());
+      probes.add(activated);
+    }
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Map.of("probes", probes));
+  }
 }

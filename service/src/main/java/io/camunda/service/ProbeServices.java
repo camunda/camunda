@@ -8,13 +8,21 @@
 package io.camunda.service;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateProbesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerProbeAnswerRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerProbeCreateRequest;
+import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Creates probes and records their answers. Creating a probe waits for its end, so the request
@@ -75,6 +83,42 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
             .setMessage(request.message()),
         authentication);
   }
+
+  /**
+   * Collects probes for a worker's poll through the gateway's long polling handler, which sends the
+   * poll to every partition and holds it until a probe arrives or the request times out.
+   *
+   * @param deliver hands the collected probes to the worker; returns whether it got them, so the
+   *     handler can yield the probes it did not
+   */
+  public void activateProbes(
+      final LongPollingActivateProbesHandler handler,
+      final ProbeActivationRequest request,
+      final CamundaAuthentication authentication,
+      final Predicate<ProbeBatchRecord> deliver,
+      final Consumer<Throwable> onError) {
+    final var brokerRequest =
+        new BrokerActivateProbesRequest(
+            request.probeId(),
+            request.worker(),
+            request.maxProbesToActivate(),
+            request.tenantIds(),
+            request.tenantFilter());
+    applyBrokerRequestMutators(brokerRequest, authentication);
+    handler.activateProbes(
+        brokerRequest,
+        request.requestTimeout() == null ? 0 : request.requestTimeout(),
+        deliver,
+        error -> onError.accept(ErrorMapper.mapError(error)));
+  }
+
+  public record ProbeActivationRequest(
+      String probeId,
+      String worker,
+      int maxProbesToActivate,
+      Long requestTimeout,
+      List<String> tenantIds,
+      TenantFilter tenantFilter) {}
 
   public record ProbeCreateRequest(
       String probeId, String input, String tenantId, Long requestTimeout) {}
