@@ -80,6 +80,27 @@ public final class ElasticsearchSchemaMigrationStatusProvider
     return new ElasticsearchSchemaMigrationStatusProvider(versionStores, searchEngineClients);
   }
 
+  /**
+   * Builds a provider over search engine clients that the caller owns, such as each tenant's shared
+   * client, so the provider opens no client of its own and closes none.
+   */
+  public static ElasticsearchSchemaMigrationStatusProvider fromClients(
+      final Map<String, SearchEngineConfiguration> configsByPhysicalTenant,
+      final Map<String, SearchEngineClient> clientsByPhysicalTenant,
+      final String applicationVersion) {
+    final Map<String, ElasticsearchSchemaVersionStore> versionStores = new LinkedHashMap<>();
+    configsByPhysicalTenant.forEach(
+        (physicalTenantId, config) ->
+            versionStores.put(
+                physicalTenantId,
+                new ElasticsearchSchemaVersionStore(
+                    clientsByPhysicalTenant.get(physicalTenantId),
+                    config.connect().getIndexPrefix(),
+                    config.connect().getTypeEnum().isElasticSearch(),
+                    applicationVersion)));
+    return new ElasticsearchSchemaMigrationStatusProvider(versionStores);
+  }
+
   private static SearchEngineClient createSearchEngineClient(
       final SearchEngineConfiguration config) {
     final var connect = config.connect();
