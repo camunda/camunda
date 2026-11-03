@@ -15,7 +15,6 @@ import com.google.common.base.Suppliers;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ZeebeRecordRefreshIntervalReader;
-import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
@@ -37,7 +36,6 @@ import org.springframework.stereotype.Component;
 public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
   private final AgentRunWriter agentRunWriter;
-  private final AgentDefinitionWriter agentDefinitionWriter;
   private final AgentRunEnrichmentService enrichmentService;
   private final ZeebeRecordRefreshIntervalReader refreshIntervalReader;
 
@@ -46,7 +44,6 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
-      final AgentDefinitionWriter agentDefinitionWriter,
       final AgentRunEnrichmentService enrichmentService,
       final ZeebeRecordRefreshIntervalReader refreshIntervalReader,
       final ObjectMapper objectMapper,
@@ -58,7 +55,6 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
         objectMapper,
         databaseClient);
     this.agentRunWriter = agentRunWriter;
-    this.agentDefinitionWriter = agentDefinitionWriter;
     this.enrichmentService = enrichmentService;
     this.refreshIntervalReader = refreshIntervalReader;
   }
@@ -80,7 +76,6 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
             new ZeebeAgentRunImportService(
                 configurationService,
                 agentRunWriter,
-                agentDefinitionWriter,
                 enrichmentService,
                 zeebeDataSourceDto.getPartitionId(),
                 databaseClient),

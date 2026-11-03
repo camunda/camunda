@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
@@ -38,7 +37,6 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final AgentRunWriter agentRunWriter;
-  private final AgentDefinitionWriter agentDefinitionWriter;
   private final AgentRunEnrichmentService enrichmentService;
   private final ConfigurationService configurationService;
   private final int partitionId;
@@ -47,14 +45,12 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
   public ZeebeAgentRunImportService(
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
-      final AgentDefinitionWriter agentDefinitionWriter,
       final AgentRunEnrichmentService enrichmentService,
       final int partitionId,
       final DatabaseClient databaseClient) {
     databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.agentRunWriter = agentRunWriter;
-    this.agentDefinitionWriter = agentDefinitionWriter;
     this.enrichmentService = enrichmentService;
     this.configurationService = configurationService;
     this.partitionId = partitionId;
@@ -70,7 +66,6 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
       final AgentRunDatabaseImportJob importJob =
           new AgentRunDatabaseImportJob(
               agentRunWriter,
-              agentDefinitionWriter,
               enrichmentService,
               configurationService,
               importCompleteCallback,

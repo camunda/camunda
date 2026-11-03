@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.query.agent;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,13 +28,6 @@ public class AgentDefinitionDto implements OptimizeDto {
   private String agentType;
   private List<String> agentDefinitionIds = new ArrayList<>();
   private List<String> processDefinitionVersions = new ArrayList<>();
-  private String model;
-  private String provider;
-  private Long maxModelCalls;
-  private Long maxToolCalls;
-  private Long maxTokens;
-  private OffsetDateTime firstSeen;
-  private OffsetDateTime lastSeen;
 
   public AgentDefinitionDto() {}
 
@@ -103,62 +95,6 @@ public class AgentDefinitionDto implements OptimizeDto {
     this.processDefinitionVersions = processDefinitionVersions;
   }
 
-  public String getModel() {
-    return model;
-  }
-
-  public void setModel(final String model) {
-    this.model = model;
-  }
-
-  public String getProvider() {
-    return provider;
-  }
-
-  public void setProvider(final String provider) {
-    this.provider = provider;
-  }
-
-  public Long getMaxModelCalls() {
-    return maxModelCalls;
-  }
-
-  public void setMaxModelCalls(final Long maxModelCalls) {
-    this.maxModelCalls = maxModelCalls;
-  }
-
-  public Long getMaxToolCalls() {
-    return maxToolCalls;
-  }
-
-  public void setMaxToolCalls(final Long maxToolCalls) {
-    this.maxToolCalls = maxToolCalls;
-  }
-
-  public Long getMaxTokens() {
-    return maxTokens;
-  }
-
-  public void setMaxTokens(final Long maxTokens) {
-    this.maxTokens = maxTokens;
-  }
-
-  public OffsetDateTime getFirstSeen() {
-    return firstSeen;
-  }
-
-  public void setFirstSeen(final OffsetDateTime firstSeen) {
-    this.firstSeen = firstSeen;
-  }
-
-  public OffsetDateTime getLastSeen() {
-    return lastSeen;
-  }
-
-  public void setLastSeen(final OffsetDateTime lastSeen) {
-    this.lastSeen = lastSeen;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -172,14 +108,7 @@ public class AgentDefinitionDto implements OptimizeDto {
         && Objects.equals(name, that.name)
         && Objects.equals(agentType, that.agentType)
         && Objects.equals(agentDefinitionIds, that.agentDefinitionIds)
-        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
-        && Objects.equals(model, that.model)
-        && Objects.equals(provider, that.provider)
-        && Objects.equals(maxModelCalls, that.maxModelCalls)
-        && Objects.equals(maxToolCalls, that.maxToolCalls)
-        && Objects.equals(maxTokens, that.maxTokens)
-        && Objects.equals(firstSeen, that.firstSeen)
-        && Objects.equals(lastSeen, that.lastSeen);
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions);
   }
 
   @Override
@@ -192,14 +121,7 @@ public class AgentDefinitionDto implements OptimizeDto {
         name,
         agentType,
         agentDefinitionIds,
-        processDefinitionVersions,
-        model,
-        provider,
-        maxModelCalls,
-        maxToolCalls,
-        maxTokens,
-        firstSeen,
-        lastSeen);
+        processDefinitionVersions);
   }
 
   @Override
@@ -221,20 +143,6 @@ public class AgentDefinitionDto implements OptimizeDto {
         + agentDefinitionIds
         + ", processDefinitionVersions="
         + processDefinitionVersions
-        + ", model="
-        + model
-        + ", provider="
-        + provider
-        + ", maxModelCalls="
-        + maxModelCalls
-        + ", maxToolCalls="
-        + maxToolCalls
-        + ", maxTokens="
-        + maxTokens
-        + ", firstSeen="
-        + firstSeen
-        + ", lastSeen="
-        + lastSeen
         + ")";
   }
 
@@ -249,12 +157,5 @@ public class AgentDefinitionDto implements OptimizeDto {
     public static final String agentType = "agentType";
     public static final String agentDefinitionIds = "agentDefinitionIds";
     public static final String processDefinitionVersions = "processDefinitionVersions";
-    public static final String model = "model";
-    public static final String provider = "provider";
-    public static final String maxModelCalls = "maxModelCalls";
-    public static final String maxToolCalls = "maxToolCalls";
-    public static final String maxTokens = "maxTokens";
-    public static final String firstSeen = "firstSeen";
-    public static final String lastSeen = "lastSeen";
   }
 }

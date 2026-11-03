@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing.job;
 
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunEnrichmentService;
@@ -21,13 +20,11 @@ import java.util.List;
 public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
 
   private final AgentRunWriter agentRunWriter;
-  private final AgentDefinitionWriter agentDefinitionWriter;
   private final AgentRunEnrichmentService enrichmentService;
   private final ConfigurationService configurationService;
 
   public AgentRunDatabaseImportJob(
       final AgentRunWriter agentRunWriter,
-      final AgentDefinitionWriter agentDefinitionWriter,
       final AgentRunEnrichmentService enrichmentService,
       final ConfigurationService configurationService,
       final Runnable importCompleteCallback,
@@ -35,7 +32,6 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
       final int partitionId) {
     super(importCompleteCallback, databaseClient, ValueType.AGENT_INSTANCE.name(), partitionId);
     this.agentRunWriter = agentRunWriter;
-    this.agentDefinitionWriter = agentDefinitionWriter;
     this.enrichmentService = enrichmentService;
     this.configurationService = configurationService;
   }
@@ -45,11 +41,6 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
     databaseClient.executeImportRequestsAsBulk(
         "Zeebe agent runs",
         agentRunWriter.generateAgentRunImports(foldedRuns),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-    databaseClient.executeImportRequestsAsBulk(
-        "Zeebe agent definition rollups",
-        agentDefinitionWriter.generateAgentRunRollupImports(
-            foldedRuns.stream().map(FoldResult::run).toList()),
         configurationService.getSkipDataAfterNestedDocLimitReached());
     enrichmentService.addAgenticProcesses(
         foldedRuns.stream().map(folded -> folded.run().getProcessDefinitionKey()).toList());

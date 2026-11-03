@@ -12,11 +12,11 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunEnrichmentService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunRecordFolder.FoldResult;
@@ -29,13 +29,11 @@ import org.mockito.InOrder;
 class AgentRunDatabaseImportJobTest {
 
   private final AgentRunWriter agentRunWriter = mock(AgentRunWriter.class);
-  private final AgentDefinitionWriter agentDefinitionWriter = mock(AgentDefinitionWriter.class);
   private final AgentRunEnrichmentService enrichmentService = mock(AgentRunEnrichmentService.class);
   private final DatabaseClient databaseClient = mock(DatabaseClient.class);
   private final AgentRunDatabaseImportJob underTest =
       new AgentRunDatabaseImportJob(
           agentRunWriter,
-          agentDefinitionWriter,
           enrichmentService,
           mock(ConfigurationService.class),
           () -> {},
@@ -58,6 +56,9 @@ class AgentRunDatabaseImportJobTest {
         .verify(databaseClient)
         .executeImportRequestsAsBulk(eq("Zeebe agent runs"), any(), anyBoolean());
     order.verify(enrichmentService).enrichCompletedRuns(List.of("700"));
+    // agent configuration is read from the runs, so the definition doc is not written per page
+    verify(databaseClient, never())
+        .executeImportRequestsAsBulk(eq("Zeebe agent definition rollups"), any(), anyBoolean());
     verify(enrichmentService).addAgenticProcesses(List.of("loan", "loan"));
   }
 
