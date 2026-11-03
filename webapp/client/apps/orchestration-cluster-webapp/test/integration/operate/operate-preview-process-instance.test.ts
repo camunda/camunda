@@ -25,7 +25,6 @@ import {
 	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
-	mockGetElementInstanceEndpoint,
 	mockResolveIncidentEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -37,7 +36,6 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
-import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {
 	createElementInstance,

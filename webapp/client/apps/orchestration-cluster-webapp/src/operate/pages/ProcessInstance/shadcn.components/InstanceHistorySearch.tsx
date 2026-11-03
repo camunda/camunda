@@ -16,7 +16,11 @@ import {useProcessInstancePage} from '../useProcessInstancePage';
 import type {ElementStatusFilter} from '../processInstanceSearch';
 
 const SEARCH_DEBOUNCE_MS = 750;
-const STATUS_FILTERS: (ElementStatusFilter | undefined)[] = [undefined, 'active', 'incidents'];
+const STATUS_FILTERS = [
+	{value: 'all', labelKey: 'operate.processInstance.history.search.status.all'},
+	{value: 'active', labelKey: 'operate.processInstance.history.search.status.active'},
+	{value: 'incidents', labelKey: 'operate.processInstance.history.search.status.incidents'},
+] as const;
 
 const InstanceHistorySearch: React.FC = () => {
 	const {t} = useTranslation();
@@ -51,6 +55,9 @@ const InstanceHistorySearch: React.FC = () => {
 
 	const isLatestFirst = history.sortOrder === 'DESC';
 	const SortIcon = isLatestFirst ? ArrowDown : ArrowUp;
+	const sortLabelKey = isLatestFirst
+		? 'operate.processInstance.history.search.latestFirst'
+		: 'operate.processInstance.history.search.oldestFirst';
 
 	return (
 		<div className="flex flex-col gap-2 border-b border-border p-2">
@@ -74,7 +81,7 @@ const InstanceHistorySearch: React.FC = () => {
 					onClick={() => history.changeSortOrder(isLatestFirst ? 'ASC' : 'DESC')}
 				>
 					<SortIcon aria-hidden="true" />
-					{t(`operate.processInstance.history.search.${isLatestFirst ? 'latestFirst' : 'oldestFirst'}`)}
+					{t(sortLabelKey)}
 				</Button>
 			</div>
 			<ToggleGroup
@@ -90,9 +97,9 @@ const InstanceHistorySearch: React.FC = () => {
 					}
 				}}
 			>
-				{STATUS_FILTERS.map((status) => (
-					<ToggleGroupItem key={status ?? 'all'} value={status ?? 'all'}>
-						{t(`operate.processInstance.history.search.status.${status ?? 'all'}`)}
+				{STATUS_FILTERS.map(({value, labelKey}) => (
+					<ToggleGroupItem key={value} value={value}>
+						{t(labelKey)}
 					</ToggleGroupItem>
 				))}
 			</ToggleGroup>

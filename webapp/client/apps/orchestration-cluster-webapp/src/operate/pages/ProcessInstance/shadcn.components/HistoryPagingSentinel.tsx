@@ -12,20 +12,25 @@ import {Skeleton} from '@camunda/design-system';
 
 type Props = {
 	scrollRef: React.RefObject<HTMLElement | null>;
+	revision: string | number;
 	onReach: () => void;
 };
 
-const HistoryPagingSentinel: React.FC<Props> = ({scrollRef, onReach}) => {
+const HistoryPagingSentinel: React.FC<Props> = ({scrollRef, revision, onReach}) => {
 	const {t} = useTranslation();
 	const ref = useRef<HTMLSpanElement>(null);
 	const onReachRef = useRef(onReach);
 	const isVisibleRef = useRef(false);
+
 	useEffect(() => {
 		onReachRef.current = onReach;
-		if (isVisibleRef.current) {
-			onReach();
-		}
 	});
+
+	useEffect(() => {
+		if (isVisibleRef.current) {
+			onReachRef.current();
+		}
+	}, [revision]);
 
 	useEffect(() => {
 		const element = ref.current;
@@ -34,11 +39,11 @@ const HistoryPagingSentinel: React.FC<Props> = ({scrollRef, onReach}) => {
 		}
 		const observer = new IntersectionObserver(
 			(entries) => {
-				const latest = entries[entries.length - 1];
-				isVisibleRef.current = latest?.isIntersecting ?? false;
-				if (isVisibleRef.current) {
+				const isVisible = entries[entries.length - 1]?.isIntersecting ?? false;
+				if (isVisible && !isVisibleRef.current) {
 					onReachRef.current();
 				}
+				isVisibleRef.current = isVisible;
 			},
 			{root: scrollRef.current},
 		);
@@ -47,13 +52,9 @@ const HistoryPagingSentinel: React.FC<Props> = ({scrollRef, onReach}) => {
 	}, [scrollRef]);
 
 	return (
-		<span
-			ref={ref}
-			role="status"
-			aria-label={t('operate.processInstance.history.loadingMore')}
-			className="block w-full"
-		>
-			<Skeleton className="h-4 w-full" />
+		<span ref={ref} className="block w-full">
+			<span className="sr-only">{t('operate.processInstance.history.loadingMore')}</span>
+			<Skeleton aria-hidden="true" className="h-4 w-full" />
 		</span>
 	);
 };
