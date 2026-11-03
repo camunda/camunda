@@ -15,20 +15,23 @@ Branch `pt-poc-lazy-tenant-resources`, based on `main` at `3214417b37a`. Local o
    cost per tenant from 18.0 to 11.1 MiB of heap, from 5.0 to 3.0 threads and from 6 to 2
    connections, cluster-wide. On a broker, a tenant that the broker does not host costs about
    0.42 MiB instead of about 3.9 MiB.
-4. The `long[]` share that grew with the tenants belongs to the stream processor, not to the
-   tenant: each partition replica, leader or follower, allocated four 1 MiB `LongHashSet`s up front
-   for its scheduled command cache. Letting the sets grow from 64 slots cuts the idle cost per
-   tenant from 11.1 to 7.2 MiB in the same setup.
-5. A node can release a tenant's MyBatis, pool and search clients once nothing has used them for
-   `idle-release-timeout` (10 minutes by default), and create them again on the next use, without
-   closing anything under a running statement or request. After a burst of queries on one
-   gateway, the cluster goes back to its idle cost.
-6. Elasticsearch/OpenSearch clients can be created on first use in the same way. On `main`, each
-   node holds two HTTP clients per tenant, each with one I/O thread per CPU: 107 threads per tenant
-   on 3 brokers with 18 CPUs. With this change, a node that does not serve a tenant holds none.
-7. A pool shared by tenants on the same database and user (P5), with a guaranteed minimum and a
-   maximum per tenant, keeps the connections of a node constant as tenants are added. It only
-   applies where the tenants share credentials. See the P5 section.
+4. The `long` arrays that grew with the tenants belong to each partition, not to the tenant. Every
+   partition, on its leader and its followers, set aside 4 MiB up front for a cache of scheduled
+   commands. Letting the cache grow as it fills cuts the idle cost per tenant from 11.1 to
+   7.2 MiB in the same setup.
+5. A node can throw away a tenant's database resources and search clients once nothing has used
+   them for a while (`idle-release-timeout`, 10 minutes by default), and build them again on the
+   next use, without closing anything that is in use. This does not lower the cost of a cluster
+   at rest. It gives back what a burst of queries made a node build: after one search per tenant
+   on one broker, the cost goes from 9.6 back to 7.2 MiB per tenant.
+6. Elasticsearch and OpenSearch clients can be built on first use in the same way. On `main`, each
+   broker holds two HTTP clients per tenant, and each client starts about one thread per CPU: 107
+   threads per tenant on 3 brokers with 18 CPUs. With this change, a broker that does not serve a
+   tenant has no client and no thread for it.
+7. Tenants that use the same database and the same database user can share one connection pool
+   per node (P5), with a guaranteed minimum and a maximum per tenant. A node's connections then
+   stay the same as tenants are added. It does not work for tenants with their own database or
+   their own credentials. See the shared pool section.
 
 ## How to run
 
@@ -119,57 +122,97 @@ a node pays this once.
 
 ### Follow-up, 2026-11-03
 
-Same machine and settings, 3 brokers, one single-replica partition per tenant. Fitted cost per
-tenant, whole cluster:
+Same laptop and settings as above: a 3-broker cluster in one JVM, each tenant with one partition
+and one copy of it. Every number is the cost of one tenant to the whole cluster, worked out by
+fitting a straight line through several tenant counts.
 
-| setup                                         | phase                  |   heap   | threads | connections |
-|-----------------------------------------------|------------------------|----------|---------|-------------|
-| RDBMS, lazy, before the cache fix (above)     | idle                   | 11.1 MiB | 3.0     | 2.0         |
-| RDBMS, lazy, before the cache fix (above)     | queried on one gateway | 13.4 MiB | 3.6     | 3.3         |
-| RDBMS, lazy + cache fix                       | idle                   | 7.2 MiB  | 3.0     | 2.0         |
-| RDBMS, lazy + cache fix                       | queried on one gateway | 9.6 MiB  | 3.6     | 3.3         |
-| RDBMS, + release after 10 s                   | after idle release     | 7.2 MiB  | 3.2     | 1.9         |
-| Elasticsearch, `main` clients                 | idle                   | 1.9 MiB  | 107     | 0           |
-| Elasticsearch, lazy clients                   | idle                   | 1.8 MiB  | 0       | 0           |
-| Elasticsearch, lazy clients                   | queried on one gateway | 1.7 MiB  | 12      | 1           |
-| Elasticsearch, + release after 10 s           | after idle release     | 1.3 MiB  | 0       | 0           |
+#### How each run is measured
 
-The RDBMS rows fit 1 to 120 tenants (R² ≥ 0.99), the release row 1 to 80. The Elasticsearch rows
-fit 1 to 20 tenants. Their heap fits are poor (R² 0.4 to 0.6): the heap of an Elasticsearch
-tenant is small next to the noise. The lazy idle thread fits are noisy too (R² 0.7 to 0.8, slope
-about -6); 0 in the table means no search client threads. The thread counts themselves:
+Each run goes through up to three steps, and the harness takes a measurement after each:
 
-| tenants | `main` threads | lazy, idle | lazy, queried | lazy, after release |
-|---------|----------------|------------|---------------|---------------------|
-| 1       | 506            | 394        | 415           | 397                 |
-| 10      | 1407           | 267        | 459           | 397                 |
-| 20      | 2557           | 277        | 658           | 282                 |
+1. **No queries yet.** The cluster has started and is sitting still. A tenant's database
+   resources (its MyBatis setup and its connection pool) exist only on the one broker that exports
+   the tenant's data.
+2. **After one search per tenant on one broker.** The harness sends one search for every tenant,
+   all to broker 0. Broker 0 has to build resources for every tenant it did not already have, so
+   most tenants now exist on two brokers.
+3. **After the searches stop and idle tenants are released.** Only in runs with idle release on.
+   The harness stops sending searches and waits 20 seconds. A node throws away a tenant's
+   resources once nothing has used them for 10 seconds (the default is 10 minutes), so broker 0
+   gives back the copies it built in step 2.
 
-#### The `long[]` share
+Idle release cannot make step 3 cheaper than step 1: the broker that exports a tenant keeps using
+it. What it does is make the step 2 cost temporary. Without it, broker 0 keeps its extra copies
+until it restarts.
 
-A heap dump of 20 tenants on 3 brokers had 104 `long[]` of 4096 elements or more. 80 of them,
-of 131,072 elements (1 MiB) each, belong to `BoundedCommandCache`, four per stream processor:
-`BoundedScheduledCommandCache` keeps one per scheduled intent (timer trigger, job time-out, job
-back-off, message expiry). Each set was sized for its full capacity of 100,000 keys when it was
-built, to avoid a resize. A stream processor runs on leaders and, in replay, on followers, so a
-broker pays 4 MiB for every partition replica it hosts, whatever the load. With one partition per
-tenant, that looked like a per-tenant cost. The earlier note of "32,873 arrays" was wrong: it
-counted every `long[]`, most of them small and unrelated.
+#### RDBMS
 
-The fix lets each set start at 64 slots and grow to the same bound. A full cache uses the same
-memory as before. In the table above it is the difference between 11.1 and 7.2 MiB.
+| code                                            | step                                      | heap     | threads | connections |
+|-------------------------------------------------|-------------------------------------------|----------|---------|-------------|
+| `main`                                          | no queries yet                            | 18.0 MiB | 5.0     | 6.0         |
+| lazy resources, before the cache fix (above)    | no queries yet                            | 11.1 MiB | 3.0     | 2.0         |
+| lazy resources, before the cache fix (above)    | after one search per tenant on one broker | 13.4 MiB | 3.6     | 3.3         |
+| lazy resources and the cache fix                | no queries yet                            | 7.2 MiB  | 3.0     | 2.0         |
+| lazy resources and the cache fix                | after one search per tenant on one broker | 9.6 MiB  | 3.6     | 3.3         |
+| lazy resources, the cache fix and idle release  | after the searches stop and tenants are released | 7.2 MiB  | 3.2     | 1.9         |
+
+The last row is back at the "no queries yet" cost of the same code, as it should be. It comes from
+a separate run of 1 to 80 tenants; the rows above it from runs of 1 to 120 tenants. In the idle
+release run, the first two steps are not usable on their own: with a 10-second timeout, some
+tenants had already been thrown away during startup and during the searches.
+
+The cache fix is the change described under "The `long[]` share" below.
+
+#### Elasticsearch
+
+| code                         | step                                             | threads | search clients |
+|------------------------------|--------------------------------------------------|---------|----------------|
+| `main`                       | no queries yet                                   | 107     | 6              |
+| lazy clients                 | no queries yet                                   | 0       | 0              |
+| lazy clients                 | after one search per tenant on one broker        | 12      | 1              |
+| lazy clients, idle release   | after the searches stop and tenants are released | 0       | 0              |
+
+These fit 1 to 20 tenants. The heap of an Elasticsearch tenant is small, 1.3 to 1.9 MiB, and too
+noisy to compare between rows. The "0 threads" rows are a noisy fit around zero: the thread count
+of the cluster no longer grows with the tenants. The raw thread counts of the whole cluster:
+
+| tenants | `main` | lazy, no queries yet | lazy, after the searches | lazy, after release |
+|---------|--------|----------------------|--------------------------|---------------------|
+| 1       | 506    | 394                  | 415                      | 397                 |
+| 10      | 1407   | 267                  | 459                      | 397                 |
+| 20      | 2557   | 277                  | 658                      | 282                 |
+
+#### The `long[]` share: the scheduled command cache
+
+The earlier notes found that arrays of `long` grew with the tenants, and could not say what owned
+them. A heap dump of 20 tenants on 3 brokers answers it.
+
+Every partition runs a stream processor, on its leader and also on its followers. Each stream
+processor keeps a cache of the commands it has scheduled (timer triggers, job time-outs, job
+retries after back-off, message expiries), one cache per kind, so four. Each cache was built at its
+full size of 100,000 entries straight away, so that it never has to grow. That is a 1 MiB array per
+cache, 4 MiB per partition, even when the partition does nothing. With one partition per tenant it
+looked like a cost of the tenant; it is a cost of the partition.
+
+The earlier note of "32,873 arrays" was wrong. It counted every `long` array in the heap, most of
+them small and unrelated. 80 large arrays are the ones that grow.
+
+The fix lets each cache start small (64 entries) and grow as it fills, up to the same limit. A full
+cache uses the same memory as before. In the RDBMS table above, it is the drop from 11.1 to
+7.2 MiB.
 
 #### Idle release
 
-10 s after the last query of every tenant on one gateway, each tenant has one MyBatis graph and
-one pool again, on the broker that exports it. The gateway's extra 2.4 MiB per tenant is gone. On
-Elasticsearch, no node holds a client after the release, because an idle exporter does not touch
-Elasticsearch.
+After the searches stop, broker 0 throws away the resources it built for them, and each tenant is
+back to one copy, on the broker that exports it. The extra 2.4 MiB per tenant from the searches is
+gone. On Elasticsearch, no broker keeps a search client afterwards, because an exporter with
+nothing to export does not talk to Elasticsearch.
 
-On RDBMS, an idle exporter does: its periodic work recreates the tenant on its broker after each
-release. With the 10 s timeout of the harness, a tenant is released and recreated every few
-seconds. With the default of 10 minutes, the exporter's period is shorter than the timeout, so
-its tenant is not released at all. I did not find which periodic task it is.
+On RDBMS, an exporter with nothing to export still runs some periodic work against the database,
+and that builds the tenant again on its broker after each release. With the 10-second timeout of
+the harness, such a tenant is thrown away and rebuilt every few seconds. With the 10-minute
+default, the periodic work comes round sooner than the timeout, so the exporting broker simply
+keeps its tenant. I did not find which periodic task it is.
 
 Two leaks showed up on the way, and both are fixed:
 
