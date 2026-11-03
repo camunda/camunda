@@ -128,15 +128,18 @@ export function schemaShape(node) {
 
 /**
  * Decode one RFC 6901 JSON Pointer segment (`~1` -> `/`, `~0` -> `~`).
- * Bundler-generated refs into `#/paths/...` escape the `/` in path templates
- * (`#/paths/~1canonical/post`) and media types (`application~1json`), so the
- * literal key never matches the spec node.
+ * Only a `$ref` *string* is a JSON Pointer whose segments need decoding
+ * (bundler-generated refs into `#/paths/...` escape the `/` in path templates
+ * and media types). Segments of a path *array* are literal keys — the
+ * builder's `refToPath` already decoded them when it split the `$ref` — so
+ * decoding them again would corrupt a literal `literal~1name` into
+ * `literal/name`.
  */
 function unescapePointerSegment(seg) {
   return seg.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-function nodeAt(root, path) {
+function nodeAt(root, path, visited = new Set()) {
   let node = root;
   // A leading `*.yaml` segment is the source-file attribution the builder
   // prefixes to cross-file paths for the verifier; the bundled spec has no
@@ -147,9 +150,27 @@ function nodeAt(root, path) {
     // Follow intermediate $refs: the bundler emits refs into `#/paths/…`,
     // whose traversal passes through nodes that are themselves `{ $ref }`.
     while (node?.$ref && typeof node.$ref === 'string' && node.$ref.startsWith('#/')) {
-      node = nodeAt(root, node.$ref.slice(2).split('/').map(unescapePointerSegment));
+      if (visited.has(node.$ref)) return undefined; // reference cycle
+      visited.add(node.$ref);
+      node = nodeAt(root, node.$ref.slice(2).split('/').map(unescapePointerSegment), visited);
     }
-    node = node?.[unescapePointerSegment(seg)];
+    node = node?.[seg];
+  }
+  // A terminal $ref (`properties: { foo: { $ref: '#/components/schemas/Foo' } }`)
+  // names the same schema as an inline sibling with Foo's content, so resolve
+  // it before comparing — but keep any sibling constraints (`nullable`,
+  // `enum`, …) the reference sits next to, since they narrow the target.
+  if (node?.$ref && typeof node.$ref === 'string' && node.$ref.startsWith('#/')) {
+    if (visited.has(node.$ref)) return undefined; // reference cycle
+    visited.add(node.$ref);
+    const target = nodeAt(root, node.$ref.slice(2).split('/').map(unescapePointerSegment), visited);
+    if (target !== undefined) {
+      const { $ref, ...siblings } = node;
+      node =
+        target && typeof target === 'object' && !Array.isArray(target)
+          ? { ...structuredClone(target), ...siblings }
+          : node;
+    }
   }
   return node;
 }
