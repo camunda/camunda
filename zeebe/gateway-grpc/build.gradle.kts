@@ -42,6 +42,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.commons)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
+  testImplementation(project(":zeebe-atomix-membership-api"))
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-cluster-config-api"))
   api(libs.io.netty.netty.handler)
