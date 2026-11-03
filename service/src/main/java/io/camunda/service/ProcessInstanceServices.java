@@ -336,8 +336,8 @@ public final class ProcessInstanceServices
       brokerRequest.setBusinessId(request.businessId());
     }
 
-    if (request.stubCallActivities() != null) {
-      brokerRequest.setStubCallActivities(request.stubCallActivities());
+    if (request.stubbedCallActivityProcessIds() != null) {
+      brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
     }
 
     if (request.holdTimers() != null) {
@@ -376,8 +376,8 @@ public final class ProcessInstanceServices
       brokerRequest.setBusinessId(request.businessId());
     }
 
-    if (request.stubCallActivities() != null) {
-      brokerRequest.setStubCallActivities(request.stubCallActivities());
+    if (request.stubbedCallActivityProcessIds() != null) {
+      brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
     }
 
     if (request.holdTimers() != null) {
@@ -729,7 +729,7 @@ public final class ProcessInstanceServices
       List<String> fetchVariables,
       Set<String> tags,
       String businessId,
-      Boolean stubCallActivities,
+      List<String> stubbedCallActivityProcessIds,
       Boolean holdTimers,
       String jobReservationToken) {
 

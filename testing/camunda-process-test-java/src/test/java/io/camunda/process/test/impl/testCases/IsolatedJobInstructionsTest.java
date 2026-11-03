@@ -23,15 +23,12 @@ import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
-import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableJobSelector;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableRunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CompleteJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.RunCalledProcessInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -75,23 +72,6 @@ public class IsolatedJobInstructionsTest {
     // then
     verify(processTestContext).releaseJob(jobSelectorCaptor.capture());
     assertSelectsElement();
-  }
-
-  @Test
-  void shouldRunCalledProcess() {
-    // when
-    new RunCalledProcessInstructionHandler()
-        .execute(
-            ImmutableRunCalledProcessInstruction.builder()
-                .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
-                .build(),
-            processTestContext,
-            camundaClient,
-            assertionFacade);
-
-    // then
-    verify(processTestContext).runCalledProcess(jobSelectorCaptor.capture());
-    assertSelectsStubJobOfElement();
   }
 
   @Test

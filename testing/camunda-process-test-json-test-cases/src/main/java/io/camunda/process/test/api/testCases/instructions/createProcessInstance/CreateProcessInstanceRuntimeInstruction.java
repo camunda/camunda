@@ -31,7 +31,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
       name = CreateProcessInstanceRuntimeInstructionType.TERMINATE_PROCESS_INSTANCE),
   @JsonSubTypes.Type(
       value = CreateProcessInstanceConfigureExecutionRuntimeInstruction.class,
-      name = CreateProcessInstanceRuntimeInstructionType.CONFIGURE_EXECUTION)
+      name = CreateProcessInstanceRuntimeInstructionType.CONFIGURE_EXECUTION),
+  @JsonSubTypes.Type(
+      value = CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class,
+      name = CreateProcessInstanceRuntimeInstructionType.STUB_CALL_ACTIVITIES)
 })
 public interface CreateProcessInstanceRuntimeInstruction {
 

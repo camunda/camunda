@@ -16,8 +16,11 @@
           "runtimeInstructions": [
             {
               "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true,
-              "stubCallActivities": true
+              "reserveJobs": true
+            },
+            {
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["shipping", "notification"]
             }
           ]
         },
@@ -66,7 +69,7 @@
     },
     {
       "name": "Run the real shipping process, stub the notification it calls",
-      "description": "The shipping process runs for real, and the call activity nested inside it is stubbed too - the switch is inherited, so no extra configuration is needed.",
+      "description": "Only 'notification' is listed, so the shipping call activity runs its real child while the notification call activity nested inside shipping is stubbed - stubbing is inherited down the tree.",
       "instructions": [
         {
           "type": "CREATE_PROCESS_INSTANCE",
@@ -79,8 +82,11 @@
           "runtimeInstructions": [
             {
               "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true,
-              "stubCallActivities": true
+              "reserveJobs": true
+            },
+            {
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["notification"]
             }
           ]
         },
@@ -88,12 +94,6 @@
           "type": "COMPLETE_JOB",
           "jobSelector": {
             "elementId": "ServiceTask_ChargeCard"
-          }
-        },
-        {
-          "type": "RUN_CALLED_PROCESS",
-          "elementSelector": {
-            "elementId": "CallActivity_ShipOrder"
           }
         },
         {
@@ -151,8 +151,11 @@
           "runtimeInstructions": [
             {
               "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true,
-              "stubCallActivities": true
+              "reserveJobs": true
+            },
+            {
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["shipping", "notification"]
             }
           ]
         },
@@ -205,8 +208,11 @@
           "runtimeInstructions": [
             {
               "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true,
-              "stubCallActivities": true
+              "reserveJobs": true
+            },
+            {
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["shipping", "notification"]
             }
           ]
         },
@@ -268,8 +274,8 @@
           },
           "runtimeInstructions": [
             {
-              "type": "CONFIGURE_EXECUTION",
-              "stubCallActivities": true
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["shipping", "notification"]
             }
           ]
         },

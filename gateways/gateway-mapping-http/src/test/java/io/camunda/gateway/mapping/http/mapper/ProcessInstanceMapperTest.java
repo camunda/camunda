@@ -15,6 +15,7 @@ import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstructio
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
@@ -114,9 +115,9 @@ class ProcessInstanceMapperTest {
             .processDefinitionId("process")
             .runtimeInstructions(
                 List.of(
-                    ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
-                        .type("CONFIGURE_EXECUTION")
-                        .stubCallActivities(true)
+                    ProcessInstanceCreationStubCallActivitiesInstruction.Builder.create()
+                        .processIds(List.of("shipping", "notification"))
+                        .type("STUB_CALL_ACTIVITIES")
                         .build()))
             .build();
 
@@ -125,7 +126,8 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().stubCallActivities()).isTrue();
+    assertThat(result.get().stubbedCallActivityProcessIds())
+        .containsExactly("shipping", "notification");
   }
 
   @Test
@@ -136,9 +138,9 @@ class ProcessInstanceMapperTest {
             .processDefinitionKey("123")
             .runtimeInstructions(
                 List.of(
-                    ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
-                        .type("CONFIGURE_EXECUTION")
-                        .stubCallActivities(true)
+                    ProcessInstanceCreationStubCallActivitiesInstruction.Builder.create()
+                        .processIds(List.of("shipping"))
+                        .type("STUB_CALL_ACTIVITIES")
                         .build()))
             .build();
 
@@ -147,7 +149,7 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().stubCallActivities()).isTrue();
+    assertThat(result.get().stubbedCallActivityProcessIds()).containsExactly("shipping");
   }
 
   @Test
@@ -163,8 +165,8 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().stubCallActivities())
-        .describedAs("no configure-execution instruction, so call activities run for real")
+    assertThat(result.get().stubbedCallActivityProcessIds())
+        .describedAs("no stub-call-activities instruction, so call activities run for real")
         .isNull();
   }
 

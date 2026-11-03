@@ -65,10 +65,6 @@ import java.util.stream.Collectors;
 public final class JobCompleteProcessor
     implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
-  private static final String RUN_CALLED_PROCESS_NOT_SUPPORTED_MESSAGE =
-      """
-          Expected to complete job with key '%d' and ask for the called process to be started, \
-          but the job does not stand in for a called process""";
   private static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       """
           Task Listener job completion with variables payload provided is not yet supported \
@@ -194,8 +190,7 @@ public final class JobCompleteProcessor
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkCreatingListenerJobForAssigneeCorrection,
                 this::checkTaskListenerJobForUnknownPropertyCorrections,
-                this::checkBusinessIdAssignment,
-                this::checkRunCalledProcessOnlyForCallActivityStub),
+                this::checkBusinessIdAssignment),
             tenantCheck);
     this.cslCheck = cslCheck;
     this.jobMetrics = jobMetrics;
@@ -389,16 +384,6 @@ public final class JobCompleteProcessor
    */
   private void completeStubbedCallActivity(
       final JobRecord value, final ElementInstance elementInstance) {
-    if (value.getResult().isRunCalledProcess()) {
-      // the completer wants the real process after all: the call activity is already activated, so
-      // the child instance is created from a follow-up command instead of during activation
-      commandWriter.appendFollowUpCommand(
-          elementInstance.getKey(),
-          ProcessInstanceIntent.START_CALLED_PROCESS,
-          elementInstance.getValue());
-      return;
-    }
-
     final var callActivity =
         processState
             .getProcessState()
@@ -540,21 +525,6 @@ public final class JobCompleteProcessor
       }
     }
 
-    return Either.right(job);
-  }
-
-  /**
-   * Only a job that stands in for a called process can be told to start that process instead of
-   * standing in for it.
-   */
-  private Either<Rejection, JobRecord> checkRunCalledProcessOnlyForCallActivityStub(
-      final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (command.getValue().getResult().isRunCalledProcess() && !job.isCallActivityStub()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              RUN_CALLED_PROCESS_NOT_SUPPORTED_MESSAGE.formatted(command.getKey())));
-    }
     return Either.right(job);
   }
 

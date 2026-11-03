@@ -244,11 +244,6 @@ public final class BpmnStreamProcessor
         afterTerminating(element, processor, context)
             .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
         break;
-      case START_CALLED_PROCESS:
-        processor
-            .onStartCalledProcess(element, context)
-            .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
-        break;
       default:
         throw new BpmnProcessingException(
             context,

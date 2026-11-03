@@ -68,7 +68,6 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorker
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableRunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
@@ -81,6 +80,7 @@ import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceM
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
 import java.time.Duration;
@@ -190,8 +190,11 @@ public class PojoCompatibilityTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
                             .reserveJobs(true)
-                            .stubCallActivities(true)
                             .holdTimers(true)
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
+                            .addProcessIds("shipping", "notification")
                             .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE =====
@@ -467,14 +470,6 @@ public class PojoCompatibilityTest {
             singleTestCase(
                 ImmutableReleaseJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().elementId("send-invoice").build())
-                    .build())),
-        // ===== RUN_CALLED_PROCESS =====
-        Arguments.of(
-            "run called process",
-            singleTestCase(
-                ImmutableRunCalledProcessInstruction.builder()
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("ship-order").build())
                     .build())),
         // ===== COMPLETE_JOB: call activity stub =====
         Arguments.of(

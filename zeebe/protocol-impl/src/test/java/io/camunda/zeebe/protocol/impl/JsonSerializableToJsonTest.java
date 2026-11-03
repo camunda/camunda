@@ -971,8 +971,7 @@ final class JsonSerializableToJsonTest {
                           }
                         ],
                         "completionConditionFulfilled": true,
-                        "cancelRemainingInstances": true,
-                        "runCalledProcess": false
+                        "cancelRemainingInstances": true
                       },
                       "secretReferences": []
                     }
@@ -1174,8 +1173,7 @@ final class JsonSerializableToJsonTest {
                       }
                     ],
                     "completionConditionFulfilled": true,
-                    "cancelRemainingInstances": true,
-                    "runCalledProcess": false
+                    "cancelRemainingInstances": true
                   },
                   "secretReferences": [
                     {
@@ -1243,8 +1241,7 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false,
-                    "runCalledProcess": false
+                    "cancelRemainingInstances": false
                   },
                   "secretReferences": []
                 }
@@ -1311,8 +1308,7 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false,
-                    "runCalledProcess": false
+                    "cancelRemainingInstances": false
                   },
                   "secretReferences": []
                 }
@@ -1967,7 +1963,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
-                  "stubCallActivities": false,
+                  "stubbedCallActivityProcessIds": [],
                   "holdTimers": false,
                   "jobReservationToken": "recorder-session-1",
                   "variablesMetadata": {
@@ -2003,7 +1999,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "versionTag": "",
-                  "stubCallActivities": false,
+                  "stubbedCallActivityProcessIds": [],
                   "holdTimers": false,
                   "jobReservationToken": "",
                   "variablesMetadata": {},
@@ -2195,7 +2191,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
-                  "stubCallActivities": false,
+                  "stubbedCallActivityProcessIds": [],
                   "holdTimers": false,
                   "elementInstanceKey": -1
                 }
@@ -2232,7 +2228,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
-                  "stubCallActivities": false,
+                  "stubbedCallActivityProcessIds": [],
                   "holdTimers": false,
                   "elementInstanceKey": -1
                 }
@@ -3081,7 +3077,7 @@ final class JsonSerializableToJsonTest {
                     "businessId": "",
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
-                  "stubCallActivities": false,
+                  "stubbedCallActivityProcessIds": [],
                   "holdTimers": false,
                     "elementInstanceKey": -1
                   }

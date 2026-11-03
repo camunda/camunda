@@ -193,27 +193,5 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command.
      */
     CompleteAdHocSubProcessResultStep1 forAdHocSubProcess();
-
-    /**
-     * Initializes the job result to decide what a call activity stub job stands in for (alpha).
-     *
-     * <p>A call activity of a process instance created with {@link
-     * CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#stubCallActivities(boolean)
-     * stubCallActivities} starts no called process and waits on a job instead. Completing that job
-     * plainly stands in for the called process; completing it through this result starts the real
-     * called process after all.
-     *
-     * <pre>{@code
-     * client.newCompleteCommand(jobKey)
-     *   .withResult(r -> r.forCallActivity().runCalledProcess())
-     *   .withJobReservationToken(token)
-     *   .send();
-     * }</pre>
-     *
-     * <p>This result is rejected for any job that does not stand in for a called process.
-     *
-     * @return the builder for this command.
-     */
-    CompleteCallActivityJobResultStep1 forCallActivity();
   }
 }

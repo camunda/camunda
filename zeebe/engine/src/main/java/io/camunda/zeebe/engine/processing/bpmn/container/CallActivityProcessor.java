@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -94,9 +95,23 @@ public final class CallActivityProcessor
   @Override
   public Either<Failure, ?> finalizeActivation(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    if (isStubbed(context)) {
-      return finalizeStubbedActivation(element, context);
+    final var stubbedProcessIds = stubbedCallActivityProcessIds(context);
+    if (stubbedProcessIds.isEmpty()) {
+      return finalizeRealActivation(element, context);
     }
+    final Either<Failure, String> processId =
+        evaluateProcessId(context, element).map(BufferUtil::bufferAsString);
+    if (processId.isLeft()) {
+      return processId;
+    }
+    if (stubbedProcessIds.contains(processId.get())) {
+      return finalizeStubbedActivation(element, context, processId.get());
+    }
+    return finalizeRealActivation(element, context);
+  }
+
+  private Either<Failure, ?> finalizeRealActivation(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
     return resolveCalledProcess(element, context)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .flatMap(
@@ -114,39 +129,29 @@ public final class CallActivityProcessor
   /**
    * Activates the call activity without starting the process it calls, and creates the job that
    * stands in for that process. The process is not looked up at all, so it does not have to be
-   * deployed; its id is resolved only to tell the job's completer which process is being stood in
-   * for.
+   * deployed; the already-resolved {@code processId} only tells the job's completer which process
+   * is being stood in for.
    */
   private Either<Failure, ?> finalizeStubbedActivation(
-      final ExecutableCallActivity element, final BpmnElementContext context) {
-    return evaluateProcessId(context, element)
-        .map(BufferUtil::bufferAsString)
-        .flatMap(
-            processId ->
-                eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> processId))
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final String processId) {
+    return eventSubscriptionBehavior
+        .subscribeToEvents(element, context)
         .thenDo(
-            processId -> {
+            ok -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
               jobBehavior.createStubCallActivityJob(activated, element, processId);
             });
   }
 
-  @Override
-  public Either<Failure, ?> onStartCalledProcess(
-      final ExecutableCallActivity element, final BpmnElementContext context) {
-    return resolveCalledProcess(element, context)
-        .flatMap(
-            process ->
-                resolveChildBusinessId(context, element)
-                    .map(businessId -> new CalledProcess(process, businessId)))
-        .thenDo(calledProcess -> startChildProcessInstance(element, context, calledProcess));
-  }
-
-  private boolean isStubbed(final BpmnElementContext context) {
+  private List<String> stubbedCallActivityProcessIds(final BpmnElementContext context) {
     final var rootProcessInstance =
         stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
-    return rootProcessInstance != null && rootProcessInstance.getValue().isStubCallActivities();
+    return rootProcessInstance == null
+        ? List.of()
+        : rootProcessInstance.getValue().getStubbedCallActivityProcessIds();
   }
 
   private Either<Failure, DeployedProcess> resolveCalledProcess(

@@ -66,9 +66,9 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
-  public BrokerCreateProcessInstanceWithResultRequest setStubCallActivities(
-      final boolean stubCallActivities) {
-    requestDto.setStubCallActivities(stubCallActivities);
+  public BrokerCreateProcessInstanceWithResultRequest setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    requestDto.setStubbedCallActivityProcessIds(stubbedCallActivityProcessIds);
     return this;
   }
 

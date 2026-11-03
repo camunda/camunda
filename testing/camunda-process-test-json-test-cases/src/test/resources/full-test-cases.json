@@ -102,8 +102,11 @@
           "runtimeInstructions": [
             {
               "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true,
-              "stubCallActivities": true
+              "reserveJobs": true
+            },
+            {
+              "type": "STUB_CALL_ACTIVITIES",
+              "processIds": ["shipping"]
             }
           ]
         },
@@ -130,12 +133,6 @@
           },
           "variables": {
             "approved": true
-          }
-        },
-        {
-          "type": "RUN_CALLED_PROCESS",
-          "elementSelector": {
-            "elementId": "ship-order"
           }
         },
         {

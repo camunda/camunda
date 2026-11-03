@@ -20,8 +20,8 @@ recording switches, which ride on a `CONFIGURE_EXECUTION` runtime instruction of
   by key. A reserved job is hidden from CPT's own `mockJobWorker` too, so mock those jobs with
   `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` rather than `MOCK_JOB_WORKER_*`, or
   release them with `RELEASE_JOB`.
-- `stubCallActivities` — each call activity activates without starting the process it calls and
-  waits on a stand-in job instead. Complete that job with `COMPLETE_JOB` to stand in for the called
+- `STUB_CALL_ACTIVITIES` — each call activity calling a listed process id activates without starting
+  the process it calls and waits on a stand-in job instead. Complete that job with `COMPLETE_JOB` to stand in for the called
   process, or `THROW_BPMN_ERROR_FROM_JOB` to make it go wrong — selecting it by
   `jobKind: CALL_ACTIVITY_STUB` and the call activity's `elementId` — or use `RUN_CALLED_PROCESS` to
   run the called process for real. The switch is inherited, so a call activity nested at any depth is

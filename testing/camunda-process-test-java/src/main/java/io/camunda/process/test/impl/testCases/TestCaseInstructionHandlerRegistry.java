@@ -44,7 +44,6 @@ import io.camunda.process.test.impl.testCases.instructions.MockJobWorkerThrowBpm
 import io.camunda.process.test.impl.testCases.instructions.PublishMessageInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ResolveIncidentInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.RunCalledProcessInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.TriggerTimerInstructionHandler;
@@ -110,7 +109,6 @@ public class TestCaseInstructionHandlerRegistry {
     register(new CorrelateMessageInstructionHandler(runContext));
     register(new ReleaseJobInstructionHandler());
     register(new ResolveIncidentInstructionHandler(runContext));
-    register(new RunCalledProcessInstructionHandler());
     register(new SetTimeInstructionHandler());
     register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));
     register(new TriggerTimerInstructionHandler(createdProcessInstances));

@@ -22,11 +22,13 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import io.camunda.process.test.impl.testCases.TestRunContext;
+import java.util.List;
 import java.util.Optional;
 
 public class CreateProcessInstanceInstructionHandler
@@ -84,14 +86,12 @@ public class CreateProcessInstanceInstructionHandler
         config
             .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
             .orElse(false);
-    final boolean stubCallActivities =
-        config
-            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getStubCallActivities)
-            .orElse(false);
     final boolean holdTimers =
         config
             .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
             .orElse(false);
+    final List<String> stubbedCallActivityProcessIds = stubbedCallActivityProcessIdsOf(instruction);
+    final boolean stubCallActivities = !stubbedCallActivityProcessIds.isEmpty();
 
     final boolean isolated = reserveJobs || stubCallActivities || holdTimers;
 
@@ -99,7 +99,7 @@ public class CreateProcessInstanceInstructionHandler
       command.reserveJobs(context.getJobReservationToken());
     }
     if (stubCallActivities) {
-      command.stubCallActivities(true);
+      command.stubCallActivities(stubbedCallActivityProcessIds.toArray(new String[0]));
     }
     if (holdTimers) {
       command.holdTimers(true);
@@ -121,6 +121,16 @@ public class CreateProcessInstanceInstructionHandler
         .findFirst();
   }
 
+  private static List<String> stubbedCallActivityProcessIdsOf(
+      final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::cast)
+        .map(CreateProcessInstanceStubCallActivitiesRuntimeInstruction::getProcessIds)
+        .findFirst()
+        .orElseGet(java.util.Collections::emptyList);
+  }
+
   @Override
   public Class<CreateProcessInstanceInstruction> getInstructionType() {
     return CreateProcessInstanceInstruction.class;
@@ -136,8 +146,10 @@ public class CreateProcessInstanceInstructionHandler
       command.terminateAfterElement(terminateInstruction.getAfterElementId());
 
     } else if (runtimeInstruction
-        instanceof CreateProcessInstanceConfigureExecutionRuntimeInstruction) {
-      // instance-wide switches are applied from configureExecutionOf, not as a command instruction
+            instanceof CreateProcessInstanceConfigureExecutionRuntimeInstruction
+        || runtimeInstruction
+            instanceof CreateProcessInstanceStubCallActivitiesRuntimeInstruction) {
+      // instance-wide switches are applied in execute(), not as a per-element command instruction
 
     } else {
       throw new IllegalArgumentException(

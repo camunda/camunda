@@ -108,23 +108,6 @@ public class ReservedJobRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldRunCalledProcess() {
-    // when
-    client
-        .newCompleteCommand(JOB_KEY)
-        .withResult(r -> r.forCallActivity().runCalledProcess())
-        .withJobReservationToken(TOKEN)
-        .send()
-        .join();
-
-    // then
-    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getResult().getType()).isEqualTo("callActivity");
-    assertThat(request.getResult().getRunCalledProcess()).isTrue();
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
-  }
-
-  @Test
   public void shouldRejectReservationTokenOverGrpc() {
     // when / then
     assertThatThrownBy(
@@ -132,19 +115,5 @@ public class ReservedJobRestTest extends ClientRestTest {
                 client.newCompleteCommand(JOB_KEY).withJobReservationToken(TOKEN).useGrpc().send())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("withJobReservationToken");
-  }
-
-  @Test
-  public void shouldRejectCallActivityResultOverGrpc() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCompleteCommand(JOB_KEY)
-                    .withResult(r -> r.forCallActivity().runCalledProcess())
-                    .useGrpc()
-                    .send())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("forCallActivity");
   }
 }

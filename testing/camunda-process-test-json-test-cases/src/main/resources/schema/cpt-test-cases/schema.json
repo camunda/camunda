@@ -132,9 +132,6 @@
           "$ref": "#/definitions/ReleaseJobInstruction"
         },
         {
-          "$ref": "#/definitions/RunCalledProcessInstruction"
-        },
-        {
           "$ref": "#/definitions/TriggerTimerInstruction"
         },
         {
@@ -215,10 +212,6 @@
                     "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
                     "type": "boolean"
                   },
-                  "stubCallActivities": {
-                    "description": "Whether the process instance's call activities start no called process, waiting on a job that stands in for it instead. Optional, defaults to false.",
-                    "type": "boolean"
-                  },
                   "holdTimers": {
                     "description": "Whether the process instance's timers are kept out of the engine's due-date scheduler, so that none of them fires on its own. A held timer fires only when a TRIGGER_TIMER instruction names its catch event. Optional, defaults to false.",
                     "type": "boolean"
@@ -226,6 +219,29 @@
                 },
                 "required": [
                   "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "description": "An instruction to stub the process instance's call activities that call one of the listed BPMN process ids. A stubbed call activity starts no called process; it waits on a job that stands in for it.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "The type of the runtime instruction.",
+                    "type": "string",
+                    "const": "STUB_CALL_ACTIVITIES"
+                  },
+                  "processIds": {
+                    "description": "The BPMN process ids whose call activities are stubbed. A call activity is stubbed when the process id it calls is in this list.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "processIds"
                 ],
                 "additionalProperties": false
               }
@@ -1519,26 +1535,6 @@
       "required": [
         "type",
         "processInstanceSelector",
-        "elementSelector"
-      ],
-      "additionalProperties": false
-    },
-    "RunCalledProcessInstruction": {
-      "description": "An instruction to run the process a call activity calls, instead of standing in for it.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "description": "The type of the instruction.",
-          "type": "string",
-          "const": "RUN_CALLED_PROCESS"
-        },
-        "elementSelector": {
-          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
-          "$ref": "#/definitions/ElementSelector"
-        }
-      },
-      "required": [
-        "type",
         "elementSelector"
       ],
       "additionalProperties": false

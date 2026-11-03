@@ -153,9 +153,6 @@
                 },
                 "cancelRemainingInstances": {
                   "type": "boolean"
-                },
-                "runCalledProcess": {
-                  "type": "boolean"
                 }
               }
             },

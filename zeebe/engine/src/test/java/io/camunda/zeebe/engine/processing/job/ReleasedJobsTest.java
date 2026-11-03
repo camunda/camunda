@@ -206,13 +206,14 @@ public final class ReleasedJobsTest {
   public void shouldRejectReleaseOfCallActivityStubJob() {
     // given an instance whose call activity is stubbed by a job no worker can run
     final String parentProcessId = Strings.newRandomValidBpmnId();
+    final String childProcessId = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
             "parent.bpmn",
             Bpmn.createExecutableProcess(parentProcessId)
                 .startEvent()
-                .callActivity("call", c -> c.zeebeProcessId(Strings.newRandomValidBpmnId()))
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
                 .endEvent()
                 .done())
         .deploy();
@@ -221,7 +222,7 @@ public final class ReleasedJobsTest {
             .processInstance()
             .ofBpmnProcessId(parentProcessId)
             .withJobReservationToken(RESERVATION_TOKEN)
-            .withStubbedCallActivities()
+            .withStubbedCallActivities(childProcessId)
             .create();
     final long jobKey =
         jobRecords(JobIntent.CREATED)

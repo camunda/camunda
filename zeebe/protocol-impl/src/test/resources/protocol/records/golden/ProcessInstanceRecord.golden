@@ -64,7 +64,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
   public static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
-  public static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
+  public static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
+      new StringValue("stubbedCallActivityProcessIds");
   public static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
@@ -112,8 +113,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final StringProperty jobReservationTokenProp =
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
-  private final BooleanProperty stubCallActivitiesProp =
-      new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
+  private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProp =
+      new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
   private final BooleanProperty holdTimersProp = new BooleanProperty(HOLD_TIMERS_KEY, false);
 
   public ProcessInstanceRecord() {
@@ -138,7 +139,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
         .declareProperty(jobReservationTokenProp)
-        .declareProperty(stubCallActivitiesProp)
+        .declareProperty(stubbedCallActivityProcessIdsProp)
         .declareProperty(holdTimersProp);
   }
 
@@ -158,6 +159,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
+    jobReservationTokenProp.setValue(record.getJobReservationTokenBuffer());
+    setStubbedCallActivityProcessIds(record.getStubbedCallActivityProcessIds());
+    holdTimersProp.setValue(record.isHoldTimers());
   }
 
   @JsonIgnore
@@ -352,12 +356,21 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public boolean isStubCallActivities() {
-    return stubCallActivitiesProp.getValue();
+  public List<String> getStubbedCallActivityProcessIds() {
+    return StreamSupport.stream(stubbedCallActivityProcessIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
   }
 
-  public ProcessInstanceRecord setStubCallActivities(final boolean stubCallActivities) {
-    stubCallActivitiesProp.setValue(stubCallActivities);
+  public ProcessInstanceRecord setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    stubbedCallActivityProcessIdsProp.reset();
+    if (stubbedCallActivityProcessIds != null) {
+      stubbedCallActivityProcessIds.forEach(
+          processId ->
+              stubbedCallActivityProcessIdsProp.add().wrap(BufferUtil.wrapString(processId)));
+    }
     return this;
   }
 

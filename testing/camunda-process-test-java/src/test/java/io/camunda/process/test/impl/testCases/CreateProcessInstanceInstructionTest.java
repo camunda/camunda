@@ -27,6 +27,7 @@ import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceI
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CreateProcessInstanceInstructionHandler;
 import java.util.Collections;
@@ -151,7 +152,10 @@ public class CreateProcessInstanceInstructionTest {
             .addRuntimeInstructions(
                 ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
                     .reserveJobs(true)
-                    .stubCallActivities(true)
+                    .build())
+            .addRuntimeInstructions(
+                ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
+                    .addProcessIds("shipping", "notification")
                     .build())
             .build();
 
@@ -167,7 +171,7 @@ public class CreateProcessInstanceInstructionTest {
             .variables(Collections.emptyMap());
 
     verify(mockCommand).reserveJobs(token);
-    verify(mockCommand).stubCallActivities(true);
+    verify(mockCommand).stubCallActivities("shipping", "notification");
     verify(mockCommand).send();
   }
 
@@ -196,7 +200,7 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand, org.mockito.Mockito.never())
         .reserveJobs(org.mockito.ArgumentMatchers.any());
     verify(mockCommand, org.mockito.Mockito.never())
-        .stubCallActivities(org.mockito.ArgumentMatchers.anyBoolean());
+        .stubCallActivities(org.mockito.ArgumentMatchers.any(String[].class));
     verify(mockCommand, org.mockito.Mockito.never())
         .holdTimers(org.mockito.ArgumentMatchers.anyBoolean());
   }

@@ -37,6 +37,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
@@ -123,7 +124,7 @@ public class ProcessInstanceMapper {
                     request.getFetchVariables(),
                     request.getTags(),
                     request.getBusinessId(),
-                    stubCallActivitiesOf(request.getRuntimeInstructions()),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
@@ -152,7 +153,7 @@ public class ProcessInstanceMapper {
                     request.getFetchVariables(),
                     request.getTags(),
                     request.getBusinessId(),
-                    stubCallActivitiesOf(request.getRuntimeInstructions()),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
@@ -180,7 +181,7 @@ public class ProcessInstanceMapper {
                     request.getFetchVariables(),
                     request.getTags(),
                     request.getBusinessId(),
-                    stubCallActivitiesOf(request.getRuntimeInstructions()),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
@@ -248,11 +249,18 @@ public class ProcessInstanceMapper {
         .orElse(null);
   }
 
-  private static @Nullable Boolean stubCallActivitiesOf(
+  private static @Nullable List<String> stubbedCallActivityProcessIdsOf(
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
-    final var config = configureExecutionOf(instructions);
-    return config == null ? null : config.getStubCallActivities();
+    if (instructions == null) {
+      return null;
+    }
+    return instructions.stream()
+        .filter(ProcessInstanceCreationStubCallActivitiesInstruction.class::isInstance)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction.class::cast)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction::getProcessIds)
+        .findFirst()
+        .orElse(null);
   }
 
   private static @Nullable Boolean holdTimersOf(

@@ -189,7 +189,7 @@ public class ProcessInstanceCreationHelper {
       final Set<String> tags,
       final DirectBuffer businessId,
       final DirectBuffer jobReservationToken,
-      final boolean stubCallActivities,
+      final List<String> stubbedCallActivityProcessIds,
       final boolean holdTimers) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
@@ -205,7 +205,7 @@ public class ProcessInstanceCreationHelper {
         .setTags(tags)
         .setBusinessId(businessId)
         .setJobReservationToken(jobReservationToken)
-        .setStubCallActivities(stubCallActivities)
+        .setStubbedCallActivityProcessIds(stubbedCallActivityProcessIds)
         .setHoldTimers(holdTimers);
   }
 

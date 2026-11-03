@@ -113,9 +113,9 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
-  public BrokerCreateProcessInstanceRequest setStubCallActivities(
-      final boolean stubCallActivities) {
-    requestDto.setStubCallActivities(stubCallActivities);
+  public BrokerCreateProcessInstanceRequest setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    requestDto.setStubbedCallActivityProcessIds(stubbedCallActivityProcessIds);
     return this;
   }
 

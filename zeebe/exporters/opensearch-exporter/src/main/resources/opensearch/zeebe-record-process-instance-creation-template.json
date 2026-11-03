@@ -77,8 +77,8 @@
             "versionTag": {
               "type": "keyword"
             },
-            "stubCallActivities": {
-              "type": "boolean"
+            "stubbedCallActivityProcessIds": {
+              "type": "keyword"
             },
             "holdTimers": {
               "type": "boolean"

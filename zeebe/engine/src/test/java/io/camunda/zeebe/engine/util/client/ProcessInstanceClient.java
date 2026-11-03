@@ -136,8 +136,8 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ProcessInstanceCreationClient withStubbedCallActivities() {
-      processInstanceCreationRecord.setStubCallActivities(true);
+    public ProcessInstanceCreationClient withStubbedCallActivities(final String... processIds) {
+      processInstanceCreationRecord.setStubbedCallActivityProcessIds(List.of(processIds));
       return this;
     }
 

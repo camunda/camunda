@@ -120,8 +120,14 @@ public class SimpleRequestMapper {
           .type(instruction.getType())
           .reserveJobs(instruction.getReserveJobs())
           .jobReservationToken(instruction.getJobReservationToken())
-          .stubCallActivities(instruction.getStubCallActivities())
           .holdTimers(instruction.getHoldTimers())
+          .build();
+    }
+    if ("STUB_CALL_ACTIVITIES".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction
+          .Builder.create()
+          .processIds(instruction.getProcessIds())
+          .type(instruction.getType())
           .build();
     }
     return io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction.Builder

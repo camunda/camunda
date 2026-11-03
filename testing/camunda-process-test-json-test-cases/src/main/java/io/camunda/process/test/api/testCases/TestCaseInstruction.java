@@ -44,7 +44,6 @@ import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmn
 import io.camunda.process.test.api.testCases.instructions.PublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ResolveIncidentInstruction;
-import io.camunda.process.test.api.testCases.instructions.RunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.SetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.TriggerTimerInstruction;
@@ -135,9 +134,6 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = ResolveIncidentInstruction.class,
       name = TestCaseInstructionType.RESOLVE_INCIDENT),
-  @JsonSubTypes.Type(
-      value = RunCalledProcessInstruction.class,
-      name = TestCaseInstructionType.RUN_CALLED_PROCESS),
   @JsonSubTypes.Type(value = SetTimeInstruction.class, name = TestCaseInstructionType.SET_TIME),
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,

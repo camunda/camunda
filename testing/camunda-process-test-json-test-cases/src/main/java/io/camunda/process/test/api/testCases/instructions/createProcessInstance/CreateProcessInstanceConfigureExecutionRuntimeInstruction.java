@@ -52,17 +52,6 @@ public interface CreateProcessInstanceConfigureExecutionRuntimeInstruction
   }
 
   /**
-   * Whether the process instance's call activities start no called process, waiting on a job that
-   * stands in for it instead. Defaults to false.
-   *
-   * @return true if the instance's call activities are stubbed, false otherwise
-   */
-  @Value.Default
-  default boolean getStubCallActivities() {
-    return false;
-  }
-
-  /**
    * Whether the process instance's timers are kept out of the engine's due-date scheduler, so that
    * none of them fires on its own. Defaults to false.
    *

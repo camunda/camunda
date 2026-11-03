@@ -50,7 +50,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
-  private static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
+  private static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
+      new StringValue("stubbedCallActivityProcessIds");
   private static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
   private static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
@@ -81,8 +82,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
   private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
-  private final BooleanProperty stubCallActivitiesProperty =
-      new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
+  private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProperty =
+      new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
   private final BooleanProperty holdTimersProperty = new BooleanProperty(HOLD_TIMERS_KEY, false);
   private final StringProperty jobReservationTokenProperty =
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
@@ -102,7 +103,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProperty)
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
-        .declareProperty(stubCallActivitiesProperty)
+        .declareProperty(stubbedCallActivityProcessIdsProperty)
         .declareProperty(holdTimersProperty)
         .declareProperty(jobReservationTokenProperty);
     declareProperties(variablesPropertyGroup);
@@ -335,12 +336,20 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public boolean isStubCallActivities() {
-    return stubCallActivitiesProperty.getValue();
+  public List<String> getStubbedCallActivityProcessIds() {
+    return StreamSupport.stream(stubbedCallActivityProcessIdsProperty.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
   }
 
-  public ProcessInstanceCreationRecord setStubCallActivities(final boolean stubCallActivities) {
-    stubCallActivitiesProperty.setValue(stubCallActivities);
+  public ProcessInstanceCreationRecord setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    stubbedCallActivityProcessIdsProperty.reset();
+    if (stubbedCallActivityProcessIds != null) {
+      stubbedCallActivityProcessIds.forEach(
+          processId -> stubbedCallActivityProcessIdsProperty.add().wrap(wrapString(processId)));
+    }
     return this;
   }
 

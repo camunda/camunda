@@ -16,6 +16,7 @@
 package io.camunda.client.impl.command;
 
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.CONFIGURE_EXECUTION;
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.STUB_CALL_ACTIVITIES;
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.TERMINATE_PROCESS_INSTANCE;
 
 import io.camunda.client.CamundaClientConfiguration;
@@ -36,6 +37,7 @@ import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -135,9 +137,13 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CreateProcessInstanceCommandStep3 stubCallActivities(final boolean stubCallActivities) {
+  public CreateProcessInstanceCommandStep3 stubCallActivities(final String... processIds) {
+    ArgumentUtil.ensureNotNull("processIds", processIds);
     restOnlyProperty = "stubCallActivities";
-    configureExecution().stubCallActivities(stubCallActivities);
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationStubCallActivitiesInstruction()
+            .processIds(Arrays.asList(processIds))
+            .type(STUB_CALL_ACTIVITIES.name()));
     return this;
   }
 
@@ -150,8 +156,8 @@ public final class CreateProcessInstanceCommandImpl
 
   /**
    * Returns the single configure-execution runtime instruction for this command, creating it and
-   * adding it to the request on first use, so the reserve-jobs, stub-call-activities and
-   * hold-timers switches accumulate onto one instruction.
+   * adding it to the request on first use, so the reserve-jobs and hold-timers switches accumulate
+   * onto one instruction.
    */
   private ProcessInstanceCreationConfigureExecutionInstruction configureExecution() {
     if (configureExecutionInstruction == null) {

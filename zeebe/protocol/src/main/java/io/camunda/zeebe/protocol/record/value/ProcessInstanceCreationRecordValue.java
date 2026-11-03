@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -100,16 +101,17 @@ public interface ProcessInstanceCreationRecordValue
   Map<String, VariableMetadataValue> getVariablesMetadata();
 
   /**
-   * Returns whether the call activities of this process instance are stubbed. A stubbed call
-   * activity starts no child process instance: it activates and waits on a job that a caller
-   * completes, either supplying the result variables the called process would have produced, or
-   * asking the engine to start the real child process after all.
+   * Returns the BPMN process ids whose call activities are stubbed for this process instance. A
+   * stubbed call activity starts no child process instance: it activates and waits on a job that a
+   * caller completes, either supplying the result variables the called process would have produced,
+   * or asking the engine to start the real child process after all. A call activity is stubbed when
+   * the process id it resolves to is contained in this list; an empty list stubs nothing.
    *
-   * @return {@code true} if the call activities of this process instance are stubbed
+   * @return the called-process ids whose call activities are stubbed, or an empty list
    * @since 8.11
    */
-  default boolean isStubCallActivities() {
-    return false;
+  default List<String> getStubbedCallActivityProcessIds() {
+    return Collections.emptyList();
   }
 
   /**

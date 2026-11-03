@@ -13,6 +13,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecuti
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
@@ -85,6 +86,73 @@ class ProcessInstanceRequestValidatorTest {
         .extracting(ProblemDetail::getDetail)
         .asString()
         .contains("2 instructions of type CONFIGURE_EXECUTION");
+  }
+
+  @Test
+  @DisplayName("Should accept a single stub-call-activities instruction")
+  void shouldAcceptSingleStubCallActivitiesInstruction() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(stubCallActivities(List.of("shipping", "notification"))))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should reject more than one stub-call-activities instruction")
+  void shouldRejectMoreThanOneStubCallActivitiesInstruction() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(
+                List.of(
+                    stubCallActivities(List.of("shipping")),
+                    stubCallActivities(List.of("notification"))))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("2 instructions of type STUB_CALL_ACTIVITIES");
+  }
+
+  @Test
+  @DisplayName("Should reject a stub-call-activities instruction with an empty process-id list")
+  void shouldRejectStubCallActivitiesWithEmptyProcessIds() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(stubCallActivities(List.of())))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("processIds");
   }
 
   @Test
@@ -163,6 +231,14 @@ class ProcessInstanceRequestValidatorTest {
         .type("CONFIGURE_EXECUTION")
         .reserveJobs(true)
         .jobReservationToken(token)
+        .build();
+  }
+
+  private static ProcessInstanceCreationStubCallActivitiesInstruction stubCallActivities(
+      final List<String> processIds) {
+    return ProcessInstanceCreationStubCallActivitiesInstruction.Builder.create()
+        .processIds(processIds)
+        .type("STUB_CALL_ACTIVITIES")
         .build();
   }
 

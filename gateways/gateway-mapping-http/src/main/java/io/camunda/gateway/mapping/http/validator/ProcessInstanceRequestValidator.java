@@ -32,6 +32,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
@@ -462,6 +463,7 @@ public class ProcessInstanceRequestValidator {
       return;
     }
     var configureExecutionCount = 0;
+    var stubCallActivitiesCount = 0;
     for (final var instruction : instructions) {
       if (instruction
           instanceof final ProcessInstanceCreationConfigureExecutionInstruction config) {
@@ -477,12 +479,26 @@ public class ProcessInstanceRequestValidator {
         } else if (token != null && !token.isBlank()) {
           violations.add("jobReservationToken may only be set when reserveJobs is true");
         }
+      } else if (instruction
+          instanceof final ProcessInstanceCreationStubCallActivitiesInstruction stub) {
+        stubCallActivitiesCount++;
+        final var processIds = stub.getProcessIds();
+        if (processIds == null || processIds.isEmpty()) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("processIds"));
+        } else if (processIds.stream().anyMatch(id -> id == null || id.isBlank())) {
+          violations.add("processIds must not contain blank values");
+        }
       }
     }
     if (configureExecutionCount > 1) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
               configureExecutionCount, "CONFIGURE_EXECUTION"));
+    }
+    if (stubCallActivitiesCount > 1) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
+              stubCallActivitiesCount, "STUB_CALL_ACTIVITIES"));
     }
   }
 

@@ -820,7 +820,7 @@ public final class ProcessInstanceServiceTest {
         List.of(), // fetchVariables
         null, // tags
         null, // businessId
-        null, // stubCallActivities
+        null, // stubbedCallActivityProcessIds
         null, // holdTimers
         null // jobReservationToken
         );
@@ -845,7 +845,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // fetchVariables
             null, // tags
             null, // businessId
-            null, // stubCallActivities
+            null, // stubbedCallActivityProcessIds
             null, // holdTimers
             null // jobReservationToken
             );
@@ -887,7 +887,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // fetchVariables
             null, // tags
             null, // businessId
-            null, // stubCallActivities
+            null, // stubbedCallActivityProcessIds
             null, // holdTimers
             null // jobReservationToken
             );
@@ -930,7 +930,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // fetchVariables
             null, // tags
             null, // businessId
-            null, // stubCallActivities
+            null, // stubbedCallActivityProcessIds
             null, // holdTimers
             null // jobReservationToken
             );
@@ -1191,7 +1191,7 @@ public final class ProcessInstanceServiceTest {
           List.of(), // fetchVariables
           null, // tags
           businessId, // businessId
-          null, // stubCallActivities
+          null, // stubbedCallActivityProcessIds
           null, // holdTimers
           null // jobReservationToken
           );
@@ -1214,7 +1214,7 @@ public final class ProcessInstanceServiceTest {
           List.of(), // fetchVariables
           null, // tags
           businessId, // businessId
-          null, // stubCallActivities
+          null, // stubbedCallActivityProcessIds
           null, // holdTimers
           null // jobReservationToken
           );

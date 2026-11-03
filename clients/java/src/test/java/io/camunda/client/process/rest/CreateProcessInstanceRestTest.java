@@ -28,6 +28,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecution
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
@@ -355,17 +356,18 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(123)
-        .stubCallActivities(true)
+        .stubCallActivities("shipping", "notification")
         .send()
         .join();
 
     // then
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
-    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
-        (ProcessInstanceCreationConfigureExecutionInstruction)
+    final ProcessInstanceCreationStubCallActivitiesInstruction runtimeInstruction =
+        (ProcessInstanceCreationStubCallActivitiesInstruction)
             request.getRuntimeInstructions().get(0);
-    assertThat(runtimeInstruction.getStubCallActivities()).isTrue();
+    assertThat(runtimeInstruction.getType()).isEqualTo("STUB_CALL_ACTIVITIES");
+    assertThat(runtimeInstruction.getProcessIds()).containsExactly("shipping", "notification");
   }
 
   @Test

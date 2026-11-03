@@ -411,25 +411,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void runCalledProcess(final JobSelector jobSelector) {
-    final CamundaClient client = createClient();
-
-    awaitJob(
-        jobSelector,
-        job -> {
-          LOGGER.debug(
-              "Mock: Run the process called by [{}, jobKey: '{}']",
-              jobSelector.describe(),
-              job.getJobKey());
-
-          completeCommand(client, job.getJobKey())
-              .withResult(result -> result.forCallActivity().runCalledProcess())
-              .send()
-              .join();
-        });
-  }
-
-  @Override
   public void triggerTimer(
       final ProcessInstanceSelector processInstanceSelector, final String elementId) {
     final CamundaClient client = createClient();

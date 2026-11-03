@@ -332,18 +332,6 @@ public interface CamundaProcessTestContext {
   void releaseJob(final JobSelector jobSelector);
 
   /**
-   * Starts the process that a stubbed call activity calls, instead of standing in for it (alpha).
-   *
-   * <p>The selected job is the one a call activity of an instance created with {@link
-   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#stubCallActivities(boolean)
-   * stubCallActivities} waits on. Completing that job by any other means stands in for the called
-   * process; this starts it for real.
-   *
-   * @param jobSelector the selector to identify the job that stands in for the called process
-   */
-  void runCalledProcess(final JobSelector jobSelector);
-
-  /**
    * Fires a held timer of the selected process instance immediately, without waiting for its due
    * date (alpha).
    *

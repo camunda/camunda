@@ -1436,9 +1436,11 @@ components:
         mapping:
           TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
           CONFIGURE_EXECUTION: "#/components/schemas/ProcessInstanceCreationConfigureExecutionInstruction"
+          STUB_CALL_ACTIVITIES: "#/components/schemas/ProcessInstanceCreationStubCallActivitiesInstruction"
       oneOf:
         - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
         - $ref: "#/components/schemas/ProcessInstanceCreationConfigureExecutionInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceCreationStubCallActivitiesInstruction"
 
     ProcessInstanceCreationTerminateInstruction:
       type: object
@@ -1467,11 +1469,11 @@ components:
         Configures how this process instance executes, for test and debugging tools rather than
         production traffic (alpha).
 
-        A single instance-wide instruction carrying any combination of three independent switches:
-        reserve this instance's jobs so no worker is handed them, stand in for the processes its
-        call activities call, and hold its timers until fired on demand. Every switch defaults off,
-        so a configure-execution instruction with none set does nothing. At most one may be given
-        per process instance.
+        A single instance-wide instruction carrying any combination of two independent switches:
+        reserve this instance's jobs so no worker is handed them, and hold its timers until fired on
+        demand. Every switch defaults off, so a configure-execution instruction with none set does
+        nothing. At most one may be given per process instance. Stubbing call activities is a
+        separate `STUB_CALL_ACTIVITIES` instruction.
 
         This instruction is an alpha feature and may be subject to change in future releases.
       properties:
@@ -1495,19 +1497,6 @@ components:
             jobs.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
-        stubCallActivities:
-          description: |
-            Starts no child process instance for the call activities of this process instance.
-
-            A stubbed call activity activates and then waits on a job instead of starting the
-            process it calls, which does not even have to be deployed. Completing that job with
-            variables completes the call activity as if the called process had returned them;
-            completing it with a `runCalledProcess` result starts the real called process after
-            all. This lets a caller stand in for the processes an instance calls while other
-            instances on the cluster keep calling them for real.
-          type: boolean
-          default: false
-          example: true
         holdTimers:
           description: |
             Holds every timer of this process instance and of the instances it calls.
@@ -1525,9 +1514,50 @@ components:
           addedInVersion: "8.11"
         - propertyName: jobReservationToken
           addedInVersion: "8.11"
-        - propertyName: stubCallActivities
-          addedInVersion: "8.11"
         - propertyName: holdTimers
+          addedInVersion: "8.11"
+
+    ProcessInstanceCreationStubCallActivitiesInstruction:
+      type: object
+      description: |
+        Stubs the call activities of this process instance that call one of the listed BPMN process
+        ids, for test and debugging tools rather than production traffic (alpha).
+
+        A stubbed call activity activates and then waits on a job instead of starting the process it
+        calls, which does not even have to be deployed. Completing that job with variables completes
+        the call activity as if the called process had returned them. This lets a caller stand in for
+        the processes an instance calls while other instances on the cluster keep calling them for
+        real.
+
+        A call activity is stubbed when the process id it resolves to is one of `processIds`; the
+        switch is inherited by the whole instance tree, so a nested call activity calling a listed
+        process is stubbed too. Call activities whose process id is not listed run their real child.
+        A call activity whose process id is a FEEL expression is only stubbed when its resolved value
+        is listed.
+
+        This instruction is an alpha feature and may be subject to change in future releases. At most
+        one may be given per process instance.
+      required:
+        - processIds
+      properties:
+        type:
+          description: The type of the runtime instruction
+          type: string
+          example: STUB_CALL_ACTIVITIES
+        processIds:
+          description: |
+            The BPMN process ids whose call activities are stubbed. A call activity is stubbed when
+            the process id it calls is in this list.
+          type: array
+          items:
+            $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+          example:
+            - order-fulfillment
+            - ship-order
+      x-properties-added-in-version:
+        - propertyName: type
+          addedInVersion: "8.11"
+        - propertyName: processIds
           addedInVersion: "8.11"
 
     CreateProcessInstanceResult:

@@ -208,8 +208,8 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 reserveJobs(final String jobReservationToken);
 
     /**
-     * Activates the process instance's call activities without starting the processes they call
-     * (alpha).
+     * Activates the process instance's call activities that call one of the given BPMN process ids
+     * without starting the processes they call (alpha).
      *
      * <p>A stubbed call activity activates and waits on a job of type {@code
      * io.camunda.zeebe:callActivityStub} instead of starting a child process instance, so the
@@ -218,17 +218,19 @@ public interface CreateProcessInstanceCommandStep1
      * {@link CompleteJobCommandStep1.CompleteJobCommandJobResultStep#forCallActivity()} to start
      * the real called process after all.
      *
-     * <p>Stubbing is inherited by the instances this one calls, so a call activity nested at any
-     * depth is stubbed too.
+     * <p>A call activity is stubbed when the process id it resolves to is one of {@code
+     * processIds}; call activities calling any other process run their real child. Stubbing is
+     * inherited by the instances this one calls, so a nested call activity calling a listed process
+     * is stubbed too.
      *
      * <p>This method is only supported over REST. This is an alpha feature and may be subject to
      * change in future releases.
      *
-     * @param stubCallActivities whether the instance's call activities start no called process
+     * @param processIds the BPMN process ids whose call activities are stubbed
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker
      */
-    CreateProcessInstanceCommandStep3 stubCallActivities(final boolean stubCallActivities);
+    CreateProcessInstanceCommandStep3 stubCallActivities(final String... processIds);
 
     /**
      * Keeps every timer this process instance creates out of the engine's due-date scheduler, so

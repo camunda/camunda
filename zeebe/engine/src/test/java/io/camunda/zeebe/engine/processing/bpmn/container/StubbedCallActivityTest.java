@@ -21,7 +21,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -318,7 +316,7 @@ public final class StubbedCallActivityTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(parentProcessId)
-            .withStubbedCallActivities()
+            .withStubbedCallActivities(childProcessId)
             .withVariable("key", "key-1")
             .create();
     final long jobKey = stubJob(processInstanceKey).getKey();
@@ -358,7 +356,7 @@ public final class StubbedCallActivityTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(parentProcessId)
-            .withStubbedCallActivities()
+            .withStubbedCallActivities(childProcessId)
             .create();
     final long jobKey = stubJob(processInstanceKey).getKey();
 
@@ -413,57 +411,8 @@ public final class StubbedCallActivityTest {
   }
 
   @Test
-  public void shouldStartCalledProcessOnRequest() {
-    // given
-    deployParentAndChild(c -> {});
-    final long processInstanceKey = createStubbedInstance();
-    final long jobKey = stubJob(processInstanceKey).getKey();
-
-    // when the completer asks for the real process instead of standing in for it
-    ENGINE.job().withKey(jobKey).withResult(runCalledProcess()).complete();
-
-    // then
-    final var childJob = jobRecords(JobIntent.CREATED).withType(childJobType).getFirst();
-    assertThat(childJob.getValue().getProcessInstanceKey())
-        .describedAs("the process the call activity calls is started for real")
-        .isNotEqualTo(processInstanceKey);
-
-    ENGINE.job().withKey(childJob.getKey()).complete();
-    assertThat(
-            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .exists())
-        .describedAs("the called process completes the call activity as it always would")
-        .isTrue();
-  }
-
-  @Test
-  public void shouldNotPropagateStubJobVariablesWhenStartingCalledProcess() {
-    // given a call activity that propagates what the called process returns
-    deployParentAndChild(c -> c.zeebePropagateAllChildVariables(true));
-    final long processInstanceKey = createStubbedInstance();
-    final long jobKey = stubJob(processInstanceKey).getKey();
-
-    // when
-    ENGINE
-        .job()
-        .withKey(jobKey)
-        .withVariables(Map.of("stub", "leaked"))
-        .withResult(runCalledProcess())
-        .complete();
-    final var childJob = jobRecords(JobIntent.CREATED).withType(childJobType).getFirst();
-    ENGINE.job().withKey(childJob.getKey()).complete();
-
-    // then
-    assertThat(records().limitToProcessInstance(processInstanceKey).variableRecords())
-        .describedAs("the real called process produces the variables, not the stub job")
-        .noneMatch(r -> "stub".equals(r.getValue().getName()));
-  }
-
-  @Test
-  public void shouldStubCallActivitiesOfStartedCalledProcess() {
-    // given a child process that itself calls a grandchild process
+  public void shouldStubInheritedCallActivitiesOfUnlistedRealChild() {
+    // given a parent that calls a real child, which itself calls a grandchild process
     final String grandchildProcessId = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
@@ -476,80 +425,19 @@ public final class StubbedCallActivityTest {
                 .endEvent()
                 .done())
         .deploy();
-    final long processInstanceKey = createStubbedInstance();
 
-    // when
-    ENGINE
-        .job()
-        .withKey(stubJob(processInstanceKey).getKey())
-        .withResult(runCalledProcess())
-        .complete();
+    // when only the grandchild process is stubbed, so the child runs for real
+    createStubbedInstance(grandchildProcessId);
 
-    // then
-    assertThat(
-            jobRecords(JobIntent.CREATED)
-                .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-                .limit(2)
-                .count())
-        .describedAs("the started process inherits the stubbing, so its own call activity stubs")
-        .isEqualTo(2);
-  }
-
-  @Test
-  public void shouldRaiseResolvableIncidentWhenCalledProcessIsNotDeployed() {
-    // given only the parent process is deployed
-    ENGINE.deployment().withXmlResource("parent.bpmn", parentProcess(c -> {})).deploy();
-    final long processInstanceKey = createStubbedInstance();
-
-    // when the real process is asked for although it is not deployed
-    ENGINE
-        .job()
-        .withKey(stubJob(processInstanceKey).getKey())
-        .withResult(runCalledProcess())
-        .complete();
-
-    // then
-    final var incident =
-        incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    assertThat(incident.getValue().getErrorType())
-        .describedAs("asking for a process that is not deployed raises the ordinary incident")
-        .isEqualTo(ErrorType.CALLED_ELEMENT_ERROR);
-
-    // and it is resolvable once the process is deployed
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            "child.bpmn",
-            Bpmn.createExecutableProcess(childProcessId)
-                .startEvent()
-                .serviceTask("child-task", t -> t.zeebeJobType(childJobType))
-                .endEvent()
-                .done())
-        .deploy();
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-
-    assertThat(jobRecords(JobIntent.CREATED).withType(childJobType).exists())
-        .describedAs("resolving the incident starts the process that is now deployed")
-        .isTrue();
-  }
-
-  @Test
-  public void shouldRejectRunCalledProcessForAnOrdinaryJob() {
-    // given an ordinary service task job
-    deployParentAndChild(c -> {});
-    ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
-    final long jobKey = jobRecords(JobIntent.CREATED).withType(childJobType).getFirst().getKey();
-
-    // when
-    final Record<JobRecordValue> rejection =
-        ENGINE.job().withKey(jobKey).withResult(runCalledProcess()).expectRejection().complete();
-
-    // then
-    assertThat(rejection.getRejectionType())
-        .describedAs("only a job standing in for a called process can ask for the real one")
-        .isEqualTo(RejectionType.INVALID_ARGUMENT);
+    // then the real child runs and its nested call activity is stubbed by inheritance. The stub job
+    // belongs to the child instance (a different process-instance key), so it is not filtered by
+    // the
+    // root key here.
+    final Record<JobRecordValue> stubJob =
+        jobRecords(JobIntent.CREATED).withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).getFirst();
+    assertThat(stubJob.getValue().getElementId())
+        .describedAs("the unlisted child runs real; only its nested grandchild call activity stubs")
+        .isEqualTo("child-call");
   }
 
   @Test
@@ -562,16 +450,12 @@ public final class StubbedCallActivityTest {
 
     // when
     final Record<JobRecordValue> rejection =
-        ENGINE.job().withKey(jobKey).withResult(runCalledProcess()).expectRejection().complete();
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
 
     // then
     assertThat(rejection.getRejectionType())
-        .describedAs("a cancelled instance's stub job cannot start the called process afterwards")
+        .describedAs("a cancelled instance's stub job cannot be completed afterwards")
         .isEqualTo(RejectionType.NOT_FOUND);
-  }
-
-  private static JobResult runCalledProcess() {
-    return new JobResult().setType(JobResultType.CALL_ACTIVITY).setRunCalledProcess(true);
   }
 
   private BpmnModelInstance parentProcess(final Consumer<CallActivityBuilder> consumer) {
@@ -597,11 +481,71 @@ public final class StubbedCallActivityTest {
         .deploy();
   }
 
+  @Test
+  public void shouldStubOnlyListedCallActivities() {
+    // given a parent with two sequential call activities calling different processes, and only the
+    // second process deployed for real
+    final String stubbedChildId = Strings.newRandomValidBpmnId();
+    final String realChildId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("callStubbed", c -> c.zeebeProcessId(stubbedChildId))
+                .callActivity("callReal", c -> c.zeebeProcessId(realChildId))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "real-child.bpmn",
+            Bpmn.createExecutableProcess(realChildId).startEvent().endEvent().done())
+        .deploy();
+
+    // when only the first process is stubbed
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withStubbedCallActivities(stubbedChildId)
+            .create();
+
+    // then the listed call activity waits on a stub job
+    final Record<JobRecordValue> stubJob = stubJob(processInstanceKey);
+    assertThat(stubJob.getValue().getElementId())
+        .describedAs("only the listed call activity is stubbed")
+        .isEqualTo("callStubbed");
+
+    // when the stub completes so the second call activity activates
+    ENGINE.job().withKey(stubJob.getKey()).complete();
+
+    // then the unlisted call activity starts its real child
+    assertThat(
+            processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(realChildId)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the unlisted call activity starts its real child")
+        .isTrue();
+    // and the instance completes — a stubbed callReal would park on a stub job no worker completes
+    assertThat(
+            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the instance completes: callStubbed stood in, callReal ran its real child")
+        .isTrue();
+  }
+
   private long createStubbedInstance() {
+    return createStubbedInstance(childProcessId);
+  }
+
+  private long createStubbedInstance(final String... processIds) {
     return ENGINE
         .processInstance()
         .ofBpmnProcessId(parentProcessId)
-        .withStubbedCallActivities()
+        .withStubbedCallActivities(processIds)
         .create();
   }
 
