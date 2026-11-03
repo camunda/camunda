@@ -19,6 +19,8 @@ import {
 	type ProcessInstanceTab,
 } from '#/operate/pages/ProcessInstance/shadcn.components/processInstanceTabs';
 import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceBreadcrumb';
+import {InstanceHistory} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceHistory';
+import {isWidthAboveBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceDiagram';
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
@@ -70,6 +72,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 
 		const changeTab = (tab: ProcessInstanceTab) => {
 			switch (tab) {
+				case 'history':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/history',
+						params: {processInstanceId},
+						search: true,
+						hash: true,
+					});
 				case 'incidents':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/incidents',
@@ -124,7 +133,8 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		};
 
 		const hasSelection = Boolean(search.elementId || search.elementInstanceKey);
-		const visibleTabs = getVisibleProcessInstanceTabs(hasSelection);
+		const isDesktop = useMatchMedia(isWidthAboveBreakpoint('lg'));
+		const visibleTabs = getVisibleProcessInstanceTabs(hasSelection, !isDesktop);
 		const activeTab = getProcessInstanceTabFromPath(pathname);
 		const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
 		const redirectTarget = getHiddenTabRedirect({
@@ -166,6 +176,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 						) : undefined
 					}
 					topPanel={<InstanceDiagram />}
+					historyPanel={<InstanceHistory />}
 					header={<ProcessInstanceHeader operations={<ProcessInstanceOperations key={processInstanceId} />} />}
 				>
 					<Outlet />
