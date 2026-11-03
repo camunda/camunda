@@ -341,6 +341,23 @@ public class CCSMAuthenticationCookieFilterTest {
   }
 
   @Test
+  public void shouldHideNotAuthorizedMessageThatIsNotKnownToBeSafe() throws Exception {
+    // given
+    givenAccessTokenCookie("entra.v1.token");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(
+            new NotAuthorizedException(
+                "Microsoft Entra token rejected: 'ver' claim is '1.0' but '2.0' is required."));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains("Token verification failed: NotAuthorizedException (reason hidden)");
+    logs.assertDoesNotContain("'ver' claim");
+  }
+
+  @Test
   public void shouldLogOnlyStatusCodeWhenIdentityPermissionCallFails() throws Exception {
     // given
     final String token = "secret.access.token";
