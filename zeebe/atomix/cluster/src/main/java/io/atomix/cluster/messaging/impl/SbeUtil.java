@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.atomix.cluster.messaging;
+package io.atomix.cluster.messaging.impl;
+
+import io.atomix.cluster.messaging.BooleanType;
 
 public class SbeUtil {
   public static BooleanType toSBE(final boolean value) {
