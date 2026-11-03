@@ -10,13 +10,14 @@ import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/Tr
 import {useEffect, useMemo, useState} from 'react';
 import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {useForm, useFormState} from 'react-final-form';
+import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {IconButton, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
+import {IconButton, SearchInput, Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
 import {Pencil} from '@camunda/design-system/icons';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {PreviewDocumentButton} from '#/operate/shared/Documents/shadcn.components/PreviewDocumentButton';
 import {DownloadDocumentButton} from '#/operate/shared/Documents/shadcn.components/DownloadDocumentButton';
-import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
+import {StructuredList, StructuredRows} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {beautifyJSON} from '#/shared/json/beautifyJSON';
 import {beautifyTruncatedJSON} from '#/operate/shared/Editors/beautifyTruncatedJSON';
 import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
@@ -33,7 +34,10 @@ import {VariableEditButtons} from './VariableEditButtons';
 import {parseDocumentVariable} from '../parseDocumentVariable';
 import {ViewDocumentListButton} from './ViewDocumentListButton';
 import {VariablesError} from './VariablesError';
-import type {VariableFormValues} from '../variableFormValues';
+import {NewVariableName} from './NewVariableName';
+import {NewVariableValue} from './NewVariableValue';
+import {NewVariableOperations} from './NewVariableOperations';
+import type {NewVariableFormValues, VariableFormValues} from '../variableFormValues';
 import {cn} from '#/shared/cn';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -112,22 +116,16 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 						}}
 						onClear={() => setSearchValue('')}
 					/>
-					<ToggleGroup
-						type="single"
-						variant="outline"
-						aria-label={t('operate.processInstance.variables.filter')}
+					<Tabs
 						value={showDocumentsOnly ? 'documents' : 'all'}
-						onValueChange={(value) => {
-							if (value !== '') {
-								setShowDocumentsOnly(value === 'documents');
-							}
-						}}
+						onValueChange={(value) => setShowDocumentsOnly(value === 'documents')}
 					>
-						<ToggleGroupItem value="all">{t('operate.processInstance.variables.filterAll')}</ToggleGroupItem>
-						<ToggleGroupItem value="documents">
-							{t('operate.processInstance.variables.filterDocuments')}
-						</ToggleGroupItem>
-					</ToggleGroup>
+						<TabsList variant="line" aria-label={t('operate.processInstance.variables.filter')}>
+							<TabsTrigger value="all">{t('operate.processInstance.variables.filterAll')}</TabsTrigger>
+							<TabsTrigger value="documents">{t('operate.processInstance.variables.filterDocuments')}</TabsTrigger>
+						</TabsList>
+						<TabsContent value={showDocumentsOnly ? 'documents' : 'all'} className="hidden" />
+					</Tabs>
 				</div>
 			)}
 			<div
@@ -168,6 +166,40 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 								void fetchNextPage();
 							}
 						}}
+						dynamicRows={
+							isVariableModificationAllowed ? (
+								<FieldArray name="newVariables">
+									{({fields}) => (
+										<StructuredRows
+											cellClassName="align-middle"
+											rows={fields.map((fieldPrefix, index) => ({
+												key: (fields.value[index] as NewVariableFormValues | undefined)?.id ?? fieldPrefix,
+												dataTestId: `variable-${fieldPrefix}`,
+												columns: [
+													{
+														cellContent: <NewVariableName fieldPrefix={fieldPrefix} scopeKey={scopeKey} />,
+														width: NAME_COLUMN_WIDTH,
+													},
+													{cellContent: <NewVariableValue fieldPrefix={fieldPrefix} />, width: VALUE_COLUMN_WIDTH},
+													{
+														cellContent: (
+															<NewVariableOperations
+																fieldPrefix={fieldPrefix}
+																scopeKey={scopeKey}
+																onRemove={() => {
+																	fields.remove(index);
+																}}
+															/>
+														),
+														width: OPERATIONS_COLUMN_WIDTH,
+													},
+												],
+											}))}
+										/>
+									)}
+								</FieldArray>
+							) : undefined
+						}
 						rows={variables.map(({name, value, variableKey, isTruncated, documentResult}) => {
 							const isMultiLine =
 								documentResult === null &&

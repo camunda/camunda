@@ -17,7 +17,7 @@ import {useInstanceStatistics} from './instanceDiagram.queries';
 import {createFinishAddingTokenAction} from './modifications/modificationOperations';
 import {canBeAddedTokenAncestor, getRunningInstancesByElement} from './modifications/modificationTargets';
 import {getModificationsByElement, hasPendingCancelOrMoveModification} from './modifications/modificationSelectors';
-import {getModificationPlaceholders, type HistoryPlaceholder} from './modifications/historyPlaceholders';
+import {getModificationPlaceholders} from './modifications/historyPlaceholders';
 
 function getPlaceholderTreeKey(placeholderKey: string, parentTreeKey: string) {
 	return `${placeholderKey}@${parentTreeKey}`;
@@ -126,4 +126,3 @@ function useHistoryModification({
 }
 
 export {getPlaceholderTreeKey, useHistoryModification};
-export type {HistoryPlaceholder};

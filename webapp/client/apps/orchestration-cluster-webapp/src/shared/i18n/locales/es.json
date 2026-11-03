@@ -1975,6 +1975,7 @@
 					"discard": "Descartar",
 					"discardDescription": "Se van a descartar todas las modificaciones añadidas para la instancia {{processInstanceKey}}.",
 					"discardHint": "Haz clic en «Descartar» para continuar.",
+					"applying": "Aplicando modificaciones",
 					"leaveTitle": "Salir del modo de modificación",
 					"stay": "Quedarse",
 					"leave": "Salir",

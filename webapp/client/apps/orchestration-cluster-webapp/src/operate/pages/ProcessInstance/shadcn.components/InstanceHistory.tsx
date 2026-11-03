@@ -10,17 +10,27 @@ import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode
 import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Alert, Badge, Button, Label, Skeleton, Switch, TreeView, type TreeNodeDef} from '@camunda/design-system';
+import {Ban, Plus, TriangleAlert} from '@camunda/design-system/icons';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
+import {isMultiInstance} from '#/operate/shared/utils/elements';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
+import {useProcessInstanceModification} from '../useProcessInstanceModification';
 import {useInstanceHistory} from '../useInstanceHistory';
+import {getPlaceholderTreeKey, useHistoryModification} from '../useHistoryModification';
+import {
+	getChildPlaceholders,
+	hasChildPlaceholders,
+	type HistoryPlaceholder,
+} from '../modifications/historyPlaceholders';
 import {instanceLastMigrationQuery} from '../processInstance.queries';
 import {FilteredInstanceHistory} from './FilteredInstanceHistory';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
+import {ElementInstanceIcon} from './ElementInstanceIcon';
 import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';
 import {InstanceHistorySearch} from './InstanceHistorySearch';
 
@@ -43,7 +53,12 @@ function nodeId(key: string) {
 	return `instance-history-${key}`;
 }
 
-type NodeEntry = {item: ElementInstance; parent?: string};
+function isInferredParentScope({state, type}: Pick<ElementInstance, 'state' | 'type'>) {
+	return state === 'ACTIVE' && type !== 'MULTI_INSTANCE_BODY';
+}
+
+type NodeEntry = {item: ElementInstance; parent?: string; hierarchy: string[]};
+type PlaceholderEntry = {placeholder: HistoryPlaceholder; treeKey: string};
 
 type Props = {
 	showHeader?: boolean;
@@ -54,10 +69,22 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 	const {t} = useTranslation();
 	const history = useInstanceHistory();
 	const selection = useProcessInstanceElementSelection();
+	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const searchText = (search.elementSearch ?? '').trim();
-	const isFiltered = searchText !== '' || search.elementStatus !== undefined;
+	const isFiltered = !isModificationModeEnabled && (searchText !== '' || search.elementStatus !== undefined);
 	const xml = useDiagramXml(processInstance.processDefinitionKey);
 	const businessObjects = xml.data?.businessObjects;
+	const {
+		placeholders,
+		expandedPlaceholders,
+		togglePlaceholder,
+		hasPlannedCancel,
+		handleModificationSelect,
+		selectPlaceholder,
+	} = useHistoryModification({
+		businessObjects,
+		isXmlLoaded: xml.data !== undefined && xml.data.xml !== '',
+	});
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	const migration = useQuery(instanceLastMigrationQuery(processInstanceId));
@@ -109,13 +136,69 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 	const {windows, timestamps} = history;
 	const tree = useMemo(() => {
 		const entries = new Map<string, NodeEntry>();
+		const placeholderEntries = new Map<string, PlaceholderEntry>();
 		const selected = new Set<string>();
 
-		function buildNode(item: ElementInstance, parent?: string): TreeNodeDef {
+		function buildPlaceholderNode(
+			{elementId, elementInstanceKey}: HistoryPlaceholder,
+			parentTreeKey: string,
+		): TreeNodeDef[] {
+			const businessObject = businessObjects?.[elementId];
+			if (businessObject === undefined) {
+				return [];
+			}
+			const name = businessObject.name ?? elementId;
+			const treeKey = getPlaceholderTreeKey(elementInstanceKey, parentTreeKey);
+			const id = nodeId(treeKey);
+			placeholderEntries.set(id, {placeholder: {elementId, elementInstanceKey}, treeKey});
+			if (isSelected(elementId, elementInstanceKey, isMultiInstance(businessObject))) {
+				selected.add(id);
+			}
+			const node: TreeNodeDef = {
+				id,
+				label: (
+					<span
+						className="flex min-w-0 flex-1 items-center gap-2"
+						aria-label={t('operate.processInstance.modification.plannedPlaceholderLabel', {name})}
+					>
+						<ElementInstanceIcon businessObject={businessObject} root={false} />
+						<span className="min-w-0 flex-1 truncate">{name}</span>
+						<TriangleAlert
+							role="img"
+							aria-label={t('operate.processInstance.modification.plannedWarningTitle')}
+							className="size-4 shrink-0 text-warning-foreground-strong"
+						/>
+						<Plus
+							role="img"
+							aria-label={t('operate.processInstance.modification.plannedAddTitle')}
+							className="size-4 shrink-0"
+						/>
+					</span>
+				),
+			};
+			if (!hasChildPlaceholders(placeholders, elementInstanceKey)) {
+				return [node];
+			}
+			const isExpanded = expandedPlaceholders.includes(treeKey);
+			return [
+				{
+					...node,
+					isExpanded,
+					children: isExpanded
+						? getChildPlaceholders(placeholders, elementInstanceKey, elementId, true).flatMap((child) =>
+								buildPlaceholderNode(child, treeKey),
+							)
+						: [{id: `${id}-collapsed`, label: null, disabled: true}],
+				},
+			];
+		}
+
+		function buildNode(item: ElementInstance, hierarchy: string[], parent?: string): TreeNodeDef {
 			const key = item.elementInstanceKey;
 			const id = nodeId(key);
 			const isRoot = item.type === 'PROCESS';
-			entries.set(id, {item, parent});
+			const hasCancelModification = hasPlannedCancel(item, hierarchy) && !item.endDate;
+			entries.set(id, {item, parent, hierarchy});
 			if (isRoot ? !hasSelection : isSelected(item.elementId, key, item.type === 'MULTI_INSTANCE_BODY')) {
 				selected.add(id);
 			}
@@ -129,8 +212,15 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 						suffix={
 							item.type === 'MULTI_INSTANCE_BODY' ? t('operate.processInstance.history.multiInstance') : undefined
 						}
-						showTimestamp={timestamps}
+						showTimestamp={timestamps && !isModificationModeEnabled}
 					/>
+					{hasCancelModification && (
+						<Ban
+							role="img"
+							aria-label={t('operate.processInstance.modification.plannedCancelTitle')}
+							className="size-4 shrink-0 text-destructive"
+						/>
+					)}
 					{migrationDate && (
 						<Badge variant="success">
 							{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
@@ -155,7 +245,12 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 					: scopeWindow.scope.from + 100 < data.page.totalItems
 				: false;
 			const revision = `${scopeWindow.scope.from}:${data?.items.length ?? 0}:${scopeWindow.query.isFetching}`;
-			const children: TreeNodeDef[] = [];
+			const children: TreeNodeDef[] =
+				scopeWindow.scope.from === 0
+					? getChildPlaceholders(placeholders, key, item.elementId, isInferredParentScope(item)).flatMap(
+							(placeholder) => buildPlaceholderNode(placeholder, key),
+						)
+					: [];
 			if (data && scopeWindow.scope.from > 0) {
 				children.push({
 					id: `${id}-previous`,
@@ -169,7 +264,7 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 					),
 				});
 			}
-			data?.items.forEach((child) => children.push(buildNode(child, key)));
+			data?.items.forEach((child) => children.push(buildNode(child, [...hierarchy, child.elementInstanceKey], key)));
 			if (hasNextPage) {
 				children.push({
 					id: `${id}-next`,
@@ -203,8 +298,23 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 			return {id, label, isExpanded: true, children};
 		}
 
-		return {data: [buildNode(root)], entries, selected};
-	}, [root, windows, timestamps, hasSelection, isSelected, migration.data, businessObjects, t, pageHistory]);
+		return {data: [buildNode(root, [processInstanceId])], entries, placeholderEntries, selected};
+	}, [
+		root,
+		processInstanceId,
+		windows,
+		timestamps,
+		isModificationModeEnabled,
+		placeholders,
+		expandedPlaceholders,
+		hasPlannedCancel,
+		hasSelection,
+		isSelected,
+		migration.data,
+		businessObjects,
+		t,
+		pageHistory,
+	]);
 
 	const rootQuery = history.windows.get(processInstanceId)?.query;
 	const error = xml.error ?? (isFiltered ? undefined : (history.pageError ?? rootQuery?.error));
@@ -262,12 +372,23 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 					data={tree.data}
 					selected={tree.selected}
 					onSelect={(_, node) => {
+						const placeholderEntry = tree.placeholderEntries.get(node.id);
+						if (placeholderEntry) {
+							selectPlaceholder(
+								placeholderEntry.placeholder.elementId,
+								placeholderEntry.placeholder.elementInstanceKey,
+							);
+							return;
+						}
 						const entry = tree.entries.get(node.id);
 						if (!entry) {
 							return;
 						}
 						if (entry.item.type === 'PROCESS') {
 							selection.clearSelection();
+							return;
+						}
+						if (handleModificationSelect(entry.item, hasPlannedCancel(entry.item, entry.hierarchy))) {
 							return;
 						}
 						const scopeWindow = history.windows.get(entry.item.elementInstanceKey);
@@ -279,6 +400,11 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 						);
 					}}
 					onToggle={(node) => {
+						const placeholderEntry = tree.placeholderEntries.get(node.id);
+						if (placeholderEntry) {
+							togglePlaceholder(placeholderEntry.treeKey);
+							return;
+						}
 						const entry = tree.entries.get(node.id);
 						if (entry) {
 							history.toggle(entry.item.elementInstanceKey, entry.parent);
@@ -296,23 +422,25 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 		>
 			{showHeader && (
 				<PanelHeader title={t('operate.processInstance.history.title')}>
-					<div className="ml-auto flex items-center gap-4">
-						{HISTORY_CONTROLS.map(({id, labelKey}) => (
-							<div key={id} className="flex items-center gap-2">
-								<Switch
-									id={`history-${id}`}
-									size="sm"
-									checked={history[id]}
-									disabled={!xml.isSuccess}
-									onCheckedChange={id === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
-								/>
-								<Label htmlFor={`history-${id}`}>{t(labelKey)}</Label>
-							</div>
-						))}
-					</div>
+					{!isModificationModeEnabled && (
+						<div className="ml-auto flex items-center gap-4">
+							{HISTORY_CONTROLS.map(({id, labelKey}) => (
+								<div key={id} className="flex items-center gap-2">
+									<Switch
+										id={`history-${id}`}
+										size="sm"
+										checked={history[id]}
+										disabled={!xml.isSuccess}
+										onCheckedChange={id === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
+									/>
+									<Label htmlFor={`history-${id}`}>{t(labelKey)}</Label>
+								</div>
+							))}
+						</div>
+					)}
 				</PanelHeader>
 			)}
-			{xml.isSuccess && !forbidden && <InstanceHistorySearch key={processInstanceId} />}
+			{xml.isSuccess && !isModificationModeEnabled && !forbidden && <InstanceHistorySearch key={processInstanceId} />}
 			{renderContent()}
 		</section>
 	);
