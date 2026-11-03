@@ -234,20 +234,29 @@ test('should match the process instance input mappings tab snapshot', async ({
 
 	await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
-
-test('should match the instance history panel snapshot', async ({operatePreviewProcessInstancePage}) => {
-	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-
-	await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toBeVisible();
-	await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
 });
 
-test('should match the filtered instance history panel snapshot', async ({operatePreviewProcessInstancePage, page}) => {
-	await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementSearch=Task`);
+test(
+	'should match the instance history panel snapshot',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
-	await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toBeVisible();
-	await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
-});
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the filtered instance history panel snapshot',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage, page}) => {
+		await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementSearch=Task`);
+
+		await expect(operatePreviewProcessInstancePage.searchResultItem('Task 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
+	},
+);
 
 test('should match the mobile instance history tab snapshot', async ({page}) => {
 	await page.setViewportSize({width: 800, height: 900});
