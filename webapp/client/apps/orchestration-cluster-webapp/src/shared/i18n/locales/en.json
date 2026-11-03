@@ -2063,6 +2063,8 @@
 					"imageAlt": "Process instance details page with incidents tab and diagram"
 				},
 				"incidents": {
+					"title": "Incidents",
+					"list": "Incidents list",
 					"filterByType": "Filter by Incident Type",
 					"resetFilters": "Reset Filters",
 					"errorMessage": "Error message",
@@ -2072,6 +2074,8 @@
 					"operations": "Operations",
 					"retryIncident": "Retry Incident",
 					"expandRow": "Expand row",
+					"collapseRow": "Collapse row",
+					"selectedRow": "Selected",
 					"jobId": "Job ID",
 					"more": "More",
 					"errorModalTitle": "Element \"{{name}}\" Error",
@@ -2521,7 +2525,9 @@
 					"active_other": "{{count}} active instances"
 				},
 				"sortableTable": {
-					"sortBy": "Sort by {{label}}"
+					"sortBy": "Sort by {{label}}",
+					"loadingPreviousPage": "Loading previous items",
+					"loadingNextPage": "Loading next items"
 				}
 			}
 		}
