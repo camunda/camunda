@@ -47,6 +47,7 @@ public class RdbmsWriterFactory {
         mapperBundle.purgeMapper(),
         mapperBundle.userTaskMapper(),
         mapperBundle.variableMapper(),
+        mapperBundle.variableHistoryMapper(),
         mapperBundle.vendorDatabaseProperties(),
         mapperBundle.jobMapper(),
         mapperBundle.jobMetricsBatchMapper(),

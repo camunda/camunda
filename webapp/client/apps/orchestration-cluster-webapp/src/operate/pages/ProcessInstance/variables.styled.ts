@@ -80,6 +80,57 @@ const Operations = styled.div`
 	min-width: var(--cds-spacing-10);
 `;
 
+const HistoryNotice = styled.div`
+	margin-bottom: var(--cds-spacing-05);
+	.cds--inline-notification {
+		max-width: none;
+		width: 100%;
+		min-width: 0;
+		margin: 0;
+	}
+`;
+
+const HistoryAccordion = styled.div`
+	.cds--accordion__content {
+		padding-inline-end: var(--cds-spacing-05);
+	}
+`;
+
+const EntryTitle = styled.span`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-04);
+	min-width: 0;
+	padding-right: var(--cds-spacing-03);
+	time {
+		margin-left: auto;
+		color: var(--cds-text-secondary);
+		font-variant-numeric: tabular-nums;
+	}
+`;
+
+const Actor = styled.span`
+	font-weight: 600;
+`;
+
+const ValueComparison = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: var(--cds-spacing-03);
+	padding: var(--cds-spacing-03) 0 var(--cds-spacing-05);
+	> div:first-child {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+`;
+
+const ValueLabel = styled.span`
+	color: var(--cds-text-secondary);
+	font-size: var(--cds-label-01-font-size, 0.75rem);
+	letter-spacing: 0.32px;
+	text-transform: uppercase;
+`;
+
 const InlineLoading = styled(BaseInlineLoading)`
 	justify-content: end;
 `;
@@ -155,4 +206,10 @@ export {
 	VariableName,
 	Operations,
 	InlineLoading,
+	HistoryNotice,
+	HistoryAccordion,
+	EntryTitle,
+	Actor,
+	ValueComparison,
+	ValueLabel,
 };

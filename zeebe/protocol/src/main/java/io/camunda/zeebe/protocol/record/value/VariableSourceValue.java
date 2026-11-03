@@ -33,4 +33,13 @@ public interface VariableSourceValue extends RecordValue {
    *     (e.g., internal operations).
    */
   VariableOperationType getType();
+
+  /**
+   * PoC for the variable history: the position in the multi-instance output collection that this
+   * update fills, or -1 for any other change.
+   */
+  @Value.Default
+  default int getCollectionIndex() {
+    return -1;
+  }
 }

@@ -98,6 +98,7 @@ public class HistoryCleanupService {
             Map.entry("incident", rdbmsWriters.getIncidentWriter()),
             Map.entry("userTask", rdbmsWriters.getUserTaskWriter()),
             Map.entry("variable", rdbmsWriters.getVariableWriter()),
+            Map.entry("variableHistory", rdbmsWriters.getVariableHistoryWriter()),
             Map.entry("decisionInstance", rdbmsWriters.getDecisionInstanceWriter()),
             Map.entry("job", rdbmsWriters.getJobWriter()),
             Map.entry("sequenceFlow", rdbmsWriters.getSequenceFlowWriter()),
