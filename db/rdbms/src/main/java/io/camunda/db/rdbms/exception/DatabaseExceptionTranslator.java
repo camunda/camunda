@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.exception;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 
 /**
  * Translates vendor-specific database exceptions into {@link CamundaSearchException} instances with
@@ -66,6 +67,9 @@ public final class DatabaseExceptionTranslator {
   private static boolean isConnectionException(final Throwable e) {
     Throwable cause = e;
     while (cause != null) {
+      if (cause instanceof SQLTransientConnectionException) {
+        return true;
+      }
       if (cause instanceof final SQLException sqlException
           && sqlException.getSQLState() != null
           && sqlException.getSQLState().startsWith(RDBMS_CONNECTION_ERROR_SQL_STATE_PREFIX)) {
