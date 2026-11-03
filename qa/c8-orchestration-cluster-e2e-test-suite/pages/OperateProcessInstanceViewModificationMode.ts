@@ -22,6 +22,7 @@ export class OperateProcessInstanceViewModificationModePage {
   readonly applyButtonModificationsDialog: Locator;
   readonly moveTokensMessage: Locator;
   readonly diagram: Locator;
+  readonly resetDiagramZoomButton: Locator;
   readonly multipleInstancesAlert: Locator;
   readonly history: Locator;
   readonly continueButton: Locator;
@@ -116,6 +117,9 @@ export class OperateProcessInstanceViewModificationModePage {
       /Select the target (flow node|element) in the diagram/,
     );
     this.diagram = this.page.getByTestId('diagram');
+    this.resetDiagramZoomButton = page.getByRole('button', {
+      name: 'Reset diagram zoom',
+    });
     this.multipleInstancesAlert = page
       .getByTestId('popover')
       .getByText(
@@ -373,18 +377,14 @@ export class OperateProcessInstanceViewModificationModePage {
     });
   }
 
-  // Picking the move target after "Move all"/"Move selected instance" is
-  // different from a normal flow-node click: the diagram enters target-selection
-  // mode and lays a transparent interaction layer over the canvas to capture the
-  // pick. That layer intercepts pointer events, so an actionability-checked click
-  // on the target flow node hangs at "performing click action" waiting for the
-  // element to receive the event until it times out. Force the click so the real
-  // mouse event lands at the element's coordinates and the interaction layer
-  // resolves the target — the same interaction a user's click performs.
-  async clickTargetFlowNode(flowNodeName: string): Promise<void> {
-    const targetFlowNode = this.getFlowNode(flowNodeName).first();
-    await expect(targetFlowNode).toBeVisible({timeout: 20000});
-    await targetFlowNode.click({force: true, timeout: 20000});
+  async clickTargetFlowNode(
+    flowNodeName: string,
+    position?: {x: number; y: number},
+  ): Promise<void> {
+    await this.resetDiagramZoomButton.click();
+    await this.getFlowNode(flowNodeName)
+      .first()
+      .click({position, timeout: 20000});
   }
 
   getFlowNode(flowNodeName: string) {
