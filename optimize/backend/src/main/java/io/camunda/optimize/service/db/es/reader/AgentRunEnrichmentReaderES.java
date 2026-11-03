@@ -46,6 +46,21 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
 
+  static final List<String> ENRICHMENT_SOURCE_FIELDS =
+      List.of(
+          ProcessInstanceIndex.PROCESS_DEFINITION_KEY,
+          ProcessInstanceIndex.STATE,
+          ProcessInstanceIndex.END_DATE,
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID),
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_ID),
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_TYPE),
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_START_DATE),
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_END_DATE),
+          flowNodeField(ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION),
+          incidentField(ProcessInstanceIndex.INCIDENT_ACTIVITY_ID),
+          incidentField(ProcessInstanceIndex.INCIDENT_INCIDENT_TYPE),
+          incidentField(ProcessInstanceIndex.INCIDENT_MESSAGE),
+          incidentField(ProcessInstanceIndex.INCIDENT_CREATE_TIME));
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgentRunEnrichmentReaderES.class);
   // A process instance rarely has more than a handful of agent runs; this bounds one lookup.
@@ -155,10 +170,22 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
                   final String index =
                       DatabaseClient.convertToPrefixedAliasName(
                           getProcessInstanceIndexAliasName(entry.getValue()), esClient);
-                  return MultiGetOperation.of(m -> m.index(index).id(entry.getKey()));
+                  return processInstanceGet(index, entry.getKey());
                 })
             .toList();
     return multiGet(docs, ProcessInstanceDto.class);
+  }
+
+  /**
+   * Reads only what enrichment uses. A long-running agentic process instance holds every flow node
+   * instance, incident and user task it ever had, most of which the enrichment never looks at.
+   */
+  static MultiGetOperation processInstanceGet(final String index, final String processInstanceId) {
+    return MultiGetOperation.of(
+        m ->
+            m.index(index)
+                .id(processInstanceId)
+                .source(s -> s.filter(f -> f.includes(ENRICHMENT_SOURCE_FIELDS))));
   }
 
   @Override
@@ -233,6 +260,14 @@ public class AgentRunEnrichmentReaderES implements AgentRunEnrichmentReader {
               }
             });
     return types;
+  }
+
+  private static String flowNodeField(final String field) {
+    return ProcessInstanceIndex.FLOW_NODE_INSTANCES + "." + field;
+  }
+
+  private static String incidentField(final String field) {
+    return ProcessInstanceIndex.INCIDENTS + "." + field;
   }
 
   private <T> Map<String, T> multiGet(final List<MultiGetOperation> docs, final Class<T> type) {

@@ -100,9 +100,9 @@ public class AgentRunEnrichmentService {
       return;
     }
     final Set<String> finished =
-        reader.getProcessInstances(agentic).values().stream()
-            .filter(instance -> instance.getEndDate() != null)
-            .map(ProcessInstanceDto::getProcessInstanceId)
+        reader.getProcessInstances(agentic).entrySet().stream()
+            .filter(entry -> entry.getValue().getEndDate() != null)
+            .map(Map.Entry::getKey)
             .collect(Collectors.toSet());
     if (finished.isEmpty()) {
       return;
