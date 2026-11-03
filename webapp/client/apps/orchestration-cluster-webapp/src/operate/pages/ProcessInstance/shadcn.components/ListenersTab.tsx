@@ -12,6 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Spinner} from '@camunda/design-system';
 import {TriangleAlert} from '@camunda/design-system/icons';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
@@ -69,13 +70,9 @@ const ListenersTab: React.FC = () => {
 	return (
 		<div className="relative flex h-full min-h-0 flex-col px-4">
 			{isPending && (
-				<div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
-					<Spinner
-						size="default"
-						data-testid="listeners-spinner"
-						accessibleLabel={t('operate.processInstance.listeners.loading')}
-					/>
-				</div>
+				<CenteredContent className="absolute inset-0 z-10 bg-background/60">
+					<Spinner size="default" accessibleLabel={t('operate.processInstance.listeners.loading')} />
+				</CenteredContent>
 			)}
 			{hasUserTaskSelected && (
 				<div className="flex w-52 flex-col gap-1.5 py-2">
@@ -87,7 +84,7 @@ const ListenersTab: React.FC = () => {
 						onValueChange={(option) => setSelectedOption(option as FilterOption)}
 						disabled={activeOption === 'all' && listeners.length === 0}
 					>
-						<SelectTrigger id="listenerTypeFilter" size="sm" data-testid="listener-type-filter" className="w-full">
+						<SelectTrigger id="listenerTypeFilter" size="sm" className="w-full">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -103,7 +100,6 @@ const ListenersTab: React.FC = () => {
 			<div className="flex min-h-0 flex-1 flex-col">
 				{listeners.length > 0 ? (
 					<StructuredList
-						dataTestId="listeners-list"
 						label={t('operate.processInstance.listeners.list')}
 						headerSize="sm"
 						headerColumns={[
@@ -121,7 +117,6 @@ const ListenersTab: React.FC = () => {
 						}}
 						rows={listeners.map(({kind, jobKey, state, type, listenerEventType, endTime}) => ({
 							key: jobKey,
-							dataTestId: jobKey,
 							columns: [
 								{
 									cellContent: (
@@ -143,9 +138,9 @@ const ListenersTab: React.FC = () => {
 					/>
 				) : (
 					!isPending && (
-						<div className="flex h-full items-center justify-center text-center">
+						<CenteredContent>
 							<EmptyMessage message={emptyMessage} />
-						</div>
+						</CenteredContent>
 					)
 				)}
 			</div>

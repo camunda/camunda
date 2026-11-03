@@ -8,8 +8,10 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
@@ -265,6 +267,35 @@ test.describe('Operations log tab', () => {
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 		await operatePreviewProcessInstancePage.tab('Operations Log').click();
 		await expect(operatePreviewProcessInstancePage.operationsLogTable).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+});
+
+test.describe('Input mappings tab', () => {
+	test('should have no accessibility violations with mappings listed', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		network.use(
+			...processInstanceDiagramHandlers(),
+			...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+		);
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: HttpResponse.text(
+					BPMN_XML.replace(
+						'<zeebe:userTask />',
+						'<zeebe:userTask /><zeebe:ioMapping><zeebe:input source="=orderId" target="localOrderId" /></zeebe:ioMapping>',
+					),
+				),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/input-mappings?elementId=task-1');
+		await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
 
 		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);

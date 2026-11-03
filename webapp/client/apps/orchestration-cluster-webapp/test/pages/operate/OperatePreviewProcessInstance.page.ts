@@ -14,8 +14,8 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		super(page);
 	}
 
-	async goto(processInstanceId: string) {
-		return this.page.goto(`/operate-preview/processes/${processInstanceId}`);
+	async goto(processInstanceId: string, path = '') {
+		return this.page.goto(`/operate-preview/processes/${processInstanceId}${path}`);
 	}
 
 	get heading() {
@@ -63,7 +63,7 @@ class OperatePreviewProcessInstancePage extends BasePage {
 	}
 
 	get listenersList() {
-		return this.page.getByTestId('listeners-list');
+		return this.page.getByRole('table', {name: 'Listeners List'});
 	}
 
 	get operationsLogTable() {

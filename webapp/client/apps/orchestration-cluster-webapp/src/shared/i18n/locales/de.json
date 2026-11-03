@@ -2159,6 +2159,7 @@
 					"processDefinitions": "Prozessdefinitionen",
 					"variables": "Variablen"
 				},
+				"noActor": "Kein Akteur",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "KI-Agent im Auftrag von {{actorType}}",
 					"mcpToolCall": "MCP-Tool-Aufruf"

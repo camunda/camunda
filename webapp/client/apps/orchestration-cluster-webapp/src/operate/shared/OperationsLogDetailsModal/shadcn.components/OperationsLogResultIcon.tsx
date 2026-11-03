@@ -17,15 +17,13 @@ const resultIconsMap = {
 
 type Props = {
 	state: AuditLogResult;
-	'data-testid'?: string;
 };
 
-const OperationsLogResultIcon: React.FC<Props> = ({state, 'data-testid': dataTestId}) => {
+const OperationsLogResultIcon: React.FC<Props> = ({state}) => {
 	const TargetComponent = resultIconsMap[state];
 
 	return (
 		<TargetComponent
-			data-testid={dataTestId}
 			size={20}
 			aria-hidden="true"
 			focusable="false"

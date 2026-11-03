@@ -16,7 +16,7 @@ import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
-	visibleTabs?: readonly ProcessInstanceTab[];
+	visibleTabs: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
@@ -26,7 +26,7 @@ type Props = {
 
 const ProcessInstance: React.FC<Props> = ({
 	activeTab,
-	visibleTabs = PROCESS_INSTANCE_TABS,
+	visibleTabs,
 	onTabChange,
 	breadcrumb,
 	header,
