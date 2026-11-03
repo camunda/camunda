@@ -365,13 +365,35 @@ test.describe('Operations', () => {
         maxRetries: 3,
       });
 
-      await Promise.all(
-        instances.map((instance) =>
-          expect(
-            operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
-          ).toBeVisible({timeout: 120000}),
-        ),
-      );
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
+      await validateURL(page, /operationId=/);
+
+      // Assert the canceled icons against the cancel operation's own
+      // (operationId-filtered) view. That filter is state-agnostic, so it keeps
+      // showing the instances once they flip to CANCELED. The recovery URL used
+      // by the steps above (filteredProcessesUrl) is a Process-Instance-Keys
+      // filter with the default Running-only state checkboxes, where a canceled
+      // instance drops out of the list entirely ("no Instances matching") and
+      // the CANCELED icon can never render — which is why this assertion timed
+      // out. Restore this same operationId view on retry.
+      const canceledInstancesUrl = page.url();
+      await waitForAssertion({
+        assertion: async () => {
+          await Promise.all(
+            instances.map((instance) =>
+              expect(
+                operateProcessesPage.getCanceledIcon(
+                  instance.processInstanceKey,
+                ),
+              ).toBeVisible({timeout: 30000}),
+            ),
+          );
+        },
+        onFailure: async () => {
+          await page.goto(canceledInstancesUrl);
+        },
+        maxRetries: 4,
+      });
     });
   });
 });
