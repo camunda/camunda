@@ -78,4 +78,21 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 
 		expect(onTabChange).toHaveBeenCalledWith('details');
 	});
+
+	it('should only render the tabs it is told are visible', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance activeTab="variables" visibleTabs={['variables', 'operations-log']} />
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByRole('tab', {name: 'Operations Log'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Input Mappings'})).not.toBeInTheDocument();
+	});
 });

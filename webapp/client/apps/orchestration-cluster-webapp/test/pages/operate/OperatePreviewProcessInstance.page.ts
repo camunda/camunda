@@ -62,6 +62,18 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.page.getByRole('tab', {name: 'Incidents'});
 	}
 
+	get listenersList() {
+		return this.page.getByTestId('listeners-list');
+	}
+
+	get operationsLogTable() {
+		return this.page.getByRole('table', {name: 'Operations Log List'});
+	}
+
+	tab(name: string) {
+		return this.page.getByRole('tab', {name});
+	}
+
 	get variablesTab() {
 		return this.page.getByRole('tab', {name: 'Variables'});
 	}
