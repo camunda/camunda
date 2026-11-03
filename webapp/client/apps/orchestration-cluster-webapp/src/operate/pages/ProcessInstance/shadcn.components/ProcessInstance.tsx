@@ -8,7 +8,7 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
+import {Badge, Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {PROCESS_INSTANCE_TABS, type ProcessInstanceTab} from './processInstanceTabs';
@@ -16,14 +16,25 @@ import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
+	visibleTabs?: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
 	topPanel?: React.ReactNode;
+	incidentsCount?: number;
 	children?: React.ReactNode;
 };
 
-const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, header, topPanel, children}) => {
+const ProcessInstance: React.FC<Props> = ({
+	activeTab,
+	visibleTabs = PROCESS_INSTANCE_TABS,
+	onTabChange,
+	breadcrumb,
+	header,
+	topPanel,
+	incidentsCount,
+	children,
+}) => {
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -66,9 +77,17 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, h
 								>
 									<div className="flex h-12 min-h-12 items-center px-4">
 										<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
-											{PROCESS_INSTANCE_TABS.map((tab) => (
+											{visibleTabs.map((tab) => (
 												<TabsTrigger key={tab} value={tab}>
 													{t(`operate.processInstance.history.${tab}`)}
+													{tab === 'incidents' && incidentsCount !== undefined && incidentsCount > 0 && (
+														<Badge
+															variant="danger"
+															className="border-transparent bg-[var(--danger-foreground-subtle)] text-[var(--background)]"
+														>
+															{incidentsCount}
+														</Badge>
+													)}
 												</TabsTrigger>
 											))}
 										</TabsList>
@@ -78,7 +97,7 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, h
 											key={tab}
 											value={tab}
 											forceMount
-											className="mt-0 min-h-0 flex-1 overflow-auto data-[state=inactive]:hidden"
+											className="mt-0 min-h-0 flex-1 overflow-auto rounded-none data-[state=inactive]:hidden"
 										>
 											{tab === activeTab ? (children ?? <ProcessInstanceTabPlaceholder />) : null}
 										</TabsContent>

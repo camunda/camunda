@@ -163,8 +163,9 @@ function useIncidentsTab() {
 		processInstanceId,
 		tenantId: search.tenantId,
 		isProcessInstanceSuspended: processInstance.state === 'SUSPENDED',
-		state:
-			result.status === 'pending'
+		state: !processInstance.hasIncident
+			? ('empty' as const)
+			: result.status === 'pending'
 				? ('skeleton' as const)
 				: result.status === 'error'
 					? ('error' as const)
