@@ -21,17 +21,19 @@ import java.util.List;
 import org.immutables.value.Value;
 
 /**
- * A worker's poll for the probes of one probe ID, and the probes it collected, as {@link
- * JobBatchRecordValue} for jobs. The probes carry their input with secret placeholders only.
+ * A worker's poll for the probes of one or more probe IDs, and the probes it collected, as {@link
+ * JobBatchRecordValue} for jobs. Unlike a job poll, which asks for one type, one poll asks for
+ * every probe ID of the worker: probes are rare, so a poll per ID would mostly come back empty. The
+ * probes carry their input with secret placeholders only.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProbeBatchRecordValue.Builder.class)
 public interface ProbeBatchRecordValue extends RecordValue {
 
   /**
-   * @return the probe ID to collect probes for
+   * @return the probe IDs to collect probes for; each collected probe carries its own
    */
-  String getProbeId();
+  List<String> getProbeIds();
 
   /**
    * @return the name of the worker that polls, recorded on the probes it collects

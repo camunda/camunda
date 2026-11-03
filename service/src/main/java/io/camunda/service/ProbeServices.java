@@ -104,7 +104,7 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
       final Consumer<Throwable> onError) {
     final var brokerRequest =
         new BrokerActivateProbesRequest(
-            request.probeId(),
+            request.probeIds(),
             request.worker(),
             request.maxProbesToActivate(),
             request.tenantIds(),
@@ -118,7 +118,7 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
   }
 
   public record ProbeActivationRequest(
-      String probeId,
+      List<String> probeIds,
       String worker,
       int maxProbesToActivate,
       Long requestTimeout,

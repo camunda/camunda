@@ -85,14 +85,17 @@ public class ProbeController {
   }
 
   /**
-   * A worker's poll (long polling, as job activation): answers with the probes collected for the
-   * probe ID, with their secret values injected, or with none when the request timed out.
+   * A worker's poll (long polling, as job activation): answers with the probes collected for any of
+   * the probe IDs, with their secret values injected, or with none when the request timed out.
    */
   @CamundaPostMapping(path = "/activation")
   public DeferredResult<ResponseEntity<Object>> activateProbes(
       @PhysicalTenantId final String physicalTenantId, @RequestBody final ActivateProbesBody body) {
-    if (body.probeId() == null || body.probeId().isBlank()) {
-      return badRequest("Expected a probe ID, but none was given.");
+    if (body.probeIds() == null || body.probeIds().isEmpty()) {
+      return badRequest("Expected at least one probe ID, but none was given.");
+    }
+    if (body.probeIds().stream().anyMatch(id -> id == null || id.isBlank())) {
+      return badRequest("Expected probe IDs, but one of %s was blank.".formatted(body.probeIds()));
     }
     if (body.maxProbesToActivate() == null || body.maxProbesToActivate() <= 0) {
       return badRequest(
@@ -105,7 +108,7 @@ public class ProbeController {
             : TenantFilter.valueOf(body.tenantFilter());
     final var request =
         new ProbeActivationRequest(
-            body.probeId(),
+            body.probeIds(),
             body.worker() == null ? "" : body.worker(),
             body.maxProbesToActivate(),
             body.requestTimeout(),
@@ -199,7 +202,7 @@ public class ProbeController {
   public record AnswerProbeBody(String outcome, Map<String, Object> data, String message) {}
 
   public record ActivateProbesBody(
-      String probeId,
+      List<String> probeIds,
       String worker,
       Integer maxProbesToActivate,
       Long requestTimeout,

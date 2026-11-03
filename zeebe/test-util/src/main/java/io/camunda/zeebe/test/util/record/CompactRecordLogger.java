@@ -2281,9 +2281,9 @@ public class CompactRecordLogger {
 
   private String summarizeProbeBatch(final Record<?> record) {
     final var value = (ProbeBatchRecordValue) record.getValue();
-    return "\"%s\" worker:%s max:%d probes:%s"
+    return "%s worker:%s max:%d probes:%s"
         .formatted(
-            value.getProbeId(),
+            value.getProbeIds(),
             value.getWorker(),
             value.getMaxProbesToActivate(),
             value.getProbeKeys().stream().map(this::formatKey).toList());

@@ -5287,7 +5287,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<ProbeBatchRecord>)
             () ->
                 new ProbeBatchRecord()
-                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                    .setProbeIds(
+                        List.of(
+                            "validate-configuration/io.camunda:aws-credential:1",
+                            "validate-configuration/io.camunda:slack:1"))
                     .setWorker("connectors-saas")
                     .setMaxProbesToActivate(4)
                     .setTenantIds(List.of("tenant-a"))
@@ -5301,7 +5304,10 @@ final class JsonSerializableToJsonTest {
                             .setWorker("connectors-saas")),
         """
         {
-          "probeId": "validate-configuration/io.camunda:aws-credential:1",
+          "probeIds": [
+            "validate-configuration/io.camunda:aws-credential:1",
+            "validate-configuration/io.camunda:slack:1"
+          ],
           "worker": "connectors-saas",
           "maxProbesToActivate": 4,
           "tenantIds": ["tenant-a"],
@@ -5333,7 +5339,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<ProbeBatchRecord>) ProbeBatchRecord::new,
         """
         {
-          "probeId": "",
+          "probeIds": [],
           "worker": "",
           "maxProbesToActivate": -1,
           "tenantIds": [],

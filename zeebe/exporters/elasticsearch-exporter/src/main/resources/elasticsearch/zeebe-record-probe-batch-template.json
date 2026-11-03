@@ -21,7 +21,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "probeId": {
+            "probeIds": {
               "type": "keyword"
             },
             "worker": {

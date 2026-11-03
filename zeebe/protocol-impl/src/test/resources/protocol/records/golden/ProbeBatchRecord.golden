@@ -27,7 +27,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ProbeBatchRecord extends UnifiedRecordValue implements ProbeBatchRecordValue {
 
-  private final StringProperty probeIdProp = new StringProperty("probeId", "");
+  private final ArrayProperty<StringValue> probeIdsProp =
+      new ArrayProperty<>("probeIds", StringValue::new);
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final IntegerProperty maxProbesToActivateProp =
       new IntegerProperty("maxProbesToActivate", -1);
@@ -43,7 +44,7 @@ public final class ProbeBatchRecord extends UnifiedRecordValue implements ProbeB
 
   public ProbeBatchRecord() {
     super(8);
-    declareProperty(probeIdProp)
+    declareProperty(probeIdsProp)
         .declareProperty(workerProp)
         .declareProperty(maxProbesToActivateProp)
         .declareProperty(tenantIdsProp)
@@ -62,12 +63,16 @@ public final class ProbeBatchRecord extends UnifiedRecordValue implements ProbeB
   }
 
   @Override
-  public String getProbeId() {
-    return BufferUtil.bufferAsString(probeIdProp.getValue());
+  public List<String> getProbeIds() {
+    return StreamSupport.stream(probeIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
   }
 
-  public ProbeBatchRecord setProbeId(final String probeId) {
-    probeIdProp.setValue(probeId);
+  public ProbeBatchRecord setProbeIds(final List<String> probeIds) {
+    probeIdsProp.reset();
+    probeIds.forEach(probeId -> probeIdsProp.add().wrap(BufferUtil.wrapString(probeId)));
     return this;
   }
 

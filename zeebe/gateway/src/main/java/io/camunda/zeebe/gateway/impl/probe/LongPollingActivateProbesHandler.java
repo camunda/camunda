@@ -34,7 +34,10 @@ import org.slf4j.Logger;
 /**
  * Collects probes for a worker's poll, with the long polling of job activation: the poll goes to
  * every partition of the physical tenant, round-robin; when none has a probe, the request is held
- * until a partition announces probes of its probe ID, or until its request timeout.
+ * until a partition announces probes of any of its probe IDs, or until its request timeout.
+ *
+ * <p>Unlike a job poll, which names one type, a probe poll names every probe ID of its worker, so a
+ * held poll waits under each of them and stops waiting under all of them once one wakes it.
  *
  * <p>A dedicated, smaller cousin of {@code LongPollingActivateJobsHandler} and {@code
  * RoundRobinActivateJobsHandler}, which are typed to job requests throughout. It keeps their
@@ -50,7 +53,7 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
   private final Duration defaultLongPollingTimeout;
   private final Map<Key, Set<Poll>> waitingPolls = new HashMap<>();
   private final Map<Key, Long> notificationCounts = new HashMap<>();
-  private final Map<String, AtomicInteger> nextPartitionByProbeId = new HashMap<>();
+  private final Map<List<String>, AtomicInteger> nextPartitionByProbeIds = new HashMap<>();
   private ActorControl actor;
 
   public LongPollingActivateProbesHandler(
@@ -105,8 +108,39 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     notificationCounts.merge(key, 1L, Long::sum);
     final var polls = waitingPolls.remove(key);
     if (polls != null) {
-      polls.forEach(this::tryPartitions);
+      for (final Poll poll : polls) {
+        if (stopWaiting(poll)) {
+          tryPartitions(poll);
+        }
+      }
     }
+  }
+
+  /**
+   * Removes the poll from the polls waiting under each of its probe IDs.
+   *
+   * @return whether it was waiting; a poll another notification or its timeout already took is not
+   */
+  private boolean stopWaiting(final Poll poll) {
+    if (!poll.waiting) {
+      return false;
+    }
+    poll.waiting = false;
+    for (final Key key : poll.keys()) {
+      final var polls = waitingPolls.get(key);
+      if (polls != null && polls.remove(poll) && polls.isEmpty()) {
+        waitingPolls.remove(key);
+      }
+    }
+    return true;
+  }
+
+  private long notificationCount(final Poll poll) {
+    long count = 0;
+    for (final Key key : poll.keys()) {
+      count += notificationCounts.getOrDefault(key, 0L);
+    }
+    return count;
   }
 
   /** Tries every partition once, round-robin, collecting probes into the poll. */
@@ -118,15 +152,15 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     }
     final List<Integer> partitions = new ArrayList<>(topology.getPartitions());
     final int start =
-        nextPartitionByProbeId
-                .computeIfAbsent(poll.request.getProbeId(), id -> new AtomicInteger())
+        nextPartitionByProbeIds
+                .computeIfAbsent(poll.request.getProbeIds(), ids -> new AtomicInteger())
                 .getAndIncrement()
             % partitions.size();
     final List<Integer> order = new ArrayList<>();
     for (int i = 0; i < partitions.size(); i++) {
       order.add(partitions.get((start + i) % partitions.size()));
     }
-    poll.notificationsAtStart = notificationCounts.getOrDefault(poll.key(), 0L);
+    poll.notificationsAtStart = notificationCount(poll);
     tryPartition(poll, order, 0);
   }
 
@@ -148,8 +182,8 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
               }
               if (error != null || !response.isResponse()) {
                 LOG.debug(
-                    "Failed to activate probes of '{}' on partition {}",
-                    request.getProbeId(),
+                    "Failed to activate probes of {} on partition {}",
+                    request.getProbeIds(),
                     partitions.get(index),
                     error);
               } else {
@@ -166,7 +200,7 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
       return;
     }
     // a partition announced probes while the others were tried: one may have been missed
-    if (notificationCounts.getOrDefault(poll.key(), 0L) != poll.notificationsAtStart) {
+    if (notificationCount(poll) != poll.notificationsAtStart) {
       tryPartitions(poll);
       return;
     }
@@ -175,12 +209,14 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
       complete(poll);
       return;
     }
-    waitingPolls.computeIfAbsent(poll.key(), k -> new LinkedHashSet<>()).add(poll);
+    poll.waiting = true;
+    for (final Key key : poll.keys()) {
+      waitingPolls.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(poll);
+    }
     actor.schedule(
         Duration.ofMillis(remainingTime),
         () -> {
-          final var polls = waitingPolls.get(poll.key());
-          if (polls != null && polls.remove(poll)) {
+          if (stopWaiting(poll)) {
             complete(poll);
           }
         });
@@ -196,9 +232,9 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     }
     if (!undelivered.isEmpty()) {
       LOG.info(
-          "Failed to deliver {} probes of '{}' to the worker; yielding them",
+          "Failed to deliver {} probes of {} to the worker; yielding them",
           undelivered.size(),
-          poll.request.getProbeId());
+          poll.request.getProbeIds());
       undelivered.forEach(probeKey -> yieldProbe(probeKey, poll.physicalTenantId()));
     }
   }
@@ -228,6 +264,7 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     private final Consumer<Throwable> onError;
     private final ProbeBatchRecord collected;
     private long notificationsAtStart;
+    private boolean waiting;
 
     private Poll(
         final BrokerActivateProbesRequest request,
@@ -242,7 +279,7 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
       this.onError = onError;
       collected =
           new ProbeBatchRecord()
-              .setProbeId(request.getProbeId())
+              .setProbeIds(request.getProbeIds())
               .setWorker(request.getWorker())
               .setMaxProbesToActivate(maxProbes)
               .setTenantIds(request.getTenantIds())
@@ -253,8 +290,11 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
       return request.getPartitionGroup();
     }
 
-    private Key key() {
-      return new Key(physicalTenantId(), request.getProbeId());
+    private List<Key> keys() {
+      return request.getProbeIds().stream()
+          .distinct()
+          .map(probeId -> new Key(physicalTenantId(), probeId))
+          .toList();
     }
 
     private int remaining() {

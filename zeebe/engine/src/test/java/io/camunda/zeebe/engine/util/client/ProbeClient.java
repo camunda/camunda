@@ -94,6 +94,13 @@ public final class ProbeClient {
     return expectation.apply(position);
   }
 
+  /** Creates the probe as the user; returns its first event (CREATED), or the rejection. */
+  public Record<ProbeRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(requestStreamId, requestId, ProbeIntent.CREATE, probeRecord, username);
+    return expectation.apply(position);
+  }
+
   /** Answers the probe as a worker; returns ANSWERED, or the rejection. */
   public Record<ProbeRecordValue> answer(
       final long probeKey, final ProbeOutcome outcome, final Map<String, Object> data) {
@@ -114,14 +121,42 @@ public final class ProbeClient {
       final String worker,
       final int maxProbesToActivate,
       final String... tenantIds) {
+    return activate(List.of(probeId), worker, maxProbesToActivate, tenantIds);
+  }
+
+  /** Polls for the probes of several probe IDs at once, as a worker that answers them all. */
+  public Record<ProbeBatchRecordValue> activate(
+      final List<String> probeIds,
+      final String worker,
+      final int maxProbesToActivate,
+      final String... tenantIds) {
     final var batch =
         new ProbeBatchRecord()
-            .setProbeId(probeId)
+            .setProbeIds(probeIds)
             .setWorker(worker)
             .setMaxProbesToActivate(maxProbesToActivate)
             .setTenantIds(List.of(tenantIds));
-    final long position =
-        writer.writeCommand(requestStreamId, requestId, ProbeBatchIntent.ACTIVATE, batch);
+    return activated(
+        writer.writeCommand(requestStreamId, requestId, ProbeBatchIntent.ACTIVATE, batch));
+  }
+
+  /** Polls for the probes of the probe IDs as a worker authenticated as the user. */
+  public Record<ProbeBatchRecordValue> activateAs(
+      final String username,
+      final List<String> probeIds,
+      final String worker,
+      final int maxProbesToActivate) {
+    final var batch =
+        new ProbeBatchRecord()
+            .setProbeIds(probeIds)
+            .setWorker(worker)
+            .setMaxProbesToActivate(maxProbesToActivate);
+    return activated(
+        writer.writeCommand(
+            requestStreamId, requestId, ProbeBatchIntent.ACTIVATE, batch, username));
+  }
+
+  private Record<ProbeBatchRecordValue> activated(final long position) {
     final var records = RecordingExporter.probeBatchRecords().withSourceRecordPosition(position);
     return expectRejection
         ? records.onlyCommandRejections().getFirst()

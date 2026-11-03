@@ -40,14 +40,17 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Collects the activatable probes of a probe ID for a worker's poll, as {@code
- * JobBatchActivateProcessor} does for jobs.
+ * Collects the activatable probes of the probe IDs of a worker's poll, as {@code
+ * JobBatchActivateProcessor} does for the jobs of one type. A poll may name several probe IDs, and
+ * its maximum counts across all of them; it collects only the probes of the IDs its worker may
+ * answer.
  *
  * <p>The secrets of a probe are checked when a poll collects it, from the stores' caches only, as
  * {@code JobBatchCollector} does: when all are cached, their values go into the activation response
@@ -104,8 +107,12 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
     final Map<Long, SecretCheckResult> toPark = new LinkedHashMap<>();
     final List<Long> failedInjections = new ArrayList<>();
     // a poll collects nothing that its worker may not answer, as job activation does
-    if (mayAnswer(command, value.getProbeId())) {
-      collect(value, authorizedTenants, batch, response, toPark, failedInjections);
+    for (final String probeId : new LinkedHashSet<>(value.getProbeIds())) {
+      if (mayAnswer(command, probeId)
+          && !collect(
+              probeId, value, authorizedTenants, batch, response, toPark, failedInjections)) {
+        break;
+      }
     }
 
     final long batchKey = keyGenerator.nextKey();
@@ -125,10 +132,14 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
   }
 
   /**
-   * Adds the probes the poll may collect to the batch (with placeholders) and to the response (with
-   * the secret values), up to the requested amount and the room left in the record batch.
+   * Adds the probes of the probe ID the poll may collect to the batch (with placeholders) and to
+   * the response (with the secret values), up to the requested amount and the room left in the
+   * record batch.
+   *
+   * @return whether the batch has room left for the probes of another probe ID
    */
-  private void collect(
+  private boolean collect(
+      final String probeId,
       final ProbeBatchRecord value,
       final TenantAccess authorizedTenants,
       final ProbeBatchRecord batch,
@@ -138,7 +149,7 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
     final var tenantIds = tenantIds(value, authorizedTenants);
     final var worker = value.getWorker();
     probeState.visitActivatableProbes(
-        value.getProbeId(),
+        probeId,
         (probeKey, probe) -> {
           if (batch.probeKeys().size() >= value.getMaxProbesToActivate()) {
             batch.setTruncated(true);
@@ -176,6 +187,7 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
           response.addProbe(probeKey, delivered);
           return true;
         });
+    return !batch.isTruncated();
   }
 
   /** Replaces the placeholders of the delivered copy's input; the probe itself keeps them. */
@@ -214,10 +226,16 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
   }
 
   private Rejection validate(final ProbeBatchRecord value, final TenantAccess authorizedTenants) {
-    if (value.getProbeId().isBlank()) {
+    if (value.getProbeIds().isEmpty()) {
       return new Rejection(
           RejectionType.INVALID_ARGUMENT,
-          "Expected to activate probes for a probe ID, but it was blank.");
+          "Expected to activate probes for at least one probe ID, but none was given.");
+    }
+    if (value.getProbeIds().stream().anyMatch(String::isBlank)) {
+      return new Rejection(
+          RejectionType.INVALID_ARGUMENT,
+          "Expected to activate probes for probe IDs, but one of %s was blank."
+              .formatted(value.getProbeIds()));
     }
     if (value.getMaxProbesToActivate() <= 0) {
       return new Rejection(
@@ -262,7 +280,7 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
 
   private static ProbeBatchRecord header(final ProbeBatchRecord value) {
     return new ProbeBatchRecord()
-        .setProbeId(value.getProbeId())
+        .setProbeIds(value.getProbeIds())
         .setWorker(value.getWorker())
         .setMaxProbesToActivate(value.getMaxProbesToActivate())
         .setTenantIds(value.getTenantIds())

@@ -17,7 +17,7 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 /**
- * A worker's poll for the probes of a probe ID on one partition, as {@code
+ * A worker's poll for the probes of its probe IDs on one partition, as {@code
  * BrokerActivateJobsRequest} for jobs. The long polling handler sends it to every partition.
  */
 public final class BrokerActivateProbesRequest extends BrokerExecuteCommand<ProbeBatchRecord> {
@@ -25,22 +25,22 @@ public final class BrokerActivateProbesRequest extends BrokerExecuteCommand<Prob
   private final ProbeBatchRecord requestDto = new ProbeBatchRecord();
 
   public BrokerActivateProbesRequest(
-      final String probeId,
+      final List<String> probeIds,
       final String worker,
       final int maxProbesToActivate,
       final List<String> tenantIds,
       final TenantFilter tenantFilter) {
     super(ValueType.PROBE_BATCH, ProbeBatchIntent.ACTIVATE);
     requestDto
-        .setProbeId(probeId)
+        .setProbeIds(probeIds)
         .setWorker(worker)
         .setMaxProbesToActivate(maxProbesToActivate)
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter);
   }
 
-  public String getProbeId() {
-    return requestDto.getProbeId();
+  public List<String> getProbeIds() {
+    return requestDto.getProbeIds();
   }
 
   public String getWorker() {

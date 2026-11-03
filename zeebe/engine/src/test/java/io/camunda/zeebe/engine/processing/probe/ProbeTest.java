@@ -19,9 +19,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -124,6 +126,61 @@ public final class ProbeTest {
 
     // then
     assertThat(activated.getValue().getProbeKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldCollectTheProbesOfEveryPolledProbeIdInOnePoll() {
+    // given
+    final var otherProbeId = probeId + "-other";
+    final long first = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    final long second = ENGINE.probe().withProbeId(otherProbeId).withInput("={}").create().getKey();
+
+    // when
+    final var activated = ENGINE.probe().activate(List.of(probeId, otherProbeId), "worker-a", 4);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).containsExactlyInAnyOrder(first, second);
+    assertThat(activated.getValue().getProbes())
+        .extracting(ProbeRecordValue::getProbeId)
+        .containsExactlyInAnyOrder(probeId, otherProbeId);
+    assertThat(activated.getValue().isTruncated()).isFalse();
+  }
+
+  @Test
+  public void shouldCountTheMaximumAcrossThePolledProbeIds() {
+    // given
+    final var otherProbeId = probeId + "-other";
+    ENGINE.probe().withProbeId(probeId).withInput("={}").create();
+    ENGINE.probe().withProbeId(otherProbeId).withInput("={}").create();
+
+    // when
+    final var activated = ENGINE.probe().activate(List.of(probeId, otherProbeId), "worker-a", 1);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).hasSize(1);
+    assertThat(activated.getValue().isTruncated()).isTrue();
+  }
+
+  @Test
+  public void shouldCollectAProbeOnceWhenItsProbeIdIsPolledTwice() {
+    // given
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+
+    // when
+    final var activated = ENGINE.probe().activate(List.of(probeId, probeId), "worker-a", 4);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).containsExactly(probeKey);
+  }
+
+  @Test
+  public void shouldRejectAPollWithABlankProbeIdAmongOthers() {
+    // when
+    final var rejection =
+        ENGINE.probe().expectRejection().activate(List.of(probeId, " "), "worker-a", 1);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -348,7 +405,7 @@ public final class ProbeTest {
   @Test
   public void shouldRejectAPollWithoutProbeId() {
     // when
-    final var rejection = ENGINE.probe().expectRejection().activate("", "worker-a", 1);
+    final var rejection = ENGINE.probe().expectRejection().activate(List.of(), "worker-a", 1);
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
