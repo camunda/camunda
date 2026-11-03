@@ -360,3 +360,86 @@ test('escaped JSON Pointer segments in $refs are decoded during lookup', () => {
   const { collapsed } = collapseSiblingVariants(vm, spec);
   assert.deepEqual(collapsed, [{ propKey: `${EP} > request > ${BY_TAG}.businessId`, from: '8.10', to: '8.9' }]);
 });
+
+test('literal tilde segments in a path array are indexed verbatim, not decoded again', () => {
+  // Path-array segments are literal keys: the builder's `refToPath` already
+  // decoded any `$ref` it split. A property genuinely named `literal~1name`
+  // must still be found — decoding again would look up `literal/name`.
+  const literal = (branch, version) => ({
+    ...entry(branch, 'literal~1name', version),
+    path: ['components', 'schemas', branch, 'properties', 'literal~1name'],
+  });
+  const vm = versionMapOf([literal(BY_ID, '8.9'), literal(BY_TAG, '8.10')]);
+  const spec = specOf({
+    [BY_ID]: { 'literal~1name': { type: 'string' } },
+    [BY_TAG]: { 'literal~1name': { type: 'string' } },
+  });
+  const { collapsed } = collapseSiblingVariants(vm, spec);
+  assert.equal(vm.properties[`${EP} > request > ${BY_TAG}.literal~1name`].version, '8.9');
+  assert.deepEqual(collapsed, [
+    { propKey: `${EP} > request > ${BY_TAG}.literal~1name`, from: '8.10', to: '8.9' },
+  ]);
+});
+
+test('an inline property and a $ref to the same schema collapse together', () => {
+  // A terminal `properties.foo.$ref` names the same schema as an inline
+  // sibling with that schema's content; leaving it unresolved would compare
+  // `{ $ref }` against the inline object and keep the newer version.
+  const referenced = (branch, version) => ({
+    ...entry(branch, 'businessId', version),
+    path: ['components', 'schemas', branch, 'properties', 'businessId'],
+  });
+  const inline = (branch, version) => ({
+    ...referenced(branch, version),
+    qualifiedName: `${branch}.businessId`,
+  });
+  const vm = versionMapOf([referenced(BY_ID, '8.9'), inline(BY_TAG, '8.10')]);
+  const spec = specOf({
+    [BY_ID]: { businessId: BUSINESS_ID },
+    [BY_TAG]: { businessId: { type: 'string', minLength: 1 } },
+  });
+  // `specOf` wraps every entry as an object of properties; the ref target is a
+  // real schema, so set it directly.
+  spec.components.schemas.BusinessId = { type: 'string', minLength: 1 };
+  const { collapsed } = collapseSiblingVariants(vm, spec);
+  assert.equal(vm.properties[`${EP} > request > ${BY_TAG}.businessId`].version, '8.9');
+  assert.deepEqual(collapsed, [{ propKey: `${EP} > request > ${BY_TAG}.businessId`, from: '8.10', to: '8.9' }]);
+});
+
+test('sibling constraints next to a terminal $ref are preserved in the comparison', () => {
+  // `{ $ref: X, nullable: true }` narrows X; resolving the ref must keep the
+  // sibling constraint, or it would wrongly collapse with a plain inline X.
+  const constrained = (branch, version) => ({
+    ...entry(branch, 'businessId', version),
+    path: ['components', 'schemas', branch, 'properties', 'businessId'],
+  });
+  const vm = versionMapOf([constrained(BY_ID, '8.9'), constrained(BY_TAG, '8.10')]);
+  const spec = specOf({
+    [BY_ID]: { businessId: { $ref: '#/components/schemas/BusinessId', nullable: true } },
+    [BY_TAG]: { businessId: { type: 'string' } },
+  });
+  // `specOf` wraps every entry as an object of properties; the ref target is a
+  // real schema, so set it directly.
+  spec.components.schemas.BusinessId = { type: 'string' };
+  const { collapsed, skipped } = collapseSiblingVariants(vm, spec);
+  assert.equal(vm.properties[`${EP} > request > ${BY_TAG}.businessId`].version, '8.10');
+  assert.deepEqual(collapsed, []);
+  assert.deepEqual(skipped, [`${EP} > request > businessId`]);
+});
+
+test('a cyclic terminal $ref is left unresolved rather than looping forever', () => {
+  const cyclic = (branch, version) => ({
+    ...entry(branch, 'businessId', version),
+    path: ['components', 'schemas', branch, 'properties', 'businessId'],
+  });
+  const vm = versionMapOf([cyclic(BY_ID, '8.9'), cyclic(BY_TAG, '8.10')]);
+  const spec = specOf({
+    [BY_ID]: { businessId: { $ref: '#/components/schemas/LoopA' } },
+    [BY_TAG]: { businessId: { $ref: '#/components/schemas/LoopA' } },
+    LoopA: { $ref: '#/components/schemas/LoopB' },
+    LoopB: { $ref: '#/components/schemas/LoopA' },
+  });
+  const { collapsed } = collapseSiblingVariants(vm, spec);
+  // Both sides are the same unresolved `{ $ref }` shape, so they still match.
+  assert.equal(vm.properties[`${EP} > request > ${BY_TAG}.businessId`].version, '8.9');
+});
