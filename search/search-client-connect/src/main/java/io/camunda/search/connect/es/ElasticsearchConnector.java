@@ -31,6 +31,7 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHost;
@@ -176,7 +177,10 @@ public final class ElasticsearchConnector {
           ClientTlsStrategyBuilder.create()
               .setSslContext(SecurityUtil.getSSLContext(security, "elasticsearch-host"));
       if (!security.isVerifyHostname()) {
-        tlsStrategyBuilder.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+        // a custom verifier alone leaves the policy at BOTH, which still checks the hostname
+        tlsStrategyBuilder
+            .setHostVerificationPolicy(HostnameVerificationPolicy.CLIENT)
+            .setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
       connectionManagerBuilder.setTlsStrategy(tlsStrategyBuilder.buildAsync());
     } catch (final Exception e) {

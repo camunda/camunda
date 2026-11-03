@@ -44,6 +44,7 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.reactor.IOReactorConfig;
@@ -130,7 +131,10 @@ public class ElasticsearchClientBuilder {
     final var tlsStrategyBuilder = ClientTlsStrategyBuilder.create().setSslContext(sslContext);
     if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
       // setting this to always return true essentially skips the hostname verification
-      tlsStrategyBuilder.setHostnameVerifier((s, sslSession) -> true);
+      // a custom verifier alone leaves the policy at BOTH, which still checks the hostname
+      tlsStrategyBuilder
+          .setHostVerificationPolicy(HostnameVerificationPolicy.CLIENT)
+          .setHostnameVerifier((s, sslSession) -> true);
     }
     connectionManagerBuilder.setTlsStrategy(tlsStrategyBuilder.buildAsync());
     return connectionManagerBuilder;
