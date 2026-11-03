@@ -99,7 +99,7 @@ re-suspends an already-activated job.**
 
 Command surface table:
 
-| Command                                             | Behavior while a job is `SUSPENDED` / instance is suspended                                                                                                                                                                                                      |
+|                       Command                       |                                                                                                   Behavior while a job is `SUSPENDED` / instance is suspended                                                                                                    |
 |-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `ActivateJobs` (poll or stream)                     | job is absent from the index; not handed out                                                                                                                                                                                                                     |
 | `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                                                                                                 |

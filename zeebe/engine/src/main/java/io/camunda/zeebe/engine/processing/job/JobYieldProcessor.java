@@ -49,7 +49,7 @@ public final class JobYieldProcessor
     suspensionState = state.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            state.getElementInstanceState(), state.getJobState(), writers.state());
+            state.getElementInstanceState(), state.getJobState());
     this.suspensionMetrics = suspensionMetrics;
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
