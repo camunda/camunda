@@ -86,6 +86,10 @@ type BaseProps<TRow> = {
 	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
+	onRowClick?: (row: TRow) => void;
+	expansion?: (row: TRow) => React.ReactNode;
+	expandRowLabel?: string;
+	collapseRowLabel?: string;
 	'data-testid'?: string;
 };
 
@@ -196,7 +200,14 @@ function readRowHeights(scrollContainer: HTMLElement): number[] {
 		scrollContainer.querySelectorAll<HTMLElement>(
 			`[data-slot="table-body"] [data-slot="table-row"]:not(:has([${SKELETON_EDGE_ATTRIBUTE}]))`,
 		),
-	).map((rowElement) => rowElement.getBoundingClientRect().height);
+	).map((rowElement) => {
+		const expansionRow = rowElement.nextElementSibling;
+		const expansionHeight =
+			expansionRow?.getAttribute('data-slot') === 'data-table-expansion-row'
+				? expansionRow.getBoundingClientRect().height
+				: 0;
+		return rowElement.getBoundingClientRect().height + expansionHeight;
+	});
 }
 
 function sumRowHeights(heights: number[], count: number): number {
@@ -586,6 +597,10 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		onSort,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
+		onRowClick,
+		expansion,
+		expandRowLabel,
+		collapseRowLabel,
 		'data-testid': dataTestId,
 	} = props;
 	const selection = props.selectionType === 'checkbox' ? props : undefined;
@@ -836,6 +851,23 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			batchActionsCancelLabel={selection?.batchActionsCancelLabel}
 			selectionCountLabel={selection?.selectionCountLabel}
 			getSelectedRows={selection === undefined ? undefined : getSelectedDisplayRows}
+			onRowClick={
+				onRowClick === undefined
+					? undefined
+					: (displayRow) => {
+							if (displayRow.kind === 'row') {
+								onRowClick(displayRow.row);
+							}
+						}
+			}
+			expansion={
+				expansion === undefined
+					? undefined
+					: (displayRow) => (displayRow.kind === 'row' ? expansion(displayRow.row) : null)
+			}
+			getRowCanExpand={expansion === undefined ? undefined : (displayRow) => displayRow.kind === 'row'}
+			expandRowLabel={expandRowLabel}
+			collapseRowLabel={collapseRowLabel}
 			sorting={hasSortableColumns ? {manual: true, sortState, onSortingChange: handleSortingChange} : undefined}
 		/>
 	);
