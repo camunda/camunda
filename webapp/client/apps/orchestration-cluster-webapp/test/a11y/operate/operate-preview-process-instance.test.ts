@@ -18,6 +18,7 @@ import {
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
 	mockQueryAuditLogsEndpoint,
+	mockQueryElementInstancesEndpoint,
 	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryVariablesEndpoint,
@@ -31,6 +32,10 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
 import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
@@ -300,4 +305,27 @@ test.describe('Input mappings tab', () => {
 		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);
 	});
+});
+
+test('should have no accessibility violations in the instance history', async ({
+	network,
+	operatePreviewProcessInstancePage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryElementInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryElementInstancesResponse([
+					createElementInstance({elementId: 'task-1', elementInstanceKey: '2251799813685290', elementName: 'Task 1'}),
+				]),
+			),
+		}),
+		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
 });
