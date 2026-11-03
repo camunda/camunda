@@ -8,6 +8,10 @@
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
@@ -140,6 +144,37 @@ class DecisionEvaluationAuditLogTransformerTest {
     // then
     assertThat(entity.getDecisionEvaluationKey()).isEqualTo(999L);
     assertThat(entity.getEntityKey()).isEqualTo("999-1");
+  }
+
+  @Test
+  void shouldReadEvaluatedDecisionsOnce() {
+    // given - getEvaluatedDecisions() copies every decision on each call in the broker
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionKey(999L)
+            .withDecisionEvaluationInstanceKey("999-1")
+            .build();
+    final DecisionEvaluationRecordValue recordValue =
+        mock(
+            DecisionEvaluationRecordValue.class,
+            delegatesTo(
+                ImmutableDecisionEvaluationRecordValue.builder()
+                    .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+                    .withEvaluatedDecisions(List.of(evaluatedDecision))
+                    .build()));
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getEntityKey()).isEqualTo("999-1");
+    verify(recordValue, times(1)).getEvaluatedDecisions();
   }
 
   @Test
