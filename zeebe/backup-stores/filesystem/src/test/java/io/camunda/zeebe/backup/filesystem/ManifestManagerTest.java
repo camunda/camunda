@@ -158,6 +158,24 @@ class ManifestManagerTest {
     assertThat(manifests).hasSize(expectedSize);
   }
 
+  @Test
+  void shouldListManifestsUnderADirectoryWithRegexMetacharacters() throws IOException {
+    // given a store directory whose name would not match itself if read as a regex
+    final var manifestManager = new ManifestManager(tempDir.resolve("backups+(1).x"));
+    manifestManager.createInitialManifest(backup);
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), CheckpointPattern.any());
+
+    // when
+    final var manifests = manifestManager.listManifests(wildcard, ListOptions.all());
+
+    // then
+    assertThat(manifests)
+        .extracting(manifest -> manifest.id().checkpointId())
+        .containsExactly(backupIdentifier.checkpointId());
+  }
+
   /**
    * Deleting a backup removes its manifest and then the parent directories that removal left empty,
    * so a listing already walking the tree can find entries gone by the time it reaches them. The
