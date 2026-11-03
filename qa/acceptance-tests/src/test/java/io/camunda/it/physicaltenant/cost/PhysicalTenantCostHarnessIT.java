@@ -9,6 +9,7 @@ package io.camunda.it.physicaltenant.cost;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.it.physicaltenant.cost.CostReport.Sample;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -69,6 +71,12 @@ final class PhysicalTenantCostHarnessIT {
       System.getProperty("camunda.pt.cost.pool-idle-timeout", "10m");
   private static final Path OUTPUT =
       Path.of(System.getProperty("camunda.pt.cost.output", "target/pt-cost"));
+  private static final List<Integer> HEAP_DUMP_AT =
+      Arrays.stream(System.getProperty("camunda.pt.cost.heap-dump-at", "").split(","))
+          .map(String::trim)
+          .filter(s -> !s.isEmpty())
+          .map(Integer::valueOf)
+          .toList();
 
   private static final CostReport REPORT = new CostReport(LABEL, OUTPUT);
   private static final List<String> DATABASE_URLS = new ArrayList<>();
@@ -181,6 +189,18 @@ final class PhysicalTenantCostHarnessIT {
                 .toList());
     REPORT.add(sample);
     LOG.info("Physical tenant cost sample {}", sample);
+    if (HEAP_DUMP_AT.contains(tenants)) {
+      dumpHeap(phase, tenants);
+    }
+  }
+
+  private static void dumpHeap(final String phase, final int tenants) throws Exception {
+    final var file = OUTPUT.resolve("pt-cost-%s-%d-%s.hprof".formatted(LABEL, tenants, phase));
+    Files.createDirectories(OUTPUT);
+    Files.deleteIfExists(file);
+    ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
+        .dumpHeap(file.toAbsolutePath().toString(), true);
+    LOG.info("Wrote heap dump {}", file.toAbsolutePath());
   }
 
   private static PhysicalTenantsITHelper tenants(final int tenantCount) {
