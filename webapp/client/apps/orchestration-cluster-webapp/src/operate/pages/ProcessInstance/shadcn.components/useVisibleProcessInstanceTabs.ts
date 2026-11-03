@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {
@@ -18,19 +18,32 @@ import {useProcessInstancePage} from '../useProcessInstancePage';
 import {useSelectionIncidentsCount} from '../useSelectionIncidentsCount';
 import {getHiddenTabRedirect, getVisibleProcessInstanceTabs, type ProcessInstanceTab} from './processInstanceTabs';
 
-function useVisibleProcessInstanceTabs(activeTab: ProcessInstanceTab) {
+const REDIRECT_PATHS = {
+	incidents: '/operate-preview/processes/$processInstanceId/incidents',
+	details: '/operate-preview/processes/$processInstanceId/details',
+	variables: '/operate-preview/processes/$processInstanceId/variables',
+} as const;
+
+function useVisibleProcessInstanceTabs(activeTab: ProcessInstanceTab, isDesktop: boolean) {
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance} = useProcessInstancePage();
 	const {hasSelection, resolvedElementInstance} = useProcessInstanceElementSelection();
-	const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
+	const {data: waitStateStatistics, isError: isWaitStateError} = useProcessInstanceWaitStateStatistics(processInstance);
 	const incidentsCount = useSelectionIncidentsCount(processInstance);
 	const isProcessLevelWaiting = hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId);
 	const isWaitStateLoading =
-		isProcessInstanceWaitStateStatisticsEnabled(processInstance) && waitStateStatistics === undefined;
+		isProcessInstanceWaitStateStatisticsEnabled(processInstance) &&
+		waitStateStatistics === undefined &&
+		!isWaitStateError;
 	const hasIncidentsTab =
 		processInstance.hasIncident &&
 		(incidentsCount === undefined || incidentsCount > 0 || resolvedElementInstance?.hasIncident === true);
-	const visibleTabs = getVisibleProcessInstanceTabs({hasIncidentsTab, hasSelection, isProcessLevelWaiting});
+	const visibleTabs = getVisibleProcessInstanceTabs({
+		hasIncidentsTab,
+		hasSelection,
+		isProcessLevelWaiting,
+		isMobile: !isDesktop,
+	});
 	const redirectTarget = getHiddenTabRedirect({
 		activeTab,
 		visibleTabs,
@@ -42,10 +55,7 @@ function useVisibleProcessInstanceTabs(activeTab: ProcessInstanceTab) {
 	useEffect(() => {
 		if (redirectTarget !== null) {
 			void navigate({
-				to:
-					redirectTarget === 'details'
-						? '/operate-preview/processes/$processInstanceId/details'
-						: '/operate-preview/processes/$processInstanceId/variables',
+				to: REDIRECT_PATHS[redirectTarget],
 				params: {processInstanceId},
 				search: true,
 				hash: true,
@@ -53,6 +63,21 @@ function useVisibleProcessInstanceTabs(activeTab: ProcessInstanceTab) {
 			});
 		}
 	}, [redirectTarget, navigate, processInstanceId]);
+
+	const hadSelection = useRef(hasSelection);
+	useEffect(() => {
+		const selectionStarted = hasSelection && !hadSelection.current;
+		hadSelection.current = hasSelection;
+		if (selectionStarted && activeTab === 'history' && !isDesktop) {
+			void navigate({
+				to: REDIRECT_PATHS[hasIncidentsTab ? 'incidents' : 'details'],
+				params: {processInstanceId},
+				search: true,
+				hash: true,
+				replace: true,
+			});
+		}
+	}, [hasSelection, activeTab, isDesktop, hasIncidentsTab, navigate, processInstanceId]);
 
 	return {visibleTabs, incidentsCount, isActiveTabHidden: !visibleTabs.includes(activeTab)};
 }

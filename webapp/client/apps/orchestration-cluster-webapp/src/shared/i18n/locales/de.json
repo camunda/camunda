@@ -1648,6 +1648,7 @@
 					"operationsLog": "Operationsprotokoll",
 					"timestamps": "Enddatum",
 					"executionCount": "Ausführungsanzahl",
+					"loadingMore": "Weitere Elemente werden geladen",
 					"multiInstance": " (Multi-Instanz)",
 					"migrated": "Migriert {{date}}",
 					"forbidden": "Sie haben keine Berechtigung, die Instanzhistorie anzuzeigen",

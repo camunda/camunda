@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import {useState} from 'react';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {getElementIconSvg, getTemplateIconSource, resolveElementIcon} from '../elementIcons';
@@ -21,13 +22,12 @@ const ElementInstanceIcon: React.FC<{businessObject?: BusinessObject; root?: boo
 	const name = resolveElementIcon(businessObject, root);
 
 	return template ? (
-		<span className={FRAME_CLASS_NAME} data-testid="element-instance-icon">
+		<span className={FRAME_CLASS_NAME}>
 			<img key={template} src={template} alt="" aria-hidden="true" onError={() => setFailedIcon(template)} />
 		</span>
 	) : (
 		<span
 			className={FRAME_CLASS_NAME}
-			data-testid="element-instance-icon"
 			aria-hidden="true"
 			data-icon={name}
 			dangerouslySetInnerHTML={{__html: getElementIconSvg(name)}}
