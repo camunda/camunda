@@ -63,12 +63,17 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
         request.requestTimeout() == null || request.requestTimeout() == 0
             ? DEFAULT_REQUEST_TIMEOUT_MS
             : request.requestTimeout();
+    // the deadline is fixed here, when the request arrives, and the engine uses it as is: time
+    // spent before the engine processes CREATE comes out of the probe's time, never out of the
+    // margin the gateway waits beyond it, so the engine's answer arrives first
+    final long deadline = System.currentTimeMillis() + timeout;
     final var brokerRequest =
         new BrokerProbeCreateRequest()
             .setProbeId(request.probeId())
             .setInputExpression(request.input())
             .setTenantId(request.tenantId())
-            .setRequestTimeout(timeout);
+            .setRequestTimeout(timeout)
+            .setDeadline(deadline);
     return sendBrokerRequestWithFullResponse(
             brokerRequest, authentication, Duration.ofMillis(timeout + RESPONSE_OFFSET_MS))
         .thenApply(response -> new ProbeResult(response.getKey(), response.getResponse()));

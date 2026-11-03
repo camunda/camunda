@@ -49,6 +49,12 @@ public final class BrokerProbeCreateRequest extends BrokerExecuteCommand<ProbeRe
     return this;
   }
 
+  /** The absolute deadline (epoch millis) the gateway computed when the request arrived. */
+  public BrokerProbeCreateRequest setDeadline(final long deadline) {
+    requestDto.setDeadline(deadline);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

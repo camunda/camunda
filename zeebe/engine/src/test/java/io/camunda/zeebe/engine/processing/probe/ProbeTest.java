@@ -176,6 +176,51 @@ public final class ProbeTest {
   }
 
   @Test
+  public void shouldUseTheDeadlineTheGatewaySent() {
+    // given - the gateway fixed the deadline when the request arrived
+    final long deadline = ENGINE.getClock().getCurrentTimeInMillis() + 5_000;
+
+    // when
+    final var created =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(5_000)
+            .withDeadline(deadline)
+            .create();
+
+    // then - kept as is, not recomputed from the processing time
+    assertThat(created.getValue().getDeadline()).isEqualTo(deadline);
+  }
+
+  @Test
+  public void shouldEndAtOnceWithNoWorkerWhenProcessedAfterItsDeadline() {
+    // given - CREATE queued past the deadline the gateway fixed
+    final long deadline = ENGINE.getClock().getCurrentTimeInMillis() - 1;
+
+    // when
+    final var created =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1_000)
+            .withDeadline(deadline)
+            .withRequest(55, 555L)
+            .create();
+
+    // then - ended by the CREATE itself, so the client is answered before the gateway gives up
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT)
+            .withRecordKey(created.getKey())
+            .getFirst();
+    assertThat(timedOut.getSourceRecordPosition()).isEqualTo(created.getSourceRecordPosition());
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(55, 555L);
+  }
+
+  @Test
   public void shouldEndWithNoWorkerWhenNoPollCollectedTheProbe() {
     // given
     final var created =

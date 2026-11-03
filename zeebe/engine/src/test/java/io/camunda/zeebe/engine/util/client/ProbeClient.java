@@ -69,6 +69,12 @@ public final class ProbeClient {
     return this;
   }
 
+  /** The absolute deadline a gateway sends with CREATE. */
+  public ProbeClient withDeadline(final long deadline) {
+    probeRecord.setDeadline(deadline);
+    return this;
+  }
+
   public ProbeClient withRequest(final int requestStreamId, final long requestId) {
     this.requestStreamId = requestStreamId;
     this.requestId = requestId;

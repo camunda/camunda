@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -104,7 +105,8 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
             .setProbeId(value.getProbeId())
             .setTenantId(value.getTenantId())
             .setInputExpression(value.getInputExpression())
-            .setRequestTimeout(value.getRequestTimeout());
+            .setRequestTimeout(value.getRequestTimeout())
+            .setDeadline(value.getDeadline());
 
     final var result =
         validate(probe)
@@ -124,9 +126,26 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
     if (probe.getRequestTimeout() == 0) {
       probe.setRequestTimeout(DEFAULT_REQUEST_TIMEOUT);
     }
-    probe.setDeadline(clock.millis() + probe.getRequestTimeout());
+    // the gateway sends the absolute deadline it fixed when the request arrived, and waits a little
+    // longer than it; recomputing it from the processing time would push the engine's answer past
+    // the gateway's wait whenever CREATE queues. A command without one (e.g. not from a gateway)
+    // gets it from the request timeout
+    if (probe.getDeadline() <= 0) {
+      probe.setDeadline(clock.millis() + probe.getRequestTimeout());
+    }
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.CREATED, probe);
     asyncRequestBehavior.writeAsyncRequestReceived(probeKey, command);
+
+    if (probe.getDeadline() <= clock.millis()) {
+      // processed after its deadline: no poll can collect it in time, so it ends right away
+      probeBehavior.end(
+          probeKey,
+          probe,
+          ProbeIntent.TIMED_OUT,
+          ProbeEndReason.NO_WORKER,
+          ProbeBehavior.noWorkerMessage(probe));
+      return;
+    }
     timeoutChecker.schedule(probe.getDeadline());
     probeBehavior.notifyProbesAvailable(probe.getProbeId());
   }
