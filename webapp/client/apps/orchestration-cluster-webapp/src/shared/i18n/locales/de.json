@@ -1763,6 +1763,8 @@
 					"exitDescription": "Verlassen",
 					"save": "Variable speichern",
 					"saveDescription": "Speichern",
+					"saving": "Variable wird gespeichert",
+					"loadingValue": "Variablenwert wird geladen",
 					"deleteDescription": "Löschen",
 					"editTitle": "Variable \"{{name}}\" bearbeiten",
 					"newVariableTitle": "Neue Variable bearbeiten",

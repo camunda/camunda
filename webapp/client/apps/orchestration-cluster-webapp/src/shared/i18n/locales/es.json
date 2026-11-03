@@ -1763,6 +1763,8 @@
 					"exitDescription": "Salir",
 					"save": "Guardar variable",
 					"saveDescription": "Guardar",
+					"saving": "Guardando variable",
+					"loadingValue": "Cargando valor de la variable",
 					"deleteDescription": "Eliminar",
 					"editTitle": "Editar variable \"{{name}}\"",
 					"newVariableTitle": "Editar una nueva variable",

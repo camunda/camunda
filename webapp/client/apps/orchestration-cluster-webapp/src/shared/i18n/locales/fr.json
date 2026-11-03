@@ -1766,6 +1766,8 @@
 					"exitDescription": "Quitter",
 					"save": "Enregistrer la variable",
 					"saveDescription": "Enregistrer",
+					"saving": "Enregistrement de la variable",
+					"loadingValue": "Chargement de la valeur de la variable",
 					"deleteDescription": "Supprimer",
 					"editTitle": "Modifier la variable « {{name}} »",
 					"newVariableTitle": "Modifier une nouvelle variable",
