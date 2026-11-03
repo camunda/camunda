@@ -24,6 +24,7 @@ dependencies {
   implementation(libs.com.google.guava.guava)
   implementation(libs.org.rocksdb.rocksdbjni)
   implementation(libs.com.netflix.concurrency.limits.concurrency.limits.core)
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-db"))

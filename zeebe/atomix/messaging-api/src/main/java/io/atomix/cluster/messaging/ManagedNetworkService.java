@@ -7,13 +7,11 @@
  */
 package io.atomix.cluster.messaging;
 
-public class SbeUtil {
-  public static BooleanType toSBE(final boolean value) {
-    return value ? BooleanType.TRUE : BooleanType.FALSE;
-  }
+import io.atomix.utils.Managed;
 
-  public static boolean toBoolean(final BooleanType booleanType) {
-    // safe to use == as it's an enum
-    return BooleanType.TRUE == booleanType;
-  }
-}
+/**
+ * A {@link NetworkService} that also owns the lifecycle of the transports behind it.
+ *
+ * <p>This is the single point at which a node's peer-to-peer transports are started and stopped.
+ */
+public interface ManagedNetworkService extends NetworkService, Managed<NetworkService> {}

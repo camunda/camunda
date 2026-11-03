@@ -19,6 +19,7 @@ dependencies {
   implementation(libs.junit.junit)
   implementation(libs.org.assertj.assertj.core)
   implementation(libs.org.slf4j.slf4j.api)
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(project(":zeebe-atomix-utils"))

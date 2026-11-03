@@ -30,17 +30,11 @@ import java.util.function.Function;
  * Publish-subscribe based messaging service.
  *
  * <p>This service is an abstraction for publish-subscribe based cluster communication. Messages are
- * published and received based on arbitrary {@link String} topics. It supports several types of
- * messaging:
+ * published and received based on arbitrary {@link String} topics. It supports broadcast messaging:
  *
  * <ul>
  *   <li>{@link #broadcast(String, Object)} broadcasts a message to all subscribers registered for
  *       the topic
- *   <li>{@link #unicast(String, Object)} sends a unicast message directly to one of the subscribers
- *       registered for the topic; unicast messages are generally delivered in round-robin fashion
- *   <li>{@link #send(String, Object)} sends a message directly to one of the subscribers registered
- *       for the topic and awaits a reply; direct messages are generally delivered in round-robin
- *       fashion
  * </ul>
  *
  * To register to listen for messages, use one of the {@link #subscribe(String, Consumer, Executor)}

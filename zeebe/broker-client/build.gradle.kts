@@ -9,6 +9,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   api(project(":zeebe-cluster-config-api"))

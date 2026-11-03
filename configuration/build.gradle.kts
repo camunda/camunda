@@ -17,7 +17,7 @@ dependencies {
   implementation(project(":zeebe-db"))
   implementation(project(":camunda-db-rdbms"))
   implementation(project(":zeebe-gateway-rest"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-exporter-common"))
   implementation(project(":zeebe-exporter-config-support"))

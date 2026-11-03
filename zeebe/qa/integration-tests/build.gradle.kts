@@ -45,6 +45,7 @@ dependencies {
   testImplementation(project(":zeebe-snapshots"))
   testImplementation(libs.io.zeebe.zeebe.test.container)
   testImplementation(libs.io.zeebe.zeebe.test.container.engine)
+  testImplementation(project(":zeebe-atomix-messaging-api"))
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-atomix-utils"))
   testImplementation(project(":dynamic-node-id-provider"))

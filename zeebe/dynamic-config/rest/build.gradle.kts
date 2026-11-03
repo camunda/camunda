@@ -3,7 +3,7 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-cluster-config-openapi"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-util"))
   implementation(libs.org.springframework.boot.spring.boot.actuator)
