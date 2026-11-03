@@ -118,8 +118,8 @@ public final class ElasticsearchConnector {
 
     final Header[] defaultHeaders =
         new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=9"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=9")
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
         };
 
     return restClientBuilder
@@ -130,7 +130,10 @@ public final class ElasticsearchConnector {
         .setHttpClientConfigCallback(
             httpClientBuilder ->
                 configureHttpClient(
-                    httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
+                    httpClientBuilder,
+                    configuration,
+                    pluginRepository.asRequestInterceptor(),
+                    ElasticsearchCompatibilityInterceptor.INSTANCE))
         .build();
   }
 
