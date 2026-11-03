@@ -71,7 +71,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void
       shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnMultiInstanceSubProcess() {
     // given
@@ -255,7 +254,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnSubProcess() {
     // given
     final var processId = "processId";
@@ -476,7 +474,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnAdHocSubProcess() {
     // given
     final var processId = "processId";
@@ -570,7 +567,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnEventSubProcess() {
     // given
     final var processId = "processId";
@@ -754,6 +750,88 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void shouldNotPropagateChildVariablesWithSameValueIfNoOutputMappingOnSubProcess() {
+    // given
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                sp ->
+                    sp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId(childProcessId)
+                                    .zeebePropagateAllParentVariables(true)
+                                    .zeebePropagateAllChildVariables(true))
+                        .endEvent())
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void shouldNotPropagateChildVariablesIfNoOutputMappingOnSubProcess() {
+    // given
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                sp ->
+                    sp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId(childProcessId)
+                                    .zeebePropagateAllParentVariables(true)
+                                    .zeebePropagateAllChildVariables(true))
+                        .endEvent())
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .endEvent()
+            .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
   @Test

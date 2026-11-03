@@ -194,12 +194,15 @@ public final class BpmnVariableMappingBehavior {
       if (resolveResult.isLeft()) {
         return Either.left(resolveResult.getLeft());
       }
+
+      final boolean isMultiInstanceActivity = isMultiInstanceActivity(context);
       return propagateVariables(
           context,
           element,
-          getVariableScopeKey(context),
+          isMultiInstanceActivity ? context.getElementInstanceKey() : context.getFlowScopeKey(),
           resolveResult.get(),
-          outputVariableBehavior);
+          outputVariableBehavior,
+          isMultiInstanceActivity);
 
     } else if (hasVariables && isCallActivityWithoutPropagation(element)) {
       final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
@@ -210,7 +213,7 @@ public final class BpmnVariableMappingBehavior {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
           propagateVariables(
-              context, element, elementInstanceKey, variables, outputVariableBehavior);
+              context, element, elementInstanceKey, variables, outputVariableBehavior, true);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -223,9 +226,10 @@ public final class BpmnVariableMappingBehavior {
           propagateVariables(
               context,
               element,
-              getVariableScopeKey(context),
+              context.getFlowScopeKey(),
               localVariables,
-              outputVariableBehavior);
+              outputVariableBehavior,
+              false);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -238,20 +242,35 @@ public final class BpmnVariableMappingBehavior {
       final ExecutableFlowNode element,
       final long scopeKey,
       final DirectBuffer result,
-      final VariableBehavior outputVariableBehavior) {
+      final VariableBehavior outputVariableBehavior,
+      final boolean propagateUnmodifiedVariables) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      outputVariableBehavior.mergeDocument(
-          scopeKey,
-          record.getProcessDefinitionKey(),
-          record.getProcessInstanceKey(),
-          context.getRootProcessInstanceKey(),
-          context.getStorageOrdinal(),
-          context.getBpmnProcessId(),
-          context.getTenantId(),
-          result,
-          VariableMetadataLookup.NONE);
+      if (propagateUnmodifiedVariables) {
+        outputVariableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
+            scopeKey,
+            record.getProcessDefinitionKey(),
+            record.getProcessInstanceKey(),
+            context.getRootProcessInstanceKey(),
+            context.getStorageOrdinal(),
+            context.getBpmnProcessId(),
+            context.getTenantId(),
+            result,
+            VariableMetadataLookup.NONE);
+      } else {
+        outputVariableBehavior.mergeDocument(
+            scopeKey,
+            record.getProcessDefinitionKey(),
+            record.getProcessInstanceKey(),
+            context.getRootProcessInstanceKey(),
+            context.getStorageOrdinal(),
+            context.getBpmnProcessId(),
+            context.getTenantId(),
+            result,
+            VariableMetadataLookup.NONE);
+      }
       return Either.right(null);
+
     } catch (final ValidationException e) {
       return Either.left(
           new Failure(
@@ -289,14 +308,11 @@ public final class BpmnVariableMappingBehavior {
     }
   }
 
-  private long getVariableScopeKey(final BpmnElementContext context) {
-    final var elementInstanceKey = context.getElementInstanceKey();
-
-    // an inner multi-instance activity needs to read from/write to its own scope
-    // to access the input and output element variables
-    final var isMultiInstanceActivity =
-        elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
-    return isMultiInstanceActivity ? elementInstanceKey : context.getFlowScopeKey();
+  private boolean isMultiInstanceActivity(final BpmnElementContext context) {
+    return elementInstanceState
+            .getInstance(context.getElementInstanceKey())
+            .getMultiInstanceLoopCounter()
+        > 0;
   }
 
   private boolean isCallActivityWithoutPropagation(final ExecutableFlowNode element) {

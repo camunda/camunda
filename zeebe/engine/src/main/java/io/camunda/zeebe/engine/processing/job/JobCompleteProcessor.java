@@ -414,7 +414,7 @@ public final class JobCompleteProcessor
       final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
     final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
     try {
-      variableBehavior.mergeDocument(
+      variableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
           targetAdHocSubProcess.getKey(),
           targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
           targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),

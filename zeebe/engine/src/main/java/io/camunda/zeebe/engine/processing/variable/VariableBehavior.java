@@ -145,8 +145,10 @@ public final class VariableBehavior {
    * then be merged with the parent scope, recursively, until there are no more. If we reach a scope
    * with no parent, then any remaining variables are created there.
    *
-   * <p>If any variable from the document already exists on the current scope, a {@code
-   * Variable.UPDATED} record is produced as a follow up event.
+   * <p>If any variable from the document already exists on the current scope, it overrides the
+   * variable and produces a {@code Variable.UPDATED} record as a follow up event. If the variable
+   * value is the same, it does not produce an event and does not propagate the variable to the
+   * parent scope.
    *
    * <p>For all variables from the document which do not exist in the current scope, a {@code
    * Variable.CREATED} record is produced as a follow up event.
@@ -169,6 +171,67 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document,
       final VariableMetadataLookup metadataLookup)
+      throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        metadataLookup,
+        false);
+  }
+
+  /**
+   * Merges the given document as in {@link #mergeDocument(long, long, long, long, int,
+   * DirectBuffer, String, DirectBuffer, VariableMetadataLookup)}, but propagates variables with the
+   * same value as the given scope to the parent scope.
+   *
+   * <p>This behavior is used for multi-instance activities and activities without output mappings,
+   * to ensure that variables are propagated to the parent scope even if they have not changed. See
+   * more details in <a href="https://github.com/camunda/camunda/issues/55491">#55491</a>.
+   *
+   * @see #mergeDocument(long, long, long, long, int, DirectBuffer, String, DirectBuffer,
+   *     VariableMetadataLookup)
+   */
+  public void mergeDocumentWithPropagationOfUnmodifiedVariable(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
+      throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        metadataLookup,
+        true);
+  }
+
+  private void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup,
+      final boolean propagateUnmodifiedVariableInScope)
       throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
@@ -200,11 +263,23 @@ public final class VariableBehavior {
         }
 
         applyEntryToRecord(entry);
+        // If the variable exists in the current scope, we update it
         final Optional<VariableEvent> variableEvent =
             updateVariable(
                 variableInstance, variableRecord, metadataLookup.forVariable(entry.getName()));
-        if (variableEvent.isPresent()) {
-          variableEvents.add(variableEvent.get());
+        variableEvent.ifPresent(variableEvents::add);
+
+        // The propagation stops at the first scope where the variable exists. But we have
+        // exceptions for compatibility reasons with existing processes. If the scope is a
+        // multi-instance activity or the element has no output mappings, we propagate an
+        // unmodified variable to the parent scope. More details in
+        // https://github.com/camunda/camunda/issues/55491.
+        final boolean shouldPropagateToParent =
+            variableEvent.isEmpty()
+                && scopeKey == currentScope
+                && propagateUnmodifiedVariableInScope;
+        if (!shouldPropagateToParent) {
+          // Remove the entry from the document to avoid propagating it to the parent scope.
           entryIterator.remove();
         }
       }
@@ -213,6 +288,7 @@ public final class VariableBehavior {
     }
 
     variableRecord.setScopeKey(currentScope);
+    // For the remaining entries in the document, we create new variables in the parent scope
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       final Optional<VariableEvent> variableEvent =
