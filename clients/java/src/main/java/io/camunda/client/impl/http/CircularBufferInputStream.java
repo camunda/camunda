@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.IntFunction;
 import javax.annotation.Nonnull;
-import org.apache.hc.core5.http.HttpStreamResetException;
 
 /**
  * A custom input stream that stores data in a circular buffer. This implementation offers a
@@ -87,14 +86,13 @@ public class CircularBufferInputStream extends InputStream {
    * Writes the data into the buffer without blocking the calling thread. Data beyond the space
    * reported to the {@link CapacityCallback} grows the buffer instead of being rejected.
    *
-   * @throws HttpStreamResetException if the stream was closed, so the I/O layer aborts the download
+   * @throws DocumentStreamClosedException if the stream was closed, so the I/O layer ends the
+   *     download
    */
   public synchronized void write(final ByteBuffer data) throws IOException {
     if (closed) {
-      // On HTTP/2, httpcore5 cancels only this stream for this exception. Any other exception ends
-      // the whole connection, with every request on it.
-      throw new HttpStreamResetException(
-          "Document stream was closed before the response was fully received");
+      // fails the exchange, after which httpclient5 closes the connection
+      throw new DocumentStreamClosedException();
     }
     if (exception != null) {
       throw exception;

@@ -32,11 +32,14 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.hc.client5.http.async.AsyncExecChain;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpRequest;
@@ -51,6 +54,7 @@ import org.apache.hc.core5.http.nio.AsyncEntityProducer;
 import org.apache.hc.core5.http.nio.AsyncRequestConsumer;
 import org.apache.hc.core5.http.nio.AsyncServerRequestHandler;
 import org.apache.hc.core5.http.nio.DataStreamChannel;
+import org.apache.hc.core5.http.nio.entity.AsyncEntityProducers;
 import org.apache.hc.core5.http.nio.entity.DiscardingEntityConsumer;
 import org.apache.hc.core5.http.nio.support.BasicRequestConsumer;
 import org.apache.hc.core5.http.nio.support.BasicResponseProducer;
@@ -76,6 +80,12 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class DocumentContentEarlyCloseHttp2Test {
 
+  private static final String DOCUMENT_ID = "document-id";
+
+  /** A small document that the server sends in full. */
+  private static final String SMALL_DOCUMENT_ID = "small-document-id";
+
+  private static final String SMALL_DOCUMENT_CONTENT = "small document";
   private static final int MAX_MESSAGE_SIZE = 64 * 1024;
   private static final int CHUNK_SIZE = 8 * 1024;
   private static final long DOCUMENT_SIZE = 64L * 1024 * 1024;
@@ -91,6 +101,11 @@ class DocumentContentEarlyCloseHttp2Test {
   private final AtomicReference<ProtocolVersion> requestVersion = new AtomicReference<>();
   private final AtomicLong bodyBytesSent = new AtomicLong();
   private final AtomicBoolean responseFailed = new AtomicBoolean();
+  private final List<String> requestedDocuments = new CopyOnWriteArrayList<>();
+
+  /** The exchange of the first request, which is the one for the document. */
+  private final AtomicReference<AsyncExecChain.Scope> documentExchange = new AtomicReference<>();
+
   private HttpAsyncServer server;
   private CamundaClient client;
 
@@ -138,6 +153,11 @@ class DocumentContentEarlyCloseHttp2Test {
             .preferRestOverGrpc(true)
             .restAddress(new URI("https://localhost:" + port))
             .caCertificatePath(certificate.certificatePath().toString())
+            .withChainHandlers(
+                (request, entityProducer, scope, chain, callback) -> {
+                  documentExchange.compareAndSet(null, scope);
+                  chain.proceed(request, entityProducer, scope, callback);
+                })
             .maxMessageSize(MAX_MESSAGE_SIZE)
             .build();
   }
@@ -158,7 +178,7 @@ class DocumentContentEarlyCloseHttp2Test {
     // given
     final InputStream content =
         client
-            .newDocumentContentGetRequest("document-id")
+            .newDocumentContentGetRequest(DOCUMENT_ID)
             .requestTimeout(REQUEST_TIMEOUT)
             .send()
             .get(20, TimeUnit.SECONDS);
@@ -172,10 +192,18 @@ class DocumentContentEarlyCloseHttp2Test {
 
     // then
     await("the client ends the download").atMost(Duration.ofSeconds(10)).untilTrue(responseFailed);
+    // httpclient5 counts a new try in the same step that drops the connection
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
+    // the client still works, and did not ask for the document again
+    try (final InputStream smallDocument =
+        client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
+      assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
+    }
+    assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
   }
 
-  /** Answers every request with the document. */
+  /** Answers a request for the small document with it, and any other request with the document. */
   private final class DocumentHandler
       implements AsyncServerRequestHandler<Message<HttpRequest, Void>> {
 
@@ -183,6 +211,7 @@ class DocumentContentEarlyCloseHttp2Test {
     public AsyncRequestConsumer<Message<HttpRequest, Void>> prepare(
         final HttpRequest request, final EntityDetails entityDetails, final HttpContext context) {
       requestVersion.set(request.getVersion());
+      requestedDocuments.add(documentId(request));
       return new BasicRequestConsumer<>(new DiscardingEntityConsumer<>());
     }
 
@@ -192,10 +221,18 @@ class DocumentContentEarlyCloseHttp2Test {
         final ResponseTrigger responseTrigger,
         final HttpContext context)
         throws HttpException, IOException {
+      final AsyncEntityProducer document =
+          SMALL_DOCUMENT_ID.equals(documentId(request.getHead()))
+              ? AsyncEntityProducers.create(
+                  SMALL_DOCUMENT_CONTENT, ContentType.APPLICATION_OCTET_STREAM)
+              : new EndlessDocumentProducer();
       responseTrigger.submitResponse(
-          new BasicResponseProducer(
-              new BasicHttpResponse(HttpStatus.SC_OK), new EndlessDocumentProducer()),
-          context);
+          new BasicResponseProducer(new BasicHttpResponse(HttpStatus.SC_OK), document), context);
+    }
+
+    private String documentId(final HttpRequest request) {
+      final String path = request.getPath().split("\\?")[0];
+      return path.substring(path.lastIndexOf('/') + 1);
     }
   }
 
