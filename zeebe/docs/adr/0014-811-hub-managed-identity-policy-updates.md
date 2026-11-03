@@ -63,7 +63,8 @@ before they change.
 version, so they see only the committed state
 
 **D6. A dedicated version-switch commits a version on a partition.**
-- After the last chunk, partition 1 distributes a committing record to mark the whole update as finished
+- After the last chunk is applied, partition 1 distributes a committing record to mark the whole update as finished
+- After the version is switched, the policy update chunks are also deleted from the local buffer
 
 **D7. The versioned layout of the column families is byte-compatible with the unversioned one at
 version 0.**
@@ -75,6 +76,17 @@ version 0.**
 - The commit stores it in the `POLICY` state together with `policyId` and `policyVersion`, so the
 polling cursor advances in the same step as the version.
 - After a restart or leader change, the Hub client resumes polling from the stored sequence.
+
+**D9. Validation happens in the policy update processor before any chunk is applied.**
+- Before any chunk is applied, the update processor validates the whole update and only then starts processing.
+- If validation fails, the whole update is `ABORTED` and all chunks are removed from the buffer.
+- The Hub client receives the failure through `errorMessage` and can retry the update.
+
+**D10. A policy update can be aborted externally while still buffering.**
+
+- If a leader transition happens while the transformer is still sending chunks, the policy update
+  may be stuck in the buffer forever because the missing chunks are never sent. The new leader can
+  abort that pending update and start a new one.
 
 ## Alternatives considered
 
@@ -97,13 +109,6 @@ polling cursor advances in the same step as the version.
 
 ## Open questions
 
-- **Rejected identity commands.** An update applies its chunks as follow-up commands, and the
-  identity processors may reject one of them, for example a membership whose role does not exist.
-  The update does not see the rejection and would still be committed. Options:
-  - Normalize the change set while applying, so that a valid delta cannot cause a rejection: an
-    upsert of an existing entity becomes an update, a delete of a missing entity is skipped.
-  - Record any remaining rejection of a command that belongs to an update, and fail the update
-    instead of committing it. The failure is reported back to Hub through `errorMessage`.
 - **Secondary storage.** The exporters see the identity records of a version as soon as they are
   written, not when the version is committed, so secondary storage shows uncommitted data and
   applies deletes early. The engine does not control secondary storage. Options:
@@ -111,11 +116,7 @@ polling cursor advances in the same step as the version.
     committed version, which the exporters take from the commit record.
   - The exporters hold back the identity records of a version until its commit, and write them then.
     That is not atomic for Elasticsearch.
-- **Leader change during an update.** Applying is safe: the follow-up commands are on the log, and a
-  new leader continues where the old one stopped. Receiving is not: if the leader fails before all
-  chunks are written, the update stays incomplete. The new leader polls again and may receive a
-  differently aggregated change set with a new update ID. Proposed rule: an update that is still
-  receiving chunks is replaced by a new one; an update that is applying runs to completion.
+  - Outsourced to https://github.com/camunda/camunda-security-library/issues/795
 - **Pausing the polling until a version is applied.** The Hub client must not poll the next change
   set while an update is open, but the client runs outside the stream processor, and the engine
   processes the update asynchronously. Options:

@@ -161,8 +161,8 @@ sequenceDiagram
 - **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
   applied before the last chunk arrives, so a partially received update never changes identity
   data. Chunks may arrive in any order; a duplicate chunk is rejected without effect.
-- **One chunk per `APPLY`.** Each `APPLY` command applies exactly one chunk and then writes the next
-  `APPLY`. This bounds the batch of the `APPLY` command itself. Each identity command it writes is
+- **One chunk per `APPLY_CHUNK`.** Each `APPLY_CHUNK` command applies exactly one chunk and then writes the next
+  `APPLY_CHUNK`. This bounds the batch of the `APPLY_CHUNK` command itself. Each identity command it writes is
   processed in its own batch, which includes its cascades: deleting a role, for example, also
   removes its memberships and owned authorizations. The chunk budget does not bound those.
 - **Reuse of identity commands.** A chunk becomes the existing identity commands, for example
@@ -179,14 +179,14 @@ sequenceDiagram
 
 The buffer uses two column families on partition 1:
 
-|      Column family       |         Key         |                                   Value                                    |
-|--------------------------|---------------------|----------------------------------------------------------------------------|
-| `POLICY_UPDATE_ASSEMBLY` | `updateId`          | The open update: policy version, chunk count, received and applied chunks. |
-| `POLICY_UPDATE_CHUNK`    | (`updateId`, index) | A buffered chunk.                                                          |
+| Column family         | Key                 | Value                                                                                     |
+|-----------------------|---------------------|-------------------------------------------------------------------------------------------|
+| `POLICY_UPDATE`       | `updateId`          | The open update: policy version, seqNo, chunk count, received and applied chunks, status. |
+| `POLICY_UPDATE_CHUNK` | (`updateId`, index) | A buffered chunk.                                                                         |
 
 ### Version switch
 
-The last `APPLY` writes the `SWITCH_VERSION` command. Partition 1 processes it first and writes
+The last `APPLY_CHUNK` writes the `SWITCH_VERSION` command. Partition 1 processes it first and writes
 `VERSION_SWITCHED`, which sets its current policy version and Hub sequence and removes the update's
 buffered chunks. It then distributes the command on the `IDENTITY` queue. Because the update's
 identity commands were distributed on the same queue before, every partition switches only after it
@@ -220,11 +220,12 @@ type and ID.
 |       Intent       |  Kind   |                                              Usage                                              |
 |--------------------|---------|-------------------------------------------------------------------------------------------------|
 | `APPEND_CHUNK`     | Command | Written by the transformer, one per chunk. Validated and buffered.                              |
-| `CHUNK_APPENDED`   | Event   | A chunk is stored. After the last chunk, the processor writes the first `APPLY`.                |
-| `APPLY`            | Command | Internal follow-up. Applies the next buffered chunk.                                            |
-| `APPLIED`          | Event   | A chunk is applied.                                                                             |
+| `CHUNK_APPENDED`   | Event   | A chunk is stored. After the last chunk, the processor writes the first `APPLY_CHUNK`.          |
+| `APPLY_CHUNK`      | Command | Internal follow-up. Applies the next buffered chunk.                                            |
+| `CHUNK_APPLIED`    | Event   | A chunk is applied.                                                                             |
 | `SWITCH_VERSION`   | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
 | `VERSION_SWITCHED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
+| `ABORT`            | Command | Written by the transformer to abort a pending policy update (e.g. from a leader change).        |
 | `ABORTED`          | Event   | An open update was discarded; its buffered chunks are removed.                                  |
 
 The identity record values (`TenantRecordValue`, `RoleRecordValue`, `GroupRecordValue`,
@@ -296,6 +297,22 @@ The committed policy of a partition is stored in the `POLICY` column family unde
 | `policyVersion` | The current policy version of the partition.             |
 | `seqNo`         | The Hub sequence of that version; polling resumes there. |
 
+### Cleanup
+
+#### PolicyUpdate State
+
+Only the last `PolicyUpdateRecordValue` of an update is kept in the `POLICY_UPDATE_ASSEMBLY` column family.
+
+All chunks of a policy update are removed when
+- the version switch, so they do not accumulate
+- an update is aborted, so a failed update does not block the next one
+
+#### Identity State
+
+When a new policy version is committed, the old versions are deleted in the identity related entity
+columns. In case of tombstones, the tombstone itself will be deleted so the whole entity is removed
+from the state.
+
 ## Open points
 
 The [ADR](../../zeebe/docs/adr/0014-811-hub-managed-identity-policy-updates.md) tracks these as open
@@ -303,12 +320,4 @@ questions, with options:
 
 - **Rejected identity commands.** An identity processor can reject a command of the update, and the
   update would still be committed.
-- **Secondary storage.** The exporters see the identity records of a version before it is committed.
-- **Leader change during an update.** An update that is still receiving chunks can stay incomplete.
 - **Pausing the polling.** The Hub client has to learn that an update is applied or has failed.
-
-Also not defined yet:
-
-- **Old versions.** No cleanup of superseded versions and tombstones is defined yet.
-- **Switch window.** Partitions switch independently (see [Version switch](#version-switch)).
-
