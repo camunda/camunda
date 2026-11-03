@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStoreRegistry;
-import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
@@ -158,13 +157,12 @@ public final class JobSecretPushInjectionTest {
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final long jobKey = jobKeyOf(processInstanceKey);
 
-    // then - the resolution is requested for the job and the job is parked
+    // then - the resolution is requested for the job, which parks it
     final Record<SecretReferenceRecordValue> requested =
         RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
             .withSecretReference(SECRET_NAME)
             .getFirst();
     assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
-    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
 
     // and - the job is neither activated nor pushed: the process instance runs no further, so
     // waiting for the element instance the job belongs to bounds what can still be exported
@@ -254,7 +252,29 @@ public final class JobSecretPushInjectionTest {
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(jobStream.getActivatedJobs()).isEmpty();
-    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(
+            record ->
+                record.getIntent() == SecretReferenceIntent.BATCH_JOBS_REACTIVATED
+                    && ((SecretReferenceRecordValue) record.getValue())
+                        .getJobKeys()
+                        .contains(jobKey));
+  }
+
+  @Test
+  public void shouldNotHandOutParkedJobToLongPollingWorker() {
+    // given - a job parked for an uncached reference
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    awaitResolutionRequests(1);
+
+    // when - the value is cached, as the resolver does before it completes the resolution, and a
+    // worker long-polls
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    final Record<JobBatchRecordValue> activated = engine.jobs().withType(JOB_TYPE).activate();
+
+    // then - the parked job is not handed out until its resolution completes
+    assertThat(activated.getValue().getJobKeys()).isEmpty();
   }
 
   @Test
@@ -439,14 +459,13 @@ public final class JobSecretPushInjectionTest {
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
 
     // when
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final long jobKey = jobKeyOf(processInstanceKey);
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // then - the job stays activatable for a long poll, which owns the check on that path
+    // then - the job is not parked but left activatable for a long poll, which owns the check on
+    // that path
     Awaitility.await("until the workers are notified")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isPositive());
-    assertThat(jobState(jobKey)).isEqualTo(State.ACTIVATABLE);
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
   }
@@ -614,10 +633,25 @@ public final class JobSecretPushInjectionTest {
     // and - no job is left waiting on a reference that is resolved already. A job the batch could
     // not take stays activatable, so a long poll still collects it; a job left parked waits for a
     // resolution that will not be requested again
-    assertThat(jobKeys)
-        .allSatisfy(
-            jobKey ->
-                assertThat(jobState(jobKey)).isNotEqualTo(State.WAITING_FOR_SECRET_RESOLUTION));
+    // the reactivation may still be running cycles, so a job can become activatable after a
+    // single poll; polling on every attempt collects it
+    final List<Long> polledJobKeys = new ArrayList<>();
+    Awaitility.await("until every job is either pushed or polled")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              polledJobKeys.addAll(
+                  engine
+                      .jobs()
+                      .withType(JOB_TYPE)
+                      .withMaxJobsToActivate(OVERSIZED_WORKER_JOB_COUNT)
+                      .activate()
+                      .getValue()
+                      .getJobKeys());
+              final List<Long> handedOutJobKeys = new ArrayList<>(polledJobKeys);
+              jobStream.getActivatedJobs().forEach(job -> handedOutJobKeys.add(job.jobKey()));
+              assertThat(handedOutJobKeys).containsExactlyInAnyOrderElementsOf(jobKeys);
+            });
   }
 
   /** Counts the record batches rejected for exceeding the maximum fragment size. */
@@ -745,10 +779,6 @@ public final class JobSecretPushInjectionTest {
         .withProcessInstanceKey(processInstanceKey)
         .getFirst()
         .getKey();
-  }
-
-  private State jobState(final long jobKey) {
-    return engine.getProcessingState().getJobState().getState(jobKey);
   }
 
   private Optional<Counter> findJobCounter(final String action) {
