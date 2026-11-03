@@ -11,11 +11,11 @@ import {useVisibleProcessInstanceTabs} from './useVisibleProcessInstanceTabs';
 
 type Props = Omit<React.ComponentProps<typeof ProcessInstance>, 'visibleTabs' | 'incidentsCount'>;
 
-const ProcessInstanceWithIncidentsCount: React.FC<Props> = ({children, ...props}) => {
-	const {visibleTabs, incidentsCount, isActiveTabHidden} = useVisibleProcessInstanceTabs(props.activeTab);
+const ProcessInstanceWithIncidentsCount: React.FC<Props> = ({children, isDesktop = true, ...props}) => {
+	const {visibleTabs, incidentsCount, isActiveTabHidden} = useVisibleProcessInstanceTabs(props.activeTab, isDesktop);
 
 	return (
-		<ProcessInstance {...props} visibleTabs={visibleTabs} incidentsCount={incidentsCount}>
+		<ProcessInstance {...props} isDesktop={isDesktop} visibleTabs={visibleTabs} incidentsCount={incidentsCount}>
 			{!isActiveTabHidden && children}
 		</ProcessInstance>
 	);

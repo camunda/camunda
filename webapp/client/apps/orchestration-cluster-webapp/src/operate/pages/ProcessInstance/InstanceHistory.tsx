@@ -30,9 +30,8 @@ import {
 	TreeView,
 } from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import type {ElementInstance, QueryBatchOperationItemsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {endpoints} from '#/shared/http/endpoints';
 import {ForbiddenError} from '#/shared/errors';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
@@ -53,7 +52,7 @@ import {
 import {useInstanceStatistics} from './instanceDiagram.queries';
 import {isMultiInstance} from '#/operate/shared/utils/elements';
 import {useInstanceHistory} from './useInstanceHistory';
-import {instanceRequest} from './processInstance.queries';
+import {instanceLastMigrationQuery} from './processInstance.queries';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
 import {FilteredInstanceHistory} from './FilteredInstanceHistory';
 import {InstanceHistorySearch} from './InstanceHistorySearch';
@@ -177,25 +176,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 		element: null,
 		target: '',
 	});
-	const migration = useQuery({
-		queryKey: ['instanceLastMigration', processInstanceId],
-		queryFn: async ({signal}) => {
-			const result = await instanceRequest<QueryBatchOperationItemsResponseBody>(
-				endpoints.queryBatchOperationItems({
-					filter: {
-						processInstanceKey: processInstanceId,
-						operationType: 'MIGRATE_PROCESS_INSTANCE',
-						state: 'COMPLETED',
-					},
-					sort: [{field: 'processedDate', order: 'DESC'}],
-					page: {from: 0, limit: 1},
-				}),
-				signal,
-			);
-			return result.items[0]?.processedDate ?? null;
-		},
-		retry: false,
-	});
+	const migration = useQuery(instanceLastMigrationQuery(processInstanceId));
 	const setVisible = history.setVisible;
 	useEffect(() => {
 		if (scrollRef.current) {
