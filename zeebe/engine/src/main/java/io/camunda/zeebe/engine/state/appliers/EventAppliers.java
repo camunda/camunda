@@ -60,6 +60,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -219,6 +220,7 @@ public final class EventAppliers implements EventApplier {
     register(ProbeIntent.ANSWERED, endedApplier);
     register(ProbeIntent.TIMED_OUT, endedApplier);
     register(ProbeIntent.CANCELED, endedApplier);
+    register(ProbeBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

@@ -176,6 +176,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case AGENT_HISTORY -> index.agentHistory;
       case AGENT_DEFINITION -> index.agentDefinition;
       case PROBE -> index.probe;
+      case PROBE_BATCH -> index.probeBatch;
       default -> false;
     };
   }
@@ -302,6 +303,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean agentDefinition = true;
 
     public boolean probe = false;
+    public boolean probeBatch = false;
 
     // index settings
     private Integer numberOfShards = null;

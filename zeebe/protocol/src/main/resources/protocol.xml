@@ -105,6 +105,7 @@
       <validValue name="ELEMENT_INSTANCE_WALK">79</validValue>
       <validValue name="PROCESS_DEFINITION_RESTORE">80</validValue>
       <validValue name="PROBE">81</validValue>
+      <validValue name="PROBE_BATCH">82</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

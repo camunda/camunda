@@ -200,6 +200,9 @@ public class OpensearchExporterSchemaManager {
       if (index.probe) {
         createValueIndexTemplate(ValueType.PROBE, version);
       }
+      if (index.probeBatch) {
+        createValueIndexTemplate(ValueType.PROBE_BATCH, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

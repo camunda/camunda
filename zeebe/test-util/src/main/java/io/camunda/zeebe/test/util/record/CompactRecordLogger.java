@@ -121,6 +121,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
@@ -356,6 +357,7 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.PROBE, this::summarizeProbe);
+    valueLoggers.put(ValueType.PROBE_BATCH, this::summarizeProbeBatch);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2275,6 +2277,16 @@ public class CompactRecordLogger {
     result.append(" tenantId:").append(value.getTenantId());
 
     return result.toString();
+  }
+
+  private String summarizeProbeBatch(final Record<?> record) {
+    final var value = (ProbeBatchRecordValue) record.getValue();
+    return "\"%s\" worker:%s max:%d probes:%s"
+        .formatted(
+            value.getProbeId(),
+            value.getWorker(),
+            value.getMaxProbesToActivate(),
+            value.getProbeKeys().stream().map(this::formatKey).toList());
   }
 
   private String summarizeProbe(final Record<?> record) {

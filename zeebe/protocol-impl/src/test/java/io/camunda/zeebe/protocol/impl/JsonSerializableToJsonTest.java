@@ -79,6 +79,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
@@ -138,6 +139,7 @@ import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -5277,6 +5279,68 @@ final class JsonSerializableToJsonTest {
           "data": {},
           "message": "",
           "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      {
+        "ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>)
+            () ->
+                new ProbeBatchRecord()
+                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                    .setWorker("connectors-saas")
+                    .setMaxProbesToActivate(4)
+                    .setTenantIds(List.of("tenant-a"))
+                    .setTenantFilter(TenantFilter.PROVIDED)
+                    .addProbe(
+                        123L,
+                        new ProbeRecord()
+                            .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                            .setTenantId("tenant-a")
+                            .setDeadline(1000L)
+                            .setWorker("connectors-saas")),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:aws-credential:1",
+          "worker": "connectors-saas",
+          "maxProbesToActivate": 4,
+          "tenantIds": ["tenant-a"],
+          "tenantFilter": "PROVIDED",
+          "probeKeys": [123],
+          "probes": [
+            {
+              "probeId": "validate-configuration/io.camunda:aws-credential:1",
+              "tenantId": "tenant-a",
+              "inputExpression": "",
+              "input": {},
+              "secretReferences": [],
+              "requestTimeout": 0,
+              "deadline": 1000,
+              "worker": "connectors-saas",
+              "yieldCount": 0,
+              "outcome": "UNSPECIFIED",
+              "data": {},
+              "message": "",
+              "endReason": "UNSPECIFIED"
+            }
+          ],
+          "truncated": false
+        }
+        """
+      },
+      {
+        "Empty ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>) ProbeBatchRecord::new,
+        """
+        {
+          "probeId": "",
+          "worker": "",
+          "maxProbesToActivate": -1,
+          "tenantIds": [],
+          "tenantFilter": "PROVIDED",
+          "probeKeys": [],
+          "probes": [],
+          "truncated": false
         }
         """
       },

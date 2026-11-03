@@ -90,6 +90,7 @@ final class TestSupport {
       case AGENT_HISTORY -> config.agentHistory = value;
       case AGENT_DEFINITION -> config.agentDefinition = value;
       case PROBE -> config.probe = value;
+      case PROBE_BATCH -> config.probeBatch = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);

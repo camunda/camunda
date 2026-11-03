@@ -41,6 +41,7 @@ public final class ValueTypes {
           ValueType.RESOURCE_DELETION,
           ValueType.USER_TASK,
           ValueType.PROBE,
+          ValueType.PROBE_BATCH,
           ValueType.PROCESS_INSTANCE_MIGRATION,
           ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
           ValueType.COMPENSATION_SUBSCRIPTION,
