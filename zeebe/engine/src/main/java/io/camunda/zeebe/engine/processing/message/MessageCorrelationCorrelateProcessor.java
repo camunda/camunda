@@ -151,7 +151,8 @@ public final class MessageCorrelationCorrelateProcessor
     messageCorrelationRecord
         .setMessageKey(messageKey)
         .setRequestId(command.getRequestId())
-        .setRequestStreamId(command.getRequestStreamId());
+        .setRequestStreamId(command.getRequestStreamId())
+        .setOperationReference(command.getOperationReference());
 
     // Collect correlations first without writing to state
     final var correlatingSubscriptions = new Subscriptions();

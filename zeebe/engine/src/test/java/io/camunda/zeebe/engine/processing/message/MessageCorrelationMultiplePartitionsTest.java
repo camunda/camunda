@@ -20,6 +20,8 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.Strings;
@@ -121,6 +123,52 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 START_PARTITION_ID + 2,
                 CORRELATION_KEYS.get(START_PARTITION_ID + 2),
                 TENANT_IDS.get(START_PARTITION_ID + 2)));
+  }
+
+  @Test
+  public void shouldPropagateOperationReferenceOnCrossPartitionCorrelation() {
+    // given — a process instance waiting on a message whose correlation key hashes to a
+    // partition other than the one the correlate command is sent to
+    final var correlationKey = CORRELATION_KEYS.get(START_PARTITION_ID + 1);
+    final var tenantId = TENANT_IDS.get(START_PARTITION_ID + 1);
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .withTenantId(tenantId)
+            .create();
+    assertThat(processInstanceKey).isPositive();
+
+    // wait until the message subscription is open on the subscription partition
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    final var operationReference = 987654321L;
+    final var messageCorrelationRecord =
+        new MessageCorrelationRecord()
+            .setName("message")
+            .setCorrelationKey(correlationKey)
+            .setTenantId(tenantId);
+
+    // when — correlate on the subscription partition with an operation reference set
+    engine.writeCommandOnPartition(
+        START_PARTITION_ID + 1,
+        writer ->
+            writer
+                .intent(MessageCorrelationIntent.CORRELATE)
+                .authorizations(tenantId)
+                .operationReference(operationReference)
+                .event(messageCorrelationRecord));
+
+    // then — the terminal CORRELATED record carries the operation reference
+    final var correlated =
+        RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATED)
+            .withCorrelationKey(correlationKey)
+            .getFirst();
+
+    assertThat(correlated.getOperationReference()).isEqualTo(operationReference);
   }
 
   @Test

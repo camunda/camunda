@@ -282,7 +282,8 @@ public class DbDistributionState implements MutableDistributionState {
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue())
-        .setAuthInfo(persistedDistribution.getAuthInfo());
+        .setAuthInfo(persistedDistribution.getAuthInfo())
+        .setOperationReference(persistedDistribution.getOperationReference());
   }
 
   @Override
