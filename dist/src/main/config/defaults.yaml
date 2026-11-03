@@ -1194,6 +1194,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         connection-pool: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool  
           # Maximum time the pool waits for a connection before throwing.
           connection-timeout: "30000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_CONNECTIONTIMEOUT
+          # In a shared pool, the connections that this tenant always gets, whatever the others use.
+          guaranteed: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_GUARANTEED
           # Maximum time a connection is allowed to sit idle in the pool before being evicted.
           idle-timeout: "600000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_IDLETIMEOUT
           # Interval at which the pool probes idle connections for aliveness, evicting dead ones before they are
@@ -1210,6 +1212,14 @@ camunda: # Type: io.camunda.configuration.Camunda
           maximum-pool-size: 10 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXIMUMPOOLSIZE
           # Minimum number of idle connections kept by the pool.
           minimum-idle: 2 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MINIMUMIDLE
+          # If true, this physical tenant takes its connections from one pool per node that it shares with
+          # every other tenant that also sets this and uses the same URL, username and password, such as
+          # tenants that differ only in their table prefix. The tenant is guaranteed {@link #guaranteed}
+          # connections of the shared pool and can use up to {@link #maximumPoolSize}.
+          shared: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_SHARED
+          # In a shared pool, the connections that any of its tenants can use beyond its guarantee. The
+          # shared pool holds the guarantees of its tenants plus the largest burst any of them sets.
+          shared-burst: 8 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_SHAREDBURST
           # Maximum time the pool waits for a connection to be validated as alive.
           validation-timeout: "5000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_VALIDATIONTIMEOUT
         

@@ -44,6 +44,23 @@ public class RdbmsConnectionPool {
   /** Maximum time the pool waits for a connection to be validated as alive. */
   private Duration validationTimeout = Duration.ofMillis(5_000);
 
+  /**
+   * If true, this physical tenant takes its connections from one pool per node that it shares with
+   * every other tenant that also sets this and uses the same URL, username and password, such as
+   * tenants that differ only in their table prefix. The tenant is guaranteed {@link #guaranteed}
+   * connections of the shared pool and can use up to {@link #maximumPoolSize}.
+   */
+  private boolean shared = false;
+
+  /** In a shared pool, the connections that this tenant always gets, whatever the others use. */
+  private int guaranteed = 1;
+
+  /**
+   * In a shared pool, the connections that any of its tenants can use beyond its guarantee. The
+   * shared pool holds the guarantees of its tenants plus the largest burst any of them sets.
+   */
+  private int sharedBurst = 8;
+
   public int getMaximumPoolSize() {
     return maximumPoolSize;
   }
@@ -98,6 +115,30 @@ public class RdbmsConnectionPool {
 
   public void setKeepaliveTime(final Duration keepaliveTime) {
     this.keepaliveTime = keepaliveTime;
+  }
+
+  public boolean isShared() {
+    return shared;
+  }
+
+  public void setShared(final boolean shared) {
+    this.shared = shared;
+  }
+
+  public int getGuaranteed() {
+    return guaranteed;
+  }
+
+  public void setGuaranteed(final int guaranteed) {
+    this.guaranteed = guaranteed;
+  }
+
+  public int getSharedBurst() {
+    return sharedBurst;
+  }
+
+  public void setSharedBurst(final int sharedBurst) {
+    this.sharedBurst = sharedBurst;
   }
 
   public Duration getValidationTimeout() {

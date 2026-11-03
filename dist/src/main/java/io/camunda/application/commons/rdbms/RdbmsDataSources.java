@@ -17,7 +17,9 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -47,7 +49,10 @@ public final class RdbmsDataSources implements AutoCloseable {
       "rewriteBatchedStatements";
   private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
 
-  private final Map<String, ReleasablePool> dataSources = new LinkedHashMap<>();
+  private final Map<String, DataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, ReleasablePool> pools = new LinkedHashMap<>();
+  private final Map<SharedPoolKey, ReleasablePool> sharedPools = new LinkedHashMap<>();
+  private final List<MeterRegistry> sharedMeterRegistries = new ArrayList<>();
   private final Map<String, DataSource> unpooledDataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
@@ -65,16 +70,23 @@ public final class RdbmsDataSources implements AutoCloseable {
       final Map<String, Rdbms> physicalTenantConfigs, final MeterRegistry meterRegistry)
       throws IOException {
     final var result = new RdbmsDataSources();
+    final var sharedDataSources = result.buildSharedPools(physicalTenantConfigs, meterRegistry);
     for (final var entry : physicalTenantConfigs.entrySet()) {
       final var currentPhysicalTenantId = entry.getKey();
       final var rdbms = entry.getValue();
       try {
         final var tenantMeterRegistry =
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
-        final var ds =
-            new ReleasablePool(
-                () -> buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry));
-        result.dataSources.put(currentPhysicalTenantId, ds);
+        final var shared = sharedDataSources.get(currentPhysicalTenantId);
+        if (shared != null) {
+          result.dataSources.put(currentPhysicalTenantId, shared);
+        } else {
+          final var ds =
+              new ReleasablePool(
+                  () -> buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry));
+          result.dataSources.put(currentPhysicalTenantId, ds);
+          result.pools.put(currentPhysicalTenantId, ds);
+        }
         final var unpooled = new UnpooledDataSource(rdbms);
         result.unpooledDataSources.put(currentPhysicalTenantId, unpooled);
         final var databaseId =
@@ -143,6 +155,70 @@ public final class RdbmsDataSources implements AutoCloseable {
                 null));
   }
 
+  /**
+   * Builds one pool for each group of tenants that share a pool and the same database user, and
+   * returns each such tenant's budgeted view of it.
+   */
+  private Map<String, DataSource> buildSharedPools(
+      final Map<String, Rdbms> physicalTenantConfigs, final MeterRegistry meterRegistry) {
+    final var groups = new LinkedHashMap<SharedPoolKey, Map<String, Rdbms>>();
+    physicalTenantConfigs.forEach(
+        (tenantId, rdbms) -> {
+          if (rdbms.getConnectionPool().isShared()) {
+            groups
+                .computeIfAbsent(SharedPoolKey.of(rdbms), ignored -> new LinkedHashMap<>())
+                .put(tenantId, rdbms);
+          }
+        });
+    final var byTenant = new LinkedHashMap<String, DataSource>();
+    int index = 0;
+    for (final var group : groups.entrySet()) {
+      final var members = group.getValue();
+      final var limits = new LinkedHashMap<String, SharedConnectionBudget.Limits>();
+      members.forEach(
+          (tenantId, rdbms) ->
+              limits.put(
+                  tenantId,
+                  new SharedConnectionBudget.Limits(
+                      rdbms.getConnectionPool().getGuaranteed(),
+                      rdbms.getConnectionPool().getMaximumPoolSize())));
+      final int burst =
+          members.values().stream()
+              .mapToInt(r -> r.getConnectionPool().getSharedBurst())
+              .max()
+              .orElse(0);
+      final var budget = SharedConnectionBudget.of(limits, burst);
+      final var first = members.values().iterator().next();
+      final var name = "shared-" + index++;
+      final var registry =
+          MicrometerUtil.wrap(
+              meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), name));
+      sharedMeterRegistries.add(registry);
+      final var pool =
+          new ReleasablePool(
+              () -> {
+                final var ds = buildDataSource(name, first, registry);
+                ds.setMaximumPoolSize(budget.poolSize());
+                return ds;
+              });
+      sharedPools.put(group.getKey(), pool);
+      LOGGER.info(
+          "Physical tenants {} share the RDBMS pool '{}' of {} connections ({} guaranteed, {} burst)",
+          members.keySet(),
+          pool.poolName(),
+          budget.poolSize(),
+          budget.poolSize() - burst,
+          burst);
+      members.forEach(
+          (tenantId, rdbms) ->
+              byTenant.put(
+                  tenantId,
+                  budget.dataSourceFor(
+                      tenantId, pool, rdbms.getConnectionPool().getConnectionTimeout())));
+    }
+    return byTenant;
+  }
+
   private MeterRegistry registerTenantMeterRegistry(
       final String physicalTenantId, final MeterRegistry meterRegistry) {
     final var tenantMeterRegistry =
@@ -184,18 +260,22 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds;
   }
 
-  /** Whether the tenant's pool has been started, and so holds connections to its database. */
+  /**
+   * Whether the tenant's own pool has been started, and so holds connections to its database. A
+   * tenant on a shared pool has none of its own.
+   */
   public boolean isPoolStarted(final String physicalTenantId) {
-    final var ds = dataSources.get(physicalTenantId);
+    final var ds = pools.get(physicalTenantId);
     return ds != null && ds.isRunning();
   }
 
   /**
-   * Closes the tenant's pool and its connections. The pool starts again on the tenant's next
-   * connection.
+   * Closes the tenant's own pool and its connections. The pool starts again on the tenant's next
+   * connection. A shared pool stays open for the other tenants on it, and closes its idle
+   * connections after its idle timeout.
    */
   public void releasePool(final String physicalTenantId) {
-    final var ds = dataSources.get(physicalTenantId);
+    final var ds = pools.get(physicalTenantId);
     if (ds != null) {
       ds.release();
     }
@@ -213,11 +293,10 @@ public final class RdbmsDataSources implements AutoCloseable {
   @Override
   public void close() {
     // close each tenant's pool together with its wrapped registry so neither is left dangling
-    dataSources.forEach(
-        (tenantId, ds) -> {
-          ds.close();
-          MicrometerUtil.close(tenantMeterRegistries.get(tenantId));
-        });
+    pools.values().forEach(ReleasablePool::close);
+    sharedPools.values().forEach(ReleasablePool::close);
+    tenantMeterRegistries.values().forEach(MicrometerUtil::close);
+    sharedMeterRegistries.forEach(MicrometerUtil::close);
   }
 
   private static HikariDataSource buildDataSource(
@@ -271,6 +350,18 @@ public final class RdbmsDataSources implements AutoCloseable {
     return Pattern.compile("[?&]" + Pattern.quote(propertyName) + "=", Pattern.CASE_INSENSITIVE)
         .matcher(url)
         .find();
+  }
+
+  /** Tenants share a pool only if their connections are interchangeable. */
+  private record SharedPoolKey(String url, String username, String password) {
+    static SharedPoolKey of(final Rdbms rdbms) {
+      return new SharedPoolKey(rdbms.getUrl(), rdbms.getUsername(), rdbms.getPassword());
+    }
+
+    @Override
+    public String toString() {
+      return "SharedPoolKey[url=%s, username=%s]".formatted(url, username);
+    }
   }
 
   @VisibleForTesting

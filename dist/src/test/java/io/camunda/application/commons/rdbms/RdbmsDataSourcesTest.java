@@ -19,8 +19,10 @@ import io.camunda.configuration.data.secondarystorage.Rdbms;
 import io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -282,6 +284,41 @@ class RdbmsDataSourcesTest {
       assertThatThrownBy(() -> registry.vendorPropertiesFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
+    }
+  }
+
+  @Test
+  void shouldShareOnePoolBetweenTenantsOnTheSameDatabaseAndUser() throws Exception {
+    // given
+    final var url = h2Rdbms().getUrl();
+    final var configs = new LinkedHashMap<String, Rdbms>();
+    for (final var tenant : List.of("tenant-a", "tenant-b")) {
+      final var rdbms = h2Rdbms();
+      rdbms.setUrl(url);
+      rdbms.getConnectionPool().setShared(true);
+      rdbms.getConnectionPool().setGuaranteed(1);
+      rdbms.getConnectionPool().setMaximumPoolSize(2);
+      rdbms.getConnectionPool().setSharedBurst(1);
+      rdbms.getConnectionPool().setConnectionTimeout(Duration.ofMillis(250));
+      configs.put(tenant, rdbms);
+    }
+
+    try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
+      final var a = registry.dataSourceFor("tenant-a");
+      final var b = registry.dataSourceFor("tenant-b");
+
+      // when
+      try (final var a1 = a.getConnection();
+          final var a2 = a.getConnection()) {
+
+        // then
+        assertThat(a.unwrap(HikariDataSource.class)).isSameAs(b.unwrap(HikariDataSource.class));
+        assertThat(a.unwrap(HikariDataSource.class).getMaximumPoolSize()).isEqualTo(3);
+        assertThatThrownBy(a::getConnection).isInstanceOf(SQLException.class);
+        try (final var b1 = b.getConnection()) {
+          assertThat(b1.isValid(1)).isTrue();
+        }
+      }
     }
   }
 
