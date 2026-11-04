@@ -23,7 +23,8 @@ public record GcsBackupConfig(
     int maxConcurrentTransfers,
     int bufferSize,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    Retry retry) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
@@ -31,7 +32,8 @@ public record GcsBackupConfig(
       final int maxConcurrentTransfers,
       final int bufferSize,
       final Optional<Duration> readTimeout,
-      final Optional<Duration> writeTimeout) {
+      final Optional<Duration> writeTimeout,
+      final Retry retry) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
@@ -42,7 +44,14 @@ public record GcsBackupConfig(
     this.bufferSize = bufferSize;
     this.readTimeout = readTimeout;
     this.writeTimeout = writeTimeout;
+    this.retry = requireNonNull(retry);
   }
+
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the library
+   * defaults in place.
+   */
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
 
   private static String requireBucketName(final String bucketName) {
     if (bucketName == null || bucketName.isBlank()) {
@@ -66,6 +75,8 @@ public record GcsBackupConfig(
     private GcsConnectionConfig.Authentication auth;
     private Duration readTimeout;
     private Duration writeTimeout;
+    private Duration retryTotalTimeout;
+    private Integer retryMaxAttempts;
     // 2MiB matches the default used by the GCS library's Path-based upload
     private int bufferSize = 2 * 1024 * 1024;
 
@@ -118,6 +129,16 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withRetryTotalTimeout(final Duration retryTotalTimeout) {
+      this.retryTotalTimeout = retryTotalTimeout;
+      return this;
+    }
+
+    public Builder withRetryMaxAttempts(final Integer retryMaxAttempts) {
+      this.retryMaxAttempts = retryMaxAttempts;
+      return this;
+    }
+
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
           bucketName,
@@ -126,7 +147,8 @@ public record GcsBackupConfig(
           maxConcurrentTransfers,
           bufferSize,
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          new Retry(Optional.ofNullable(retryTotalTimeout), Optional.ofNullable(retryMaxAttempts)));
     }
   }
 }

@@ -25,6 +25,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
   /** Size of the buffer (in bytes) used when uploading files to GCS. */
   private int bufferSize = 2 * 1024 * 1024;
 
+  private Retry retry = new Retry(null, null);
+
   public String getBucketName() {
     return bucketName;
   }
@@ -73,6 +75,14 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.bufferSize = bufferSize;
   }
 
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
   public static GcsBackupConfig toStoreConfig(
       final GcsBackupStoreConfig config,
       final @Nullable Duration readTimeout,
@@ -85,7 +95,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
             .withBasePath(config.getBasePath())
             .withHost(config.getHost())
             .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers())
-            .withBufferSize(config.getBufferSize());
+            .withBufferSize(config.getBufferSize())
+            .withRetryTotalTimeout(config.getRetry().totalTimeout())
+            .withRetryMaxAttempts(config.getRetry().maxAttempts());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
@@ -96,7 +108,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(bucketName, basePath, host, auth, maxConcurrentTransfers, bufferSize);
+    return Objects.hash(
+        bucketName, basePath, host, auth, maxConcurrentTransfers, bufferSize, retry);
   }
 
   @Override
@@ -113,7 +126,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(host, that.host)
         && auth == that.auth
         && maxConcurrentTransfers == that.maxConcurrentTransfers
-        && bufferSize == that.bufferSize;
+        && bufferSize == that.bufferSize
+        && Objects.equals(retry, that.retry);
   }
 
   @Override
@@ -134,8 +148,18 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         + maxConcurrentTransfers
         + ", bufferSize="
         + bufferSize
+        + ", retry="
+        + retry
         + '}';
   }
+
+  /**
+   * Optional limits on how the client retries failing requests.
+   *
+   * @param totalTimeout cap on the total time the client retries a failing request
+   * @param maxAttempts cap on the number of attempts the client makes for a failing request
+   */
+  public record Retry(@Nullable Duration totalTimeout, @Nullable Integer maxAttempts) {}
 
   public enum GcsBackupStoreAuth {
     NONE,
