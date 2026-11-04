@@ -203,11 +203,13 @@ describe('InstanceHistory (design system)', () => {
 		await expect.element(screen.getByRole('treeitem', {name: /Leaf task/})).not.toBeInTheDocument();
 	});
 
-	it('should filter by status through the status toggle', async ({worker}) => {
+	it('should filter by status through the status tabs', async ({worker}) => {
 		const screen = await renderHistory(worker);
+		await expect.element(screen.getByRole('tab', {name: 'All'})).toHaveAttribute('aria-selected', 'true');
 
-		await userEvent.click(screen.getByRole('radio', {name: 'Incidents'}));
+		await userEvent.click(screen.getByRole('tab', {name: 'Incidents'}));
 
+		await expect.element(screen.getByRole('tab', {name: 'Incidents'})).toHaveAttribute('aria-selected', 'true');
 		await expect.element(screen.getByText('1 matching element')).toBeVisible();
 	});
 

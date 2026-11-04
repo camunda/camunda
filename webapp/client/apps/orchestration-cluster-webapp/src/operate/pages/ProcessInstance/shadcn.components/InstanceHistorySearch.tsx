@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {Button, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
+import {Button, SearchInput, Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
 import {ArrowDown, ArrowUp} from '@camunda/design-system/icons';
 import {useInstanceHistory} from '../useInstanceHistory';
 import {useProcessInstancePage} from '../useProcessInstancePage';
@@ -53,6 +53,7 @@ const InstanceHistorySearch: React.FC = () => {
 		return () => clearTimeout(timeoutId);
 	}, [draft, applied, updateSearch]);
 
+	const status = search.elementStatus ?? 'all';
 	const isLatestFirst = history.sortOrder === 'DESC';
 	const SortIcon = isLatestFirst ? ArrowDown : ArrowUp;
 	const sortLabelKey = isLatestFirst
@@ -86,25 +87,21 @@ const InstanceHistorySearch: React.FC = () => {
 					{t(sortLabelKey)}
 				</Button>
 			</div>
-			<ToggleGroup
-				type="single"
-				variant="outline"
-				size="sm"
-				fullWidth
-				aria-label={t('operate.processInstance.history.search.statusFilter')}
-				value={search.elementStatus ?? 'all'}
-				onValueChange={(value) => {
-					if (value !== '') {
-						updateSearch({elementStatus: value === 'all' ? undefined : (value as ElementStatusFilter)});
-					}
-				}}
+			<Tabs
+				value={status}
+				onValueChange={(value) =>
+					updateSearch({elementStatus: value === 'all' ? undefined : (value as ElementStatusFilter)})
+				}
 			>
-				{STATUS_FILTERS.map(({value, labelKey}) => (
-					<ToggleGroupItem key={value} value={value}>
-						{t(labelKey)}
-					</ToggleGroupItem>
-				))}
-			</ToggleGroup>
+				<TabsList aria-label={t('operate.processInstance.history.search.statusFilter')}>
+					{STATUS_FILTERS.map(({value, labelKey}) => (
+						<TabsTrigger key={value} value={value}>
+							{t(labelKey)}
+						</TabsTrigger>
+					))}
+				</TabsList>
+				<TabsContent value={status} className="hidden" />
+			</Tabs>
 		</div>
 	);
 };
