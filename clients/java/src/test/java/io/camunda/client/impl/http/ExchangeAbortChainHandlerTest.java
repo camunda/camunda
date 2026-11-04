@@ -15,11 +15,14 @@
  */
 package io.camunda.client.impl.http;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.client5.http.HttpRoute;
 import org.apache.hc.client5.http.async.AsyncExecCallback;
 import org.apache.hc.client5.http.async.AsyncExecChain;
@@ -57,6 +60,37 @@ class ExchangeAbortChainHandlerTest {
   void shouldDoNothingWhenRequestDidNotGoThroughHandler() {
     // when / then
     assertThatCode(() -> ExchangeAbortChainHandler.abort(context)).doesNotThrowAnyException();
+    assertThat(ExchangeAbortChainHandler.isAborted(context)).isFalse();
+  }
+
+  @Test
+  void shouldNotReportExchangeAsAbortedUntilItIsAborted() throws Exception {
+    // when
+    handler.execute(request, null, scope(), chain, callback);
+
+    // then
+    assertThat(ExchangeAbortChainHandler.isAborted(context)).isFalse();
+  }
+
+  @Test
+  void shouldReportExchangeAsAbortedBeforeDiscardingConnection() throws Exception {
+    // given the I/O thread can fail on the closed connection and ask whether to retry before abort
+    // returns, so the exchange must already count as aborted by the time the connection closes
+    handler.execute(request, null, scope(), chain, callback);
+    final AtomicBoolean abortedWhenDiscarding = new AtomicBoolean();
+    doAnswer(
+            invocation -> {
+              abortedWhenDiscarding.set(ExchangeAbortChainHandler.isAborted(context));
+              return null;
+            })
+        .when(execRuntime)
+        .discardEndpoint();
+
+    // when
+    ExchangeAbortChainHandler.abort(context);
+
+    // then
+    assertThat(abortedWhenDiscarding).isTrue();
   }
 
   @Test
@@ -68,6 +102,7 @@ class ExchangeAbortChainHandlerTest {
     // when / then
     assertThatCode(() -> ExchangeAbortChainHandler.abort(context)).doesNotThrowAnyException();
     verify(execRuntime).discardEndpoint();
+    assertThat(ExchangeAbortChainHandler.isAborted(context)).isTrue();
   }
 
   private Scope scope() {

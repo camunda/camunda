@@ -27,6 +27,12 @@ import org.apache.hc.core5.http.protocol.HttpContext;
  * <p>The caller has stopped reading, so there is nothing to download anymore. Without this,
  * httpclient5 logs that it sends the request again and starts to open a new connection for it, only
  * to give up because the caller already got the response.
+ *
+ * <p>Closing the stream makes the download fail in one of two ways: the next data that arrives
+ * cannot be written to the stream, which fails with {@link DocumentStreamClosedException}, or the
+ * next read from the closed connection fails with an I/O error that httpclient5 would otherwise
+ * retry, such as a {@link java.nio.channels.ClosedChannelException}. The second case is recognized
+ * by {@link ExchangeAbortChainHandler#isAborted(HttpContext)}.
  */
 final class HttpRetryStrategy extends DefaultHttpRequestRetryStrategy {
 
@@ -37,6 +43,7 @@ final class HttpRetryStrategy extends DefaultHttpRequestRetryStrategy {
       final int execCount,
       final HttpContext context) {
     return !(exception instanceof DocumentStreamClosedException)
+        && !ExchangeAbortChainHandler.isAborted(context)
         && super.retryRequest(request, exception, execCount, context);
   }
 }
