@@ -238,12 +238,9 @@ public final class RestoreValidator
   }
 
   /**
-   * The partition count of the backups the time range resolves to, read from the first backup
-   * partition 1 restores from, as every backup holds partition 1. Partition 1 alone can resolve to
-   * a later restore point than all partitions together, when a backup failed on another partition,
-   * so its last backup may be one the restore does not reach. A range spanning a scale up cannot be
-   * restored, as the added partitions hold no backup as early as {@code from}, so all backups of
-   * the range share the count of the first one.
+   * The partition count of the first backup partition 1 resolves to; every backup holds partition
+   * 1. A backup later in the range taken with another partition count, after a scale up, is
+   * rejected by {@link #verifyLastBackupsHoldThePartitions}.
    */
   private int timeRangePartitionCount(final Instant from, final @Nullable Instant to) {
     final var store =
