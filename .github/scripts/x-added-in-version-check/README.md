@@ -30,6 +30,7 @@ the spec to pass: restructuring changes the generated SDK types.
 ```
 build-bundler-version-map.mjs # computes the version map by diffing property/operation
                                # presence across released baselines + the in-development version
+backwards-compat-collapse.mjs # backwards-compat collapse used by the builder (runs before the sibling-variant collapse)
 sibling-variant-collapse.mjs  # sibling-variant collapse used by the builder (see Rule 4)
 test/                     # node:test fixture tests (`npm test`)
 build-artefacts.mjs       # runs build-bundler-version-map.mjs and copies its
