@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 
 public final class DbProcessMessageSubscriptionState
@@ -35,6 +38,7 @@ public final class DbProcessMessageSubscriptionState
         StreamProcessorLifecycleAware {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+  private static final int RECOVERY_BATCH_LIMIT = 50_000;
   // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
 
@@ -49,6 +53,13 @@ public final class DbProcessMessageSubscriptionState
 
   private final TransientPendingSubscriptionState transientState;
   private final InstantSource clock;
+
+  // (elementInstanceKey, "", "") sorts before every subscription of that element instance
+  private final DbLong recoveryElementInstanceKey = new DbLong();
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>> recoveryStartKey =
+      new DbCompositeKey<>(
+          recoveryElementInstanceKey,
+          new DbTenantAwareKey<>(new DbString(), new DbString(), PlacementType.PREFIX));
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -74,16 +85,46 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    subscriptionColumnFamily.forEach(
-        subscription -> {
-          if (subscription.isOpening() || subscription.isClosing()) {
-            final var record = subscription.getRecord();
-            transientState.add(
-                new PendingSubscription(
-                    record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-                clock.millis());
-          }
-        });
+    long next = NO_ELEMENT_INSTANCE;
+    do {
+      next = recoverPending(next, RECOVERY_BATCH_LIMIT);
+    } while (next != NO_ELEMENT_INSTANCE);
+  }
+
+  @Override
+  public long recoverPending(final long fromElementInstanceKey, final int batchLimit) {
+    final var currentElementInstanceKey = new MutableLong(NO_ELEMENT_INSTANCE);
+    final var resumeAt = new MutableLong(NO_ELEMENT_INSTANCE);
+    final var visited = new MutableInteger();
+    final KeyValuePairVisitor<
+            DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, ProcessMessageSubscription>
+        visitor =
+            (key, subscription) -> {
+              final long instanceKey = key.first().getValue();
+              if (instanceKey != currentElementInstanceKey.get()) {
+                if (currentElementInstanceKey.get() != NO_ELEMENT_INSTANCE
+                    && visited.get() >= batchLimit) {
+                  resumeAt.set(instanceKey);
+                  return false;
+                }
+                currentElementInstanceKey.set(instanceKey);
+              }
+              visited.increment();
+
+              if (subscription.isOpening() || subscription.isClosing()) {
+                final var record = subscription.getRecord();
+                transientState.add(
+                    new PendingSubscription(
+                        instanceKey, record.getMessageName(), record.getTenantId()),
+                    clock.millis());
+              }
+              return true;
+            };
+
+    recoveryElementInstanceKey.wrapLong(fromElementInstanceKey);
+    subscriptionColumnFamily.whileTrue(
+        fromElementInstanceKey == NO_ELEMENT_INSTANCE ? null : recoveryStartKey, visitor);
+    return resumeAt.get();
   }
 
   @Override
