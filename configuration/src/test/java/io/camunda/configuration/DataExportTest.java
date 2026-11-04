@@ -30,7 +30,13 @@ public class DataExportTest {
   @Nested
   @TestPropertySource(
       properties = {
+<<<<<<< HEAD:configuration/src/test/java/io/camunda/configuration/DataExportTest.java
         "camunda.data.export.distribution-interval=1m",
+=======
+        "camunda.processing.engine.messages.ttl-checker-batch-limit=50",
+        "camunda.processing.engine.messages.ttl-checker-interval=2m",
+        "camunda.processing.engine.messages.pending-subscription-recovery-batch-limit=5000",
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable):configuration/src/test/java/io/camunda/configuration/processing/engine/EngineMessagesTest.java
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -40,8 +46,16 @@ public class DataExportTest {
     }
 
     @Test
+<<<<<<< HEAD:configuration/src/test/java/io/camunda/configuration/DataExportTest.java
     void shouldSetDistributionInterval() {
       assertThat(brokerCfg.getExporting().distributionInterval()).isEqualTo(Duration.ofMinutes(1));
+=======
+    void shouldSetMessages() {
+      assertThat(brokerCfg.getExperimental().getEngine().getMessages())
+          .returns(50, MessagesCfg::getTtlCheckerBatchLimit)
+          .returns(Duration.ofMinutes(2), MessagesCfg::getTtlCheckerInterval)
+          .returns(5000, MessagesCfg::getPendingSubscriptionRecoveryBatchLimit);
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable):configuration/src/test/java/io/camunda/configuration/processing/engine/EngineMessagesTest.java
     }
   }
 
@@ -67,7 +81,13 @@ public class DataExportTest {
   @TestPropertySource(
       properties = {
         // new
+<<<<<<< HEAD:configuration/src/test/java/io/camunda/configuration/DataExportTest.java
         "camunda.data.export.distribution-interval=1m",
+=======
+        "camunda.processing.engine.messages.ttl-checker-batch-limit=50",
+        "camunda.processing.engine.messages.ttl-checker-interval=2m",
+        "camunda.processing.engine.messages.pending-subscription-recovery-batch-limit=5000",
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable):configuration/src/test/java/io/camunda/configuration/processing/engine/EngineMessagesTest.java
         // legacy
         "zeebe.broker.exporting.distributionInterval=2m",
       })
@@ -79,6 +99,7 @@ public class DataExportTest {
     }
 
     @Test
+<<<<<<< HEAD:configuration/src/test/java/io/camunda/configuration/DataExportTest.java
     void shouldSetDistributionIntervalFromNew() {
       assertThat(brokerCfg.getExporting().distributionInterval()).isEqualTo(Duration.ofMinutes(1));
     }
@@ -105,6 +126,13 @@ public class DataExportTest {
     @Test
     void shouldSetSkipRecordsForPartition2() {
       assertThat(brokerCfg.getExporting().skipRecords()).containsEntry(2, Set.of(30L));
+=======
+    void shouldSetMessagesFromNew() {
+      assertThat(brokerCfg.getExperimental().getEngine().getMessages())
+          .returns(50, MessagesCfg::getTtlCheckerBatchLimit)
+          .returns(Duration.ofMinutes(2), MessagesCfg::getTtlCheckerInterval)
+          .returns(5000, MessagesCfg::getPendingSubscriptionRecoveryBatchLimit);
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable):configuration/src/test/java/io/camunda/configuration/processing/engine/EngineMessagesTest.java
     }
   }
 }

@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.PendingSubscriptionRecovery;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
@@ -133,6 +134,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
+  private final int pendingSubscriptionRecoveryBatchLimit;
 
   public ProcessingDbState(
       final int partitionId,
@@ -145,6 +147,8 @@ public class ProcessingDbState implements MutableProcessingState {
       final InstantSource clock) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
+    pendingSubscriptionRecoveryBatchLimit =
+        config.getMessagesPendingSubscriptionRecoveryBatchLimit();
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
@@ -194,10 +198,17 @@ public class ProcessingDbState implements MutableProcessingState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    messageSubscriptionState.onRecovered(context);
-    processMessageSubscriptionState.onRecovered(context);
+    recoverPending(messageSubscriptionState);
+    recoverPending(processMessageSubscriptionState);
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
+  }
+
+  private void recoverPending(final PendingSubscriptionRecovery recovery) {
+    long next = PendingSubscriptionRecovery.NO_ELEMENT_INSTANCE;
+    do {
+      next = recovery.recoverPending(next, pendingSubscriptionRecoveryBatchLimit);
+    } while (next != PendingSubscriptionRecovery.NO_ELEMENT_INSTANCE);
   }
 
   @Override

@@ -113,8 +113,286 @@ public class BrokerBasedPropertiesOverride {
     return override;
   }
 
+<<<<<<< HEAD
   private void populateFromExpression(final BrokerBasedProperties override) {
     final var expression = unifiedConfiguration.getCamunda().getExpression();
+=======
+  /**
+   * Builds a per-physical-tenant {@link BrokerBasedProperties} entirely from the supplied
+   * per-tenant {@link Camunda} object, using the same population logic as the root {@link
+   * #brokerBasedProperties()} bean.
+   *
+   * <p>The per-tenant {@code Camunda} is produced by {@code PhysicalTenantResolver} via a two-step
+   * bind: it inherits root values for every un-overridden key, so cluster-wide sections come out
+   * identical to the root while per-tenant overrides apply on top.
+   *
+   * <p>Unlike the root bean, the legacy {@code zeebe.broker.*} properties that do not have a
+   * corresponding unified configuration property are not inherited. The default tenant keeps legacy
+   * support by reusing the root bean directly instead of this method.
+   *
+   * <p>The caller must stamp {@code cluster.nodeId} / {@code cluster.nodeVersion} (from {@code
+   * NodeIdProvider}) and call {@code init()}, just as {@code BrokerBasedConfiguration} does for the
+   * root bean.
+   */
+  public static BrokerBasedProperties convert(final Camunda perTenant) {
+    final BrokerBasedProperties props = new BrokerBasedProperties();
+    populateFromCamunda(props, perTenant);
+    return props;
+  }
+
+  /**
+   * Populates the given {@link BrokerBasedProperties} from a {@link Camunda} object. Single code
+   * path shared by the root bean and the per-tenant build so the two cannot drift.
+   */
+  private static void populateFromCamunda(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromCluster(override, camunda);
+
+    populateFromLongPolling(override, camunda);
+
+    populateFromRestFilters(override, camunda);
+
+    populateFromSystem(override, camunda);
+
+    populateFromPrimaryStorage(override, camunda);
+
+    populateFromGrpc(override, camunda);
+
+    populateFromData(override, camunda);
+
+    if (camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
+      populateRdbmsExporter(override, camunda);
+    } else {
+      populateCamundaExporter(override, camunda);
+    }
+
+    populateFromExporters(override, camunda);
+
+    populateFromMonitoring(override, camunda);
+
+    populateFromProcessing(override, camunda);
+
+    populateFromFlowControl(override, camunda);
+
+    populateFromSecurity(override, camunda);
+
+    override.setLicenseKey(camunda.getLicense().getKey());
+  }
+
+  private static void populateFromSecurity(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var tlsCluster =
+        camunda
+            .getSecurity()
+            .getTransportLayerSecurity()
+            .getCluster()
+            .withBrokerTlsClusterProperties();
+
+    final var networkSecurity = override.getNetwork().getSecurity();
+    networkSecurity.setEnabled(tlsCluster.isEnabled());
+    networkSecurity.setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    networkSecurity.setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    networkSecurity
+        .getKeyStore()
+        .setFilePath(
+            tlsCluster.getKeyStore().withBrokerTlsClusterKeyStoreProperties().getFilePath());
+    networkSecurity
+        .getKeyStore()
+        .setPassword(
+            tlsCluster.getKeyStore().withBrokerTlsClusterKeyStoreProperties().getPassword());
+  }
+
+  private static void populateFromProcessing(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Processing processing = camunda.getProcessing();
+
+    // processing
+    override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
+    override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
+    override.getProcessing().setMaxPendingSideEffects(processing.getMaxPendingSideEffects());
+    override
+        .getProcessing()
+        .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());
+    override.getProcessing().setSkipPositions(processing.getSkipPositions());
+
+    // consistency checks
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnablePreconditions(processing.isEnablePreconditionsCheck());
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnableForeignKeyChecks(processing.isEnableForeignKeyChecks());
+    // features
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableYieldingDueDateChecker(processing.isEnableYieldingDueDateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageTtlCheckerAsync(processing.isEnableAsyncMessageTtlChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableTimerDueDateCheckerAsync(processing.isEnableAsyncTimerDuedateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableStraightThroughProcessingLoopDetector(
+            processing.isEnableStraightthroughProcessingLoopDetector());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+            processing.isEvaluateBoundaryEventCorrelationKeyInActivityScope());
+
+    populateFromEngine(override, camunda);
+  }
+
+  private static void populateFromEngine(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromDistribution(override, camunda);
+    populateFromBatchOperations(override, camunda);
+    populateFromExpression(override, camunda);
+    populateFromProcessInstanceCreation(override, camunda);
+    populateFromJobs(override, camunda);
+    populateFromCaches(override, camunda);
+    populateFromMessages(override, camunda);
+    populateFromValidators(override, camunda);
+    populateFromSecretResolution(override, camunda);
+    populateFromStorageOrdinals(override, camunda);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getStartup()
+        .setRpaReexportMigrationEnabled(
+            camunda.getProcessing().getEngine().getStartup().isRpaReexportMigrationEnabled());
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getStartup()
+        .setProcessDefinitionRestoreEnabled(
+            camunda.getProcessing().getEngine().getStartup().isProcessDefinitionRestoreEnabled());
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputMappingMode(
+            toEngineMode(camunda.getProcessing().getEngine().getMappings().getInputMode()));
+
+    final var inputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getInputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setInputComparisonMode(
+            inputComparisonMode != null ? toEngineMode(inputComparisonMode) : null);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputMappingMode(
+            toEngineOutputMode(camunda.getProcessing().getEngine().getMappings().getOutputMode()));
+
+    final var outputComparisonMode =
+        camunda.getProcessing().getEngine().getMappings().getOutputComparisonMode();
+    override
+        .getExperimental()
+        .getEngine()
+        .setOutputComparisonMode(
+            outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
+  }
+
+  private static InputMappingMode toEngineMode(final InputMode mode) {
+    return mode == InputMode.COMBINED ? InputMappingMode.COMBINED : InputMappingMode.ORDERED;
+  }
+
+  private static OutputMappingMode toEngineOutputMode(final OutputMode outputMode) {
+    return outputMode == OutputMode.COMBINED
+        ? OutputMappingMode.COMBINED
+        : OutputMappingMode.ORDERED;
+  }
+
+  private static void populateFromDistribution(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var distribution = camunda.getProcessing().getEngine().getDistribution();
+
+    final var distributionCfg = override.getExperimental().getEngine().getDistribution();
+    distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
+    distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+    distributionCfg.setPauseCommandDistribution(distribution.isPauseCommandDistribution());
+  }
+
+  private static void populateFromCaches(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var caches = camunda.getProcessing().getEngine().getCaches();
+
+    final var cachesCfg = override.getExperimental().getEngine().getCaches();
+    cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
+    cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
+    cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setProcessCacheSoftValues(caches.isProcessCacheSoftValues());
+    cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
+    cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
+    cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
+    cachesCfg.setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity());
+    cachesCfg.setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution());
+  }
+
+  private static void populateFromMessages(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var messages = camunda.getProcessing().getEngine().getMessages();
+
+    final var messagesCfg = override.getExperimental().getEngine().getMessages();
+    messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
+    messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+    messagesCfg.setPendingSubscriptionRecoveryBatchLimit(
+        messages.getPendingSubscriptionRecoveryBatchLimit());
+  }
+
+  private static void populateFromValidators(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var validators = camunda.getProcessing().getEngine().getValidators();
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setResultsOutputMaxSize(validators.getResultsOutputMaxSize());
+  }
+
+  private static void populateFromBatchOperations(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineBatchOperation = camunda.getProcessing().getEngine().getBatchOperations();
+    final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
+    batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
+    batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());
+    batchOperationsCfg.setQueryPageSize(engineBatchOperation.getQueryPageSize());
+    batchOperationsCfg.setQueryInClauseSize(engineBatchOperation.getQueryInClauseSize());
+    batchOperationsCfg.setQueryRetryMax(engineBatchOperation.getQueryRetryMax());
+    batchOperationsCfg.setQueryRetryInitialDelay(engineBatchOperation.getQueryRetryInitialDelay());
+    batchOperationsCfg.setQueryRetryMaxDelay(engineBatchOperation.getQueryRetryMaxDelay());
+    batchOperationsCfg.setQueryRetryBackoffFactor(
+        engineBatchOperation.getQueryRetryBackoffFactor());
+  }
+
+  private static void populateFromExpression(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var expression = camunda.getExpression();
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable)
     override.getExperimental().getEngine().getExpression().setTimeout(expression.getTimeout());
   }
 

@@ -13,6 +13,8 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = 100;
   public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
+  // ~15ms per chunk at ~1.5us per subscription (cold RocksDB caches)
+  public static final int DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT = 10_000;
 
   public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
 
@@ -58,6 +60,8 @@ public final class EngineConfiguration {
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+  private int messagesPendingSubscriptionRecoveryBatchLimit =
+      DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
@@ -104,6 +108,17 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessagesTtlCheckerBatchLimit(
       final int messagesTtlCheckerBatchLimit) {
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    return this;
+  }
+
+  public int getMessagesPendingSubscriptionRecoveryBatchLimit() {
+    return messagesPendingSubscriptionRecoveryBatchLimit;
+  }
+
+  public EngineConfiguration setMessagesPendingSubscriptionRecoveryBatchLimit(
+      final int messagesPendingSubscriptionRecoveryBatchLimit) {
+    this.messagesPendingSubscriptionRecoveryBatchLimit =
+        messagesPendingSubscriptionRecoveryBatchLimit;
     return this;
   }
 
