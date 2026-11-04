@@ -9,7 +9,7 @@
 import {reactQueryClient} from './reactQueryClient';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {z} from 'zod';
-import {currentUserSchema, endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {currentUserSchema, endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type RequestError =
 	| {
@@ -49,20 +49,15 @@ async function requestCsrfToken(input: Request) {
 	}
 }
 
+const currentUserUrlPattern = new URLPattern({pathname: `*${endpoints.getCurrentUser.getUrl()}`});
 const anonymousCurrentUserSchema = currentUserSchema.pick({isAnonymous: true});
 
-async function isAnonymousCurrentUser(input: RequestInfo, response: Response) {
-	const url = new URL(typeof input === 'string' ? input : input.url, window.location.origin);
-	if (!url.pathname.endsWith(unifiedAPIEndpoints.getCurrentUser.getUrl())) {
+async function isAnonymousCurrentUser(response: Response) {
+	if (!currentUserUrlPattern.test(response.url)) {
 		return false;
 	}
 
-	try {
-		const result = anonymousCurrentUserSchema.safeParse(await response.json());
-		return result.success && result.data.isAnonymous;
-	} catch {
-		return false;
-	}
+	return anonymousCurrentUserSchema.safeParse(await response.json().catch(() => null)).data?.isAnonymous === true;
 }
 
 async function request(
@@ -89,8 +84,8 @@ async function request(
 		}
 
 		const response = await fetch(input);
-		const isUnauthorized =
-			response.status === 401 || (response.ok && (await isAnonymousCurrentUser(input, response.clone())));
+		const isAnonymous = response.ok && (await isAnonymousCurrentUser(response.clone()));
+		const isUnauthorized = response.status === 401 || isAnonymous;
 
 		if (response.ok && !isUnauthorized) {
 			authenticationStore.activateSession();
