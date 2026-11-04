@@ -83,6 +83,7 @@ const config = defineConfig(({mode}) => ({
 		proxy: {
 			'/v2': 'http://localhost:8080',
 			'/admin/config.js': 'http://localhost:8080',
+			'/operate/client-config.js': 'http://localhost:8080',
 			'/login': {
 				target: 'http://localhost:8080',
 				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),

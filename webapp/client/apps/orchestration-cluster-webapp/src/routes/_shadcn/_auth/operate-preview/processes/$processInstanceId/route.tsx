@@ -15,12 +15,16 @@ import {
 } from '#/operate/pages/ProcessInstance/shadcn.components/processInstanceTabs';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
+import {loadOperateClientConfig} from '#/operate/shared/queries/loadOperateClientConfig';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId')({
 	validateSearch: validateProcessInstanceRouteSearch,
-	loader: ({context: {queryClient}, params: {processInstanceId}}) =>
-		queryClient.ensureQueryData(processInstanceQuery(processInstanceId)),
+	loader: async ({context: {queryClient}, params: {processInstanceId}}) => {
+		storeSessionState('operateClientConfig', await loadOperateClientConfig(queryClient));
+		return queryClient.ensureQueryData(processInstanceQuery(processInstanceId));
+	},
 	head: ({loaderData, params: {processInstanceId}}) => ({
 		meta: loaderData
 			? [
