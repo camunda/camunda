@@ -12,7 +12,6 @@ import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneRole;
-import io.camunda.zeebe.util.MemberIdUtil;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
