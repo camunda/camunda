@@ -103,7 +103,25 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void start() {
+    deleteLeftoverBootstrapSnapshots();
     setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
+  }
+
+  /**
+   * A bootstrap snapshot is only tracked in memory, so one found on disk at startup was left behind
+   * by a previous process (e.g. a crash during or after the copy). It is never reused, and if kept
+   * it would block every later {@link #copyForBootstrap}.
+   */
+  private void deleteLeftoverBootstrapSnapshots() {
+    try (final var stream = Files.list(bootstrapSnapshotsDirectory)) {
+      if (stream.findAny().isEmpty()) {
+        return;
+      }
+      LOGGER.info("Deleting leftover bootstrap snapshots in {}", bootstrapSnapshotsDirectory);
+      FileUtil.deleteFolderContents(bootstrapSnapshotsDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete leftover bootstrap snapshots", e);
+    }
   }
 
   public void close() {
