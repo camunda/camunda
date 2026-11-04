@@ -6,50 +6,61 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {HttpResponse} from 'msw';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {it} from '#/vitest-modules/test-extend';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {mockCurrentUserEndpoint, mockQueryProcessInstancesEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {endpoints} from './endpoints';
 import {request} from './request';
 
-const CURRENT_USER_URL = '/v2/authentication/me';
-
 describe('request', () => {
-	afterEach(() => {
-		vi.restoreAllMocks();
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		authenticationStore.reset();
 	});
 
-	it('should handle an anonymous current user like a 401', async () => {
-		vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({isAnonymous: true, username: null}));
-		const disableSession = vi.spyOn(authenticationStore, 'disableSession').mockImplementation(() => {});
+	afterEach(() => {
+		sessionStorage.clear();
+	});
 
-		const {response, error} = await request(CURRENT_USER_URL);
+	it('should handle an anonymous current user like a 401', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createAnonymousCurrentUser())}));
+
+		const {response, error} = await request(endpoints.getCurrentUser());
 
 		expect(response).toBeNull();
 		expect(error?.variant).toBe('failed-response');
-		expect(disableSession).toHaveBeenCalled();
+		expect(authenticationStore.status).toBe('session-invalid');
 	});
 
-	it('should return an authenticated current user', async () => {
-		vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({isAnonymous: false, username: 'demo'}));
+	it('should return an authenticated current user', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({username: 'demo'}))}));
 
-		const {response, error} = await request(CURRENT_USER_URL);
+		const {response, error} = await request(endpoints.getCurrentUser());
 
 		expect(error).toBeNull();
 		expect(await response?.json()).toMatchObject({username: 'demo'});
+		expect(authenticationStore.status).toBe('logged-in');
 	});
 
-	it('should not check other endpoints for an anonymous user', async () => {
-		vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({isAnonymous: true}));
+	it('should not check other endpoints for an anonymous user', async ({worker}) => {
+		worker.use(mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json({isAnonymous: true})}));
 
-		const {error} = await request('/v2/process-instances/search');
+		const {error} = await request(endpoints.queryProcessInstances({}));
 
 		expect(error).toBeNull();
+		expect(authenticationStore.status).toBe('logged-in');
 	});
 
-	it('should not treat a current user body that is not JSON as anonymous', async () => {
-		vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not json'));
+	it('should not treat a current user body that is not JSON as anonymous', async ({worker}) => {
+		worker.use(mockCurrentUserEndpoint({successResponse: new HttpResponse('not json')}));
 
-		const {error} = await request(CURRENT_USER_URL);
+		const {error} = await request(endpoints.getCurrentUser());
 
 		expect(error).toBeNull();
+		expect(authenticationStore.status).toBe('logged-in');
 	});
 });
