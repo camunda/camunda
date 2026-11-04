@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -26,8 +25,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 
 public final class DbMessageSubscriptionState
@@ -57,9 +54,8 @@ public final class DbMessageSubscriptionState
   private final InstantSource clock;
 
   // (elementInstanceKey, "") sorts before every subscription of that element instance
-  private final DbLong recoveryElementInstanceKey = new DbLong();
   private final DbCompositeKey<DbLong, DbString> recoveryStartKey =
-      new DbCompositeKey<>(recoveryElementInstanceKey, new DbString());
+      new DbCompositeKey<>(new DbLong(), new DbString());
 
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -97,37 +93,19 @@ public final class DbMessageSubscriptionState
 
   @Override
   public long recoverPending(final long fromElementInstanceKey, final int batchLimit) {
-    final var currentElementInstanceKey = new MutableLong(NO_ELEMENT_INSTANCE);
-    final var resumeAt = new MutableLong(NO_ELEMENT_INSTANCE);
-    final var visited = new MutableInteger();
-    final KeyValuePairVisitor<DbCompositeKey<DbLong, DbString>, MessageSubscription> visitor =
-        (key, subscription) -> {
-          final long instanceKey = key.first().getValue();
-          if (instanceKey != currentElementInstanceKey.get()) {
-            if (currentElementInstanceKey.get() != NO_ELEMENT_INSTANCE
-                && visited.get() >= batchLimit) {
-              resumeAt.set(instanceKey);
-              return false;
-            }
-            currentElementInstanceKey.set(instanceKey);
-          }
-          visited.increment();
-
+    return PendingSubscriptionScan.scanChunk(
+        subscriptionColumnFamily,
+        recoveryStartKey,
+        fromElementInstanceKey,
+        batchLimit,
+        (subscription, instanceKey) -> {
           if (subscription.isCorrelating()) {
+            final var record = subscription.getRecord();
             transientState.add(
-                new PendingSubscription(
-                    instanceKey,
-                    subscription.getRecord().getMessageName(),
-                    subscription.getRecord().getTenantId()),
+                new PendingSubscription(instanceKey, record.getMessageName(), record.getTenantId()),
                 clock.millis());
           }
-          return true;
-        };
-
-    recoveryElementInstanceKey.wrapLong(fromElementInstanceKey);
-    subscriptionColumnFamily.whileTrue(
-        fromElementInstanceKey == NO_ELEMENT_INSTANCE ? null : recoveryStartKey, visitor);
-    return resumeAt.get();
+        });
   }
 
   @Override
