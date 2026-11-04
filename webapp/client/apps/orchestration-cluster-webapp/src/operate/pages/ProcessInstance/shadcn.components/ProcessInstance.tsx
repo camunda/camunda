@@ -130,7 +130,7 @@ const ProcessInstance: React.FC<Props> = ({
 					headerTitle: t('operate.processInstance.modification.frameTitle'),
 				}}
 			>
-				<div className="flex h-full min-h-0 flex-col">
+				<div className="flex h-full min-h-0 flex-col" inert={isApplyingModifications}>
 					<div className="flex min-h-0 flex-1 flex-col">
 						{breadcrumb}
 						{header}
