@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.engine.secret;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.service.SecretServices;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Holds the two definitions of the secret reference name charset together.
+ * Holds the definitions of the secret reference name charset together.
  *
  * <p>{@link SecretReference#REFERENCE_PATTERN} (the engine's raw-text scanners) and {@link
  * SecretServices#REFERENCE_NAME_PATTERN} (the {@code /v2/secrets} endpoints) describe the same
@@ -25,13 +26,17 @@ import org.junit.jupiter.params.provider.ValueSource;
  * which is exactly the failure of <a href="https://github.com/camunda/camunda/issues/60364">
  * #60364</a>. Nothing but this test fails when only one of them is edited.
  *
+ * <p>{@link EnvVarSecretStore#NAME_PATTERN} is a third copy: the environment-variable store refuses
+ * any other name, so a name it rejects but the other two accept could be stored as a variable and
+ * referenced, yet never resolve.
+ *
  * <p>The two sets below are golden rather than a mutual comparison: each name is asserted against
  * the verdict it must get, not merely against what the other pattern says about it. Asserting only
  * that the two agree would pass a wrong edit applied to both — dropping the dash from each pattern
  * reintroduces #60364 while leaving them perfectly in sync.
  *
- * <p>This module is the only one with both artifacts on its classpath, which is why a unit test
- * lives here.
+ * <p>This module is the only one with all three artifacts on its classpath, which is why a unit
+ * test lives here.
  */
 final class SecretReferenceCharsetSyncTest {
 
@@ -97,6 +102,9 @@ final class SecretReferenceCharsetSyncTest {
     assertThat(serviceAccepts(name))
         .as("the endpoints accept '%s', which the engine detector rejects", name)
         .isFalse();
+    assertThat(envStoreAccepts(name))
+        .as("the environment-variable store accepts '%s', which the other two reject", name)
+        .isFalse();
   }
 
   private static void assertAccepted(final String name) {
@@ -115,6 +123,12 @@ final class SecretReferenceCharsetSyncTest {
                 + "resolvable",
             name)
         .isTrue();
+    assertThat(envStoreAccepts(name))
+        .as(
+            "the environment-variable store rejects '%s', which the other two accept: a variable "
+                + "of that name could be referenced but never resolve",
+            name)
+        .isTrue();
   }
 
   private static boolean engineAccepts(final String name) {
@@ -123,5 +137,9 @@ final class SecretReferenceCharsetSyncTest {
 
   private static boolean serviceAccepts(final String name) {
     return SecretServices.REFERENCE_NAME_PATTERN.matcher(name).matches();
+  }
+
+  private static boolean envStoreAccepts(final String name) {
+    return EnvVarSecretStore.NAME_PATTERN.matcher(name).matches();
   }
 }
