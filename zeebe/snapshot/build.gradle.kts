@@ -3,6 +3,7 @@ import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
 }
 
 dependencies {

@@ -19,6 +19,7 @@
   <name>Zeebe Dynamic Cluster Configuration Implementation</name>
 
   <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
     <proto.dir>${maven.multiModuleProjectDirectory}/zeebe/dynamic-config/impl/src/main/resources/proto</proto.dir>
   </properties>
 

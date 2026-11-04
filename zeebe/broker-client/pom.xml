@@ -15,6 +15,10 @@
 
   <name>Zeebe Broker Client</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.agrona</groupId>

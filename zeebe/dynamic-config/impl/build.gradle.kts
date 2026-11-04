@@ -1,6 +1,9 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.protobuf-conventions") }
+plugins {
+  id("buildlogic.protobuf-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+}
 
 // Point to the proto files in resources
 sourceSets { main { proto { srcDir("src/main/resources/proto") } } }

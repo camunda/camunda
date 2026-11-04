@@ -31,7 +31,4 @@ extensions.configure<PublishingExtension> {
 
 testsJar.configure {
   from(publishedTestJar.sourceSetName.flatMap { sourceSets.named(it) }.map { it.output })
-  // JUnit settings belong to the module that owns them; packaged here they would silently apply to
-  // every module depending on the test jar.
-  exclude("junit-platform.properties")
 }

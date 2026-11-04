@@ -20,6 +20,10 @@
 
   <name>Zeebe Backup Store Testkit</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <!--
      Dependencies on junit to ensure that testkit users are picking up these tests even when they don't depend on junit themselves.
