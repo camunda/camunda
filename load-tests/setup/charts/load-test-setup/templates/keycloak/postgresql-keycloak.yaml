@@ -33,8 +33,12 @@ spec:
 
   affinity:
     nodeSelector:
+      {{- if .Values.topologyZone }}
       topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
-      {{- toYaml .Values.keycloak.postgresql.nodeSelector | nindent 6 }}
+      {{- end }}
+      {{- with .Values.keycloak.postgresql.nodeSelector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 
     tolerations:
       {{- toYaml .Values.keycloak.postgresql.tolerations | nindent 6 }}
