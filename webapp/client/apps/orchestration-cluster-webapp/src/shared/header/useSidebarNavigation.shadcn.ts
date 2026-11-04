@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 
 import {
 	Bot,
+	Briefcase,
 	GitBranch,
 	History,
 	LayoutDashboard,
@@ -32,12 +33,14 @@ import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-s
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
 import {hasComponentAccess} from '#/shared/componentAccess';
+import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
 	tasklistIndex: '/tasklist',
 	tasklistProcesses: '/tasklist/processes',
+	tasklistCases: '/tasklist/cases',
 	// The Dashboard is the only Operate page migrated to the Design System so far, so it
 	// points at the migration-time /operate-preview leaf. Every other Operate item below
 	// still points at its live Carbon route — those pages haven't moved yet.
@@ -146,6 +149,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const isCasesRoute = ENABLE_CASE_MANAGEMENT && matchRoute({to: tabRoutes['tasklistCases'], fuzzy: true}) !== false;
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 	const isAdminRoute = activeComponentHomeRoute === tabRoutes['adminIndex'];
@@ -167,7 +171,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute,
+							isActive: !isProcessesRoute && !isCasesRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {
@@ -185,6 +189,20 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 								to: tabRoutes['tasklistProcesses'],
 							},
 						},
+						...(ENABLE_CASE_MANAGEMENT
+							? [
+									{
+										type: 'item',
+										key: 'cases',
+										label: t('tasklist.headerNavItemCases'),
+										icon: Briefcase,
+										isActive: isCasesRoute,
+										linkProps: {
+											to: tabRoutes['tasklistCases'],
+										},
+									} satisfies SidebarNode,
+								]
+							: []),
 					]
 				: [],
 		};
