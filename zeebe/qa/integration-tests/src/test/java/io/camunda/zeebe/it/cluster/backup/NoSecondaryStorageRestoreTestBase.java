@@ -466,6 +466,87 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
         broker, PROCESS_ID, PARTITION_COUNT);
   }
 
+  @Test
+  void shouldRestoreEveryPartitionOfABackupTakenAfterAScaleUp() throws Exception {
+    // given - a backup taken after the cluster was scaled up from 2 to 3 partitions
+    final List<Long> backedUp = new ArrayList<>();
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstances(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+    }
+    backupId = takeAndAwaitBackup();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.backups(backupId));
+
+    // then - all 3 partitions are restored, with the data from before and after the scale up
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionOfATimeRangeAfterAScaleUp() throws Exception {
+    // given - a time range whose backups were all taken after the cluster was scaled up
+    final List<Long> backedUp = new ArrayList<>();
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstances(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+      takeAndAwaitBackup();
+      to = currentTime(broker);
+
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+      takeAndAwaitBackup();
+    }
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.timeRange(from, to));
+
+    // then - all 3 partitions are restored up to `to`
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  private void assertRestoredEveryPartitionAfterAScaleUp() {
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        SCALED_PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var clusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the scaled up partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    clusterActuator, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, SCALED_PARTITION_COUNT);
+  }
+
   /**
    * Restores as requested and leaves the broker running and ready for verification (e.g. by
    * restarting it, for the standalone path, or by completing an in-process restore change plan and
