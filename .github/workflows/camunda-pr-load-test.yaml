@@ -395,25 +395,24 @@ jobs:
             });
 
             let comment = `## Profiling Results - ${storageType} - ${process.env.PROTOCOL}\n\n`;
-            comment += 'The benchmark has been profiled with the following events:\n\n';
-            comment += '| Event | Pod | Artifact |\n';
-            comment += '|-------|-----|----------|\n';
+            comment += 'The benchmark has been profiled on the following pods:\n\n';
+            comment += '| Pod | Artifact |\n';
+            comment += '|-----|----------|\n';
 
-            const artifactPrefix = `flamegraph-${storageType}`;
-            const regex = new RegExp(artifactPrefix + '-(\\w+)-(\\w+-\\d+)');
+            // profile-load-test.yml names artifacts flamegraph-<name>-<date>-<pod>.
+            const regex = /^flamegraph-.*-(camunda-\d+)$/;
             artifacts.forEach(artifact => {
               const match = artifact.match(regex);
               if (match) {
-                const event = match[1];
-                const pod = match[2];
+                const pod = match[1];
 
                 // Find the artifact ID for this artifact name
                 const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
                 if (artifactInfo) {
                   const downloadUrl = `${runURL}/artifacts/${artifactInfo.id}`;
-                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
+                  comment += `| ${pod} | [Download](${downloadUrl}) |\n`;
                 } else {
-                  comment += `| ${event} | ${pod} | N/A |\n`;
+                  comment += `| ${pod} | N/A |\n`;
                 }
               }
             });
