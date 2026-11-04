@@ -36,6 +36,15 @@ components:
       allOf:
         - $ref: "#/components/schemas/LongKey"
 
+    TimerKey:
+      description: System-generated key for a timer.
+      format: TimerKey
+      x-semantic-type: TimerKey
+      example: "2251799813687123"
+      type: string
+      allOf:
+        - $ref: "#/components/schemas/LongKey"
+
     UserTaskKey:
       description: System-generated key for a user task.
       format: UserTaskKey

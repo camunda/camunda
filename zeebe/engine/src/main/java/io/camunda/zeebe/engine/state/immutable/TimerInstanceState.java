@@ -29,6 +29,14 @@ public interface TimerInstanceState {
   TimerInstance get(long elementInstanceKey, long timerKey);
 
   /**
+   * Returns the timer with the given key, or {@code null} if there is none. Used by the public
+   * trigger-timer command, which addresses a timer by its key alone.
+   *
+   * <p>NOTE: the returned timer is shared and will be mutated on the next state access.
+   */
+  TimerInstance getByKey(long timerKey);
+
+  /**
    * Resolves a held timer by its owning process instance and the BPMN element id of its catch
    * event. Only held timers are considered, so scheduled (non-held) timers and unknown elements
    * resolve to {@link HeldTimerResolution.Status#NOT_FOUND}. When more than one held timer matches

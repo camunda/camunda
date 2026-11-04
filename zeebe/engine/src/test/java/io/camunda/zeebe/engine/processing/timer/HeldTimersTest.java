@@ -188,6 +188,62 @@ public final class HeldTimersTest {
   }
 
   @Test
+  public void shouldFireOrdinaryTimerWhenTriggeredByKey() {
+    // given an ordinary instance whose timer is not due yet
+    final String processId = deployTimerCatchProcess();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final Record<TimerRecordValue> created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when a client-issued command addresses the timer by its key, as
+    // POST /v2/timers/{timerKey}/trigger does
+    final var command =
+        RecordToWrite.command().timer(TimerIntent.TRIGGER, triggerByKey()).key(created.getKey());
+    command.recordMetadata().requestId(1L).requestStreamId(1);
+    ENGINE.writeRecords(command);
+
+    // then the timer fires without its due date passing, completing the instance
+    final Record<TimerRecordValue> triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(triggered.getKey()).isEqualTo(created.getKey());
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+  }
+
+  @Test
+  public void shouldRejectTriggerForUnknownTimerKey() {
+    // when a client-issued command addresses a timer key that does not exist
+    final var command =
+        RecordToWrite.command().timer(TimerIntent.TRIGGER, triggerByKey()).key(888_888L);
+    command.recordMetadata().requestId(1L).requestStreamId(1);
+    ENGINE.writeRecords(command);
+
+    // then the command is rejected as not found
+    final Record<TimerRecordValue> rejection =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+            .onlyCommandRejections()
+            .filter(r -> r.getKey() == 888_888L)
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+  }
+
+  private static TimerRecord triggerByKey() {
+    return new TimerRecord()
+        .setElementInstanceKey(-1L)
+        .setProcessInstanceKey(-1L)
+        .setProcessDefinitionKey(-1L)
+        .setDueDate(-1L)
+        .setRepetitions(0)
+        .setTargetElementId(BufferUtil.wrapString(""));
+  }
+
+  @Test
   public void shouldRejectTriggerForUnknownProcessElement() {
     // given a deployed process but no held timer for the process instance below
     deployTimerCatchProcess();

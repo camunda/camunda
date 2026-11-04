@@ -169,6 +169,9 @@ import io.camunda.gateway.protocol.model.TenantResult;
 import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
 import io.camunda.gateway.protocol.model.TenantUserResult;
 import io.camunda.gateway.protocol.model.TenantUserSearchResult;
+import io.camunda.gateway.protocol.model.TimerResult;
+import io.camunda.gateway.protocol.model.TimerSearchQueryResult;
+import io.camunda.gateway.protocol.model.TimerStateEnum;
 import io.camunda.gateway.protocol.model.TimerWaitStateDetails;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
@@ -256,6 +259,9 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -711,6 +717,37 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toElementInstanceWaitStateResult)
                 .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  public static TimerSearchQueryResult toTimerSearchQueryResult(
+      final SearchQueryResult<WaitStateEntity> result) {
+    return TimerSearchQueryResult.Builder.create()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(items -> items.stream().map(SearchQueryResponseMapper::toTimerResult).toList())
+                .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  private static TimerResult toTimerResult(final WaitStateEntity item) {
+    final var timer = (WaitStateTimerDetails) item.details();
+    return TimerResult.Builder.create()
+        .timerKey(keyToString(item.waitStateKey()))
+        .processDefinitionId(item.bpmnProcessId())
+        .processInstanceKey(keyToString(item.processInstanceKey()))
+        .elementId(item.elementId())
+        .elementInstanceKey(keyToString(item.elementInstanceKey()))
+        .state(TimerStateEnum.CREATED)
+        .tenantId(item.tenantId())
+        .dueDate(
+            timer.dueDate() == null
+                ? null
+                : formatDate(
+                    OffsetDateTime.ofInstant(
+                        Instant.ofEpochMilli(timer.dueDate()), ZoneOffset.UTC)))
+        .repetitions(timer.repetitions())
         .build();
   }
 

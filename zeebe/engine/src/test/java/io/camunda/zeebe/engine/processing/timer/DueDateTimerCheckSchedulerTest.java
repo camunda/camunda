@@ -241,6 +241,11 @@ class DueDateTimerCheckSchedulerTest {
     }
 
     @Override
+    public TimerInstance getByKey(final long timerKey) {
+      return null;
+    }
+
+    @Override
     public HeldTimerResolution resolveHeldByProcessElement(
         final long processInstanceKey, final org.agrona.DirectBuffer elementId) {
       return HeldTimerResolution.notFound();

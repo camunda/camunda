@@ -416,7 +416,12 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // Reverse lookup processInstanceKey -> runScope, written alongside the scoped lock above so the
   // lock can be removed on completion/termination without carrying the run scope on the completing
   // ProcessInstanceRecord. Present only for run-scoped message-start instances.
-  MESSAGE_PROCESS_INSTANCE_RUN_SCOPE(168, PARTITION_LOCAL);
+  MESSAGE_PROCESS_INSTANCE_RUN_SCOPE(168, PARTITION_LOCAL),
+
+  // timerKey -> elementInstanceKey, so the public trigger command can address a timer by its key
+  // alone (POST /v2/timers/{timerKey}/trigger). Timers are otherwise keyed by
+  // (elementInstanceKey, timerKey).
+  TIMER_ELEMENT_INSTANCE_BY_KEY(169, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

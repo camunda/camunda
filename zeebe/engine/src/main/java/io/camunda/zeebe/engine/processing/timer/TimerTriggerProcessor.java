@@ -110,10 +110,11 @@ public final class TimerTriggerProcessor
   @Override
   public void processRecord(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();
-    // A client-issued trigger command (public REST endpoint) addresses a held timer by
-    // (processInstanceKey, elementId); a scheduler-issued command carries the full value keyed by
-    // the timer key. For the former we resolve the held timer, hydrate the command value from it,
-    // authorize the caller, and use the resolved timer key for the remainder of processing.
+    // A client-issued trigger command (public REST endpoint) addresses a timer either by its key
+    // or, for a held timer, by (processInstanceKey, elementId); a scheduler-issued command carries
+    // the full value keyed by the timer key. For the former we resolve the timer, hydrate the
+    // command value from it, authorize the caller, and use the resolved timer key for the remainder
+    // of processing.
     final long timerKey;
     if (record.hasRequestMetadata()) {
       final var resolvedTimerKey = resolveAndAuthorizeExternalTrigger(record);
@@ -202,36 +203,44 @@ public final class TimerTriggerProcessor
   private Long resolveAndAuthorizeExternalTrigger(final TypedRecord<TimerRecord> record) {
     final var command = record.getValue();
     final var processInstanceKey = command.getProcessInstanceKey();
-    final var elementId = command.getTargetElementIdBuffer();
-    final var elementIdString = BufferUtil.bufferAsString(elementId);
 
-    final var resolution =
-        timerInstanceState.resolveHeldByProcessElement(processInstanceKey, elementId);
-    switch (resolution.status()) {
-      case NOT_FOUND -> {
-        reject(
-            record,
-            RejectionType.NOT_FOUND,
-            NO_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString));
+    final TimerInstance stored;
+    final String notFoundMessage;
+    if (processInstanceKey < 0) {
+      // addressed by timer key (POST /v2/timers/{timerKey}/trigger): any timer, held or not
+      notFoundMessage = NO_TIMER_FOUND_MESSAGE.formatted(record.getKey());
+      stored = timerInstanceState.getByKey(record.getKey());
+      if (stored == null) {
+        reject(record, RejectionType.NOT_FOUND, notFoundMessage);
         return null;
       }
-      case AMBIGUOUS -> {
-        reject(
-            record,
-            RejectionType.INVALID_STATE,
-            AMBIGUOUS_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString));
-        return null;
-      }
-      default -> {
-        // FOUND: fall through to authorization
+    } else {
+      final var elementId = command.getTargetElementIdBuffer();
+      final var elementIdString = BufferUtil.bufferAsString(elementId);
+      notFoundMessage = NO_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString);
+
+      final var resolution =
+          timerInstanceState.resolveHeldByProcessElement(processInstanceKey, elementId);
+      switch (resolution.status()) {
+        case NOT_FOUND -> {
+          reject(record, RejectionType.NOT_FOUND, notFoundMessage);
+          return null;
+        }
+        case AMBIGUOUS -> {
+          reject(
+              record,
+              RejectionType.INVALID_STATE,
+              AMBIGUOUS_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString));
+          return null;
+        }
+        default -> stored = resolution.timer();
       }
     }
 
-    final var held = resolution.timer();
-    final long timerKey = held.getKey();
+    final long timerKey = stored.getKey();
     // hydrate before authorization: reading the shared timer instance now avoids any later state
     // access mutating it, and lets the authorization check use the command's own bpmnProcessId.
-    hydrateFromStoredTimer(command, held);
+    hydrateFromStoredTimer(command, stored);
 
     final var isAuthorized =
         cslCheck.checkAuthorizationAndTenant(
@@ -250,10 +259,8 @@ public final class TimerTriggerProcessor
                 AuthorizationResourceType.PROCESS_DEFINITION),
             command.getTenantId(),
             // NOT_FOUND, not FORBIDDEN: a caller outside the owning tenant must not be able to tell
-            // a held timer it may not touch from one that does not exist.
-            new Rejection(
-                RejectionType.NOT_FOUND,
-                NO_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString)));
+            // a timer it may not touch from one that does not exist.
+            new Rejection(RejectionType.NOT_FOUND, notFoundMessage));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       reject(record, rejection.type(), rejection.reason());

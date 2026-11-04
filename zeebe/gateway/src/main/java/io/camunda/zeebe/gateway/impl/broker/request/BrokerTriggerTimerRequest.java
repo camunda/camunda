@@ -35,6 +35,25 @@ public final class BrokerTriggerTimerRequest extends BrokerExecuteCommand<TimerR
         .setRepetitions(0);
   }
 
+  private BrokerTriggerTimerRequest(final long timerKey) {
+    super(ValueType.TIMER, TimerIntent.TRIGGER);
+    // Route the command to the partition owning the timer (encoded in the timer key).
+    request.setKey(timerKey);
+    // A process instance key of -1 tells the engine the timer is addressed by its key; it
+    // hydrates the remaining fields from the stored timer.
+    requestDto
+        .setProcessInstanceKey(-1L)
+        .setTargetElementId(BufferUtil.wrapString(""))
+        .setElementInstanceKey(-1L)
+        .setProcessDefinitionKey(-1L)
+        .setDueDate(-1L)
+        .setRepetitions(0);
+  }
+
+  public static BrokerTriggerTimerRequest byTimerKey(final long timerKey) {
+    return new BrokerTriggerTimerRequest(timerKey);
+  }
+
   @Override
   public TimerRecord getRequestWriter() {
     return requestDto;

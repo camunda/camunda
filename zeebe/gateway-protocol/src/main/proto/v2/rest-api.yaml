@@ -501,6 +501,10 @@ paths:
     $ref: "tenants.yaml#/paths/~1tenants~1{tenantId}~1users~1{username}"
 
   # Cluster endpoints
+  /timers/search:
+    $ref: "timers.yaml#/paths/~1timers~1search"
+  /timers/{timerKey}/trigger:
+    $ref: "timers.yaml#/paths/~1timers~1{timerKey}~1trigger"
   /topology:
     $ref: "cluster.yaml#/paths/~1topology"
   /mode:

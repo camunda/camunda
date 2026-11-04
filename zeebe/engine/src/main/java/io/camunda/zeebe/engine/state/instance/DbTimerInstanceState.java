@@ -51,6 +51,12 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>>
       heldTimerByProcessInstanceKey;
 
+  // timerKey -> elementInstanceKey, populated for every timer so the public trigger command can
+  // address a timer by its key alone
+  private final ColumnFamily<DbLong, DbLong> elementInstanceByTimerKeyColumnFamily;
+  private final DbLong indexedTimerKey;
+  private final DbLong indexedElementInstanceKey;
+
   private long nextDueDate;
 
   public DbTimerInstanceState(
@@ -89,6 +95,15 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
             transactionContext,
             heldTimerByProcessInstanceKey,
             DbNil.INSTANCE);
+
+    indexedTimerKey = new DbLong();
+    indexedElementInstanceKey = new DbLong();
+    elementInstanceByTimerKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TIMER_ELEMENT_INSTANCE_BY_KEY,
+            transactionContext,
+            indexedTimerKey,
+            indexedElementInstanceKey);
   }
 
   @Override
@@ -97,6 +112,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
 
     timerInstanceColumnFamily.insert(elementAndTimerKey, timer);
+
+    indexedTimerKey.wrapLong(timer.getKey());
+    indexedElementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    elementInstanceByTimerKeyColumnFamily.upsert(indexedTimerKey, indexedElementInstanceKey);
 
     if (timer.isHeld()) {
       // a held timer is kept out of the due-date index so the scheduler never fires it; it fires
@@ -123,6 +142,9 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     wrapHeldKey(timer);
     heldTimerByProcessInstanceColumnFamily.deleteIfExists(heldTimerByProcessInstanceKey);
+
+    indexedTimerKey.wrapLong(timer.getKey());
+    elementInstanceByTimerKeyColumnFamily.deleteIfExists(indexedTimerKey);
   }
 
   private void wrapHeldKey(final TimerInstance timer) {
@@ -212,6 +234,16 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
+  }
+
+  @Override
+  public TimerInstance getByKey(final long timerKey) {
+    indexedTimerKey.wrapLong(timerKey);
+    final var elementInstance = elementInstanceByTimerKeyColumnFamily.get(indexedTimerKey);
+    if (elementInstance == null) {
+      return null;
+    }
+    return get(elementInstance.getValue(), timerKey);
   }
 
   @Override

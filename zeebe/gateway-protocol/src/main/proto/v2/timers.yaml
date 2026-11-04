@@ -1,6 +1,99 @@
 ## Endpoint definitions
 
 paths:
+  /timers/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Timer
+      operationId: searchTimers
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search timers
+      description: |
+        Searches the timers that process instances wait on: intermediate catch events, boundary
+        events and event sub-process start events. Only timers in state `CREATED` are returned.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimerSearchQuery"
+      responses:
+        "200":
+          description: The timer search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerSearchQueryResult"
+        "400":
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
+        "401":
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
+        "500":
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
+
+  /timers/{timerKey}/trigger:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Timer
+      operationId: triggerTimerByKey
+      x-required-permissions:
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: UPDATE_PROCESS_INSTANCE,
+          }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Trigger timer by key
+      description: |
+        Fires the timer now, as if its due date had arrived. For a cycle timer, the next repetition
+        is scheduled as a new timer with a new key. The cluster clock is not changed.
+      parameters:
+        - name: timerKey
+          in: path
+          required: true
+          description: The key of the timer to trigger.
+          schema:
+            $ref: "keys.yaml#/components/schemas/TimerKey"
+      responses:
+        "204":
+          description: The timer fired.
+        "400":
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
+        "401":
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
+        "404":
+          description: No timer with this key is in state `CREATED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: The timer can no longer fire, for example because its element was left.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
+        "503":
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
+
   /process-instances/{processInstanceKey}/timers/trigger:
     post:
       x-eventually-consistent: false
@@ -66,6 +159,96 @@ paths:
 
 components:
   schemas:
+    TimerSearchQuery:
+      description: Timer search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryRequest"
+      properties:
+        filter:
+          description: The timer search filter.
+          allOf:
+            - $ref: "#/components/schemas/TimerFilter"
+
+    TimerFilter:
+      description: Timer search filter. All properties match exactly.
+      type: object
+      additionalProperties: false
+      properties:
+        processInstanceKey:
+          $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        elementInstanceKey:
+          $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        elementId:
+          $ref: "identifiers.yaml#/components/schemas/ElementId"
+        state:
+          $ref: "#/components/schemas/TimerStateEnum"
+
+    TimerStateEnum:
+      description: The state of a timer.
+      type: string
+      enum:
+        - CREATED
+        - TRIGGERED
+        - CANCELED
+
+    TimerSearchQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching timers.
+          type: array
+          items:
+            $ref: "#/components/schemas/TimerResult"
+
+    TimerResult:
+      description: A timer a process instance waits on.
+      type: object
+      required:
+        - timerKey
+        - processDefinitionId
+        - processInstanceKey
+        - elementId
+        - elementInstanceKey
+        - state
+        - tenantId
+      properties:
+        timerKey:
+          $ref: "keys.yaml#/components/schemas/TimerKey"
+        processDefinitionId:
+          $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+        processInstanceKey:
+          $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        elementId:
+          description: The id of the timer event.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        elementInstanceKey:
+          description: |
+            The element instance that waits: the catch event, the host of a boundary event, or the
+            scope of an event sub-process.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        state:
+          $ref: "#/components/schemas/TimerStateEnum"
+        dueDate:
+          description: When the timer fires on its own.
+          type: string
+          format: date-time
+          nullable: true
+        repetitions:
+          description: Remaining repetitions of a cycle timer; -1 for an unbounded cycle.
+          type: integer
+          format: int32
+          nullable: true
+        tenantId:
+          $ref: "identifiers.yaml#/components/schemas/TenantId"
+
     TimerTriggerRequest:
       type: object
       additionalProperties: false
