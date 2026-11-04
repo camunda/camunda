@@ -1,6 +1,51 @@
 plugins { id("buildlogic.server-conventions") }
 
-sourceSets { main { java { srcDir("src/build") } } }
+// Build-time tooling (GenerateDefaults) that is run against the Spring configuration metadata. It is
+// kept out of `main` so it is not packaged in the module jar.
+val buildTools =
+  sourceSets.create("build") {
+    java.srcDir("src/build")
+    compileClasspath += sourceSets["main"].output
+    runtimeClasspath += output + compileClasspath
+  }
+
+// Inherit the main dependencies (and the BOM constraints applied to `implementation`).
+configurations.named(buildTools.implementationConfigurationName) {
+  extendsFrom(configurations.implementation.get())
+}
+
+sourceSets.named("test") {
+  compileClasspath += buildTools.output
+  runtimeClasspath += buildTools.output
+}
+
+// Mirrors dist's exec:java@generate-default-config / @verify-default-config. Intentionally not wired
+// into assemble/check, like the Maven executions bound to phase=none.
+val defaultsFile = rootProject.layout.projectDirectory.file("dist/src/main/config/defaults.yaml")
+val metadataFile =
+  layout.buildDirectory.file("classes/java/main/META-INF/spring-configuration-metadata.json")
+
+tasks.register<JavaExec>("generateDefaultConfig") {
+  group = "build tools"
+  description = "Regenerates dist/src/main/config/defaults.yaml from the Spring configuration metadata"
+  classpath = buildTools.runtimeClasspath
+  mainClass.set("io.camunda.configuration.GenerateDefaults")
+  dependsOn(tasks.named("compileJava"))
+  inputs.file(metadataFile)
+  outputs.file(defaultsFile)
+  args(metadataFile.get().asFile.absolutePath, defaultsFile.asFile.absolutePath)
+}
+
+tasks.register<JavaExec>("verifyDefaultConfig") {
+  group = "verification"
+  description = "Verifies dist/src/main/config/defaults.yaml is up to date with the Spring metadata"
+  classpath = buildTools.runtimeClasspath
+  mainClass.set("io.camunda.configuration.GenerateDefaults")
+  dependsOn(tasks.named("compileJava"))
+  inputs.file(metadataFile)
+  inputs.file(defaultsFile)
+  args(metadataFile.get().asFile.absolutePath, defaultsFile.asFile.absolutePath, "--verify")
+}
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
