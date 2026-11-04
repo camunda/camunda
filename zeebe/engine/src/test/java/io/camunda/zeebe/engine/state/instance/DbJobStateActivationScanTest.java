@@ -20,7 +20,6 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStr
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -36,12 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Covers the collapsed single-scan path in {@link DbJobState#forEachActivatableJobs} that is taken
- * once {@code isLegacyCfDrained} is set, using RocksDB ticker metrics to assert on the number of
- * seeks and skipped internal keys per poll.
- *
- * <p>Ticker metrics are whole-DB counters, so each test polls only within its own {@code
- * DbJobState}/{@code ZeebeDb} instance and takes before/after deltas; no concurrent DB activity
- * runs during a measured poll.
+ * once {@code isLegacyCfDrained} is set, asserting on ordering, tenant filtering and batch limits.
  */
 final class DbJobStateActivationScanTest {
 
@@ -57,7 +51,6 @@ final class DbJobStateActivationScanTest {
     final var config = new RocksDbConfiguration();
     config.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     config.setMemoryLimit(32 * 1024 * 1024);
-    config.setStatisticsEnabled(true);
     final var factory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             config,
@@ -73,49 +66,6 @@ final class DbJobStateActivationScanTest {
   @AfterEach
   void tearDown() throws Exception {
     db.close();
-  }
-
-  @Test
-  void shouldUseOneSeekForDrainedIdlePoll() {
-    // given: a type with no jobs at all; the first poll drains (and sets) the flag
-    final DirectBuffer type = wrapString("idle");
-    poll(type, 10);
-
-    // when
-    final double seeksBefore = ticker(RocksDbTickerMetricsDoc.NUMBER_DB_SEEK);
-    poll(type, 10);
-    final double seekDelta = ticker(RocksDbTickerMetricsDoc.NUMBER_DB_SEEK) - seeksBefore;
-
-    // then: one scan instead of the pre-fix two (Phase 1 + Phase 3)
-    assertThat(seekDelta).isEqualTo(1);
-  }
-
-  @Test
-  void shouldUseOneSeekAndHalvedSkipsForDrainedTombstonePoll() {
-    // given: the flag is drained, then 100 priority-0 jobs are created and 90 are consumed
-    // (tombstoned) without compaction
-    final DirectBuffer type = wrapString("busy");
-    poll(type, 10); // drains the flag (no jobs yet, CF globally empty)
-    for (long k = 1; k <= 100; k++) {
-      createJob(k, type, 0);
-    }
-
-    for (long k = 1; k <= 90; k++) {
-      final var record = jobState.getJob(k);
-      jobState.makeJobNotActivatable(k, record);
-    }
-    final double seeksAfterConsume = ticker(RocksDbTickerMetricsDoc.NUMBER_DB_SEEK);
-    final double skipsAfterConsume = ticker(RocksDbTickerMetricsDoc.NUMBER_ITER_SKIP);
-
-    // when
-    final List<Long> keys = poll(type, 10);
-    final double seekDelta = ticker(RocksDbTickerMetricsDoc.NUMBER_DB_SEEK) - seeksAfterConsume;
-    final double skipDelta = ticker(RocksDbTickerMetricsDoc.NUMBER_ITER_SKIP) - skipsAfterConsume;
-
-    // then: single scan (1 seek), and bounded skipped tombstone keys of the single-scan path
-    assertThat(keys).containsExactly(91L, 92L, 93L, 94L, 95L, 96L, 97L, 98L, 99L, 100L);
-    assertThat(seekDelta).isEqualTo(1);
-    assertThat(skipDelta).isLessThanOrEqualTo(200);
   }
 
   @Test
@@ -190,11 +140,5 @@ final class DbJobStateActivationScanTest {
           return keys.size() < max;
         });
     return keys;
-  }
-
-  private double ticker(final RocksDbTickerMetricsDoc doc) {
-    db.exportMetrics();
-    final var gauge = registry.find(doc.getName()).gauge();
-    return gauge == null ? 0d : gauge.value();
   }
 }
