@@ -12,11 +12,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 final class S3BackupConfigTest {
 
@@ -24,16 +25,6 @@ final class S3BackupConfigTest {
   private static final String VALID_SSEC_KEY =
       Base64.getEncoder()
           .encodeToString("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8));
-
-  @Test
-  void shouldParseDefaultsMode() {
-    // when
-    final var config =
-        new Builder().withBucketName("bucket").withDefaultsMode(Optional.of("in-region")).build();
-
-    // then
-    assertThat(config.defaultsMode()).hasValue(DefaultsMode.IN_REGION);
-  }
 
   @Test
   void shouldLeaveDefaultsModeUnsetByDefault() {
@@ -44,13 +35,11 @@ final class S3BackupConfigTest {
     assertThat(config.defaultsMode()).isEmpty();
   }
 
-  @Test
-  void shouldRejectUnknownDefaultsMode() {
+  @ParameterizedTest
+  @EnumSource(DefaultsMode.class)
+  void shouldMapDefaultsModeToSdkConstantWithSameName(final DefaultsMode mode) {
     // when / then
-    assertThatThrownBy(
-            () -> new Builder().withBucketName("bucket").withDefaultsMode(Optional.of("nope")))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Unknown defaults mode 'nope'");
+    assertThat(mode.toSdk().name()).isEqualTo(mode.name());
   }
 
   @Test

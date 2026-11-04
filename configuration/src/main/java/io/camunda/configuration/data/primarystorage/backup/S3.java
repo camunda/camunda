@@ -9,6 +9,7 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -354,17 +355,5 @@ public class S3 {
 
   public void setSsecKey(final String ssecKey) {
     this.ssecKey = ssecKey;
-  }
-
-  /**
-   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
-   * client for mobile applications, which a broker is not.
-   */
-  public enum DefaultsMode {
-    LEGACY,
-    STANDARD,
-    CROSS_REGION,
-    IN_REGION,
-    AUTO
   }
 }

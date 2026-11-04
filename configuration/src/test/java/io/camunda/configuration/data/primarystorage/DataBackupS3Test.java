@@ -13,6 +13,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -764,7 +765,8 @@ public class DataBackupS3Test {
 
     @Test
     void shouldSetDefaultsMode() {
-      assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode()).hasValue("STANDARD");
+      assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode())
+          .hasValue(DefaultsMode.STANDARD);
     }
   }
 }

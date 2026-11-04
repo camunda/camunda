@@ -14,6 +14,7 @@ dependencies {
   implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-backup-store-azure"))
+  implementation(project(":zeebe-backup-store-s3"))
   implementation(project(":zeebe-db"))
   implementation(project(":camunda-db-rdbms"))
   implementation(project(":zeebe-gateway-rest"))

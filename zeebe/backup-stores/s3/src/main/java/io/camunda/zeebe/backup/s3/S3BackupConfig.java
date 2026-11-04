@@ -9,13 +9,10 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.common.BackupStorePaths;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Optional;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.jspecify.annotations.Nullable;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 
 /**
  * Holds configuration for the {@link S3BackupStore S3 Backup Store}.
@@ -223,24 +220,9 @@ public record S3BackupConfig(
       return this;
     }
 
-    /**
-     * @param defaultsMode name of a {@link DefaultsMode}, e.g. {@code standard} or {@code
-     *     in-region}; case-insensitive and accepting '-' for '_'
-     */
-    public Builder withDefaultsMode(final Optional<String> defaultsMode) {
-      this.defaultsMode = defaultsMode.map(Builder::parseDefaultsMode);
+    public Builder withDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
+      this.defaultsMode = defaultsMode;
       return this;
-    }
-
-    private static DefaultsMode parseDefaultsMode(final String value) {
-      try {
-        return DefaultsMode.valueOf(value.trim().toUpperCase(Locale.ROOT).replace('-', '_'));
-      } catch (final IllegalArgumentException e) {
-        throw new IllegalArgumentException(
-            "Unknown defaults mode '%s', expected one of %s"
-                .formatted(value, Arrays.toString(DefaultsMode.values())),
-            e);
-      }
     }
 
     public S3BackupConfig build() {
@@ -263,6 +245,28 @@ public record S3BackupConfig(
           Optional.ofNullable(readTimeout),
           Optional.ofNullable(writeTimeout),
           defaultsMode);
+    }
+  }
+
+  /**
+   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
+   * client for mobile applications, which a broker is not.
+   */
+  public enum DefaultsMode {
+    LEGACY,
+    STANDARD,
+    CROSS_REGION,
+    IN_REGION,
+    AUTO;
+
+    public software.amazon.awssdk.awscore.defaultsmode.DefaultsMode toSdk() {
+      return switch (this) {
+        case LEGACY -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.LEGACY;
+        case STANDARD -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.STANDARD;
+        case CROSS_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.CROSS_REGION;
+        case IN_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.IN_REGION;
+        case AUTO -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.AUTO;
+      };
     }
   }
 
