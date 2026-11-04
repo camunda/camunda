@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -18,6 +20,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -162,7 +168,7 @@ public final class JobSuspensionGateTest {
   }
 
   @Test
-  public void shouldBufferAndDrainJobYieldWhileSuspended() {
+  public void shouldParkJobOnYieldWhileSuspended() {
     // given
     final String jobType = Strings.newRandomValidBpmnId();
     final String processId = Strings.newRandomValidBpmnId();
@@ -178,16 +184,64 @@ public final class JobSuspensionGateTest {
     // when
     ENGINE.writeRecords(RecordToWrite.command().job(JobIntent.YIELD, activatedJob).key(jobKey));
 
-    // then
-    assertThat(bufferedCommandIntent(processInstanceKey)).isEqualTo(JobIntent.YIELD);
+    // then - the yield is applied right away and the job is parked, so no stale yield is left to
+    // drain on resume
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withRecordKey(jobKey)
+                .limit(r -> r.getIntent() == JobIntent.SUSPENDED)
+                .map(Record::getIntent))
+        .containsSubsequence(JobIntent.YIELDED, JobIntent.SUSPENDED);
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
 
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.YIELDED)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
+    assertThat(ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys())
+        .containsExactly(jobKey);
+  }
+
+  @Test
+  public void shouldNotParkJobOfTerminatingElementOnYieldWhileSuspended() {
+    // given - a canceling task listener keeps the interrupted user task terminating, so its job
+    // stays available while the instance is suspended
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .boundaryEvent(
+                    "boundary",
+                    b -> b.message(m -> m.name(processId).zeebeCorrelationKeyExpression("\"key\"")))
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.message().withName(processId).withCorrelationKey("key").publish();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(processId).activate();
+    final JobRecordValue activatedJob = batch.getValue().getJobs().getFirst();
+    final long jobKey = batch.getValue().getJobKeys().getFirst();
+
+    // when
+    ENGINE.writeRecords(RecordToWrite.command().job(JobIntent.YIELD, activatedJob).key(jobKey));
+
+    // then - the yielded job can be activated again while the instance is still suspended
+    RecordingExporter.jobRecords(JobIntent.YIELDED).withRecordKey(jobKey).await();
+    assertThat(ENGINE.jobs().withType(processId).activate().getValue().getJobKeys())
+        .containsExactly(jobKey);
   }
 
   @Test
@@ -217,6 +271,89 @@ public final class JobSuspensionGateTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldRejectTaskListenerJobCompleteWhileResuming() {
+    // given - the listener's follow-up user task command would be rejected while resuming
+    final String listenerType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.creating().type(listenerType)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType)
+            .getFirst();
+    seedSuspensionState(processInstanceKey, ProcessInstanceIntent.RESUMING);
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldCompleteEndListenerJobWhenInstanceEndsWhileResuming() {
+    // given - a due timer is buffered while suspended; draining it ends the instance before the
+    // resume finishes, so the end listener job is handed out while still resuming
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .zeebeEndExecutionListener(listenerType)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("task", t -> t.zeebeJobType(Strings.newRandomValidBpmnId()))
+                .endEvent()
+                .moveToNode("fork")
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1M"))
+                .endEvent("terminate", e -> e.terminate())
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    // write RESUME directly: the client's resume() waits for RESUMED, which this flow never writes
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(
+                ProcessInstanceIntent.RESUME,
+                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey))
+            .key(processInstanceKey));
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
   private static JobIntent bufferedCommandIntent(final long processInstanceKey) {
     return (JobIntent)
         ((BufferedCommandRecordValue) bufferedCommand(processInstanceKey).getValue()).getIntent();
@@ -231,5 +368,17 @@ public final class JobSuspensionGateTest {
                 ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
                     == processInstanceKey)
         .getFirst();
+  }
+
+  private static void seedSuspensionState(
+      final long processInstanceKey, final ProcessInstanceIntent intent) {
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(intent, new ProcessInstanceRecord()));
+    ENGINE.start();
   }
 }

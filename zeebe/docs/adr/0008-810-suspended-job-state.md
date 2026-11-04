@@ -88,15 +88,16 @@ re-suspends an already-activated job.**
 
 Command surface table:
 
-|                           Command                            |                                                                                          Behavior while a job is `SUSPENDED` / instance is suspended                                                                                           |
-|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ActivateJobs` (poll or stream)                              | job is absent from the index; not handed out                                                                                                                                                                                                   |
-| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob`, `Yield` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                                                                               |
-| `JobFail` (immediate retry)                                  | rejected by the gate                                                                                                                                                                                                                           |
-| `JobRecurAfterBackoff`                                       | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present                                                                            |
-| `JobTimeOut`                                                 | processed while the instance marker is present (`SuspensionBehavior.PROCESS`); after `TIMED_OUT`, if `getSuspensionState == SUSPENDED` and the job's element instance is not terminating, append `Job.SUSPENDED` instead of notifying hand-out |
-| `CancelJob`                                                  | deletes the job, same as any other state                                                                                                                                                                                                       |
-| process instance termination                                 | deletes the job, same as any other state                                                                                                                                                                                                       |
+|                       Command                       |                                                                                          Behavior while a job is `SUSPENDED` / instance is suspended                                                                                           |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ActivateJobs` (poll or stream)                     | job is absent from the index; not handed out                                                                                                                                                                                                   |
+| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                                                                               |
+| `JobFail` (immediate retry)                         | rejected by the gate                                                                                                                                                                                                                           |
+| `JobRecurAfterBackoff`                              | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present                                                                            |
+| `JobTimeOut`                                        | processed while the instance marker is present (`SuspensionBehavior.PROCESS`); after `TIMED_OUT`, if `getSuspensionState == SUSPENDED` and the job's element instance is not terminating, append `Job.SUSPENDED` instead of notifying hand-out |
+| `Yield`                                             | processed while the instance marker is present, like `JobTimeOut`; after `YIELDED`, if `getSuspensionState == SUSPENDED` and the job's element instance is not terminating, append `Job.SUSPENDED` instead of notifying hand-out.              |
+| `CancelJob`                                         | deletes the job, same as any other state                                                                                                                                                                                                       |
+| process instance termination                        | deletes the job, same as any other state                                                                                                                                                                                                       |
 
 Notes:
 
@@ -114,6 +115,10 @@ Notes:
   never finishes (#64505). A job of an element that is already terminating at suspend time, e.g.
   the canceling listener of an interrupted user task, stays available too; the flow after the
   interruption still waits for the resume.
+- Job commands are processed while `RESUMING`, so a fast worker is not rejected
+  ([#62715](https://github.com/camunda/camunda/issues/62715)). Task listener job completion is
+  still rejected, since its follow-up is a user task command, which stays rejected
+  until `ProcessInstance.RESUMED`.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
