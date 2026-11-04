@@ -164,7 +164,11 @@ test('should show a loading state while the login form is submitting', async ({n
 	await expect(loginPage.loadingButton).toBeDisabled();
 });
 
-test('should redirect to login when the API answers with an anonymous user', async ({network, page, loginPage}) => {
+test('should redirect to Operate login when the API answers with an anonymous user', async ({
+	network,
+	page,
+	loginPage,
+}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createAnonymousCurrentUser()),
@@ -179,6 +183,6 @@ test('should redirect to login when the API answers with an anonymous user', asy
 
 	await page.goto('/operate');
 
-	await expect(page).toHaveURL((url) => url.pathname === '/login');
+	await expect(page).toHaveURL('/operate/login');
 	await expect(loginPage.usernameInput).toBeVisible();
 });
