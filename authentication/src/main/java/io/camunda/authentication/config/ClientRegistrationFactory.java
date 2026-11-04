@@ -25,6 +25,11 @@ public final class ClientRegistrationFactory {
 
   private static final String DEFAULT_REDIRECT_URI = "{baseUrl}" + WebSecurityConfig.REDIRECT_URI;
 
+  /** Discovery metadata keys, per RFC 8414 §2 and OpenID Connect Session Management. */
+  private static final String END_SESSION_ENDPOINT_METADATA_KEY = "end_session_endpoint";
+
+  private static final String REVOCATION_ENDPOINT_METADATA_KEY = "revocation_endpoint";
+
   private ClientRegistrationFactory() {}
 
   public static ClientRegistration createClientRegistration(
@@ -58,14 +63,6 @@ public final class ClientRegistrationFactory {
     if (configuration.getAuthorizationUri() != null) {
       builder.authorizationUri(configuration.getAuthorizationUri());
     }
-    if (configuration.getEndSessionEndpointUri() != null) {
-      // end_session_endpoint should be located in the provider metadata
-      // this will also override any other metadata provided by the builder previously
-      // there is no way to get the current builder metadata or merge into it
-      final Map<String, Object> metadata = new HashMap<>();
-      metadata.put("end_session_endpoint", configuration.getEndSessionEndpointUri());
-      builder.providerConfigurationMetadata(metadata);
-    }
     if (configuration.getTokenUri() != null) {
       builder.tokenUri(configuration.getTokenUri());
     }
@@ -89,7 +86,68 @@ public final class ClientRegistrationFactory {
       builder.userInfoUri(null);
     }
 
-    return builder.build();
+    return mergeProviderMetadata(builder.build(), registrationId, configuration);
+  }
+
+  /**
+   * Adds this registration's own endpoints to the provider metadata by build-then-rebuild, because
+   * {@code providerConfigurationMetadata} replaces the map rather than merging into it: writing an
+   * explicitly configured {@code end_session_endpoint} on the builder used to drop every endpoint
+   * issuer discovery had found, {@code revocation_endpoint} among them.
+   */
+  private static ClientRegistration mergeProviderMetadata(
+      final ClientRegistration built,
+      final String registrationId,
+      final OidcAuthenticationConfiguration configuration) {
+    final Map<String, Object> discovered = built.getProviderDetails().getConfigurationMetadata();
+    final Map<String, Object> merged = new HashMap<>(discovered);
+    if (configuration.getEndSessionEndpointUri() != null) {
+      merged.put(END_SESSION_ENDPOINT_METADATA_KEY, configuration.getEndSessionEndpointUri());
+    }
+    applyRevocationEndpoint(merged, registrationId, configuration);
+    return merged.equals(discovered)
+        ? built
+        : ClientRegistration.withClientRegistration(built)
+            .providerConfigurationMetadata(merged)
+            .build();
+  }
+
+  /**
+   * Writes, or removes, this registration's {@code revocation_endpoint}.
+   *
+   * <p>Removal is the default path, and it is why the key is stripped here rather than tested at
+   * logout: the endpoint normally arrives from issuer discovery (Keycloak, Okta and Auth0 all
+   * publish one), so without this every discovery-based deployment would gain refresh-token
+   * revocation on upgrade, which is a logout behaviour change nobody asked for in a patch release.
+   * 8.10 holds the same default through its own {@code OidcRevocationDefaultPostProcessor}, so an
+   * 8.9 deployment does not lose revocation by upgrading. Stripping the key keeps {@link
+   * RefreshTokenRevocationLogoutHandler} asking one question, and reuses the no-op path it already
+   * has for a provider that publishes none.
+   *
+   * <p>An operator opts in per provider with {@code revocation-enabled=true}. Disabling still wins
+   * over a configured URI: setting both is a contradiction, and the flag is the more specific
+   * statement. It is logged, because silently ignoring a value someone configured on purpose is
+   * otherwise an afternoon lost.
+   */
+  private static void applyRevocationEndpoint(
+      final Map<String, Object> merged,
+      final String registrationId,
+      final OidcAuthenticationConfiguration configuration) {
+    final var configuredUri = configuration.getRevocationEndpointUri();
+    if (configuration.isRevocationEnabled()) {
+      if (configuredUri != null && !configuredUri.isBlank()) {
+        merged.put(REVOCATION_ENDPOINT_METADATA_KEY, configuredUri);
+      }
+      return;
+    }
+    if (configuredUri != null && !configuredUri.isBlank()) {
+      LOGGER.warn(
+          "OIDC registration '{}' sets both revocation-endpoint-uri and revocation-enabled=false;"
+              + " the configured URI is ignored and no refresh token will be revoked. Remove one of"
+              + " the two to make the intent explicit.",
+          RefreshTokenRevocationLogoutHandler.sanitizeForLog(registrationId));
+    }
+    merged.remove(REVOCATION_ENDPOINT_METADATA_KEY);
   }
 
   private static void requireSupportedClientAuthenticationMethod(
