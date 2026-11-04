@@ -49,7 +49,8 @@ public class AdminClientConfigController {
 
   private final CamundaSecurityLibraryProperties cslProperties;
   private final PhysicalTenantCamundaGroups camundaGroups;
-  // The groups mode is the only value that differs between physical tenants.
+  // Only the groups mode is resolved per physical tenant, so the script is built once with each
+  // value. The additional IdP still comes from the cluster configuration (#68209).
   private final String clientConfigWithCamundaGroups;
   private final String clientConfigWithoutCamundaGroups;
   private final ObjectMapper objectMapper;
