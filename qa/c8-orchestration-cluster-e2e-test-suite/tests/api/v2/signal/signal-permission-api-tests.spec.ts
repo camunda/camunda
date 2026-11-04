@@ -227,14 +227,20 @@ test.describe.serial('Signal Permission API', () => {
         data: {signalName: catchSignalName},
       });
       await assertStatusCode(res, 200);
-      for (const processInstanceKey of catchProcessInstanceKeys) {
-        await searchElementInstanceByElementIdAndState(
-          request,
-          processInstanceKey,
-          'catchSignal',
-          'COMPLETED',
-        );
-      }
+      const search = await request.post(buildUrl('/element-instances/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId: catchProcessDefinitionId,
+            elementId: 'catchSignal',
+            state: 'COMPLETED',
+          },
+        },
+      });
+      await assertStatusCode(search, 200);
+      expect((await search.json()).items).toHaveLength(
+        catchProcessInstanceKeys.length,
+      );
     }).toPass(defaultAssertionOptions);
   });
 });
