@@ -7,6 +7,8 @@
  */
 package io.camunda.secretstore.env;
 
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
+import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -22,20 +24,16 @@ import org.junit.jupiter.api.Test;
 class EnvVarSecretStoreTest {
 
   @Test
-  void shouldResolveFromSystemEnvironmentSnapshot() {
-    // when
-    try (final SecretStore store = EnvVarSecretStore.fromSystemEnvironment("SECRET_")) {
+  void shouldNotResolveAnUnprefixedVariableFromTheSystemEnvironment() {
+    // given a store over the real environment, where PATH is set but carries no prefix
+    try (final SecretStore store =
+        EnvVarSecretStore.fromConfig(new EnvVarSecretStoreConfig("SECRET_", System.getenv()))) {
+
+      // when
+      final var result = store.resolve(Set.of("PATH"));
 
       // then
-      assertThat(store.resolve(Set.of("PATH")))
-          .hasEntrySatisfying(
-              "PATH",
-              entry ->
-                  assertThat(entry)
-                      .isInstanceOfSatisfying(
-                          SecretResolutionResult.Failed.class,
-                          failed ->
-                              assertThat(failed.code()).isEqualTo(SecretErrorCode.NOT_FOUND)));
+      assertFailed(result, "PATH", NOT_FOUND);
     }
   }
 
@@ -52,25 +50,188 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
-  void shouldReportEveryNameAsNotFound() {
+  void shouldResolveANameFromItsPrefixedVariable() {
     // given
-    final var store = new EnvVarSecretStore(Map.of("SECRET_DB_PASSWORD", "s3cr3t"), "SECRET_");
+    final var store = new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t"), "SECRET_");
 
     // when
-    final var result = store.resolve(Set.of("DB_PASSWORD", "API_KEY"));
+    final var result = store.resolve(Set.of("API_KEY"));
 
     // then
-    assertThat(result)
-        .containsOnlyKeys("DB_PASSWORD", "API_KEY")
-        .allSatisfy(
-            (name, entry) ->
-                assertThat(entry)
-                    .isInstanceOfSatisfying(
-                        SecretResolutionResult.Failed.class,
-                        failed -> {
-                          assertThat(failed.code()).isEqualTo(SecretErrorCode.NOT_FOUND);
-                          assertThat(failed.message()).contains(name).doesNotContain("s3cr3t");
-                        }));
+    assertResolved(result, "API_KEY", "s3cr3t");
+  }
+
+  @Test
+  void shouldReportAnEmptyValueAsNotFound() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_API_KEY", ""), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("API_KEY"));
+
+    // then
+    assertFailed(result, "API_KEY", NOT_FOUND);
+  }
+
+  @Test
+  void shouldMatchNamesExactly() {
+    // given only a lower-case variant of the name
+    final var store = new EnvVarSecretStore(Map.of("SECRET_api_key", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("API_KEY"));
+
+    // then
+    assertFailed(result, "API_KEY", NOT_FOUND);
+  }
+
+  @Test
+  void shouldNotResolveAVariableWhosePrefixDiffersInCase() {
+    // given the variable carries the prefix in lower case only
+    final var store = new EnvVarSecretStore(Map.of("secret_API_KEY", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("API_KEY"));
+
+    // then
+    assertFailed(result, "API_KEY", NOT_FOUND);
+  }
+
+  @Test
+  void shouldReturnMultiLineAndJsonValuesUnchanged() {
+    // given
+    final var pem = "-----BEGIN KEY-----\nMIIBVgIBADAN\nBgkqhkiG9w0B\n-----END KEY-----";
+    final var json = "{\"user\": \"admin\", \"password\": \"p@ss \\\"quoted\\\"\"}";
+    final var store =
+        new EnvVarSecretStore(Map.of("SECRET_TLS_KEY", pem, "SECRET_CREDENTIALS", json), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("TLS_KEY", "CREDENTIALS"));
+
+    // then
+    assertResolved(result, "TLS_KEY", pem);
+    assertResolved(result, "CREDENTIALS", json);
+  }
+
+  @Test
+  void shouldKeepATrailingNewline() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_TOKEN", "s3cr3t\n"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("TOKEN"));
+
+    // then
+    assertResolved(result, "TOKEN", "s3cr3t\n");
+  }
+
+  @Test
+  void shouldReturnANonAsciiValueUnchanged() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_PASSWORD", "pässwörd-密码"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("PASSWORD"));
+
+    // then
+    assertResolved(result, "PASSWORD", "pässwörd-密码");
+  }
+
+  @Test
+  void shouldNotResolveAVariableWithoutThePrefix() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("API_KEY", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("API_KEY"));
+
+    // then
+    assertFailed(result, "API_KEY", NOT_FOUND);
+  }
+
+  @Test
+  void shouldResolveADashedName() {
+    // given a name Docker --env-file and Kubernetes envFrom pass through unchanged
+    final var store = new EnvVarSecretStore(Map.of("SECRET_db-password", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("db-password"));
+
+    // then
+    assertResolved(result, "db-password", "s3cr3t");
+  }
+
+  @Test
+  void shouldRefuseANameOutsideTheReferenceCharset() {
+    // given variables whose names a backtick-escaped reference in a job can carry, but the secrets
+    // API cannot
+    final var store =
+        new EnvVarSecretStore(
+            Map.of("SECRET_has.dot", "s3cr3t", "SECRET_tokén", "s3cr3t", "SECRET_", "s3cr3t"),
+            "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("has.dot", "tokén", ""));
+
+    // then
+    assertFailed(result, "has.dot", INVALID_REF);
+    assertFailed(result, "tokén", INVALID_REF);
+    assertFailed(result, "", INVALID_REF);
+  }
+
+  @Test
+  void shouldResolveEachNameOfAMixedRequestOnItsOwn() {
+    // given
+    final var store =
+        new EnvVarSecretStore(
+            Map.of("SECRET_API_KEY", "s3cr3t", "SECRET_has.dot", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolve(Set.of("API_KEY", "MISSING", "has.dot"));
+
+    // then
+    assertThat(result).containsOnlyKeys("API_KEY", "MISSING", "has.dot");
+    assertResolved(result, "API_KEY", "s3cr3t");
+    assertFailed(result, "MISSING", NOT_FOUND);
+    assertFailed(result, "has.dot", INVALID_REF);
+  }
+
+  @Test
+  void shouldResolveFromStoreAsResolveDoes() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t"), "SECRET_");
+
+    // when
+    final var result = store.resolveFromStore(Set.of("API_KEY", "MISSING"));
+
+    // then
+    assertResolved(result, "API_KEY", "s3cr3t");
+    assertFailed(result, "MISSING", NOT_FOUND);
+  }
+
+  @Test
+  void shouldLookUpAValueLocally() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t"), "SECRET_");
+
+    // when
+    final var value = store.lookupLocal("API_KEY");
+
+    // then
+    assertThat(value).contains("s3cr3t");
+  }
+
+  @Test
+  void shouldLookUpNothingLocallyForAMissingOrRefusedName() {
+    // given a refused name that is nevertheless held, which the local lookup must not hand out
+    final var store =
+        new EnvVarSecretStore(Map.of("SECRET_has.dot", "s3cr3t", "SECRET_EMPTY", ""), "SECRET_");
+
+    // when / then empty rather than an exception, so the job is parked and the background
+    // resolution raises the incident
+    assertThat(store.lookupLocal("MISSING")).isEmpty();
+    assertThat(store.lookupLocal("EMPTY")).isEmpty();
+    assertThat(store.lookupLocal("has.dot")).isEmpty();
   }
 
   @Test
@@ -157,10 +318,43 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
-  void shouldRejectInvalidPrefixWhenCreatedFromSystemEnvironment() {
+  void shouldRejectInvalidPrefixWhenCreatedFromConfig() {
     // when / then
     assertThatIllegalArgumentException()
-        .isThrownBy(() -> EnvVarSecretStore.fromSystemEnvironment("ZEEBE_"))
+        .isThrownBy(
+            () ->
+                EnvVarSecretStore.fromConfig(
+                    new EnvVarSecretStoreConfig("ZEEBE_", System.getenv())))
         .withMessageContaining("reserved prefix 'ZEEBE_'");
+  }
+
+  private static void assertResolved(
+      final Map<String, SecretResolutionResult> result, final String name, final String value) {
+    assertThat(result)
+        .hasEntrySatisfying(
+            name,
+            entry ->
+                assertThat(entry)
+                    .isInstanceOfSatisfying(
+                        SecretResolutionResult.Resolved.class,
+                        resolved -> assertThat(resolved.value()).isEqualTo(value)));
+  }
+
+  private static void assertFailed(
+      final Map<String, SecretResolutionResult> result,
+      final String name,
+      final SecretErrorCode code) {
+    assertThat(result)
+        .hasEntrySatisfying(
+            name,
+            entry ->
+                assertThat(entry)
+                    .isInstanceOfSatisfying(
+                        SecretResolutionResult.Failed.class,
+                        failed -> {
+                          assertThat(failed.code()).isEqualTo(code);
+                          assertThat(failed.message()).contains(name).doesNotContain("s3cr3t");
+                          assertThat(failed.cause()).isNull();
+                        }));
   }
 }

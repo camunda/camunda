@@ -7,15 +7,17 @@
  */
 package io.camunda.secretstore.env;
 
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
+import io.camunda.secretstore.LocallyCachedSecretStore;
 import io.camunda.secretstore.SecretResolutionResult;
-import io.camunda.secretstore.SecretStore;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -26,13 +28,24 @@ import org.slf4j.LoggerFactory;
  * {@code <prefix><name>}.
  *
  * <p>The environment is snapshotted at construction, keeping only the variables that carry the
- * prefix, so the store never holds the platform's own settings or credentials. The JVM cannot see
- * changes to its own environment after start, and Kubernetes does not update a running container's
- * environment either, so rotating a secret held here requires a restart.
+ * prefix, keyed by the name that follows it, so the store never holds the platform's own settings
+ * or credentials and a name can only ever reach a prefixed variable. The JVM cannot see changes to
+ * its own environment after start, and Kubernetes does not update a running container's environment
+ * either, so rotating a secret held here requires a restart.
  *
- * <p>Reading secrets from the snapshot is not implemented yet: until then, {@link #resolve(Set)}
- * reports every name as {@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND not found} and
- * {@link #list()} returns no names.
+ * <p>Names match exactly, case included, on every OS. A variable with an empty value is not a
+ * secret and resolves as {@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND not found}. Values
+ * are returned exactly as the environment holds them, a trailing newline included, unlike the file
+ * store. A name outside {@link #NAME_PATTERN} is refused as an {@link
+ * io.camunda.secretstore.SecretErrorCode#INVALID_REF invalid reference} without a lookup, even
+ * where a variable of that name exists: Docker and Kubernetes pass names such as {@code tls.crt}
+ * unchanged, and a backtick-escaped reference in a job can carry one, but the secrets API cannot.
+ *
+ * <p>The whole snapshot is already in memory, so the store implements {@link
+ * LocallyCachedSecretStore} itself rather than sit behind a second cache: every lookup is local,
+ * and the configured cache TTL and maximum size do not apply to it.
+ *
+ * <p>Listing secret names is not implemented yet: {@link #list()} returns no names.
  *
  * <p>The prefix is mandatory, must be a {@link #PREFIX_FORMAT well-formed} variable-name prefix
  * ending in an underscore, and must not start with a {@link #RESERVED_PREFIXES reserved prefix}.
@@ -40,7 +53,14 @@ import org.slf4j.LoggerFactory;
  * database passwords, OIDC client secrets or cloud keys, through a {@code camunda.secrets.<name>}
  * reference.
  */
-public final class EnvVarSecretStore implements SecretStore {
+public final class EnvVarSecretStore implements LocallyCachedSecretStore {
+
+  /**
+   * The names this store looks up: the characters both an environment variable name and a secret
+   * reference can hold. Kept in step with the engine's and the secrets API's charset by {@code
+   * SecretReferenceCharsetSyncTest}.
+   */
+  public static final Pattern NAME_PATTERN = Pattern.compile("[\\p{Alnum}_-]+");
 
   /**
    * A prefix starts with a letter, holds only letters, digits and underscores, and ends with an
@@ -86,30 +106,36 @@ public final class EnvVarSecretStore implements SecretStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(EnvVarSecretStore.class);
 
-  private final Map<String, String> environment;
+  private final Map<String, String> secrets;
   private final String prefix;
 
   /**
-   * @throws IllegalArgumentException if the prefix is blank, malformed, or starts with a {@link
-   *     #RESERVED_PREFIXES reserved prefix}
-   */
-  public EnvVarSecretStore(final Map<String, String> environment, final String prefix) {
-    requireValidPrefix(prefix);
-    this.environment =
-        environment.entrySet().stream()
-            .filter(variable -> variable.getKey().startsWith(prefix))
-            .collect(toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-    this.prefix = prefix;
-  }
-
-  /**
-   * Creates a store over a snapshot of this process's environment.
+   * Package-private so that production code builds the store through {@link
+   * #fromConfig(EnvVarSecretStoreConfig)}, as it does every other store.
    *
    * @throws IllegalArgumentException if the prefix is blank, malformed, or starts with a {@link
    *     #RESERVED_PREFIXES reserved prefix}
    */
-  public static EnvVarSecretStore fromSystemEnvironment(final String prefix) {
-    return new EnvVarSecretStore(System.getenv(), prefix);
+  EnvVarSecretStore(final Map<String, String> environment, final String prefix) {
+    requireValidPrefix(prefix);
+    secrets =
+        environment.entrySet().stream()
+            .filter(variable -> variable.getKey().startsWith(prefix))
+            .filter(variable -> !variable.getValue().isEmpty())
+            .collect(
+                toUnmodifiableMap(
+                    variable -> variable.getKey().substring(prefix.length()), Map.Entry::getValue));
+    this.prefix = prefix;
+  }
+
+  /**
+   * Creates a store over a snapshot of the configured environment.
+   *
+   * @throws IllegalArgumentException if the prefix is blank, malformed, or starts with a {@link
+   *     #RESERVED_PREFIXES reserved prefix}
+   */
+  public static EnvVarSecretStore fromConfig(final EnvVarSecretStoreConfig config) {
+    return new EnvVarSecretStore(config.environment(), config.prefix());
   }
 
   @Override
@@ -119,14 +145,36 @@ public final class EnvVarSecretStore implements SecretStore {
     }
     LOG.debug(
         "Resolving {} secrets from environment variables prefixed '{}'", names.size(), prefix);
-    return names.stream().collect(toMap(name -> name, EnvVarSecretStore::notFound));
+    return names.stream().collect(toMap(name -> name, this::resolveOne));
+  }
+
+  @Override
+  public Map<String, SecretResolutionResult> resolveFromStore(final Set<String> names) {
+    return resolve(names);
+  }
+
+  @Override
+  public Optional<String> lookupLocal(final String name) {
+    return isValidName(name) ? Optional.ofNullable(secrets.get(name)) : Optional.empty();
   }
 
   @Override
   public List<String> list() {
     LOG.debug(
-        "Listing secrets from {} environment variables, prefixed '{}'", environment.size(), prefix);
+        "Listing secrets from {} environment variables, prefixed '{}'", secrets.size(), prefix);
     return List.of();
+  }
+
+  private SecretResolutionResult resolveOne(final String name) {
+    if (!isValidName(name)) {
+      return new SecretResolutionResult.Failed(INVALID_REF, "Invalid secret name: " + name, null);
+    }
+    final var value = secrets.get(name);
+    return value == null ? notFound(name) : new SecretResolutionResult.Resolved(value);
+  }
+
+  private static boolean isValidName(final String name) {
+    return NAME_PATTERN.matcher(name).matches();
   }
 
   private static SecretResolutionResult notFound(final String name) {
