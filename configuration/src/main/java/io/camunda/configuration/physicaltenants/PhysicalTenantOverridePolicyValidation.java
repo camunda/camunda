@@ -142,6 +142,9 @@ final class PhysicalTenantOverridePolicyValidation {
               // forward declaration — property lands with #54898
               "security.cluster-admin",
               "security.multi-tenancy",
+              // SaaS runs one organization per cluster, and per-tenant code such as the SaaS token
+              // validators reads the organization and cluster id from the root
+              "security.saas",
               "security.session",
               "security.transport-layer-security.cluster")
           .map(ConfigurationPropertyName::of)

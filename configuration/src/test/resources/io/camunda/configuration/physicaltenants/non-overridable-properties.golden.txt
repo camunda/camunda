@@ -138,6 +138,9 @@ security.http-headers.referrer-policy.value
 security.multi-tenancy
 security.multi-tenancy.api-enabled
 security.multi-tenancy.checks-enabled
+security.saas
+security.saas.cluster-id
+security.saas.organization-id
 security.session
 security.session.heartbeat.enabled
 security.session.max-inactive-interval
