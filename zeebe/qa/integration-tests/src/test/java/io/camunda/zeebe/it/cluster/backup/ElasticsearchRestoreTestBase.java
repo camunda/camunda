@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -50,6 +51,12 @@ abstract class ElasticsearchRestoreTestBase {
   private static final int SCALED_PARTITION_COUNT = PARTITION_COUNT + 1;
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
+
+  /**
+   * Backup ids restart at 1 in every test, and a backup that already completed is accepted without
+   * saving anything new, so each test instance keeps its backups in a directory of its own.
+   */
+  private final String backupSubdirectory = UUID.randomUUID().toString();
 
   @TestZeebe(partitionCount = PARTITION_COUNT)
   protected final TestStandaloneBroker broker =
@@ -229,9 +236,9 @@ abstract class ElasticsearchRestoreTestBase {
       throws Exception;
 
   /**
-   * The backup store's base directory. Declared as a {@code static @TempDir} field on each concrete
-   * subclass so JUnit injects it before that subclass's {@code broker} field initializer runs
-   * {@link #configureBroker}.
+   * The directory all tests of a subclass keep their backup stores in. Declared as a {@code
+   * static @TempDir} field on each concrete subclass so JUnit injects it before that subclass's
+   * {@code broker} field initializer runs {@link #configureBroker}.
    */
   protected abstract Path backupDir();
 
@@ -245,7 +252,9 @@ abstract class ElasticsearchRestoreTestBase {
     cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(elasticsearchUrl());
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(BackupStoreType.FILESYSTEM);
-    backup.getFilesystem().setBasePath(backupDir().toAbsolutePath().toString());
+    backup
+        .getFilesystem()
+        .setBasePath(backupDir().resolve(backupSubdirectory).toAbsolutePath().toString());
   }
 
   private void assertOnlyInstancesRestored(final List<Long> expectedInstances) {
