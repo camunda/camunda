@@ -967,4 +967,149 @@ class ExpressionProcessorTest {
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
   }
+
+  @Nested
+  class EvaluateIntervalAndDateTimeExpressionWithLabelTest {
+
+    private static final ExpressionLabel LABEL =
+        new ExpressionLabel("timer duration expression", "event 't'");
+
+    private final ExpressionProcessor processor =
+        new ExpressionProcessor(
+            EXPRESSION_LANGUAGE,
+            new InMemoryVariableEvaluationContext(Map.of("x", "foo")),
+            DEFAULT_TIMEOUT);
+
+    @Test
+    void shouldLabelInvalidDurationFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid duration format 'foo' for the timer duration expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDurationFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid duration format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelIntervalTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer duration expression 'true' of event 't' to be one of");
+    }
+
+    @Test
+    void shouldLabelIntervalEvaluationFailureMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x = \"bar\")");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .contains("(timer duration expression of event 't')");
+    }
+
+    @Test
+    void shouldLabelInvalidDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the timer date expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldLabelInvalidNullableDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("due date expression", "user task 'u'");
+
+      // when
+      final var result =
+          processor.evaluateDateTimeExpression(expression, -1L, "tenant", true, label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the due date expression 'x' of user task 'u'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDateTimeFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid date-time format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelDateTimeTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer date expression 'true' of event 't' to be one of");
+    }
+  }
 }

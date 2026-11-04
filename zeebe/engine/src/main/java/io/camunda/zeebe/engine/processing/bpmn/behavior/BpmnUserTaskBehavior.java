@@ -13,6 +13,7 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,11 +131,19 @@ public final class BpmnUserTaskBehavior {
                     .map(p::candidateUsers))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getDueDate(), scopeKey, tenantId)
+                evaluateDateExpression(
+                        userTaskProps.getDueDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.dueDateExpression(element.getId()))
                     .map(p::dueDate))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey, tenantId)
+                evaluateDateExpression(
+                        userTaskProps.getFollowUpDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.followUpDateExpression(element.getId()))
                     .map(p::followUpDate))
         .flatMap(
             p ->
@@ -298,12 +308,15 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, String> evaluateDateExpression(
-      final Expression date, final long scopeKey, final String tenantId) {
+      final Expression date,
+      final long scopeKey,
+      final String tenantId,
+      final Supplier<ExpressionLabel> label) {
     if (date == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateDateTimeExpression(date, scopeKey, tenantId, true)
+        .evaluateDateTimeExpression(date, scopeKey, tenantId, true, label.get())
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 

@@ -16,6 +16,7 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -212,12 +213,20 @@ public final class BpmnJobBehavior {
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateDateExpression(jobWorkerProps.getDueDate(), scopeKey, tenantId)
+                    .evaluateDateExpression(
+                        jobWorkerProps.getDueDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.dueDateExpression(context.getElementId()))
                     .map(p::dueDate))
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateDateExpression(jobWorkerProps.getFollowUpDate(), scopeKey, tenantId)
+                    .evaluateDateExpression(
+                        jobWorkerProps.getFollowUpDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.followUpDateExpression(context.getElementId()))
                     .map(p::followUpDate))
         .flatMap(
             p ->

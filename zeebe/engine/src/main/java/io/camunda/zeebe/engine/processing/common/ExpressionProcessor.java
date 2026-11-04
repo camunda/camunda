@@ -297,28 +297,47 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, Interval> evaluateIntervalExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .flatMap(result -> typeCheck(result, INTERVAL_RESULT_TYPES, scopeKey))
+    return evaluateIntervalExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateIntervalExpression(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel} so it identifies what failed and what
+   * it targets. Pass {@link ExpressionLabel#NONE} for the generic wording.
+   */
+  public Either<Failure, Interval> evaluateIntervalExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, INTERVAL_RESULT_TYPES, scopeKey, label))
         .flatMap(
             result ->
                 switch (result.getType()) {
                   case DURATION -> Either.right(new Interval(result.getDuration()));
                   case PERIOD -> Either.right(new Interval(result.getPeriod()));
-                  default -> parseIntervalString(expression, scopeKey, result);
+                  default -> parseIntervalString(expression, scopeKey, result, label);
                 });
   }
 
   private Either<Failure, Interval> parseIntervalString(
-      final Expression expression, final long scopeKey, final EvaluationResult result) {
+      final Expression expression,
+      final long scopeKey,
+      final EvaluationResult result,
+      final ExpressionLabel label) {
     try {
       return Either.right(Interval.parse(result.getString()));
     } catch (final DateTimeParseException e) {
       return Either.left(
           createFailureMessage(
               result,
-              String.format(
-                  "Invalid duration format '%s' for expression '%s'.",
-                  result.getString(), expression.getExpression()),
+              "Invalid duration format '%s' for %s '%s'%s."
+                  .formatted(
+                      result.getString(),
+                      describeKindWithArticle(label),
+                      expression.getExpression(),
+                      label.describeTarget()),
               scopeKey));
     }
   }
@@ -335,7 +354,20 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
       final Expression expression, final Long scopeKey, final String tenantId) {
-    return evaluateDateTimeExpression(expression, scopeKey, tenantId, false)
+    return evaluateDateTimeExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateDateTimeExpression(Expression, Long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel} so it identifies what failed and what
+   * it targets. Pass {@link ExpressionLabel#NONE} for the generic wording.
+   */
+  public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
+      final Expression expression,
+      final Long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateDateTimeExpression(expression, scopeKey, tenantId, false, label)
         .flatMap(optionalDateTime -> Either.right(optionalDateTime.get()));
   }
 
@@ -362,16 +394,31 @@ public final class ExpressionProcessor {
       final Long scopeKey,
       final String tenantId,
       final boolean isNullable) {
+    return evaluateDateTimeExpression(
+        expression, scopeKey, tenantId, isNullable, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateDateTimeExpression(Expression, Long, String, boolean)}, but labels the
+   * failure message, if any, with the given {@link ExpressionLabel} so it identifies what failed
+   * and what it targets. Pass {@link ExpressionLabel#NONE} for the generic wording.
+   */
+  public Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpression(
+      final Expression expression,
+      final Long scopeKey,
+      final String tenantId,
+      final boolean isNullable,
+      final ExpressionLabel label) {
     final var dateTimeResultTypes =
         isNullable ? NULLABLE_DATE_TIME_RESULT_TYPES : DATE_TIME_RESULT_TYPES;
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .flatMap(result -> typeCheck(result, dateTimeResultTypes, scopeKey))
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, dateTimeResultTypes, scopeKey, label))
         .flatMap(
             result ->
                 switch (result.getType()) {
                   case NULL -> Either.right(Optional.empty());
                   case DATE_TIME -> Either.right(Optional.of(result.getDateTime()));
-                  default -> evaluateDateTimeExpressionString(result, scopeKey, isNullable);
+                  default -> evaluateDateTimeExpressionString(result, scopeKey, isNullable, label);
                 });
   }
 
@@ -598,6 +645,14 @@ public final class ExpressionProcessor {
       final EvaluationResult result,
       final Collection<ResultType> expectedResultTypes,
       final long scopeKey) {
+    return typeCheck(result, expectedResultTypes, scopeKey, ExpressionLabel.NONE);
+  }
+
+  private Either<Failure, EvaluationResult> typeCheck(
+      final EvaluationResult result,
+      final Collection<ResultType> expectedResultTypes,
+      final long scopeKey,
+      final ExpressionLabel label) {
     return expectedResultTypes.stream()
         .map(expected -> typeCheck(result, expected, scopeKey))
         .filter(Either::isRight)
@@ -606,9 +661,13 @@ public final class ExpressionProcessor {
             Either.left(
                 createFailureMessage(
                     result,
-                    String.format(
-                        "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
-                        result.getExpression(), expectedResultTypes, result.getType()),
+                    "Expected result of the %s '%s'%s to be one of '%s', but was '%s'."
+                        .formatted(
+                            label.hasKind() ? label.kind() : "expression",
+                            result.getExpression(),
+                            label.describeTarget(),
+                            expectedResultTypes,
+                            result.getType()),
                     scopeKey)));
   }
 
@@ -776,6 +835,14 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Describes what a failing expression is for use in a sentence like "for the due date expression
+   * 'x'", falling back to the generic "expression" for {@link ExpressionLabel#NONE}.
+   */
+  private static String describeKindWithArticle(final ExpressionLabel label) {
+    return label.hasKind() ? "the " + label.kind() : "expression";
+  }
+
+  /**
    * Appends the given label's context to a failure message, e.g. turning {@code "Assertion failure
    * on evaluate the expression '...': The condition is not fulfilled"} into {@code "Assertion
    * failure on evaluate the expression '...': The condition is not fulfilled (condition expression
@@ -812,7 +879,10 @@ public final class ExpressionProcessor {
   }
 
   private Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpressionString(
-      final EvaluationResult result, final Long scopeKey, final boolean isNullable) {
+      final EvaluationResult result,
+      final Long scopeKey,
+      final boolean isNullable,
+      final ExpressionLabel label) {
     final var resultString = result.getString();
 
     if (isNullable && resultString.isEmpty()) {
@@ -825,9 +895,12 @@ public final class ExpressionProcessor {
       return Either.left(
           createFailureMessage(
               result,
-              String.format(
-                  "Invalid date-time format '%s' for expression '%s'.",
-                  resultString, result.getExpression()),
+              "Invalid date-time format '%s' for %s '%s'%s."
+                  .formatted(
+                      resultString,
+                      describeKindWithArticle(label),
+                      result.getExpression(),
+                      label.describeTarget()),
               scopeKey));
     }
   }
