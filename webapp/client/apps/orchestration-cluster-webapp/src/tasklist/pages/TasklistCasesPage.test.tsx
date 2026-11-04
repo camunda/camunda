@@ -102,13 +102,27 @@ describe('<TasklistCasesPage />', () => {
 		expect(onSearchChange).toHaveBeenCalledWith({sortField, sortOrder: 'asc', page: 1});
 	});
 
-	it('should reverse the start date order', async () => {
+	it('should sort by the oldest start date first', async () => {
 		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Started'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({sortOrder: 'asc', page: 1});
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'startDate', sortOrder: 'asc', page: 1});
 	});
+
+	it.for([
+		{column: 'Started', sortField: 'startDate', sortOrder: 'asc'},
+		{column: 'Business ID', sortField: 'businessId', sortOrder: 'desc'},
+	] as const)(
+		'should clear the sort on the third click of the $column column',
+		async ({column, sortField, sortOrder}) => {
+			const {screen, onSearchChange} = await renderPage({search: {sortField, sortOrder, page: 2}});
+
+			await userEvent.click(screen.getByRole('button', {name: column}));
+
+			expect(onSearchChange).toHaveBeenCalledWith({sortField: undefined, sortOrder: undefined, page: 1});
+		},
+	);
 
 	it('should go to the next page', async () => {
 		const {screen, onSearchChange} = await renderPage({totalItems: 60});
