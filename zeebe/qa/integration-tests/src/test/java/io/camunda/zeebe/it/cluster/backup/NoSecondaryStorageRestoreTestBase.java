@@ -32,8 +32,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -264,6 +266,154 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRestoreFromTheRangeOfBackupsThatContainsFrom() throws Exception {
+    // given - two ranges of backups, split by deleting the backup between them. Both start
+    // before `from`, but only the second one reaches it
+    final List<Long> createdUntilTo = new ArrayList<>();
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createdUntilTo.addAll(createInstances(client));
+      final long firstBackup = takeAndAwaitBackup();
+      createdUntilTo.addAll(createInstances(client));
+      final long deletedBackup = takeAndAwaitBackup();
+      createdUntilTo.addAll(createInstances(client));
+      final long thirdBackup = takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      createdUntilTo.addAll(createInstances(client));
+      takeAndAwaitBackup();
+      to = currentTime(broker);
+      createInstances(client);
+
+      InProcessRestoreTestUtil.deleteBackupSplittingItsRange(
+          backupActuator, PARTITION_COUNT, firstBackup, deletedBackup, thirdBackup);
+    }
+
+    // when
+    restore(RestoreRequest.timeRange(from, to));
+
+    // then - every partition ends at the backup closest to `to` in the second range, not at the
+    // end of the first one
+    assertOnlyInstancesRestored(createdUntilTo);
+  }
+
+  @Test
+  void shouldRestoreFromABackup() throws Exception {
+    // given
+    final List<Long> backedUp;
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstances(client);
+      backupId = takeAndAwaitBackup();
+      createInstances(client);
+    }
+
+    // when
+    restore(RestoreRequest.backups(backupId));
+
+    // then - every partition ends at the backup, without what was created after it
+    assertOnlyInstancesRestored(backedUp);
+  }
+
+  @Test
+  void shouldRejectANonExistingBackup() throws Exception {
+    // given
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      takeAndAwaitBackup();
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreRequest.backups(1234L),
+        NoSuchElementException.class,
+        "No completed backup found with backup id 1234");
+  }
+
+  @Test
+  void shouldRejectABackupTogetherWithATimeRange() throws Exception {
+    // given
+    final long backupId;
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      from = currentTime(broker);
+      createInstances(client);
+      backupId = takeAndAwaitBackup();
+    }
+
+    // when / then - the restore app rejects it while parsing its arguments, in its own words
+    assertRestoreRejected(
+        new RestoreRequest(List.of(backupId), from, null), IllegalArgumentException.class, "both");
+  }
+
+  @Test
+  void shouldRejectATimeRangeEndingBeforeItStarts() throws Exception {
+    // given
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      to = currentTime(broker);
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+    }
+
+    // when / then
+    assertRestoreRejected(
+        RestoreRequest.timeRange(from, to),
+        IllegalArgumentException.class,
+        "Invalid time range: from");
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsOfABackupAfterAScaleUp() throws Exception {
+    // given - a backup of the 2 partitions
+    final List<Long> backedUp;
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp = createInstances(client);
+      backupId = takeAndAwaitBackup();
+    }
+
+    // and - the cluster is scaled up to 3 partitions, with a later backup holding all 3
+    final var clusterActuator = ClusterActuator.of(broker);
+    scaleUp(clusterActuator, SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+    }
+    takeAndAwaitBackup();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.backups(backupId));
+
+    // then - only the backup's partitions are restored, and the group routes over them again
+    assertOnlyInstancesRestored(backedUp);
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  @Test
   void shouldRestoreTheBackupsPartitionsOfATimeRangeAfterAScaleUp() throws Exception {
     // given - backups of the 2 partitions within the time range
     final List<Long> createdUntilTo = new ArrayList<>();
@@ -304,9 +454,128 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
         PARTITION_COUNT,
         SCALED_PARTITION_COUNT);
 
-    // and - the group routes over them again
-    InProcessRestoreTestUtil.assertRoutesOverPartitions(
-        ClusterActuator.of(broker), PARTITION_COUNT);
+    // and - the group routes over them again. After the standalone restore the broker takes the
+    // routing state from the restored data once it is up, so it settles shortly after.
+    final var restoredClusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the backup's partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    restoredClusterActuator, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionOfABackupTakenAfterAScaleUp() throws Exception {
+    // given - a backup taken after the cluster was scaled up from 2 to 3 partitions
+    final List<Long> backedUp = new ArrayList<>();
+    final long backupId;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstances(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+    }
+    backupId = takeAndAwaitBackup();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.backups(backupId));
+
+    // then - all 3 partitions are restored, with the data from before and after the scale up
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionOfATimeRangeAfterAScaleUp() throws Exception {
+    // given - a time range whose backups were all taken after the cluster was scaled up
+    final List<Long> backedUp = new ArrayList<>();
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstances(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final Instant from;
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+      takeAndAwaitBackup();
+      to = currentTime(broker);
+
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+      takeAndAwaitBackup();
+    }
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreRequest.timeRange(from, to));
+
+    // then - all 3 partitions are restored up to `to`
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  @Test
+  void shouldRejectATimeRangeSpanningAScaleUp() throws Exception {
+    // given - a time range starting at a backup of the 2 partitions, and ending at a backup taken
+    // after the cluster was scaled up to 3. A range of
+    // backups starts at its first backup, so `from` is its timestamp
+    final Instant from;
+    final long lastBackup;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      from = checkpointTimestamp(takeAndAwaitBackup());
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+      lastBackup = takeAndAwaitBackup();
+      to = currentTime(broker);
+    }
+
+    // when / then - the backups of the range do not hold the same partitions
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    assertRestoreRejected(
+        RestoreRequest.timeRange(from, to),
+        IllegalStateException.class,
+        "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
+            .formatted(lastBackup, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+  }
+
+  private void assertRestoredEveryPartitionAfterAScaleUp() {
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        SCALED_PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var clusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the scaled up partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    clusterActuator, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, SCALED_PARTITION_COUNT);
   }
 
   /**
@@ -398,6 +667,19 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
           .send()
           .join();
     }
+  }
+
+  /**
+   * The timestamp of the checkpoint the backup was taken at, on the partition that took it last. A
+   * range of backups starts at its first backup, so a time range that is to start there has to
+   * start at that exact timestamp: the checkpoint's id is not it.
+   */
+  private Instant checkpointTimestamp(final long checkpointId) {
+    return backupActuator.state().getCheckpointStates().stream()
+        .filter(state -> state.getCheckpointId() == checkpointId)
+        .map(state -> state.getCheckpointTimestamp().toInstant())
+        .max(Comparator.naturalOrder())
+        .orElseThrow();
   }
 
   private long takeAndAwaitBackup() {

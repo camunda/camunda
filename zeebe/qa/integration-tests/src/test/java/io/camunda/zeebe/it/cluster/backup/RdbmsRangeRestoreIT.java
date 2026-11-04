@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.configuration.Camunda;
@@ -48,17 +47,26 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     try (final var restoreApp = testRestoreApp(target)) {
       restoreApp.start();
     }
+    // the broker restarts configured like the restore, so only the restored topology can bring
+    // the partitions back to the backup's
+    broker.unifiedConfig().getCluster().setPartitionCount(configuredPartitionCount);
     broker.start();
   }
 
   @Override
-  void assertRestoreFails(final RestoreTarget target, final String expectedMessage)
+  void assertRestoreRejected(
+      final RestoreTarget target,
+      final Class<? extends RuntimeException> expectedType,
+      final String message)
       throws Exception {
     stopBrokerAndEmptyWorkingDirectory();
     try (final var restoreApp = testRestoreApp(target)) {
-      assertThatThrownBy(restoreApp::start)
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining(expectedMessage);
+      // A rejection is thrown as is, or wrapped by the application runner
+      var failure = catchThrowable(restoreApp::start);
+      while (failure != null && failure.getCause() != null) {
+        failure = failure.getCause();
+      }
+      assertThat(failure).isInstanceOf(expectedType).hasMessageContaining(message);
     }
   }
 
@@ -86,7 +94,7 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   private void configureRestoreApp(final Camunda cfg) {
-    cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+    cfg.getCluster().setPartitionCount(configuredPartitionCount);
     configureRdbms(cfg);
     // Filesystem backup store (same as broker)
     final var fsConfig = new Filesystem();
