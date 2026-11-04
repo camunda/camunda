@@ -75,7 +75,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *       prefer-username-claim}.
  *   <li><b>State:</b> the slot sets the claim, or leaves it unset. Each slot has a case that sets
  *       every claim, one that sets none, and one that sets one claim and inherits the others, so a
- *       claim is resolved on its own and not as part of a block.
+ *       claim is resolved on its own and not as part of a block. Each claim that a slot can inherit
+ *       is inherited with a non-default value in some case, so a slot that falls back to the
+ *       default instead of inheriting fails.
  * </ul>
  *
  * <p>The expected principal comes from the written rule, not from the code under test: a tenant
@@ -142,7 +144,8 @@ final class OidcPrincipalClaimsMatrixIT {
   /**
    * Paths and claims that the matrix does not cover yet, with the reason. {@link
    * #shouldCoverEveryCombinationOrListItHere()} checks that every slot, claim and state has a case,
-   * that every slot has a partial case, and that every entry here gives a reason.
+   * that every slot has a partial case, that every inherited claim is inherited with a non-default
+   * value in some case, and that every entry here gives a reason.
    */
   private static final Map<String, String> NOT_COVERED =
       Map.of(
@@ -257,9 +260,38 @@ final class OidcPrincipalClaimsMatrixIT {
     }
     assertThat(missing).as("slot/claim/state combinations without a case").isEmpty();
     assertThat(partial).as("slots with a partial case").containsExactlyInAnyOrder(Slot.values());
+    assertThat(inheritsNonDefault())
+        .as("slot/claim combinations with an unset case that inherits a non-default value")
+        .containsExactlyInAnyOrderElementsOf(
+            Arrays.stream(Slot.values())
+                .filter(slot -> slot != Slot.ROOT_DEFAULT)
+                .flatMap(slot -> Arrays.stream(Claim.values()).map(claim -> slot + "/" + claim))
+                .toList());
     assertThat(NOT_COVERED)
         .as("every left-out combination gives a reason")
         .allSatisfy((combination, reason) -> assertThat(reason).isNotBlank());
+  }
+
+  /**
+   * The slot and claim combinations with an unset case whose inherited value differs from the
+   * library default. Only such a case shows that the slot inherits, instead of falling back to the
+   * default. The root default slot inherits only the defaults, so it has none.
+   */
+  private static Set<String> inheritsNonDefault() {
+    final ClaimSettings defaults = ClaimSettings.NONE.withDefaults();
+    final Set<String> found = new HashSet<>();
+    cases()
+        .forEach(
+            matrixCase ->
+                Arrays.stream(Claim.values())
+                    .filter(claim -> claim.state(matrixCase) == State.UNSET)
+                    .filter(
+                        claim -> {
+                          final Object inherited = claim.valueIn(matrixCase.parent());
+                          return inherited != null && !inherited.equals(claim.valueIn(defaults));
+                        })
+                    .forEach(claim -> found.add(matrixCase.slot() + "/" + claim)));
+    return found;
   }
 
   static Stream<Arguments> matrix() {
@@ -392,6 +424,14 @@ final class OidcPrincipalClaimsMatrixIT {
             "tenantnamedpartial",
             TENANT_NAMED_PARTIAL,
             tenantADefault),
+        new MatrixCase(
+            with,
+            Slot.TENANT_NAMED,
+            TENANT_B,
+            REALM_TENANT_NAMED_UNSET,
+            "tenantnamedunset",
+            none,
+            rootDefault),
         new MatrixCase(
             without,
             Slot.TENANT_NAMED,
@@ -558,8 +598,11 @@ final class OidcPrincipalClaimsMatrixIT {
         broker, TENANT_A, "tenantnamedpartial", REALM_TENANT_NAMED_PARTIAL, TENANT_NAMED_PARTIAL);
     assign(broker, TENANT_A, "oidc", "tenantnamedset", "tenantnamedunset", "tenantnamedpartial");
 
-    // tenantb keeps the root default slot, and tenantc overrides one claim of it
-    assign(broker, TENANT_B, "oidc");
+    // tenantb keeps the root default slot, so its provider inherits prefer-username-claim: true;
+    // tenantc overrides one claim of the root default slot
+    tenantProvider(
+        broker, TENANT_B, "tenantnamedunset", REALM_TENANT_NAMED_UNSET, ClaimSettings.NONE);
+    assign(broker, TENANT_B, "oidc", "tenantnamedunset");
     tenantClaims(broker, TENANT_C, TENANT_DEFAULT_PARTIAL);
     assign(broker, TENANT_C, "oidc");
   }
@@ -871,14 +914,16 @@ final class OidcPrincipalClaimsMatrixIT {
 
     /** Whether the slot of the case sets this claim. */
     State state(final MatrixCase matrixCase) {
-      final ClaimSettings own = matrixCase.own();
-      final Object value =
-          switch (this) {
-            case USERNAME_CLAIM -> own.usernameClaim();
-            case CLIENT_ID_CLAIM -> own.clientIdClaim();
-            case PREFER_USERNAME_CLAIM -> own.preferUsernameClaim();
-          };
-      return value != null ? State.SET : State.UNSET;
+      return valueIn(matrixCase.own()) != null ? State.SET : State.UNSET;
+    }
+
+    /** The value of this claim in {@code settings}, or {@code null} when it is unset. */
+    Object valueIn(final ClaimSettings settings) {
+      return switch (this) {
+        case USERNAME_CLAIM -> settings.usernameClaim();
+        case CLIENT_ID_CLAIM -> settings.clientIdClaim();
+        case PREFER_USERNAME_CLAIM -> settings.preferUsernameClaim();
+      };
     }
   }
 
