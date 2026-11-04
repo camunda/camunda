@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -73,7 +75,8 @@ public class ProcessInstanceRestServiceTest {
             flowNodeInstanceReader,
             sequenceFlowStore);
 
-    when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
+    lenient()
+        .when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);
   }
 
@@ -325,6 +328,32 @@ public class ProcessInstanceRestServiceTest {
     // then
     assertThat(exception.getMessage())
         .contains("No MODIFY_PROCESS_INSTANCE permission for process instance");
+    verifyNoInteractions(modifyProcessInstanceRequestValidator);
+    verifyNoInteractions(batchOperationWriter);
+  }
+
+  @Test
+  public void testModifyFailsWithNotFoundForMissingProcessInstance() {
+    // given
+    final String processInstanceId = "123";
+    final ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto()
+            .setModifications(
+                List.of(
+                    new Modification()
+                        .setModification(Modification.Type.CANCEL_TOKEN)
+                        .setFromFlowNodeInstanceKey("999")));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenThrow(new NotFoundException("Could not find process instance with id '123'."));
+
+    // when
+    final NotFoundException exception =
+        assertThatExceptionOfType(NotFoundException.class)
+            .isThrownBy(() -> underTest.modify(processInstanceId, request))
+            .actual();
+
+    // then
+    assertThat(exception.getMessage()).contains("Could not find process instance");
     verifyNoInteractions(modifyProcessInstanceRequestValidator);
     verifyNoInteractions(batchOperationWriter);
   }
