@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,8 @@ import org.slf4j.LoggerFactory;
  * reports every name as {@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND not found} and
  * {@link #list()} returns no names.
  *
- * <p>The prefix is mandatory and must not overlap a {@link #RESERVED_PREFIXES reserved prefix}.
+ * <p>The prefix is mandatory, must be a {@link #PREFIX_FORMAT well-formed} variable-name prefix
+ * ending in an underscore, and must not start with a {@link #RESERVED_PREFIXES reserved prefix}.
  * Without it, anyone who can deploy a process could read every variable of the node, such as
  * database passwords, OIDC client secrets or cloud keys, through a {@code camunda.secrets.<name>}
  * reference.
@@ -41,14 +43,24 @@ import org.slf4j.LoggerFactory;
 public final class EnvVarSecretStore implements SecretStore {
 
   /**
-   * Prefixes of variables the platform or its runtime reads for its own settings and credentials. A
-   * secret prefix overlaps one of these when either starts with the other, ignoring case: {@code
-   * CAMUNDA_APP_} would expose {@code CAMUNDA_APP_*} settings, and {@code CAMUNDA} would expose
-   * every {@code CAMUNDA_*} variable.
+   * A prefix starts with a letter, holds only letters, digits and underscores, and ends with an
+   * underscore. The trailing underscore bounds the prefix to whole name segments, so {@code
+   * SECRET_} cannot also match {@code SECRETARY_*}, and it rules out a prefix cut short of a
+   * reserved one, such as {@code CAMUNDA} or {@code C}. Rejecting whitespace and other characters
+   * no variable name carries turns a mistyped prefix into a startup error instead of a store that
+   * silently finds nothing.
+   */
+  static final Pattern PREFIX_FORMAT = Pattern.compile("[A-Za-z][A-Za-z0-9_]*_");
+
+  /**
+   * Prefixes of variables the platform, its runtime or the services it ships with read for their
+   * own settings and credentials. A secret prefix starting with one of these, ignoring case, is
+   * refused: {@code CAMUNDA_APP_} would expose {@code CAMUNDA_APP_*} settings.
    *
-   * <p>This list guards only the platform's own settings and credentials; any other variable that
-   * happens to start with the configured prefix stays reachable, so operators should dedicate a
-   * prefix to secrets rather than reuse a broad one.
+   * <p>This list guards only those well-known settings and credentials; any other variable that
+   * happens to start with the configured prefix, such as a {@code DB_PASSWORD} under a {@code DB_}
+   * prefix, stays reachable. Operators should dedicate a prefix to secrets rather than reuse a
+   * broad one.
    */
   static final List<String> RESERVED_PREFIXES =
       List.of(
@@ -58,6 +70,9 @@ public final class EnvVarSecretStore implements SecretStore {
           "TASKLIST_",
           "OPTIMIZE_",
           "IDENTITY_",
+          "ELASTICSEARCH_",
+          "OPENSEARCH_",
+          "KEYCLOAK_",
           "SPRING_",
           "SERVER_",
           "MANAGEMENT_",
@@ -75,8 +90,8 @@ public final class EnvVarSecretStore implements SecretStore {
   private final String prefix;
 
   /**
-   * @throws IllegalArgumentException if the prefix is blank or overlaps a {@link #RESERVED_PREFIXES
-   *     reserved prefix}
+   * @throws IllegalArgumentException if the prefix is blank, malformed, or starts with a {@link
+   *     #RESERVED_PREFIXES reserved prefix}
    */
   public EnvVarSecretStore(final Map<String, String> environment, final String prefix) {
     requireValidPrefix(prefix);
@@ -90,8 +105,8 @@ public final class EnvVarSecretStore implements SecretStore {
   /**
    * Creates a store over a snapshot of this process's environment.
    *
-   * @throws IllegalArgumentException if the prefix is blank or overlaps a {@link #RESERVED_PREFIXES
-   *     reserved prefix}
+   * @throws IllegalArgumentException if the prefix is blank, malformed, or starts with a {@link
+   *     #RESERVED_PREFIXES reserved prefix}
    */
   public static EnvVarSecretStore fromSystemEnvironment(final String prefix) {
     return new EnvVarSecretStore(System.getenv(), prefix);
@@ -124,9 +139,14 @@ public final class EnvVarSecretStore implements SecretStore {
           "The prefix is missing; it is required so that a secret reference cannot read every"
               + " environment variable of the node");
     }
+    if (!PREFIX_FORMAT.matcher(prefix).matches()) {
+      throw new IllegalArgumentException(
+          "The prefix '%s' is malformed; it must start with a letter, contain only letters, digits and underscores, and end with an underscore"
+              .formatted(prefix));
+    }
     final var upperCasePrefix = prefix.toUpperCase(Locale.ROOT);
     for (final var reserved : RESERVED_PREFIXES) {
-      if (upperCasePrefix.startsWith(reserved) || reserved.startsWith(upperCasePrefix)) {
+      if (upperCasePrefix.startsWith(reserved)) {
         throw new IllegalArgumentException(
             "The prefix '%s' overlaps the reserved prefix '%s', so a secret reference could read the platform's own settings or credentials"
                 .formatted(prefix, reserved));

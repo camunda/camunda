@@ -100,6 +100,23 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
+  void shouldRejectMalformedPrefix() {
+    // given prefixes with whitespace, without a trailing underscore (including ones cut short of a
+    // reserved prefix), not starting with a letter, or with characters no variable name carries
+    final var malformedPrefixes =
+        List.of(
+            " SECRET_", "SECRET_ ", "SECRET", "CAMUNDA", "C", "_SECRET_", "1SECRET_", "SE-CRET_");
+
+    // when / then
+    assertThat(malformedPrefixes)
+        .allSatisfy(
+            prefix ->
+                assertThatIllegalArgumentException()
+                    .isThrownBy(() -> new EnvVarSecretStore(Map.of(), prefix))
+                    .withMessageContaining("'" + prefix + "' is malformed"));
+  }
+
+  @Test
   void shouldRejectEveryReservedPrefix() {
     // when / then
     assertThat(EnvVarSecretStore.RESERVED_PREFIXES)
@@ -111,10 +128,10 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
-  void shouldRejectPrefixOverlappingAReservedPrefix() {
-    // given prefixes that differ from CAMUNDA_ only in case, extend it, or are cut short of it, and
-    // so would each read CAMUNDA_* variables
-    final var overlappingPrefixes = List.of("camunda_", "Camunda_", "CAMUNDA_APP_", "CAMUNDA", "C");
+  void shouldRejectPrefixStartingWithAReservedPrefix() {
+    // given prefixes that differ from CAMUNDA_ only in case or extend it, and so would each read
+    // CAMUNDA_* variables
+    final var overlappingPrefixes = List.of("camunda_", "Camunda_", "CAMUNDA_APP_");
 
     // when / then
     assertThat(overlappingPrefixes)
@@ -128,8 +145,9 @@ class EnvVarSecretStoreTest {
 
   @Test
   void shouldAcceptPrefixOutsideTheReservedOnes() {
-    // given prefixes that share leading letters with a reserved prefix but neither starts the other
-    final var validPrefixes = List.of("SECRET_", "APP_SECRET_", "ERP_", "ZB_", "CAM_");
+    // given prefixes that share leading letters with a reserved prefix but do not start with one,
+    // in either case
+    final var validPrefixes = List.of("SECRET_", "APP_SECRET_", "ERP_", "ZB_", "CAM_", "a_", "X1_");
 
     // when / then
     assertThat(validPrefixes)
