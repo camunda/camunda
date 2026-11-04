@@ -615,17 +615,21 @@ describe('<ProcessInstanceVariables />', () => {
 			);
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
-			await expect.element(screen.getByRole('radio', {name: 'All'})).toBeChecked();
+			await expect
+				.element(screen.getByRole('tab', {name: 'All', exact: true}))
+				.toHaveAttribute('aria-selected', 'true');
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
-			await expect.element(screen.getByRole('radio', {name: 'Documents'})).toBeChecked();
+			await expect
+				.element(screen.getByRole('tab', {name: 'Documents', exact: true}))
+				.toHaveAttribute('aria-selected', 'true');
 			await expect.element(variableRow(screen, 'amount')).not.toBeInTheDocument();
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
 			await expect.element(variableRow(screen, 'nestedDecoy')).not.toBeInTheDocument();
 			await expect.element(variableRow(screen, 'stringDecoy')).not.toBeInTheDocument();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'All'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'All', exact: true}));
 
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
@@ -642,7 +646,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(screen.getByText('There are no document variables')).toBeVisible();
 			await expect.element(variableRow(screen, 'nestedDecoy')).not.toBeInTheDocument();
@@ -676,7 +680,7 @@ describe('<ProcessInstanceVariables />', () => {
 			);
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 			await expect.element(variableRow(screen, 'amount')).not.toBeInTheDocument();
 
 			await userEvent.click(screen.getByRole('button', {name: 'Enter modification mode'}));
@@ -708,7 +712,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
 			await expect.element(variableRow(screen, 'decoy-00')).not.toBeInTheDocument();
@@ -740,7 +744,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(variableRow(screen, 'first')).toBeVisible();
 			await expect.element(variableRow(screen, 'second')).toBeVisible();
@@ -767,7 +771,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
 			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
