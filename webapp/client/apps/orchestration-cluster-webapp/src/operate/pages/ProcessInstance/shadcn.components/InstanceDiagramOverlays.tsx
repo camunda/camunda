@@ -9,7 +9,7 @@
 import {useContext, useLayoutEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import {Text} from '@camunda/design-system';
+import {Badge, Text} from '@camunda/design-system';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
@@ -80,16 +80,9 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 		if (type === 'instance-waiting') {
 			const {waitingCount, centered} = payload as WaitingPayload;
 			return createPortal(
-				<Text
-					as="span"
-					variant="label-md-strong"
-					className={cn(
-						'inline-flex items-center rounded-full bg-warning-background-strong px-3 py-1 whitespace-nowrap text-warning-foreground-strong tabular-nums',
-						centered && '-translate-x-1/2',
-					)}
-				>
+				<Badge variant="warning" className={cn('tabular-nums', centered && '-translate-x-1/2')}>
 					{getWaitStateLabel(waitingCount)}
-				</Text>,
+				</Badge>,
 				container,
 				`waiting-${elementId}`,
 			);
