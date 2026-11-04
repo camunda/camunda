@@ -102,17 +102,18 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
-      // The two binds above leave typed-POJO maps (named OIDC providers, document stores) with the
+      // The two binds above leave typed-POJO maps (document stores, secret stores) with the
       // MapBinder defect: a partial PT override drops the entry's root fields. Recompute every
-      // registered map config with the merge-aware overlay engine.
+      // registered map config with the merge-aware overlay engine. The named OIDC providers are
+      // merged with the rest of the authentication below.
       PhysicalTenantMapOverlays.apply(physicalTenant, physicalTenantId, environment);
       // Exporter entries have the same defect but raw Map<String, Object> args that the typed
       // overlay engine cannot merge — recompute them with the dedicated exporter step (ADR-0008).
       PhysicalTenantExporterConfigurations.apply(
           camunda, physicalTenant, physicalTenantId, environment);
-      // The authentication module resolves the same tree for the security filter chains. Taking
-      // it from there keeps the broker, the gateways and the chains on one resolution, including
-      // the merge of the named OIDC providers and the narrowing to providers.assigned (#68207).
+      // PhysicalTenantAuthConfigurations also resolves the authentication for the security filter
+      // chains. Using it here keeps the broker, the gateways and the chains on one resolution,
+      // including the merge of the named OIDC providers and the narrowing to providers.assigned.
       physicalTenant
           .getSecurity()
           .setAuthentication(
