@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.policy;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -25,6 +26,7 @@ import org.jspecify.annotations.NullMarked;
  * identity processor validates its own command, so an entry that cannot be applied, for example a
  * delete of a missing role, is rejected on its own while the other entries of the chunk apply.
  */
+@ExcludeAuthorizationCheck
 @NullMarked
 public final class PolicyUpdateApplyChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
