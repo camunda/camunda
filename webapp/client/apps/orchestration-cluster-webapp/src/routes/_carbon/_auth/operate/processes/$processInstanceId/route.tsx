@@ -14,13 +14,16 @@ import {ProcessInstanceBottomPanel} from '#/operate/pages/ProcessInstance/Proces
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/ProcessInstanceOperations';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
+import {operateClientConfigQuery} from '#/operate/shared/queries/operateClientConfig.queries';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {ForbiddenError} from '#/shared/errors';
 import {requestErrorSchema} from '#/shared/http/request';
 
 const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstanceId')({
 	validateSearch: validateProcessInstanceRouteSearch,
 	loader: async ({context: {queryClient}, params: {processInstanceId}}) => {
+		storeSessionState('operateClientConfig', await queryClient.ensureQueryData(operateClientConfigQuery()));
 		try {
 			return await queryClient.ensureQueryData(processInstanceQuery(processInstanceId));
 		} catch (error) {

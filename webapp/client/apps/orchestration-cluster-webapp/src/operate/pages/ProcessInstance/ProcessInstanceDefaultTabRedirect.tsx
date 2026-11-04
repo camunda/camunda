@@ -10,8 +10,10 @@ import {useEffect} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
-import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
-import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
+import {
+	isProcessInstanceWaitStateStatisticsEnabled,
+	useProcessInstanceWaitStateStatistics,
+} from './processInstance.queries';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {getDefaultProcessInstanceTab, getProcessInstanceTabPath} from './processInstanceSearch';
 
@@ -19,7 +21,7 @@ const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance, selection} = useProcessInstancePage();
 	const {data, isPending, isFetching, isError, refetch} = useProcessInstanceWaitStateStatistics(processInstance);
-	const isEnabled = isInstanceRunning(processInstance);
+	const isEnabled = isProcessInstanceWaitStateStatisticsEnabled(processInstance);
 
 	useEffect(() => {
 		if (isEnabled && (isPending || isFetching || isError)) {
