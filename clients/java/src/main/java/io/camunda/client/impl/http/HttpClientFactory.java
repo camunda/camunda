@@ -147,9 +147,9 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            // ResponseDeadlineChainHandler discards the whole connection on expiry, which is only
-            // safe with one exchange per HTTP/2 connection. Pin it, as newer httpclient5 versions
-            // default to multiplexing.
+            // ResponseDeadlineChainHandler and ExchangeAbortChainHandler discard the whole
+            // connection, which is only safe with one exchange per HTTP/2 connection. Pin it, as
+            // newer httpclient5 versions default to multiplexing.
             .setMessageMultiplexing(false)
             .setMaxConnPerRoute(config.getMaxHttpConnections());
 
@@ -261,6 +261,12 @@ public class HttpClientFactory {
         ChainElement.MAIN_TRANSPORT.name(),
         ResponseDeadlineChainHandler.NAME,
         new ResponseDeadlineChainHandler(responseDeadlineMargin));
+    // lets a document stream end its download when the application closes it early. It goes in
+    // front of the deadline handler, which must stay directly in front of the transport.
+    builder.addExecInterceptorBefore(
+        ResponseDeadlineChainHandler.NAME,
+        ExchangeAbortChainHandler.NAME,
+        new ExchangeAbortChainHandler());
 
     return builder;
   }

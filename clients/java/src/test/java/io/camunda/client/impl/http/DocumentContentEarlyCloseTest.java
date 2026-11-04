@@ -20,6 +20,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -79,6 +80,12 @@ class DocumentContentEarlyCloseTest {
    */
   private static final long PAUSE_AT = MAX_MESSAGE_SIZE + 2 * CHUNK_SIZE;
 
+  /**
+   * How much a server that goes silent sends. It is less than the client buffers, so the client
+   * reads all of it from the socket and closing the stream cannot make the client read more.
+   */
+  private static final long SILENT_AT = 2 * CHUNK_SIZE;
+
   /** Long enough that a timeout cannot be what ends the download within the test. */
   private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(5);
 
@@ -118,10 +125,12 @@ class DocumentContentEarlyCloseTest {
     ProxySelector.setDefault(originalProxySelector);
   }
 
-  private void startServer(final BodyFraming framing) throws Exception {
+  private void startServer(
+      final BodyFraming framing, final long pauseAt, final AfterPause afterPause) throws Exception {
     ThreadLocalRandom.current().nextBytes(chunk);
     serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
-    final Thread server = new Thread(() -> serve(framing), "endless-document-server");
+    final Thread server =
+        new Thread(() -> serve(framing, pauseAt, afterPause), "endless-document-server");
     server.setDaemon(true);
     server.start();
 
@@ -157,7 +166,7 @@ class DocumentContentEarlyCloseTest {
   void shouldEndDownloadWhenStreamIsClosedBeforeEndOfDocument(final BodyFraming framing)
       throws Exception {
     // given
-    startServer(framing);
+    startServer(framing, PAUSE_AT, AfterPause.RESUME_WHEN_CLOSED);
     final InputStream content =
         client
             .newDocumentContentGetRequest(DOCUMENT_ID)
@@ -175,23 +184,58 @@ class DocumentContentEarlyCloseTest {
     await("the client drops the connection")
         .atMost(Duration.ofSeconds(10))
         .untilTrue(connectionDropped);
-    // httpclient5 counts a new try in the same step that drops the connection
-    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(bodyBytesSent.get()).isLessThan(DOCUMENT_SIZE);
     // the client still works, and did not ask for the document again
     try (final InputStream smallDocument =
         client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
       assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
     }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
+    assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
+  }
+
+  @ParameterizedTest
+  @EnumSource(BodyFraming.class)
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void shouldEndDownloadWhenStreamIsClosedWhileServerIsSilent(final BodyFraming framing)
+      throws Exception {
+    // given
+    startServer(framing, SILENT_AT, AfterPause.STAY_SILENT);
+    final InputStream content =
+        client
+            .newDocumentContentGetRequest(DOCUMENT_ID)
+            .requestTimeout(REQUEST_TIMEOUT)
+            .send()
+            .get(20, TimeUnit.SECONDS);
+    new DataInputStream(content).readFully(new byte[(int) SILENT_AT]);
+
+    // when
+    content.close();
+
+    // then
+    await("the client drops the connection")
+        .atMost(Duration.ofSeconds(10))
+        .untilTrue(connectionDropped);
+    // the client still works, and did not ask for the document again
+    try (final InputStream smallDocument =
+        client.newDocumentContentGetRequest(SMALL_DOCUMENT_ID).send().get(20, TimeUnit.SECONDS)) {
+      assertThat(smallDocument).hasContent(SMALL_DOCUMENT_CONTENT);
+    }
+    // httpclient5 counts a new try once it learns that the download failed, which happens after
+    // the connection is closed, but before the small document is back
+    assertThat(documentExchange.get().execCount).as("attempts to get the document").hasValue(1);
     assertThat(requestedDocuments).containsExactly(DOCUMENT_ID, SMALL_DOCUMENT_ID);
   }
 
   /** Answers the requests one connection at a time, until the test closes the server socket. */
-  private void serve(final BodyFraming framing) {
+  private void serve(final BodyFraming framing, final long pauseAt, final AfterPause afterPause) {
     try {
       while (true) {
         try (final Socket socket = serverSocket.accept()) {
-          final String documentId = readRequestedDocumentId(socket.getInputStream());
+          final InputStream request = socket.getInputStream();
+          final String documentId = readRequestedDocumentId(request);
           if (documentId == null) {
             continue;
           }
@@ -199,7 +243,7 @@ class DocumentContentEarlyCloseTest {
           if (SMALL_DOCUMENT_ID.equals(documentId)) {
             sendSmallDocument(socket.getOutputStream());
           } else {
-            sendDocument(socket.getOutputStream(), framing);
+            sendDocument(request, socket.getOutputStream(), framing, pauseAt, afterPause);
           }
         }
       }
@@ -241,17 +285,26 @@ class DocumentContentEarlyCloseTest {
   }
 
   /**
-   * Sends the document as fast as the client accepts it, pausing once at {@link #PAUSE_AT} until
-   * the stream is closed, and goes on until the client drops the connection.
+   * Sends the document as fast as the client accepts it, pausing once at {@code pauseAt}, and goes
+   * on until the client drops the connection.
    */
-  private void sendDocument(final OutputStream out, final BodyFraming framing)
+  private void sendDocument(
+      final InputStream request,
+      final OutputStream out,
+      final BodyFraming framing,
+      final long pauseAt,
+      final AfterPause afterPause)
       throws InterruptedException {
     try {
       out.write(framing.responseHead().getBytes(StandardCharsets.ISO_8859_1));
       while (bodyBytesSent.get() < DOCUMENT_SIZE) {
         framing.writeChunk(out, chunk);
-        if (bodyBytesSent.addAndGet(CHUNK_SIZE) == PAUSE_AT) {
+        if (bodyBytesSent.addAndGet(CHUNK_SIZE) == pauseAt) {
           out.flush();
+          if (afterPause == AfterPause.STAY_SILENT) {
+            awaitDisconnect(request);
+            return;
+          }
           streamClosed.await();
         }
       }
@@ -260,6 +313,26 @@ class DocumentContentEarlyCloseTest {
     } catch (final IOException e) {
       connectionDropped.set(true);
     }
+  }
+
+  /** Returns once the client drops the connection; the client sends nothing more until then. */
+  private void awaitDisconnect(final InputStream request) {
+    try {
+      while (request.read() >= 0) {
+        // the client sends nothing more after the request
+      }
+    } catch (final IOException e) {
+      // the client reset the connection
+    }
+    connectionDropped.set(true);
+  }
+
+  /** What the server does once it reaches the pause. */
+  private enum AfterPause {
+    /** Waits until the test closes the stream, then sends the rest of the document. */
+    RESUME_WHEN_CLOSED,
+    /** Sends nothing more, without ending the response. */
+    STAY_SILENT
   }
 
   /** How the response marks the end of the document; httpcore5 reads the two kinds differently. */
