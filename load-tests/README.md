@@ -74,7 +74,7 @@ graph TD
     DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
     VARIANT -- "scenario: max" --> CORE
     VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
-    VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
+    VARIANT -- "45 min soak, then<br/>snapshot metrics" --> METRICS
     VARIANT -- "delete namespace<br/>after metrics" --> DELETE
     WEEKLY -- "main: 3 parallel calls,<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "main: ECS" --> ECS
@@ -393,7 +393,7 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 
 ### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 45 minutes (15 min warmup, then a 30 min measured window, the same as the PR load test).
 
 **Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 

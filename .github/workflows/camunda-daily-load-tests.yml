@@ -1,7 +1,7 @@
 # description: Runs a daily max-load stress test against main, currently in four variants: gRPC
 #              and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and
 #              REST flavors (exporters disabled). After a 15-minute warmup, profiles the next 30
-#              minutes of each variant via async-profiler. After a 3-hour soak: snapshots metrics
+#              minutes of each variant via async-profiler. After a 45-minute soak: snapshots the last 30 minutes of metrics
 #              as a GitHub artifact, persists metrics and flamegraphs to the
 #              camunda-benchmark-load-test-results-prod GCS bucket for long-term retention, posts a
 #              side-by-side summary table (with flamegraph links) to Slack (the scheduled run always

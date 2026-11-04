@@ -110,7 +110,7 @@ table  = '\n'.join([header, sep] + rows)
 # All variants' Grafana links share one time range, anchored to the first (primary) variant's
 # soak end — mirrors prior behavior, which always anchored the range on gRPC's soak end.
 soak_end = int(variants[0]['soakEndEpoch']) if variants else int(time.time())
-from_ms  = (soak_end - 10800) * 1000
+from_ms  = (soak_end - 2700) * 1000
 to_ms    = soak_end * 1000
 run_url  = f'https://github.com/{repo}/actions/runs/{run_id}'
 
@@ -124,7 +124,7 @@ blocks = [
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>',
+            'text': f':bar_chart: *Daily Load Test Results — {date}*\nMetrics: 30 min after 15 min warmup · <{run_url}|Workflow run>',
         },
     },
 ]

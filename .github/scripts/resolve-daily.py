@@ -32,7 +32,7 @@ VARIANT_LABELS = {
 }
 WARMUP_SECONDS = 900           # mirrors sleep 900 in await-benchmark (PR side)
 METRICS_WINDOW_SECONDS = 1800  # PromQL [1800s] @ at evaluates [at-1800, at]
-TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 3h soak → ~05:30
+TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 45 min soak → ~03:30
 LOOKBACK_BUSINESS_DAYS = 7
 
 

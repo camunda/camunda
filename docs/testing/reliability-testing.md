@@ -45,14 +45,14 @@ There exist various variations of load tests in the wild to answer different que
 The table below gives a quick overview; each variant is described in more detail afterward, along
 with whether it is implemented as a scenario in [`load-tests/`](../../load-tests):
 
-|                Test type                |                           Question answered                            |                                            Status                                             |
-|-----------------------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| [Average load test](#average-load-test) | How does the system behave under normal/average workload?              | Implemented (`typical`, `realistic`); weekly endurance rotation runs the `realistic` variants |
-| [Stress test](#stress-test)             | How does the system perform under stress, up to the maximum load?      | Implemented (`max`), run as a bounded ~3-hour test via the daily load tests                   |
-| [Endurance test](#endurance-test)       | Can the system sustain load reliably over a long time?                 | Implemented by the average-load scenarios (see above)                                         |
-| [Spike test](#spike-test)               | How does the system handle a sudden, short burst, and does it recover? | Defined below; not run as a dedicated scenario                                                |
-| [Smoke test](#smoke-test)               | Does the workload behave correctly at minimal, negligible load?        | Covered continuously via completion-rate SLOs/alerting on every scenario (see note below)     |
-| [Breakpoint test](#breakpoint-test)     | Where exactly does the system's capacity limit lie?                    | Defined below; not run as a dedicated scenario                                                |
+|                Test type                |                           Question answered                            |                                                         Status                                                         |
+|-----------------------------------------|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [Average load test](#average-load-test) | How does the system behave under normal/average workload?              | Implemented (`typical`, `realistic`); weekly endurance rotation runs the `realistic` variants                          |
+| [Stress test](#stress-test)             | How does the system perform under stress, up to the maximum load?      | Implemented (`max`), run as a bounded ~45-minute test (15 min warmup, 30 min measured window) via the daily load tests |
+| [Endurance test](#endurance-test)       | Can the system sustain load reliably over a long time?                 | Implemented by the average-load scenarios (see above)                                                                  |
+| [Spike test](#spike-test)               | How does the system handle a sudden, short burst, and does it recover? | Defined below; not run as a dedicated scenario                                                                         |
+| [Smoke test](#smoke-test)               | Does the workload behave correctly at minimal, negligible load?        | Covered continuously via completion-rate SLOs/alerting on every scenario (see note below)                              |
+| [Breakpoint test](#breakpoint-test)     | Where exactly does the system's capacity limit lie?                    | Defined below; not run as a dedicated scenario                                                                         |
 
 #### Average load test
 
@@ -127,7 +127,7 @@ with whether it is implemented as a scenario in [`load-tests/`](../../load-tests
 
 ### How do we implement these tests?
 
-Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~3-hour window before tearing it down.
+Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~45-minute run (15 min warmup, 30 min measured window) before tearing it down.
 
 ### Endurance test variants
 
