@@ -19,7 +19,14 @@ public record AzureBackupConfig(
     boolean createContainer,
     SasTokenConfig sasTokenConfig,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    Retry retry) {
+
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the SDK defaults
+   * in place.
+   */
+  public record Retry(Optional<Integer> maxAttempts) {}
 
   public static class Builder {
 
@@ -33,6 +40,7 @@ public record AzureBackupConfig(
     private String containerName;
     private Duration readTimeout;
     private Duration writeTimeout;
+    private Integer retryMaxAttempts;
 
     public Builder withEndpoint(final String endpoint) {
       this.endpoint = endpoint;
@@ -79,6 +87,11 @@ public record AzureBackupConfig(
       return this;
     }
 
+    public Builder withRetryMaxAttempts(final Integer retryMaxAttempts) {
+      this.retryMaxAttempts = retryMaxAttempts;
+      return this;
+    }
+
     public AzureBackupConfig build() {
 
       return new AzureBackupConfig(
@@ -90,7 +103,8 @@ public record AzureBackupConfig(
           createContainer,
           sasToken,
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          new Retry(Optional.ofNullable(retryMaxAttempts)));
     }
   }
 }
