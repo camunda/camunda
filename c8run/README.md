@@ -32,7 +32,7 @@ Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set se
 
 Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` refuses to import the c8run `.env` because that file can contain runtime, download, and packaging credentials.
 
-`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
+`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=env` with `C8RUN_SECRETS_ENV_PREFIX=C8_` to read secrets from environment variables instead: `C8_DEFAULT_<NAME>` for the default tenant and `C8_<ID>_<NAME>` for each physical tenant. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
 
 ## Physical tenants
 
@@ -68,7 +68,7 @@ Physical tenants are isolated engines; logical tenants provide tenancy within an
 - Removing a physical tenant does not delete its data; it stays in secondary storage under the physical tenant's prefix.
 - c8run does not manage physical tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
 - Each physical tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
-- Physical tenants need `C8RUN_SECRETS_MODE=local`, the default, so each physical tenant gets its own secret store.
+- Physical tenants need `C8RUN_SECRETS_MODE=local`, the default, or `env`, so each physical tenant gets its own secret store. `env` mode refuses to start when physical tenants are declared outside c8run.
 
 ## Validate saved physical-tenant selection locally
 

@@ -459,6 +459,8 @@ C8RUN_SECRETS_DIR selects another directory; relative paths use the current work
 Each physical tenant has its own secrets; use --physical-tenant <id> (or --physical-tenant=<id>)
 to manage them. A physical tenant never sees another physical tenant's secrets, including default.
 C8RUN_SECRETS_MODE defaults to local; external disables local secret commands.
+C8RUN_SECRETS_MODE=env reads secrets from <C8RUN_SECRETS_ENV_PREFIX>DEFAULT_<NAME>
+and <C8RUN_SECRETS_ENV_PREFIX><ID>_<NAME> environment variables instead.
 Overwrites and deletions may remain cached until c8run restarts or the cache expires.
 Local secret commands do not manage stores configured explicitly through --config, such as AWS or GCP.
 `
