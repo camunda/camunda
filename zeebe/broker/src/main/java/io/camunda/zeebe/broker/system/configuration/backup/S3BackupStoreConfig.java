@@ -25,6 +25,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private boolean forcePathStyleAccess = false;
   private String compression;
   private boolean supportLegacyMd5;
+  private @Nullable String defaultsMode;
 
   /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
   private int maxConcurrentConnections = 50;
@@ -144,6 +145,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.ssecKey = ssecKey;
   }
 
+  public @Nullable String getDefaultsMode() {
+    return defaultsMode;
+  }
+
+  public void setDefaultsMode(final @Nullable String defaultsMode) {
+    this.defaultsMode = defaultsMode;
+  }
+
   public static S3BackupConfig toStoreConfig(
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
@@ -162,7 +171,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
             .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
             .withSupportLegacyMd5(config.isSupportLegacyMd5())
-            .withSsecKey(config.getSsecKey());
+            .withSsecKey(config.getSsecKey())
+            .withDefaultsMode(config.getDefaultsMode());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -182,6 +192,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (basePath != null ? basePath.hashCode() : 0);
     result = 31 * result + (ssecKey != null ? ssecKey.hashCode() : 0);
     result = 31 * result + maxConcurrentConnections;
+    result = 31 * result + (defaultsMode != null ? defaultsMode.hashCode() : 0);
     result =
         31 * result
             + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
@@ -211,6 +222,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(ssecKey, that.ssecKey)
         && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
+        && Objects.equals(defaultsMode, that.defaultsMode)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
@@ -246,6 +258,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + connectionAcquisitionTimeout
         + ", supportLegacyMd5="
         + supportLegacyMd5
+        + ", defaultsMode="
+        + defaultsMode
         + ", ssecKey='"
         + (ssecKey != null ? "<redacted>" : "null")
         + '\''

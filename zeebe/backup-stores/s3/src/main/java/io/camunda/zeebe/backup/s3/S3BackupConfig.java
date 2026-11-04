@@ -9,10 +9,13 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.common.BackupStorePaths;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.jspecify.annotations.Nullable;
+import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 
 /**
  * Holds configuration for the {@link S3BackupStore S3 Backup Store}.
@@ -41,6 +44,9 @@ import org.jspecify.annotations.Nullable;
  *     same retry semantics as {@code readTimeout}. If empty, the AWS SDK default of 30s is used.
  * @param ssecKey Optional base64-encoded 32-byte AES-256 key. When present, all objects are written
  *     and read using server-side encryption with a caller-provided key (SSE-C).
+ * @param defaultsMode Defaults mode of the AWS SDK client. If empty, {@link DefaultsMode#AUTO} is
+ *     used, which probes the EC2 instance metadata endpoint to detect the runtime environment and
+ *     can block for a couple of seconds when not running on AWS.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -63,7 +69,8 @@ public record S3BackupConfig(
     boolean supportLegacyMd5,
     Optional<String> ssecKey,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    Optional<DefaultsMode> defaultsMode) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -119,6 +126,8 @@ public record S3BackupConfig(
         + readTimeout
         + ", writeTimeout="
         + writeTimeout
+        + ", defaultsMode="
+        + defaultsMode
         + '}';
   }
 
@@ -136,6 +145,7 @@ public record S3BackupConfig(
     private @Nullable String ssecKey;
     private @Nullable Duration readTimeout;
     private @Nullable Duration writeTimeout;
+    private @Nullable DefaultsMode defaultsMode;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -213,6 +223,26 @@ public record S3BackupConfig(
       return this;
     }
 
+    /**
+     * @param defaultsMode name of a {@link DefaultsMode}, e.g. {@code standard} or {@code
+     *     in-region}; case-insensitive and accepting '-' for '_'
+     */
+    public Builder withDefaultsMode(final @Nullable String defaultsMode) {
+      this.defaultsMode = defaultsMode == null ? null : parseDefaultsMode(defaultsMode);
+      return this;
+    }
+
+    private static DefaultsMode parseDefaultsMode(final String value) {
+      try {
+        return DefaultsMode.valueOf(value.trim().toUpperCase(Locale.ROOT).replace('-', '_'));
+      } catch (final IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+            "Unknown defaults mode '%s', expected one of %s"
+                .formatted(value, Arrays.toString(DefaultsMode.values())),
+            e);
+      }
+    }
+
     public S3BackupConfig build() {
       if (bucketName == null) {
         throw new IllegalArgumentException("Bucket name must not be empty.");
@@ -231,7 +261,8 @@ public record S3BackupConfig(
           supportLegacyMd5,
           Optional.ofNullable(ssecKey),
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          Optional.ofNullable(defaultsMode));
     }
   }
 

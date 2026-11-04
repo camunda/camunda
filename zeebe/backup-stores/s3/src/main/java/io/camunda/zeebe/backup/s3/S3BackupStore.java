@@ -876,7 +876,7 @@ public final class S3BackupStore implements BackupStore {
     final var builder = S3AsyncClient.builder();
 
     // Enable auto-tuning of various parameters based on the environment
-    builder.defaultsMode(DefaultsMode.AUTO);
+    builder.defaultsMode(config.defaultsMode().orElse(DefaultsMode.AUTO));
 
     // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
     // compatible storage systems that expect MD5 checksums in the request.
