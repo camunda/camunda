@@ -31,6 +31,8 @@ final class EngineCfgTest {
     // then
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(100);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofMinutes(1));
+    assertThat(configuration.getMessagesPendingSubscriptionRecoveryBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT);
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(1000L);
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
