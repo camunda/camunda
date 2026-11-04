@@ -523,6 +523,68 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRestoreEveryPartitionOfABackupTakenAfterAScaleUp() throws Exception {
+    // given - a backup taken after the cluster was scaled up from 2 to 3 partitions, covering the
+    // exported positions of all 3
+    final List<Long> backedUp = new ArrayList<>();
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+    }
+    disableRdbmsExporter(SCALED_PARTITION_COUNT);
+    awaitBackupCoversExportedPositionsOnEveryPartition(SCALED_PARTITION_COUNT);
+    final long backupId = takeAndAwaitBackup().getBackupId();
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.backups(backupId));
+
+    // then - all 3 partitions are restored, with the data from before and after the scale up
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionOfATimeRangeAfterAScaleUp() throws Exception {
+    // given - a time range whose backups were all taken after the cluster was scaled up
+    final List<Long> backedUp = new ArrayList<>();
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      backedUp.addAll(createInstancesOnEveryPartition(client));
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+      takeAndAwaitBackup();
+      from = currentTime(broker);
+
+      backedUp.addAll(
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, SCALED_PARTITION_COUNT));
+    }
+    disableRdbmsExporter(SCALED_PARTITION_COUNT);
+    awaitBackupCoversExportedPositionsOnEveryPartition(SCALED_PARTITION_COUNT);
+    final Instant to = currentTime(broker);
+
+    // when
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    restore(RestoreTarget.timeRange(from, to));
+
+    // then - all 3 partitions are restored up to `to`
+    assertOnlyInstancesRestored(backedUp);
+    assertRestoredEveryPartitionAfterAScaleUp();
+  }
+
+  @Test
   void shouldRestoreEveryPartitionPastItsExportedPositionAndResumeExporting() throws Exception {
     // given - backups covering what the RDBMS holds, and an exporter that is stopped, so the
     // exported positions stay where they are
@@ -616,13 +678,17 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * never records a position on that partition, and no backup can ever cover it.
    */
   protected final void disableRdbmsExporter() {
+    disableRdbmsExporter(PARTITION_COUNT);
+  }
+
+  private void disableRdbmsExporter(final int partitionCount) {
     await("the RDBMS exporter recorded a position on every partition")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               progressClock(broker, 1000);
-              assertThat(IntStream.rangeClosed(1, PARTITION_COUNT).boxed())
+              assertThat(IntStream.rangeClosed(1, partitionCount).boxed())
                   .allSatisfy(
                       partitionId ->
                           assertThat(exporterPositionMapper.findOne(partitionId))
@@ -638,6 +704,10 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * does a time-range restore have a backup that covers the exported data on all partitions.
    */
   protected final void awaitBackupCoversExportedPositionsOnEveryPartition() {
+    awaitBackupCoversExportedPositionsOnEveryPartition(PARTITION_COUNT);
+  }
+
+  private void awaitBackupCoversExportedPositionsOnEveryPartition(final int partitionCount) {
     Awaitility.await("backup covers the exported position on every partition")
         .pollDelay(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(300))
@@ -647,7 +717,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
               assertThat(backup.getDetails())
                   .extracting(PartitionBackupInfo::getPartitionId)
                   .containsExactlyInAnyOrderElementsOf(
-                      IntStream.rangeClosed(1, PARTITION_COUNT).boxed().toList());
+                      IntStream.rangeClosed(1, partitionCount).boxed().toList());
               assertThat(backup.getDetails())
                   .allSatisfy(
                       details -> {
@@ -715,6 +785,23 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
             Collectors.toMap(
                 partitionId -> partitionId,
                 partitionId -> mapper.findOne(partitionId).lastExportedPosition()));
+  }
+
+  private void assertRestoredEveryPartitionAfterAScaleUp() {
+    InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+        broker.getWorkingDirectory(),
+        DEFAULT_PHYSICAL_TENANT_ID,
+        SCALED_PARTITION_COUNT,
+        SCALED_PARTITION_COUNT);
+    final var clusterActuator = ClusterActuator.of(broker);
+    await("the group routes over the scaled up partitions")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                InProcessRestoreTestUtil.assertRoutesOverPartitions(
+                    clusterActuator, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+    InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+        broker, PROCESS_ID, SCALED_PARTITION_COUNT);
   }
 
   private void assertRestoredTheBackupsPartitions() {
