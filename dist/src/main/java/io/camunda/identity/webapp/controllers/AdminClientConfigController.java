@@ -9,18 +9,22 @@ package io.camunda.identity.webapp.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,12 +47,19 @@ public class AdminClientConfigController {
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
-  private final String clientConfigAsJS;
+  private final CamundaSecurityLibraryProperties cslProperties;
+  private final PhysicalTenantCamundaGroups camundaGroups;
+  // The groups mode is the only value that differs between physical tenants.
+  private final String clientConfigWithCamundaGroups;
+  private final String clientConfigWithoutCamundaGroups;
   private final ObjectMapper objectMapper;
 
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
-      @Autowired(required = false) final WebappConfiguration webappConfiguration) {
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
+      final Environment environment) {
+    this.cslProperties = cslProperties;
+    camundaGroups = new PhysicalTenantCamundaGroups(environment);
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     final boolean isNewDesignSystemEnabled =
@@ -66,17 +77,26 @@ public class AdminClientConfigController {
         namedProviders.keySet());
 
     objectMapper = new ObjectMapper();
-    clientConfigAsJS =
-        generateClientConfig(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
+    clientConfigWithCamundaGroups =
+        generateClientConfig(
+            cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured, true);
+    clientConfigWithoutCamundaGroups =
+        generateClientConfig(
+            cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured, false);
   }
 
   private String generateClientConfig(
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured) {
+      final boolean isAdditionalIdpConfigured,
+      final boolean isCamundaGroupsEnabled) {
     try {
       final Map<String, Object> config =
-          createConfigMap(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
+          createConfigMap(
+              cslProperties,
+              isNewDesignSystemEnabled,
+              isAdditionalIdpConfigured,
+              isCamundaGroupsEnabled);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -88,12 +108,13 @@ public class AdminClientConfigController {
   private Map<String, Object> createConfigMap(
       final CamundaSecurityLibraryProperties cslProperties,
       final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured) {
+      final boolean isAdditionalIdpConfigured,
+      final boolean isCamundaGroupsEnabled) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = cslProperties.getSaas();
 
     config.put(IS_OIDC, String.valueOf(isOidcAuthentication(cslProperties)));
-    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(cslProperties)));
+    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled));
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
@@ -126,18 +147,15 @@ public class AdminClientConfigController {
         .anyMatch(oidc -> StringUtils.hasText(oidc.getClientId()));
   }
 
-  private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
-    final var authentication = cslProperties.getAuthentication();
-    final var oidcConfig = authentication.getOidc();
-    return oidcConfig == null
-        || oidcConfig.getGroupsClaim() == null
-        || oidcConfig.getGroupsClaim().isEmpty();
-  }
-
   @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")
   @ResponseBody
   @Hidden
-  public String getClientConfig() {
-    return clientConfigAsJS;
+  public String getClientConfig(final HttpServletRequest request) {
+    final boolean isCamundaGroupsEnabled =
+        camundaGroups.isCamundaGroupsEnabled(
+            PhysicalTenantContext.getPhysicalTenantId(request), cslProperties.getAuthentication());
+    return isCamundaGroupsEnabled
+        ? clientConfigWithCamundaGroups
+        : clientConfigWithoutCamundaGroups;
   }
 }

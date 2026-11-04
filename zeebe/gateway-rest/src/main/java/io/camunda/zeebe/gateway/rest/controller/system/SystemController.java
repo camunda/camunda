@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.system;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuthenticationConfigurationResponse;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,7 @@ public class SystemController {
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
   private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
+  private final PhysicalTenantCamundaGroups camundaGroups;
 
   public SystemController(
       final ServiceRegistry serviceRegistry,
@@ -56,7 +59,8 @@ public class SystemController {
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize,
-      final PhysicalTenantRestConfigProvider tenantRestConfigProvider) {
+      final PhysicalTenantRestConfigProvider tenantRestConfigProvider,
+      final Environment environment) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.cslProperties = cslProperties;
@@ -64,6 +68,7 @@ public class SystemController {
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
     this.tenantRestConfigProvider = tenantRestConfigProvider;
+    camundaGroups = new PhysicalTenantCamundaGroups(environment);
   }
 
   @RequiresSecondaryStorage
@@ -99,7 +104,7 @@ public class SystemController {
             .jobMetrics(jobMetricsResponse)
             .components(buildComponentsConfiguration())
             .deployment(buildDeploymentConfiguration())
-            .authentication(buildAuthenticationConfiguration())
+            .authentication(buildAuthenticationConfiguration(physicalTenantId))
             .cloud(buildCloudConfiguration())
             .build());
   }
@@ -130,13 +135,13 @@ public class SystemController {
         .build();
   }
 
-  private AuthenticationConfigurationResponse buildAuthenticationConfiguration() {
+  private AuthenticationConfigurationResponse buildAuthenticationConfiguration(
+      final String physicalTenantId) {
     final boolean canLogout =
         !SaasConfigurationHelper.isSaas(cslProperties != null ? cslProperties.getSaas() : null);
     final boolean isCamundaGroupsEnabled =
-        cslProperties != null
-            && cslProperties.getAuthentication() != null
-            && cslProperties.getAuthentication().isCamundaGroupsEnabled();
+        camundaGroups.isCamundaGroupsEnabled(
+            physicalTenantId, cslProperties != null ? cslProperties.getAuthentication() : null);
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)
