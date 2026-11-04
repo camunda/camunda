@@ -14,6 +14,7 @@ declare module '@tanstack/history' {
 		operateVariableFilterOpenedFromList?: true;
 		operateInstanceMigration?: unknown;
 		operateHideOptionalFilters?: true;
+		operateLoginReferrer?: string;
 	}
 }
 
