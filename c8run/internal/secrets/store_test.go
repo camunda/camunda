@@ -279,7 +279,54 @@ func TestModeRejectsInvalidValue(t *testing.T) {
 
 	_, err := Mode()
 
-	assert.ErrorContains(t, err, "must be local or external")
+	assert.ErrorContains(t, err, "must be local, external or env")
+}
+
+func TestModeAcceptsEnvIgnoringCaseAndSpaces(t *testing.T) {
+	t.Setenv(ModeEnv, " ENV ")
+
+	mode, err := Mode()
+
+	require.NoError(t, err)
+	assert.Equal(t, "env", mode)
+}
+
+func TestEnvPrefixAcceptsWellFormedPrefix(t *testing.T) {
+	for _, prefix := range []string{"C8_", "c8_", "MY_APP_", "A_", "A1__"} {
+		t.Run(prefix, func(t *testing.T) {
+			t.Setenv(EnvPrefixEnv, prefix)
+
+			got, err := EnvPrefix()
+
+			require.NoError(t, err)
+			assert.Equal(t, prefix, got)
+		})
+	}
+}
+
+func TestEnvPrefixRequiresAValue(t *testing.T) {
+	for _, value := range []string{"", "  "} {
+		t.Run("value="+value, func(t *testing.T) {
+			t.Setenv(EnvPrefixEnv, value)
+
+			_, err := EnvPrefix()
+
+			assert.ErrorContains(t, err, EnvPrefixEnv)
+		})
+	}
+}
+
+func TestEnvPrefixRejectsMalformedPrefix(t *testing.T) {
+	for _, prefix := range []string{"1C8_", "C8-", "C8", "C8.", "_C8_", "C8-X_", "Ä8_"} {
+		t.Run(prefix, func(t *testing.T) {
+			t.Setenv(EnvPrefixEnv, prefix)
+
+			_, err := EnvPrefix()
+
+			assert.ErrorContains(t, err, EnvPrefixEnv)
+			assert.ErrorContains(t, err, "end with an underscore")
+		})
+	}
 }
 
 func TestSetCreatesNestedConfiguredDirectory(t *testing.T) {

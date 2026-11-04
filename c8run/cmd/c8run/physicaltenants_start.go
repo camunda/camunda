@@ -34,13 +34,20 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 	}
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
 	var userConfigs []string
-	externallyDeclared := envDeclaresTenants()
+	settings.PhysicalTenantsDeclaredIn = nil
+	if envDeclaresTenants() {
+		settings.PhysicalTenantsDeclaredIn = append(settings.PhysicalTenantsDeclaredIn,
+			physicaltenants.TenantEnvPrefix+"* variables or -Dcamunda.physical-tenants. in JAVA_OPTS/JDK_JAVA_OPTIONS")
+	}
 	for _, p := range settings.ConfigPaths {
 		if p != defaultConfig {
 			userConfigs = append(userConfigs, p)
-			externallyDeclared = externallyDeclared || physicaltenants.ConfigDeclaresTenants(p)
+			if physicaltenants.ConfigDeclaresTenants(p) {
+				settings.PhysicalTenantsDeclaredIn = append(settings.PhysicalTenantsDeclaredIn, "--config "+p)
+			}
 		}
 	}
+	externallyDeclared := len(settings.PhysicalTenantsDeclaredIn) > 0
 	mode, err := physicaltenants.Mode()
 	if err != nil {
 		return err

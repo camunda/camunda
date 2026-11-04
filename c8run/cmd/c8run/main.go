@@ -17,7 +17,6 @@ import (
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
-	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/start"
@@ -441,40 +440,9 @@ func main() {
 	}
 	state := initialize(baseCommand, baseDir)
 	if baseCommand == "start" {
-		mode, err := localsecrets.Mode()
-		if err != nil {
+		if err := configureSecretStores(baseDir, &state.Settings); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
-		}
-		if mode != "local" && len(state.Settings.PhysicalTenants) > 0 {
-			fmt.Fprintf(os.Stderr, "Physical tenants managed by c8run need their own secret stores, which c8run only sets up when %s=local.\n"+
-				"Either unset %s, or declare the physical tenants and their secret stores in your --config "+
-				"(camunda.physical-tenants.<id>.secrets.stores.*).\n", localsecrets.ModeEnv, localsecrets.ModeEnv)
-			os.Exit(1)
-		}
-		if mode == "local" {
-			secretStore := localsecrets.New(baseDir)
-			if err := secretStore.Ensure(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-			secretDirectory, err := secretStore.Directory()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-			if err := os.Setenv(localsecrets.DirectoryEnv, secretDirectory); err != nil {
-				fmt.Fprintln(os.Stderr, "failed to configure local secrets directory:", err)
-				os.Exit(1)
-			}
-			if err := os.Setenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", secretDirectory); err != nil {
-				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store:", err)
-				os.Exit(1)
-			}
-			if err := configureTenantSecretStores(baseDir, &state.Settings); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
 		}
 	}
 
