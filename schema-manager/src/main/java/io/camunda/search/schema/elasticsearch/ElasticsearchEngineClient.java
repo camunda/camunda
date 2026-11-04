@@ -55,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -429,6 +430,32 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void awaitActivePrimaries(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return;
+    }
+    final var timeout = Duration.ofSeconds(10);
+    try {
+      final var response =
+          client
+              .cluster()
+              .health(
+                  r ->
+                      r.index(List.copyOf(indexNames))
+                          .waitForStatus(HealthStatus.Yellow)
+                          .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
+      if (response.timedOut()) {
+        throw new SearchEngineException(
+            "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                .formatted(indexNames, timeout, response.status()));
+      }
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
     }
   }
 
