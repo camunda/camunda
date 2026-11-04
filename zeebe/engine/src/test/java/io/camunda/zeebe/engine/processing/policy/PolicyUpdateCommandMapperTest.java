@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.policy;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.NO_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.IdentityCommand;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -61,9 +59,7 @@ final class PolicyUpdateCommandMapperTest {
 
   @BeforeEach
   void setUp() {
-    mapper =
-        new PolicyUpdateCommandMapper(
-            processingState, EngineSecurityConfigurations.defaultConfig());
+    mapper = new PolicyUpdateCommandMapper(processingState);
     nextKey = 1000L;
   }
 
@@ -82,11 +78,9 @@ final class PolicyUpdateCommandMapperTest {
                   List.<MappingRuleRecordValue>of(mappingRule("rule-" + uid(), "claim-" + uid())));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .extracting(IdentityCommand::intent)
           .containsExactly(
@@ -97,35 +91,31 @@ final class PolicyUpdateCommandMapperTest {
     @Test
     void shouldUpdateEntitiesThatExist() {
       // given
-      final var tenantKey = createTenant("tenant-" + uid());
-      final var roleKey = createRole("role-" + uid());
-      final var groupKey = createGroup("group-" + uid());
-      final var ruleKey = createMappingRule("rule-" + uid(), "claim-" + uid());
+      final var tenant = createTenant("tenant-" + uid());
+      final var role = createRole("role-" + uid());
+      final var group = createGroup("group-" + uid());
+      final var rule = createMappingRule("rule-" + uid(), "claim-" + uid());
       final var chunk =
           chunk()
-              .setTenants(List.<TenantRecordValue>of(tenant(tenantKey.id())))
-              .setRoles(List.<RoleRecordValue>of(role(roleKey.id())))
-              .setGroups(List.<GroupRecordValue>of(group(groupKey.id())))
+              .setTenants(List.<TenantRecordValue>of(tenant(tenant.id())))
+              .setRoles(List.<RoleRecordValue>of(role(role.id())))
+              .setGroups(List.<GroupRecordValue>of(group(group.id())))
               .setMappingRules(
-                  List.<MappingRuleRecordValue>of(
-                      mappingRule(ruleKey.id(), "other-claim-" + uid())));
+                  List.<MappingRuleRecordValue>of(mappingRule(rule.id(), "other-claim-" + uid())));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .extracting(IdentityCommand::intent)
           .containsExactly(
               TenantIntent.UPDATE, RoleIntent.UPDATE, GroupIntent.UPDATE, MappingRuleIntent.UPDATE);
-      assertThat(((TenantRecord) commands.get(0).value()).getTenantKey())
-          .isEqualTo(tenantKey.key());
-      assertThat(((RoleRecord) commands.get(1).value()).getRoleKey()).isEqualTo(roleKey.key());
-      assertThat(((GroupRecord) commands.get(2).value()).getGroupKey()).isEqualTo(groupKey.key());
+      assertThat(((TenantRecord) commands.get(0).value()).getTenantKey()).isEqualTo(tenant.key());
+      assertThat(((RoleRecord) commands.get(1).value()).getRoleKey()).isEqualTo(role.key());
+      assertThat(((GroupRecord) commands.get(2).value()).getGroupKey()).isEqualTo(group.key());
       assertThat(((MappingRuleRecord) commands.get(3).value()).getMappingRuleKey())
-          .isEqualTo(ruleKey.key());
+          .isEqualTo(rule.key());
     }
 
     @Test
@@ -134,58 +124,10 @@ final class PolicyUpdateCommandMapperTest {
       final var chunk = chunk().setRoles(List.<RoleRecordValue>of(role("role-" + uid())));
 
       // when
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
       assertThat(((RoleRecord) commands.getFirst().value()).getPolicyVersion()).isEqualTo(VERSION);
-    }
-
-    @Test
-    void shouldRejectChangingADefaultRole() {
-      // given
-      final var defaultRoleId = DefaultRole.ADMIN.getId();
-      processingState
-          .getRoleState()
-          .create(new RoleRecord().setRoleKey(1L).setRoleId(defaultRoleId));
-      final var chunk = chunk().setRoles(List.<RoleRecordValue>of(role(defaultRoleId)));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains(defaultRoleId, "default role");
-    }
-
-    @Test
-    void shouldRejectAnEntityWithoutId() {
-      // given
-      final var chunk = chunk().setGroups(List.<GroupRecordValue>of(group("")));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains("group ID");
-    }
-
-    @Test
-    void shouldRejectAMappingRuleWithTheClaimOfAnotherRule() {
-      // given
-      final var claimValue = "claim-" + uid();
-      final var existingKey = createMappingRule("rule-" + uid(), claimValue);
-      final var chunk =
-          chunk()
-              .setMappingRules(
-                  List.<MappingRuleRecordValue>of(mappingRule("rule-" + uid(), claimValue)));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors)
-          .singleElement()
-          .asString()
-          .contains(existingKey.id(), "already has this claim");
     }
   }
 
@@ -205,128 +147,67 @@ final class PolicyUpdateCommandMapperTest {
                           PolicyUpdateEntityType.ROLE, roleId, EntityType.CLIENT, "client")));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .extracting(IdentityCommand::intent)
           .containsExactly(RoleIntent.CREATE, RoleIntent.ADD_ENTITY);
       final var membership = (RoleRecord) commands.get(1).value();
       assertThat(membership.getRoleId()).isEqualTo(roleId);
+      assertThat(membership.getRoleKey()).isEqualTo(NO_KEY);
       assertThat(membership.getEntityType()).isEqualTo(EntityType.CLIENT);
       assertThat(membership.getEntityId()).isEqualTo("client");
     }
 
     @Test
-    void shouldSkipAMembershipThatAlreadyExists() {
+    void shouldRemoveAMemberFromAnExistingTarget() {
       // given
-      final var groupId = createGroup("group-" + uid()).id();
+      final var tenant = createTenant("tenant-" + uid());
       processingState
           .getMembershipState()
-          .insertRelation(EntityType.CLIENT, "client", RelationType.GROUP, groupId);
-      final var chunk =
-          chunk()
-              .setMemberships(
-                  List.<PolicyMembershipEntryValue>of(
-                      membership(
-                          PolicyUpdateEntityType.GROUP, groupId, EntityType.CLIENT, "client")));
-
-      // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
-
-      // then
-      assertThat(errors).isEmpty();
-      assertThat(commands).isEmpty();
-    }
-
-    @Test
-    void shouldRejectAMembershipOfAMissingTarget() {
-      // given
-      final var chunk =
-          chunk()
-              .setMemberships(
-                  List.<PolicyMembershipEntryValue>of(
-                      membership(
-                          PolicyUpdateEntityType.TENANT,
-                          "missing-" + uid(),
-                          EntityType.CLIENT,
-                          "client")));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains("tenant does not exist");
-    }
-
-    @Test
-    void shouldRejectAMemberTypeTheTargetDoesNotAccept() {
-      // given
-      final var groupId = createGroup("group-" + uid()).id();
-      final var roleId = createRole("role-" + uid()).id();
-      final var chunk =
-          chunk()
-              .setMemberships(
-                  List.<PolicyMembershipEntryValue>of(
-                      membership(PolicyUpdateEntityType.GROUP, groupId, EntityType.ROLE, roleId)));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains("cannot be a member of a group");
-    }
-
-    @Test
-    void shouldRemoveAnExistingMembership() {
-      // given
-      final var tenantKey = createTenant("tenant-" + uid());
-      processingState
-          .getMembershipState()
-          .insertRelation(EntityType.CLIENT, "client", RelationType.TENANT, tenantKey.id());
+          .insertRelation(EntityType.CLIENT, "client", RelationType.TENANT, tenant.id());
       final var chunk =
           chunk()
               .setMembershipDeletes(
                   List.<PolicyMembershipEntryValue>of(
                       membership(
                           PolicyUpdateEntityType.TENANT,
-                          tenantKey.id(),
+                          tenant.id(),
                           EntityType.CLIENT,
                           "client")));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .singleElement()
           .extracting(IdentityCommand::intent)
           .isEqualTo(TenantIntent.REMOVE_ENTITY);
       assertThat(((TenantRecord) commands.getFirst().value()).getTenantKey())
-          .isEqualTo(tenantKey.key());
+          .isEqualTo(tenant.key());
     }
 
     @Test
-    void shouldRejectRemovingAMembershipThatDoesNotExist() {
+    void shouldNotMapAMembershipWithoutTargetType() {
       // given
-      final var roleId = createRole("role-" + uid()).id();
       final var chunk =
           chunk()
-              .setMembershipDeletes(
+              .setMemberships(
                   List.<PolicyMembershipEntryValue>of(
                       membership(
-                          PolicyUpdateEntityType.ROLE, roleId, EntityType.CLIENT, "client")));
+                          PolicyUpdateEntityType.UNSPECIFIED,
+                          "target-" + uid(),
+                          EntityType.CLIENT,
+                          "client")));
 
       // when
-      final var errors = mapper.validate(chunk);
+      final var result = mapper.toCommands(chunk);
 
       // then
-      assertThat(errors).singleElement().asString().contains("is not a member");
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft()).singleElement().asString().contains("UNSPECIFIED");
     }
   }
 
@@ -334,26 +215,25 @@ final class PolicyUpdateCommandMapperTest {
   final class Authorizations {
 
     @Test
-    void shouldCreateAnAuthorizationForAnOwnerUpsertedInTheSameChunk() {
+    void shouldCreateAnAuthorizationThatDoesNotExist() {
       // given
-      final var roleId = "role-" + uid();
       final var chunk =
           chunk()
-              .setRoles(List.<RoleRecordValue>of(role(roleId)))
               .setAuthorizations(
                   List.<AuthorizationRecordValue>of(
                       authorization(
-                          roleId, "process-" + uid(), PermissionType.READ_PROCESS_DEFINITION)));
+                          "role-" + uid(),
+                          "process-" + uid(),
+                          PermissionType.READ_PROCESS_DEFINITION)));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
+          .singleElement()
           .extracting(IdentityCommand::intent)
-          .containsExactly(RoleIntent.CREATE, AuthorizationIntent.CREATE);
+          .isEqualTo(AuthorizationIntent.CREATE);
     }
 
     @Test
@@ -370,11 +250,9 @@ final class PolicyUpdateCommandMapperTest {
                       authorization(roleId, processId, PermissionType.UPDATE_PROCESS_INSTANCE)));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .singleElement()
           .extracting(IdentityCommand::intent)
@@ -386,46 +264,7 @@ final class PolicyUpdateCommandMapperTest {
     }
 
     @Test
-    void shouldRejectAnAuthorizationOfAMissingOwner() {
-      // given
-      final var chunk =
-          chunk()
-              .setAuthorizations(
-                  List.<AuthorizationRecordValue>of(
-                      authorization(
-                          "missing-" + uid(),
-                          "process-" + uid(),
-                          PermissionType.READ_PROCESS_DEFINITION)));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains("owner does not exist");
-    }
-
-    @Test
-    void shouldRejectAPermissionTheResourceTypeDoesNotSupport() {
-      // given
-      final var roleId = createRole("role-" + uid()).id();
-      final var chunk =
-          chunk()
-              .setAuthorizations(
-                  List.<AuthorizationRecordValue>of(
-                      authorization(
-                          roleId,
-                          "process-" + uid(),
-                          PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE)));
-
-      // when
-      final var errors = mapper.validate(chunk);
-
-      // then
-      assertThat(errors).singleElement().asString().contains("supports only");
-    }
-
-    @Test
-    void shouldDeleteAnExistingAuthorization() {
+    void shouldDeleteTheAuthorizationWithTheSameOwnerAndResource() {
       // given
       final var roleId = createRole("role-" + uid()).id();
       final var processId = "process-" + uid();
@@ -438,11 +277,9 @@ final class PolicyUpdateCommandMapperTest {
                       authorization(roleId, processId, PermissionType.READ_PROCESS_DEFINITION)));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .singleElement()
           .extracting(IdentityCommand::intent)
@@ -452,21 +289,23 @@ final class PolicyUpdateCommandMapperTest {
     }
 
     @Test
-    void shouldRejectDeletingAnAuthorizationThatDoesNotExist() {
+    void shouldLeaveTheKeyOfAnAuthorizationDeleteWithoutMatchEmpty() {
       // given
-      final var roleId = createRole("role-" + uid()).id();
       final var chunk =
           chunk()
               .setAuthorizationDeletes(
                   List.<AuthorizationRecordValue>of(
                       authorization(
-                          roleId, "process-" + uid(), PermissionType.READ_PROCESS_DEFINITION)));
+                          "role-" + uid(),
+                          "process-" + uid(),
+                          PermissionType.READ_PROCESS_DEFINITION)));
 
       // when
-      final var errors = mapper.validate(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
-      // then
-      assertThat(errors).singleElement().asString().contains("no such authorization exists");
+      // then the authorization processor decides that the authorization does not exist
+      assertThat(((AuthorizationRecord) commands.getFirst().value()).getAuthorizationKey())
+          .isEqualTo(NO_KEY);
     }
   }
 
@@ -474,36 +313,34 @@ final class PolicyUpdateCommandMapperTest {
   final class EntityDeletes {
 
     @Test
-    void shouldDeleteExistingEntities() {
+    void shouldDeleteEntitiesWithTheirKeys() {
       // given
-      final var tenantKey = createTenant("tenant-" + uid());
-      final var roleKey = createRole("role-" + uid());
-      final var groupKey = createGroup("group-" + uid());
-      final var ruleKey = createMappingRule("rule-" + uid(), "claim-" + uid());
+      final var tenant = createTenant("tenant-" + uid());
+      final var role = createRole("role-" + uid());
+      final var group = createGroup("group-" + uid());
+      final var rule = createMappingRule("rule-" + uid(), "claim-" + uid());
       final var chunk =
           chunk()
               .setDeletes(
                   List.<PolicyDeleteEntryValue>of(
-                      delete(PolicyUpdateEntityType.MAPPING_RULE, ruleKey.id()),
-                      delete(PolicyUpdateEntityType.GROUP, groupKey.id()),
-                      delete(PolicyUpdateEntityType.ROLE, roleKey.id()),
-                      delete(PolicyUpdateEntityType.TENANT, tenantKey.id())));
+                      delete(PolicyUpdateEntityType.MAPPING_RULE, rule.id()),
+                      delete(PolicyUpdateEntityType.GROUP, group.id()),
+                      delete(PolicyUpdateEntityType.ROLE, role.id()),
+                      delete(PolicyUpdateEntityType.TENANT, tenant.id())));
 
       // when
-      final var errors = mapper.validate(chunk);
-      final var commands = mapper.toCommands(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
       // then
-      assertThat(errors).isEmpty();
       assertThat(commands)
           .extracting(IdentityCommand::intent)
           .containsExactly(
               MappingRuleIntent.DELETE, GroupIntent.DELETE, RoleIntent.DELETE, TenantIntent.DELETE);
-      assertThat(((RoleRecord) commands.get(2).value()).getRoleKey()).isEqualTo(roleKey.key());
+      assertThat(((RoleRecord) commands.get(2).value()).getRoleKey()).isEqualTo(role.key());
     }
 
     @Test
-    void shouldRejectDeletingAnEntityThatDoesNotExist() {
+    void shouldMapTheDeleteOfAMissingEntity() {
       // given
       final var chunk =
           chunk()
@@ -512,30 +349,31 @@ final class PolicyUpdateCommandMapperTest {
                       delete(PolicyUpdateEntityType.GROUP, "missing-" + uid())));
 
       // when
-      final var errors = mapper.validate(chunk);
+      final var commands = mapper.toCommands(chunk).get();
 
-      // then
-      assertThat(errors).singleElement().asString().contains("does not exist");
+      // then the group processor decides that the group does not exist
+      assertThat(commands)
+          .singleElement()
+          .extracting(IdentityCommand::intent)
+          .isEqualTo(GroupIntent.DELETE);
+      assertThat(((GroupRecord) commands.getFirst().value()).getGroupKey()).isEqualTo(NO_KEY);
     }
 
     @Test
-    void shouldRejectDeletingADefaultRole() {
+    void shouldNotMapADeleteWithoutEntityType() {
       // given
-      final var defaultRoleId = DefaultRole.ADMIN.getId();
-      processingState
-          .getRoleState()
-          .create(new RoleRecord().setRoleKey(1L).setRoleId(defaultRoleId));
+      final var id = "entity-" + uid();
       final var chunk =
           chunk()
               .setDeletes(
-                  List.<PolicyDeleteEntryValue>of(
-                      delete(PolicyUpdateEntityType.ROLE, defaultRoleId)));
+                  List.<PolicyDeleteEntryValue>of(delete(PolicyUpdateEntityType.UNSPECIFIED, id)));
 
       // when
-      final var errors = mapper.validate(chunk);
+      final var result = mapper.toCommands(chunk);
 
       // then
-      assertThat(errors).singleElement().asString().contains("default role");
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft()).singleElement().asString().contains(id, "not specified");
     }
   }
 
@@ -571,11 +409,9 @@ final class PolicyUpdateCommandMapperTest {
             .setRoles(List.<RoleRecordValue>of(role(newRoleId)));
 
     // when
-    final var errors = mapper.validate(chunk);
-    final var commands = mapper.toCommands(chunk);
+    final var commands = mapper.toCommands(chunk).get();
 
     // then
-    assertThat(errors).isEmpty();
     assertThat(commands)
         .extracting(IdentityCommand::intent)
         .containsExactly(
