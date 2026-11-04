@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +41,23 @@ final class S3BackupConfigTest {
   void shouldMapDefaultsModeToSdkConstantWithSameName(final DefaultsMode mode) {
     // when / then
     assertThat(mode.toSdk().name()).isEqualTo(mode.name());
+  }
+
+  // Our DefaultsMode mirrors the AWS SDK enum minus MOBILE, which tunes the client for mobile apps.
+  // The mapping only guards our values against the SDK, so a mode added by an SDK upgrade would go
+  // unnoticed. Failing here forces whoever bumps the SDK to decide whether to support the new mode.
+  @Test
+  void shouldCoverAllSdkDefaultsModesExceptMobile() {
+    // given
+    final var sdkModes =
+        Arrays.stream(software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.values())
+            .map(Enum::name)
+            .filter(name -> !name.equals("MOBILE"))
+            .toList();
+
+    // when / then
+    assertThat(Arrays.stream(DefaultsMode.values()).map(Enum::name))
+        .containsExactlyInAnyOrderElementsOf(sdkModes);
   }
 
   @Test
