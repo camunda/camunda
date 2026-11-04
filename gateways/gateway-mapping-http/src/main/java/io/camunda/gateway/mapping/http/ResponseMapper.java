@@ -85,6 +85,8 @@ import io.camunda.gateway.protocol.model.TenantCreateResult;
 import io.camunda.gateway.protocol.model.TenantUpdateResult;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.gateway.protocol.model.UserCreateResult;
+import io.camunda.gateway.protocol.model.UserTaskLookupResult;
+import io.camunda.gateway.protocol.model.UserTaskLookupStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.search.entities.DeployedResourceEntity;
@@ -133,15 +135,18 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
@@ -946,6 +951,71 @@ public final class ResponseMapper {
                             .build())
                 .toList())
         .build();
+  }
+
+  public static UserTaskLookupResult toUserTaskLookupResult(final UserTaskLookupRecord lookup) {
+    final var userTask = lookup.getUserTask();
+    final long rootProcessInstanceKey = userTask.getRootProcessInstanceKey();
+    final long formKey = userTask.getFormKey();
+    return UserTaskLookupResult.Builder.create()
+        .userTaskKey(keyToString(userTask.getUserTaskKey()))
+        .state(toUserTaskLookupState(lookup.getLifecycleState(), userTask.getUserTaskKey()))
+        .elementId(userTask.getElementId())
+        .elementInstanceKey(keyToString(userTask.getElementInstanceKey()))
+        .processInstanceKey(keyToString(userTask.getProcessInstanceKey()))
+        .rootProcessInstanceKey(
+            rootProcessInstanceKey > 0 ? keyToString(rootProcessInstanceKey) : null)
+        .processDefinitionId(userTask.getBpmnProcessId())
+        .processDefinitionKey(keyToString(userTask.getProcessDefinitionKey()))
+        .processDefinitionVersion(userTask.getProcessDefinitionVersion())
+        .tenantId(userTask.getTenantId())
+        .assignee(emptyToNull(userTask.getAssignee()))
+        .candidateGroups(userTask.getCandidateGroupsList())
+        .candidateUsers(userTask.getCandidateUsersList())
+        .dueDate(toUserTaskDateOrNull(userTask.getDueDate()))
+        .followUpDate(toUserTaskDateOrNull(userTask.getFollowUpDate()))
+        .formKey(formKey > 0 ? keyToString(formKey) : null)
+        .externalFormReference(emptyToNull(userTask.getExternalFormReference()))
+        .customHeaders(userTask.getCustomHeaders())
+        .priority(userTask.getPriority())
+        .tags(userTask.getTags())
+        .businessId(emptyToNull(userTask.getBusinessId()))
+        .creationDate(
+            formatDate(
+                OffsetDateTime.ofInstant(
+                    Instant.ofEpochMilli(userTask.getCreationTimestamp()), ZoneOffset.UTC)))
+        .variables(userTask.getVariables())
+        .build();
+  }
+
+  /**
+   * The engine stores user task dates with {@link ZonedDateTime#toString()}, which may omit the
+   * seconds or append a region (e.g. {@code [Europe/Berlin]}), so they're not always RFC 3339.
+   */
+  private static @Nullable String toUserTaskDateOrNull(final String date) {
+    if (date.isEmpty()) {
+      return null;
+    }
+    return formatDate(
+        ZonedDateTime.parse(date, DateTimeFormatter.ISO_ZONED_DATE_TIME).toOffsetDateTime());
+  }
+
+  private static UserTaskLookupStateEnum toUserTaskLookupState(
+      final UserTaskLifecycleState lifecycleState, final long userTaskKey) {
+    return switch (lifecycleState) {
+      case CREATING -> UserTaskLookupStateEnum.CREATING;
+      case CREATED -> UserTaskLookupStateEnum.CREATED;
+      case ASSIGNING -> UserTaskLookupStateEnum.ASSIGNING;
+      case CLAIMING -> UserTaskLookupStateEnum.CLAIMING;
+      case UPDATING -> UserTaskLookupStateEnum.UPDATING;
+      case COMPLETING -> UserTaskLookupStateEnum.COMPLETING;
+      case CANCELING -> UserTaskLookupStateEnum.CANCELING;
+      case UNSPECIFIED ->
+          throw new IllegalStateException(
+              ("Expected a lifecycle state for user task '%d', but the engine has none stored "
+                      + "(UNSPECIFIED). This is a bug, please report it.")
+                  .formatted(userTaskKey));
+    };
   }
 
   public static ClockResult toClockResult(final ClockRecord clockRecord) {
