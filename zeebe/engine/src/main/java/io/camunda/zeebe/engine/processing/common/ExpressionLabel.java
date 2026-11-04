@@ -99,6 +99,21 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("escalation code expression", event(eventId));
   }
 
+  /** Labels an expression as the duration expression of a timer event. */
+  public static ExpressionLabel timerDurationExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer duration expression", event(eventId));
+  }
+
+  /** Labels an expression as the cycle expression of a timer event. */
+  public static ExpressionLabel timerCycleExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer cycle expression", event(eventId));
+  }
+
+  /** Labels an expression as the date expression of a timer event. */
+  public static ExpressionLabel timerDateExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer date expression", event(eventId));
+  }
+
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
     return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
   }

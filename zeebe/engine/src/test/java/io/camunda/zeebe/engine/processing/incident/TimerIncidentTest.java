@@ -119,7 +119,8 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'date and time(date(timer_duration),time("T00:00:00@UTC"))' \
+            Expected result of the timer date expression \
+            'date and time(date(timer_duration),time("T00:00:00@UTC"))' of event 'boundary-event-1' \
             to be one of '[DATE_TIME, STRING]', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'
@@ -152,9 +153,9 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Invalid date-time format 'not_a_duration_expression' for expression '"
+            "Invalid date-time format 'not_a_duration_expression' for the timer date expression '"
                 + DURATION_VARIABLE
-                + "'.");
+                + "' of event 'boundary-event-1'.");
   }
 
   @Test
@@ -178,7 +179,8 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'duration(timer_duration)' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
+            Expected result of the timer duration expression 'duration(timer_duration)' of event 'timer-1' \
+            to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Illegal arguments: 'null'""");
@@ -209,9 +211,9 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Invalid duration format 'not_a_duration_expression' for expression '"
+            "Invalid duration format 'not_a_duration_expression' for the timer duration expression '"
                 + DURATION_VARIABLE
-                + "'.");
+                + "' of event 'timer-1'.");
   }
 
   @Test
@@ -240,10 +242,77 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'cycle(duration(timer_duration))' to be 'STRING', but was 'NULL'. \
+            Expected result of the timer cycle expression 'cycle(duration(timer_duration))' \
+            of event 'boundary-event-1' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Failed to parse duration from 'not_a_duration_expression'
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'cycle': cycle function expected an interval (duration) parameter, but found 'null'""");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCycleVariableNotACycle() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "not_a_cycle_expression")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    // the parser's own reason is appended; only assert on the part we own to stay independent of
+    // the cron library's wording
+    assertThat(incident.getValue().getErrorMessage())
+        .startsWith(
+            "Invalid cycle format 'not_a_cycle_expression' for the timer cycle expression '"
+                + DURATION_VARIABLE
+                + "' of event 'boundary-event-1': ");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfRepeatingCycleVariableHasNoInterval() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "Rfoo")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid cycle format 'Rfoo' for the timer cycle expression '"
+                + DURATION_VARIABLE
+                + "' of event 'boundary-event-1': No interval given");
   }
 
   @Test
