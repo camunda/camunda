@@ -1,15 +1,19 @@
 # description: Runs the full lifecycle for a stress test: deploy (setup), 15-min
 #              warmup, async-profiler capture (30 min, parallel to soak), 3-hour soak, metrics
 #              snapshot, then namespace cleanup. Used on daily schedule in different
-#              variants, see camunda-daily-load-tests.yml.
+#              variants, see camunda-daily-load-tests.yml, and weekly for the stable branches,
+#              see camunda-stable-stress-tests.yml. For a stable branch (input stable-branch) only
+#              the setup differs: the branch is built and deployed with its own
+#              camunda-load-test.yml, everything else runs from the caller's (main) copy.
 #              Uploads its own metrics as a `stress-test-result-<name>` artifact containing
 #              {namespace, soakEndEpoch, results} for the caller to aggregate (matrix job outputs
 #              are not reliable to fan out per-leg via `needs.<job>.outputs`).
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
-# called-by: camunda-daily-load-tests.yml
+# called-by: camunda-daily-load-tests.yml, camunda-stable-stress-tests.yml
 # note: this chain is 3 of GitHub's 4 allowed reusable-workflow nesting levels deep (calls 4 more
 #       reusable workflows); none of them may add another nested "uses:" job without breaking it.
+#       The stable branches' camunda-load-test.yml copies have no nested "uses:" either.
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stress test
@@ -41,6 +45,11 @@ on:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
         default: true
+        required: false
+      stable-branch:
+        description: 'Stable branch to stress (8.8, 8.9 or 8.10). Empty stress-tests main. Setup (build and deploy) then runs the branch own camunda-load-test.yml, everything else runs from the caller.'
+        type: string
+        default: ""
         required: false
     outputs:
       soak-end-epoch:
@@ -77,6 +86,11 @@ on:
         type: boolean
         default: true
         required: false
+      stable-branch:
+        description: 'Stable branch to stress (8.8, 8.9 or 8.10). Empty stress-tests main.'
+        type: string
+        default: ""
+        required: false
 
 defaults:
   run:
@@ -96,6 +110,7 @@ env:
 jobs:
   setup:
     name: Setup
+    if: inputs.stable-branch == ''
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
@@ -109,6 +124,82 @@ jobs:
       load-test-load: ${{ inputs.load-test-load }}
       load-test-setup-helm-values: ${{ inputs.load-test-setup-helm-values }}
 
+  setup-88:
+    name: Setup (stable/8.8)
+    if: inputs.stable-branch == '8.8'
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.8
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      scenario: max
+      enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      load-test-load: ${{ inputs.load-test-load }}
+
+  setup-89:
+    name: Setup (stable/8.9)
+    if: inputs.stable-branch == '8.9'
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.9
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      scenario: max
+      enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      load-test-load: ${{ inputs.load-test-load }}
+
+  setup-810:
+    name: Setup (stable/8.10)
+    if: inputs.stable-branch == '8.10'
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@stable/8.10
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      scenario: max
+      enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      load-test-load: ${{ inputs.load-test-load }}
+      load-test-setup-helm-values: ${{ inputs.load-test-setup-helm-values }}
+
+  # A `uses:` path cannot be dynamic, so every stable branch has its own setup job above (a stable
+  # branch builds and deploys with its own copy of camunda-load-test.yml; the stable branches have
+  # no load-tests/setup folder, it lives on main). Exactly one setup job runs per call. The jobs
+  # below depend on this single join so their gating is the same for main and stable branches.
+  # load-test-setup-helm-values is only forwarded to 8.10, the older stable workflows lack that input.
+  # build-frontend is not forwarded: the stable workflows default to false, as in the weekly load tests.
+  # enable-optimize is false without secondary storage: the stable workflows default it to true, but
+  # newLoadTest.sh then skips Optimize's values file and the later helm install fails on the missing file.
+  # Every job below the join carries an explicit `!cancelled()`: without a status function GitHub adds
+  # an implicit success() that also looks at skipped ancestors (the unused setup jobs) and would skip it.
+  setup-done:
+    name: Setup done
+    runs-on: ubuntu-latest
+    needs: [ setup, setup-88, setup-89, setup-810 ]
+    if: ${{ !cancelled() }}
+    timeout-minutes: 1
+    permissions: {}
+    env:
+      SETUP_SUCCEEDED: ${{ contains(needs.*.result, 'success') }}
+      STABLE_BRANCH: ${{ inputs.stable-branch }}
+    steps:
+      # Fails when no setup job succeeded, including an unsupported stable-branch value that
+      # matches none of the setup jobs, so such a run is not green without having tested anything.
+      - name: Verify setup
+        run: |
+          if [[ "${SETUP_SUCCEEDED}" != "true" ]]; then
+            echo "::error::No setup job succeeded (stable-branch='${STABLE_BRANCH}', supported: '', 8.8, 8.9, 8.10)"
+            exit 1
+          fi
+
   # Wait 15 minutes after setup succeeds before profiling starts, mirroring the warmup convention
   # the rest of the load-test flow already uses (see WARMUP_SECONDS in resolve-daily.py and
   # await-benchmark's `sleep 900` in camunda-pr-load-test.yaml): profiling from t=0 would capture
@@ -116,8 +207,8 @@ jobs:
   warmup:
     name: Warmup before profiling
     runs-on: ubuntu-latest
-    needs: setup
-    if: needs.setup.result == 'success'
+    needs: setup-done
+    if: ${{ !cancelled() && needs.setup-done.result == 'success' }}
     timeout-minutes: 20
     permissions: {}
     steps:
@@ -128,8 +219,8 @@ jobs:
   # on its critical path).
   profile:
     name: Profile pods
-    needs: [ setup, warmup ]
-    if: needs.warmup.result == 'success'
+    needs: [ setup-done, warmup ]
+    if: ${{ !cancelled() && needs.warmup.result == 'success' }}
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
@@ -153,8 +244,8 @@ jobs:
   soak:
     name: Soak
     runs-on: ubuntu-latest
-    needs: setup
-    if: needs.setup.result == 'success'
+    needs: setup-done
+    if: ${{ !cancelled() && needs.setup-done.result == 'success' }}
     timeout-minutes: 195
     permissions: {}
     outputs:
@@ -170,8 +261,8 @@ jobs:
   # collection rather than query a missing namespace.
   collect-metrics:
     name: Collect metrics
-    needs: [ setup, soak ]
-    if: needs.soak.result == 'success' && needs.setup.result == 'success'
+    needs: [ setup-done, soak ]
+    if: ${{ !cancelled() && needs.soak.result == 'success' }}
     permissions: {}
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
