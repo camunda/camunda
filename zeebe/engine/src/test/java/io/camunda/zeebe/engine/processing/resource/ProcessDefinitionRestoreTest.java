@@ -25,6 +25,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -373,6 +374,11 @@ public class ProcessDefinitionRestoreTest {
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
     awaitRestoreFinished();
+    // a snapshot after the restore keeps recovery from replaying RESTORED, whose applier would
+    // fill the in-memory cache again
+    Awaitility.await("until the engine has reached the end of the log after the restore")
+        .until(engine::hasReachedEnd);
+    engine.snapshot();
 
     // when - a restart empties the in-memory cache, so creating an instance of that version
     // reloads the definition through the by-version lookup path
