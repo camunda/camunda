@@ -7,8 +7,7 @@
  */
 
 import {useEffect, useMemo, useRef} from 'react';
-import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import {NoTasks} from './NoTasks';
 import {Task} from './Task';

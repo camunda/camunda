@@ -7,7 +7,7 @@
  */
 
 import {Badge, Text} from '@camunda/design-system';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';

@@ -7,17 +7,22 @@
  */
 
 import {API_VERSION, type Endpoint} from './common';
+import {authenticatedCamundaUserResultSchema} from './gen/zod/authenticatedCamundaUserResultSchema';
 import {camundaUserResultSchema} from './gen/zod/camundaUserResultSchema';
+import type {AuthenticatedCamundaUserResult} from './gen/types/AuthenticatedCamundaUserResult';
 import type {CamundaUserResult} from './gen/types/CamundaUserResult';
 
 const currentUserSchema = camundaUserResultSchema;
 type CurrentUser = CamundaUserResult;
+
+const authenticatedCurrentUserSchema = authenticatedCamundaUserResultSchema;
+type AuthenticatedCurrentUser = AuthenticatedCamundaUserResult;
 
 const getCurrentUser = {
 	method: 'GET',
 	getUrl: () => `/${API_VERSION}/authentication/me` as const,
 } as const satisfies Endpoint;
 
-export {currentUserSchema, getCurrentUser};
+export {authenticatedCurrentUserSchema, currentUserSchema, getCurrentUser};
 
-export type {CurrentUser};
+export type {AuthenticatedCurrentUser, CurrentUser};

@@ -7,8 +7,7 @@
  */
 
 import {Button, Text, useIsMobile} from '@camunda/design-system';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useNavigate} from '@tanstack/react-router';
 import {ArrowLeft, CircleCheck, LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
