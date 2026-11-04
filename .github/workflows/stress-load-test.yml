@@ -122,7 +122,7 @@ jobs:
     secrets: inherit
     with:
       name: c8-${{ inputs.name }}
-      duration-seconds: '600'
+      duration-seconds: '300'
 
   # Wait 45 minutes (15-min warmup + 30-min metrics window), anchored to this variant's own setup completion, before taking its metrics
   # snapshot. Variants build+deploy independently and don't reliably finish at the same time, so
