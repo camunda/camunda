@@ -24,7 +24,8 @@ public interface EvaluateConditionalCommandStep1
 
   interface EvaluateConditionalCommandStep2
       extends CommandWithTenantStep<EvaluateConditionalCommandStep2>,
-          FinalCommandStep<EvaluateConditionalResponse> {
+          FinalCommandStep<EvaluateConditionalResponse>,
+          CommandWithOperationReferenceStep<EvaluateConditionalCommandStep2> {
 
     /**
      * Set the key of the process definition to evaluate conditional start events for. If a key is

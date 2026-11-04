@@ -66,6 +66,27 @@ public class PublishMessageRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final MessagePublicationRequest request =
+        gatewayService.getLastRequest(MessagePublicationRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldPublishMessageWithDefaultTtl() {
     // given
     gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);

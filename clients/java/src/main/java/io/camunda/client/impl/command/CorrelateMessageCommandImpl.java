@@ -78,6 +78,12 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   }
 
   @Override
+  public CorrelateMessageCommandStep3 operationReference(final long operationReference) {
+    request.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public CorrelateMessageCommandStep3 withoutCorrelationKey() {
     return this;
   }

@@ -631,7 +631,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     void shouldAssignUserTaskByKey() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -653,14 +653,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices)
-          .assignUserTask(eq(5L), eq("jane.doe"), eq("assign"), eq(true), any());
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("assign"), eq(true), any(), any());
     }
 
     @Test
     void shouldAssignUserTaskWithOptions() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -674,7 +674,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
                           "assignee",
                           "jane.doe",
                           "assignmentOptions",
-                          Map.of("allowOverride", false, "action", "claim")))
+                          Map.of(
+                              "allowOverride", false, "action", "claim", "operationReference", 42)))
                   .build());
 
       // then
@@ -689,13 +690,13 @@ class UserTaskToolsTest extends OperationalToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices)
-          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), any());
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), eq(42L), any());
     }
 
     @Test
     void shouldUnassignUserTaskWhenAssigneeIsMissing() {
       // given
-      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
+      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -715,7 +716,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
 
-      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any());
+      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any(), any());
     }
 
     @ParameterizedTest
@@ -723,7 +724,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     @ValueSource(strings = {"  "})
     void shouldUnassignUserTaskWhenAssigneeIsNullOrEmpty(final String assignee) {
       // given
-      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
+      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -744,14 +745,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
 
-      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any());
+      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any(), any());
     }
 
     @Test
     void shouldFailAssignUserTaskOnException() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));
@@ -850,7 +851,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     @Test
     void shouldCompleteUserTaskByKey() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -870,13 +871,13 @@ class UserTaskToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
 
-      verify(userTaskServices).completeUserTask(eq(5L), eq(Map.of()), eq(""), any());
+      verify(userTaskServices).completeUserTask(eq(5L), eq(Map.of()), eq(""), any(), any());
     }
 
     @Test
     void shouldCompleteUserTaskWithVariablesAndAction() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -902,13 +903,13 @@ class UserTaskToolsTest extends OperationalToolsTest {
                   assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
 
       verify(userTaskServices)
-          .completeUserTask(eq(5L), eq(Map.of("approved", true)), eq("customAction"), any());
+          .completeUserTask(eq(5L), eq(Map.of("approved", true)), eq("customAction"), any(), any());
     }
 
     @Test
     void shouldFailCompleteUserTaskOnException() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));

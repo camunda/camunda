@@ -529,6 +529,9 @@ public final class ProcessInstanceServices
         new BrokerAssignProcessInstanceBusinessIdRequest()
             .setProcessInstanceKey(request.processInstanceKey())
             .setBusinessId(request.businessId());
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -739,7 +742,7 @@ public final class ProcessInstanceServices
       Long operationReference) {}
 
   public record AssignProcessInstanceBusinessIdRequest(
-      Long processInstanceKey, String businessId) {}
+      Long processInstanceKey, String businessId, Long operationReference) {}
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,

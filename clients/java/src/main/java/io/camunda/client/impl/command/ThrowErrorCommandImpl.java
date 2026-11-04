@@ -96,6 +96,13 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   @Override
+  public ThrowErrorCommandStep2 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public ThrowErrorCommandStep2 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
     if (useRest) {

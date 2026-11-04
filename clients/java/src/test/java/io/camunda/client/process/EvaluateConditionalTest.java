@@ -60,6 +60,25 @@ public final class EvaluateConditionalTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onEvaluateConditionalRequest(2251799813685249L, 2251799813685250L);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newEvaluateConditionalCommand()
+        .variables("{\"x\":100}")
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final EvaluateConditionalRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldEvaluateConditionalWithProcessDefinitionKey() {
     // given
     final long processDefinitionKey = 12345L;

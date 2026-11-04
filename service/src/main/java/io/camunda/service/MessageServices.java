@@ -73,6 +73,9 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
             .setTenantId(correlationRequest.tenantId)
             .setBusinessId(correlationRequest.businessId);
+    if (correlationRequest.operationReference != null) {
+      brokerRequest.setOperationReference(correlationRequest.operationReference);
+    }
     if (channelType != null) {
       brokerRequest.setChannelType(channelType);
     }
@@ -91,6 +94,9 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId)
             .setBusinessId(request.businessId);
+    if (request.operationReference != null) {
+      brokerRequest.setOperationReference(request.operationReference);
+    }
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
@@ -99,13 +105,14 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
       String correlationKey,
       Map<String, Object> variables,
       String tenantId,
-      @Nullable String businessId) {
+      @Nullable String businessId,
+      @Nullable Long operationReference) {
     public CorrelateMessageRequest(
         final String name,
         final String correlationKey,
         final Map<String, Object> variables,
         final String tenantId) {
-      this(name, correlationKey, variables, tenantId, null);
+      this(name, correlationKey, variables, tenantId, null, null);
     }
   }
 
@@ -116,5 +123,6 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
       String messageId,
       Map<String, Object> variables,
       String tenantId,
-      @Nullable String businessId) {}
+      @Nullable String businessId,
+      @Nullable Long operationReference) {}
 }

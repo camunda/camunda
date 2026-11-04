@@ -342,6 +342,7 @@ public class ProcessInstanceRequestValidator {
           } else {
             validateBusinessId(request.getBusinessId(), violations);
           }
+          validateOperationReference(request.getOperationReference(), violations);
         });
   }
 

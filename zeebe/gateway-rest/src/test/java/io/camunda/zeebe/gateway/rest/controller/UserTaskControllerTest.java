@@ -96,7 +96,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldCompleteTaskWithoutActionAndVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     // when / then
     webClient
@@ -110,14 +110,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(2251799813685732L), eq(Map.of()), eq(""), any());
+        .completeUserTask(eq(2251799813685732L), eq(Map.of()), eq(""), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithAction(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -139,14 +139,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of()), eq("customAction"), any());
+        .completeUserTask(eq(1L), eq(Map.of()), eq("customAction"), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -171,14 +171,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(""), any());
+        .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(""), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithActionAndVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -204,14 +204,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq("customAction"), any());
+        .completeUserTask(
+            eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq("customAction"), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldUpdateTaskWithAction(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -234,7 +235,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq("customAction"), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq("customAction"), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasNoChangedAttributes()
         .hasDueDate("")
@@ -247,7 +248,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldUpdateTaskWithChanges(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -277,7 +278,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(
             UserTaskRecord.CANDIDATE_USERS,
@@ -296,7 +297,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldUpdateTaskWithPartialChanges(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -323,7 +324,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
         .hasDueDate("")
@@ -336,7 +337,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldUpdateTaskWithPartialEmptyValueChanges(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -362,7 +363,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
         .hasDueDate("")
@@ -375,7 +376,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldUpdateTaskWithActionAndChanges(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -406,7 +407,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq("customAction"), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq("customAction"), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(
             UserTaskRecord.CANDIDATE_USERS,
@@ -425,7 +426,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("validDateInputsAndUrls")
   void shouldUpdateTaskWithDateChanges(final Pair<String, String> dateAndUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -452,7 +453,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
     Mockito.verify(userTaskServices)
-        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any());
+        .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any(), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(UserTaskRecord.DUE_DATE, UserTaskRecord.FOLLOW_UP_DATE)
         .hasDueDate(dateAndUrl.getLeft())
@@ -796,7 +797,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -828,14 +829,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldReturnGatewayTimeoutWhenCompleteTaskTimesOut(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked completion"))));
@@ -863,7 +864,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldYieldConflictWhenInvalidState(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -898,7 +899,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any(), any());
   }
 
   @ParameterizedTest
@@ -906,7 +907,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   public void shouldYieldBadRequestWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -941,7 +942,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any(), any());
   }
 
   @ParameterizedTest
@@ -949,7 +950,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   public void shouldYieldConflictWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -984,7 +985,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any(), any());
   }
 
   @ParameterizedTest
@@ -993,7 +994,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1015,7 +1016,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any(), any());
   }
 
   @ParameterizedTest
@@ -1024,7 +1026,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1048,7 +1050,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(true),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1057,7 +1064,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1082,7 +1089,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(true),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1091,7 +1103,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // gíven
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1116,7 +1128,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(false), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(false),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1125,7 +1142,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1148,7 +1165,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any(), any());
   }
 
   @ParameterizedTest
@@ -1157,7 +1175,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1180,7 +1198,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(false), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(false), any(), any());
   }
 
   @ParameterizedTest
@@ -1224,7 +1243,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked assignment"))));
@@ -1260,7 +1279,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldReturnGatewayTimeoutWhenUpdateTaskTimesOut(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked update"))));
@@ -1298,7 +1317,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldUnassignTask(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
+    Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     // when / then
     webClient
@@ -1310,14 +1329,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .isEmpty();
 
-    Mockito.verify(userTaskServices).unassignUserTask(eq(2251799813685732L), eq("unassign"), any());
+    Mockito.verify(userTaskServices)
+        .unassignUserTask(eq(2251799813685732L), eq("unassign"), any(), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldReturnGatewayTimeoutWhenUnassignTaskTimesOut(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
+    Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked unassignment"))));

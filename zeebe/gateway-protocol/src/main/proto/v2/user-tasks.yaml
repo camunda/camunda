@@ -965,6 +965,11 @@ components:
             from this endpoint invocation. If not provided, it will default to "complete".
           type: string
           nullable: true
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     UserTaskAssignmentRequest:
       type: object
@@ -990,6 +995,11 @@ components:
             from this endpoint invocation. If not provided, it will default to "assign".
           type: string
           nullable: true
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     UserTaskUpdateRequest:
       type: object
@@ -1003,6 +1013,11 @@ components:
             from this endpoint invocation. If not provided, it will default to "update".
           type: string
           nullable: true
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     Changeset:
       description: |

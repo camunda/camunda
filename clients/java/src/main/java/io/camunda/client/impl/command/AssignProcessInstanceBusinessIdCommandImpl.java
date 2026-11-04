@@ -80,6 +80,14 @@ public final class AssignProcessInstanceBusinessIdCommandImpl
   }
 
   @Override
+  public AssignProcessInstanceBusinessIdCommandStep2 operationReference(
+      final long operationReference) {
+    requestBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<AssignProcessInstanceBusinessIdResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;

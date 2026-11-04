@@ -114,8 +114,12 @@ public class UserTaskTools {
               required = false)
           final UserTaskCompletionRequest completionOptions) {
     try {
-      final var completionRequest =
+      final var mappedRequest =
           RequestMapper.toUserTaskCompletionRequest(completionOptions, userTaskKey);
+      if (mappedRequest.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
+      }
+      final var completionRequest = mappedRequest.get();
 
       return CallToolResultMapper.fromPrimitive(
           serviceRegistry
@@ -124,6 +128,7 @@ public class UserTaskTools {
                   completionRequest.userTaskKey(),
                   completionRequest.variables(),
                   completionRequest.action(),
+                  completionRequest.operationReference(),
                   authenticationProvider.getCamundaAuthentication()),
           r -> "User task with key %s completed.".formatted(completionRequest.userTaskKey()));
     } catch (final Exception e) {
@@ -156,7 +161,8 @@ public class UserTaskTools {
           request =
               request
                   .allowOverride(assignmentOptions.getAllowOverride())
-                  .action(assignmentOptions.getAction());
+                  .action(assignmentOptions.getAction())
+                  .operationReference(assignmentOptions.getOperationReference());
         }
 
         return performAssignment(userTaskKey, request);
@@ -182,6 +188,7 @@ public class UserTaskTools {
                 assignmentRequest.assignee(),
                 assignmentRequest.action(),
                 assignmentRequest.allowOverride(),
+                assignmentRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()),
         r ->
             "User task with key %s assigned to %s."
@@ -197,6 +204,7 @@ public class UserTaskTools {
             .unassignUserTask(
                 unassignRequest.userTaskKey(),
                 unassignRequest.action(),
+                unassignRequest.operationReference(),
                 authenticationProvider.getCamundaAuthentication()),
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }

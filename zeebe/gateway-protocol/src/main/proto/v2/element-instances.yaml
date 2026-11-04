@@ -657,8 +657,13 @@ components:
           description: Whether to cancel remaining instances of the ad-hoc sub-process.
           type: boolean
           default: false
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - elements
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.11"
 
     ElementInstanceWaitStateQuery:
       description: Element instance inspection request.
