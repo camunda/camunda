@@ -10,11 +10,11 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -49,9 +49,7 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final Executor executor);
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();

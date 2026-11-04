@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
@@ -131,10 +132,10 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
       final Map<String, String> filters) {
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
+    final var filter = new FilterByKeysQuery(idsMap).inclusions(filters);
     final var finishDate = batch.finishDate();
     return archiverRepository
-        .moveDocumentsById(
-            sourceIdxName, sourceIdxName + finishDate, idsMap, filters, Map.of(), executor)
+        .moveDocumentsById(sourceIdxName, sourceIdxName + finishDate, filter, executor)
         .thenApplyAsync(ok -> batch.size(), executor);
   }
 
