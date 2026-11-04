@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Named.named;
 
 import io.atomix.cluster.MemberId;
@@ -23,6 +24,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -296,6 +299,142 @@ class MetaStoreTest {
               named(
                   "force configuration",
                   new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+    }
+  }
+
+  @Nested
+  final class AsyncLastFlushedIndexTest {
+
+    @Test
+    void shouldPersistLatestAsyncIndexOnClose() throws IOException {
+      // given
+      metaStore.storeLastFlushedIndexAsync(5L);
+      metaStore.storeLastFlushedIndexAsync(7L);
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(7L);
+    }
+
+    @Test
+    void shouldEventuallyPersistAsyncIndexWithoutClose() {
+      // when
+      metaStore.storeLastFlushedIndexAsync(9L);
+
+      // then
+      Awaitility.await()
+          .untilAsserted(() -> assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(9L));
+    }
+
+    @Test
+    void shouldCoalesceBurstOfAsyncWrites() throws IOException {
+      // given - the writer is blocked while the burst is requested
+      final var requests = 1000;
+      synchronized (metaStore) {
+        for (int i = 1; i <= requests; i++) {
+          metaStore.storeLastFlushedIndexAsync(i);
+        }
+      }
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(requests);
+      final var writes =
+          meterRegistry.find("atomix.last.flushed.index.update").timers().stream()
+              .mapToLong(t -> t.count())
+              .sum();
+      assertThat(writes).isLessThan(requests);
+    }
+
+    @Test
+    void shouldNotOverwriteSyncStoreWithOlderPendingAsyncValue() throws IOException {
+      // given - an async value is pending while a sync store for a lower index happens, as in
+      // deleteAfter or reset
+      metaStore.storeLastFlushedIndex(10L);
+      synchronized (metaStore) {
+        metaStore.storeLastFlushedIndexAsync(100L);
+        metaStore.storeLastFlushedIndex(50L);
+      }
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(50L);
+    }
+
+    @Test
+    void shouldDropPendingAsyncValueWhenSyncStoreEqualsPersistedValue() throws IOException {
+      // given
+      metaStore.storeLastFlushedIndex(50L);
+      synchronized (metaStore) {
+        metaStore.storeLastFlushedIndexAsync(100L);
+        metaStore.storeLastFlushedIndex(50L);
+      }
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(50L);
+    }
+
+    @Test
+    void shouldDropPendingAsyncValueOnReset() throws IOException {
+      // given
+      synchronized (metaStore) {
+        metaStore.storeLastFlushedIndexAsync(100L);
+        metaStore.resetLastFlushedIndex();
+      }
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.hasLastFlushedIndex()).isFalse();
+    }
+
+    @Test
+    void shouldKeepTermAndVoteDurableWhileAsyncWritesAreInFlight() throws IOException {
+      // given
+      metaStore.storeLastFlushedIndexAsync(5L);
+
+      // when
+      metaStore.storeTerm(3L);
+      metaStore.storeVote(MemberId.from("1"));
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadTerm()).isEqualTo(3L);
+      assertThat(metaStore.loadVote().id()).isEqualTo("1");
+    }
+
+    @Test
+    void shouldSurfaceFailedAsyncWriteOnNextStore() throws Exception {
+      // given - make every file write fail by closing the underlying channel
+      final var channelField = MetaStore.class.getDeclaredField("metaFileChannel");
+      channelField.setAccessible(true);
+      ((java.nio.channels.FileChannel) channelField.get(metaStore)).close();
+
+      // when
+      metaStore.storeLastFlushedIndexAsync(5L);
+
+      // then
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  assertThatThrownBy(() -> metaStore.storeLastFlushedIndexAsync(6L))
+                      .isInstanceOf(StorageException.class));
     }
   }
 }
