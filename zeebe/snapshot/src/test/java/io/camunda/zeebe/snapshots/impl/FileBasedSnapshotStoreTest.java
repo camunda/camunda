@@ -601,6 +601,44 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldDeleteLeftoverBootstrapSnapshotOnStart() throws IOException {
+    // given - a bootstrap snapshot exists when the process dies without closing the store
+    final var persistedSnapshot = takeTransientSnapshotWithFiles(123L).persist().join();
+    final var leftover =
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+
+    // when
+    snapshotStore = createStore(rootDirectory);
+
+    // then
+    assertThat(leftover.getPath()).doesNotExist();
+    assertThat(rootDirectory.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_BOOTSTRAP_DIRECTORY))
+        .isEmptyDirectory();
+    assertThat(snapshotStore.getLatestSnapshot()).hasValue(persistedSnapshot);
+  }
+
+  @Test
+  public void shouldCreateSnapshotForBootstrapAfterRestartWithPartialBootstrapSnapshot()
+      throws IOException {
+    // given - the process died while copying a snapshot for bootstrap
+    final var persistedSnapshot = takeTransientSnapshotWithFiles(123L).persist().join();
+    final var partialCopy =
+        rootDirectory
+            .resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_BOOTSTRAP_DIRECTORY)
+            .resolve(FileBasedSnapshotId.forBoostrap(0).getSnapshotIdAsString());
+    createSnapshotDir(partialCopy);
+
+    // when
+    snapshotStore = createStore(rootDirectory);
+    final var copiedSnapshot =
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+
+    // then
+    assertThat(copiedSnapshot.isBootstrap()).isTrue();
+    assertThat(snapshotStore.getBootstrapSnapshot()).hasValue(copiedSnapshot);
+  }
+
+  @Test
   public void shouldDeleteRestoredBootstrapSnapshotWhenNeeded() throws IOException {
     // given
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
