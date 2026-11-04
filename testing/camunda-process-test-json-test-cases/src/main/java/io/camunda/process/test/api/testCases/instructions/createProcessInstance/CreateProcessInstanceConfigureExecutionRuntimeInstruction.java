@@ -50,15 +50,4 @@ public interface CreateProcessInstanceConfigureExecutionRuntimeInstruction
   default boolean getReserveJobs() {
     return false;
   }
-
-  /**
-   * Whether the process instance's timers are kept out of the engine's due-date scheduler, so that
-   * none of them fires on its own. Defaults to false.
-   *
-   * @return true if the instance's timers are held, false otherwise
-   */
-  @Value.Default
-  default boolean getHoldTimers() {
-    return false;
-  }
 }

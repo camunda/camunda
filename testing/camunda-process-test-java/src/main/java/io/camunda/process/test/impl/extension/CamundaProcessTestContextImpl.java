@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
+import io.camunda.client.api.search.enums.TimerState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -37,6 +38,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.Timer;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
@@ -76,6 +78,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -415,47 +418,53 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final ProcessInstanceSelector processInstanceSelector, final String elementId) {
     final CamundaClient client = createClient();
 
-    // triggering inside the await block to handle the eventual consistency of the API: the
-    // rejection while the held timer does not exist yet is a ClientException, which the await
-    // behavior retries
+    // resolve and fire the timer inside the await block to absorb eventual consistency: the process
+    // instance or its waiting timer may not be indexed yet (an empty result or a ClientException
+    // retries), and a stale index can 404 the trigger until it catches up
     awaitProcessInstance(
         processInstanceSelector,
         pi -> {
+          final List<Timer> waitingTimers =
+              client
+                  .newTimerSearchRequest()
+                  .filter(
+                      f ->
+                          f.processInstanceKey(pi.getProcessInstanceKey())
+                              .elementId(elementId)
+                              .state(TimerState.CREATED))
+                  .send()
+                  .join()
+                  .items();
+
+          assertThat(waitingTimers)
+              .withFailMessage(
+                  "Expected to trigger a waiting timer [elementId: '%s'] of process instance [%s, processInstanceKey: %s], but found none. It may not be indexed yet, or it has already fired.",
+                  elementId, processInstanceSelector.describe(), pi.getProcessInstanceKey())
+              .isNotEmpty();
+
+          if (waitingTimers.size() > 1) {
+            throw new IllegalStateException(
+                String.format(
+                    "Expected a single waiting timer [elementId: '%s'] of process instance [processInstanceKey: %s], but found %d (timer keys: %s). Refine the selector so it addresses exactly one timer.",
+                    elementId,
+                    pi.getProcessInstanceKey(),
+                    waitingTimers.size(),
+                    waitingTimers.stream()
+                        .map(Timer::getTimerKey)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(", "))));
+          }
+
+          final long timerKey = waitingTimers.get(0).getTimerKey();
           LOGGER.debug(
-              "Mock: Trigger held timer [elementId: '{}'] of process instance [{}, processInstanceKey: '{}']",
+              "Mock: Trigger timer [elementId: '{}', timerKey: '{}'] of process instance [{}, processInstanceKey: '{}']",
               elementId,
+              timerKey,
               processInstanceSelector.describe(),
               pi.getProcessInstanceKey());
 
-          client
-              .newTriggerTimerCommand(pi.getProcessInstanceKey())
-              .elementId(elementId)
-              .send()
-              .join();
+          client.newTriggerTimerCommand(timerKey).send().join();
         });
-  }
-
-  @Override
-  public void triggerTimer(final long processInstanceKey, final String elementId) {
-    final CamundaClient client = createClient();
-
-    LOGGER.debug(
-        "Mock: Trigger held timer [elementId: '{}'] of process instance [processInstanceKey: '{}']",
-        elementId,
-        processInstanceKey);
-
-    // triggering inside the await block to handle the eventual consistency of the API: the
-    // rejection while the held timer does not exist yet is a ClientException, which the await
-    // behavior retries
-    awaitBehaviorSupplier
-        .get()
-        .untilAsserted(
-            () ->
-                client
-                    .newTriggerTimerCommand(processInstanceKey)
-                    .elementId(elementId)
-                    .send()
-                    .join());
   }
 
   @Override

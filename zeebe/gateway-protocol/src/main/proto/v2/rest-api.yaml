@@ -409,8 +409,6 @@ paths:
     $ref: "process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1wait-states"
   /process-instances/{processInstanceKey}/suspension:
     $ref: "process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1suspension"
-  /process-instances/{processInstanceKey}/timers/trigger:
-    $ref: "timers.yaml#/paths/~1process-instances~1{processInstanceKey}~1timers~1trigger"
 
   # Resource endpoints
   /resources/search:

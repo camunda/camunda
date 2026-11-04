@@ -125,7 +125,6 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
-                    holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -154,7 +153,6 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
-                    holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -182,7 +180,6 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
-                    holdTimersOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -261,13 +258,6 @@ public class ProcessInstanceMapper {
         .map(ProcessInstanceCreationStubCallActivitiesInstruction::getProcessIds)
         .findFirst()
         .orElse(null);
-  }
-
-  private static @Nullable Boolean holdTimersOf(
-      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
-          instructions) {
-    final var config = configureExecutionOf(instructions);
-    return config == null ? null : config.getHoldTimers();
   }
 
   private static @Nullable String jobReservationTokenOf(

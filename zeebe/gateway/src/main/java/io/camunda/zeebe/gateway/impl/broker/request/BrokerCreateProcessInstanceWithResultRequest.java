@@ -72,11 +72,6 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
-  public BrokerCreateProcessInstanceWithResultRequest setHoldTimers(final boolean holdTimers) {
-    requestDto.setHoldTimers(holdTimers);
-    return this;
-  }
-
   public BrokerCreateProcessInstanceWithResultRequest setJobReservationToken(
       final String jobReservationToken) {
     requestDto.setJobReservationToken(jobReservationToken);

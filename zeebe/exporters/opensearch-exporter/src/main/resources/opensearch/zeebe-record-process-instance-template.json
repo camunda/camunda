@@ -84,9 +84,6 @@
             "stubbedCallActivityProcessIds": {
               "type": "keyword"
             },
-            "holdTimers": {
-              "type": "boolean"
-            },
             "elementInstanceKey": {
               "enabled": "false"
             }

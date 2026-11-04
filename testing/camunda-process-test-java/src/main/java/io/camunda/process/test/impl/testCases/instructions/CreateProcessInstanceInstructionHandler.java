@@ -86,14 +86,10 @@ public class CreateProcessInstanceInstructionHandler
         config
             .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
             .orElse(false);
-    final boolean holdTimers =
-        config
-            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
-            .orElse(false);
     final List<String> stubbedCallActivityProcessIds = stubbedCallActivityProcessIdsOf(instruction);
     final boolean stubCallActivities = !stubbedCallActivityProcessIds.isEmpty();
 
-    final boolean isolated = reserveJobs || stubCallActivities || holdTimers;
+    final boolean isolated = reserveJobs || stubCallActivities;
 
     if (reserveJobs) {
       command.reserveJobs(context.getJobReservationToken());
@@ -101,16 +97,11 @@ public class CreateProcessInstanceInstructionHandler
     if (stubCallActivities) {
       command.stubCallActivities(stubbedCallActivityProcessIds.toArray(new String[0]));
     }
-    if (holdTimers) {
-      command.holdTimers(true);
-    }
 
     final ProcessInstanceEvent processInstance = command.send().join();
 
-    // an isolated instance waits on jobs no worker takes, or on timers that never fire, so it
-    // parks until the test ends it
-    createdProcessInstances.register(
-        processDefinitionId, processInstance.getProcessInstanceKey(), holdTimers, isolated);
+    // an isolated instance waits on jobs no worker takes, so it parks until the test ends it
+    createdProcessInstances.register(processInstance.getProcessInstanceKey(), isolated);
   }
 
   private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>

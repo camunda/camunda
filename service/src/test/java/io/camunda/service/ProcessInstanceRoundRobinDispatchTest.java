@@ -201,7 +201,6 @@ final class ProcessInstanceRoundRobinDispatchTest {
         null,
         null,
         null,
-        null,
         null);
   }
 }

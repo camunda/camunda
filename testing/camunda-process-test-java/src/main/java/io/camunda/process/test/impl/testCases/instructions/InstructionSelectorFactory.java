@@ -218,9 +218,9 @@ final class InstructionSelectorFactory {
         .orElseThrow(
             () ->
                 new IllegalArgumentException(
-                    "The timer catch event must be selected by elementId; a held timer is addressed"
-                        + " by its element id, which for a boundary timer is the boundary event's"
-                        + " own id."));
+                    "The timer catch event must be selected by elementId; a timer is addressed by"
+                        + " its element id, which for a boundary timer is the boundary event's own"
+                        + " id."));
   }
 
   /**

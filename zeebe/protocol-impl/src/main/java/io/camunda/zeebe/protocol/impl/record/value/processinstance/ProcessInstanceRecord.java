@@ -11,7 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -66,7 +65,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringValue("jobReservationToken");
   public static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
       new StringValue("stubbedCallActivityProcessIds");
-  public static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -115,10 +113,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
   private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProp =
       new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
-  private final BooleanProperty holdTimersProp = new BooleanProperty(HOLD_TIMERS_KEY, false);
 
   public ProcessInstanceRecord() {
-    super(22);
+    super(21);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -139,8 +136,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
         .declareProperty(jobReservationTokenProp)
-        .declareProperty(stubbedCallActivityProcessIdsProp)
-        .declareProperty(holdTimersProp);
+        .declareProperty(stubbedCallActivityProcessIdsProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -163,7 +159,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     stubbedCallActivityProcessIdsProp.reset();
     record.stubbedCallActivityProcessIdsProp.forEach(
         processId -> stubbedCallActivityProcessIdsProp.add().wrap(processId.getValue()));
-    holdTimersProp.setValue(record.isHoldTimers());
   }
 
   @JsonIgnore
@@ -373,16 +368,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
           processId ->
               stubbedCallActivityProcessIdsProp.add().wrap(BufferUtil.wrapString(processId)));
     }
-    return this;
-  }
-
-  @Override
-  public boolean isHoldTimers() {
-    return holdTimersProp.getValue();
-  }
-
-  public ProcessInstanceRecord setHoldTimers(final boolean holdTimers) {
-    holdTimersProp.setValue(holdTimers);
     return this;
   }
 

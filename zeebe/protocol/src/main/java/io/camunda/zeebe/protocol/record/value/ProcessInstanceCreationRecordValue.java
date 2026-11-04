@@ -115,19 +115,6 @@ public interface ProcessInstanceCreationRecordValue
   }
 
   /**
-   * Returns whether the timers of this process instance are held back from the scheduler. A held
-   * timer does not fire on its due date; it fires only when triggered explicitly via the trigger
-   * command. Holding a timer keeps it out of the due-date scheduler while leaving the instance
-   * otherwise drivable.
-   *
-   * @return {@code true} if the timers of this process instance are held
-   * @since 8.11
-   */
-  default boolean isHoldTimers() {
-    return false;
-  }
-
-  /**
    * Returns the token that reserves this process instance's jobs for the caller, set from the
    * configure-execution instruction when {@code reserveJobs} is requested. Reserved jobs are not
    * handed to job workers that activate normally, and their complete, fail and throw-error commands

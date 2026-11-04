@@ -1469,9 +1469,8 @@ components:
         Configures how this process instance executes, for test and debugging tools rather than
         production traffic (alpha).
 
-        A single instance-wide instruction carrying any combination of two independent switches:
-        reserve this instance's jobs so no worker is handed them, and hold its timers until fired on
-        demand. Every switch defaults off, so a configure-execution instruction with none set does
+        A single instance-wide instruction that reserves this instance's jobs so no worker is handed
+        them. The switch defaults off, so a configure-execution instruction with it unset does
         nothing. At most one may be given per process instance. Stubbing call activities is a
         separate `STUB_CALL_ACTIVITIES` instruction.
 
@@ -1497,24 +1496,12 @@ components:
             jobs.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
-        holdTimers:
-          description: |
-            Holds every timer of this process instance and of the instances it calls.
-
-            A held timer never fires on its due date; it only fires when triggered explicitly via
-            the `POST /process-instances/{processInstanceKey}/timers/trigger` endpoint. This lets a
-            caller control when timer catch events fire.
-          type: boolean
-          default: false
-          example: true
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.11"
         - propertyName: reserveJobs
           addedInVersion: "8.11"
         - propertyName: jobReservationToken
-          addedInVersion: "8.11"
-        - propertyName: holdTimers
           addedInVersion: "8.11"
 
     ProcessInstanceCreationStubCallActivitiesInstruction:

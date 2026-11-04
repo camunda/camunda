@@ -17,19 +17,19 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.TriggerTimerInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
-import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class TriggerTimerInstructionHandler
     implements TestCaseInstructionHandler<TriggerTimerInstruction> {
 
-  private final CreatedProcessInstanceRegistry createdProcessInstances;
+  private final TestRunContext runContext;
 
-  public TriggerTimerInstructionHandler(
-      final CreatedProcessInstanceRegistry createdProcessInstances) {
-    this.createdProcessInstances = createdProcessInstances;
+  public TriggerTimerInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
   }
 
   @Override
@@ -39,22 +39,13 @@ public class TriggerTimerInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final String processDefinitionId =
-        instruction
-            .getProcessInstanceSelector()
-            .getProcessDefinitionId()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException("Missing required property: processDefinitionId"));
+    final ProcessInstanceSelector processInstanceSelector =
+        InstructionSelectorFactory.buildProcessInstanceSelector(
+            instruction.getProcessInstanceSelector(), runContext);
     final String elementId =
         InstructionSelectorFactory.buildTimerElementId(instruction.getElementSelector());
 
-    // resolved from the instances this test case created, not from a cluster query: a query also
-    // matches an instance of an earlier test case or of a concurrent run against the same cluster
-    final long processInstanceKey =
-        createdProcessInstances.resolveHeldTimerProcessInstanceKey(processDefinitionId);
-
-    context.triggerTimer(processInstanceKey, elementId);
+    context.triggerTimer(processInstanceSelector, elementId);
   }
 
   @Override

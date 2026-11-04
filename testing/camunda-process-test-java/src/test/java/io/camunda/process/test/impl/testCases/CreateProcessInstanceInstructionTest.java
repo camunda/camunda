@@ -201,38 +201,6 @@ public class CreateProcessInstanceInstructionTest {
         .reserveJobs(org.mockito.ArgumentMatchers.any());
     verify(mockCommand, org.mockito.Mockito.never())
         .stubCallActivities(org.mockito.ArgumentMatchers.any(String[].class));
-    verify(mockCommand, org.mockito.Mockito.never())
-        .holdTimers(org.mockito.ArgumentMatchers.anyBoolean());
-  }
-
-  @Test
-  void shouldHoldTimers() {
-    // given
-    final CreateProcessInstanceInstruction instruction =
-        ImmutableCreateProcessInstanceInstruction.builder()
-            .processDefinitionSelector(
-                ImmutableProcessDefinitionSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .addRuntimeInstructions(
-                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                    .holdTimers(true)
-                    .build())
-            .build();
-
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    final CreateProcessInstanceCommandStep3 mockCommand =
-        camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_DEFINITION_ID)
-            .latestVersion()
-            .variables(Collections.emptyMap());
-
-    verify(mockCommand).holdTimers(true);
-    verify(mockCommand).send();
   }
 
   @Test

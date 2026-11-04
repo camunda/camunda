@@ -190,7 +190,6 @@ public class PojoCompatibilityTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
                             .reserveJobs(true)
-                            .holdTimers(true)
                             .build())
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()

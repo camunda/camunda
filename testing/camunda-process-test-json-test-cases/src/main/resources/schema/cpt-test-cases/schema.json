@@ -211,10 +211,6 @@
                   "reserveJobs": {
                     "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
                     "type": "boolean"
-                  },
-                  "holdTimers": {
-                    "description": "Whether the process instance's timers are kept out of the engine's due-date scheduler, so that none of them fires on its own. A held timer fires only when a TRIGGER_TIMER instruction names its catch event. Optional, defaults to false.",
-                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -1515,7 +1511,7 @@
       "additionalProperties": false
     },
     "TriggerTimerInstruction": {
-      "description": "An instruction to fire a held timer immediately, without waiting for its due date.",
+      "description": "An instruction to fire a waiting timer immediately, without waiting for its due date.",
       "type": "object",
       "properties": {
         "type": {
@@ -1524,11 +1520,11 @@
           "const": "TRIGGER_TIMER"
         },
         "processInstanceSelector": {
-          "description": "The selector to identify the process instance that owns the held timer.",
+          "description": "The selector to identify the process instance that owns the waiting timer.",
           "$ref": "#/definitions/ProcessInstanceSelector"
         },
         "elementSelector": {
-          "description": "The selector to identify the timer catch event. A held timer is addressed by the element id of its catch event, which for a boundary timer is the boundary event's own id, so the element must be selected by elementId.",
+          "description": "The selector to identify the timer catch event. A timer is addressed by the element id of its catch event, which for a boundary timer is the boundary event's own id, so the element must be selected by elementId.",
           "$ref": "#/definitions/ElementSelector"
         }
       },

@@ -127,13 +127,6 @@ public final class CatchEventBehavior {
         evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
-  private boolean isHoldTimers(final long rootProcessInstanceKey) {
-    // read at the root instance, so a called process's timers are held too; only the root's record
-    // was given the flag at creation
-    final var rootInstance = elementInstanceState.getInstance(rootProcessInstanceKey);
-    return rootInstance != null && rootInstance.getValue().isHoldTimers();
-  }
-
   private String getBusinessId(final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     return processInstance != null ? processInstance.getValue().getBusinessId() : "";
@@ -505,7 +498,6 @@ public final class CatchEventBehavior {
       final BpmnElementType elementType,
       final Timer timer) {
     final long dueDate = timer.getDueDate(clock.millis());
-    final boolean held = isHoldTimers(rootProcessInstanceKey);
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
@@ -518,19 +510,14 @@ public final class CatchEventBehavior {
         .setRootProcessInstanceKey(rootProcessInstanceKey)
         .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
-        .setElementType(elementType)
-        .setHeld(held);
+        .setElementType(elementType);
 
-    if (!held) {
-      // a held timer never enters the due-date index, so waking the checker for it would only make
-      // it rescan and find nothing
-      sideEffectWriter.appendSideEffect(
-          () -> {
-            /* timerChecker implements onRecovered to recover from restart, so no need to schedule
-            this in TimerCreatedApplier.*/
-            timerChecker.scheduleTimer(dueDate);
-          });
-    }
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          /* timerChecker implements onRecovered to recover from restart, so no need to schedule
+          this in TimerCreatedApplier.*/
+          timerChecker.scheduleTimer(dueDate);
+        });
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
   }

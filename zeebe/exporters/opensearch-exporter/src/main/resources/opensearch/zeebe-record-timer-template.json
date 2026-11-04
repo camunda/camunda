@@ -59,9 +59,6 @@
             },
             "elementType": {
               "type": "keyword"
-            },
-            "held": {
-              "type": "boolean"
             }
           }
         }

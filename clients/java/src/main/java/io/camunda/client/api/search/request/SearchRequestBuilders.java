@@ -39,6 +39,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.ResourceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
+import io.camunda.client.api.search.filter.TimerFilter;
 import io.camunda.client.api.search.filter.UserFilter;
 import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
@@ -110,6 +111,7 @@ import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.ResourceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
+import io.camunda.client.impl.search.filter.TimerFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskAuditLogFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
@@ -175,6 +177,12 @@ public final class SearchRequestBuilders {
   public static ProcessInstanceFilter processInstanceFilter(
       final Consumer<ProcessInstanceFilter> fn) {
     final ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static TimerFilter timerFilter(final Consumer<TimerFilter> fn) {
+    final TimerFilter filter = new TimerFilterImpl();
     fn.accept(filter);
     return filter;
   }

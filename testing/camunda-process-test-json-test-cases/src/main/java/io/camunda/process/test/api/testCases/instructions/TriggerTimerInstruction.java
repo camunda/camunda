@@ -23,10 +23,9 @@ import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import org.immutables.value.Value;
 
 /**
- * An instruction to fire a held timer immediately, without waiting for its due date.
+ * An instruction to fire a waiting timer immediately, without waiting for its due date.
  *
- * <p>The selected element is the timer catch event of a process instance created with {@code
- * holdTimers}, whose timers never fire on their own.
+ * <p>The selected element is the timer catch event the process instance is waiting on.
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTriggerTimerInstruction.Builder.class)
@@ -39,16 +38,16 @@ public interface TriggerTimerInstruction extends TestCaseInstruction {
   }
 
   /**
-   * The selector to identify the process instance that owns the held timer.
+   * The selector to identify the process instance that owns the waiting timer.
    *
    * @return the process instance selector
    */
   ProcessInstanceSelector getProcessInstanceSelector();
 
   /**
-   * The selector to identify the timer catch event. The element must be selected by elementId: the
-   * engine addresses a held timer by the element id of its catch event, which for a boundary timer
-   * is the boundary event's own id rather than that of the activity it is attached to.
+   * The selector to identify the timer catch event. The element must be selected by elementId: a
+   * timer is addressed by the element id of its catch event, which for a boundary timer is the
+   * boundary event's own id rather than that of the activity it is attached to.
    *
    * @return the element selector
    */

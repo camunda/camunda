@@ -120,7 +120,6 @@ public class SimpleRequestMapper {
           .type(instruction.getType())
           .reserveJobs(instruction.getReserveJobs())
           .jobReservationToken(instruction.getJobReservationToken())
-          .holdTimers(instruction.getHoldTimers())
           .build();
     }
     if ("STUB_CALL_ACTIVITIES".equals(instruction.getType())) {

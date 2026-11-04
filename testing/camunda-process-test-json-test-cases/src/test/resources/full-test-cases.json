@@ -158,7 +158,7 @@
     },
     {
       "name": "Recording of an order whose escalation timer is driven by hand",
-      "description": "The instance holds its timers, so the escalation deadline fires only when the test says so.",
+      "description": "The escalation deadline is fired by hand, without waiting for its due date.",
       "instructions": [
         {
           "type": "CREATE_PROCESS_INSTANCE",
@@ -167,13 +167,7 @@
           },
           "variables": {
             "order_id": "order-2"
-          },
-          "runtimeInstructions": [
-            {
-              "type": "CONFIGURE_EXECUTION",
-              "holdTimers": true
-            }
-          ]
+          }
         },
         {
           "type": "TRIGGER_TIMER",

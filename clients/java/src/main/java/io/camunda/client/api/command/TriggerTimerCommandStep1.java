@@ -17,19 +17,4 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.TriggerTimerResponse;
 
-public interface TriggerTimerCommandStep1 {
-
-  /**
-   * Sets the BPMN element id of the timer catch event whose held timer should fire.
-   *
-   * <p>For a boundary timer this is the id of the boundary event itself, not of the activity it is
-   * attached to.
-   *
-   * @param elementId the BPMN element id of the timer catch event
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  TriggerTimerCommandStep2 elementId(String elementId);
-
-  interface TriggerTimerCommandStep2 extends FinalCommandStep<TriggerTimerResponse> {}
-}
+public interface TriggerTimerCommandStep1 extends FinalCommandStep<TriggerTimerResponse> {}

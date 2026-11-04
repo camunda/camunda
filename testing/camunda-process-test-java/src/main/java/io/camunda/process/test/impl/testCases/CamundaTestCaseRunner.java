@@ -47,9 +47,6 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
           TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB,
           TestCaseInstructionType.MOCK_JOB_WORKER_THROW_BPMN_ERROR);
 
-  private static final List<String> CLOCK_INSTRUCTIONS =
-      Arrays.asList(TestCaseInstructionType.INCREASE_TIME, TestCaseInstructionType.SET_TIME);
-
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
   private final TestCaseInstructionHandlerRegistry registry;
@@ -92,7 +89,6 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     LOGGER.debug("Running test case: '{}'", testCase.getName());
     final Instant start = Instant.now();
     warnIfReservedJobsAreMocked(testCase);
-    warnIfHeldTimersAreDrivenByTheClock(testCase);
     createdProcessInstances.clear();
 
     try (final CamundaClient camundaClient = context.createClient()) {
@@ -143,48 +139,10 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     return reservesJobs && mocksJobWorkers;
   }
 
-  /**
-   * A held timer is out of the engine's due-date scheduler, so advancing the clock does not fire
-   * it. A test case that expects it to waits for an element that never activates and fails on the
-   * await timeout instead of saying why.
-   */
-  private void warnIfHeldTimersAreDrivenByTheClock(final TestCase testCase) {
-    if (holdsTimersAndMovesTheClock(testCase)) {
-      LOGGER.warn(
-          "Test case '{}' holds a process instance's timers and moves the clock. A held timer is"
-              + " out of the due-date scheduler, so INCREASE_TIME and SET_TIME do not fire it. If"
-              + " the clock is meant to fire the held instance's timer, use TRIGGER_TIMER instead;"
-              + " otherwise the test case waits for a timer that never fires.",
-          testCase.getName());
-    }
-  }
-
-  static boolean holdsTimersAndMovesTheClock(final TestCase testCase) {
-    final boolean holdsTimers =
-        testCase.getInstructions().stream()
-            .filter(CreateProcessInstanceInstruction.class::isInstance)
-            .map(CreateProcessInstanceInstruction.class::cast)
-            .anyMatch(CamundaTestCaseRunner::instructionHoldsTimers);
-
-    final boolean movesTheClock =
-        testCase.getInstructions().stream()
-            .map(TestCaseInstruction::getType)
-            .anyMatch(CLOCK_INSTRUCTIONS::contains);
-
-    return holdsTimers && movesTheClock;
-  }
-
   private static boolean instructionReservesJobs(
       final CreateProcessInstanceInstruction instruction) {
     return configureExecutionOf(instruction)
         .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
-        .orElse(false);
-  }
-
-  private static boolean instructionHoldsTimers(
-      final CreateProcessInstanceInstruction instruction) {
-    return configureExecutionOf(instruction)
-        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
         .orElse(false);
   }
 

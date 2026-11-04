@@ -120,8 +120,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
             record.getTags(),
             record.getBusinessIdBuffer(),
             ProcessInstanceCreationHelper.jobReservationTokenOf(record),
-            record.getStubbedCallActivityProcessIds(),
-            record.isHoldTimers());
+            record.getStubbedCallActivityProcessIds());
 
     helper.setVariablesFromDocument(
         processInstance,

@@ -247,16 +247,4 @@ public interface ProcessInstanceRecordValue
   default List<String> getStubbedCallActivityProcessIds() {
     return Collections.emptyList();
   }
-
-  /**
-   * Returns whether the timers of this process instance are held back from the scheduler. Only the
-   * root element instance record of an instance created with the flag carries it. A held timer does
-   * not fire on its due date; it fires only when triggered explicitly.
-   *
-   * @return {@code true} if the timers of this process instance are held
-   * @since 8.11
-   */
-  default boolean isHoldTimers() {
-    return false;
-  }
 }

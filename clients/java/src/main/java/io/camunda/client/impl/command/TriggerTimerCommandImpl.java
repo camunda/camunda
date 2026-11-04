@@ -16,40 +16,26 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.TriggerTimerCommandStep1;
-import io.camunda.client.api.command.TriggerTimerCommandStep1.TriggerTimerCommandStep2;
 import io.camunda.client.api.response.TriggerTimerResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.TriggerTimerResponseImpl;
-import io.camunda.client.protocol.rest.TimerTriggerRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class TriggerTimerCommandImpl implements TriggerTimerCommandStep1, TriggerTimerCommandStep2 {
+public class TriggerTimerCommandImpl implements TriggerTimerCommandStep1 {
 
-  private final TimerTriggerRequest httpRequestObject = new TimerTriggerRequest();
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long processInstanceKey;
-  private final JsonMapper jsonMapper;
+  private final long timerKey;
 
-  public TriggerTimerCommandImpl(
-      final long processInstanceKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
-    this.processInstanceKey = processInstanceKey;
+  public TriggerTimerCommandImpl(final long timerKey, final HttpClient httpClient) {
+    this.timerKey = timerKey;
     this.httpClient = httpClient;
-    this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public TriggerTimerCommandStep2 elementId(final String elementId) {
-    ArgumentUtil.ensureNotNullNorEmpty("elementId", elementId);
-    httpRequestObject.setElementId(elementId);
-    return this;
   }
 
   @Override
@@ -62,8 +48,8 @@ public class TriggerTimerCommandImpl implements TriggerTimerCommandStep1, Trigge
   public CamundaFuture<TriggerTimerResponse> send() {
     final HttpCamundaFuture<TriggerTimerResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/process-instances/" + processInstanceKey + "/timers/trigger",
-        jsonMapper.toJson(httpRequestObject),
+        "/timers/" + timerKey + "/trigger",
+        "",
         httpRequestConfig.build(),
         TriggerTimerResponseImpl::new,
         result);

@@ -32,5 +32,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0015](0015-811-per-instance-recording-switches.md) | Per-instance recording switches set at create time via one `CONFIGURE_EXECUTION` instruction, read at root, withheld from workers, REST-only                                    |
 | [0016](0016-811-reserved-jobs.md)                   | Reserved jobs: a caller-chosen token hides an instance's jobs from workers; token separate from the lease token; one-way release                                                |
 | [0017](0017-811-stubbed-call-activities.md)         | Stubbed call activities: an explicit `STUB_CALL_ACTIVITIES` process-id list makes matching call activities wait on a stand-in job carrying its own `JobKind.CALL_ACTIVITY_STUB` |
-| [0018](0018-811-held-timers.md)                     | Held timers: kept out of the due-date scheduler, fired on demand by `(instance, elementId)`, authorized not tokened                                                             |
+| [0018](0018-811-timer-search-and-trigger-by-key.md) | Timers searchable as wait states and fired on demand by timer key (no hold); authorized not tokened; a timer may still fire on its own                                          |
 

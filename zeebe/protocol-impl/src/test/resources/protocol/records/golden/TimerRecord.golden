@@ -10,7 +10,6 @@ package io.camunda.zeebe.protocol.impl.record.value.timer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -41,10 +40,8 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
       new EnumProperty<>(
           new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
-  private final BooleanProperty heldProp = new BooleanProperty("held", false);
-
   public TimerRecord() {
-    super(12);
+    super(11);
     declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
@@ -55,8 +52,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(elementTypeProp)
-        .declareProperty(heldProp);
+        .declareProperty(elementTypeProp);
   }
 
   @JsonIgnore
@@ -171,16 +167,6 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
 
   public TimerRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
-    return this;
-  }
-
-  @Override
-  public boolean isHeld() {
-    return heldProp.getValue();
-  }
-
-  public TimerRecord setHeld(final boolean held) {
-    heldProp.setValue(held);
     return this;
   }
 }

@@ -36,7 +36,6 @@ final class TimerCreatedV3Applier implements TypedEventApplier<TimerIntent, Time
     timerInstance.setBpmnProcessId(value.getBpmnProcessId());
     timerInstance.setElementType(value.getElementType());
     timerInstance.setStorageOrdinal(value.getStorageOrdinal());
-    timerInstance.setHeld(value.isHeld());
 
     timerInstanceState.store(timerInstance);
   }

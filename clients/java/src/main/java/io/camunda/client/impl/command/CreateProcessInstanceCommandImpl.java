@@ -147,17 +147,10 @@ public final class CreateProcessInstanceCommandImpl
     return this;
   }
 
-  @Override
-  public CreateProcessInstanceCommandStep3 holdTimers(final boolean holdTimers) {
-    restOnlyProperty = "holdTimers";
-    configureExecution().holdTimers(holdTimers);
-    return this;
-  }
-
   /**
    * Returns the single configure-execution runtime instruction for this command, creating it and
-   * adding it to the request on first use, so the reserve-jobs and hold-timers switches accumulate
-   * onto one instruction.
+   * adding it to the request on first use, so the reserve-jobs switch is carried on one
+   * instruction.
    */
   private ProcessInstanceCreationConfigureExecutionInstruction configureExecution() {
     if (configureExecutionInstruction == null) {

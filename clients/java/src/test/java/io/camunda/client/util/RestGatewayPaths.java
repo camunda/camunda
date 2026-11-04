@@ -70,6 +70,7 @@ public class RestGatewayPaths {
   private static final String URL_GROUPS = REST_API_PATH + "/groups";
   private static final String URL_INCIDENT = REST_API_PATH + "/incidents/%s";
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
+  private static final String URL_TIMER_TRIGGER = REST_API_PATH + "/timers/%s/trigger";
   private static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
   private static final String URL_MAPPING_RULES = REST_API_PATH + "/mapping-rules";
   private static final String URL_MAPPING_RULE = URL_MAPPING_RULES + "/%s";
@@ -187,6 +188,14 @@ public class RestGatewayPaths {
    */
   public static String getUserTaskAssignmentUrl(final long userTaskKey) {
     return String.format(URL_USER_TASK_ASSIGNMENT, userTaskKey);
+  }
+
+  /**
+   * @param timerKey the timer key to get the URL for
+   * @return the timer trigger request URL
+   */
+  public static String getTriggerTimerUrl(final long timerKey) {
+    return String.format(URL_TIMER_TRIGGER, timerKey);
   }
 
   /**

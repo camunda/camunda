@@ -15,38 +15,26 @@
  */
 package io.camunda.client.process.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static io.camunda.client.util.assertions.LoggedRequestAssert.assertThat;
 
-import io.camunda.client.protocol.rest.TimerTriggerRequest;
+import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
 public class TriggerTimerRestTest extends ClientRestTest {
 
-  private static final long PROCESS_INSTANCE_KEY = 42;
+  private static final long TIMER_KEY = 42;
 
   @Test
-  public void shouldTriggerHeldTimer() {
+  public void shouldTriggerTimerByKey() {
     // when
-    client.newTriggerTimerCommand(PROCESS_INSTANCE_KEY).elementId("escalation").send().join();
+    client.newTriggerTimerCommand(TIMER_KEY).send().join();
 
     // then
-    final TimerTriggerRequest request = gatewayService.getLastRequest(TimerTriggerRequest.class);
-    assertThat(request.getElementId()).isEqualTo("escalation");
-  }
-
-  @Test
-  public void shouldRejectBlankElementId() {
-    // when / then
-    assertThatThrownBy(() -> client.newTriggerTimerCommand(PROCESS_INSTANCE_KEY).elementId(""))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  public void shouldRejectNullElementId() {
-    // when / then
-    assertThatThrownBy(() -> client.newTriggerTimerCommand(PROCESS_INSTANCE_KEY).elementId(null))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getTriggerTimerUrl(TIMER_KEY));
   }
 }

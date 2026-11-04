@@ -74,9 +74,6 @@
             "stubbedCallActivityProcessIds": {
               "type": "keyword"
             },
-            "holdTimers": {
-              "type": "boolean"
-            },
             "jobReservationToken": {
               "type": "keyword"
             },

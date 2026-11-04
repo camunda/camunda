@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -52,12 +53,8 @@ public final class TimerTriggerProcessor
 
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
-  private static final String NO_HELD_TIMER_MESSAGE =
-      "Expected to trigger a held timer of process instance '%d' at element '%s', but no such held"
-          + " timer was found";
-  private static final String AMBIGUOUS_HELD_TIMER_MESSAGE =
-      "Expected to trigger a single held timer of process instance '%d' at element '%s', but"
-          + " multiple held timers matched";
+  private static final String SUSPENDED_INSTANCE_MESSAGE =
+      "Expected to trigger timer with key '%d', but its process instance '%d' is suspended";
   private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
       "Expected to find a process definition with key '%d', but no such definition was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =
@@ -74,6 +71,7 @@ public final class TimerTriggerProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CslAuthorizationCheck cslCheck;
+  private final SuspensionState suspensionState;
 
   private final EventHandle eventHandle;
   private final InstantSource clock;
@@ -95,6 +93,7 @@ public final class TimerTriggerProcessor
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
+    suspensionState = processingState.getSuspensionState();
     keyGenerator = processingState.getKeyGenerator();
     eventHandle =
         new EventHandle(
@@ -110,11 +109,10 @@ public final class TimerTriggerProcessor
   @Override
   public void processRecord(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();
-    // A client-issued trigger command (public REST endpoint) addresses a timer either by its key
-    // or, for a held timer, by (processInstanceKey, elementId); a scheduler-issued command carries
-    // the full value keyed by the timer key. For the former we resolve the timer, hydrate the
-    // command value from it, authorize the caller, and use the resolved timer key for the remainder
-    // of processing.
+    // A client-issued trigger command (public REST endpoint) addresses a timer by its key; a
+    // scheduler-issued command carries the full value keyed by the timer key. For the former we
+    // resolve the timer, hydrate the command value from it, authorize the caller, and use the
+    // resolved timer key for the remainder of processing.
     final long timerKey;
     if (record.hasRequestMetadata()) {
       final var resolvedTimerKey = resolveAndAuthorizeExternalTrigger(record);
@@ -193,48 +191,31 @@ public final class TimerTriggerProcessor
   }
 
   /**
-   * Resolves the held timer addressed by a client-issued trigger command via (processInstanceKey,
-   * elementId) and authorizes the caller. Returns {@code null} (after writing a rejection) when no
-   * held timer matches, when more than one matches, or when the caller is not permitted to update
+   * Resolves the timer addressed by a client-issued trigger command via its timer key (POST
+   * /v2/timers/{timerKey}/trigger) and authorizes the caller. Returns {@code null} (after writing a
+   * rejection) when no timer with that key exists, or when the caller is not permitted to update
    * the owning process instance. On success the command value is hydrated from the stored timer so
    * the remainder of {@link #processRecord} behaves identically to a scheduler-issued trigger, and
    * the resolved timer key is returned.
    */
   private Long resolveAndAuthorizeExternalTrigger(final TypedRecord<TimerRecord> record) {
     final var command = record.getValue();
-    final var processInstanceKey = command.getProcessInstanceKey();
 
-    final TimerInstance stored;
-    final String notFoundMessage;
-    if (processInstanceKey < 0) {
-      // addressed by timer key (POST /v2/timers/{timerKey}/trigger): any timer, held or not
-      notFoundMessage = NO_TIMER_FOUND_MESSAGE.formatted(record.getKey());
-      stored = timerInstanceState.getByKey(record.getKey());
-      if (stored == null) {
-        reject(record, RejectionType.NOT_FOUND, notFoundMessage);
-        return null;
-      }
-    } else {
-      final var elementId = command.getTargetElementIdBuffer();
-      final var elementIdString = BufferUtil.bufferAsString(elementId);
-      notFoundMessage = NO_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString);
+    final String notFoundMessage = NO_TIMER_FOUND_MESSAGE.formatted(record.getKey());
+    final TimerInstance stored = timerInstanceState.getByKey(record.getKey());
+    if (stored == null) {
+      reject(record, RejectionType.NOT_FOUND, notFoundMessage);
+      return null;
+    }
 
-      final var resolution =
-          timerInstanceState.resolveHeldByProcessElement(processInstanceKey, elementId);
-      switch (resolution.status()) {
-        case NOT_FOUND -> {
-          reject(record, RejectionType.NOT_FOUND, notFoundMessage);
-          return null;
-        }
-        case AMBIGUOUS -> {
-          reject(
-              record,
-              RejectionType.INVALID_STATE,
-              AMBIGUOUS_HELD_TIMER_MESSAGE.formatted(processInstanceKey, elementIdString));
-          return null;
-        }
-        default -> stored = resolution.timer();
-      }
+    // A client trigger carries no process instance key, so the suspension gate cannot route it;
+    // reject here rather than fire the timer of a suspended instance.
+    if (suspensionState.isSuspended(stored.getProcessInstanceKey())) {
+      reject(
+          record,
+          RejectionType.INVALID_STATE,
+          SUSPENDED_INSTANCE_MESSAGE.formatted(record.getKey(), stored.getProcessInstanceKey()));
+      return null;
     }
 
     final long timerKey = stored.getKey();
@@ -270,19 +251,18 @@ public final class TimerTriggerProcessor
     return timerKey;
   }
 
-  private void hydrateFromStoredTimer(final TimerRecord timer, final TimerInstance held) {
+  private void hydrateFromStoredTimer(final TimerRecord timer, final TimerInstance stored) {
     timer
-        .setElementInstanceKey(held.getElementInstanceKey())
-        .setProcessInstanceKey(held.getProcessInstanceKey())
-        .setProcessDefinitionKey(held.getProcessDefinitionKey())
-        .setTargetElementId(held.getHandlerNodeId())
-        .setRepetitions(held.getRepetitions())
-        .setDueDate(held.getDueDate())
-        .setTenantId(held.getTenantId())
-        .setRootProcessInstanceKey(held.getRootProcessInstanceKey())
-        .setBpmnProcessId(held.getBpmnProcessId())
-        .setElementType(held.getElementType())
-        .setHeld(held.isHeld());
+        .setElementInstanceKey(stored.getElementInstanceKey())
+        .setProcessInstanceKey(stored.getProcessInstanceKey())
+        .setProcessDefinitionKey(stored.getProcessDefinitionKey())
+        .setTargetElementId(stored.getHandlerNodeId())
+        .setRepetitions(stored.getRepetitions())
+        .setDueDate(stored.getDueDate())
+        .setTenantId(stored.getTenantId())
+        .setRootProcessInstanceKey(stored.getRootProcessInstanceKey())
+        .setBpmnProcessId(stored.getBpmnProcessId())
+        .setElementType(stored.getElementType());
   }
 
   private void reject(
@@ -354,8 +334,10 @@ public final class TimerTriggerProcessor
   @Override
   public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
     if (!record.isInternalCommand()) {
-      // A client-issued trigger carries no timer key and no due date to index, so there is nothing
-      // to suspend; buffering it would leave the caller's request unanswered until resume.
+      // A client-issued trigger expects an immediate answer; buffering it would leave the caller's
+      // request unanswered until resume. (A trigger-by-key is also rejected earlier, in
+      // resolveAndAuthorizeExternalTrigger, since it carries no process instance key to route
+      // here.)
       return SuspensionAction.REJECT;
     }
     restoreStorageOrdinal(record);

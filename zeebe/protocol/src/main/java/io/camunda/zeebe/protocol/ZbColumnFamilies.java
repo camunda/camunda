@@ -399,13 +399,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // instance completes (see AgentInstanceCompletedApplier).
   AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
 
-  // Indexes held timers by their process instance, so a public trigger-timer command that carries
-  // only (processInstanceKey, elementId) can enumerate the instance's held timers and match the
-  // element id against each stored timer. The key is (processInstanceKey, elementInstanceKey,
-  // timerKey) — all immutable for the life of a timer, unlike the element id, which migration
-  // changes. Only held timers are indexed; the entry is written in DbTimerInstanceState#store and
-  // removed in #remove.
-  HELD_TIMER_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+  // 166 was HELD_TIMER_BY_PROCESS_INSTANCE (held timers, never released); removed. The value is
+  // left
+  // unused rather than reassigned so persisted ordinals stay stable.
 
   // Run-scoped variant of MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY (ADR 0014, D7 parallel-CF
   // prototype). Keyed (bpmnProcessId, correlationKey, runScope); written only when a message-start

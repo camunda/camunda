@@ -35,7 +35,6 @@ final class TimerCreatedV2Applier implements TypedEventApplier<TimerIntent, Time
     timerInstance.setRootProcessInstanceKey(value.getRootProcessInstanceKey());
     timerInstance.setBpmnProcessId(value.getBpmnProcessId());
     timerInstance.setElementType(value.getElementType());
-    timerInstance.setHeld(value.isHeld());
 
     timerInstanceState.store(timerInstance);
   }

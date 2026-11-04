@@ -32,14 +32,6 @@ public final class TimerServices extends PhysicalTenantScopedApiServices<TimerSe
   }
 
   public CompletableFuture<TimerRecord> triggerTimer(
-      final long processInstanceKey,
-      final String elementId,
-      final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerTriggerTimerRequest(processInstanceKey, elementId), authentication);
-  }
-
-  public CompletableFuture<TimerRecord> triggerTimer(
       final long timerKey, final CamundaAuthentication authentication) {
     return sendBrokerRequest(BrokerTriggerTimerRequest.byTimerKey(timerKey), authentication);
   }

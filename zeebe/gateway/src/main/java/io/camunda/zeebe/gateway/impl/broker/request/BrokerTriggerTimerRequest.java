@@ -18,29 +18,13 @@ public final class BrokerTriggerTimerRequest extends BrokerExecuteCommand<TimerR
 
   private final TimerRecord requestDto = new TimerRecord();
 
-  public BrokerTriggerTimerRequest(final long processInstanceKey, final String elementId) {
-    super(ValueType.TIMER, TimerIntent.TRIGGER);
-    // Route the command to the partition owning the process instance (encoded in the record key).
-    request.setKey(processInstanceKey);
-    // The caller addresses the held timer by (processInstanceKey, elementId); the engine resolves
-    // the concrete (elementInstanceKey, timerKey) from its held-timer index and hydrates the
-    // remaining fields (process definition, due date, ...). They have no msgpack default, so they
-    // are seeded here purely to satisfy serialization.
-    requestDto
-        .setProcessInstanceKey(processInstanceKey)
-        .setTargetElementId(BufferUtil.wrapString(elementId))
-        .setElementInstanceKey(-1L)
-        .setProcessDefinitionKey(-1L)
-        .setDueDate(-1L)
-        .setRepetitions(0);
-  }
-
   private BrokerTriggerTimerRequest(final long timerKey) {
     super(ValueType.TIMER, TimerIntent.TRIGGER);
     // Route the command to the partition owning the timer (encoded in the timer key).
     request.setKey(timerKey);
-    // A process instance key of -1 tells the engine the timer is addressed by its key; it
-    // hydrates the remaining fields from the stored timer.
+    // The caller addresses the timer by its key; the engine hydrates the remaining fields from the
+    // stored timer. They have no msgpack default, so they are seeded here purely to satisfy
+    // serialization.
     requestDto
         .setProcessInstanceKey(-1L)
         .setTargetElementId(BufferUtil.wrapString(""))

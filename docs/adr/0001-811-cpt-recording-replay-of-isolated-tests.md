@@ -13,11 +13,11 @@ surface (`zeebe/gateway-protocol/`), and AI agents reasoning about CPT recording
 
 ## Context
 
-The engine switches for [reserved jobs](../../zeebe/docs/adr/0016-811-reserved-jobs.md),
-[stubbed call activities](../../zeebe/docs/adr/0017-811-stubbed-call-activities.md), and
-[held timers](../../zeebe/docs/adr/0018-811-held-timers.md), plus
-[run-scope isolation](../../zeebe/docs/adr/0014-811-tag-scoped-run-isolation.md), let a test drive one
-instance on a shared cluster without colliding with concurrent runs. CPT is their consumer: it records
+The engine switches for [reserved jobs](../../zeebe/docs/adr/0016-811-reserved-jobs.md) and
+[stubbed call activities](../../zeebe/docs/adr/0017-811-stubbed-call-activities.md), the
+[timer search and trigger-by-key API](../../zeebe/docs/adr/0018-811-timer-search-and-trigger-by-key.md),
+plus [run-scope isolation](../../zeebe/docs/adr/0014-811-tag-scoped-run-isolation.md), let a test drive
+one instance on a shared cluster without colliding with concurrent runs. CPT is their consumer: it records
 a test by driving an instance by hand and replays it by re-issuing the recorded actions. This ADR
 covers the decisions that span the client, the JSON test-case format, and the CPT runtime; it depends
 on the engine ADRs rather than restating them.

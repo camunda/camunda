@@ -1719,8 +1719,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "elementId": "node1",
                   "storageOrdinal": 4,
-                  "elementType": "UNSPECIFIED",
-                  "held": false
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -1964,7 +1963,6 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
                   "stubbedCallActivityProcessIds": [],
-                  "holdTimers": false,
                   "jobReservationToken": "recorder-session-1",
                   "variablesMetadata": {
                     "foo": {
@@ -2000,7 +1998,6 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "versionTag": "",
                   "stubbedCallActivityProcessIds": [],
-                  "holdTimers": false,
                   "jobReservationToken": "",
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
@@ -2192,7 +2189,6 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
-                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2229,7 +2225,6 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
-                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -3078,7 +3073,6 @@ final class JsonSerializableToJsonTest {
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
-                  "holdTimers": false,
                     "elementInstanceKey": -1
                   }
                 }

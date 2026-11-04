@@ -12,7 +12,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -52,7 +51,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
   private static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
       new StringValue("stubbedCallActivityProcessIds");
-  private static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
   private static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
 
@@ -84,12 +82,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
   private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProperty =
       new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
-  private final BooleanProperty holdTimersProperty = new BooleanProperty(HOLD_TIMERS_KEY, false);
   private final StringProperty jobReservationTokenProperty =
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(17);
+    super(16);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -104,7 +101,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
         .declareProperty(stubbedCallActivityProcessIdsProperty)
-        .declareProperty(holdTimersProperty)
         .declareProperty(jobReservationTokenProperty);
     declareProperties(variablesPropertyGroup);
   }
@@ -350,16 +346,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       stubbedCallActivityProcessIds.forEach(
           processId -> stubbedCallActivityProcessIdsProperty.add().wrap(wrapString(processId)));
     }
-    return this;
-  }
-
-  @Override
-  public boolean isHoldTimers() {
-    return holdTimersProperty.getValue();
-  }
-
-  public ProcessInstanceCreationRecord setHoldTimers(final boolean holdTimers) {
-    holdTimersProperty.setValue(holdTimers);
     return this;
   }
 

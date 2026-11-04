@@ -111,7 +111,7 @@ public class TestCaseInstructionHandlerRegistry {
     register(new ResolveIncidentInstructionHandler(runContext));
     register(new SetTimeInstructionHandler());
     register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));
-    register(new TriggerTimerInstructionHandler(createdProcessInstances));
+    register(new TriggerTimerInstructionHandler(runContext));
     register(new UpdateVariablesInstructionHandler(runContext));
   }
 

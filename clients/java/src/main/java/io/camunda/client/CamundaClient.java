@@ -189,6 +189,7 @@ import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.TimerSearchRequest;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
@@ -961,32 +962,28 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ReleaseJobCommandStep1 newReleaseJobCommand(long jobKey);
 
   /**
-   * Command to fire a held timer of a process instance immediately (alpha).
+   * Command to fire a waiting timer immediately, by its key (alpha).
    *
    * <pre>
    * camundaClient
-   *  .newTriggerTimerCommand(processInstanceKey)
-   *  .elementId("escalation")
+   *  .newTriggerTimerCommand(timerKey)
    *  .send();
    * </pre>
    *
-   * <p>A timer of a process instance created with {@link
-   * CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#holdTimers(boolean)
-   * holdTimers} never fires on its own, so the caller fires it here — naming the BPMN element id of
-   * its catch event, which for a boundary timer is the boundary event's own id. The timer fires
-   * without waiting for its due date, and no other process instance on the cluster is affected.
+   * <p>The timer fires as if its due date had arrived, without waiting for it and without changing
+   * the cluster clock, so no other process instance on the cluster is affected. The timer key is
+   * learned from the timer search ({@code POST /v2/timers/search}).
    *
-   * <p>The command is rejected when no held timer of the instance matches the element, and when
-   * more than one does — an element id cannot tell apart two live held timers on the same element,
-   * as on a multi-instance element or a parallel branch.
+   * <p>The command is rejected when no timer with that key is waiting, for example because it has
+   * already fired or its element was left.
    *
    * <p>This command is only supported over REST. This is an alpha feature and may be subject to
    * change in future releases.
    *
-   * @param processInstanceKey the key of the process instance that owns the held timer
+   * @param timerKey the key of the timer to fire
    * @return a builder for the command
    */
-  TriggerTimerCommandStep1 newTriggerTimerCommand(long processInstanceKey);
+  TriggerTimerCommandStep1 newTriggerTimerCommand(long timerKey);
 
   /**
    * Command to pin the Zeebe engine's internal clock to a specific time.
@@ -1404,6 +1401,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance search request
    */
   ProcessInstanceSearchRequest newProcessInstanceSearchRequest();
+
+  /**
+   * Executes a search request to query the timers that process instances wait on. Only timers in
+   * state {@code CREATED} are returned.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newTimerSearchRequest()
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the timer search request
+   */
+  TimerSearchRequest newTimerSearchRequest();
 
   /**
    * Executes a search request to query element instances.
