@@ -18,6 +18,19 @@ public interface JournalMetaStore {
   void storeLastFlushedIndex(long index);
 
   /**
+   * Requests that lastFlushedIndex is updated without waiting for it to be written. Only for
+   * updates that follow a completed journal flush: the stored value may lag behind, never be ahead
+   * of what is flushed. A later call to {@link #storeLastFlushedIndex(long)} or {@link
+   * #resetLastFlushedIndex()} supersedes any pending request. The default implementation stores
+   * synchronously.
+   *
+   * @param index last flushed index
+   */
+  default void storeLastFlushedIndexAsync(final long index) {
+    storeLastFlushedIndex(index);
+  }
+
+  /**
    * Read last flushed index from the metastore. This method might be expensive and blocking as the
    * implementations of this may have to read from a database or file. It is recommended for the
    * callers of this method to cache lastFlushedIndex and call this method only when necessary.
