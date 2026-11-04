@@ -20,12 +20,14 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * Runs the browser authorization code flow against a Keycloak login form, with the real login
- * callback, and reads the username of the session from {@code /v2/authentication/me}.
+ * callback. Then it reads the username of the session from {@code /v2/authentication/me}, or sends
+ * another request with the session.
  */
 final class OidcBrowserLogin {
 
@@ -53,7 +55,49 @@ final class OidcBrowserLogin {
     }
   }
 
+  /**
+   * Logs in like {@link #loginAndReadUsername(URI, String, String, String, String)}, then sends
+   * {@code request} with the session of the login.
+   *
+   * @param request builds the request from the REST address of the application
+   */
+  static HttpResponse<String> loginAndSend(
+      final URI restAddress,
+      final String pathPrefix,
+      final String registrationId,
+      final String username,
+      final String password,
+      final Function<URI, HttpRequest.Builder> request)
+      throws Exception {
+    try (final var app = new Browser();
+        final var keycloak = new Browser()) {
+      login(app, keycloak, restAddress, pathPrefix, registrationId, username, password);
+      return app.send(request.apply(restAddress), BodyHandlers.ofString());
+    }
+  }
+
   private static String loginAndReadUsername(
+      final Browser app,
+      final Browser keycloak,
+      final URI restAddress,
+      final String pathPrefix,
+      final String registrationId,
+      final String username,
+      final String password)
+      throws Exception {
+    login(app, keycloak, restAddress, pathPrefix, registrationId, username, password);
+    final var me =
+        app.send(
+            HttpRequest.newBuilder(restAddress.resolve(pathPrefix + "/v2/authentication/me"))
+                .header("Accept", "application/json")
+                .GET(),
+            BodyHandlers.ofString());
+    assertThat(me.statusCode()).as("GET me on '%s': %s", pathPrefix, me.body()).isEqualTo(200);
+    return new ObjectMapper().readTree(me.body()).get("username").asText();
+  }
+
+  /** Runs the authorization code flow, so that {@code app} holds the session of the login. */
+  private static void login(
       final Browser app,
       final Browser keycloak,
       final URI restAddress,
@@ -92,15 +136,6 @@ final class OidcBrowserLogin {
     final var callback =
         app.send(HttpRequest.newBuilder(URI.create(callbackUrl)).GET(), BodyHandlers.discarding());
     assertThat(callback.statusCode()).isEqualTo(302);
-
-    final var me =
-        app.send(
-            HttpRequest.newBuilder(restAddress.resolve(pathPrefix + "/v2/authentication/me"))
-                .header("Accept", "application/json")
-                .GET(),
-            BodyHandlers.ofString());
-    assertThat(me.statusCode()).as("GET me on '%s': %s", pathPrefix, me.body()).isEqualTo(200);
-    return new ObjectMapper().readTree(me.body()).get("username").asText();
   }
 
   /** Whether the application already answers the login start of {@code registrationId}. */
