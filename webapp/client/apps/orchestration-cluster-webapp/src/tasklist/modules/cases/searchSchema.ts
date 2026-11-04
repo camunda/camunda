@@ -8,14 +8,12 @@
 
 import {z} from 'zod';
 
-const PAGE_SIZES = [25, 50, 100] as const;
 const SORT_FIELDS = ['startDate', 'businessId', 'processDefinitionName'] as const;
 
 const casesSearchDefaults = {
 	sortField: 'startDate',
 	sortOrder: 'desc',
 	page: 1,
-	pageSize: 25,
 } as const;
 
 const casesSearchSchema = z.object({
@@ -23,10 +21,9 @@ const casesSearchSchema = z.object({
 	sortField: z.enum(SORT_FIELDS).default(casesSearchDefaults.sortField),
 	sortOrder: z.enum(['asc', 'desc']).default(casesSearchDefaults.sortOrder),
 	page: z.number().int().positive().default(casesSearchDefaults.page),
-	pageSize: z.literal(PAGE_SIZES).default(casesSearchDefaults.pageSize),
 });
 
 type CasesSearch = z.infer<typeof casesSearchSchema>;
 
-export {PAGE_SIZES, SORT_FIELDS, casesSearchDefaults, casesSearchSchema};
+export {SORT_FIELDS, casesSearchDefaults, casesSearchSchema};
 export type {CasesSearch};
