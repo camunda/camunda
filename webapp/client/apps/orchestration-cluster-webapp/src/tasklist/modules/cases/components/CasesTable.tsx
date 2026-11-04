@@ -13,8 +13,10 @@ import {DataTable, EmptyState, type DataTableColumn, type SortingConfig} from '@
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
 import {CaseStatusBadge} from '#/tasklist/modules/cases/components/CaseStatusBadge';
-import {PAGE_SIZES, SORT_FIELDS, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
+import {SORT_FIELDS, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
+
+const PAGE_SIZE = 25;
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
@@ -100,13 +102,10 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 	);
 
 	const handlePaginationChange = useCallback(
-		({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => {
-			onSearchChange({
-				pageSize: PAGE_SIZES.find((size) => size === pageSize),
-				page: pageSize === search.pageSize ? pageIndex + 1 : 1,
-			});
+		({pageIndex}: {pageIndex: number}) => {
+			onSearchChange({page: pageIndex + 1});
 		},
-		[onSearchChange, search.pageSize],
+		[onSearchChange],
 	);
 
 	const sorting = useMemo(
@@ -121,13 +120,12 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 	const pagination = useMemo(
 		() => ({
 			manual: true,
-			pageSizes: [...PAGE_SIZES],
-			pageSize: search.pageSize,
+			pageSize: PAGE_SIZE,
 			pageIndex: search.page - 1,
 			rowCount: totalItems,
 			onPaginationChange: handlePaginationChange,
 		}),
-		[search.pageSize, search.page, totalItems, handlePaginationChange],
+		[search.page, totalItems, handlePaginationChange],
 	);
 
 	const getRowHref = useCallback(

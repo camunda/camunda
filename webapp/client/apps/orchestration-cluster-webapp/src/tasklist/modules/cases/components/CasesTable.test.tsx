@@ -126,27 +126,7 @@ describe('<CasesTable />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({pageSize: 25, page: 2});
-	});
-
-	it('should return to the first page when the page size changes', async () => {
-		const onSearchChange = vi.fn();
-		const screen = await renderWithRouter(
-			() => (
-				<CasesTable
-					cases={CASES}
-					totalItems={200}
-					search={{...casesSearchDefaults, page: 3}}
-					onSearchChange={onSearchChange}
-				/>
-			),
-			{path: '/tasklist/cases'},
-		);
-
-		await userEvent.click(screen.getByRole('combobox'));
-		await userEvent.click(screen.getByRole('option', {name: '50'}));
-
-		expect(onSearchChange).toHaveBeenCalledWith({pageSize: 50, page: 1});
+		expect(onSearchChange).toHaveBeenCalledWith({page: 2});
 	});
 
 	it('should show an empty state when there are no open cases', async () => {
