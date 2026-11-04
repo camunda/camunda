@@ -164,3 +164,22 @@ components:
       x-properties-added-in-version:
         - propertyName: "isAnonymous"
           addedInVersion: "8.11"
+
+    AuthenticatedCamundaUserResult:
+      description: >-
+        A `CamundaUserResult` with `isAnonymous` set to `false`, so `username` is always set.
+        `GET /authentication/me` returns `CamundaUserResult`. Clients that only handle a caller
+        with an identity can narrow the result to this schema once they checked `isAnonymous`.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CamundaUserResult'
+      properties:
+        isAnonymous:
+          description: Always `false`, because the caller has an identity.
+          type: boolean
+          enum:
+            - false
+        username:
+          description: The username of the user.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/Username"

@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useNavigate} from '@tanstack/react-router';
 import {useCallback} from 'react';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';

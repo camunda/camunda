@@ -8,6 +8,7 @@
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
+	AuthenticatedCurrentUser,
 	License,
 	Form,
 	UserTask,
@@ -87,7 +88,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {redactValue, redactValues} from '#/shared/variables/redactedVariable';
 import {request} from './request';
-import type {AuthenticatedCurrentUser} from './currentUser';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
 import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';

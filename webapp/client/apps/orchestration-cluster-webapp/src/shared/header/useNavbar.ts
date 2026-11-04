@@ -9,7 +9,7 @@
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useCallback} from 'react';

@@ -8,8 +8,7 @@
 
 import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
+import type {AuthenticatedCurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Heading, useMediaQuery} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
