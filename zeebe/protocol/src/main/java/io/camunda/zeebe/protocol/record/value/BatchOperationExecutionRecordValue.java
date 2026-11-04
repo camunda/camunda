@@ -32,4 +32,9 @@ public interface BatchOperationExecutionRecordValue extends BatchOperationRelate
    * @return subset of entity keys for the batch operation which are being or were processed
    */
   Set<Long> getItemKeys();
+
+  /**
+   * @return the storage ordinal shared by the items in this record, 0 when not known
+   */
+  int getBatchItemsStorageOrdinal();
 }

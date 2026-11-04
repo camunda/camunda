@@ -88,19 +88,30 @@ public interface MutableBatchOperationState extends BatchOperationState {
    *
    * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
    * @param itemKeys the set of itemKeys to add to the batch operation
-   * @deprecated Use {@link #addChunk(long, long, Set)}
+   * @deprecated Use {@link #addChunk(long, long, int, Set)}
    */
   @Deprecated
   void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
 
   /**
    * Adds a chunk of itemKeys to the given batch operation. The itemKeys are added to the end of the
-   * pending itemKeys.
+   * pending itemKeys. Every item in a chunk shares the given storage ordinal.
    *
    * @param chunkKey the key of the chunk being added
    * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
+   * @param batchItemsStorageOrdinal the storage ordinal of every item in the chunk, 0 when unknown
    * @param itemKeys the set of itemKeys to add to the batch operation
    */
+  void addChunk(
+      long chunkKey, long batchOperationKey, int batchItemsStorageOrdinal, Set<Long> itemKeys);
+
+  /**
+   * Adds a chunk without a storage ordinal, stored as 0.
+   *
+   * @deprecated since 8.11.0, kept for the chunk CREATED applier version 2, which must not change.
+   *     New code uses {@link #addChunk(long, long, int, Set)}
+   */
+  @Deprecated(since = "8.11.0")
   void addChunk(long chunkKey, long batchOperationKey, Set<Long> itemKeys);
 
   /**

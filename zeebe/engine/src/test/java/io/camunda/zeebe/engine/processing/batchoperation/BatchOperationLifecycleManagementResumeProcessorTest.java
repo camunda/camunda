@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -112,5 +113,35 @@ class BatchOperationLifecycleManagementResumeProcessorTest {
 
     final BatchOperationExecutionRecord capturedRecord = captor.getValue();
     assert capturedRecord.getBatchOperationKey() == batchOperationKey;
+  }
+
+  @Test
+  void shouldStampStorageOrdinalOnExecuteCommandWhenResumed() {
+    // given
+    final long resumeKey = 123L;
+    final long batchOperationKey = 456L;
+    final int storageOrdinal = 1234;
+    final BatchOperationLifecycleManagementRecord recordValue =
+        new BatchOperationLifecycleManagementRecord();
+    recordValue.setBatchOperationKey(batchOperationKey);
+
+    final PersistedBatchOperation batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getKey()).thenReturn(batchOperationKey);
+    when(batchOperation.isInitialized()).thenReturn(true);
+    when(batchOperation.getStorageOrdinal()).thenReturn(storageOrdinal);
+
+    // when
+    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
+
+    // then
+    final ArgumentCaptor<BatchOperationExecutionRecord> captor =
+        ArgumentCaptor.forClass(BatchOperationExecutionRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(batchOperationKey),
+            eq(BatchOperationExecutionIntent.EXECUTE),
+            captor.capture(),
+            any());
+    assertThat(captor.getValue().getStorageOrdinal()).isEqualTo(storageOrdinal);
   }
 }

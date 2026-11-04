@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,6 +58,7 @@ public final class BatchOperationCreationCreateProcessor
       "Expected to create a batch operation with key: '%d', but a batch operation command with this key already exists";
 
   private final KeyGenerator keyGenerator;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -70,6 +72,7 @@ public final class BatchOperationCreationCreateProcessor
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
@@ -79,6 +82,7 @@ public final class BatchOperationCreationCreateProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
@@ -87,6 +91,9 @@ public final class BatchOperationCreationCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    // Stamped before validation so a rejected CREATE carries the active storage ordinal too.
+    command.getValue().setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
+
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);

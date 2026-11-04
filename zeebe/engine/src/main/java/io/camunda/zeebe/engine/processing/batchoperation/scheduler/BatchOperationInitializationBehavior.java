@@ -145,7 +145,8 @@ public class BatchOperationInitializationBehavior {
 
   private void startExecutionPhase(
       final TaskResultBuilder resultBuilder, final InitializationContext context) {
-    commands.appendExecutionCommand(resultBuilder, context.operation().getKey());
+    commands.appendExecutionCommand(
+        resultBuilder, context.operation().getKey(), context.operation().getStorageOrdinal());
 
     metrics.recordItemsPerPartition(
         context.operation().getNumTotalItems() + context.itemsProcessed(),
@@ -158,7 +159,8 @@ public class BatchOperationInitializationBehavior {
 
   private void finishInitialization(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
-    commands.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
+    commands.appendFinishInitializationCommand(
+        resultBuilder, batchOperation.getKey(), batchOperation.getStorageOrdinal());
     metrics.recordInitialized(batchOperation.getBatchOperationType());
   }
 
@@ -168,6 +170,7 @@ public class BatchOperationInitializationBehavior {
     commands.appendInitializationCommand(
         taskResultBuilder,
         context.operation().getKey(),
+        context.operation().getStorageOrdinal(),
         context.currentCursor(),
         context.pageSize());
   }
@@ -175,9 +178,11 @@ public class BatchOperationInitializationBehavior {
   public void appendFailedCommand(
       final TaskResultBuilder taskResultBuilder,
       final long batchOperationKey,
+      final int storageOrdinal,
       final String message,
       final BatchOperationErrorType errorType) {
-    commands.appendFailureCommand(taskResultBuilder, batchOperationKey, message, errorType);
+    commands.appendFailureCommand(
+        taskResultBuilder, batchOperationKey, storageOrdinal, message, errorType);
   }
 
   /**
