@@ -16,6 +16,7 @@ import { writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync
 import { fetchAndBundle, specDirForRef } from 'camunda-schema-bundler';
 import YAML from 'yaml';
 import { collapseSiblingVariants } from './sibling-variant-collapse.mjs';
+import { collapseBackwardsCompat } from './backwards-compat-collapse.mjs';
 
 const yaml = { load: (source) => YAML.parse(source) };
 
@@ -822,50 +823,10 @@ async function main() {
     }
   }
 
-  // Backwards-compat collapse: when a property re-appears in a later version
-  // on a different schema branch (oneOf split, sibling reintroduction for
-  // backwards-compatibility), branch-tagging gives every occurrence its own
-  // entry. Collapse to the MIN version across the (endpoint, location,
-  // property) triple ONLY when a fully-tagless ancestor exists — i.e. the
-  // property had a pre-polymorphic-split flat form. Without a tagless
-  // ancestor, the sibling-variant collapse further down still collapses
-  // occurrences whose schema is identical on every branch; occurrences with
-  // different schemas (e.g. a discriminator-wrapper child pinning the
-  // discriminator to its own value) keep their own version.
-  {
-    const cmp = (a, b) => {
-      const [aMaj, aMin] = a.split('.').map(Number);
-      const [bMaj, bMin] = b.split('.').map(Number);
-      return aMaj - bMaj || aMin - bMin;
-    };
-    // Deliberately not the sibling-variant collapse's normalizeQname /
-    // isBranchTagged: those also strip inline branch tags (`oneOf[0].foo`),
-    // which would group an inline-branch property with a plain `foo` on the
-    // same endpoint. This pass has no schema check, so it must keep grouping
-    // only what it grouped before the sibling-variant collapse existed.
-    const hasLeadingBranch = (qname) => /^[A-Z][^.|]*\./.test(qname);
-    const isTagless = (qname) => !qname.includes('|') && !hasLeadingBranch(qname);
-    const normalizeQname = (qname) =>
-      qname.replace(/\|[^.]+/g, '').replace(/^[A-Z][^.|]*\./, '');
-    const byTriple = new Map();
-    for (const val of Object.values(versionMap.properties)) {
-      const k = `${val.endpoint}|||${val.location}|||${normalizeQname(val.qualifiedName)}`;
-      let bucket = byTriple.get(k);
-      if (!bucket) {
-        bucket = { hasTagless: false, min: val.version, entries: [] };
-        byTriple.set(k, bucket);
-      }
-      bucket.entries.push(val);
-      if (isTagless(val.qualifiedName)) bucket.hasTagless = true;
-      if (cmp(val.version, bucket.min) < 0) bucket.min = val.version;
-    }
-    for (const bucket of byTriple.values()) {
-      if (!bucket.hasTagless) continue;
-      for (const val of bucket.entries) {
-        if (cmp(bucket.min, val.version) < 0) val.version = bucket.min;
-      }
-    }
-  }
+  // Backwards-compat collapse: see backwards-compat-collapse.mjs. Runs before
+  // the sibling-variant collapse; the order is part of the contract tested in
+  // test/collapse-pipeline.test.mjs.
+  collapseBackwardsCompat(versionMap);
 
   // Sibling-variant collapse: a property repeated on sibling oneOf/anyOf
   // branches of the same request or response, with an identical schema, gets
