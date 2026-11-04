@@ -181,6 +181,15 @@ public class PlatformDefaultEntities {
             .setResourceMatcher(WILDCARD.getMatcher())
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(Set.of(PermissionType.REVEAL)));
+    // The managed-script connector reads the script linked to its task through the resource API.
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.RESOURCE)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(Set.of(PermissionType.READ)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)
