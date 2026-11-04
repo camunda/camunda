@@ -310,14 +310,14 @@ The exception to this is a PATCH operation where sending an explicit `null` is s
 
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
-Every operation **should** declare `x-eventually-consistent` explicitly:
+Every operation **must** declare `x-eventually-consistent` explicitly:
 
 |                     Operation type                      |  Value  |                   Reason                    |
 |---------------------------------------------------------|---------|---------------------------------------------|
 | **Queries** (search, statistics, GET reads)             | `true`  | Read from eventually-consistent projections |
 | **Commands** (create, update, delete, complete, assign) | `false` | Synchronous writes                          |
 
-> **What the Spectral rule enforces:** The `no-eventually-consistent-on-commands` rule only prevents command (mutating) operations from being marked `x-eventually-consistent: true`. It does **not** require the extension to be present on every operation, nor does it enforce that query operations set it to `true`. Declaring the annotation on all operations is a **team convention** for clarity and SDK correctness; setting `true` on a command causes SDK generators to emit unnecessary polling wrappers.
+> **What the Spectral rules enforce:** `require-eventually-consistent` fails the build when an operation does not declare `x-eventually-consistent` as a boolean `true` or `false`. `no-eventually-consistent-on-commands` additionally prevents command (mutating) operations from being marked `true`, since that makes SDK generators emit unnecessary polling wrappers. Neither rule checks that query operations set it to `true` — that remains a reviewer responsibility.
 
 #### Relationship to `@RequiresSecondaryStorage`
 
@@ -1605,6 +1605,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                 |
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                 |
 | `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                |
+| `require-eventually-consistent`            | error    | Every operation must declare `x-eventually-consistent` as `true` or `false` (see §2.5)                                                          |
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                 |
 | `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                   |
 | `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17)                                               |
