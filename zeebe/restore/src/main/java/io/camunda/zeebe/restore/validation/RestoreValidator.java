@@ -215,13 +215,14 @@ public final class RestoreValidator
     if (exportedPositionSupplier == null) {
       // No secondary storage to keep consistent with: restore the partitions of the backup the
       // time range resolves to.
-      final var from =
-          requireNonNull(
-              instantFrom, "from is required to restore a time range without exported positions");
-      final var restoredPartitionCount = timeRangePartitionCount(from, instantTo);
+      if (instantFrom == null) {
+        throw new IllegalArgumentException(
+            "from is required to restore a time range without exported positions");
+      }
+      final var restoredPartitionCount = timeRangePartitionCount(instantFrom, instantTo);
       final var restorableBackups =
           RestorePointResolver.resolve(
-              loadMetadataForAllPartitions(restoredPartitionCount), from, instantTo, null);
+              loadMetadataForAllPartitions(restoredPartitionCount), instantFrom, instantTo, null);
       verifyLastBackupsHoldThePartitions(restorableBackups, restoredPartitionCount);
       return restorableBackups;
     }
