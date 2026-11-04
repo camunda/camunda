@@ -423,6 +423,17 @@ public class RestorePointResolver {
                         from);
                 return;
               }
+              if (from != null && endInfo.checkpointTimestamp().isBefore(from)) {
+                LOG.atInfo()
+                    .addKeyValue("partition", metadata.partitionId())
+                    .log(
+                        "Skipping range [{}, {}] because it ends at {}, before requested time {}",
+                        range.start(),
+                        range.end(),
+                        endInfo.checkpointTimestamp(),
+                        from);
+                return;
+              }
               if (effectiveExportedPosition != null
                   && startInfo.getFirstLogPositionOrDefault() > effectiveExportedPosition) {
                 LOG.atInfo()
