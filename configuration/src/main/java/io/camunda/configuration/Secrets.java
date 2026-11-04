@@ -353,7 +353,11 @@ public class Secrets {
 
     /**
      * Prefix every secret variable carries: secret {@code name} is read from the variable {@code
-     * <prefix><name>}.
+     * <prefix><name>}. Required, and must start with a letter, contain only letters, digits and
+     * underscores, and end with an underscore, such as {@code APP_SECRET_}. Startup is refused when
+     * it is missing or malformed, or when it starts, ignoring case, with a prefix reserved for the
+     * platform's own settings and credentials, such as {@code CAMUNDA_}, {@code ZEEBE_}, {@code
+     * SPRING_} or {@code AWS_}.
      */
     private String prefix = "";
 

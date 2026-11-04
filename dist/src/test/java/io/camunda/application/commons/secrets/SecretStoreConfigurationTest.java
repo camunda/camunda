@@ -124,7 +124,7 @@ class SecretStoreConfigurationTest {
     // when / then
     assertThatIllegalStateException()
         .isThrownBy(() -> registries(resolver))
-        .withMessageContaining("no prefix configured")
+        .withMessageContaining("prefix is missing")
         .withMessageContaining("camunda.secrets.stores.env.default.prefix")
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
@@ -594,6 +594,18 @@ class SecretStoreConfigurationTest {
         .withMessageContaining("the only supported store id is 'default'")
         .withMessageContaining("camunda.secrets.stores.env.main")
         .withMessageContaining("camunda.secrets.stores.env.default");
+  }
+
+  @Test
+  void shouldRefuseToStartWhenAPhysicalTenantsEnvStorePrefixIsReserved() {
+    // given a tenant whose env store prefix would read the engine's own ZEEBE_* variables
+    final var resolver = resolverFor(tenantWithEnvStore("tenanta", "ZEEBE_"));
+
+    // when / then — the message names the tenant-scoped setting and the reserved prefix
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix")
+        .withMessageContaining("reserved prefix 'ZEEBE_'");
   }
 
   @ParameterizedTest
