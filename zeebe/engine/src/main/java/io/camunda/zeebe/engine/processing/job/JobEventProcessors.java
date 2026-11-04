@@ -90,7 +90,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
-            new JobYieldProcessor(processingState, bpmnBehaviors, writers, tenantCheck))
+            new JobYieldProcessor(
+                processingState, bpmnBehaviors, writers, tenantCheck, suspensionMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
