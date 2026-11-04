@@ -96,6 +96,28 @@ ENV PATH $JAVA_HOME/bin:$PATH
 # Copy JRE from previous build stage
 COPY --from=jre-build /jre ${JAVA_HOME}
 
+# CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
+# Sectigo's AAA Certificate Services from the JDK cacerts, and the jre-build stage checks that G1,
+# G3 and AAA are out of ours. Ubuntu's ca-certificates still ships emSign G1 in the OS bundle that
+# curl and openssl use. Deselect it in /etc/ca-certificates.conf, so update-ca-certificates drops
+# it and keeps it out when a derived image runs update-ca-certificates to add its own CA. The build
+# fails if G1, G3 or AAA is in the OS bundle. emSign C1 and C3 are not part of Oracle's removal and
+# stay.
+RUN set -eu; \
+    g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    sed -i 's#^mozilla/emSign_Root_CA_-_G1\.crt$#!&#' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
+    tmp=$(mktemp -d); \
+    keytool -printcert -file /etc/ssl/certs/ca-certificates.crt > "$tmp/os.txt"; \
+    awk '$1=="SHA256:"{f=$2; gsub(":","",f); print f}' "$tmp/os.txt" > "$tmp/os.fp"; \
+    [ "$(wc -l < "$tmp/os.fp")" -gt 100 ]; \
+    if awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/os.fp"; then \
+      echo "forbidden root left in OS bundle" >&2; exit 1; \
+    fi; \
+    rm -rf "$tmp"
+
 # https://github.com/docker-library/openjdk/issues/212#issuecomment-420979840
 # https://openjdk.java.net/jeps/341
 # TL;DR generate some class data sharing for faster load time
