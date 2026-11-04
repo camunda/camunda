@@ -49,6 +49,7 @@ import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.JobMetricsBatchClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
+import io.camunda.zeebe.engine.util.client.ProcessDefinitionSuspensionClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
@@ -585,6 +586,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public ProcessDefinitionSuspensionClient processDefinitionSuspension() {
+    return new ProcessDefinitionSuspensionClient(environmentRule);
   }
 
   public UserTaskLookupClient userTaskLookup() {
