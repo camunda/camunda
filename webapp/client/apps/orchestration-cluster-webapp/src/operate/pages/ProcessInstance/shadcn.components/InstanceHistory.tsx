@@ -21,7 +21,7 @@ import {useInstanceHistory} from '../useInstanceHistory';
 import {instanceLastMigrationQuery} from '../processInstance.queries';
 import {FilteredInstanceHistory} from './FilteredInstanceHistory';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
-import {HistoryRowLabel} from './HistoryRowLabel';
+import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';
 import {InstanceHistorySearch} from './InstanceHistorySearch';
 
 const ROW_HEIGHT = 32;
@@ -235,6 +235,7 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 					label={t('operate.processInstance.history.title')}
 					hideLabel
 					size="sm"
+					className={HISTORY_TREE_CLASS_NAME}
 					data={tree.data}
 					selected={tree.selected}
 					onSelect={(_, node) => {

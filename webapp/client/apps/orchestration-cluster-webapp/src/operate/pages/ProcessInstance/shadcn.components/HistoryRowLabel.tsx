@@ -19,12 +19,16 @@ type Props = {
 	showTimestamp?: boolean;
 };
 
+const HISTORY_TREE_CLASS_NAME = '[&_[role=treeitem]]:border-l-[2rem] [&_[role=treeitem]]:border-transparent';
+
 const HistoryRowLabel: React.FC<Props> = ({item, businessObject, suffix, showTimestamp = true}) => {
 	const name = item.elementName ?? item.elementId;
 	return (
 		<span className="flex min-w-0 flex-1 items-center gap-2">
+			<span className="absolute inset-y-0 -left-6 flex items-center">
+				<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
+			</span>
 			<ElementInstanceIcon businessObject={businessObject} root={item.type === 'PROCESS'} />
-			<StateIcon state={item.hasIncident ? 'INCIDENT' : item.state} size={16} />
 			<span className="min-w-0 flex-1 truncate">
 				{name}
 				{suffix}
@@ -36,4 +40,4 @@ const HistoryRowLabel: React.FC<Props> = ({item, businessObject, suffix, showTim
 	);
 };
 
-export {HistoryRowLabel};
+export {HistoryRowLabel, HISTORY_TREE_CLASS_NAME};
