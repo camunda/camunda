@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -205,15 +206,11 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final Map<String, String> exclusionFilters) {
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
+    final var filter =
+        new FilterByKeysQuery(idsMap).inclusions(inclusionFilters).exclusions(exclusionFilters);
     final var finishDate = batch.finishDate();
     return getArchiverRepository()
-        .moveDocumentsById(
-            sourceIdxName,
-            sourceIdxName + finishDate,
-            idsMap,
-            inclusionFilters,
-            exclusionFilters,
-            getExecutor())
+        .moveDocumentsById(sourceIdxName, sourceIdxName + finishDate, filter, getExecutor())
         .thenApplyAsync(ok -> batch.size(), getExecutor());
   }
 
