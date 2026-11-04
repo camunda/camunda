@@ -807,6 +807,31 @@ class ProcessingScheduleServiceTest {
       inOrder.verifyNoMoreInteractions();
     }
 
+    @RegressionTest("https://github.com/camunda/camunda/issues/13880")
+    void shouldExecuteScheduledTaskFarInTheFuture() {
+      // given
+      // about 317 years, which overflows a long of nanoseconds (about 292 years)
+      final var delay = Duration.ofSeconds(9_999_999_990L);
+      final var mockedTask = spy(new DummyTask());
+      scheduleService.runAt(100 + delay.toMillis(), mockedTask);
+      actorScheduler.workUntilDone();
+
+      // when
+      // the service checks for due tasks every second, so step by that interval
+      actorScheduler.updateClock(delay.minusSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
+    }
+
     @Test
     void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
       // given
