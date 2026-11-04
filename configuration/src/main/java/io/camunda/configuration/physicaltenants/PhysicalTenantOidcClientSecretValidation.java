@@ -15,7 +15,6 @@ import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -30,7 +29,11 @@ import org.springframework.core.env.Environment;
  *
  * <p>A tenant inherits each provider field that it does not set. If it changes the issuer or the
  * token endpoint but not the secret, the inherited secret goes to the other identity provider. A
- * secret that the tenant sets itself is accepted, because then the operator made the decision.
+ * secret that the tenant sets itself is accepted, because then the operator made the decision. A
+ * value that differs only by a trailing slash is the same identity provider.
+ *
+ * <p>Only the issuer and the token endpoint count, because the client secret goes only to the token
+ * endpoint. The authorization endpoint and the JWK set get no secret.
  */
 @NullMarked
 final class PhysicalTenantOidcClientSecretValidation {
@@ -129,8 +132,9 @@ final class PhysicalTenantOidcClientSecretValidation {
         merged.getClientAuthenticationMethod())) {
       return false;
     }
-    return !Objects.equals(root.getIssuerUri(), merged.getIssuerUri())
-        || !Objects.equals(root.getTokenUri(), merged.getTokenUri());
+    // A trailing slash alone does not change the identity provider (#61896).
+    return !OidcIssuerUris.isSame(root.getIssuerUri(), merged.getIssuerUri())
+        || !OidcIssuerUris.isSame(root.getTokenUri(), merged.getTokenUri());
   }
 
   private static OidcConfiguration bindProvider(

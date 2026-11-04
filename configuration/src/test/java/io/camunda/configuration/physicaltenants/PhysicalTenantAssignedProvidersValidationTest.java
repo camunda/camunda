@@ -499,6 +499,30 @@ class PhysicalTenantAssignedProvidersValidationTest {
   }
 
   @Test
+  void shouldRejectProvidersWhoseIssuersDifferOnlyByATrailingSlash() {
+    // given — the runtime treats both issuer-uris as one issuer
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com/",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("[a, b]");
+  }
+
+  @Test
   void shouldRejectCamelCaseProvidersWithSameIssuerInAssigned() {
     // given two camel-case named providers sharing the same issuer-uri, both assigned
     final Environment environment =

@@ -18,4 +18,5 @@ Cross-cutting monorepo-wide decisions live in [`docs/adr/`](../README.md).
 | [0008](0008-physical-tenant-exporter-assignment-and-args-merge.md)                   | Explicit exporter assignment and opt-in type-aware args merge                                    |
 | [0009](0009-propagating-physical-tenant-context-across-async-authorization-reads.md) | Propagating physical-tenant context across async authorization reads (Proposed)                  |
 | [0010](0010-zone-aware-cluster-identity-and-partitioning.md)                         | Composite `<zone>_<nodeIdx>` broker identity and zone-driven partitioning held in dynamic config |
+| [0011](0011-per-physical-tenant-resolution-of-identity-properties.md)                | Per-physical-tenant resolution of each identity property in the tenant and provider layers       |
 

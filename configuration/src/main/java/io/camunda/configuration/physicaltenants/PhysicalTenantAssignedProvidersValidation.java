@@ -66,6 +66,7 @@ import org.springframework.core.env.Environment;
  *   <li>Among the effective provider set (the {@code assigned} list, or all providers for the
  *       default tenant without a selection), no two providers may carry the same {@code
  *       issuer-uri}: identical issuers produce an ambiguous token-validation chain at runtime.
+ *       Issuers that differ only by a trailing slash are the same issuer, as at runtime.
  * </ul>
  */
 @NullMarked
@@ -340,8 +341,8 @@ final class PhysicalTenantAssignedProvidersValidation {
 
   /**
    * Fails if any two provider ids in {@code providerIds} resolve to the same {@code issuer-uri}
-   * under {@code tenantId}. Provider ids whose issuer is {@code null} are skipped (not yet
-   * configured, or set elsewhere).
+   * under {@code tenantId}, a trailing slash ignored. Provider ids whose issuer is {@code null} are
+   * skipped (not yet configured, or set elsewhere).
    */
   private static void checkIssuerCollisions(
       final Environment environment,
@@ -366,7 +367,10 @@ final class PhysicalTenantAssignedProvidersValidation {
     for (final String id : distinctIds) {
       final String issuer = resolveIssuerUri(environment, binder, tenantId, id);
       if (issuer != null) {
-        byIssuer.computeIfAbsent(issuer, k -> new ArrayList<>()).add(id);
+        // The runtime treats issuers that differ only by a trailing slash as one issuer.
+        byIssuer
+            .computeIfAbsent(OidcIssuerUris.withoutTrailingSlash(issuer), k -> new ArrayList<>())
+            .add(id);
       }
     }
     final List<String> collisions =
