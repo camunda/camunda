@@ -119,14 +119,11 @@ polling cursor advances in the same step as the version.
   - Outsourced to https://github.com/camunda/camunda-security-library/issues/795
 - **Pausing the polling until a version is applied.** The Hub client must not poll the next change
   set while an update is open, but the client runs outside the stream processor, and the engine
-  processes the update asynchronously. Options:
-  - The client polls only when the policy state of partition 1 has no open update, and takes its
-    cursor from that state (see D8). It also remembers the update it has handed over itself, until
-    the update appears in the state.
-  - The engine notifies the client after it has processed the commit or a failure, for example
-    through a side effect on partition 1.
-
-  Partition 1 committing a version does not mean that the other partitions have switched yet.
+  processes the update asynchronously.
+  - https://github.com/camunda/pdp-initiative-ea-identity--access-at-scale/issues/53
+- **Hub-client reads current policyVersion and sequenceNo** How can this hub-client component get to
+  know this sequence number to receive the correct updates?
+  - https://github.com/camunda/pdp-initiative-ea-identity--access-at-scale/issues/52
 
 ## Source
 
