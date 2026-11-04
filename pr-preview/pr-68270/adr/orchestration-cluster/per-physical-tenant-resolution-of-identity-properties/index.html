@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">ADR-0011: Per-Physical-Tenant Resolution of Identity Properties | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-68270/adr/orchestration-cluster/per-physical-tenant-resolution-of-identity-properties/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="ADR-0011: Per-Physical-Tenant Resolution of Identity Properties | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Timothy Cline (@timcline)"><meta data-rh="true" property="og:description" content="DRI: Timothy Cline (@timcline)"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-68270/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-68270/adr/orchestration-cluster/per-physical-tenant-resolution-of-identity-properties/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68270/adr/orchestration-cluster/per-physical-tenant-resolution-of-identity-properties/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68270/adr/orchestration-cluster/per-physical-tenant-resolution-of-identity-properties/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-68270/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-68270/assets/js/runtime~main.0337d922.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-68270/assets/js/main.0eab295e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68270/assets/js/runtime~main.43ec7cfc.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68270/assets/js/main.750cf9ee.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -30,12 +30,12 @@ A value that the tenant sets wins over the root value, and a value that it omits
 <p><strong>D4. A tenant can define providers of its own.</strong>
 A provider that exists only in a tenant is valid, as is a root provider. Like every provider of a non-default tenant, it must be in the tenant&#x27;s provider selection (<a class="" href="/camunda/pr-preview/pr-68270/adr/orchestration-cluster/per-physical-tenant-provider-selection-via-assigned/">ADR-0004</a>).</p>
 <p><strong>D5. Startup checks compare issuers as the runtime does.</strong>
-Two issuer URIs that differ only by a trailing slash are one issuer. Thus two providers of one tenant must not use issuers that differ only in this way. A tenant that inherits the root client secret must not change the issuer or the token endpoint of that provider, but a trailing slash is not a change. Only these two values count, because the client secret goes only to the token endpoint.</p>
+Two issuer URIs that differ only by a trailing slash are one issuer, because discovery settles both on the provider&#x27;s issuer. Thus two providers of one tenant must not use issuers that differ only in this way. A tenant that inherits the root client secret must not change the issuer or the token endpoint of that provider. For the issuer, a trailing slash is not a change. The token endpoint is called as configured, so any change to it counts. Only these two values count, because the client secret goes only to the token endpoint.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <ul>
 <li class="">The configuration reference can give the rule of each property in both layers from this record.</li>
 <li class="">A configuration with two providers whose issuers differ only by a trailing slash now fails at startup. Before, it started and the runtime used only the first provider.</li>
-<li class="">A tenant that only adds or removes a trailing slash on an inherited issuer or token endpoint no longer needs its own client secret.</li>
+<li class="">A tenant that only adds or removes a trailing slash on an inherited issuer no longer needs its own client secret. A trailing slash on the token endpoint still requires one.</li>
 <li class="">A new provider value does not inherit from the default slot unless a new decision says so.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="source">Source<a href="#source" class="hash-link" aria-label="Direct link to Source" title="Direct link to Source" translate="no">​</a></h2>
