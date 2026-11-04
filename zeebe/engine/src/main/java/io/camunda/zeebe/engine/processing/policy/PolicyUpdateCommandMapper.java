@@ -312,6 +312,11 @@ public final class PolicyUpdateCommandMapper {
   /**
    * Finds the stored authorization with the same owner and resource. Each candidate is compared
    * right away, because a state read reuses the buffer of the previous one.
+   *
+   * <p>The engine allows several authorizations with the same owner and resource if their
+   * permissions are disjoint, but in hub mode there is at most one: the identity data is truncated
+   * before a cluster switches to hub mode, and Hub sends at most one authorization per owner and
+   * resource, which this mapping reconciles onto. So the first match is the only one.
    */
   private OptionalLong findAuthorizationKey(final AuthorizationRecordValue authorization) {
     final var authorizationState = state.getAuthorizationState();
