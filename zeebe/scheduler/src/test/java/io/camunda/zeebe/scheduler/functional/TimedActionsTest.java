@@ -95,6 +95,38 @@ public final class TimedActionsTest {
     }
 
     @Test
+    public void shouldRunActionWhenFarFutureDeadlineReached() {
+      // given
+      // about 317 years, which overflows a long of nanoseconds (about 292 years)
+      final var delay = Duration.ofSeconds(9_999_999_990L);
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.schedule(delay, action);
+            }
+          };
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      // when
+      actorScheduler.updateClock(delay.minusMillis(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, never()).run();
+
+      // when
+      actorScheduler.updateClock(Duration.ofMillis(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(1)).run();
+    }
+
+    @Test
     public void shouldRunAtFixedRate() throws InterruptedException {
       // given
       final Runnable action = mock(Runnable.class);
