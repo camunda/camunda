@@ -32,7 +32,7 @@ class UsageMetricsAggregationResultTransformerTest {
     assertThat(result.totalRpi()).isZero();
     assertThat(result.totalEdi()).isZero();
     assertThat(result.at()).isZero();
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
@@ -44,7 +44,7 @@ class UsageMetricsAggregationResultTransformerTest {
     assertThat(result.totalRpi()).isZero();
     assertThat(result.totalEdi()).isZero();
     assertThat(result.at()).isZero();
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
@@ -68,7 +68,7 @@ class UsageMetricsAggregationResultTransformerTest {
     assertThat(result.totalRpi()).isEqualTo(5L);
     assertThat(result.totalEdi()).isEqualTo(2L);
     assertThat(result.at()).isEqualTo(2L);
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test

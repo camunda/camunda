@@ -28,7 +28,7 @@ class UsageMetricsTUAggregationResultTransformerTest {
 
     // then
     assertThat(result.totalTu()).isZero();
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
@@ -38,7 +38,7 @@ class UsageMetricsTUAggregationResultTransformerTest {
 
     // then
     assertThat(result.totalTu()).isZero();
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
@@ -52,7 +52,7 @@ class UsageMetricsTUAggregationResultTransformerTest {
 
     // then
     assertThat(result.totalTu()).isZero();
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
@@ -66,7 +66,7 @@ class UsageMetricsTUAggregationResultTransformerTest {
 
     // then
     assertThat(result.totalTu()).isEqualTo(7L);
-    assertThat(result.tenants()).isEmpty();
+    assertThat(result.tenants()).isNull();
   }
 
   @Test
