@@ -2940,6 +2940,11 @@
           <version>${plugin.version.maven-jar}</version>
           <configuration>
             <useDefaultManifestFile>false</useDefaultManifestFile>
+            <excludes>
+              <!-- JUnit settings belong to the module that owns them; packaged in a test-jar they
+                   would silently apply to every module depending on it -->
+              <exclude>junit-platform.properties</exclude>
+            </excludes>
           </configuration>
         </plugin>
 
