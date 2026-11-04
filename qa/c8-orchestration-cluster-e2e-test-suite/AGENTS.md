@@ -1006,7 +1006,7 @@ skipping.
    cause: comment on it with your additional diagnosis; do not open a
    second PR.
 
-8. Open a draft PR targeting the same base branch you are on, label
+8. Open a PR targeting the same base branch you are on, label
    `failing-test-fix`. Body must include:
 
    - Root cause analysis
@@ -1014,8 +1014,13 @@ skipping.
    - Link to the failing nightly run(s)
    - Link to the triage run
 
-   The PR stays in draft at this point — do not mark it ready yet. The Live
-   Docker Verify loop below decides whether it can leave draft.
+   **Open it ready for review, NOT a draft** — do not pass `--draft`.
+   Copilot's automatic review never fires on a draft, and the calling workflow
+   waits for that review so the Review-Response Agent can answer every comment
+   in this same run, before a human ever opens the PR (see
+   `## Review-Response Agent`). The Live Docker Verify loop below still owns
+   the PR's final state: an `unverified` outcome demotes it back to draft, but
+   only after the review round has run.
 
 ### Live Docker Verify
 
@@ -1080,10 +1085,11 @@ and verify against it**, using the same general loop:
    Result Manifest below):
 
    - Green within 3 iterations → `"verify": "verified"`. The calling workflow
-     marks the PR ready-for-review and adds the `verified` label.
-   - Still red after 3 → `"verify": "unverified"`. The PR stays in draft, gets
-     the `unverified` label, and your PR body must describe what you tried and
-     the remaining failure.
+     adds the `verified` label; the PR is already ready for review.
+   - Still red after 3 → `"verify": "unverified"`. The calling workflow demotes
+     the PR to draft and adds the `unverified` label — after the Copilot review
+     round, so the round still happens. Your PR body must describe what you
+     tried and the remaining failure.
 
 **Not eligible for this loop** (record `"verify": "skipped"` instead):
 the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
@@ -1206,7 +1212,12 @@ section above for what each means). Defaults to being treated as `"skipped"`
 if omitted — set it explicitly. The calling workflow creates the
 `verified`/`unverified` labels if missing, applies one of them mutually
 exclusively based on this field, and toggles the PR's ready/draft state to
-match (`skipped`/`not-reproduced` leave the label and draft state untouched).
+match (`skipped`/`not-reproduced` leave the label and draft state untouched;
+`verified` leaves the PR ready, `unverified` demotes it to draft — both only
+after the Copilot review round). If the review round pushed a commit, the
+workflow downgrades a `verified` PR to `skipped` for labelling purposes: the
+verification measured the previous head and the Review-Response Agent may not
+run Playwright, so nothing re-measured it.
 `root_cause` and `fix` are **strongly recommended** — they are surfaced directly
 in the GitHub job summary so reviewers understand the agent's decision without
 reading the full agent log.
@@ -1309,6 +1320,99 @@ calling workflow shows `team` and `tier` in the Slack thread and the whole entry
 Use exactly the keys of the example, also when a value is empty, plus `job` for a workflow-level
 failure. Give `reasoning`, `sources`, `candidates` and `gaps` as lists. The job summary does not
 show other keys, such as `group` or `source`.
+
+## Review-Response Agent
+
+This section is read by the second Claude invocation in
+`.github/workflows/c8-orchestration-cluster-e2e-nightly-fix.yml`, the one dispatched after Copilot
+has reviewed the PR the Nightly Fix Agent just opened. It applies to every dispatched version,
+`main` and `stable/<version>` alike.
+
+### Why the PR is open and not a draft
+
+Copilot's automatic review never fires on a draft. A draft fix PR therefore sat untouched until a
+human marked it ready hours later, got its review then, and nobody went back to triage what the
+review said. So the fix agent now opens the PR **ready for review**, Copilot reviews it within a
+couple of minutes, and this agent answers that review inside the same run. By the time a person
+opens the PR, every Copilot thread already has a considered reply.
+
+**One round, and one round only.** Do not wait for, or solicit, a second Copilot pass. The human
+reviewer's own review is what decides the next cycle — your job is to make their review cheap, not
+to replace it.
+
+### What you do with each thread
+
+Work the threads **one at a time**, and **reply in each thread separately**. Never answer several
+threads in one issue comment, never answer in the PR body, and never leave a thread with no reply:
+an unanswered thread is indistinguishable from one nobody read.
+
+Judge each comment on its merits. A fair share of Copilot comments are wrong, already handled
+elsewhere, or out of scope for this PR. Read the surrounding code before deciding — never apply a
+suggestion because it was made, and never dismiss one unread.
+
+| Verdict | What to do | Resolve? |
+|---|---|---|
+| **Accepted** | Make the change on the PR's branch, minimal diff, lint the changed files, and commit all accepted changes in ONE follow-up commit — then **push it, and only resolve once the push succeeded**. Reply in each accepted thread with what changed and the pushed commit SHA. If the push fails, say so in each affected thread and leave them open. | yes, after the push |
+| **Rejected** | Reply with the concrete reason — wrong, contradicts a repo convention, already handled, or it would mask the very failure this PR exists to catch. | yes |
+| **Too complicated / needs a maintainer's call / valid but out of scope** | Reply saying exactly that and why. | **no — leave it open** |
+
+Leaving a thread open is a legitimate outcome, not a failure. It is the right one whenever the
+change would be larger than this PR, whenever the call is a maintainer's to make, or whenever you
+are simply not confident. An open thread is how the question reaches the human reviewer; a resolve
+is how it disappears.
+
+**Push before you resolve.** A resolved thread tells the reviewer the defect is fixed on the PR. A
+commit sitting on the runner has fixed nothing, and this agent's workspace is thrown away when the
+job ends — so an accepted thread resolved against an unpushed commit is a false report that nobody
+will catch. Push first, verify it succeeded, then resolve. The workflow pushes anything you left
+behind and warns about it, but that is a backstop, not the contract.
+
+**A code change here invalidates Live Docker Verify.** If the fix agent verified its fix against a
+local Docker environment and you then change code, that result describes the previous commit — and
+you are not allowed to stand up an environment or run Playwright, so nothing re-measures it. The
+workflow handles this: it drops the `verified` label for that head rather than claiming a
+verification that did not happen. Do not re-assert it in a thread reply or the PR body.
+
+### The constraints that still bind you
+
+Everything the fix agent was held to still applies to any change you make here: never mask a
+failure, no `continue-on-error`, no `test.skip()` / `test.fixme()` / `.only` (outside an
+already-gated product bug), no refactors, no dependency bumps, no unrelated edits, and the lint gate
+before every commit. **A suggestion that would breach one of these is a reject, with that as the
+stated reason** — Copilot does not know this suite's rules, and "the reviewer asked for it" does not
+override them.
+
+Also: do not stand up a Docker environment or run Playwright, do not open another PR, do not change
+the PR's draft state (the Finalize PR verification status step owns that), do not touch the backport
+labels, and do not touch threads a human opened.
+
+### Mechanics
+
+```bash
+# Reply in one thread
+gh api graphql -f query='mutation($id:ID!,$body:String!){
+  addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){clientMutationId}}' \
+  -F id=<threadId> -F body='<reply>'
+
+# Resolve it — ONLY after replying
+gh api graphql -f query='mutation($id:ID!){
+  resolveReviewThread(input:{threadId:$id}){clientMutationId}}' -F id=<threadId>
+```
+
+Lint before committing, from `qa/c8-orchestration-cluster-e2e-test-suite` (see `## Linting`):
+`npm run lint` — or `npx prettier --write <changed files> && npx eslint <changed files>` when only
+a couple of files changed.
+
+### Result manifest
+
+Write `/tmp/review-response.json` when you are done. The counts must add up to the number of
+threads you were given — the workflow folds this into `fix-meta.json`, the job summary and the
+Slack thread reply, where `left_open` is the only part still waiting on a person:
+
+```json
+{"pr": 1234, "threads": 3, "accepted": 2, "rejected": 1, "left_open": 0,
+ "commit": "<sha of the follow-up commit, or null if nothing changed>"}
+```
 
 ## Unskip Verify Agent
 

@@ -1,7 +1,11 @@
 # description: Triage-driven fix agent for C8 Orchestration Cluster nightly E2E/API failures.
 #              Dispatched per version by c8-orchestration-cluster-e2e-nightly-triage.yml.
 #              Uses Claude Code CLI to read failing tests + screenshots, apply a minimal fix,
-#              and open a draft PR against stable/<version> (or main). On branches that carry the
+#              and open a PR — ready for review, not a draft — against stable/<version> (or main).
+#              The run then waits for Copilot's automatic review (it never fires on a draft) and a
+#              second Claude invocation answers every thread it opened, one reply per thread, before
+#              a human ever sees the PR; what it cannot settle is replied to and left open.
+#              On branches that carry the
 #              automatic orchestration-cluster suite PR check (team-test-automation#188) the body is
 #              patched with a definition of done; on branches without it (e.g. stable/8.7) the agent
 #              still triggers the on-demand workflow and links the run for verification.
@@ -157,7 +161,7 @@ jobs:
           # 100-minute ceiling. The job's timeout-minutes is the hard cap on
           # total waiting; exceeding it fails the gate rather than releasing a
           # still-blocked agent.
-          stall_budget=$(( 120 * 60 ))
+          stall_budget=$(( 150 * 60 ))
           deadline=$(( $(date +%s) + stall_budget ))
           prev_ahead=""
           self_started=""
@@ -206,18 +210,22 @@ jobs:
             sleep 60
           done
 
-          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 150m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
 
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
     needs: [serialize]
     runs-on: ubuntu-latest
-    # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
+    # 130 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
     # Camunda distribution from source for RDBMS-flagged failures, mirroring
     # c8-orchestration-cluster-e2e-tests-on-demand.yml's own H2/RDBMS job.
     # Raised from 90 after run 35684370785 (2026-09-22) hit that ceiling with
-    # real, uncommitted progress still in flight.
-    timeout-minutes: 100
+    # real, uncommitted progress still in flight; raised again from 100 for the
+    # Copilot review round that now follows the agent (up to 15 minutes waiting
+    # for the review, then a second Claude invocation to answer it). The agent's
+    # own deadline stays at 85 minutes from job start, so the extra 30 minutes
+    # belong to the round, not to the fix.
+    timeout-minutes: 130
 
     steps:
       - name: Record job start time
@@ -600,6 +608,11 @@ jobs:
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).
 
+          Open the PR READY FOR REVIEW, not a draft — do not pass --draft and do not convert it to
+          one. Copilot's automatic review never fires on a draft, and this run waits for that review
+          so it can address the comments before a human ever looks at the PR. The Live Docker Verify
+          outcome still decides the PR's final state, and the workflow applies it after that round.
+
           CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
           headRefName of the PR you opened — never null, never omitted. Obtain it
           with: gh pr view <number> --repo ${REPO} --json headRefName --jq '.headRefName'
@@ -910,10 +923,339 @@ jobs:
             fi
           done
 
+      # Copilot's automatic review fires only on a NON-draft PR, and it fires
+      # fast. A draft gets nothing until a human marks it ready hours later, and
+      # by then nobody re-triages what Copilot said. So the agent now opens the
+      # PR ready for review and this step waits for that ONE review, so the next
+      # step can answer it inside the same run. A PR reused across nights gets
+      # no "opened" event, hence the explicit review request.
+      #
+      # Placed BEFORE "Finalize PR verification status": that step demotes an
+      # `unverified` PR back to draft, which would end the review round before
+      # it started.
+      #
+      # A GitHub App installation token lives one hour; this job may run over two
+      # (timeout-minutes: 130), and the review phase is at the very end of it —
+      # after provisioning, the Live Docker Verify loop and the fix agent. With
+      # the original token the head lookup would 401, this step would warn and
+      # skip the round, and the response agent's replies and resolves would
+      # fail: a silent loss of the whole round, late in a long job. So mint a
+      # fresh one here, for the three steps that follow. Best-effort — each
+      # consumer falls back to the original token, which is still valid on a
+      # short run.
+      - name: Refresh the GitHub App token for the review phase
+        id: github-token-review
+        if: always()
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Request and await the Copilot review
+        id: copilot_review
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          COPILOT_WAIT_SECONDS: ${{ vars.COPILOT_REVIEW_WAIT_SECONDS || '900' }}
+        run: |
+          set -uo pipefail
+          COPILOT="copilot-pull-request-reviewer"
+          pr_num=""
+          thread_count=0
+          finish() {
+            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          [ -f /tmp/fix-meta.json ] || { echo "No fix-meta.json — nothing was opened."; finish; }
+          pr_num=$(jq -r '[.prs[]?.number] | first // empty' /tmp/fix-meta.json)
+          [ -n "$pr_num" ] || { echo "No PR in fix-meta.json — nothing to review."; finish; }
+
+          # The agent is told not to open a draft, but a draft here would skip
+          # the review in silence, which is the whole failure mode this step
+          # exists to close. The finalize step below still has the final say on
+          # draft state, and runs after this round.
+          if [ "$(gh pr view "$pr_num" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            echo "::warning::PR #${pr_num} was opened as a draft; marking it ready so Copilot reviews it."
+            gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+          fi
+
+          head_sha=$(gh pr view "$pr_num" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+          [ -n "$head_sha" ] || { echo "::warning::Could not read the head SHA of #${pr_num} — skipping the review round."; finish; }
+          echo "Waiting for a Copilot review of ${head_sha}."
+
+          # Keyed on the head COMMIT, not on a timestamp baseline taken here.
+          # Copilot can finish reviewing before this step even starts, and a
+          # baseline would then mark that review as the "before" state and wait
+          # out the full timeout for a second one that never comes — discarding
+          # the very review this round exists to answer. A review records the
+          # commit it reviewed, so ask for that instead; it is unambiguous on a
+          # PR reused across nights too, whose older reviews name older commits.
+          # --jq runs once PER PAGE, so sort across pages.
+          copilot_review_of_head() {
+            gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+              --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
+              2>/dev/null | sort | tail -1
+          }
+
+          latest=$(copilot_review_of_head)
+          if [ -n "$latest" ]; then
+            echo "A Copilot review of this commit had already landed at ${latest}."
+          else
+            # Only needed for a PR reused across nights — a freshly opened one is
+            # auto-reviewed off the "opened" event, and GitHub then answers 422
+            # for an already-requested reviewer, which is harmless. The accepted
+            # spelling of the Copilot reviewer has moved around, so try each and
+            # stop at the first that lands.
+            requested=false
+            for who in "${COPILOT}[bot]" "${COPILOT}" "Copilot"; do
+              if gh api -X POST "repos/${REPO}/pulls/${pr_num}/requested_reviewers" \
+                   -f "reviewers[]=${who}" >/dev/null 2>&1; then
+                echo "Requested a review from ${who}."
+                requested=true
+                break
+              fi
+            done
+            [ "$requested" = true ] \
+              || echo "Review request not accepted (already requested, or the auto-review is already running)."
+
+            deadline=$(( $(date +%s) + COPILOT_WAIT_SECONDS ))
+            while [ "$(date +%s)" -lt "$deadline" ]; do
+              sleep 30
+              latest=$(copilot_review_of_head)
+              [ -n "$latest" ] && break
+            done
+          fi
+
+          if [ -z "$latest" ]; then
+            echo "::warning::No Copilot review of ${head_sha} within ${COPILOT_WAIT_SECONDS}s — leaving the PR for the human reviewer."
+            finish
+          fi
+          echo "Copilot reviewed #${pr_num} at ${latest}."
+
+          gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+            --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
+            > /tmp/copilot-review-summary.md 2>/dev/null || : > /tmp/copilot-review-summary.md
+
+          # Every Copilot review of THIS head, not just the newest: a re-request
+          # can produce more than one, and each owns its own threads. Ids kept as
+          # STRINGS on both sides of the match below — a review id is already
+          # past 2^31, so anything that narrows one to a 32-bit int is a silent
+          # mismatch waiting to happen.
+          #
+          # Built step by step rather than as one pipeline with a trailing
+          # "|| echo '[]'": that fallback runs on the exit status of the last
+          # stage only, so a stage that printed before failing would leave TWO
+          # JSON documents in the variable. --argjson rejects that, the filter
+          # below dies, thread_count lands at 0, and the round is skipped in
+          # silence — the exact opposite of the fail-open it is meant to be.
+          review_ids='[]'
+          if raw_ids=$(gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+               --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
+               2>/dev/null); then
+            parsed_ids=$(printf '%s\n' "$raw_ids" | grep -E '^[0-9]+$' | sort -u | jq -R . | jq -sc '.' 2>/dev/null) || parsed_ids=""
+            [ -n "$parsed_ids" ] && review_ids="$parsed_ids"
+          fi
+          # Belt and braces: whatever happened above, what goes into --argjson is
+          # exactly one JSON array, or the empty one that fails open.
+          printf '%s' "$review_ids" | jq -e 'type == "array"' >/dev/null 2>&1 || review_ids='[]'
+          echo "Copilot review id(s) for this head: ${review_ids}"
+
+          # Paginated, and slurped into one flat array of nodes: a PR reused
+          # across nights accumulates resolved threads, and a single first:100
+          # page of them would push this round's findings off the end and leave
+          # thread_count at a false zero. --paginate emits one JSON document per
+          # page, hence the jq -s.
+          # shellcheck disable=SC2016 # $owner/$repo/$pr/$endCursor are GraphQL variables, bound by -F below
+          gh api graphql --paginate -f query='
+            query($owner:String!,$repo:String!,$pr:Int!,$endCursor:String){
+              repository(owner:$owner,name:$repo){
+                pullRequest(number:$pr){
+                  reviewThreads(first:100, after:$endCursor){
+                    pageInfo{hasNextPage endCursor}
+                    nodes{
+                      id isResolved isOutdated
+                      comments(first:20){nodes{
+                        author{login} path line body url
+                        pullRequestReview{fullDatabaseId}}}}}}}}' \
+            -F owner="${REPO%/*}" -F repo="${REPO#*/}" -F pr="$pr_num" 2>/dev/null \
+            | jq -s '[.[].data.repository.pullRequest.reviewThreads.nodes[]?]' \
+            > /tmp/copilot-threads-raw.json 2>/dev/null \
+            || echo '[]' > /tmp/copilot-threads-raw.json
+
+          # Only threads Copilot opened in THIS review, and nobody has resolved.
+          # Threads a human started are theirs to run; an outdated thread is kept
+          # (the line moved, the point may still stand); and a thread an earlier
+          # night's round deliberately LEFT OPEN for the human is excluded —
+          # re-answering it every night would bury their question under agent
+          # replies. Scoped by the review's own id, not by a time window: a
+          # pending review's comments are written as they are drafted and
+          # submitted only at the end. An empty id list means the lookup failed,
+          # and then every unresolved Copilot thread is in scope — answering one
+          # twice is a far smaller failure than skipping the round.
+          jq --arg bot "$COPILOT" --argjson ids "$review_ids" '[
+            .[]?
+            | select(.isResolved == false)
+            | select(((.comments.nodes[0].author.login) // "") | startswith($bot))
+            | ((.comments.nodes[0].pullRequestReview.fullDatabaseId // "") | tostring) as $rid
+            | select(($ids | length) == 0 or ($ids | index($rid)) != null)
+            | {id,
+               path: .comments.nodes[0].path,
+               line: .comments.nodes[0].line,
+               url: .comments.nodes[0].url,
+               outdated: .isOutdated,
+               comments: [.comments.nodes[] | {author: (.author.login // "?"), body}]}
+          ]' /tmp/copilot-threads-raw.json > /tmp/copilot-threads.json 2>/dev/null \
+            || { echo "::warning::could not filter the review threads — treating this round as having none."; \
+                 echo '[]' > /tmp/copilot-threads.json; }
+
+          thread_count=$(jq 'length' /tmp/copilot-threads.json 2>/dev/null || echo 0)
+          if [ "$thread_count" -eq 0 ]; then
+            echo "Copilot left no unresolved issue threads on #${pr_num} — nothing to address."
+          else
+            echo "${thread_count} unresolved Copilot thread(s) on #${pr_num}:"
+            jq -r '.[] | "  - \(.path):\(.line // "?") \(.url)"' /tmp/copilot-threads.json
+          fi
+          finish
+
+      # One round, and only one: the PR carries the agent's answer to every
+      # Copilot thread by the time a person opens it, and that person's own
+      # review is what decides the next cycle. Anything the agent cannot settle
+      # is replied to and deliberately LEFT open, so it reaches that person as a
+      # question rather than disappearing under a resolve.
+      - name: Address the Copilot review comments
+        id: review_response
+        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.copilot_review.outputs.pr }}
+          THREAD_COUNT: ${{ steps.copilot_review.outputs.thread_count }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -uo pipefail
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          suite_dir="$ws_dir/qa/c8-orchestration-cluster-e2e-test-suite"
+          threads=$(cat /tmp/copilot-threads.json)
+          review_summary=$(cat /tmp/copilot-review-summary.md 2>/dev/null || echo "")
+
+          prompt=$(cat <<EOF
+          You are the Camunda QA engineer who just opened PR #${PR_NUMBER} in ${REPO} for the
+          failing orchestration-cluster ${VERSION} nightly. Copilot has reviewed it. Address that
+          review now, in this run — this is the ONLY automated round, and the human reviewer sees
+          the result next cycle.
+
+          Read "## Review-Response Agent" in /tmp/nightly-fix-agent-manual.md before you start. It
+          is the contract for this step; everything below is the dispatch-specific part.
+
+          The ${THREAD_COUNT} unresolved threads Copilot opened, as JSON (thread id, file, line,
+          url, whether the line has since moved, and the comment bodies):
+
+          ${threads}
+
+          Copilot's review overview:
+
+          ${review_summary}
+
+          How to work them:
+
+          1. ONE THREAD AT A TIME, and reply IN EACH THREAD SEPARATELY. Never post one issue
+             comment that answers several threads at once, never answer in the PR body, and never
+             leave a thread with no reply. Every thread in that list gets its own reply.
+          2. Judge each on its merits. A fair share of Copilot comments are wrong, already handled
+             elsewhere, or out of scope for this PR. Read the surrounding code before you decide —
+             never apply a suggestion just because it was made, and never dismiss one unread.
+          3. ACCEPTED: make the change on this PR's branch in ${ws_dir} (you are already on it),
+             keep the diff minimal, run lint on the changed files, and commit ALL accepted changes
+             in ONE follow-up commit — then PUSH it with "git push" BEFORE you resolve anything.
+             Only once that push has SUCCEEDED do you reply in each accepted thread with what you
+             changed and the pushed commit SHA, and resolve it. A resolved thread says the defect
+             is fixed on the PR; a commit that never left this runner has fixed nothing. If the
+             push fails, say exactly that in each affected thread and LEAVE those threads OPEN.
+             Commit title prefix: 'test:' for test-only changes, 'ci:' for workflow-only changes,
+             'fix:' for other code changes — commitlint rejects 'fix:' on a test-only change.
+          4. REJECTED: reply in the thread with the concrete reason — wrong, contradicts a repo
+             convention, already handled, or it would mask the very failure this PR exists to
+             catch — then resolve it. A silent dismissal is not acceptable.
+          5. TOO COMPLICATED, needs a maintainer's call, or valid but out of scope: reply in the
+             thread saying exactly that and why, and LEAVE IT OPEN. Do not resolve it. This is the
+             right outcome whenever the change would be larger than this PR, or you are not
+             confident — the human reviewer picks it up from there.
+          6. This PR's own constraints still bind you: never mask a failure, no continue-on-error,
+             no test.skip / test.fixme / .only, no refactors, no dependency bumps, no unrelated
+             edits. A suggestion that would breach one of those is a REJECT, with that as the
+             reason.
+          7. Do NOT stand up a Docker environment, do NOT run Playwright, do NOT open another PR,
+             do NOT change the PR's draft state or its backport labels, and do NOT touch threads a
+             human opened.
+
+          Reply in a thread:
+            gh api graphql -f query='mutation(\$id:ID!,\$body:String!){
+              addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\$id,body:\$body}){clientMutationId}}' \\
+              -F id=<threadId> -F body='<reply>'
+
+          Resolve a thread (ONLY after you have replied in it):
+            gh api graphql -f query='mutation(\$id:ID!){
+              resolveReviewThread(input:{threadId:\$id}){clientMutationId}}' -F id=<threadId>
+
+          Lint before committing, from ${suite_dir}:
+            npx prettier --write <changed files> && npx eslint <changed files>
+
+          When you are done, write /tmp/review-response.json — counts must add up to ${THREAD_COUNT}:
+            {"pr": ${PR_NUMBER}, "threads": ${THREAD_COUNT}, "accepted": 0, "rejected": 0,
+             "left_open": 0, "commit": "<sha of your follow-up commit, or null if nothing changed>"}
+          EOF
+          )
+
+          cd "$ws_dir"
+          claude -p "$prompt" --dangerously-skip-permissions 2>&1 | tee /tmp/claude-review-response.md
+
+          {
+            echo "## Copilot review round"
+            echo ""
+            echo '```'
+            cat /tmp/claude-review-response.md
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Belt and braces for the rule above: a commit that never reached the
+          # remote is invisible to the PR, so a thread resolved against it would
+          # claim a fix nobody can see. The agent is told to push; this catches
+          # the case where it did not.
+          if [ "$(git rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)" -gt 0 ]; then
+            echo "::warning::the review round left commit(s) unpushed — pushing them now."
+            git push 2>&1 \
+              || echo "::error::could not push the review-round commit(s); the PR does not carry them."
+          fi
+
+          # Fold the round into fix-meta so the Slack reply and the uploaded
+          # artifact both carry it.
+          if [ -f /tmp/review-response.json ] && [ -f /tmp/fix-meta.json ]; then
+            jq --slurpfile rr /tmp/review-response.json '.review_round = $rr[0]' /tmp/fix-meta.json \
+              > /tmp/fix-meta.next && mv /tmp/fix-meta.next /tmp/fix-meta.json
+          else
+            echo "::warning::review-response.json missing — the round ran but reported no counts."
+          fi
+
       - name: Finalize PR verification status (verified/unverified)
         if: always()
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -927,9 +1269,23 @@ jobs:
             exit 0
           fi
 
+          # The Live Docker Verify loop ran against the commit the fix agent
+          # pushed. If the Copilot round then changed code, that result describes
+          # an earlier revision, and the response agent is forbidden from standing
+          # up an environment — so there is no verification signal for what the PR
+          # now contains. Drop to "skipped" rather than label the new head
+          # verified: it leaves the PR ready for its human review (an unverified
+          # demotion to draft would undo the round) while claiming nothing that
+          # was not measured.
+          rr_commit=$(jq -r '.review_round.commit // "" | select(. != "null")' /tmp/fix-meta.json 2>/dev/null || echo "")
+
           jq -c '.prs[]?' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_num=$(echo "$pr_obj" | jq -r '.number')
             verify=$(echo "$pr_obj" | jq -r '.verify // "skipped"')
+            if [ "$verify" = "verified" ] && [ -n "$rr_commit" ]; then
+              echo "::warning::live verification predates the Copilot round's commit ${rr_commit} — not labelling PR #${pr_num} verified."
+              verify="skipped"
+            fi
             echo "PR #${pr_num}: verify=${verify}"
             case "$verify" in
               verified)
@@ -1092,6 +1448,13 @@ jobs:
                 /tmp/fix-meta.json || true
             fi
 
+            if [ -f /tmp/fix-meta.json ] && [ "$(jq -r 'has("review_round")' /tmp/fix-meta.json)" = "true" ]; then
+              echo ""
+              jq -r '.review_round
+                     | "**Copilot review:** \(.threads // 0) comment(s) — \(.accepted // 0) applied, \(.rejected // 0) rejected, \(.left_open // 0) left open"' \
+                /tmp/fix-meta.json
+            fi
+
             if [ -n "${TRIAGE_RUN_URL:-}" ]; then
               echo ""
               echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
@@ -1106,6 +1469,8 @@ jobs:
           path: |
             /tmp/test_specs.json
             /tmp/fix-meta.json
+            /tmp/copilot-threads.json
+            /tmp/claude-review-response.md
           retention-days: 14
           if-no-files-found: warn
 
@@ -1185,6 +1550,20 @@ jobs:
               "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             lines+=("• PR(s) opened: ${pr_links}")
+          fi
+
+          # The Copilot round already happened on that PR, so say what it left
+          # behind: a thread the agent deliberately left open is the only part
+          # still waiting on a person.
+          if [ -f /tmp/fix-meta.json ] && [ "$(jq -r 'has("review_round")' /tmp/fix-meta.json)" = "true" ]; then
+            rr=$(jq -c '.review_round' /tmp/fix-meta.json)
+            rr_total=$(echo "$rr" | jq -r '.threads // 0')
+            rr_acc=$(echo "$rr" | jq -r '.accepted // 0')
+            rr_rej=$(echo "$rr" | jq -r '.rejected // 0')
+            rr_open=$(echo "$rr" | jq -r '.left_open // 0')
+            rr_line="• Copilot review: ${rr_total} comment(s) — ${rr_acc} applied, ${rr_rej} rejected"
+            [ "$rr_open" -gt 0 ] && rr_line="${rr_line}, :eyes: ${rr_open} left open for you"
+            lines+=("$rr_line")
           fi
 
           # Sub-bullet per fix PR that met an active release branch: during a code
