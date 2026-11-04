@@ -21,6 +21,20 @@ final class EngineCfgTest {
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
+  void shouldReadPendingSubscriptionRecoveryBatchLimitFromEnvironment() {
+    // given
+    environment.put(
+        "zeebe.broker.experimental.engine.messages.pendingSubscriptionRecoveryBatchLimit", "7000");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+
+    // then
+    final var configuration = cfg.getExperimental().getEngine().createEngineConfiguration();
+    assertThat(configuration.getMessagesPendingSubscriptionRecoveryBatchLimit()).isEqualTo(7000);
+  }
+
+  @Test
   void shouldCreateEngineConfigurationFromDefaults() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
@@ -31,6 +45,8 @@ final class EngineCfgTest {
     // then
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(100);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofMinutes(1));
+    assertThat(configuration.getMessagesPendingSubscriptionRecoveryBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT);
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(1000L);
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
