@@ -1,7 +1,7 @@
 # description: Creates a load test when a PR gets a benchmark label (benchmark-<storage>-<protocol>). Deploys with
 #              scenario 'max', then runs two independent post-deploy paths:
-#                - profile path: wait 30 min, run async-profiler, post flamegraph comment
-#                - metrics path: wait 30 min, scrape PR + daily metrics over a 30 min window,
+#                - profile path: wait 45 min (15 min warmup + 30 min window), run async-profiler, post flamegraph comment
+#                - metrics path: wait 45 min (15 min warmup + 30 min window), scrape PR + daily metrics over a 30 min window,
 #                                post the comparison comment, then tear the namespace down
 #              On unlabel or PR close, fires an explicit cleanup. New commits on the PR
 #              cancel the in-flight run (via dispatch-level concurrency) and redeploy fresh.
@@ -222,7 +222,7 @@ jobs:
     secrets: inherit
     with:
       namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
-      # First 30 min of daily soak after its 15-min warmup (anchor = soak.started_at + 1800s).
+      # First 30 min of daily soak after its 15-min warmup (anchor = soak.started_at + 2700s).
       duration-seconds: '1800'
       at: ${{ needs.resolve-daily-namespace.outputs.daily-at }}
 

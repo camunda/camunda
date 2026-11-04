@@ -82,7 +82,7 @@ graph TD
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "profile path:<br/>after 45min wait" --> PROFILE
     PR -- "metrics path:<br/>15min warmup + 30min window,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
@@ -435,7 +435,7 @@ The label selects the secondary storage and the client protocol: `benchmark-<sto
 
 Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR.
 
-- **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
+- **Profile path:** after the 15-minute warmup and the 30-minute metrics window, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
   1. Waits 15 minutes (warmup), then 30 minutes (metrics accumulation), so PromQL `rate`/`increase` numbers cover steady-state traffic with no ramp-up bias.
   2. Resolves the last completed daily-on-main run via the GitHub Actions API ([`.github/scripts/resolve-daily.py`](../.github/scripts/resolve-daily.py)), walking back up to 7 business days. Derives the daily comparison anchor from `soak.started_at + 45 min` to match the same post-warmup slice as the PR side.
