@@ -440,6 +440,46 @@ func TestExternalTenantConfigDoesNotNeedTheSavedTenantsFile(t *testing.T) {
 	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
 }
 
+func TestApplyPhysicalTenantsRecordsWhereTenantsAreDeclaredOutsideC8Run(t *testing.T) {
+	// given
+	t.Setenv(pt.FileEnv, "")
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	base := t.TempDir()
+	declaring := filepath.Join(t.TempDir(), "tenants.yaml")
+	require.NoError(t, os.WriteFile(declaring, []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
+	other := filepath.Join(t.TempDir(), "other.yaml")
+	require.NoError(t, os.WriteFile(other, []byte("camunda:\n  rest: {}\n"), 0o644))
+	defaultConfig := filepath.Join(base, "configuration", "application.yaml")
+	settings := types.C8RunSettings{DisableConnectors: true, ConfigPaths: []string{defaultConfig, other, declaring}}
+	t.Setenv("CAMUNDA_PHYSICALTENANTS_X_DATA_FOO", "1")
+
+	// when
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
+
+	// then
+	require.Len(t, settings.PhysicalTenantsDeclaredIn, 2)
+	assert.Contains(t, settings.PhysicalTenantsDeclaredIn[0], "CAMUNDA_PHYSICALTENANTS_*")
+	assert.Equal(t, "--config "+declaring, settings.PhysicalTenantsDeclaredIn[1])
+	assert.Empty(t, settings.PhysicalTenants)
+}
+
+func TestApplyPhysicalTenantsRecordsNoDeclarationWhenC8RunManagesTenants(t *testing.T) {
+	// given
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms",
+		PhysicalTenantsDeclaredIn: []string{"stale"}}
+
+	// when
+	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+
+	// then
+	assert.Empty(t, settings.PhysicalTenantsDeclaredIn)
+	assert.Len(t, settings.PhysicalTenants, 1)
+}
+
 func TestTenantsAddRejectsIDsTooLongForRDBMS(t *testing.T) {
 	base := t.TempDir()
 	cmd, _, _ := testTenantsCommand(t, "", false, "")

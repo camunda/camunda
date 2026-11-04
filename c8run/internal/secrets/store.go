@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -28,6 +29,7 @@ const (
 	DirectoryName       = "secrets"
 	DirectoryEnv        = "C8RUN_SECRETS_DIR"
 	ModeEnv             = "C8RUN_SECRETS_MODE"
+	EnvPrefixEnv        = "C8RUN_SECRETS_ENV_PREFIX"
 	secretReferenceBase = "camunda.secrets."
 	maxReferenceLength  = 256
 	MaxSecretSize       = 1024 * 1024
@@ -68,10 +70,26 @@ func Mode() (string, error) {
 	if mode == "" {
 		return "local", nil
 	}
-	if mode != "local" && mode != "external" {
-		return "", fmt.Errorf("%s must be local or external", ModeEnv)
+	if mode != "local" && mode != "external" && mode != "env" {
+		return "", fmt.Errorf("%s must be local, external or env", ModeEnv)
 	}
 	return mode, nil
+}
+
+// envPrefixFormat mirrors EnvVarSecretStore.PREFIX_FORMAT in secret-store/secret-store-env;
+// keep the two in step. Reserved prefixes are left to the server's startup check.
+var envPrefixFormat = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]*_$`)
+
+// EnvPrefix returns the environment-variable secret prefix for C8RUN_SECRETS_MODE=env.
+func EnvPrefix() (string, error) {
+	prefix := strings.TrimSpace(os.Getenv(EnvPrefixEnv))
+	if prefix == "" {
+		return "", fmt.Errorf("%s=env needs %s, for example %s=C8_", ModeEnv, EnvPrefixEnv, EnvPrefixEnv)
+	}
+	if !envPrefixFormat.MatchString(prefix) {
+		return "", fmt.Errorf("%s=%q must start with a letter, contain only letters, digits and underscores, and end with an underscore, for example C8_", EnvPrefixEnv, prefix)
+	}
+	return prefix, nil
 }
 
 // TenantDirectoryName holds one local secret directory per physical tenant, next to the
