@@ -59,6 +59,36 @@ class PhysicalTenantCamundaGroupsTest {
     assertThat(camundaGroups.isCamundaGroupsEnabled("default", null)).isFalse();
   }
 
+  @Test
+  void shouldTellWhetherAnyTenantManagesOrTakesItsGroups() {
+    // given - the root takes groups from a claim, tenant a clears it
+    final var environment =
+        new MockEnvironment()
+            .withProperty(ROOT + ".method", "oidc")
+            .withProperty(ROOT + ".oidc.groups-claim", "groups")
+            .withProperty(TENANT_A + ".oidc.groups-claim", "");
+    final var camundaGroups = new PhysicalTenantCamundaGroups(environment);
+
+    // when / then
+    assertThat(camundaGroups.isCamundaGroupsEnabled("tenanta")).isTrue();
+    assertThat(camundaGroups.isCamundaGroupsEnabled("default")).isFalse();
+    assertThat(camundaGroups.isCamundaGroupsEnabled("unknown")).isFalse();
+    assertThat(camundaGroups.isCamundaGroupsEnabledForAnyTenant()).isTrue();
+    assertThat(camundaGroups.isCamundaGroupsDisabledForAnyTenant()).isTrue();
+  }
+
+  @Test
+  void shouldNotDisableCamundaGroupsForAnyTenantWithoutAGroupsClaim() {
+    // given
+    final var camundaGroups =
+        new PhysicalTenantCamundaGroups(
+            new MockEnvironment().withProperty(ROOT + ".method", "oidc"));
+
+    // when / then
+    assertThat(camundaGroups.isCamundaGroupsEnabledForAnyTenant()).isTrue();
+    assertThat(camundaGroups.isCamundaGroupsDisabledForAnyTenant()).isFalse();
+  }
+
   private static AuthenticationConfiguration oidc(final String groupsClaim) {
     final var oidc = new OidcConfiguration();
     oidc.setGroupsClaim(groupsClaim);

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -33,7 +34,6 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.spring.annotation.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices.GroupDTO;
@@ -49,6 +49,7 @@ import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,7 +58,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/groups")
-@ConditionalOnCamundaGroupsEnabled
+// Exists when any physical tenant manages its groups in Camunda; ApiFiltersConfiguration blocks the
+// API for the tenants that take their groups from a groups claim.
+@Conditional(PhysicalTenantCamundaGroups.EnabledForAnyTenant.class)
 public class GroupController {
 
   private final ServiceRegistry serviceRegistry;

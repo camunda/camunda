@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.spring.utils.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -17,6 +21,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -27,14 +33,30 @@ public class EndpointAccessErrorFilter extends HttpFilter {
   private final ObjectMapper objectMapper;
   private final String errorMessage;
   private final List<PathPattern> pathPatterns;
+  private final Predicate<String> blockedForPhysicalTenant;
 
   public EndpointAccessErrorFilter(
       @Autowired final ObjectMapper objectMapper,
       final String errorMessage,
       final List<PathPattern> pathPatterns) {
+    this(objectMapper, errorMessage, pathPatterns, physicalTenantId -> true);
+  }
+
+  /**
+   * Blocks a matching request only for the physical tenants {@code blockedForPhysicalTenant}
+   * accepts. The tenant is the {@link PhysicalTenantContext#PATH_VARIABLE_PHYSICAL_TENANT_ID} path
+   * variable of the matching pattern, or the {@code default} tenant for a pattern without it. It is
+   * read from the path because this filter can run before the tenant is resolved on the request.
+   */
+  public EndpointAccessErrorFilter(
+      final ObjectMapper objectMapper,
+      final String errorMessage,
+      final List<PathPattern> pathPatterns,
+      final Predicate<String> blockedForPhysicalTenant) {
     this.objectMapper = objectMapper;
     this.errorMessage = errorMessage;
     this.pathPatterns = pathPatterns;
+    this.blockedForPhysicalTenant = blockedForPhysicalTenant;
   }
 
   @Override
@@ -43,7 +65,17 @@ public class EndpointAccessErrorFilter extends HttpFilter {
       throws IOException, ServletException {
     final var requestPath =
         PathContainer.parsePath(req.getRequestURI().substring(req.getContextPath().length()));
-    if (pathPatterns.stream().noneMatch(p -> p.matches(requestPath))) {
+    final var match =
+        pathPatterns.stream()
+            .map(pattern -> pattern.matchAndExtract(requestPath))
+            .filter(Objects::nonNull)
+            .findFirst();
+    if (match.isEmpty()
+        || !blockedForPhysicalTenant.test(
+            match
+                .get()
+                .getUriVariables()
+                .getOrDefault(PATH_VARIABLE_PHYSICAL_TENANT_ID, DEFAULT_PHYSICAL_TENANT_ID))) {
       chain.doFilter(req, res);
       return;
     }
