@@ -56,6 +56,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 			{
 				accessorKey: 'startDate',
 				header: t('tasklist.casesColumnStarted'),
+				sortDescFirst: true,
 				cell: ({row}) => {
 					const startDate = formatISODateTime(row.original.startDate);
 
@@ -85,7 +86,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 	const handleSortingChange = useCallback(
 		([sortedColumn]: SortingState) => {
 			if (sortedColumn === undefined) {
-				onSearchChange({sortOrder: search.sortOrder === 'asc' ? 'desc' : 'asc', page: 1});
+				onSearchChange({sortField: undefined, sortOrder: undefined, page: 1});
 				return;
 			}
 
@@ -95,7 +96,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 				page: 1,
 			});
 		},
-		[onSearchChange, search.sortOrder],
+		[onSearchChange],
 	);
 
 	const handlePaginationChange = useCallback(
