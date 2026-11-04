@@ -160,9 +160,8 @@ tasks.withType<Test>().configureEach {
     systemProperty("junit.jupiter.execution.parallel.enabled", "true")
     systemProperty("junit.jupiter.execution.parallel.config.strategy", "fixed")
     systemProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", junitThreadCount)
-    // Match Maven: tests only run concurrently when they explicitly opt in with @Execution.
-    systemProperty("junit.jupiter.execution.parallel.mode.default", "same_thread")
-    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    // Match Maven: the execution modes are left to the module's junit-platform.properties or to
+    // @Execution. System properties would override those, so do not set them here.
   }
 
   // Gradle-only for now: Maven has no default JUnit timeout. Re-enable together with a Maven setting.
