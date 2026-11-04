@@ -48,45 +48,54 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the modification mode page snapshot with staged modifications', async ({
-	page,
-	operatePreviewProcessInstancePage,
-}) => {
-	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
-	await page
-		.getByRole('dialog', {name: 'Process Instance Modification Mode'})
-		.getByRole('button', {name: 'Continue'})
-		.click();
-	await operatePreviewProcessInstancePage.diagramElement('task-1').click();
-	await page.getByRole('button', {name: 'Add single element instance'}).click();
+test(
+	'should match the modification mode page snapshot with staged modifications',
+	{tag: '@desktop'},
+	async ({page, operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
+		await page
+			.getByRole('dialog', {name: 'Process Instance Modification Mode'})
+			.getByRole('button', {name: 'Continue'})
+			.click();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+		await page.getByRole('button', {name: 'Add single element instance'}).click();
 
-	await expect(page.getByText('Last added modification: Add "Review invoice"')).toBeVisible();
-	await expect(page.getByRole('button', {name: 'Review Modifications'})).toBeEnabled();
-	await expect(page).toHaveScreenshot();
-});
+		await expect(page.getByText('Last added modification: Add "Review invoice"')).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Review Modifications'})).toBeEnabled();
+		await expect(page).toHaveScreenshot();
+	},
+);
 
-test('should match the modification summary modal snapshot', async ({page, operatePreviewProcessInstancePage}) => {
-	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
-	await page
-		.getByRole('dialog', {name: 'Process Instance Modification Mode'})
-		.getByRole('button', {name: 'Continue'})
-		.click();
-	await operatePreviewProcessInstancePage.diagramElement('task-1').click();
-	await page.getByRole('button', {name: 'Add single element instance'}).click();
-	await page.getByRole('button', {name: 'Review Modifications'}).click();
+test(
+	'should match the modification summary modal snapshot',
+	{tag: '@desktop'},
+	async ({page, operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
+		await page
+			.getByRole('dialog', {name: 'Process Instance Modification Mode'})
+			.getByRole('button', {name: 'Continue'})
+			.click();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+		await page.getByRole('button', {name: 'Add single element instance'}).click();
+		await page.getByRole('button', {name: 'Review Modifications'}).click();
 
-	const summary = page.getByRole('dialog', {name: 'Apply Modifications'});
-	await expect(summary).toBeVisible();
-	await expect(summary).toHaveScreenshot();
-});
+		const summary = page.getByRole('dialog', {name: 'Apply Modifications'});
+		await expect(summary).toBeVisible();
+		await expect(summary).toHaveScreenshot();
+	},
+);
 
-test('should match the modification helper modal snapshot', async ({page, operatePreviewProcessInstancePage}) => {
-	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
+test(
+	'should match the modification helper modal snapshot',
+	{tag: '@desktop'},
+	async ({page, operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
 
-	const helper = page.getByRole('dialog', {name: 'Process Instance Modification Mode'});
-	await expect(helper).toBeVisible();
-	await expect(helper).toHaveScreenshot();
-});
+		const helper = page.getByRole('dialog', {name: 'Process Instance Modification Mode'});
+		await expect(helper).toBeVisible();
+		await expect(helper).toHaveScreenshot();
+	},
+);
