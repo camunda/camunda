@@ -419,6 +419,7 @@ processing.engine.mappings.input-mode
 processing.engine.mappings.output-comparison-mode
 processing.engine.mappings.output-mode
 processing.engine.max-process-depth
+processing.engine.messages.pending-subscription-recovery-batch-limit
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
 processing.engine.secrets.batch-resolution-limit

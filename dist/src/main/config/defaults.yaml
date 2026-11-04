@@ -1712,6 +1712,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       # guard against unbounded process recursion.
       max-process-depth: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MAXPROCESSDEPTH
       messages: # Type: io.camunda.configuration.processing.engine.EngineMessages  
+        # Configures how many message subscriptions a new leader scans per chunk when it rebuilds the pending
+        # subscriptions after recovery.
+        pending-subscription-recovery-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_PENDINGSUBSCRIPTIONRECOVERYBATCHLIMIT
         # Configures the maximum number of expired messages processed per Time-To-Live check.
         ttl-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
         # Configures the interval at which buffered messages are checked for expiry.

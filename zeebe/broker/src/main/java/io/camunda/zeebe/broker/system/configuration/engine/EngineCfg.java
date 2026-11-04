@@ -256,6 +256,8 @@ public final class EngineCfg implements ConfigurationEntry {
     return new EngineConfiguration()
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
+        .setMessagesPendingSubscriptionRecoveryBatchLimit(
+            messages.getPendingSubscriptionRecoveryBatchLimit())
         .setDrgCacheCapacity(caches.getDrgCacheCapacity())
         .setFormCacheCapacity(caches.getFormCacheCapacity())
         .setResourceCacheCapacity(caches.getResourceCacheCapacity())
