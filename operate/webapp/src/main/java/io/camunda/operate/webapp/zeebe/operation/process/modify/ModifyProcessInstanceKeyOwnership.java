@@ -19,11 +19,42 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.util.StringUtils;
 
 public final class ModifyProcessInstanceKeyOwnership {
 
   private ModifyProcessInstanceKeyOwnership() {}
+
+  /**
+   * Returns whether the key is the process instance itself or one of its flow node instances. The
+   * process instance itself needs no lookup.
+   */
+  public static boolean belongsToProcessInstance(
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final Long processInstanceKey,
+      final Long key) {
+    return findForeignKeys(flowNodeInstanceReader, processInstanceKey, Set.of(key)).isEmpty();
+  }
+
+  /**
+   * Returns the keys that are neither the process instance itself nor one of its flow node
+   * instances. The process instance itself needs no lookup.
+   */
+  private static Set<Long> findForeignKeys(
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final Long processInstanceKey,
+      final Set<Long> keys) {
+    final Set<Long> keysToLookUp = new HashSet<>(keys);
+    keysToLookUp.remove(processInstanceKey);
+    if (keysToLookUp.isEmpty()) {
+      return Set.of();
+    }
+    final Set<Long> foreignKeys = new HashSet<>(keysToLookUp);
+    foreignKeys.removeAll(
+        flowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(processInstanceKey, keysToLookUp));
+    return foreignKeys;
+  }
 
   /**
    * Returns an error message for the first key of the modifications that does not belong to the
@@ -60,18 +91,13 @@ public final class ModifyProcessInstanceKeyOwnership {
       }
     }
 
-    // the process instance itself needs no lookup
-    final Set<Long> keysToLookUp = new HashSet<>();
-    keysToCheck.forEach(keyToCheck -> keysToLookUp.add(keyToCheck.key()));
-    keysToLookUp.remove(processInstanceKey);
-    if (keysToLookUp.isEmpty()) {
-      return Optional.empty();
-    }
-    final Set<Long> keysOfProcessInstance =
-        flowNodeInstanceReader.findFlowNodeInstanceKeysOwnedBy(processInstanceKey, keysToLookUp);
+    final Set<Long> foreignKeys =
+        findForeignKeys(
+            flowNodeInstanceReader,
+            processInstanceKey,
+            keysToCheck.stream().map(KeyToCheck::key).collect(Collectors.toSet()));
     return keysToCheck.stream()
-        .filter(keyToCheck -> keysToLookUp.contains(keyToCheck.key()))
-        .filter(keyToCheck -> !keysOfProcessInstance.contains(keyToCheck.key()))
+        .filter(keyToCheck -> foreignKeys.contains(keyToCheck.key()))
         .findFirst()
         .map(
             keyToCheck ->
