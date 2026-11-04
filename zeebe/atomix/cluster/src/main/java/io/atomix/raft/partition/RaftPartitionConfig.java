@@ -167,10 +167,10 @@ public class RaftPartitionConfig {
   }
 
   /**
-   * The maximum time to wait, once a join request was accepted, for this node's own commit index to
-   * catch up to the index it was admitted at. Unlike {@link #getConfigurationChangeTimeout()},
-   * which bounds request round-trips, this bounds a replication-paced wait, so it defaults to a
-   * longer duration.
+   * The maximum time this node's own commit index may stay unchanged, once a join request was
+   * accepted, while it catches up to the index it was admitted at. Unlike {@link
+   * #getConfigurationChangeTimeout()}, which bounds request round-trips, this bounds a
+   * replication-paced wait, so it defaults to a longer duration.
    *
    * @return the join catch-up timeout
    */
