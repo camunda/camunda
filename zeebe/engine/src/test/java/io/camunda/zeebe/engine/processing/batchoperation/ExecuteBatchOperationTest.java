@@ -79,7 +79,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   @Test
   public void shouldLogPartitionIdInHeartbeat() {
     try (final var logs =
-        LogCapturer.capturing(BatchOperationExecutionExecuteProcessor.class, Level.DEBUG)) {
+        LogCapturer.capturing(BatchOperationExecuteProcessor.class, Level.DEBUG)) {
       // given - the heartbeat is logged every 1000 executed items
       final var processInstanceKeys =
           LongStream.rangeClosed(1, 1000).boxed().collect(Collectors.toSet());
