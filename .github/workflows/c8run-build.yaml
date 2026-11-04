@@ -15,11 +15,19 @@ on:
       - "c8run/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
+      # C8RUN_SECRETS_MODE=env runs on the server's environment-variable secret store
+      - "secret-store/**"
+      - "dist/src/main/java/io/camunda/application/commons/secrets/**"
+      - "configuration/src/main/java/io/camunda/configuration/Secrets.java"
   pull_request:
     paths:
       - "c8run/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
+      # C8RUN_SECRETS_MODE=env runs on the server's environment-variable secret store
+      - "secret-store/**"
+      - "dist/src/main/java/io/camunda/application/commons/secrets/**"
+      - "configuration/src/main/java/io/camunda/configuration/Secrets.java"
   schedule:
     # Run at 23:30 UTC every day
     - cron: "30 23 * * *"
@@ -490,12 +498,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_physical_tenant_isolation:
-    name: C8Run Tenant Isolation ${{ matrix.os }}
+    name: C8Run Tenant Isolation ${{ matrix.os }}${{ matrix.secrets_mode == 'env' && ' env secrets' || '' }}
     needs: [test_c8run_on_unix, test_c8run_e2e_on_windows]
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+        secrets_mode: [local, env]
         include:
           - os: ubuntu-latest
             artifact: camunda8-run-build-ubuntu-latest
@@ -567,8 +576,17 @@ jobs:
           fi
           cp ../../e2e_tests/physical-tenants-auth.yaml .
           printf '%s' 'pt1-e2e-password' | "$c8run" physical-tenants add pt1 --username alice --password-stdin
-          printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+          if [[ "$SECRETS_MODE" == "env" ]]; then
+            # c8run secrets set is disabled in env mode; the secrets live in the start environment.
+            export C8RUN_SECRETS_MODE=env C8RUN_SECRETS_ENV_PREFIX=C8E2E_
+            export C8E2E_DEFAULT_C8RUN_E2E_SECRET=default-env-secret-value
+            export C8E2E_PT1_C8RUN_E2E_SECRET=pt1-only-secret-value
+          else
+            printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+          fi
           "$c8run" start --no-browser --config physical-tenants-auth.yaml
+        env:
+          SECRETS_MODE: ${{ matrix.secrets_mode }}
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 
       - name: Run physical tenant isolation test
@@ -578,15 +596,21 @@ jobs:
           C8RUN_AUTH: alice:pt1-e2e-password
           C8RUN_DEFAULT_AUTH: demo:demo
           TENANT_SECRET_VALUE: pt1-only-secret-value
+          CHECK_MISSING_SECRET: "1"
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
+          C8RUN_SECRETS_MODE: ${{ matrix.secrets_mode }}
+          C8RUN_SECRETS_ENV_PREFIX: ${{ matrix.secrets_mode == 'env' && 'C8E2E_' || '' }}
+          DEFAULT_SECRET_VALUE: ${{ matrix.secrets_mode == 'env' && 'default-env-secret-value' || '' }}
+          SECRETS_LIST_EXPECT: ${{ matrix.secrets_mode == 'env' && 'C8RUN_E2E_SECRET' || '' }}
+          CONNECTOR_ENV_PREFIX: ${{ matrix.secrets_mode == 'env' && 'C8E2E_' || '' }}
         working-directory: ./c8run/e2e_tests
 
       - name: Upload physical tenant isolation logs
         if: ${{ (failure() || cancelled()) && env.C8RUN_E2E_DIR != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: c8run-tenant-isolation-logs-${{ matrix.os }}
+          name: c8run-tenant-isolation-logs-${{ matrix.os }}${{ matrix.secrets_mode == 'env' && '-env-secrets' || '' }}
           path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
@@ -595,7 +619,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "test_c8run_physical_tenant_isolation/${{ matrix.os }}"
+          job_name: "test_c8run_physical_tenant_isolation/${{ matrix.os }}${{ matrix.secrets_mode == 'env' && '/env-secrets' || '' }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
