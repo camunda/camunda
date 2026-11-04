@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -126,9 +127,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            Map.of("key", List.of("1", "2", "3")),
-            Map.of(),
-            Map.of(),
+            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -162,9 +161,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            Map.of("key", List.of("1", "2", "3")),
-            Map.of(),
-            Map.of(),
+            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -213,9 +210,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            Map.of("key", List.of("1", "2", "3")),
-            Map.of(),
-            Map.of(),
+            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -242,7 +237,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // when
     ((OpenSearchArchiverRepository) repository)
         .getArchiveDocIdsBatch(
-            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), null, 10)
+            "source-index", new FilterByKeysQuery(Map.of("key", List.of("1"))), null, 10)
         .join();
 
     // then

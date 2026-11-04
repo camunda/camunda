@@ -21,6 +21,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -39,7 +40,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -54,7 +54,6 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
-import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
@@ -307,20 +306,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final Executor executor) {
 
     return archiveByIdPipeline.moveBetweenIndexes(
-        (searchAfter, size) ->
-            getArchiveDocIdsBatch(
-                sourceIndexName,
-                keysByField,
-                inclusionFilters,
-                exclusionFilters,
-                searchAfter,
-                size),
+        (searchAfter, size) -> getArchiveDocIdsBatch(sourceIndexName, filter, searchAfter, size),
         sourceIndexName,
         destinationIndexName,
         executor);
@@ -351,12 +341,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   @VisibleForTesting
   CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>> getArchiveDocIdsBatch(
       final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final SearchAfter searchAfter,
       final int size) {
-    final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
+    final Query query = toQuery(filter);
     final Builder requestBuilder =
         new Builder()
             .trackTotalHits(t -> t.enabled(false))
@@ -884,49 +872,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final List<String> ids = batchHits.stream().map(Hit::id).toList();
     return new BasicArchiveBatch(date, ids);
-  }
-
-  private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
-    return QueryBuilders.terms()
-        .field(idFieldName)
-        .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
-        .build();
-  }
-
-  private Query buildFilterQuery(
-      final Map<String, List<String>> keysByField, final Map<String, String> inclusionFilters) {
-    return buildFilterQuery(keysByField, inclusionFilters, Map.of());
-  }
-
-  private Query buildFilterQuery(
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters) {
-    final var boolBuilder = QueryBuilders.bool();
-
-    // Match any keys
-    if (!keysByField.isEmpty()) {
-      final var keysBoolBuilder = QueryBuilders.bool();
-      for (final var entry : keysByField.entrySet()) {
-        keysBoolBuilder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
-      }
-      keysBoolBuilder.minimumShouldMatch("1");
-      boolBuilder.filter(keysBoolBuilder.build().toQuery());
-    }
-
-    // Match all additional inclusion filters
-    for (final var filter : inclusionFilters.entrySet()) {
-      boolBuilder.filter(
-          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
-    }
-
-    // Exclude all docs matching exclusion filters
-    for (final var filter : exclusionFilters.entrySet()) {
-      boolBuilder.mustNot(
-          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
-    }
-
-    return boolBuilder.build().toQuery();
   }
 
   private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
