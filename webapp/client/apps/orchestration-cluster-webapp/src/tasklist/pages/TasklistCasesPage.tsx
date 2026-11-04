@@ -27,7 +27,7 @@ const TasklistCasesPage: React.FC<Props> = ({cases, totalItems, search, onSearch
 	);
 
 	return (
-		<PageLayout>
+		<PageLayout id="main-content" tabIndex={-1}>
 			<div className="flex flex-col gap-6">
 				<PageHeader
 					title={t('tasklist.casesTitle')}
