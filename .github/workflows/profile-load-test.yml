@@ -8,7 +8,7 @@
 #              Uploads flamegraph artifacts named
 #              {name-prefix}{pod}, where name-prefix defaults to flamegraph-{name}-{date}-.
 # called-by: camunda-pr-load-test.yml, stress-load-test.yml (itself called by
-#            camunda-daily-load-tests.yml)
+#            camunda-daily-load-tests.yml and camunda-stable-stress-tests.yml)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Profile running load test

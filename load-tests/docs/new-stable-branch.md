@@ -145,6 +145,19 @@ and the
 **Result:** the new job is present in the workflow file and included in the `notify` job's
 `needs:` list. It only actually runs on the next scheduled trigger.
 
+### Add the branch to the stable stress tests
+
+- In [`stress-load-test.yml`](../../.github/workflows/stress-load-test.yml): add a `setup-<major><minor>`
+  job (for example `setup-810`) that calls `camunda-load-test.yml@$VERSION_BRANCH`. Copy an existing
+  one, including its `if: inputs.stable-branch == '<X.Y>'` gate, which keeps it from also running for
+  main. Add the job to the `setup-done` job's `needs:` list. Forward `load-test-setup-helm-values` only
+  if the branch's workflow has that input.
+- In [`camunda-stable-stress-tests.yml`](../../.github/workflows/camunda-stable-stress-tests.yml): add the
+  branch's legs to the `run-variant` matrix and their `key:label` pairs to `VARIANT_ORDER` in
+  `aggregate-metrics`.
+
+This step needs no later backport.
+
 ### Add the branch to the scheduled release load tests
 
 In
