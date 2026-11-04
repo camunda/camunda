@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 
 import {
 	Bot,
+	Briefcase,
 	GitBranch,
 	History,
 	LayoutDashboard,
@@ -33,12 +34,14 @@ import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.
 import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {hasComponentAccess} from '#/shared/componentAccess';
+import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
 	tasklistIndex: '/tasklist',
 	tasklistProcesses: '/tasklist/processes',
+	tasklistCases: '/tasklist/cases',
 	operateDashboard: OPERATE_BASE,
 	operateProcesses: `${OPERATE_BASE}/processes`,
 	operateDecisions: `${OPERATE_BASE}/decisions`,
@@ -142,6 +145,7 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const isCasesRoute = ENABLE_CASE_MANAGEMENT && matchRoute({to: tabRoutes['tasklistCases'], fuzzy: true}) !== false;
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 	const isAdminRoute = activeComponentHomeRoute === tabRoutes['adminIndex'];
@@ -163,7 +167,7 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute,
+							isActive: !isProcessesRoute && !isCasesRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {
@@ -181,6 +185,20 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 								to: tabRoutes['tasklistProcesses'],
 							},
 						},
+						...(ENABLE_CASE_MANAGEMENT
+							? [
+									{
+										type: 'item',
+										key: 'cases',
+										label: t('tasklist.headerNavItemCases'),
+										icon: Briefcase,
+										isActive: isCasesRoute,
+										linkProps: {
+											to: tabRoutes['tasklistCases'],
+										},
+									} satisfies SidebarNode,
+								]
+							: []),
 					]
 				: [],
 		};
