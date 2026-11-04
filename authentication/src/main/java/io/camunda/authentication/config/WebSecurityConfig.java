@@ -772,10 +772,11 @@ public class WebSecurityConfig {
      * CachingOidcClaimsProvider routes a token to its own issuer's endpoint.
      *
      * <p>The owner is decided first, and only then whether it has an endpoint: the first
-     * registration per issuer in the repository's order, which is the order the access-token
-     * decoder routes by. Dropping registrations without an endpoint first would let a token routed
-     * to a registration with UserInfo disabled be augmented from another registration that resolved
-     * to the same issuer, which two issuer-uris differing only by a trailing slash now can.
+     * registration per issuer in the repository's iteration order, the same order the access-token
+     * decoder routes by. For Spring's in-memory repository, that is hash order, not configuration
+     * order. Dropping registrations without an endpoint first would let a token routed to a
+     * registration with UserInfo disabled be augmented from another registration that resolved to
+     * the same issuer, which two issuer-uris differing only by a trailing slash now can.
      */
     static Map<String, URI> userInfoUriByIssuer(
         final ClientRegistrationRepository clientRegistrationRepository) {

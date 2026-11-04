@@ -69,7 +69,10 @@ class UserInfoUriByIssuerTest {
                 "https://b.example.com", URI.create("https://b.example.com/userinfo")));
   }
 
-  /** In the given order, as the decoder iterates it; Spring's in-memory repository has none. */
+  /**
+   * Iterates in the given order, so a test controls which registration comes first. Spring's
+   * in-memory repository iterates in hash order, which the decoder uses too.
+   */
   private static OrderedRepository repository(final List<ClientRegistration> registrations) {
     return new OrderedRepository(registrations);
   }

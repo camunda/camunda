@@ -36,13 +36,13 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
       "Missing or empty 'iss' (issuer) claim in JWT.";
   private static final String ERROR_CONFLICTING_ADDITIONAL_KEYS =
       "OIDC providers '%2$s' and '%3$s' both resolve to issuer '%1$s' but configure different"
-          + " additional-jwk-set-uris. Tokens of that issuer are verified for '%2$s' only, so the"
-          + " additional keys of '%3$s' would never be used. Give both providers the same"
-          + " additional-jwk-set-uris, or remove one of them.";
+          + " additional-jwk-set-uris. Tokens of that issuer are verified with one set of"
+          + " additional keys only. Give both providers the same additional-jwk-set-uris, or set"
+          + " them on one provider only.";
 
   private final List<ClientRegistration> clientRegistrations;
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
-  private final Map<String, List<String>> additionalJwkSetUrisByRegistrationId;
+  private final Map<String, List<String>> additionalJwkSetUrisByIssuer;
   private final Map<String, JWSKeySelector<SecurityContext>> selectors;
 
   public IssuerAwareJWSKeySelector(
@@ -55,43 +55,54 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
       final List<ClientRegistration> clientRegistrations,
       final JWSKeySelectorFactory jwsKeySelectorFactory,
       final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
-    requireConsistentAdditionalKeys(clientRegistrations, additionalJwkSetUrisByRegistrationId);
     this.clientRegistrations = List.copyOf(clientRegistrations);
     this.jwsKeySelectorFactory = jwsKeySelectorFactory;
-    this.additionalJwkSetUrisByRegistrationId =
-        additionalJwkSetUrisByRegistrationId != null
-            ? Map.copyOf(additionalJwkSetUrisByRegistrationId)
-            : Collections.emptyMap();
+    additionalJwkSetUrisByIssuer =
+        additionalKeysByIssuer(clientRegistrations, additionalJwkSetUrisByRegistrationId);
     selectors = new ConcurrentHashMap<>();
   }
 
   /**
-   * Rejects registrations that share a resolved issuer but configure different additional JWK Set
-   * URIs. A token is routed by issuer to the first registration that has it, so the others' keys
-   * would silently go unused. Two providers configured as {@code https://idp/} and {@code
+   * Rejects registrations that share a resolved issuer but configure different, non-empty
+   * additional JWK Set URIs. Two providers configured as {@code https://idp/} and {@code
    * https://idp} both resolve to the provider's issuer (see {@link ClientRegistrationFactory}), so
-   * this is checked on the resolved issuer, whatever the configuration order.
+   * this is checked on the resolved issuer, whatever the configuration order. A registration
+   * without additional keys does not conflict: it uses the keys of its issuer, as before this
+   * check.
    *
    * @throws IllegalStateException naming the issuer and the registrations that conflict
    */
   public static void requireConsistentAdditionalKeys(
       final List<ClientRegistration> clientRegistrations,
       final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
-    final Map<String, ClientRegistration> firstByIssuer = new HashMap<>();
+    additionalKeysByIssuer(clientRegistrations, additionalJwkSetUrisByRegistrationId);
+  }
+
+  /**
+   * The additional JWK Set URIs of each resolved issuer. A token is routed by issuer to the first
+   * registration that has it, so all registrations of an issuer share one set. The issuer must
+   * match exactly, so a provider whose issuer only looks alike never gets these keys.
+   */
+  private static Map<String, List<String>> additionalKeysByIssuer(
+      final List<ClientRegistration> clientRegistrations,
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
+    final Map<String, List<String>> keysByIssuer = new HashMap<>();
+    final Map<String, ClientRegistration> ownerByIssuer = new HashMap<>();
     for (final var registration : clientRegistrations) {
       final var issuer = registration.getProviderDetails().getIssuerUri();
-      if (issuer == null || issuer.isBlank()) {
+      final var keys = additionalKeysOf(registration, additionalJwkSetUrisByRegistrationId);
+      if (issuer == null || issuer.isBlank() || keys.isEmpty()) {
         continue;
       }
-      final var first = firstByIssuer.putIfAbsent(issuer, registration);
-      if (first != null
-          && !additionalKeysOf(first, additionalJwkSetUrisByRegistrationId)
-              .equals(additionalKeysOf(registration, additionalJwkSetUrisByRegistrationId))) {
+      final var owner = ownerByIssuer.putIfAbsent(issuer, registration);
+      if (owner != null && !keysByIssuer.get(issuer).equals(keys)) {
         throw new IllegalStateException(
             ERROR_CONFLICTING_ADDITIONAL_KEYS.formatted(
-                issuer, first.getRegistrationId(), registration.getRegistrationId()));
+                issuer, owner.getRegistrationId(), registration.getRegistrationId()));
       }
+      keysByIssuer.put(issuer, keys);
     }
+    return Map.copyOf(keysByIssuer);
   }
 
   private static List<String> additionalKeysOf(
@@ -141,10 +152,9 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
     final var clientRegistration = getClientRegistrationByIssuer(issuer);
     final var providerDetails = clientRegistration.getProviderDetails();
     final var jwkSetUri = providerDetails.getJwkSetUri();
-    // By the registration the token was routed to, so a token only ever reaches the additional
-    // keys of its own provider, never those of a provider whose issuer merely looks alike.
-    final var additionalUris =
-        additionalJwkSetUrisByRegistrationId.get(clientRegistration.getRegistrationId());
+    // By the exact issuer of the registration the token was routed to, so a token never reaches
+    // the additional keys of a provider whose issuer merely looks alike.
+    final var additionalUris = additionalJwkSetUrisByIssuer.get(providerDetails.getIssuerUri());
     return jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri, additionalUris);
   }
 }
