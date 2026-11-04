@@ -7,6 +7,7 @@ functions:
   - verifyKeyTypesPaths
   - verifyKeyTypesSchemas
   - verifyEventuallyConsistent
+  - verifyEventuallyConsistentDeclared
   - verifyRequiredPropertiesExist
   - verifyNoRedundantRequired
   - verifyArrayPropertiesRequired
@@ -156,6 +157,14 @@ rules:
     then:
       function: verifyEventuallyConsistent
     message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."
+
+  require-eventually-consistent:
+    description: "Every operation must declare `x-eventually-consistent` explicitly as `true` or `false`."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyEventuallyConsistentDeclared
 
   valid-deprecated-enum-members:
     description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
