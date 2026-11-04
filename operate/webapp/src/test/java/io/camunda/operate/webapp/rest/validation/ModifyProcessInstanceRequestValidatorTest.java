@@ -148,6 +148,18 @@ public class ModifyProcessInstanceRequestValidatorTest {
             new Modification()
                 .setModification(Modification.Type.CANCEL_TOKEN)
                 .setFromFlowNodeInstanceKey("999"),
+            "Element instance 999 does not belong to process instance 123."),
+        Arguments.of(
+            new Modification()
+                .setModification(Modification.Type.CANCEL_TOKEN)
+                .setFromFlowNodeId("task")
+                .setAncestorElementInstanceKey(999L),
+            "Element instance 999 does not belong to process instance 123."),
+        Arguments.of(
+            new Modification()
+                .setModification(Modification.Type.EDIT_VARIABLE)
+                .setAncestorElementInstanceKey(999L)
+                .setVariables(Map.of("a", 1)),
             "Element instance 999 does not belong to process instance 123."));
   }
 
