@@ -1,3 +1,6 @@
+import buildlogic.ArtifactKind
+import buildlogic.artifactKind
+
 plugins { id("buildlogic.server-conventions") }
 
 // Build-time tooling (GenerateDefaults) that is run against the Spring configuration metadata. It is
@@ -19,33 +22,35 @@ sourceSets.named("test") {
   runtimeClasspath += buildTools.output
 }
 
-// Mirrors dist's exec:java@generate-default-config / @verify-default-config. Intentionally not wired
-// into assemble/check, like the Maven executions bound to phase=none.
-val defaultsFile = rootProject.layout.projectDirectory.file("dist/src/main/config/defaults.yaml")
+// Mirrors dist's exec:java@generate-default-config. Not wired into assemble/check, like the Maven
+// execution bound to phase=none; :dist copies the result into its sources and verifies it.
 val metadataFile =
   layout.buildDirectory.file("classes/java/main/META-INF/spring-configuration-metadata.json")
+val generatedDefaultsFile = layout.buildDirectory.file("generated/default-config/defaults.yaml")
 
-tasks.register<JavaExec>("generateDefaultConfig") {
-  group = "build tools"
-  description = "Regenerates dist/src/main/config/defaults.yaml from the Spring configuration metadata"
-  classpath = buildTools.runtimeClasspath
-  mainClass.set("io.camunda.configuration.GenerateDefaults")
-  dependsOn(tasks.named("compileJava"))
-  inputs.file(metadataFile)
-  outputs.file(defaultsFile)
-  args(metadataFile.get().asFile.absolutePath, defaultsFile.asFile.absolutePath)
-}
+val generateDefaultConfig =
+  tasks.register<JavaExec>("generateDefaultConfig") {
+    group = "build tools"
+    description = "Generates defaults.yaml from the Spring configuration metadata"
+    classpath = buildTools.runtimeClasspath
+    mainClass.set("io.camunda.configuration.GenerateDefaults")
+    dependsOn(tasks.named("compileJava"))
+    inputs.file(metadataFile)
+    outputs.file(generatedDefaultsFile)
+    // JavaExec is not cacheable by default; opt in so unchanged inputs hit the build cache.
+    outputs.cacheIf { true }
+    args(metadataFile.get().asFile.absolutePath, generatedDefaultsFile.get().asFile.absolutePath)
+  }
 
-tasks.register<JavaExec>("verifyDefaultConfig") {
-  group = "verification"
-  description = "Verifies dist/src/main/config/defaults.yaml is up to date with the Spring metadata"
-  classpath = buildTools.runtimeClasspath
-  mainClass.set("io.camunda.configuration.GenerateDefaults")
-  dependsOn(tasks.named("compileJava"))
-  inputs.file(metadataFile)
-  inputs.file(defaultsFile)
-  args(metadataFile.get().asFile.absolutePath, defaultsFile.asFile.absolutePath, "--verify")
-}
+// Consumed by :dist, which owns the committed copy of the file.
+val defaultConfig =
+  configurations.create("defaultConfig") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    artifactKind(project, ArtifactKind.DEFAULT_CONFIG)
+  }
+
+artifacts { add(defaultConfig.name, generatedDefaultsFile) { builtBy(generateDefaultConfig) } }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)

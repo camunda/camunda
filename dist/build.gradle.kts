@@ -1,8 +1,10 @@
+import buildlogic.ArtifactKind
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
 import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.filterMavenResources
+import buildlogic.projectArtifact
 import io.camunda.gradle.pom.PomResolver
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.FileTree
@@ -277,6 +279,30 @@ tasks.named<Tar>("distTar") {
 }
 
 tasks.named<Zip>("distZip") { reproducibleArchive() }
+
+// defaults.yaml is committed in src/main/config (and shipped from there); :configuration generates it
+// from the Spring metadata. Mirrors Maven's exec:java@generate-default-config and, like it, is not
+// wired into assemble/check. DefaultConfigTest verifies the committed file.
+val generatedDefaultConfig =
+  configurations.create("generatedDefaultConfig") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+  }
+
+tasks.register<Copy>("updateDefaultConfig") {
+  group = "build tools"
+  description = "Copies the generated defaults.yaml into src/main/config"
+  from(generatedDefaultConfig)
+  into(layout.projectDirectory.dir("src/main/config"))
+}
+
+dependencies {
+  add(
+    generatedDefaultConfig.name,
+    projectArtifact(":configuration", ArtifactKind.DEFAULT_CONFIG),
+  )
+}
 
 dependencies {
   implementation(project(":camunda-cluster"))
