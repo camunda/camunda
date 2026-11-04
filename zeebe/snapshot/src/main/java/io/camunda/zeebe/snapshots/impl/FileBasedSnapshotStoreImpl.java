@@ -113,8 +113,12 @@ public final class FileBasedSnapshotStoreImpl {
    * it would block every later {@link #copyForBootstrap}.
    */
   private void deleteLeftoverBootstrapSnapshots() {
-    try (final var stream = Files.list(bootstrapSnapshotsDirectory)) {
-      if (stream.findAny().isEmpty()) {
+    try {
+      final boolean isEmpty;
+      try (final var stream = Files.list(bootstrapSnapshotsDirectory)) {
+        isEmpty = stream.findAny().isEmpty();
+      }
+      if (isEmpty) {
         return;
       }
       LOGGER.info("Deleting leftover bootstrap snapshots in {}", bootstrapSnapshotsDirectory);
