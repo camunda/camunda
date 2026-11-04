@@ -50,6 +50,9 @@ jobs:
           - 'config/application.yaml'
           - 'qa/http/c8run-tests/application-h2.yaml'
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
+
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -138,3 +141,14 @@ jobs:
         with:
           files: '**/reports/report.xml'
           comment_mode: off
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: build_and_test_c8run/${{ matrix.env }}/${{ matrix.config }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
