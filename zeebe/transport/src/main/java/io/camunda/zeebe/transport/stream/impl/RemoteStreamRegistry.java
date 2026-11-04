@@ -57,8 +57,9 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
    *     stream.
    * @param receiver The id of the node that receives data from the stream
    * @param properties properties used by the producer to generate data to be pushed to the stream
+   * @return true if the stream was added, false if it was already registered
    */
-  public void add(
+  public boolean add(
       final UnsafeBuffer streamType,
       final UUID streamId,
       final MemberId receiver,
@@ -66,7 +67,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
 
     final StreamId uniqueId = new StreamId(streamId, receiver);
     if (idToConsumer.containsKey(uniqueId)) {
-      return;
+      return false;
     }
 
     // Using CopyOnWriteArraySet assuming the size is small and updates/removal is less frequent. If
@@ -88,6 +89,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
 
     idToConsumer.put(uniqueId, streamConsumer);
     metrics.addStream();
+    return true;
   }
 
   /**
@@ -95,8 +97,9 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
    *
    * @param streamId id of the stream
    * @param receiver The id of the node that receives data from the stream
+   * @return true if the stream was registered and is now removed, false if it was unknown
    */
-  public void remove(final UUID streamId, final MemberId receiver) {
+  public boolean remove(final UUID streamId, final MemberId receiver) {
     final var uniqueId = new StreamId(streamId, receiver);
     final var consumer = idToConsumer.remove(uniqueId);
     if (consumer != null) {
@@ -115,7 +118,9 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
             }
           });
       metrics.removeStream();
+      return true;
     }
+    return false;
   }
 
   /**

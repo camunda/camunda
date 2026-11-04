@@ -16,24 +16,24 @@ class OperatePreviewProcessesPage extends BasePage {
 		super(page);
 	}
 
-	async goto() {
-		return this.page.goto(this.processesUrl);
+	async goto(search = '') {
+		return this.page.goto(`${this.processesUrl}${search}`);
 	}
 
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Processes'});
 	}
 
-	get filtersPanelPlaceholder() {
-		return this.page.getByText('Filters panel placeholder');
+	get nameFilter() {
+		return this.page.getByLabel('Name');
 	}
 
 	get diagramPanelPlaceholder() {
 		return this.page.getByText('Diagram panel placeholder');
 	}
 
-	get instancesTablePlaceholder() {
-		return this.page.getByText('Instances table placeholder');
+	get instancesTable() {
+		return this.page.getByTestId('process-instances-table');
 	}
 }
 

@@ -69,6 +69,6 @@ public class JobUpdateTimeoutProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    return SuspensionAction.PROCESS;
   }
 }

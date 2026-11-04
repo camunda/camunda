@@ -1090,10 +1090,15 @@
 				"drainingDescriptionVersion": "Diese Version der Prozessdefinition ist zur Löschung vorgesehen und wird automatisch entfernt, sobald alle ihre laufenden Instanzen abgeschlossen sind."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Nach Prozessname suchen",
+						"selectVersion": "Prozessversion auswählen",
+						"searchByElement": "Nach Prozesselement suchen"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
-					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
-					"instancesTablePlaceholder": "Platzhalter für die Instanztabelle"
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich"
 				},
 				"migration": {
 					"migrate": "Migrieren",
@@ -1334,7 +1339,10 @@
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
 					"none": "Keine",
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
-					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
+					"tableLabel": "Prozessinstanzen",
+					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
+					"loadingNextPage": "Nächste Prozessinstanzen werden geladen"
 				},
 				"diagramHeader": {
 					"title": "Prozess",
@@ -1586,6 +1594,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Platzhalter für die Kopfzeile",
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
+					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"
+				},
 				"history": {
 					"title": "Instanzhistorie",
 					"tabs": "Prozessinstanz-Registerkarten",

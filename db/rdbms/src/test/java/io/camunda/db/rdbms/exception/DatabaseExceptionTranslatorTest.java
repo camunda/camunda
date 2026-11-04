@@ -13,8 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DatabaseExceptionTranslatorTest {
 
@@ -57,6 +60,40 @@ class DatabaseExceptionTranslatorTest {
     // then
     assertThat(result).isInstanceOf(CamundaSearchException.class);
     assertThat(((CamundaSearchException) result).getReason()).isEqualTo(Reason.INVALID_ARGUMENT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"08001", "08006"})
+  void shouldTranslateConnectionSqlStatesToConnectionFailed(final String sqlState) {
+    // given
+    final var cause = new SQLException("connection problem", sqlState);
+    final var exception = new PersistenceException(cause);
+
+    // when
+    final var result = DatabaseExceptionTranslator.translateIfNeeded(exception);
+
+    // then
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            CamundaSearchException.class,
+            e -> assertThat(e.getReason()).isEqualTo(Reason.CONNECTION_FAILED));
+  }
+
+  @Test
+  void shouldTranslateTransientConnectionExceptionWithNullSqlState() {
+    // given – a pool-acquisition timeout carries no SQLState when there was no prior driver error
+    final var cause = new SQLTransientConnectionException("Connection is not available");
+    assertThat(cause.getSQLState()).isNull();
+    final var exception = new PersistenceException(cause);
+
+    // when
+    final var result = DatabaseExceptionTranslator.translateIfNeeded(exception);
+
+    // then
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            CamundaSearchException.class,
+            e -> assertThat(e.getReason()).isEqualTo(Reason.CONNECTION_FAILED));
   }
 
   @Test

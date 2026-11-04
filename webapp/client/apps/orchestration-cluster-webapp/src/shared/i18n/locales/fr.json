@@ -1093,10 +1093,15 @@
 				"drainingDescriptionVersion": "Cette version de la définition de processus est programmée pour suppression et sera automatiquement supprimée une fois que toutes ses instances en cours seront terminées."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Rechercher par nom de processus",
+						"selectVersion": "Sélectionner une version de processus",
+						"searchByElement": "Rechercher par élément de processus"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres",
-					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme",
-					"instancesTablePlaceholder": "Espace réservé pour le tableau des instances"
+					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme"
 				},
 				"migration": {
 					"migrate": "Migrer",
@@ -1337,7 +1342,10 @@
 					"viewParentInstance": "Afficher l'instance parente {{key}}",
 					"none": "Aucune",
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
-					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+					"tableLabel": "Instances de processus",
+					"loadingPreviousPage": "Chargement des instances de processus précédentes",
+					"loadingNextPage": "Chargement des instances de processus suivantes"
 				},
 				"diagramHeader": {
 					"title": "Processus",
@@ -1589,6 +1597,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Espace réservé de l’en-tête",
+					"diagramPanelPlaceholder": "Espace réservé du panneau de diagramme",
+					"bottomPanelPlaceholder": "Espace réservé du panneau inférieur"
+				},
 				"history": {
 					"title": "Historique de l’instance",
 					"tabs": "Onglets de l’instance de processus",

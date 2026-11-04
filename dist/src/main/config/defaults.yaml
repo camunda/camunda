@@ -267,11 +267,11 @@ camunda: # Type: io.camunda.configuration.Camunda
       # The heartbeat interval for Raft. The leader sends a heartbeat to a follower every heartbeatInterval.
       # This is an advanced setting.
       heartbeat-interval: "250ms" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_HEARTBEATINTERVAL
-      # Sets how long a member joining a partition is given to catch up to the entry that admitted it. A
-      # join is only complete once the joiner has replicated that entry; until then it is a non-voting
-      # learner. If the joiner does not get there in time, the attempt fails and is retried from scratch, so
-      # a value below the time a joiner needs to replicate the backlog makes joins fail repeatedly. On slow
-      # networks or with large logs, raise it.
+      # Sets how long a member joining a partition may go without making progress towards the entry that
+      # admitted it. A join is only complete once the joiner has replicated that entry; until then it is a
+      # non-voting learner. If the joiner's commit index does not advance for this long, the attempt fails
+      # and is retried. Raise it if a joiner can go this long without committing anything, for example while
+      # receiving a very large snapshot.
       join-catch-up-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_JOINCATCHUPTIMEOUT
       # Sets the maximum batch size, which is send per append request to a follower.
       max-append-batch-size: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_MAXAPPENDBATCHSIZE

@@ -15,7 +15,7 @@ import {getCurrentCopyrightNoticeText} from '#/shared/login/getCurrentCopyrightN
 import {Disclaimer} from '#/shared/login/shadcn.components/Disclaimer';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 
-// Hand-composed DS-primitives markup, kept only for Operate's /_carbon/login route
+// Hand-composed DS-primitives markup, kept only for Operate's /_carbon/operate/login route
 // (see its TODO(#64077) comment). Operate can't adopt the packaged DS `LoginScreen`
 // component yet because Operate itself isn't migrated onto the design system —
 // that's tracked separately and is intentionally blocked. Admin and Tasklist use

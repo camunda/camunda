@@ -7,15 +7,56 @@ on:
 
 jobs:
   slack-notify:
-    name: Send slack notification if issue is labeled as critical
+    name: Notify Slack and ping medics if issue is labeled as critical
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    # Notify when the issue has no component label yet, or a component label owned by the
+    # orchestration cluster. Deliberately excluded: connectors, identity,
+    # management-identity, feel-js, release, qa, load-tests, build-pipeline.
     if: >
       github.event.label.name == 'severity/critical' &&
       (
+        !contains(join(github.event.issue.labels.*.name, ' '), 'component/') ||
         contains(github.event.issue.labels.*.name, 'component/zeebe') ||
         contains(github.event.issue.labels.*.name, 'component/zeebe-engine') ||
         contains(github.event.issue.labels.*.name, 'component/zeebe-platform') ||
-        !contains(join(github.event.issue.labels.*.name, ', '), 'component/')
+        contains(github.event.issue.labels.*.name, 'component/engine') ||
+        contains(github.event.issue.labels.*.name, 'component/broker') ||
+        contains(github.event.issue.labels.*.name, 'component/gateway') ||
+        contains(github.event.issue.labels.*.name, 'component/exporter') ||
+        contains(github.event.issue.labels.*.name, 'component/stream-platform') ||
+        contains(github.event.issue.labels.*.name, 'component/raft') ||
+        contains(github.event.issue.labels.*.name, 'component/journal') ||
+        contains(github.event.issue.labels.*.name, 'component/snapshot') ||
+        contains(github.event.issue.labels.*.name, 'component/backup') ||
+        contains(github.event.issue.labels.*.name, 'component/state') ||
+        contains(github.event.issue.labels.*.name, 'component/scheduler') ||
+        contains(github.event.issue.labels.*.name, 'component/transport') ||
+        contains(github.event.issue.labels.*.name, 'component/gossip') ||
+        contains(github.event.issue.labels.*.name, 'component/partition-transitions') ||
+        contains(github.event.issue.labels.*.name, 'component/protocol') ||
+        contains(github.event.issue.labels.*.name, 'component/db') ||
+        contains(github.event.issue.labels.*.name, 'component/monitor') ||
+        contains(github.event.issue.labels.*.name, 'component/batch-operation') ||
+        contains(github.event.issue.labels.*.name, 'component/operate') ||
+        contains(github.event.issue.labels.*.name, 'component/tasklist') ||
+        contains(github.event.issue.labels.*.name, 'component/optimize') ||
+        contains(github.event.issue.labels.*.name, 'component/webapp') ||
+        contains(github.event.issue.labels.*.name, 'component/c8-api') ||
+        contains(github.event.issue.labels.*.name, 'component/data-layer') ||
+        contains(github.event.issue.labels.*.name, 'component/rdbms') ||
+        contains(github.event.issue.labels.*.name, 'component/schema-manager') ||
+        contains(github.event.issue.labels.*.name, 'component/document-handling') ||
+        contains(github.event.issue.labels.*.name, 'component/mcp') ||
+        contains(github.event.issue.labels.*.name, 'component/clients') ||
+        contains(github.event.issue.labels.*.name, 'component/backend') ||
+        contains(github.event.issue.labels.*.name, 'component/frontend') ||
+        contains(github.event.issue.labels.*.name, 'component/camunda') ||
+        contains(github.event.issue.labels.*.name, 'component/spring-boot-starter') ||
+        contains(github.event.issue.labels.*.name, 'component/camunda-process-test') ||
+        contains(github.event.issue.labels.*.name, 'component/c8run') ||
+        contains(github.event.issue.labels.*.name, 'component/feel-scala')
       )
     steps:
       - name: Import Secrets
@@ -28,30 +69,23 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
+            secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+
       - id: slack-notify
         name: Send slack notification
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
-          webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          # For posting a rich message using Block Kit
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: New critical issue! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
-                  }
-                }
-              ]
-            }
+            channel: "C08F5RD5X8B"
+            text: "New critical issue: #${{ github.event.issue.number }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":alarm: New critical issue! :alarm:"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Please check the issue: <${{ github.event.issue.html_url }}|#${{ github.event.issue.number }}>\ncc <!subteam^S09B7LXB77D|distributed-systems-medic> <!subteam^S08P2CU9V8W|core-features-medic>"

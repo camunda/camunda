@@ -87,6 +87,31 @@ final class RestoreParameterValidatorTest {
     }
 
     @Test
+    void shouldAcceptMultipleBackupIds() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validator.validateParameters(request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptFromOnly() {
+      // when / then
+      assertThatCode(
+              () -> validator.validateParameters(request(NO_BACKUP_IDS, EARLIER, null, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptToOnly() {
+      // when / then
+      assertThatCode(
+              () -> validator.validateParameters(request(NO_BACKUP_IDS, null, LATER, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
     void shouldRejectBackupIdAndTimeRangeTogether() {
       // when / then
       assertThatExceptionOfType(IllegalArgumentException.class)
@@ -149,8 +174,141 @@ final class RestoreParameterValidatorTest {
                       request(NO_BACKUP_IDS, null, null, DB, false)))
           .withMessage(
               "Cannot resolve a restore point: no backupId was specified and no "
-                  + "exported-position data is available. Configure RDBMS as the secondary "
-                  + "storage to enable time-range restores, or specify a backupId.");
+                  + "exported-position data is available. Specify a backupId, or a time range "
+                  + "with from.");
+    }
+  }
+
+  @Nested
+  final class NoSecondaryStorage {
+
+    private static final String DB = "none";
+
+    private final RestoreValidator validatorWithoutExportedPositions =
+        new RestoreValidator(1, null, null);
+
+    @Test
+    void shouldAcceptBackupIdOnly() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(BACKUP_ID, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptMultipleBackupIds() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectNoParameters() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, null, null, DB, false)))
+          .withMessage(
+              "Cannot resolve a restore point: no backupId was specified and no "
+                  + "exported-position data is available. Specify a backupId, or a time range "
+                  + "with from.");
+    }
+
+    @Test
+    void shouldRejectBackupIdAndTimeRangeTogether() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(BACKUP_ID, EARLIER, null, DB, true)))
+          .withMessage(BOTH_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectTimeRangeWithoutContinuousBackups() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, false)))
+          .withMessage(CONTINUOUS_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectSingleBoundWithoutContinuousBackups() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, null, DB, false)))
+          .withMessage(CONTINUOUS_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectInvalidTimestamp() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, "not-a-timestamp", null, DB, true)))
+          .withMessage("Invalid from timestamp 'not-a-timestamp': must be an ISO 8601 date-time.");
+    }
+
+    @Test
+    void shouldAcceptTimeRangeWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptFromAloneWithoutExportedPositions() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, null, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectToAloneWithoutExportedPositions() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, null, LATER, DB, true)))
+          .withMessage(
+              "Cannot resolve a restore point: from is required for a time range restore when "
+                  + "no exported-position data is available.");
+    }
+
+    @Test
+    void shouldRejectFromAfterTo() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validatorWithoutExportedPositions.validateParameters(
+                      request(NO_BACKUP_IDS, LATER, EARLIER, DB, true)))
+          .withMessage(
+              "Invalid time range: from (%s) must be before to (%s)"
+                  .formatted(Instant.parse(LATER), Instant.parse(EARLIER)));
     }
   }
 
@@ -191,6 +349,55 @@ final class RestoreParameterValidatorTest {
           .isThrownBy(
               () -> validator.validateParameters(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectFromOnly() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () -> validator.validateParameters(request(NO_BACKUP_IDS, EARLIER, null, DB, true)))
+          .withMessage("Time range restore (from/to) is not supported for elasticsearch.");
+    }
+
+    @Test
+    void shouldRejectToOnly() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () -> validator.validateParameters(request(NO_BACKUP_IDS, null, LATER, DB, true)))
+          .withMessage("Time range restore (from/to) is not supported for elasticsearch.");
+    }
+
+    @Test
+    void shouldRejectInvalidTimestamp() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validator.validateParameters(
+                      request(NO_BACKUP_IDS, "not-a-timestamp", null, DB, true)))
+          .withMessage("Invalid from timestamp 'not-a-timestamp': must be an ISO 8601 date-time.");
+    }
+
+    @Test
+    void shouldAcceptBackupIdOnlyForOpensearch() {
+      // when / then
+      assertThatCode(
+              () ->
+                  validator.validateParameters(request(BACKUP_ID, null, null, "opensearch", false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectTimeRangeForOpensearch() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validator.validateParameters(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, "opensearch", true)))
+          .withMessage("Time range restore (from/to) is not supported for opensearch.");
     }
 
     @Test

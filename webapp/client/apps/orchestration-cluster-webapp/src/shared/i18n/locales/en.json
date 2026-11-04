@@ -1102,10 +1102,15 @@
 				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Search by process name",
+						"selectVersion": "Select a process version",
+						"searchByElement": "Search by process element"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Filters panel placeholder",
-					"diagramPanelPlaceholder": "Diagram panel placeholder",
-					"instancesTablePlaceholder": "Instances table placeholder"
+					"diagramPanelPlaceholder": "Diagram panel placeholder"
 				},
 				"migration": {
 					"migrate": "Migrate",
@@ -1346,7 +1351,10 @@
 					"viewParentInstance": "View parent instance {{key}}",
 					"none": "None",
 					"emptyMessage": "There are no Instances matching this filter set",
-					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
+					"tableLabel": "Process instances",
+					"loadingPreviousPage": "Loading previous process instances",
+					"loadingNextPage": "Loading next process instances"
 				},
 				"diagramHeader": {
 					"title": "Process",
@@ -1598,6 +1606,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Header placeholder",
+					"diagramPanelPlaceholder": "Diagram panel placeholder",
+					"bottomPanelPlaceholder": "Bottom panel placeholder"
+				},
 				"history": {
 					"title": "Instance History",
 					"tabs": "Process instance tabs",

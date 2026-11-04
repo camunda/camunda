@@ -1090,10 +1090,15 @@
 				"drainingDescriptionVersion": "Esta versión de la definición de proceso está programada para su eliminación y se eliminará automáticamente una vez que todas sus instancias en ejecución hayan finalizado."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Buscar por nombre de proceso",
+						"selectVersion": "Seleccionar una versión de proceso",
+						"searchByElement": "Buscar por elemento de proceso"
+					}
+				},
 				"scaffold": {
-					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
-					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama",
-					"instancesTablePlaceholder": "Marcador de posición de la tabla de instancias"
+					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama"
 				},
 				"migration": {
 					"migrate": "Migrar",
@@ -1334,7 +1339,10 @@
 					"viewParentInstance": "Ver instancia principal {{key}}",
 					"none": "Ninguna",
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
-					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
+					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+					"tableLabel": "Instancias de proceso",
+					"loadingPreviousPage": "Cargando instancias de proceso anteriores",
+					"loadingNextPage": "Cargando instancias de proceso siguientes"
 				},
 				"diagramHeader": {
 					"title": "Proceso",
@@ -1586,6 +1594,11 @@
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"headerPlaceholder": "Marcador de posición del encabezado",
+					"diagramPanelPlaceholder": "Marcador de posición del panel de diagrama",
+					"bottomPanelPlaceholder": "Marcador de posición del panel inferior"
+				},
 				"history": {
 					"title": "Historial de la instancia",
 					"tabs": "Pestañas de la instancia de proceso",
