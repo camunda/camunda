@@ -234,9 +234,53 @@ public class BrokerBasedPropertiesOverride {
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
   }
 
+<<<<<<< HEAD
   private void populateFromBatchOperations(final BrokerBasedProperties override) {
     final var engineBatchOperation =
         unifiedConfiguration.getCamunda().getProcessing().getEngine().getBatchOperations();
+=======
+  private static void populateFromCaches(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var caches = camunda.getProcessing().getEngine().getCaches();
+
+    final var cachesCfg = override.getExperimental().getEngine().getCaches();
+    cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
+    cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
+    cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setProcessCacheSoftValues(caches.isProcessCacheSoftValues());
+    cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
+    cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
+    cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
+    cachesCfg.setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity());
+    cachesCfg.setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution());
+  }
+
+  private static void populateFromMessages(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var messages = camunda.getProcessing().getEngine().getMessages();
+
+    final var messagesCfg = override.getExperimental().getEngine().getMessages();
+    messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
+    messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+    messagesCfg.setPendingSubscriptionRecoveryBatchLimit(
+        messages.getPendingSubscriptionRecoveryBatchLimit());
+  }
+
+  private static void populateFromValidators(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var validators = camunda.getProcessing().getEngine().getValidators();
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setResultsOutputMaxSize(validators.getResultsOutputMaxSize());
+  }
+
+  private static void populateFromBatchOperations(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineBatchOperation = camunda.getProcessing().getEngine().getBatchOperations();
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable)
     final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
     batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
     batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());

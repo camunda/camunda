@@ -1168,6 +1168,63 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Allows configuring command redistribution retry interval. This is the initial interval used when
         # retrying command distributions that have not been acknowledged.
         redistribution-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL
+<<<<<<< HEAD
+=======
+      
+      job: # Type: io.camunda.configuration.processing.engine.EngineJob  
+        include-variables-in-job-completed-event: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_JOB_INCLUDEVARIABLESINJOBCOMPLETEDEVENT
+        # Configures the maximum number of timed-out jobs processed per timeout check.
+        timeout-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_JOB_TIMEOUTCHECKERBATCHLIMIT
+        # Configures the interval at which jobs are checked for timeouts.
+        timeout-checker-polling-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_JOB_TIMEOUTCHECKERPOLLINGINTERVAL
+      
+      mappings: # Type: io.camunda.configuration.processing.engine.EngineMappings  
+        input-comparison-mode: null # Type: io.camunda.configuration.processing.engine.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTCOMPARISONMODE
+        input-mode: "combined" # Type: io.camunda.configuration.processing.engine.EngineMappings$InputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_INPUTMODE
+        output-comparison-mode: null # Type: io.camunda.configuration.processing.engine.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTCOMPARISONMODE
+        output-mode: "combined" # Type: io.camunda.configuration.processing.engine.EngineMappings$OutputMode, Env: CAMUNDA_PROCESSING_ENGINE_MAPPINGS_OUTPUTMODE
+      
+      # Configures the maximum depth of nested call activities allowed before an incident is raised, to
+      # guard against unbounded process recursion.
+      max-process-depth: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MAXPROCESSDEPTH
+      messages: # Type: io.camunda.configuration.processing.engine.EngineMessages  
+        # Configures how many message subscriptions a new leader scans per chunk when it rebuilds the pending
+        # subscriptions after recovery.
+        pending-subscription-recovery-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_PENDINGSUBSCRIPTIONRECOVERYBATCHLIMIT
+        # Configures the maximum number of expired messages processed per Time-To-Live check.
+        ttl-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
+        # Configures the interval at which buffered messages are checked for expiry.
+        ttl-checker-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERINTERVAL
+      
+      secrets: # Type: io.camunda.configuration.processing.engine.EngineSecrets  
+        batch-resolution-limit: 20 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_BATCHRESOLUTIONLIMIT
+        interval: "5s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_INTERVAL
+        retry-backoff-factor: 2 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYBACKOFFFACTOR
+        retry-initial-delay: "1s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYINITIALDELAY
+        retry-max-attempts: 3 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXATTEMPTS
+        retry-max-delay: "30s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXDELAY
+        wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
+      
+      startup: # Type: io.camunda.configuration.processing.engine.EngineStartup  
+        # Configures whether the one-time cleanup that restores stray resting PENDING_DELETION process
+        # definitions back to ACTIVE runs on broker startup.
+        process-definition-restore-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_PROCESSDEFINITIONRESTOREENABLED
+        # Configures whether the one-time migration that re-exports existing RPA resources runs on broker
+        # startup.
+        rpa-reexport-migration-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_RPAREEXPORTMIGRATIONENABLED
+      
+      storage-ordinals: # Type: io.camunda.configuration.processing.engine.EngineStorageOrdinals  
+        # Controls whether the archiverless mode is enabled.
+        enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
+        # Override default storage ordinal with fixed value, mainly used during initial testing. The default
+        # value of -1 means no override is applied.
+        fixed-storage-ordinal: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_FIXEDSTORAGEORDINAL
+      
+      validators: # Type: io.camunda.configuration.processing.engine.EngineValidators  
+        # Configures the maximum size, in bytes, of the validation error output produced when deploying an
+        # invalid BPMN or DMN resource.
+        results-output-max-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
+>>>>>>> f77c7758 (feat: make the pending subscription recovery batch limit configurable)
     
     flow-control: # Type: io.camunda.configuration.FlowControl  
       request: # Type: io.camunda.configuration.Limit  
