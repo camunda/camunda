@@ -62,6 +62,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
@@ -394,8 +395,15 @@ public final class ProcessInstanceServiceTest {
 
     assertThat(
             MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthorizationCheckBuffer(), RequiredAuthorization.class))
-        .isEqualTo(authorizationCheck);
+                enrichedRecord.getAuthorizationCheckBuffer(),
+                BatchOperationAuthorizationCheck.class))
+        .isEqualTo(
+            new BatchOperationAuthorizationCheck(
+                authorizationCheck.resourceType(),
+                authorizationCheck.permissionType(),
+                authorizationCheck.resourceIds(),
+                authorizationCheck.resourcePropertyNames(),
+                authorizationCheck.transitive()));
   }
 
   @Test

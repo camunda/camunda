@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -178,9 +179,20 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
-      final RequiredAuthorization<?> authorization =
+      final var check =
           MsgPackConverter.convertToObject(
-              command.getValue().getAuthorizationCheckBuffer(), RequiredAuthorization.class);
+              command.getValue().getAuthorizationCheckBuffer(),
+              BatchOperationAuthorizationCheck.class);
+      // the resource id supplier and condition are not part of the wire format
+      final RequiredAuthorization<?> authorization =
+          new RequiredAuthorization<>(
+              check.resourceType(),
+              check.permissionType(),
+              check.resourceIds(),
+              null,
+              check.resourcePropertyNames(),
+              null,
+              check.transitive());
       return cslCheck.checkForDistributedCommand(
           command,
           authorization,
