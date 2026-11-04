@@ -29,7 +29,9 @@ jobs:
       # component/zeebe routes here as a fallback when neither zeebe-engine nor zeebe-platform is set
       - id: add-to-core-features
         if: >
-          github.event.action != 'labeled'
+          !contains(github.event.issue.labels.*.name, 'component/operate-frontend')
+            && !contains(github.event.issue.labels.*.name, 'component/admin-frontend')
+            && (github.event.action != 'labeled'
             || github.event.label.name == 'component/zeebe-engine'
             || github.event.label.name == 'component/zeebe'
             || github.event.label.name == 'component/operate'
@@ -44,7 +46,7 @@ jobs:
             || github.event.label.name == 'component/document-handling'
             || github.event.label.name == 'component/webapp'
             || github.event.label.name == 'component/mcp'
-            || github.event.label.name == 'component/camunda-process-test'
+            || github.event.label.name == 'component/camunda-process-test')
         name: Add to Core Features project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
@@ -56,6 +58,19 @@ jobs:
             component/engine, component/camunda, component/backend, component/frontend,
             component/batch-operation, component/document-handling,
             component/webapp, component/mcp, component/camunda-process-test
+
+      # Operate and Admin Pod (#270)
+      - id: add-to-operate-admin-pod
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/operate-frontend'
+            || github.event.label.name == 'component/admin-frontend'
+        name: Add to Operate and Admin Pod project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/270
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/operate-frontend, component/admin-frontend
 
       # Distributed Systems / ZDP (#92)
       # component/zeebe routes here as a fallback when neither zeebe-engine nor zeebe-platform is set
@@ -135,9 +150,11 @@ jobs:
       # Identity (#209)
       - id: add-to-identity
         if: >
-          github.event.action != 'labeled'
+          !contains(github.event.issue.labels.*.name, 'component/operate-frontend')
+            && !contains(github.event.issue.labels.*.name, 'component/admin-frontend')
+            && (github.event.action != 'labeled'
             || github.event.label.name == 'component/identity'
-            || github.event.label.name == 'component/management-identity'
+            || github.event.label.name == 'component/management-identity')
         name: Add to Identity project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
