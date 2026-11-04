@@ -127,7 +127,7 @@ with whether it is implemented as a scenario in [`load-tests/`](../../load-tests
 
 ### How do we implement these tests?
 
-Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~45-minute run (15 min warmup, 30 min measured window) before tearing it down.
+Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~45-minute measured run (15 min warmup, 30 min measured window), profile it, and then tear it down.
 
 ### Endurance test variants
 

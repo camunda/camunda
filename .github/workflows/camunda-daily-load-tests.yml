@@ -1,14 +1,14 @@
 # description: Runs a daily max-load stress test against main, currently in four variants: gRPC
 #              and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and
-#              REST flavors (exporters disabled). After a 15-minute warmup, profiles the next 30
-#              minutes of each variant via async-profiler. After a 45-minute soak: snapshots the last 30 minutes of metrics
-#              as a GitHub artifact, persists metrics and flamegraphs to the
+#              REST flavors (exporters disabled). After a 45-minute soak (15-minute warmup plus a
+#              30-minute measured window): snapshots the metrics of that window as a GitHub artifact,
+#              profiles each variant via async-profiler, persists metrics and flamegraphs to the
 #              camunda-benchmark-load-test-results-prod GCS bucket for long-term retention, posts a
 #              side-by-side summary table (with flamegraph links) to Slack (the scheduled run always
 #              posts; a manual run only when opted in via the post-to-slack input), then immediately
 #              deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
-#              Each variant's full lifecycle (setup, warmup, profile, soak, collect-metrics,
+#              Each variant's full lifecycle (setup, soak, collect-metrics, profile,
 #              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
 #              matrix — adding a variant is a one-line matrix entry, not a 6-job copy-paste.
 #              The no-secondary-storage variants only run this daily `max` leg; they deliberately
