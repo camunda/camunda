@@ -1024,7 +1024,7 @@ public class CamundaMultiDBExtension
           camunda -> {
             final var ordinalsConfig = camunda.getProcessing().getEngine().getStorageOrdinals();
             ordinalsConfig.setEnableArchiverless(true);
-            ordinalsConfig.setFixedStorageOrdinal(1);
+            ordinalsConfig.setFixedStorageOrdinals(List.of(1));
           });
     }
 

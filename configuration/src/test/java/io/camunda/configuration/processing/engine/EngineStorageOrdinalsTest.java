@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.engine.StorageOrdinalsCfg;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,7 +30,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @TestPropertySource(
     properties = {
       "camunda.processing.engine.storage-ordinals.enable-archiverless=true",
-      "camunda.processing.engine.storage-ordinals.fixed-storage-ordinal=1001",
+      "camunda.processing.engine.storage-ordinals.fixed-storage-ordinals=1001,1002",
     })
 public class EngineStorageOrdinalsTest {
   final BrokerBasedProperties brokerCfg;
@@ -42,6 +43,6 @@ public class EngineStorageOrdinalsTest {
   void shouldSetStorageOrdinals() {
     assertThat(brokerCfg.getExperimental().getEngine().getStorageOrdinals())
         .returns(true, StorageOrdinalsCfg::isEnableArchiverless)
-        .returns(1001, StorageOrdinalsCfg::getFixedStorageOrdinal);
+        .returns(List.of(1001, 1002), StorageOrdinalsCfg::getFixedStorageOrdinals);
   }
 }
