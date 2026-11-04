@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.cluster.systempartition;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.FailureDetectorType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneRole;
