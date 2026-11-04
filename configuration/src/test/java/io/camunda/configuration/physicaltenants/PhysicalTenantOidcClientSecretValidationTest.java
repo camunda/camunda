@@ -170,21 +170,36 @@ class PhysicalTenantOidcClientSecretValidationTest {
   }
 
   @Test
-  void shouldAcceptIssuerAndTokenUriThatOnlyAddATrailingSlash() {
-    // given — the same identity provider, written with a trailing slash
+  void shouldAcceptIssuerThatOnlyAddsATrailingSlash() {
+    // given — the same issuer, written with a trailing slash
     final var environment =
         environmentWith(
             Map.of(
                 ROOT + "oidc.issuer-uri", "https://root-idp",
-                ROOT + "oidc.token-uri", "https://root-idp/token",
                 ROOT + "oidc.client-secret", "root-secret",
                 TENANT + "oidc.issuer-uri", "https://root-idp/",
-                TENANT + "oidc.token-uri", "https://root-idp/token/",
                 TENANT + "providers.assigned[0]", "oidc"));
 
     // when / then
     assertThatCode(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectTokenUriThatOnlyAddsATrailingSlashWithInheritedSecret() {
+    // given — the token endpoint is called as configured, so a trailing slash is another endpoint
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "oidc.token-uri", "https://root-idp/token",
+                ROOT + "oidc.client-secret", "root-secret",
+                TENANT + "oidc.token-uri", "https://root-idp/token/",
+                TENANT + "providers.assigned[0]", "oidc"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .withMessageContaining("provider 'oidc'");
   }
 
   @Test

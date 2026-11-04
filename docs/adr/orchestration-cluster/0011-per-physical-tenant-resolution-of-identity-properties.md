@@ -31,13 +31,13 @@ A value that the tenant sets wins over the root value, and a value that it omits
 A provider that exists only in a tenant is valid, as is a root provider. Like every provider of a non-default tenant, it must be in the tenant's provider selection ([ADR-0004](0004-per-physical-tenant-provider-selection-via-assigned.md)).
 
 **D5. Startup checks compare issuers as the runtime does.**
-Two issuer URIs that differ only by a trailing slash are one issuer. Thus two providers of one tenant must not use issuers that differ only in this way. A tenant that inherits the root client secret must not change the issuer or the token endpoint of that provider, but a trailing slash is not a change. Only these two values count, because the client secret goes only to the token endpoint.
+Two issuer URIs that differ only by a trailing slash are one issuer, because discovery settles both on the provider's issuer. Thus two providers of one tenant must not use issuers that differ only in this way. A tenant that inherits the root client secret must not change the issuer or the token endpoint of that provider. For the issuer, a trailing slash is not a change. The token endpoint is called as configured, so any change to it counts. Only these two values count, because the client secret goes only to the token endpoint.
 
 ## Consequences
 
 - The configuration reference can give the rule of each property in both layers from this record.
 - A configuration with two providers whose issuers differ only by a trailing slash now fails at startup. Before, it started and the runtime used only the first provider.
-- A tenant that only adds or removes a trailing slash on an inherited issuer or token endpoint no longer needs its own client secret.
+- A tenant that only adds or removes a trailing slash on an inherited issuer no longer needs its own client secret. A trailing slash on the token endpoint still requires one.
 - A new provider value does not inherit from the default slot unless a new decision says so.
 
 ## Source
