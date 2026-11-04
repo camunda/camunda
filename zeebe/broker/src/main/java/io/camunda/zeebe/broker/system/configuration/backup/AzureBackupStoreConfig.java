@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 public class AzureBackupStoreConfig implements ConfigurationEntry {
@@ -23,7 +24,7 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
   private boolean createContainer = true;
   private SasTokenConfig sasToken;
 
-  private Retry retry = new Retry(null);
+  private Retry retry = new Retry(Optional.empty());
 
   public String getEndpoint() {
     return endpoint;
@@ -181,5 +182,5 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
    *
    * @param maxAttempts cap on the number of attempts the client makes for a failing request
    */
-  public record Retry(@Nullable Integer maxAttempts) {}
+  public record Retry(Optional<Integer> maxAttempts) {}
 }

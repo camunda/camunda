@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -20,7 +21,7 @@ final class RetryOptionsTest {
   @Test
   void shouldApplyMaxAttempts() {
     // given
-    final var config = configBuilder().withRetryMaxAttempts(2).build();
+    final var config = configBuilder().withRetryMaxAttempts(Optional.of(2)).build();
 
     // when
     final var options = AzureBackupStore.retryOptions(config);
@@ -43,7 +44,7 @@ final class RetryOptionsTest {
   @ValueSource(ints = {0, -1})
   void shouldRejectNonPositiveMaxAttempts(final int maxAttempts) {
     // given
-    final var builder = configBuilder().withRetryMaxAttempts(maxAttempts);
+    final var builder = configBuilder().withRetryMaxAttempts(Optional.of(maxAttempts));
 
     // when / then
     assertThatThrownBy(builder::build)

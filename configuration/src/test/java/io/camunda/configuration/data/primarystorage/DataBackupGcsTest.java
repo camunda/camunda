@@ -16,6 +16,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -400,7 +401,8 @@ public class DataBackupGcsTest {
     @Test
     void shouldSetRetry() {
       assertThat(brokerCfg.getData().getBackup().getGcs().getRetry())
-          .isEqualTo(new GcsBackupStoreConfig.Retry(Duration.ofSeconds(5), 2));
+          .isEqualTo(
+              new GcsBackupStoreConfig.Retry(Optional.of(Duration.ofSeconds(5)), Optional.of(2)));
     }
   }
 }

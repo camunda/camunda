@@ -86,8 +86,8 @@ public record GcsBackupConfig(
     private GcsConnectionConfig.Authentication auth;
     private Duration readTimeout;
     private Duration writeTimeout;
-    private Duration retryTotalTimeout;
-    private Integer retryMaxAttempts;
+    private Optional<Duration> retryTotalTimeout = Optional.empty();
+    private Optional<Integer> retryMaxAttempts = Optional.empty();
     // 2MiB matches the default used by the GCS library's Path-based upload
     private int bufferSize = 2 * 1024 * 1024;
 
@@ -140,12 +140,12 @@ public record GcsBackupConfig(
       return this;
     }
 
-    public Builder withRetryTotalTimeout(final Duration retryTotalTimeout) {
+    public Builder withRetryTotalTimeout(final Optional<Duration> retryTotalTimeout) {
       this.retryTotalTimeout = retryTotalTimeout;
       return this;
     }
 
-    public Builder withRetryMaxAttempts(final Integer retryMaxAttempts) {
+    public Builder withRetryMaxAttempts(final Optional<Integer> retryMaxAttempts) {
       this.retryMaxAttempts = retryMaxAttempts;
       return this;
     }
@@ -159,7 +159,7 @@ public record GcsBackupConfig(
           bufferSize,
           Optional.ofNullable(readTimeout),
           Optional.ofNullable(writeTimeout),
-          new Retry(Optional.ofNullable(retryTotalTimeout), Optional.ofNullable(retryMaxAttempts)));
+          new Retry(retryTotalTimeout, retryMaxAttempts));
     }
   }
 }

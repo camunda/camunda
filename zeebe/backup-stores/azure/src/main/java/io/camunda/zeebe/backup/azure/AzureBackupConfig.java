@@ -51,7 +51,7 @@ public record AzureBackupConfig(
     private String containerName;
     private Duration readTimeout;
     private Duration writeTimeout;
-    private Integer retryMaxAttempts;
+    private Optional<Integer> retryMaxAttempts = Optional.empty();
 
     public Builder withEndpoint(final String endpoint) {
       this.endpoint = endpoint;
@@ -98,7 +98,7 @@ public record AzureBackupConfig(
       return this;
     }
 
-    public Builder withRetryMaxAttempts(final Integer retryMaxAttempts) {
+    public Builder withRetryMaxAttempts(final Optional<Integer> retryMaxAttempts) {
       this.retryMaxAttempts = retryMaxAttempts;
       return this;
     }
@@ -115,7 +115,7 @@ public record AzureBackupConfig(
           sasToken,
           Optional.ofNullable(readTimeout),
           Optional.ofNullable(writeTimeout),
-          new Retry(Optional.ofNullable(retryMaxAttempts)));
+          new Retry(retryMaxAttempts));
     }
   }
 }

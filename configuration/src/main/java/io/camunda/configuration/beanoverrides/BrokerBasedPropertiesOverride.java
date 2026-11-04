@@ -932,8 +932,7 @@ public class BrokerBasedPropertiesOverride {
     s3BackupStoreConfig.setBasePath(s3.getBasePath());
     s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
     s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
-    s3BackupStoreConfig.setDefaultsMode(
-        Optional.ofNullable(s3.getDefaultsMode()).map(Enum::name).orElse(null));
+    s3BackupStoreConfig.setDefaultsMode(s3.getDefaultsMode().map(Enum::name));
 
     override.getData().getBackup().setS3(s3BackupStoreConfig);
   }

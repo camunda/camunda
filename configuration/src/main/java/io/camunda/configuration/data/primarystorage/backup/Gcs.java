@@ -11,8 +11,8 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Gcs {
@@ -161,24 +161,24 @@ public class Gcs {
 
   public static class Retry {
     /** Maximum total time the client keeps retrying a failing request. */
-    private @Nullable Duration totalTimeout;
+    private Optional<Duration> totalTimeout = Optional.empty();
 
     /** Maximum number of attempts the client makes for a failing request. */
-    private @Nullable Integer maxAttempts;
+    private Optional<Integer> maxAttempts = Optional.empty();
 
-    public @Nullable Duration getTotalTimeout() {
+    public Optional<Duration> getTotalTimeout() {
       return totalTimeout;
     }
 
-    public void setTotalTimeout(final @Nullable Duration totalTimeout) {
+    public void setTotalTimeout(final Optional<Duration> totalTimeout) {
       this.totalTimeout = totalTimeout;
     }
 
-    public @Nullable Integer getMaxAttempts() {
+    public Optional<Integer> getMaxAttempts() {
       return maxAttempts;
     }
 
-    public void setMaxAttempts(final @Nullable Integer maxAttempts) {
+    public void setMaxAttempts(final Optional<Integer> maxAttempts) {
       this.maxAttempts = maxAttempts;
     }
   }

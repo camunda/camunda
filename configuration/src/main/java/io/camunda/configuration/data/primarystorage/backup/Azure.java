@@ -11,8 +11,8 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.data.primarystorage.backup.azure.SasToken;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Azure {
@@ -195,13 +195,13 @@ public class Azure {
 
   public static class Retry {
     /** Maximum number of attempts the client makes for a failing request. */
-    private @Nullable Integer maxAttempts;
+    private Optional<Integer> maxAttempts = Optional.empty();
 
-    public @Nullable Integer getMaxAttempts() {
+    public Optional<Integer> getMaxAttempts() {
       return maxAttempts;
     }
 
-    public void setMaxAttempts(final @Nullable Integer maxAttempts) {
+    public void setMaxAttempts(final Optional<Integer> maxAttempts) {
       this.maxAttempts = maxAttempts;
     }
   }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -199,8 +200,8 @@ final class ConfigTest {
     final var config =
         new GcsBackupConfig.Builder()
             .withBucketName("test")
-            .withRetryTotalTimeout(Duration.ofSeconds(5))
-            .withRetryMaxAttempts(3)
+            .withRetryTotalTimeout(Optional.of(Duration.ofSeconds(5)))
+            .withRetryMaxAttempts(Optional.of(3))
             .build();
 
     // when
@@ -230,7 +231,9 @@ final class ConfigTest {
   void shouldRejectNonPositiveRetryMaxAttempts(final int maxAttempts) {
     // given
     final var builder =
-        new GcsBackupConfig.Builder().withBucketName("test").withRetryMaxAttempts(maxAttempts);
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withRetryMaxAttempts(Optional.of(maxAttempts));
 
     // when / then
     Assertions.assertThatThrownBy(builder::build)

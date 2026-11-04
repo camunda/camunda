@@ -145,7 +145,7 @@ public record S3BackupConfig(
     private @Nullable String ssecKey;
     private @Nullable Duration readTimeout;
     private @Nullable Duration writeTimeout;
-    private @Nullable DefaultsMode defaultsMode;
+    private Optional<DefaultsMode> defaultsMode = Optional.empty();
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -227,8 +227,8 @@ public record S3BackupConfig(
      * @param defaultsMode name of a {@link DefaultsMode}, e.g. {@code standard} or {@code
      *     in-region}; case-insensitive and accepting '-' for '_'
      */
-    public Builder withDefaultsMode(final @Nullable String defaultsMode) {
-      this.defaultsMode = defaultsMode == null ? null : parseDefaultsMode(defaultsMode);
+    public Builder withDefaultsMode(final Optional<String> defaultsMode) {
+      this.defaultsMode = defaultsMode.map(Builder::parseDefaultsMode);
       return this;
     }
 
@@ -262,7 +262,7 @@ public record S3BackupConfig(
           Optional.ofNullable(ssecKey),
           Optional.ofNullable(readTimeout),
           Optional.ofNullable(writeTimeout),
-          Optional.ofNullable(defaultsMode));
+          defaultsMode);
     }
   }
 

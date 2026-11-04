@@ -118,8 +118,10 @@ final class BackupStoreCfgTest {
 
     // then
     assertThat(backup.getGcs().getRetry())
-        .isEqualTo(new GcsBackupStoreConfig.Retry(Duration.ofSeconds(5), 2));
-    assertThat(backup.getAzure().getRetry()).isEqualTo(new AzureBackupStoreConfig.Retry(3));
+        .isEqualTo(
+            new GcsBackupStoreConfig.Retry(Optional.of(Duration.ofSeconds(5)), Optional.of(2)));
+    assertThat(backup.getAzure().getRetry())
+        .isEqualTo(new AzureBackupStoreConfig.Retry(Optional.of(3)));
   }
 
   @Test

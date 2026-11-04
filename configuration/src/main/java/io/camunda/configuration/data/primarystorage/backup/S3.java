@@ -11,8 +11,8 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
 
 public class S3 {
   private static final String PREFIX = "camunda.data.primary-storage.backup.s3";
@@ -153,7 +153,7 @@ public class S3 {
    * uses 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment
    * and can block for a couple of seconds when not running on AWS.
    */
-  private @Nullable DefaultsMode defaultsMode;
+  private Optional<DefaultsMode> defaultsMode = Optional.empty();
 
   /**
    * Maximum number of connections allowed in a connection pool. This is used to restrict the
@@ -327,11 +327,11 @@ public class S3 {
     this.supportLegacyMd5 = supportLegacyMd5;
   }
 
-  public @Nullable DefaultsMode getDefaultsMode() {
+  public Optional<DefaultsMode> getDefaultsMode() {
     return defaultsMode;
   }
 
-  public void setDefaultsMode(final @Nullable DefaultsMode defaultsMode) {
+  public void setDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
     this.defaultsMode = defaultsMode;
   }
 

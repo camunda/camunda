@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 public class GcsBackupStoreConfig implements ConfigurationEntry {
@@ -25,7 +26,7 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
   /** Size of the buffer (in bytes) used when uploading files to GCS. */
   private int bufferSize = 2 * 1024 * 1024;
 
-  private Retry retry = new Retry(null, null);
+  private Retry retry = new Retry(Optional.empty(), Optional.empty());
 
   public String getBucketName() {
     return bucketName;
@@ -159,7 +160,7 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
    * @param totalTimeout cap on the total time the client retries a failing request
    * @param maxAttempts cap on the number of attempts the client makes for a failing request
    */
-  public record Retry(@Nullable Duration totalTimeout, @Nullable Integer maxAttempts) {}
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
 
   public enum GcsBackupStoreAuth {
     NONE,

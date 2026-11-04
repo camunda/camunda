@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -448,7 +449,7 @@ public class DataBackupAzureTest {
     @Test
     void shouldSetRetry() {
       assertThat(brokerCfg.getData().getBackup().getAzure().getRetry())
-          .isEqualTo(new AzureBackupStoreConfig.Retry(3));
+          .isEqualTo(new AzureBackupStoreConfig.Retry(Optional.of(3)));
     }
   }
 }
