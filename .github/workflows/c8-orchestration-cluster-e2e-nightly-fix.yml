@@ -806,6 +806,35 @@ jobs:
           owner: camunda
           repositories: camunda
 
+      # The token refresh above re-authenticates `gh`, but git authenticates
+      # separately: "Configure git with GitHub App token" baked the ORIGINAL
+      # installation token into a global insteadOf rewrite, and every git call
+      # on this runner still carries it — including the release-pair resolver's
+      # `git ls-remote origin` in the runner checkout. That resolver fails
+      # CLOSED, so an expired token reads as "no active release branch" and the
+      # backport gate silently stops proposing and reconciling labels.
+      #
+      # So re-point the rewrite here, as its own step: the responder below
+      # updates only the agent workspace, and does not run at all when Copilot
+      # left no threads. Existing entries are dropped by the key git itself
+      # prints, rather than by reconstructing the old token's key, so this holds
+      # if that earlier step ever changes shape.
+      - name: Re-point git at the refreshed token
+        id: git-token-review
+        if: always()
+        continue-on-error: true
+        env:
+          TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+        run: |
+          set -uo pipefail
+          git config --global --get-regexp 'insteadof$' 2>/dev/null \
+            | awk '{print $1}' \
+            | while read -r key; do
+                git config --global --unset-all "$key" 2>/dev/null || true
+              done
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          echo "git now authenticates with the review-phase token."
+
       - name: Request and await the Copilot review
         id: copilot_review
         if: always()
@@ -1163,6 +1192,10 @@ jobs:
             echo "::warning::review-response.json missing — the round ran but reported no counts."
           fi
 
+      # Its resolver runs `git ls-remote` in the RUNNER checkout, so it depends
+      # on the "Re-point git at the refreshed token" step above, not on the
+      # responder's workspace-local remote.
+      #
       # Runs AFTER the Copilot review round, deliberately. This gate decides
       # eligibility from the PR's actual diff — whether the release branch holds
       # the same area and whether the patch still applies — and labels for
