@@ -19,7 +19,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.CountRequest;
@@ -45,6 +44,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBat
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -60,7 +60,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -295,19 +294,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final Executor executor) {
     return archiveByIdPipeline.moveBetweenIndexes(
-        (searchAfter, size) ->
-            getArchiveDocIdsBatch(
-                sourceIndexName,
-                keysByField,
-                inclusionFilters,
-                exclusionFilters,
-                searchAfter,
-                size),
+        (searchAfter, size) -> getArchiveDocIdsBatch(sourceIndexName, filter, searchAfter, size),
         sourceIndexName,
         destinationIndexName,
         executor);
@@ -334,12 +324,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   @VisibleForTesting
   CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>> getArchiveDocIdsBatch(
       final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final SearchAfter searchAfter,
       final int size) {
-    final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
+    final Query query = toQuery(filter);
     final Builder requestBuilder =
         new SearchRequest.Builder()
             .trackTotalHits(TrackHits.of(t -> t.enabled(false)))
@@ -665,49 +653,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final List<String> ids = batchHits.stream().map(Hit::id).toList();
     return new BasicArchiveBatch(date, ids);
-  }
-
-  private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
-    return QueryBuilders.terms()
-        .field(idFieldName)
-        .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
-        .build();
-  }
-
-  private Query buildFilterQuery(
-      final Map<String, List<String>> keysByField, final Map<String, String> inclusionFilters) {
-    return buildFilterQuery(keysByField, inclusionFilters, Map.of());
-  }
-
-  private Query buildFilterQuery(
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters) {
-    final var boolBuilder = QueryBuilders.bool();
-
-    // Match any keys
-    if (!keysByField.isEmpty()) {
-      final var keysBoolBuilder = QueryBuilders.bool();
-      for (final var entry : keysByField.entrySet()) {
-        keysBoolBuilder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
-      }
-      keysBoolBuilder.minimumShouldMatch("1");
-      boolBuilder.filter(keysBoolBuilder.build()._toQuery());
-    }
-
-    // Match all additional inclusion filters
-    for (final var filter : inclusionFilters.entrySet()) {
-      boolBuilder.filter(
-          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
-    }
-
-    // Exclude all docs matching exclusion filters
-    for (final var filter : exclusionFilters.entrySet()) {
-      boolBuilder.mustNot(
-          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
-    }
-
-    return boolBuilder.build()._toQuery();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {

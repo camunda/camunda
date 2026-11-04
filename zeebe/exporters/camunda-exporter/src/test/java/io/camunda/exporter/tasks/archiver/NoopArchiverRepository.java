@@ -8,8 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -66,9 +66,7 @@ public class NoopArchiverRepository implements ArchiverRepository {
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final Executor executor) {
     return CompletableFuture.completedFuture(null);
   }
