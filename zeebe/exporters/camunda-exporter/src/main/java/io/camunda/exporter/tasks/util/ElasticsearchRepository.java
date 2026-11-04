@@ -10,7 +10,11 @@ package io.camunda.exporter.tasks.util;
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
@@ -21,6 +25,7 @@ import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -87,6 +92,46 @@ public class ElasticsearchRepository implements AutoCloseable {
               }
             },
             executor);
+  }
+
+  protected static Query toQuery(final FilterByKeysQuery filterByKeys) {
+    final Map<String, List<String>> keysByField = filterByKeys.keysByField();
+    final Map<String, String> inclusionFilters = filterByKeys.inclusionFilters();
+    final Map<String, String> exclusionFilters = filterByKeys.exclusionFilters();
+
+    final var boolBuilder = QueryBuilders.bool();
+
+    // Match any keys
+    if (!keysByField.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      for (final var entry : keysByField.entrySet()) {
+        keysBoolBuilder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+      }
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build()._toQuery());
+    }
+
+    // Match all additional inclusion filters
+    for (final var filter : inclusionFilters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    // Exclude all docs matching exclusion filters
+    for (final var filter : exclusionFilters.entrySet()) {
+      boolBuilder.mustNot(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build()._toQuery();
+  }
+
+  private static TermsQuery buildIdTermsQuery(
+      final String idFieldName, final List<String> idValues) {
+    return QueryBuilders.terms()
+        .field(idFieldName)
+        .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
+        .build();
   }
 
   private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
