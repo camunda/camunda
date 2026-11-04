@@ -23,8 +23,6 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import org.agrona.DirectBuffer;
@@ -33,13 +31,10 @@ import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 
 public final class DbMessageSubscriptionState
-    implements MutableMessageSubscriptionState,
-        PendingMessageSubscriptionState,
-        StreamProcessorLifecycleAware {
+    implements MutableMessageSubscriptionState, PendingMessageSubscriptionState {
 
   // (elementInstanceKey, messageName) => MessageSubscription
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-  private static final int RECOVERY_BATCH_LIMIT = 50_000;
   private final DbLong elementInstanceKey;
   private final DbString messageName;
   private final MessageSubscription messageSubscription;
@@ -98,14 +93,6 @@ public final class DbMessageSubscriptionState
             tenantAwareNameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
     this.transientState = transientState;
-  }
-
-  @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    long next = NO_ELEMENT_INSTANCE;
-    do {
-      next = recoverPending(next, RECOVERY_BATCH_LIMIT);
-    } while (next != NO_ELEMENT_INSTANCE);
   }
 
   @Override
