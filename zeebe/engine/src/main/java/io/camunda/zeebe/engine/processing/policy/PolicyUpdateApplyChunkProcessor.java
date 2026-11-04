@@ -20,12 +20,14 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Applies a policy update that consists of a single chunk. The chunk is validated as a whole and
- * then turned into identity commands, which the identity processors apply and distribute to the
- * other partitions. An invalid chunk is rejected without writing any of its commands.
+ * Applies a policy update that consists of a single chunk. The chunk is turned into identity
+ * commands, which the identity processors apply and distribute to the other partitions. Each
+ * identity processor validates its own command, so an entry that cannot be applied, for example a
+ * delete of a missing role, is rejected on its own while the other entries of the chunk apply.
  */
 @NullMarked
-public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<PolicyUpdateRecord> {
+public final class PolicyUpdateApplyChunkProcessor
+    implements TypedRecordProcessor<PolicyUpdateRecord> {
 
   private final PolicyUpdateCommandMapper commandMapper;
   private final KeyGenerator keyGenerator;
@@ -33,7 +35,7 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
 
-  public PolicyUpdateApplyProcessor(
+  public PolicyUpdateApplyChunkProcessor(
       final PolicyUpdateCommandMapper commandMapper,
       final KeyGenerator keyGenerator,
       final Writers writers) {
@@ -56,18 +58,19 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
       return;
     }
 
-    final var errors = commandMapper.validate(chunk);
-    if (!errors.isEmpty()) {
+    final var commands = commandMapper.toCommands(chunk);
+    if (commands.isLeft()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.INVALID_ARGUMENT,
-          "Expected policy update '%s' of policy '%s' to be applicable, but: %s"
-              .formatted(chunk.getUpdateId(), chunk.getPolicyId(), String.join("; ", errors)));
+          "Expected every entry of policy update '%s' of policy '%s' to name its entity type, but: %s"
+              .formatted(
+                  chunk.getUpdateId(), chunk.getPolicyId(), String.join("; ", commands.getLeft())));
       return;
     }
 
-    commandMapper
-        .toCommands(chunk)
+    commands
+        .get()
         .forEach(
             identityCommand ->
                 commandWriter.appendFollowUpCommand(
@@ -79,9 +82,12 @@ public final class PolicyUpdateApplyProcessor implements TypedRecordProcessor<Po
         new PolicyUpdateRecord()
             .setPolicyId(chunk.getPolicyId())
             .setPolicyVersion(chunk.getPolicyVersion())
+            .setBasePolicyVersion(chunk.getBasePolicyVersion())
+            .setSeqNo(chunk.getSeqNo())
             .setUpdateId(chunk.getUpdateId())
             .setChunkIndex(chunk.getChunkIndex())
             .setChunkCount(chunk.getChunkCount());
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.CHUNK_APPLIED, applied);
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), PolicyUpdateIntent.CHUNK_APPLIED, applied);
   }
 }

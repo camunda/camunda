@@ -20,9 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembership
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -195,18 +193,16 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldRejectAnInvalidChunkWithoutApplyingAnyOfIt() {
+  public void shouldRejectAChunkWithAnEntryWithoutEntityType() {
     // given
-    final var roleId = "role-" + uid();
-    final var missingGroupId = "missing-" + uid();
+    final var id = "entity-" + uid();
     final var chunk =
         chunk()
-            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
             .setDeletes(
                 List.<PolicyDeleteEntryValue>of(
                     new PolicyDeleteEntry()
-                        .setEntityType(PolicyUpdateEntityType.GROUP)
-                        .setId(missingGroupId)));
+                        .setEntityType(PolicyUpdateEntityType.UNSPECIFIED)
+                        .setId(id)));
 
     // when
     apply(chunk);
@@ -218,18 +214,7 @@ public final class PolicyUpdateApplyTest {
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
             .getFirst();
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains(missingGroupId, "does not exist");
-    assertThat(
-            RecordingExporter.records()
-                .limit(
-                    record ->
-                        record.getRecordType() == RecordType.COMMAND_REJECTION
-                            && record.getValueType() == ValueType.POLICY_UPDATE)
-                .roleRecords()
-                .withRoleId(roleId)
-                .exists())
-        .describedAs("no role command of the rejected chunk is written")
-        .isFalse();
+    assertThat(rejection.getRejectionReason()).contains(id, "not specified");
   }
 
   @Test
@@ -260,7 +245,8 @@ public final class PolicyUpdateApplyTest {
   }
 
   static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
-    engine.writeRecords(RecordToWrite.command().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+    engine.writeRecords(
+        RecordToWrite.command().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
   }
 
   private static void apply(final PolicyUpdateRecord chunk) {
