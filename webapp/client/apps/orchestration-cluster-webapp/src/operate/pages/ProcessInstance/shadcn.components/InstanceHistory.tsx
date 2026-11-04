@@ -271,7 +271,7 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 			className="flex h-full min-h-0 min-w-0 flex-col bg-background"
 		>
 			{showHeader && (
-				<PanelHeader title={t('operate.processInstance.history.title')} size="sm">
+				<PanelHeader title={t('operate.processInstance.history.title')}>
 					<div className="ml-auto flex items-center gap-4">
 						{HISTORY_CONTROLS.map(({id, labelKey}) => (
 							<div key={id} className="flex items-center gap-2">
