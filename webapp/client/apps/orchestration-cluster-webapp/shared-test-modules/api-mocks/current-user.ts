@@ -7,7 +7,7 @@
  */
 
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
-import type {AuthenticatedCurrentUser} from '../../src/shared/http/currentUser';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 
 function createCurrentUser(overrides?: Partial<AuthenticatedCurrentUser>): AuthenticatedCurrentUser {
 	return {
