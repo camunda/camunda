@@ -13,16 +13,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
@@ -340,5 +343,56 @@ public class ProcessDefinitionSuspensionMultiPartitionTest {
         stats.getAverage(),
         stats.getMax());
     assertThat(delays).hasSize(rounds);
+  }
+
+  @Test
+  public void shouldCreateStartTimersOnlyOnDeploymentPartition() {
+    // given two versions with a timer start event; v2 owns the timer
+    final var processId = Strings.newRandomValidBpmnId();
+    final long v1 = deployTimerVersion(processId, "task-v1");
+    final long v2 = deployTimerVersion(processId, "task-v2");
+
+    // when the owner is suspended, then resumed
+    engine.processDefinitionSuspension().withKey(v2).suspend();
+    engine.processDefinitionSuspension().withKey(v2).resume();
+
+    // then start timers exist on the deployment partition only
+    final var records =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == ProcessDefinitionSuspensionIntent.RESUMED
+                        && r.getPartitionId() == PARTITION_COUNT)
+            .toList();
+    final var timersCreatedPerPartition =
+        records.stream()
+            .filter(r -> r.getValueType() == ValueType.TIMER)
+            .filter(r -> r.getIntent() == TimerIntent.CREATED)
+            .collect(Collectors.groupingBy(Record::getPartitionId, Collectors.counting()));
+    assertThat(timersCreatedPerPartition).containsOnlyKeys(1);
+    assertThat(v1).isNotEqualTo(v2);
+  }
+
+  private long deployTimerVersion(final String processId, final String jobType) {
+    final long key =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .timerWithCycle("R/PT1H")
+                    .serviceTask("task", t -> t.zeebeJobType(jobType))
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+        .withDistributionValueType(ValueType.DEPLOYMENT)
+        .limit(1)
+        .await();
+    return key;
   }
 }

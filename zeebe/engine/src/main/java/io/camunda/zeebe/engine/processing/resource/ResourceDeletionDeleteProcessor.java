@@ -427,7 +427,7 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
     final var ownerAfter =
         processState.getLatestActiveProcessVersionByProcessId(processIdBuffer, tenantId);
-    startEventSubscriptions.moveStartEventSubscriptions(ownerBefore, ownerAfter);
+    startEventSubscriptions.moveStartEventSubscriptions(ownerBefore, ownerAfter, true);
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
     final boolean finalizedImmediately =

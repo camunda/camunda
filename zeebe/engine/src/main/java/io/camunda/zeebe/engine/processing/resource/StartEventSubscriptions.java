@@ -64,7 +64,9 @@ public final class StartEventSubscriptions {
    * up.
    */
   public void moveStartEventSubscriptions(
-      final @Nullable DeployedProcess from, final @Nullable DeployedProcess to) {
+      final @Nullable DeployedProcess from,
+      final @Nullable DeployedProcess to,
+      final boolean subscribeToTimers) {
     if (from == null && to == null) {
       return;
     }
@@ -74,16 +76,26 @@ public final class StartEventSubscriptions {
     if (from != null) {
       unsubscribeFromStartEvents(from);
     }
-    resubscribeToStartEvents(to);
+    resubscribeToStartEvents(to, subscribeToTimers);
   }
 
   public void resubscribeToStartEvents(final DeployedProcess deployedProcess) {
+    resubscribeToStartEvents(deployedProcess, true);
+  }
+
+  /**
+   * @param subscribeToTimers whether to create the timer start events. Start timers only exist on
+   *     the partition that processed the original command, not on the partitions it is distributed
+   *     to; creating them there would start every instance once per partition.
+   */
+  public void resubscribeToStartEvents(
+      final @Nullable DeployedProcess deployedProcess, final boolean subscribeToTimers) {
     if (deployedProcess == null) {
       return;
     }
 
     final var process = deployedProcess.getProcess();
-    if (process.hasTimerStartEvent()) {
+    if (subscribeToTimers && process.hasTimerStartEvent()) {
       process.getStartEvents().stream()
           .filter(ExecutableCatchEventElement::isTimer)
           .forEach(

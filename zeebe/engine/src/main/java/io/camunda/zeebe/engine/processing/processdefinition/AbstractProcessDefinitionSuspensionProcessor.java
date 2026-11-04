@@ -100,7 +100,7 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
     }
 
     final long eventKey = keyGenerator.nextKey();
-    apply(process, value, eventKey);
+    apply(process, value, eventKey, true);
 
     responseWriter.writeAcceptedResponseOnCommand(eventKey, eventIntent, value, command);
     commandDistributionBehavior
@@ -118,7 +118,7 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
     // A copy that no longer applies (e.g. the version was deleted in the meantime) is dropped
     // silently; the caller was already answered on the origin partition.
     if (process != null && validate(process) == null) {
-      apply(process, value, command.getKey());
+      apply(process, value, command.getKey(), false);
     }
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -126,7 +126,8 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
   private void apply(
       final DeployedProcess process,
       final ProcessDefinitionSuspensionRecord value,
-      final long eventKey) {
+      final long eventKey,
+      final boolean subscribeToTimers) {
     value
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
@@ -139,7 +140,7 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
     final var ownerAfter =
         processState.getLatestActiveProcessVersionByProcessId(
             process.getBpmnProcessId(), process.getTenantId());
-    moveStartEventSubscriptions(ownerBefore, ownerAfter);
+    startEventSubscriptions.moveStartEventSubscriptions(ownerBefore, ownerAfter, subscribeToTimers);
   }
 
   private @Nullable String validate(final DeployedProcess process) {
@@ -149,11 +150,6 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
           .formatted(verb, key);
     }
     return validateMarker(key, processState.isProcessDefinitionSuspended(key));
-  }
-
-  private void moveStartEventSubscriptions(
-      final @Nullable DeployedProcess from, final @Nullable DeployedProcess to) {
-    startEventSubscriptions.moveStartEventSubscriptions(from, to);
   }
 
   private void reject(
