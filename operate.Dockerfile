@@ -92,19 +92,19 @@ RUN addgroup --gid 1001 camunda && \
 # image runs update-ca-certificates to add its own CA. Temurin keeps a separate JVM cacerts, so also
 # delete the roots from it by fingerprint. The build fails if G1, G3 or AAA is left in either store.
 # emSign C1 and C3 are not part of Oracle's removal and stay. POSIX sh without pipes: plain Alpine
-# has no bash, and a failing "! pipeline" would not stop "set -e". A base without
-# update-ca-certificates and keytool is left as it is.
+# has no bash, and a failing "! pipeline" would not stop "set -e". Plain Alpine gets ca-certificates
+# for update-ca-certificates and has no JVM store to check.
+# hadolint ignore=DL3018
 RUN set -eu; \
     g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
     g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
     aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
-    if command -v update-ca-certificates >/dev/null 2>&1; then \
-      sed -i -E 's#^mozilla/(emSign_Root_CA_-_G[12]|emSign_ECC_Root_CA_-_G3|AAA_Certificate_Services)\.crt$#!&#' /etc/ca-certificates.conf; \
-      update-ca-certificates; \
+    if ! command -v update-ca-certificates >/dev/null 2>&1 && command -v apk >/dev/null 2>&1; then \
+      apk add --no-cache ca-certificates; \
+      apk add --no-cache --upgrade ca-certificates-bundle; \
     fi; \
-    for pem in emSign_Root_CA_-_G1 emSign_Root_CA_-_G2 emSign_ECC_Root_CA_-_G3 AAA_Certificate_Services; do \
-      [ ! -e "/etc/ssl/certs/$pem.pem" ]; \
-    done; \
+    sed -i -E 's#^mozilla/(emSign_Root_CA_-_G[12]|emSign_ECC_Root_CA_-_G3|AAA_Certificate_Services)\.crt$#!&#' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
     if command -v keytool >/dev/null 2>&1; then \
       tmp=$(mktemp -d); \
       fingerprints() { awk '/^Alias name: /{a=substr($0,13)} $1=="SHA256:"{f=$2; gsub(":","",f); print f"\t"a}' "$1"; }; \
@@ -120,16 +120,17 @@ RUN set -eu; \
       if awk -F'\t' -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/jvm.fp"; then \
         echo "forbidden root left in JVM cacerts" >&2; exit 1; \
       fi; \
-      if [ -f /etc/ssl/certs/ca-certificates.crt ]; then \
-        keytool -printcert -file /etc/ssl/certs/ca-certificates.crt > "$tmp/os.txt"; \
-        awk '$1=="SHA256:"{f=$2; gsub(":","",f); print f}' "$tmp/os.txt" > "$tmp/os.fp"; \
-        [ "$(wc -l < "$tmp/os.fp")" -gt 100 ]; \
-        if awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/os.fp"; then \
-          echo "forbidden root left in OS bundle" >&2; exit 1; \
-        fi; \
-      fi; \
       rm -rf "$tmp"; \
-    fi
+    fi; \
+    osd=$(mktemp -d); \
+    awk -v d="$osd" '/-----BEGIN CERTIFICATE-----/{n++; f=d"/c"n".b64"; next} /-----END CERTIFICATE-----/{if (f != "") close(f); f=""; next} f != ""{sub(/\r$/, ""); print > f}' /etc/ssl/certs/ca-certificates.crt; \
+    for b in "$osd"/*.b64; do base64 -d "$b" > "${b%.b64}.der"; done; \
+    sha256sum "$osd"/*.der > "$osd/os.sum"; \
+    [ "$(wc -l < "$osd/os.sum")" -gt 100 ]; \
+    if awk -v a="$g3" -v b="$g1" -v c="$aaa" '{h=toupper($1)} h==a||h==b||h==c{f=1} END{exit (f ? 0 : 1)}' "$osd/os.sum"; then \
+      echo "forbidden root left in OS bundle" >&2; exit 1; \
+    fi; \
+    rm -rf "$osd"
 
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
 
