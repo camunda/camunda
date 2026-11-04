@@ -404,7 +404,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
    * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
    */
-  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  /**
+   * The versions of the policy that Hub manages, keyed by policy version: the committed one and at
+   * most one pending newer one. Global, so a partition added by scaling starts with the current
+   * policy version.
+   */
+  POLICY(167, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
