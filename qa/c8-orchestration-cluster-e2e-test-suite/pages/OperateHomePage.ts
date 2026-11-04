@@ -37,7 +37,8 @@ class OperateHomePage {
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
     this.operationsMenuButton = page.getByRole('button', {
-      name: 'Toggle Operations',
+      name: 'Operations',
+      exact: true,
     });
     this.batchOperationsNavItem = page.getByRole('link', {
       name: 'Batch operations',
