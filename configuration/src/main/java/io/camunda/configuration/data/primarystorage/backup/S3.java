@@ -153,7 +153,7 @@ public class S3 {
    * uses 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment
    * and can block for a couple of seconds when not running on AWS.
    */
-  private @Nullable String defaultsMode;
+  private @Nullable DefaultsMode defaultsMode;
 
   /**
    * Maximum number of connections allowed in a connection pool. This is used to restrict the
@@ -327,11 +327,11 @@ public class S3 {
     this.supportLegacyMd5 = supportLegacyMd5;
   }
 
-  public @Nullable String getDefaultsMode() {
+  public @Nullable DefaultsMode getDefaultsMode() {
     return defaultsMode;
   }
 
-  public void setDefaultsMode(final @Nullable String defaultsMode) {
+  public void setDefaultsMode(final @Nullable DefaultsMode defaultsMode) {
     this.defaultsMode = defaultsMode;
   }
 
@@ -354,5 +354,17 @@ public class S3 {
 
   public void setSsecKey(final String ssecKey) {
     this.ssecKey = ssecKey;
+  }
+
+  /**
+   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
+   * client for mobile applications, which a broker is not.
+   */
+  public enum DefaultsMode {
+    LEGACY,
+    STANDARD,
+    CROSS_REGION,
+    IN_REGION,
+    AUTO
   }
 }
