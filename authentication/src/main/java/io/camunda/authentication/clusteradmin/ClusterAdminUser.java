@@ -12,11 +12,11 @@ package io.camunda.authentication.clusteradmin;
  *
  * <p>Intentionally duplicated from {@code
  * io.camunda.configuration.security.clusteradmin.ClusterAdminUser} (configuration module): {@code
- * authentication} does not depend on {@code configuration} (see {@code
- * PhysicalTenantAuthConfigurations#VALID_TENANT_ID} for the same constraint on an analogous case),
- * so this module binds the {@code camunda.security.cluster-admin.basic.users} property path
- * independently. The configuration-module type exists for typed config metadata only; this one is
- * what actually gets bound and consumed. Keep the two in sync.
+ * authentication} does not depend on {@code configuration} (the same constraint is why {@code
+ * PhysicalTenantAuthConfigurations} lives in {@code spring-utils}), so this module binds the {@code
+ * camunda.security.cluster-admin.basic.users} property path independently. The configuration-module
+ * type exists for typed config metadata only; this one is what actually gets bound and consumed.
+ * Keep the two in sync.
  *
  * @param name the login name, unique among configured cluster-admin users
  * @param password the plaintext password, encoded once at startup

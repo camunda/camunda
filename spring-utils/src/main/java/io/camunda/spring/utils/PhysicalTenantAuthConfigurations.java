@@ -121,11 +121,8 @@ public final class PhysicalTenantAuthConfigurations {
    * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This matches the
    * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
    * the same tenant.
-   *
-   * <p>Package-private so {@code PhysicalTenantScopeProvider} can delegate to it; must not be
-   * tightened to {@code private}.
    */
-  static Set<String> discoverExplicitTenantIds(final Environment environment) {
+  private static Set<String> discoverExplicitTenantIds(final Environment environment) {
     return PhysicalTenantConfigUtil.discover(environment);
   }
 

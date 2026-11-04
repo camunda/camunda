@@ -29,9 +29,11 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyN
  * tenant in exactly one of two ways:
  *
  * <ul>
- *   <li><b>deep-merged</b> by {@link PhysicalTenantMapOverlay} — the map is declared in a {@link
- *       MapOverlaySpec} registered in {@link PhysicalTenantMapOverlays#REGISTRY}, so a partial
- *       tenant override of one entry keeps that entry's unrestated root fields;
+ *   <li><b>deep-merged</b> — a partial tenant override of one entry keeps that entry's unrestated
+ *       root fields. Either {@link PhysicalTenantMapOverlay} merges it, because the map is declared
+ *       in a {@link MapOverlaySpec} registered in {@link PhysicalTenantMapOverlays#REGISTRY}, or,
+ *       for the named OIDC providers ({@link #OIDC_PROVIDERS}), {@code
+ *       PhysicalTenantAuthConfigurations} does;
  *   <li><b>default-merged</b> — the map keeps Spring's entry-level {@code MapBinder} merge, where a
  *       touched entry is rebuilt from just the tenant's sub-keys. This is only safe when losing an
  *       entry's unrestated sibling fields does no harm, e.g. an opaque {@code Map<String, Object>}
