@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.pt.JwksTestServer;
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
@@ -26,6 +25,7 @@ import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;

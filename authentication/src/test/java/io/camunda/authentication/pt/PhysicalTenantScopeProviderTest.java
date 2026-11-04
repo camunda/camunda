@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;

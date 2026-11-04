@@ -16,6 +16,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -608,6 +609,45 @@ class PhysicalTenantResolverTest {
             OidcPrincipalClaims.resolve(
                 tenantA.getProviders().getOidc().get("okta"), tenantA.getOidc()))
         .isEqualTo(new OidcPrincipalClaims("upn", "azp", false));
+  }
+
+  @Test
+  void shouldResolveTheSameAuthenticationAsTheSecurityChains() {
+    // given a tenant that partially overrides a root provider, sets its own groups claim, and is
+    // assigned only that provider
+    final Map<String, Object> properties = new HashMap<>();
+    properties.put("camunda.security.authentication.method", "oidc");
+    properties.put("camunda.security.authentication.oidc.client-id", "keycloak-client");
+    properties.put(
+        "camunda.security.authentication.oidc.issuer-uri", "https://keycloak.example.com");
+    properties.put("camunda.security.authentication.providers.oidc.okta.client-id", "okta-client");
+    properties.put(
+        "camunda.security.authentication.providers.oidc.okta.issuer-uri",
+        "https://okta.example.com");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.okta.client-id",
+        "tenanta-okta-client");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim", "roles");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]", "okta");
+    properties.put(
+        "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+        "tenanta");
+    setProperties(properties, "tenanta");
+
+    // when
+    final var resolved =
+        newResolver().forPhysicalTenant("tenanta").getSecurity().getAuthentication();
+
+    // then the broker and the gateways see the same configuration as the security chains
+    assertThat(resolved)
+        .usingRecursiveComparison()
+        .isEqualTo(PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment));
+    assertThat(resolved.getProviders().getOidc().get("okta").getIssuerUri())
+        .isEqualTo("https://okta.example.com");
+    assertThat(resolved.getProviders().getOidc().get("okta").getClientId())
+        .isEqualTo("tenanta-okta-client");
   }
 
   @Test

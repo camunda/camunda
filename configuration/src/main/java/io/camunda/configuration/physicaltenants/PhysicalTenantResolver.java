@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
@@ -109,6 +110,13 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       // overlay engine cannot merge — recompute them with the dedicated exporter step (ADR-0008).
       PhysicalTenantExporterConfigurations.apply(
           camunda, physicalTenant, physicalTenantId, environment);
+      // The authentication module resolves the same tree for the security filter chains. Taking
+      // it from there keeps the broker, the gateways and the chains on one resolution, including
+      // the merge of the named OIDC providers and the narrowing to providers.assigned (#68207).
+      physicalTenant
+          .getSecurity()
+          .setAuthentication(
+              PhysicalTenantAuthConfigurations.forPhysicalTenant(physicalTenantId, environment));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
@@ -120,8 +128,6 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     resolvedPhysicalTenants.forEach(
         (physicalTenantId, physicalTenantCfg) -> {
           PhysicalTenantExporterConfigurations.narrowToAssigned(
-              physicalTenantCfg, physicalTenantId, environment);
-          PhysicalTenantAuthenticationProviderConfigurations.narrowToAssigned(
               physicalTenantCfg, physicalTenantId, environment);
         });
 

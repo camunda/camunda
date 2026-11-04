@@ -82,15 +82,23 @@ final class MapOverlaySurface {
           "camunda.security.authentication.providers.oidc.*.authorize-request-configuration.additional-parameters",
           "camunda.data.primary-storage.rocks-db.column-family-options");
 
+  /**
+   * The named OIDC providers. {@link PhysicalTenantResolver} takes a tenant's whole authentication
+   * configuration from {@code PhysicalTenantAuthConfigurations}, which merges each provider field
+   * by field like the overlay engine.
+   */
+  static final String OIDC_PROVIDERS = "camunda.security.authentication.providers.oidc";
+
   private MapOverlaySurface() {}
 
   /**
-   * Property paths of every map deep-merged by the overlay engine, derived from the live {@link
-   * PhysicalTenantMapOverlays#REGISTRY}. Canonical dashed names below the {@code camunda} root,
-   * e.g. {@code camunda.document.aws}, {@code camunda.security.authentication.providers.oidc}.
+   * Property paths of every deep-merged map: the maps of the live {@link
+   * PhysicalTenantMapOverlays#REGISTRY}, and {@link #OIDC_PROVIDERS}. Canonical dashed names below
+   * the {@code camunda} root, e.g. {@code camunda.document.aws}.
    */
   static Set<String> deepMergedMapPaths() {
     final Set<String> paths = new LinkedHashSet<>();
+    paths.add(OIDC_PROVIDERS);
     for (final MapOverlaySpec<?> spec : PhysicalTenantMapOverlays.REGISTRY) {
       for (final MapDescriptor<?, ?> descriptor : spec.maps()) {
         paths.add(Camunda.PREFIX + "." + spec.configPath() + "." + descriptor.subPath());
