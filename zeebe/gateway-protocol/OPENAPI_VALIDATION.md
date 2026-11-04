@@ -16,7 +16,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Custom naming conventions (e.g., no "flow node" terminology)
   - Property description requirements
   - Key property type validation (`...Key` properties must be strings)
-  - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
+  - Eventually-consistent annotation validation (every operation must declare `x-eventually-consistent` as `true` or `false`; command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
 
@@ -64,9 +64,21 @@ required:
   - myField  # ✓ Correct - array at object level
 ```
 
-### `x-eventually-consistent` on Command Operations
+### `x-eventually-consistent` on Operations
 
-Command (mutating) operations must not be marked with `x-eventually-consistent: true`.
+Every operation must declare `x-eventually-consistent` explicitly as a boolean `true` or `false` (rule `require-eventually-consistent`). A missing value, `null`, or a quoted string such as `"true"` fails validation, because SDK generators read the annotation to decide whether to emit polling wrappers and a missing value silently means "no polling".
+
+In addition, command (mutating) operations must be marked `x-eventually-consistent: false`. Rule `no-eventually-consistent-on-commands` rejects `true` on them.
+
+**Missing:**
+
+```yaml
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      # ❌ x-eventually-consistent is not declared
+```
 
 **Wrong:**
 
