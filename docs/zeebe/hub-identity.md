@@ -179,7 +179,7 @@ sequenceDiagram
 
 The buffer uses two column families on partition 1:
 
-| Column family         | Key                 | Value                                                                                     |
+|     Column family     |         Key         |                                           Value                                           |
 |-----------------------|---------------------|-------------------------------------------------------------------------------------------|
 | `POLICY_UPDATE`       | `updateId`          | The open update: policy version, seqNo, chunk count, received and applied chunks, status. |
 | `POLICY_UPDATE_CHUNK` | (`updateId`, index) | A buffered chunk.                                                                         |
@@ -321,3 +321,4 @@ questions, with options:
 - **Rejected identity commands.** An identity processor can reject a command of the update, and the
   update would still be committed.
 - **Pausing the polling.** The Hub client has to learn that an update is applied or has failed.
+
