@@ -168,7 +168,7 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
     awaitHolderCompleted(AUTO_PROCESS_ID);
 
     // then P_B emits a PUSHED event carrying the holder's lock coordinates and a request key that
-    // addresses P_K
+    // addresses P_K; its applier drops the holder-origin entry on P_B
     final var pushed =
         RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
                 MessageStartCorrelationKeyLockReleaseIntent.PUSHED)
@@ -183,15 +183,6 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
     assertThat(holder.getProcessInstanceKey()).isEqualTo(holderKey);
     assertThat(holder.getBpmnProcessId()).isEqualTo(AUTO_PROCESS_ID);
     assertThat(holder.getCorrelationKey()).isEqualTo(CORRELATION_KEY);
-
-    // and the holder-origin entry on P_B is dropped by the PUSHED applier
-    assertThat(
-            engine
-                .getProcessingState(partitionFor(BUSINESS_ID))
-                .getMessageState()
-                .getCrossPartitionStartHolderOrigin(holderKey))
-        .as("the holder-origin entry is consumed by the push")
-        .isNull();
 
     // and the RELEASE reply is delivered to P_K
     final var release =

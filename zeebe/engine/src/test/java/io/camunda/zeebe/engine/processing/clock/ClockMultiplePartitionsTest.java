@@ -74,22 +74,22 @@ public class ClockMultiplePartitionsTest {
     final var record = clockClient.pinAt(pinnedNow);
 
     // then
-    for (int i = 1; i <= PARTITION_COUNT; i++) {
-      // required to ensure we apply the side effect of the clock
-      final var partitionId = i;
-      Awaitility.await("until side effect has been applied")
-          .until(
-              () ->
-                  RecordingExporter.clockRecords(ClockIntent.PINNED)
-                      .withPartitionId(partitionId)
-                      .withRecordKey(record.getKey())
-                      .exists());
+    awaitOnAllPartitions(record, ClockIntent.PINNED);
+    awaitClockOnAllPartitions(Modification.pinAt(pinnedNow));
+  }
 
-      // then
-      assertThat(ENGINE.getStreamClock(partitionId).instant()).isEqualTo(pinnedNow);
-      assertThat(ENGINE.getProcessingState(partitionId).getClockState().getModification())
-          .isEqualTo(Modification.pinAt(pinnedNow));
-    }
+  @Test
+  public void shouldKeepPinnedClockOnAllPartitionsAfterRestart() {
+    // given
+    final var pinnedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    awaitOnAllPartitions(clockClient.pinAt(pinnedAt), ClockIntent.PINNED);
+
+    // when - each partition sets its clock from the clock it stored
+    ENGINE.stop();
+    ENGINE.start();
+
+    // then
+    awaitClockOnAllPartitions(Modification.pinAt(pinnedAt));
   }
 
   @Test
@@ -124,22 +124,23 @@ public class ClockMultiplePartitionsTest {
     final var record = clockClient.reset();
 
     // then
-    for (int i = 1; i <= PARTITION_COUNT; i++) {
-      // required to ensure we apply the side effect of the clock
-      final var partitionId = i;
-      Awaitility.await("until side effect has been applied")
-          .until(
-              () ->
-                  RecordingExporter.clockRecords(ClockIntent.RESETTED)
-                      .withPartitionId(partitionId)
-                      .withRecordKey(record.getKey())
-                      .exists());
+    awaitOnAllPartitions(record, ClockIntent.RESETTED);
+    awaitClockOnAllPartitions(Modification.none());
+  }
 
-      // then
-      assertThat(ENGINE.getStreamClock(partitionId).instant()).isAfter(pinnedNow);
-      assertThat(ENGINE.getProcessingState(partitionId).getClockState().getModification())
-          .isEqualTo(Modification.none());
-    }
+  @Test
+  public void shouldKeepResetClockOnAllPartitionsAfterRestart() {
+    // given
+    final var pinnedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    awaitOnAllPartitions(clockClient.pinAt(pinnedAt), ClockIntent.PINNED);
+    awaitOnAllPartitions(clockClient.reset(), ClockIntent.RESETTED);
+
+    // when - each partition sets its clock from the clock it stored
+    ENGINE.stop();
+    ENGINE.start();
+
+    // then
+    awaitClockOnAllPartitions(Modification.none());
   }
 
   @Test
