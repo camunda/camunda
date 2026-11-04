@@ -105,7 +105,8 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
   public void remove(final TimerSubscription timer) {
     final long timerId = timer.getTimerId();
 
-    timerJobMap.remove(timerId);
-    cancelTimer(timerId);
+    if (timerJobMap.remove(timerId, timer)) {
+      cancelTimer(timerId);
+    }
   }
 }
