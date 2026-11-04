@@ -123,6 +123,11 @@ public final class DbProcessState implements MutableProcessState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil>
       pendingProcessDeletionsPerPartitionColumnFamily;
 
+  private final DbLong suspendedProcessDefinitionKey;
+
+  /** [process definition key] => [DbNil], present while the version is suspended */
+  private final ColumnFamily<DbLong, DbNil> suspendedProcessDefinitionsColumnFamily;
+
   private final DbString processDefinitionRestoreKey;
 
   /** [process-definition-restore] => [DbNil], set once the startup restore has run */
@@ -206,6 +211,14 @@ public final class DbProcessState implements MutableProcessState {
             ZbColumnFamilies.PENDING_PROCESS_DELETIONS_PER_PARTITION,
             transactionContext,
             pendingDeletionKey,
+            DbNil.INSTANCE);
+
+    suspendedProcessDefinitionKey = new DbLong();
+    suspendedProcessDefinitionsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.SUSPENDED_PROCESS_DEFINITIONS,
+            transactionContext,
+            suspendedProcessDefinitionKey,
             DbNil.INSTANCE);
 
     processDefinitionRestoreKey = new DbString();
@@ -321,6 +334,29 @@ public final class DbProcessState implements MutableProcessState {
     process.setDeleteHistory(processRecord.isDeleteHistory());
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     updateInMemoryState(process);
+    removeProcessDefinitionSuspended(processRecord.getProcessDefinitionKey());
+  }
+
+  @Override
+  public void markProcessDefinitionSuspended(final long processDefinitionKey) {
+    suspendedProcessDefinitionKey.wrapLong(processDefinitionKey);
+    suspendedProcessDefinitionsColumnFamily.upsert(suspendedProcessDefinitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removeProcessDefinitionSuspended(final long processDefinitionKey) {
+    suspendedProcessDefinitionKey.wrapLong(processDefinitionKey);
+    suspendedProcessDefinitionsColumnFamily.deleteIfExists(suspendedProcessDefinitionKey);
+  }
+
+  @Override
+  public boolean isProcessDefinitionSuspended(final long processDefinitionKey) {
+    suspendedProcessDefinitionKey.wrapLong(processDefinitionKey);
+    return suspendedProcessDefinitionsColumnFamily.exists(suspendedProcessDefinitionKey);
+  }
+
+  private boolean isLatestActiveCandidate(final DeployedProcess process) {
+    return process.isActive() && !isProcessDefinitionSuspended(process.getKey());
   }
 
   @Override
@@ -626,7 +662,7 @@ public final class DbProcessState implements MutableProcessState {
     if (process == null) {
       return null;
     }
-    if (process.isActive()) {
+    if (isLatestActiveCandidate(process)) {
       return process;
     }
 
@@ -638,7 +674,7 @@ public final class DbProcessState implements MutableProcessState {
         continue;
       }
       process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
-      if (process != null && process.isActive()) {
+      if (process != null && isLatestActiveCandidate(process)) {
         return process;
       }
     }

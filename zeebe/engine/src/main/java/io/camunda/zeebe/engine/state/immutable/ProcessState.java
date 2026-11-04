@@ -28,6 +28,12 @@ public interface ProcessState {
    * versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
    * highest version in state regardless of lifecycle.
    */
+  /**
+   * Whether new instances of the process definition version with the given key are blocked because
+   * the version was suspended.
+   */
+  boolean isProcessDefinitionSuspended(long processDefinitionKey);
+
   DeployedProcess getLatestActiveProcessVersionByProcessId(
       DirectBuffer processId, final String tenantId);
 
