@@ -9,8 +9,8 @@ ARG BASE_DIGEST="sha256:185eeb5a0420bb96c371bf40b53a573a15855283cd70365d1ea22c18
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.12_8-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:7739f0ffce786528961eea6bf46d9610ee968ac6127c9b2e93494757bdecce9f"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.13_9-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:0eda5830ed7b669abc246a8dc520ea8a23cab06f9a8d4b6964109e2f2394e46f"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
