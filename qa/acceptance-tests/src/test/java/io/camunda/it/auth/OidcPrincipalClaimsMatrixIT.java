@@ -15,6 +15,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.CsrfConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -34,12 +35,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,16 +65,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>The matrix is path × config slot × claim × set/unset:
  *
  * <ul>
- *   <li><b>Path:</b> a REST bearer token, a gRPC bearer token, and a browser login. The two bearer
- *       paths are observed through the broker claims, the principal that the gateway attaches to
- *       the command it sends to the broker. The browser login is observed through the username of
- *       its session.
+ *   <li><b>Path:</b> a REST bearer token, a gRPC bearer token, and a browser login. Each path is
+ *       observed through the broker claims, the principal that the gateway attaches to the command
+ *       it sends to the broker. The browser login sends its command with the session of the login.
  *   <li><b>Slot:</b> the root default slot ({@code oidc.*}), a root named provider ({@code
  *       providers.oidc.<id>}), a tenant default slot ({@code physical-tenants.<id>...oidc.*}), and
  *       a tenant named provider.
  *   <li><b>Claim:</b> {@code username-claim}, {@code client-id-claim}, {@code
  *       prefer-username-claim}.
- *   <li><b>State:</b> the slot sets the claim, or leaves it unset.
+ *   <li><b>State:</b> the slot sets the claim, or leaves it unset. Each slot has a case that sets
+ *       every claim, one that sets none, and one that sets one claim and inherits the others, so a
+ *       claim is resolved on its own and not as part of a block.
  * </ul>
  *
  * <p>The expected principal comes from the written rule, not from the code under test: a tenant
@@ -97,8 +101,10 @@ final class OidcPrincipalClaimsMatrixIT {
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final AtomicInteger PROCESS_IDS = new AtomicInteger();
 
+  private static final String DEFAULT_TENANT = PhysicalTenantsITHelper.DEFAULT_TENANT_ID;
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
+  private static final String TENANT_C = "tenantc";
   private static final String LOGIN_USER = "matrix-user";
   private static final String LOGIN_PASSWORD = "matrix-password";
 
@@ -106,8 +112,10 @@ final class OidcPrincipalClaimsMatrixIT {
   private static final String REALM_ROOT_DEFAULT = "matrix-root-default";
   private static final String REALM_ROOT_NAMED_SET = "matrix-root-named-set";
   private static final String REALM_ROOT_NAMED_UNSET = "matrix-root-named-unset";
+  private static final String REALM_ROOT_NAMED_PARTIAL = "matrix-root-named-partial";
   private static final String REALM_TENANT_NAMED_SET = "matrix-tenant-named-set";
   private static final String REALM_TENANT_NAMED_UNSET = "matrix-tenant-named-unset";
+  private static final String REALM_TENANT_NAMED_PARTIAL = "matrix-tenant-named-partial";
 
   // the claim settings of each slot; every set value differs from the value the slot inherits
   private static final ClaimSettings ROOT_DEFAULT_SET =
@@ -119,32 +127,41 @@ final class OidcPrincipalClaimsMatrixIT {
   private static final ClaimSettings TENANT_NAMED_SET =
       new ClaimSettings("tenant_named_user", "tenant_named_client", true);
 
+  // one claim set, the others inherited
+  private static final ClaimSettings ROOT_DEFAULT_PARTIAL =
+      new ClaimSettings(null, "root_client", null);
+  private static final ClaimSettings ROOT_NAMED_PARTIAL =
+      new ClaimSettings("root_named_user", null, null);
+  private static final ClaimSettings TENANT_DEFAULT_PARTIAL = new ClaimSettings(null, null, false);
+  private static final ClaimSettings TENANT_NAMED_PARTIAL =
+      new ClaimSettings(null, "tenant_named_client", null);
+
   private static final List<ClaimSettings> SET_SLOTS =
       List.of(ROOT_DEFAULT_SET, ROOT_NAMED_SET, TENANT_DEFAULT_SET, TENANT_NAMED_SET);
 
   /**
    * Paths and claims that the matrix does not cover yet, with the reason. {@link
-   * #shouldCoverEveryCombinationOrListItHere()} checks that every slot and state has a case, and
-   * that every entry here gives a reason.
+   * #shouldCoverEveryCombinationOrListItHere()} checks that every slot, claim and state has a case,
+   * that every slot has a partial case, and that every entry here gives a reason.
    */
   private static final Map<String, String> NOT_COVERED =
       Map.of(
-          "path=BROWSER_LOGIN, claim=CLIENT_ID_CLAIM or PREFER_USERNAME_CLAIM",
-          "A browser login is always a user: its token carries no client ID claim, and the session"
-              + " shows only the username.",
+          "path=BROWSER_LOGIN, claim=USERNAME_CLAIM or CLIENT_ID_CLAIM",
+          "A provider has one login client, so its login token carries both claim sets. The"
+              + " PREFER_USERNAME_CLAIM row shows the username or the client ID, whichever the"
+              + " preference selects.",
           "path=MEMBERSHIPS",
           "Follow-up of #68212: memberships resolve groups, which belong with groups-claim.",
           "claim=GROUPS_CLAIM",
           "Follow-up of #68212: groups per provider land with #66967 and CSL ADR-0040.");
 
   // the root default slot sets every claim
-  // the session username of a browser login is read from /me, which needs secondary storage
   private static final PhysicalTenantsITHelper WITH_ROOT_CLAIMS_TENANTS =
       PhysicalTenantsITHelper.builder()
-          .withTenant(
-              PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("matrix-with-default"))
+          .withTenant(DEFAULT_TENANT, Storage.rdbmsH2("matrix-with-default"))
           .withTenant(TENANT_A, Storage.rdbmsH2("matrix-with-tenanta"))
           .withTenant(TENANT_B, Storage.rdbmsH2("matrix-with-tenantb"))
+          .withTenant(TENANT_C, Storage.rdbmsH2("matrix-with-tenantc"))
           .build();
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
@@ -154,8 +171,7 @@ final class OidcPrincipalClaimsMatrixIT {
   // the root default slot sets no claim, so the library defaults apply
   private static final PhysicalTenantsITHelper WITHOUT_ROOT_CLAIMS_TENANTS =
       PhysicalTenantsITHelper.builder()
-          .withTenant(
-              PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("matrix-without-default"))
+          .withTenant(DEFAULT_TENANT, Storage.rdbmsH2("matrix-without-default"))
           .withTenant(TENANT_A, Storage.rdbmsH2("matrix-without-tenanta"))
           .build();
 
@@ -163,20 +179,34 @@ final class OidcPrincipalClaimsMatrixIT {
   private static final TestStandaloneBroker BROKER_WITHOUT_ROOT_CLAIMS =
       WITHOUT_ROOT_CLAIMS_TENANTS.configure(oidcBroker());
 
+  // the root default slot sets only the client ID claim
+  private static final PhysicalTenantsITHelper PARTIAL_ROOT_CLAIMS_TENANTS =
+      PhysicalTenantsITHelper.builder()
+          .withTenant(DEFAULT_TENANT, Storage.rdbmsH2("matrix-partial-default"))
+          .build();
+
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
+  private static final TestStandaloneBroker BROKER_PARTIAL_ROOT_CLAIMS =
+      PARTIAL_ROOT_CLAIMS_TENANTS.configure(oidcBroker());
+
   @BeforeAll
   static void startBrokers() {
     Stream.of(
             REALM_ROOT_DEFAULT,
             REALM_ROOT_NAMED_SET,
             REALM_ROOT_NAMED_UNSET,
+            REALM_ROOT_NAMED_PARTIAL,
             REALM_TENANT_NAMED_SET,
-            REALM_TENANT_NAMED_UNSET)
+            REALM_TENANT_NAMED_UNSET,
+            REALM_TENANT_NAMED_PARTIAL)
         .forEach(OidcPrincipalClaimsMatrixIT::createRealm);
 
     configureWithRootClaims();
     configureWithoutRootClaims();
+    rootDefaultSlot(BROKER_PARTIAL_ROOT_CLAIMS, ROOT_DEFAULT_PARTIAL);
     BROKER_WITH_ROOT_CLAIMS.start();
     BROKER_WITHOUT_ROOT_CLAIMS.start();
+    BROKER_PARTIAL_ROOT_CLAIMS.start();
   }
 
   @ParameterizedTest(name = "{0}")
@@ -189,33 +219,44 @@ final class OidcPrincipalClaimsMatrixIT {
       final Principal expected) {
     // given the case's realm, whose tokens carry every candidate claim with a value of its own
 
-    // when the token is sent, or the browser logs in
+    // when the token is sent, or the browser logs in and sends a command with its session
     final Principal actual =
         path == Path.BROWSER_LOGIN
-            ? Principal.user(sessionUsername(matrixCase))
-            : brokerPrincipal(matrixCase, path, token(matrixCase.realm(), claim.tokenClient()));
+            ? sessionPrincipal(matrixCase)
+            : bearerPrincipal(matrixCase, path, token(matrixCase.realm(), claim.tokenClient()));
 
     // then
-    assertThat(actual)
-        .as(
-            "path %s, slot %s, claim %s, %s (%s)",
-            path, matrixCase.slot(), claim, matrixCase.state(), matrixCase.cluster())
-        .isEqualTo(expected);
+    assertThat(actual).as("%s", name).isEqualTo(expected);
   }
 
   @Test
   void shouldCoverEveryCombinationOrListItHere() {
     final Set<String> covered = new HashSet<>();
-    cases().forEach(matrixCase -> covered.add(matrixCase.slot() + "/" + matrixCase.state().name()));
+    final Set<Slot> partial = new HashSet<>();
+    cases()
+        .forEach(
+            matrixCase -> {
+              Arrays.stream(Claim.values())
+                  .forEach(
+                      claim ->
+                          covered.add(
+                              matrixCase.slot() + "/" + claim + "/" + claim.state(matrixCase)));
+              if (matrixCase.own().isPartial()) {
+                partial.add(matrixCase.slot());
+              }
+            });
     final List<String> missing = new ArrayList<>();
     for (final Slot slot : Slot.values()) {
-      for (final State state : State.values()) {
-        if (!covered.contains(slot + "/" + state.name())) {
-          missing.add(slot + "/" + state);
+      for (final Claim claim : Claim.values()) {
+        for (final State state : State.values()) {
+          if (!covered.contains(slot + "/" + claim + "/" + state)) {
+            missing.add(slot + "/" + claim + "/" + state);
+          }
         }
       }
     }
-    assertThat(missing).as("slot/state combinations without a case").isEmpty();
+    assertThat(missing).as("slot/claim/state combinations without a case").isEmpty();
+    assertThat(partial).as("slots with a partial case").containsExactlyInAnyOrder(Slot.values());
     assertThat(NOT_COVERED)
         .as("every left-out combination gives a reason")
         .allSatisfy((combination, reason) -> assertThat(reason).isNotBlank());
@@ -233,130 +274,146 @@ final class OidcPrincipalClaimsMatrixIT {
                                 .map(
                                     path ->
                                         Arguments.of(
-                                            "%s %s %s, %s over %s"
+                                            "%s, %s %s, over %s"
                                                 .formatted(
-                                                    matrixCase.cluster(),
-                                                    matrixCase.slot(),
-                                                    matrixCase.state(),
+                                                    matrixCase,
                                                     claim,
+                                                    claim.state(matrixCase),
                                                     path),
                                             matrixCase,
                                             claim,
                                             path,
-                                            path == Path.BROWSER_LOGIN
-                                                ? expectedSessionPrincipal(matrixCase)
-                                                : expectedPrincipal(matrixCase, claim)))));
+                                            expectedPrincipal(matrixCase, claim, path)))));
   }
 
   /**
-   * One case per slot and state. Each case names the cluster, the physical tenant whose path the
-   * token is sent to, the realm that issues the token, the registration that a browser logs in
-   * with, and the claim settings that the written rule resolves for that slot.
+   * One case per slot and claim settings. Each case names the cluster, the physical tenant whose
+   * path the token is sent to, the realm that issues the token, the registration that a browser
+   * logs in with, the claims that the slot sets, and the claim settings that the written rule
+   * resolves for it.
    */
   private static Stream<MatrixCase> cases() {
+    final ClaimSettings none = ClaimSettings.NONE;
     final ClaimSettings rootDefault = ROOT_DEFAULT_SET;
     final ClaimSettings tenantADefault = TENANT_DEFAULT_SET.orElse(rootDefault);
-    final ClaimSettings none = ClaimSettings.NONE;
+    final var with = Cluster.WITH_ROOT_CLAIMS;
+    final var without = Cluster.WITHOUT_ROOT_CLAIMS;
+    final var partial = Cluster.PARTIAL_ROOT_CLAIMS;
     return Stream.of(
-        // with root claims
+        // the root default slot
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with, Slot.ROOT_DEFAULT, DEFAULT_TENANT, REALM_ROOT_DEFAULT, "oidc", rootDefault, none),
+        new MatrixCase(
+            without, Slot.ROOT_DEFAULT, DEFAULT_TENANT, REALM_ROOT_DEFAULT, "oidc", none, none),
+        new MatrixCase(
+            partial,
             Slot.ROOT_DEFAULT,
-            State.SET,
-            PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
+            DEFAULT_TENANT,
             REALM_ROOT_DEFAULT,
             "oidc",
-            rootDefault),
+            ROOT_DEFAULT_PARTIAL,
+            none),
+        // a root named provider inherits from the root default slot
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with,
             Slot.ROOT_NAMED,
-            State.SET,
-            PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
+            DEFAULT_TENANT,
             REALM_ROOT_NAMED_SET,
             "rootnamedset",
-            ROOT_NAMED_SET.orElse(rootDefault)),
+            ROOT_NAMED_SET,
+            rootDefault),
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with,
             Slot.ROOT_NAMED,
-            State.UNSET,
-            PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
+            DEFAULT_TENANT,
             REALM_ROOT_NAMED_UNSET,
             "rootnamedunset",
-            none.orElse(rootDefault)),
+            none,
+            rootDefault),
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with,
+            Slot.ROOT_NAMED,
+            DEFAULT_TENANT,
+            REALM_ROOT_NAMED_PARTIAL,
+            "rootnamedpartial",
+            ROOT_NAMED_PARTIAL,
+            rootDefault),
+        new MatrixCase(
+            without,
+            Slot.ROOT_NAMED,
+            DEFAULT_TENANT,
+            REALM_ROOT_NAMED_UNSET,
+            "rootnamedunset",
+            none,
+            none),
+        // a tenant default slot inherits from the root default slot
+        new MatrixCase(
+            with,
             Slot.TENANT_DEFAULT,
-            State.SET,
             TENANT_A,
             REALM_ROOT_DEFAULT,
             "oidc",
-            tenantADefault),
+            TENANT_DEFAULT_SET,
+            rootDefault),
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with, Slot.TENANT_DEFAULT, TENANT_B, REALM_ROOT_DEFAULT, "oidc", none, rootDefault),
+        new MatrixCase(
+            with,
             Slot.TENANT_DEFAULT,
-            State.UNSET,
-            TENANT_B,
+            TENANT_C,
             REALM_ROOT_DEFAULT,
             "oidc",
-            none.orElse(rootDefault)),
+            TENANT_DEFAULT_PARTIAL,
+            rootDefault),
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            without, Slot.TENANT_DEFAULT, TENANT_A, REALM_ROOT_DEFAULT, "oidc", none, none),
+        // a tenant named provider inherits from the tenant default slot
+        new MatrixCase(
+            with,
             Slot.TENANT_NAMED,
-            State.SET,
             TENANT_A,
             REALM_TENANT_NAMED_SET,
             "tenantnamedset",
-            TENANT_NAMED_SET.orElse(tenantADefault)),
+            TENANT_NAMED_SET,
+            tenantADefault),
         new MatrixCase(
-            Cluster.WITH_ROOT_CLAIMS,
+            with,
             Slot.TENANT_NAMED,
-            State.UNSET,
             TENANT_A,
             REALM_TENANT_NAMED_UNSET,
             "tenantnamedunset",
-            none.orElse(tenantADefault)),
-        // without root claims: each unset slot ends at the library defaults
+            none,
+            tenantADefault),
         new MatrixCase(
-            Cluster.WITHOUT_ROOT_CLAIMS,
-            Slot.ROOT_DEFAULT,
-            State.UNSET,
-            PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
-            REALM_ROOT_DEFAULT,
-            "oidc",
-            none),
-        new MatrixCase(
-            Cluster.WITHOUT_ROOT_CLAIMS,
-            Slot.ROOT_NAMED,
-            State.UNSET,
-            PhysicalTenantsITHelper.DEFAULT_TENANT_ID,
-            REALM_ROOT_NAMED_UNSET,
-            "rootnamedunset",
-            none),
-        new MatrixCase(
-            Cluster.WITHOUT_ROOT_CLAIMS,
-            Slot.TENANT_DEFAULT,
-            State.UNSET,
-            TENANT_A,
-            REALM_ROOT_DEFAULT,
-            "oidc",
-            none),
-        new MatrixCase(
-            Cluster.WITHOUT_ROOT_CLAIMS,
+            with,
             Slot.TENANT_NAMED,
-            State.UNSET,
+            TENANT_A,
+            REALM_TENANT_NAMED_PARTIAL,
+            "tenantnamedpartial",
+            TENANT_NAMED_PARTIAL,
+            tenantADefault),
+        new MatrixCase(
+            without,
+            Slot.TENANT_NAMED,
             TENANT_A,
             REALM_TENANT_NAMED_UNSET,
             "tenantnamedunset",
+            none,
             none));
   }
 
   /**
    * The principal of the written rule: a user when the username claim is preferred and present, or
-   * when there is no client ID; else a client. The expectation reads the claims of a token from the
-   * realm, so it needs no running cluster.
+   * when there is no client ID; else a client. A bearer token's claims are read from a token of the
+   * realm. A browser login token carries every candidate claim of the realm, and its {@code sub} is
+   * the ID of the Keycloak user.
    */
-  private static Principal expectedPrincipal(final MatrixCase matrixCase, final Claim claim) {
-    final Map<String, Object> tokenClaims = claims(token(matrixCase.realm(), claim.tokenClient()));
+  private static Principal expectedPrincipal(
+      final MatrixCase matrixCase, final Claim claim, final Path path) {
+    final Map<String, Object> tokenClaims =
+        path == Path.BROWSER_LOGIN
+            ? loginTokenClaims(matrixCase.realm())
+            : claims(token(matrixCase.realm(), claim.tokenClient()));
     final ClaimSettings resolved = matrixCase.resolved().withDefaults();
     final Object username = tokenClaims.get(resolved.usernameClaim());
     final Object clientId =
@@ -367,48 +424,23 @@ final class OidcPrincipalClaimsMatrixIT {
     return Principal.client(String.valueOf(clientId));
   }
 
-  /**
-   * The username of a browser login: the value of the resolved username claim in the login token.
-   * When the claim ends at the default {@code sub}, it is the ID of the Keycloak user.
-   */
-  private static Principal expectedSessionPrincipal(final MatrixCase matrixCase) {
-    final String usernameClaim = matrixCase.resolved().withDefaults().usernameClaim();
-    if (!"sub".equals(usernameClaim)) {
-      return Principal.user(claimValue(matrixCase.realm(), usernameClaim));
-    }
+  private static Map<String, Object> loginTokenClaims(final String realm) {
+    final Map<String, Object> claims = new HashMap<>();
+    SET_SLOTS.forEach(
+        settings -> {
+          claims.put(settings.usernameClaim(), claimValue(realm, settings.usernameClaim()));
+          claims.put(settings.clientIdClaim(), claimValue(realm, settings.clientIdClaim()));
+        });
     try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
-      return Principal.user(
-          admin.realm(matrixCase.realm()).users().search(LOGIN_USER).getFirst().getId());
+      claims.put("sub", admin.realm(realm).users().search(LOGIN_USER).getFirst().getId());
     }
-  }
-
-  /** Logs in with the case's registration on the case's tenant and reads the session username. */
-  private static String sessionUsername(final MatrixCase matrixCase) {
-    final URI restAddress = matrixCase.cluster().broker().restAddress();
-    final String pathPrefix =
-        PhysicalTenantsITHelper.DEFAULT_TENANT_ID.equals(matrixCase.tenant())
-            ? ""
-            : "/physical-tenants/" + matrixCase.tenant();
-    Awaitility.await("the login of %s is served".formatted(matrixCase.registrationId()))
-        .atMost(Duration.ofSeconds(120))
-        .ignoreExceptions()
-        .until(
-            () ->
-                OidcBrowserLogin.isLoginServed(
-                    restAddress, pathPrefix, matrixCase.registrationId()));
-    try {
-      return OidcBrowserLogin.loginAndReadUsername(
-          restAddress, pathPrefix, matrixCase.registrationId(), LOGIN_USER, LOGIN_PASSWORD);
-    } catch (final Exception e) {
-      throw new IllegalStateException("Browser login of " + matrixCase + " failed", e);
-    }
+    return claims;
   }
 
   /** Sends a deployment with the token and reads the principal the gateway gave the broker. */
-  private static Principal brokerPrincipal(
+  private static Principal bearerPrincipal(
       final MatrixCase matrixCase, final Path path, final String token) {
-    final String processId = "matrix_" + PROCESS_IDS.incrementAndGet();
-    final String resourceName = processId + ".bpmn";
+    final String processId = nextProcessId();
     try (final CamundaClient client =
         matrixCase
             .cluster()
@@ -425,10 +457,60 @@ final class OidcPrincipalClaimsMatrixIT {
               Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
               processId);
     }
+    return brokerPrincipal(processId);
+  }
+
+  /**
+   * Logs in with the case's registration on the case's tenant, sends a deployment with the session
+   * of the login, and reads the principal the gateway gave the broker.
+   */
+  private static Principal sessionPrincipal(final MatrixCase matrixCase) {
+    final URI restAddress = matrixCase.cluster().broker().restAddress();
+    final String pathPrefix =
+        DEFAULT_TENANT.equals(matrixCase.tenant())
+            ? ""
+            : "/physical-tenants/" + matrixCase.tenant();
+    final String processId = nextProcessId();
+    Awaitility.await("a deployment with the session of %s succeeds".formatted(matrixCase))
+        .atMost(Duration.ofSeconds(120))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var response =
+                  OidcBrowserLogin.loginAndSend(
+                      restAddress,
+                      pathPrefix,
+                      matrixCase.registrationId(),
+                      LOGIN_USER,
+                      LOGIN_PASSWORD,
+                      deployment(pathPrefix, processId));
+              assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+            });
+    return brokerPrincipal(processId);
+  }
+
+  private static Function<URI, HttpRequest.Builder> deployment(
+      final String pathPrefix, final String processId) {
+    final String boundary = "matrix-" + processId;
+    final String body =
+        "--%s\r\nContent-Disposition: form-data; name=\"resources\"; filename=\"%s.bpmn\"\r\n"
+                .formatted(boundary, processId)
+            + "Content-Type: application/xml\r\n\r\n"
+            + Bpmn.convertToString(
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            + "\r\n--%s--\r\n".formatted(boundary);
+    return restAddress ->
+        HttpRequest.newBuilder(restAddress.resolve(pathPrefix + "/v2/deployments"))
+            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+            .header("Accept", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body));
+  }
+
+  private static Principal brokerPrincipal(final String processId) {
     final Map<String, Object> claims =
         RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
             .onlyCommands()
-            .withResourceName(resourceName)
+            .withResourceName(processId + ".bpmn")
             .getFirst()
             .getAuthorizations();
     final Object username = claims.get(Authorization.AUTHORIZED_USERNAME);
@@ -438,14 +520,25 @@ final class OidcPrincipalClaimsMatrixIT {
         : Principal.client(String.valueOf(clientId));
   }
 
+  private static String nextProcessId() {
+    return "matrix_" + PROCESS_IDS.incrementAndGet();
+  }
+
   private static TestStandaloneBroker oidcBroker() {
     // the broker claims are read from the exported deployment commands; the helper assigns the
-    // exporter to every tenant only when it is already registered
+    // exporter to every tenant only when it is already registered. CSRF protection is off, because
+    // the browser login sends its deployment with the session, and CSRF is not under test here.
     return new TestStandaloneBroker()
         .withRecordingExporter(true)
         .withAuthenticatedAccess()
         .withAuthenticationMethod(AuthenticationMethod.OIDC)
-        .withSecurityConfig(c -> c.getAuthorizations().setEnabled(false));
+        .withSecurityConfig(
+            c -> {
+              c.getAuthorizations().setEnabled(false);
+              final var csrf = new CsrfConfiguration();
+              csrf.setEnabled(false);
+              c.setCsrf(csrf);
+            });
   }
 
   private static void configureWithRootClaims() {
@@ -453,17 +546,22 @@ final class OidcPrincipalClaimsMatrixIT {
     rootDefaultSlot(broker, ROOT_DEFAULT_SET);
     rootProvider(broker, "rootnamedset", REALM_ROOT_NAMED_SET, ROOT_NAMED_SET);
     rootProvider(broker, "rootnamedunset", REALM_ROOT_NAMED_UNSET, ClaimSettings.NONE);
+    rootProvider(broker, "rootnamedpartial", REALM_ROOT_NAMED_PARTIAL, ROOT_NAMED_PARTIAL);
     // the default tenant assigns nothing, so it keeps every root provider
 
-    // tenanta overrides its default slot and has two providers of its own
-    tenantClaims(broker, TENANT_A, "oidc", TENANT_DEFAULT_SET);
+    // tenanta overrides its default slot and has three providers of its own
+    tenantClaims(broker, TENANT_A, TENANT_DEFAULT_SET);
     tenantProvider(broker, TENANT_A, "tenantnamedset", REALM_TENANT_NAMED_SET, TENANT_NAMED_SET);
     tenantProvider(
         broker, TENANT_A, "tenantnamedunset", REALM_TENANT_NAMED_UNSET, ClaimSettings.NONE);
-    assign(broker, TENANT_A, "oidc", "tenantnamedset", "tenantnamedunset");
+    tenantProvider(
+        broker, TENANT_A, "tenantnamedpartial", REALM_TENANT_NAMED_PARTIAL, TENANT_NAMED_PARTIAL);
+    assign(broker, TENANT_A, "oidc", "tenantnamedset", "tenantnamedunset", "tenantnamedpartial");
 
-    // tenantb keeps the root default slot
+    // tenantb keeps the root default slot, and tenantc overrides one claim of it
     assign(broker, TENANT_B, "oidc");
+    tenantClaims(broker, TENANT_C, TENANT_DEFAULT_PARTIAL);
+    assign(broker, TENANT_C, "oidc");
   }
 
   private static void configureWithoutRootClaims() {
@@ -520,11 +618,8 @@ final class OidcPrincipalClaimsMatrixIT {
   }
 
   private static void tenantClaims(
-      final TestStandaloneBroker broker,
-      final String tenantId,
-      final String slot,
-      final ClaimSettings settings) {
-    claimProperties(tenantAuth(tenantId) + slot + ".", settings).forEach(broker::withProperty);
+      final TestStandaloneBroker broker, final String tenantId, final ClaimSettings settings) {
+    claimProperties(tenantAuth(tenantId) + "oidc.", settings).forEach(broker::withProperty);
   }
 
   private static void assign(
@@ -613,7 +708,7 @@ final class OidcPrincipalClaimsMatrixIT {
     final List<ClientRepresentation> clients =
         new ArrayList<>(
             Arrays.stream(Claim.values()).map(claim -> tokenClient(realmName, claim)).toList());
-    clients.add(loginClient(realmName, usernameClaims(realmName)));
+    clients.add(loginClient(realmName, candidateClaims(realmName, true, true)));
     realm.setClients(clients);
     realm.setUsers(List.of(loginUser()));
     try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
@@ -622,13 +717,6 @@ final class OidcPrincipalClaimsMatrixIT {
   }
 
   private static ClientRepresentation tokenClient(final String realmName, final Claim claim) {
-    final Set<String> claimNames = new HashSet<>();
-    if (claim.carriesUsernameClaims()) {
-      SET_SLOTS.forEach(settings -> claimNames.add(settings.usernameClaim()));
-    }
-    if (claim.carriesClientIdClaims()) {
-      SET_SLOTS.forEach(settings -> claimNames.add(settings.clientIdClaim()));
-    }
     final var client = new ClientRepresentation();
     client.setClientId(claim.tokenClient());
     client.setEnabled(true);
@@ -636,13 +724,11 @@ final class OidcPrincipalClaimsMatrixIT {
     client.setSecret(claim.tokenClient());
     client.setServiceAccountsEnabled(true);
     client.setProtocolMappers(
-        claimNames.stream()
-            .map(name -> hardcodedClaim(name, claimValue(realmName, name)))
-            .toList());
+        candidateClaims(realmName, claim.carriesUsernameClaims(), claim.carriesClientIdClaims()));
     return client;
   }
 
-  /** The client that a browser logs in with; its tokens carry the username claims of every slot. */
+  /** The client that a browser logs in with. */
   private static ClientRepresentation loginClient(
       final String realmName, final List<ProtocolMapperRepresentation> mappers) {
     final var client = new ClientRepresentation();
@@ -656,9 +742,16 @@ final class OidcPrincipalClaimsMatrixIT {
     return client;
   }
 
-  private static List<ProtocolMapperRepresentation> usernameClaims(final String realmName) {
-    return SET_SLOTS.stream()
-        .map(ClaimSettings::usernameClaim)
+  private static List<ProtocolMapperRepresentation> candidateClaims(
+      final String realmName, final boolean usernameClaims, final boolean clientIdClaims) {
+    final Set<String> claimNames = new HashSet<>();
+    if (usernameClaims) {
+      SET_SLOTS.forEach(settings -> claimNames.add(settings.usernameClaim()));
+    }
+    if (clientIdClaims) {
+      SET_SLOTS.forEach(settings -> claimNames.add(settings.clientIdClaim()));
+    }
+    return claimNames.stream()
         .map(name -> hardcodedClaim(name, claimValue(realmName, name)))
         .toList();
   }
@@ -720,9 +813,12 @@ final class OidcPrincipalClaimsMatrixIT {
     GRPC,
     BROWSER_LOGIN;
 
-    /** A browser login is always a user, so it shows only the username claim. */
+    /**
+     * A provider has one login client, so a browser login token carries both claim sets. It shows
+     * the claim that the preference selects.
+     */
     boolean covers(final Claim claim) {
-      return this != BROWSER_LOGIN || claim == Claim.USERNAME_CLAIM;
+      return this != BROWSER_LOGIN || claim == Claim.PREFER_USERNAME_CLAIM;
     }
   }
 
@@ -739,9 +835,9 @@ final class OidcPrincipalClaimsMatrixIT {
   }
 
   /**
-   * The claim under test, and the token that shows it. A token with only username claims shows the
-   * username claim, one with only client ID claims shows the client ID claim, and one with both
-   * shows which of the two is preferred.
+   * The claim under test, and the bearer token that shows it. A token with only username claims
+   * shows the username claim, one with only client ID claims shows the client ID claim, and one
+   * with both shows which of the two is preferred.
    */
   enum Claim {
     USERNAME_CLAIM("username-token", true, false),
@@ -772,33 +868,64 @@ final class OidcPrincipalClaimsMatrixIT {
     boolean carriesClientIdClaims() {
       return carriesClientIdClaims;
     }
+
+    /** Whether the slot of the case sets this claim. */
+    State state(final MatrixCase matrixCase) {
+      final ClaimSettings own = matrixCase.own();
+      final Object value =
+          switch (this) {
+            case USERNAME_CLAIM -> own.usernameClaim();
+            case CLIENT_ID_CLAIM -> own.clientIdClaim();
+            case PREFER_USERNAME_CLAIM -> own.preferUsernameClaim();
+          };
+      return value != null ? State.SET : State.UNSET;
+    }
   }
 
   enum Cluster {
     WITH_ROOT_CLAIMS,
-    WITHOUT_ROOT_CLAIMS;
+    WITHOUT_ROOT_CLAIMS,
+    PARTIAL_ROOT_CLAIMS;
 
     TestStandaloneBroker broker() {
-      return this == WITH_ROOT_CLAIMS ? BROKER_WITH_ROOT_CLAIMS : BROKER_WITHOUT_ROOT_CLAIMS;
+      return switch (this) {
+        case WITH_ROOT_CLAIMS -> BROKER_WITH_ROOT_CLAIMS;
+        case WITHOUT_ROOT_CLAIMS -> BROKER_WITHOUT_ROOT_CLAIMS;
+        case PARTIAL_ROOT_CLAIMS -> BROKER_PARTIAL_ROOT_CLAIMS;
+      };
     }
 
     PhysicalTenantsITHelper tenants() {
-      return this == WITH_ROOT_CLAIMS ? WITH_ROOT_CLAIMS_TENANTS : WITHOUT_ROOT_CLAIMS_TENANTS;
+      return switch (this) {
+        case WITH_ROOT_CLAIMS -> WITH_ROOT_CLAIMS_TENANTS;
+        case WITHOUT_ROOT_CLAIMS -> WITHOUT_ROOT_CLAIMS_TENANTS;
+        case PARTIAL_ROOT_CLAIMS -> PARTIAL_ROOT_CLAIMS_TENANTS;
+      };
     }
   }
 
+  /**
+   * @param own the claims that the slot itself sets
+   * @param parent the resolved claims of the slot it inherits from, {@link ClaimSettings#NONE} for
+   *     the root default slot
+   */
   record MatrixCase(
       Cluster cluster,
       Slot slot,
-      State state,
       String tenant,
       String realm,
       String registrationId,
-      ClaimSettings resolved) {
+      ClaimSettings own,
+      ClaimSettings parent) {
+
+    /** The claim settings of the written rule: each claim the slot leaves unset is inherited. */
+    ClaimSettings resolved() {
+      return own.orElse(parent);
+    }
 
     @Override
     public String toString() {
-      return cluster + " " + slot + " " + state;
+      return "%s %s on %s (%s)".formatted(cluster, slot, tenant, registrationId);
     }
   }
 
@@ -818,6 +945,15 @@ final class OidcPrincipalClaimsMatrixIT {
     /** The library defaults: {@code sub}, no client ID claim, and the client ID preferred. */
     ClaimSettings withDefaults() {
       return orElse(new ClaimSettings("sub", null, false));
+    }
+
+    /** Whether the slot sets some claims, but not all. */
+    boolean isPartial() {
+      final long set =
+          Stream.of(usernameClaim, clientIdClaim, preferUsernameClaim)
+              .filter(value -> value != null)
+              .count();
+      return set > 0 && set < 3;
     }
   }
 
