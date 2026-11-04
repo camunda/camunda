@@ -33,8 +33,10 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +56,34 @@ public class ProcessDefinitionController {
       final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+  }
+
+  @CamundaPostMapping(
+      path = "/{processDefinitionKey}/suspension",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> suspendProcessDefinition(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processDefinitionKey) {
+    final var processDefinitionServices =
+        serviceRegistry.processDefinitionServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
+        () ->
+            processDefinitionServices.suspendProcessDefinition(
+                processDefinitionKey, authenticationProvider.getCamundaAuthentication()));
+  }
+
+  @CamundaPostMapping(
+      path = "/{processDefinitionKey}/resumption",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> resumeProcessDefinition(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processDefinitionKey) {
+    final var processDefinitionServices =
+        serviceRegistry.processDefinitionServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
+        () ->
+            processDefinitionServices.resumeProcessDefinition(
+                processDefinitionKey, authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
