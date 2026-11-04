@@ -13,8 +13,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
