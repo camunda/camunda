@@ -188,6 +188,54 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectCommandWhenTimerDueDateOfFlowScopeIsOutOfRange() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess(
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                .boundaryEvent("timer")
+                .timerWithDurationExpression("timerDuration")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("timerDuration", "P300000000Y")
+            .create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that the timer of the flow scope could not be subscribed")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to subscribe to catch event(s) of 'sp' but \
+            Expected the due date of timer 'timer' to be within the supported range, \
+            but the evaluated timer results in a due date that is too far in the past or future.""");
+  }
+
+  @Test
   public void shouldRejectCommandWhenItExceedsMaxMessageSize() {
     // given
     ENGINE

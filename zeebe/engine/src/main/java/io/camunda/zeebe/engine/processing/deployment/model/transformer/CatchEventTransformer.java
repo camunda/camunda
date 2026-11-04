@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSig
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
+import io.camunda.zeebe.engine.processing.timer.TimerFailures;
 import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
@@ -38,13 +39,16 @@ import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
+import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
 
@@ -155,7 +159,18 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
           (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
                   .evaluateDateTimeExpression(expression, scopeKey, tenantId)
-                  .map(TimeDateTimer::new));
+                  .flatMap(
+                      dateTime ->
+                          createTimeDateTimer(dateTime, executableElement.getId(), scopeKey)));
+    }
+  }
+
+  private static Either<Failure, Timer> createTimeDateTimer(
+      final ZonedDateTime dateTime, final DirectBuffer timerId, final long scopeKey) {
+    try {
+      return Either.right(new TimeDateTimer(dateTime));
+    } catch (final ArithmeticException e) {
+      return Either.left(TimerFailures.dueDateOutOfRange(timerId, scopeKey));
     }
   }
 
