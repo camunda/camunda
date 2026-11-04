@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
+import io.camunda.zeebe.engine.processing.timer.TimerFailures;
 import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -53,6 +54,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.DateTimeException;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
@@ -346,13 +348,23 @@ public final class CatchEventBehavior {
     if (!event.isTimer()) {
       return Either.right(evaluation);
     }
+    final long scopeKey = context.getElementInstanceKey();
     return event
         .getTimerFactory()
-        .apply(
-            evaluation.expressionProcessor(),
-            context.getElementInstanceKey(),
-            context.getTenantId())
-        .map(evaluation::recordTimer);
+        .apply(evaluation.expressionProcessor(), scopeKey, context.getTenantId())
+        .flatMap(
+            timer ->
+                calculateDueDate(timer, event.getId(), scopeKey)
+                    .map(dueDate -> evaluation.recordTimer(timer, dueDate)));
+  }
+
+  private Either<Failure, Long> calculateDueDate(
+      final Timer timer, final DirectBuffer timerId, final long scopeKey) {
+    try {
+      return Either.right(timer.getDueDate(clock.millis()));
+    } catch (final ArithmeticException | DateTimeException e) {
+      return Either.left(TimerFailures.dueDateOutOfRange(timerId, scopeKey));
+    }
   }
 
   private Either<Failure, OngoingEvaluation> evaluateSignalName(
@@ -472,7 +484,8 @@ public final class CatchEventBehavior {
                   context.getStorageOrdinal(),
                   BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   context.getBpmnElementType(),
-                  timer);
+                  timer,
+                  result.timerDueDate);
             });
   }
 
@@ -487,7 +500,32 @@ public final class CatchEventBehavior {
       final String bpmnProcessId,
       final BpmnElementType elementType,
       final Timer timer) {
-    final long dueDate = timer.getDueDate(clock.millis());
+    subscribeToTimerEvent(
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        handlerNodeId,
+        tenantId,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        elementType,
+        timer,
+        timer.getDueDate(clock.millis()));
+  }
+
+  private void subscribeToTimerEvent(
+      final long elementInstanceKey,
+      final long processInstanceKey,
+      final long processDefinitionKey,
+      final DirectBuffer handlerNodeId,
+      final String tenantId,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final String bpmnProcessId,
+      final BpmnElementType elementType,
+      final Timer timer,
+      final long dueDate) {
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
@@ -787,6 +825,7 @@ public final class CatchEventBehavior {
     private DirectBuffer messageName;
     private DirectBuffer correlationKey;
     private Timer timer;
+    private long timerDueDate;
     private DirectBuffer signalName;
 
     public OngoingEvaluation(
@@ -820,8 +859,9 @@ public final class CatchEventBehavior {
       return this;
     }
 
-    public OngoingEvaluation recordTimer(final Timer timer) {
+    public OngoingEvaluation recordTimer(final Timer timer, final long timerDueDate) {
       this.timer = timer;
+      this.timerDueDate = timerDueDate;
       return this;
     }
 
@@ -831,7 +871,7 @@ public final class CatchEventBehavior {
     }
 
     EvalResult getResult() {
-      return new EvalResult(event, messageName, correlationKey, timer, signalName);
+      return new EvalResult(event, messageName, correlationKey, timer, timerDueDate, signalName);
     }
   }
 
@@ -840,6 +880,7 @@ public final class CatchEventBehavior {
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       Timer timer,
+      long timerDueDate,
       DirectBuffer signalName) {
 
     public boolean isMessage() {
