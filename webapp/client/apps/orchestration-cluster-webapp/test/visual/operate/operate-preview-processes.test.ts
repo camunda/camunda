@@ -97,3 +97,34 @@ test('should match the instances table snapshot when no instances match', async 
 	await expect(operatePreviewProcessesPage.instancesTable.getByText(/no Instances matching/)).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
+
+test('should match the instances table snapshot with a selected instance and the bulk actions bar', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+}) => {
+	network.use(
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({
+					items: [
+						createProcessInstance({processInstanceKey: '2251799813700001', processDefinitionName: 'Order process'}),
+						createProcessInstance({
+							processInstanceKey: '2251799813700002',
+							processDefinitionName: 'Shipping process',
+							hasIncident: true,
+						}),
+					],
+				}),
+			),
+		}),
+	);
+	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true&incidents=true`);
+
+	await operatePreviewProcessesPage.instancesTable
+		.getByRole('checkbox', {name: 'Select instance 2251799813700002'})
+		.click({force: true});
+
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 item selected')).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});

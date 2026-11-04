@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createLink} from '@tanstack/react-router';
-import {useMemo} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useEffect, useMemo} from 'react';
+import {createLink, useNavigate} from '@tanstack/react-router';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {Link, Skeleton} from '@camunda/design-system';
 import type {
@@ -30,7 +31,10 @@ import {useProcessInstancesSearch} from '../useProcessInstancesSearch';
 import {useProcessInstancesSelection} from '../useProcessInstancesSelection';
 import {batchOperationItemsForInstancesQueryOptions} from '../batchOperationItems.queries';
 import type {ProcessesSearch} from '../processesFilter';
+import {processBulkOperationMachine} from '../processBulkOperationMachine';
 import {InstanceOperations} from './InstanceOperations';
+import {ProcessBulkActionDialog} from './ProcessBulkActionDialog';
+import {useProcessBulkActions} from './useProcessBulkActions';
 
 type Props = {
 	search: ProcessesSearch;
@@ -115,7 +119,24 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const isRefreshing =
 		isFetching && (status === 'pending' || isPlaceholderData) && !isFetchingPreviousPage && !isFetchingNextPage;
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
-	const canSelect = status === 'success' && !isPlaceholderData;
+	const queryClient = useQueryClient();
+	const navigate = useNavigate();
+	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
+	const isSubmitting = operation.matches('submitting');
+	const {acceptedKey, acceptedIdentity} = operation.context;
+	const {reset, filterIdentity} = selection;
+	useEffect(() => {
+		if (acceptedKey !== null && acceptedIdentity === filterIdentity) {
+			reset();
+		}
+	}, [acceptedKey, acceptedIdentity, filterIdentity, reset]);
+	const bulkActions = useProcessBulkActions({
+		selection,
+		isSubmitting,
+		onSubmit: (action) =>
+			send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity}),
+	});
+	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
 	// Truthiness, as on Carbon, so an empty key from a hand-edited URL behaves like no filter at all.
 	const batchOperationKey = search.batchOperationKey || undefined;
@@ -133,7 +154,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	} satisfies QueryBatchOperationItemsRequestBody;
 	const {
 		data: operationStates,
-		isLoading: isLoadingOperationItems,
+		isLoading: areOperationItemsLoading,
 		isError: isOperationItemsError,
 	} = useQuery({
 		...batchOperationItemsForInstancesQueryOptions(operationItemsRequestBody),
@@ -182,7 +203,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 							key: 'instanceOperationState',
 							label: t('operate.processes.instancesTable.operationState'),
 							render: (row: ProcessInstance) =>
-								isLoadingOperationItems ? (
+								areOperationItemsLoading ? (
 									<Skeleton className="h-4 w-24" />
 								) : isOperationItemsError ? (
 									t('operate.shared.errorMessage.message')
@@ -290,7 +311,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		[
 			t,
 			isOperationStateColumnVisible,
-			isLoadingOperationItems,
+			areOperationItemsLoading,
 			isOperationItemsError,
 			operationStates,
 			hasVersionTags,
@@ -314,7 +335,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	return (
 		<section className="flex h-full flex-col" aria-label={t('operate.processes.instancesTable.panelLabel')}>
-			{isLoadingOperationItems && (
+			{areOperationItemsLoading && (
 				<span className="sr-only" role="status" aria-live="polite">
 					{t('operate.processes.instancesTable.operationStateLoading')}
 				</span>
@@ -351,6 +372,10 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					}
 				}}
 				onReset={selection.reset}
+				batchActions={bulkActions.batchActions}
+				selectionCountLabel={bulkActions.selectionCountLabel}
+				batchActionsLabel={t('operate.processes.toolbar.bulkActionsLabel')}
+				batchActionsCancelLabel={t('operate.processes.toolbar.discard')}
 				pagination={{
 					hasPreviousPage: hasPreviousPage && !isRefreshing,
 					hasNextPage: hasNextPage && !isRefreshing,
@@ -362,6 +387,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				className={TABLE_CONTAINER_CLASSES}
 				data-testid="process-instances-table"
 			/>
+			<ProcessBulkActionDialog {...bulkActions.dialogProps} />
 		</section>
 	);
 };

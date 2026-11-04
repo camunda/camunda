@@ -26,7 +26,7 @@ const Operations: React.FC<Props> = ({operations, processInstanceKey, isLoading 
 		<div className="flex flex-row items-center gap-2">
 			<div className="flex size-4 items-center justify-center">
 				{isLoading ? (
-					<div data-testid="operation-spinner" role="status" aria-live="polite">
+					<div role="status" aria-live="polite">
 						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
 						<span className="sr-only">
 							{loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
