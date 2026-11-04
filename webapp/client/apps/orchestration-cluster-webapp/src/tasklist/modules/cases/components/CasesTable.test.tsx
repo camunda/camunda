@@ -8,14 +8,11 @@
 
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {casesSearchDefaults, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
-import {TasklistCasesPage} from './TasklistCasesPage';
-
-const DEBOUNCED = {timeout: 3000};
+import {casesSearchDefaults} from '#/tasklist/modules/cases/searchSchema';
+import {CasesTable} from './CasesTable';
 
 const CASES = [
 	createProcessInstance({
@@ -31,37 +28,12 @@ const CASES = [
 	}),
 ];
 
-async function renderPage({
-	cases = CASES,
-	totalItems = cases.length,
-	search = {},
-}: {cases?: ProcessInstance[]; totalItems?: number; search?: Partial<CasesSearch>} = {}) {
-	const onSearchChange = vi.fn();
-	const screen = await renderWithRouter(
-		() => (
-			<TasklistCasesPage
-				cases={cases}
-				totalItems={totalItems}
-				search={{...casesSearchDefaults, ...search}}
-				onSearchChange={onSearchChange}
-			/>
-		),
-		{path: '/tasklist/cases'},
-	);
-
-	return {screen, onSearchChange};
-}
-
-describe('<TasklistCasesPage />', () => {
-	it('should show the open case count in the page header', async () => {
-		const {screen} = await renderPage({totalItems: 42});
-
-		await expect.element(screen.getByRole('heading', {name: 'Cases', level: 1})).toBeVisible();
-		await expect.element(screen.getByText('42 open cases')).toBeVisible();
-	});
-
+describe('<CasesTable />', () => {
 	it('should list the cases with their business ID and status', async () => {
-		const {screen} = await renderPage();
+		const screen = await renderWithRouter(
+			() => <CasesTable cases={CASES} totalItems={2} search={casesSearchDefaults} onSearchChange={vi.fn()} />,
+			{path: '/tasklist/cases'},
+		);
 
 		const homeLoanRow = screen.getByRole('row').filter({hasText: 'HL-28005'});
 		const insuranceClaimRow = screen.getByRole('row').filter({hasText: 'IC-28011'});
@@ -73,7 +45,10 @@ describe('<TasklistCasesPage />', () => {
 	});
 
 	it('should link each row to its case', async () => {
-		const {screen} = await renderPage();
+		const screen = await renderWithRouter(
+			() => <CasesTable cases={CASES} totalItems={2} search={casesSearchDefaults} onSearchChange={vi.fn()} />,
+			{path: '/tasklist/cases'},
+		);
 
 		await expect
 			.element(screen.getByRole('link', {name: 'Home loan application, HL-28005'}))
@@ -83,19 +58,22 @@ describe('<TasklistCasesPage />', () => {
 			.toHaveAttribute('href', '/tasklist/cases/2251799813685302');
 	});
 
-	it('should search by business ID once the reader stops typing', async () => {
-		const {screen, onSearchChange} = await renderPage({search: {page: 2}});
-
-		await userEvent.fill(screen.getByRole('searchbox', {name: 'Search by business ID'}), 'HL-28');
-
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'HL-28', page: 1}), DEBOUNCED);
-	});
-
 	it.for([
 		{column: 'Case', sortField: 'processDefinitionName'},
 		{column: 'Business ID', sortField: 'businessId'},
 	] as const)('should sort by the $column column', async ({column, sortField}) => {
-		const {screen, onSearchChange} = await renderPage({search: {page: 2}});
+		const onSearchChange = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<CasesTable
+					cases={CASES}
+					totalItems={2}
+					search={{...casesSearchDefaults, page: 2}}
+					onSearchChange={onSearchChange}
+				/>
+			),
+			{path: '/tasklist/cases'},
+		);
 
 		await userEvent.click(screen.getByRole('button', {name: column}));
 
@@ -103,7 +81,11 @@ describe('<TasklistCasesPage />', () => {
 	});
 
 	it('should sort by the oldest start date first', async () => {
-		const {screen, onSearchChange} = await renderPage();
+		const onSearchChange = vi.fn();
+		const screen = await renderWithRouter(
+			() => <CasesTable cases={CASES} totalItems={2} search={casesSearchDefaults} onSearchChange={onSearchChange} />,
+			{path: '/tasklist/cases'},
+		);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Started'}));
 
@@ -116,7 +98,18 @@ describe('<TasklistCasesPage />', () => {
 	] as const)(
 		'should clear the sort on the third click of the $column column',
 		async ({column, sortField, sortOrder}) => {
-			const {screen, onSearchChange} = await renderPage({search: {sortField, sortOrder, page: 2}});
+			const onSearchChange = vi.fn();
+			const screen = await renderWithRouter(
+				() => (
+					<CasesTable
+						cases={CASES}
+						totalItems={2}
+						search={{...casesSearchDefaults, sortField, sortOrder, page: 2}}
+						onSearchChange={onSearchChange}
+					/>
+				),
+				{path: '/tasklist/cases'},
+			);
 
 			await userEvent.click(screen.getByRole('button', {name: column}));
 
@@ -125,7 +118,11 @@ describe('<TasklistCasesPage />', () => {
 	);
 
 	it('should go to the next page', async () => {
-		const {screen, onSearchChange} = await renderPage({totalItems: 60});
+		const onSearchChange = vi.fn();
+		const screen = await renderWithRouter(
+			() => <CasesTable cases={CASES} totalItems={60} search={casesSearchDefaults} onSearchChange={onSearchChange} />,
+			{path: '/tasklist/cases'},
+		);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
 
@@ -133,7 +130,18 @@ describe('<TasklistCasesPage />', () => {
 	});
 
 	it('should return to the first page when the page size changes', async () => {
-		const {screen, onSearchChange} = await renderPage({totalItems: 200, search: {page: 3}});
+		const onSearchChange = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<CasesTable
+					cases={CASES}
+					totalItems={200}
+					search={{...casesSearchDefaults, page: 3}}
+					onSearchChange={onSearchChange}
+				/>
+			),
+			{path: '/tasklist/cases'},
+		);
 
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: '50'}));
@@ -142,14 +150,26 @@ describe('<TasklistCasesPage />', () => {
 	});
 
 	it('should show an empty state when there are no open cases', async () => {
-		const {screen} = await renderPage({cases: []});
+		const screen = await renderWithRouter(
+			() => <CasesTable cases={[]} totalItems={0} search={casesSearchDefaults} onSearchChange={vi.fn()} />,
+			{path: '/tasklist/cases'},
+		);
 
 		await expect.element(screen.getByRole('heading', {name: 'No open cases'})).toBeVisible();
-		await expect.element(screen.getByText('0 open cases')).toBeVisible();
 	});
 
 	it('should show an empty state when no case matches the search', async () => {
-		const {screen} = await renderPage({cases: [], search: {search: 'XY-1'}});
+		const screen = await renderWithRouter(
+			() => (
+				<CasesTable
+					cases={[]}
+					totalItems={0}
+					search={{...casesSearchDefaults, search: 'XY-1'}}
+					onSearchChange={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/cases'},
+		);
 
 		await expect.element(screen.getByRole('heading', {name: 'No matching cases'})).toBeVisible();
 		await expect.element(screen.getByText('No open case has a business ID that contains "XY-1".')).toBeVisible();
