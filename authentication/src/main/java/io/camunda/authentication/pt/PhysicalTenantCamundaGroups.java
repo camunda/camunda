@@ -10,6 +10,7 @@ package io.camunda.authentication.pt;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.context.annotation.Condition;
