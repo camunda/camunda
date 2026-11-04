@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
+import io.camunda.zeebe.engine.util.client.ProcessDefinitionSuspensionClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
@@ -126,6 +127,10 @@ public final class TestEngine {
 
   public ProcessInstanceClient createProcessInstanceClient() {
     return new ProcessInstanceClient(streamProcessingComposite);
+  }
+
+  public ProcessDefinitionSuspensionClient createProcessDefinitionSuspensionClient() {
+    return new ProcessDefinitionSuspensionClient(streamProcessingComposite);
   }
 
   public JobActivationClient createJobActivationClient() {
