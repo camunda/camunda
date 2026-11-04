@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockRele
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -686,6 +688,17 @@ public final class RecordingExporter implements Exporter {
 
   public static UserTaskRecordStream userTaskRecords(final UserTaskIntent intent) {
     return userTaskRecords().withIntent(intent);
+  }
+
+  public static ProcessDefinitionSuspensionRecordStream processDefinitionSuspensionRecords() {
+    return new ProcessDefinitionSuspensionRecordStream(
+        records(
+            ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionRecordValue.class));
+  }
+
+  public static ProcessDefinitionSuspensionRecordStream processDefinitionSuspensionRecords(
+      final ProcessDefinitionSuspensionIntent intent) {
+    return processDefinitionSuspensionRecords().withIntent(intent);
   }
 
   public static UserTaskLookupRecordStream userTaskLookupRecords() {

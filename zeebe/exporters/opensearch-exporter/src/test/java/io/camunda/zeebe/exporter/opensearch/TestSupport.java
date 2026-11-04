@@ -157,7 +157,9 @@ final class TestSupport {
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH,
             // a read of the engine state that changes nothing, never exported by design
-            ValueType.USER_TASK_LOOKUP);
+            ValueType.USER_TASK_LOOKUP,
+            // POC: not exported yet
+            ValueType.PROCESS_DEFINITION_SUSPENSION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
