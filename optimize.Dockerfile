@@ -106,57 +106,39 @@ RUN addgroup -S -g 1001 camunda && \
 COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
 
 # CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
-# Sectigo's AAA Certificate Services from the JDK cacerts. Most bases still ship some of them in
-# ca-certificates. Deselect them in /etc/ca-certificates.conf so update-ca-certificates keeps them
-# out of the OS bundle (and out of the JVM cacerts where that is rebuilt from it) even when a derived
-# image runs update-ca-certificates to add its own CA. Temurin keeps a separate JVM cacerts, so also
-# delete the roots from it by fingerprint. The build fails if G1, G3 or AAA is left in either store.
-# emSign C1 and C3 are not part of Oracle's removal and stay. POSIX sh without pipes: plain Alpine
-# has no bash, and a failing "! pipeline" would not stop "set -e". Plain Alpine gets ca-certificates
-# for update-ca-certificates and has no JVM store to check.
+# Sectigo's AAA Certificate Services from the JDK cacerts, but both bases still ship emSign G1 in
+# ca-certificates. Deselect it in /etc/ca-certificates.conf, so update-ca-certificates drops it from
+# the OS bundle (and from the Minimus JVM cacerts, which is rebuilt from it) and keeps it out when a
+# derived image runs it to add its own CA. Plain Alpine has no bash, keytool or JRE: the step is POSIX
+# sh, gets ca-certificates and hashes each bundle certificate, and checks the JVM cacerts only where
+# keytool exists. The build fails if G1, G3 or AAA is left in a store or a store looks truncated.
+# emSign C1 and C3 are not part of Oracle's removal.
 # hadolint ignore=DL3018
 RUN set -eu; \
     g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
     g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
     aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
-    if ! command -v update-ca-certificates >/dev/null 2>&1 && command -v apk >/dev/null 2>&1; then \
+    tmp=$(mktemp -d); \
+    chk() { \
+      awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1=="SHA256:"{f=$2; gsub(":","",f); n++; if (f==a||f==b||f==c) x=1} END{exit (n>100 && !x ? 0 : 1)}' "$1" \
+        || { echo "forbidden root left in $2, or it looks truncated" >&2; exit 1; }; \
+    }; \
+    if ! command -v update-ca-certificates >/dev/null 2>&1; then \
       apk add --no-cache ca-certificates; \
+      apk add --no-cache --upgrade ca-certificates-bundle; \
     fi; \
-    if command -v update-ca-certificates >/dev/null 2>&1; then \
-      sed -i -E 's#^mozilla/(emSign_Root_CA_-_G[12]|emSign_ECC_Root_CA_-_G3|AAA_Certificate_Services)\.crt$#!&#' /etc/ca-certificates.conf; \
-      update-ca-certificates; \
-    fi; \
-    for pem in emSign_Root_CA_-_G1 emSign_Root_CA_-_G2 emSign_ECC_Root_CA_-_G3 AAA_Certificate_Services; do \
-      [ ! -e "/etc/ssl/certs/$pem.pem" ]; \
-    done; \
+    sed -i 's#^mozilla/emSign_Root_CA_-_G1\.crt$#!&#' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
+    awk -v d="$tmp" '/-----BEGIN CERTIFICATE-----/{n++; f=d"/c"n".b64"; next} /-----END CERTIFICATE-----/{if (f != "") close(f); f=""; next} f != ""{sub(/\r$/, ""); print > f}' /etc/ssl/certs/ca-certificates.crt; \
+    for b in "$tmp"/*.b64; do base64 -d "$b" > "${b%.b64}.der"; done; \
+    sha256sum "$tmp"/*.der > "$tmp/os.sum"; \
+    awk '{print "SHA256: " toupper($1)}' "$tmp/os.sum" > "$tmp/os.txt"; \
+    chk "$tmp/os.txt" "OS bundle"; \
     if command -v keytool >/dev/null 2>&1; then \
-      tmp=$(mktemp -d); \
-      fingerprints() { awk '/^Alias name: /{a=substr($0,13)} $1=="SHA256:"{f=$2; gsub(":","",f); print f"\t"a}' "$1"; }; \
       keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
-      fingerprints "$tmp/jvm.txt" > "$tmp/jvm.fp"; \
-      for fp in "$g3" "$g1" "$aaa"; do \
-        alias=$(awk -F'\t' -v fp="$fp" '$1==fp{print $2}' "$tmp/jvm.fp"); \
-        if [ -n "$alias" ]; then keytool -delete -cacerts -storepass changeit -alias "$alias"; fi; \
-      done; \
-      keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
-      fingerprints "$tmp/jvm.txt" > "$tmp/jvm.fp"; \
-      [ "$(wc -l < "$tmp/jvm.fp")" -gt 100 ]; \
-      if awk -F'\t' -v a="$g3" -v b="$g1" -v c="$aaa" '$1==a||$1==b||$1==c{f=1} END{exit (f ? 0 : 1)}' "$tmp/jvm.fp"; then \
-        echo "forbidden root left in JVM cacerts" >&2; exit 1; \
-      fi; \
-      rm -rf "$tmp"; \
+      chk "$tmp/jvm.txt" "JVM cacerts"; \
     fi; \
-    if [ -f /etc/ssl/certs/ca-certificates.crt ]; then \
-      osd=$(mktemp -d); \
-      awk -v d="$osd" '/-----BEGIN CERTIFICATE-----/{n++; f=d"/c"n".b64"; next} /-----END CERTIFICATE-----/{if (f != "") close(f); f=""; next} f != ""{print > f}' /etc/ssl/certs/ca-certificates.crt; \
-      for b in "$osd"/*.b64; do base64 -d "$b" > "${b%.b64}.der"; done; \
-      sha256sum "$osd"/*.der > "$osd/os.sum"; \
-      [ "$(wc -l < "$osd/os.sum")" -gt 100 ]; \
-      if awk -v a="$g3" -v b="$g1" -v c="$aaa" '{h=toupper($1)} h==a||h==b||h==c{f=1} END{exit (f ? 0 : 1)}' "$osd/os.sum"; then \
-        echo "forbidden root left in OS bundle" >&2; exit 1; \
-      fi; \
-      rm -rf "$osd"; \
-    fi
+    rm -rf "$tmp"
 
 WORKDIR /optimize
 USER 1001:1001
