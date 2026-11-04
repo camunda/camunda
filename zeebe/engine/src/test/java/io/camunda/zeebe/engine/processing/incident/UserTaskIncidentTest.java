@@ -498,10 +498,41 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            (due date expression of user task 'user-task') \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDueDateExpressionIsNotADate() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeDueDateExpression("not_a_date")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("not_a_date", "tomorrow")
+            .create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid date-time format 'tomorrow' for the due date expression 'not_a_date' of user task 'user-task'.");
   }
 
   @Test
@@ -526,7 +557,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '[1,2,3]' to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.");
+            """
+            Expected result of the due date expression '[1,2,3]' of user task 'user-task' \
+            to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.""");
   }
 
   @Test
@@ -641,10 +674,41 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            (follow-up date expression of user task 'user-task') \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfFollowUpDateExpressionIsNotADate() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeFollowUpDateExpression("not_a_date")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("not_a_date", "tomorrow")
+            .create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid date-time format 'tomorrow' for the follow-up date expression 'not_a_date' of user task 'user-task'.");
   }
 
   @Test
@@ -669,7 +733,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '[1,2,3]' to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.");
+            """
+            Expected result of the follow-up date expression '[1,2,3]' of user task 'user-task' \
+            to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.""");
   }
 
   @Test

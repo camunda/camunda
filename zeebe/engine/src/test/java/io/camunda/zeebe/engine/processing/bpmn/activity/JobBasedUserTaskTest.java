@@ -580,6 +580,60 @@ public final class JobBasedUserTaskTest {
   }
 
   @Test
+  public void shouldCreateIncidentNamingDueDateExpressionAndUserTaskIfDueDateIsInvalid() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeDueDateExpression("=dueDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("dueDate", "tomorrow"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getErrorMessage())
+        .isEqualTo(
+            "Invalid date-time format 'tomorrow' for the due date expression 'dueDate' of user task 'task'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentNamingFollowUpDateExpressionAndUserTaskIfDateIsInvalid() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("=followUp")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("followUp", "tomorrow"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getErrorMessage())
+        .isEqualTo(
+            "Invalid date-time format 'tomorrow' for the follow-up date expression 'followUp' of user task 'task'.");
+  }
+
+  @Test
   public void shouldCreateJobWithFollowUpDateHeader() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(FOLLOW_UP_DATE))).deploy();
