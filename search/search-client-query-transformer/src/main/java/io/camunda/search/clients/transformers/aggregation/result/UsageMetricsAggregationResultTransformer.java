@@ -36,6 +36,10 @@ public class UsageMetricsAggregationResultTransformer
   @Override
   public UsageMetricsAggregationResult apply(final Map<String, AggregationResult> aggregations) {
 
+    if (aggregations == null || aggregations.isEmpty()) {
+      return new UsageMetricsAggregationResult(new UsageMetricStatisticsEntity(0, 0, 0, null));
+    }
+
     final boolean withTenants =
         !aggregations.containsKey(UsageMetricsAggregation.AGGREGATION_TERMS_EVENT_TYPE);
     final UsageMetricStatisticsEntity res;
