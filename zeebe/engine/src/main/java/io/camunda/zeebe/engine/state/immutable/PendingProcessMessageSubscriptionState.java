@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
  * during opening or closing of a process message subscription. This state is not persisted to disk
  * and needs to be recovered after restart
  */
-public interface PendingProcessMessageSubscriptionState {
+public interface PendingProcessMessageSubscriptionState extends PendingSubscriptionRecovery {
 
   /**
    * Visits all pending process message subscriptions where a command hasn't been sent out since a
