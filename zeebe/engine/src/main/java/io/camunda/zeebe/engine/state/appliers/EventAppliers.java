@@ -210,7 +210,9 @@ public final class EventAppliers implements EventApplier {
   private void registerPolicyUpdateAppliers(final MutableProcessingState state) {
     register(PolicyUpdateIntent.CHUNK_APPENDED, NOOP_EVENT_APPLIER);
     register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
-    register(PolicyUpdateIntent.VERSION_SWITCHED, NOOP_EVENT_APPLIER);
+    register(
+        PolicyUpdateIntent.VERSION_SWITCHED,
+        new PolicyUpdateVersionSwitchedApplier(state.getPolicyState()));
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
   }
 
