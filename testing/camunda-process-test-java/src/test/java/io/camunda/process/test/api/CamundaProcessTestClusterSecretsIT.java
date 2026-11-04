@@ -22,18 +22,34 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.time.Duration;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CamundaProcessTestClusterSecretsIT {
 
+  private static final String PROCESS_ID = "cluster-secrets-process";
+  private static final String JOB_TYPE = "cluster-secrets-job";
+  private static final String SECRET_KEY = "MY_API_KEY";
+  private static final String SECRET_VALUE = "test-key";
+  private static final String SECRET_VARIABLE_NAME = "apiKey";
+
+  private static final BpmnModelInstance PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask(
+              "task",
+              task ->
+                  task.zeebeJobType(JOB_TYPE)
+                      .zeebeInputExpression("=camunda.secrets." + SECRET_KEY, SECRET_VARIABLE_NAME))
+          .endEvent()
+          .done();
+
   @RegisterExtension
   private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension().withClusterSecret("MY_API_KEY", "test-key");
+      new CamundaProcessTestExtension().withClusterSecret(SECRET_KEY, SECRET_VALUE);
 
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
@@ -43,82 +59,53 @@ public class CamundaProcessTestClusterSecretsIT {
     // given
     client
         .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("cluster-secrets-process")
-                .startEvent()
-                .serviceTask(
-                    "task",
-                    task ->
-                        task.zeebeJobType("cluster-secrets-job")
-                            .zeebeInputExpression("=camunda.secrets.MY_API_KEY", "apiKey"))
-                .endEvent()
-                .done(),
-            "cluster-secrets-process.bpmn")
+        .addProcessModel(PROCESS, "cluster-secrets-process.bpmn")
         .send()
         .join();
 
-    final AtomicReference<Map<String, Object>> variables = new AtomicReference<>();
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
 
     // when
-    client
-        .newCreateInstanceCommand()
-        .bpmnProcessId("cluster-secrets-process")
-        .latestVersion()
-        .send()
-        .join();
+    final AtomicReference<Map<String, Object>> jobVariables = new AtomicReference<>();
 
     try (final JobWorker ignored =
         client
             .newWorker()
-            .jobType("cluster-secrets-job")
+            .jobType(JOB_TYPE)
             .handler(
                 (jobClient, job) -> {
-                  variables.set(job.getVariablesAsMap());
+                  jobVariables.set(job.getVariablesAsMap());
                   jobClient.newCompleteCommand(job).send().join();
                 })
             .open()) {
 
       // then
-      Awaitility.await("until the job is activated with the resolved secret")
-          .atMost(Duration.ofSeconds(30))
-          .untilAsserted(() -> assertThat(variables.get()).containsEntry("apiKey", "test-key"));
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).isCompleted();
+
+      assertThat(jobVariables.get()).containsEntry(SECRET_VARIABLE_NAME, SECRET_VALUE);
     }
   }
 
   @Test
   void shouldResolveClusterSecretForMockJobWorker() {
     // given
-    final JobWorkerMock mockedJobWorker =
-        processTestContext.mockJobWorker("mocked-cluster-secrets-job").thenComplete();
+    final JobWorkerMock mockedJobWorker = processTestContext.mockJobWorker(JOB_TYPE).thenComplete();
 
     client
         .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("mocked-cluster-secrets-process")
-                .startEvent()
-                .serviceTask(
-                    "task",
-                    task ->
-                        task.zeebeJobType("mocked-cluster-secrets-job")
-                            .zeebeInputExpression("=camunda.secrets.MY_API_KEY", "apiKey"))
-                .endEvent()
-                .done(),
-            "mocked-cluster-secrets-process.bpmn")
+        .addProcessModel(PROCESS, "mocked-cluster-secrets-process.bpmn")
         .send()
         .join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("mocked-cluster-secrets-process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
 
     // then
     CamundaAssert.assertThatProcessInstance(processInstance).isCompleted();
+
     assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap())
-        .containsEntry("apiKey", "test-key");
+        .containsEntry(SECRET_VARIABLE_NAME, SECRET_VALUE);
   }
 }
