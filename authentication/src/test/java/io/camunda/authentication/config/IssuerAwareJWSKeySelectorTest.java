@@ -100,27 +100,52 @@ class IssuerAwareJWSKeySelectorTest {
 
   /**
    * Two providers that resolve to the same issuer (for example configured as https://idp/ and
-   * https://idp) with different additional keys. Tokens of that issuer reach only the first, so the
-   * other's keys would silently go unused: the configuration is rejected, whatever its order.
+   * https://idp) with different additional keys. Tokens of that issuer are verified with one set
+   * only, so the configuration is rejected, whatever its order.
    */
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldRejectRegistrationsSharingAnIssuerWithDifferentAdditionalKeys(
-      final boolean withKeysFirst) {
+      final boolean firstKeysFirst) {
     // given
-    final var withKeys = registration("with-keys", "https://idp.example.com");
-    final var withoutKeys = registration("without-keys", "https://idp.example.com");
-    final var registrations =
-        withKeysFirst ? List.of(withKeys, withoutKeys) : List.of(withoutKeys, withKeys);
-    final var keys = Map.of("with-keys", ADDITIONAL_URIS);
+    final var first = registration("first", "https://idp.example.com");
+    final var second = registration("second", "https://idp.example.com");
+    final var registrations = firstKeysFirst ? List.of(first, second) : List.of(second, first);
+    final var keys =
+        Map.of("first", ADDITIONAL_URIS, "second", List.of("https://other.example.com/jwks"));
 
     // when / then
     assertThatThrownBy(
             () -> new IssuerAwareJWSKeySelector(registrations, jwsKeySelectorFactory, keys))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("https://idp.example.com")
-        .hasMessageContaining("with-keys")
-        .hasMessageContaining("without-keys");
+        .hasMessageContaining("first")
+        .hasMessageContaining("second");
+  }
+
+  /**
+   * Two client IDs of the same identity provider, only one with additional keys. As before keys
+   * were bound to registrations, the keys apply to every token of that issuer, whichever
+   * registration the token is routed to.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldGiveEveryTokenOfASharedIssuerTheAdditionalKeys(final boolean withKeysFirst)
+      throws Exception {
+    // given
+    final var withKeys = registration("with-keys", "https://idp.example.com");
+    final var withoutKeys = registration("without-keys", "https://idp.example.com");
+    final var registrations =
+        withKeysFirst ? List.of(withKeys, withoutKeys) : List.of(withoutKeys, withKeys);
+    final var selector =
+        new IssuerAwareJWSKeySelector(
+            registrations, jwsKeySelectorFactory, Map.of("with-keys", ADDITIONAL_URIS));
+
+    // when
+    selectKeysFor(selector, "https://idp.example.com");
+
+    // then
+    verify(jwsKeySelectorFactory).createJWSKeySelector(any(), eq(ADDITIONAL_URIS));
   }
 
   @Test

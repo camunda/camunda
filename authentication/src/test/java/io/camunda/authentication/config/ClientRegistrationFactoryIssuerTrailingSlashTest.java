@@ -52,12 +52,15 @@ class ClientRegistrationFactoryIssuerTrailingSlashTest {
     assertThat(registration.getProviderDetails().getIssuerUri()).isEqualTo(issuer);
   }
 
-  /** Auth0: the document has a trailing slash, the configuration doesn't. */
+  /**
+   * Auth0: the document has a trailing slash, the configuration doesn't. The retry's OIDC URL then
+   * has a double slash, which Auth0 answers with 404, so Spring falls back to the RFC 8414 form.
+   */
   @Test
   void shouldTakeTheProvidersIssuerWhenTheConfiguredOneIsMissingItsTrailingSlash() {
     // given
     final var issuer = baseUrl() + REALM_PATH;
-    givenDiscoveryDocumentDeclaring(issuer + "/");
+    givenAuth0LikeDiscoveryDocumentDeclaring(issuer + "/");
 
     // when
     final var registration =
@@ -154,7 +157,10 @@ class ClientRegistrationFactoryIssuerTrailingSlashTest {
     return "http://localhost:" + idp.getPort();
   }
 
-  /** Serves the document for both forms of the realm path, as a real provider would. */
+  /**
+   * Serves the document for both forms of the realm path, as Microsoft Entra ID does: it also
+   * answers {@code .../v2.0//.well-known/openid-configuration}.
+   */
   private static void givenDiscoveryDocumentDeclaring(final String documentIssuer) {
     final var base = baseUrl();
     final var document =
@@ -179,6 +185,21 @@ class ClientRegistrationFactoryIssuerTrailingSlashTest {
           get(urlEqualTo(path))
               .willReturn(
                   aResponse().withHeader("Content-Type", "application/json").withBody(document)));
+    }
+  }
+
+  /**
+   * Serves the document as Auth0 does: at the OIDC path without a double slash, and at the RFC 8414
+   * path ({@code /.well-known/openid-configuration/<issuer path>}). A double-slash path gets 404,
+   * WireMock's answer for a path without a stub.
+   */
+  private static void givenAuth0LikeDiscoveryDocumentDeclaring(final String documentIssuer) {
+    for (final var path :
+        new String[] {
+          REALM_PATH + "/.well-known/openid-configuration",
+          "/.well-known/openid-configuration" + REALM_PATH + "/"
+        }) {
+      idp.stubFor(get(urlEqualTo(path)).willReturn(document(documentIssuer)));
     }
   }
 
