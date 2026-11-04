@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processdefinition;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -49,6 +50,7 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final String verb;
   private final ProcessDefinitionSuspensionIntent eventIntent;
+  private final StartEventSubscriptions startEventSubscriptions;
 
   AbstractProcessDefinitionSuspensionProcessor(
       final String verb,
@@ -57,7 +59,9 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CslTenantCheck tenantCheck,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final StartEventSubscriptions startEventSubscriptions) {
+    this.startEventSubscriptions = startEventSubscriptions;
     this.verb = verb;
     this.eventIntent = eventIntent;
     stateWriter = writers.state();
@@ -147,9 +151,10 @@ abstract class AbstractProcessDefinitionSuspensionProcessor
     return validateMarker(key, processState.isProcessDefinitionSuspended(key));
   }
 
-  // Task 5: hands start event subscriptions from the previous owner to the new one
-  void moveStartEventSubscriptions(
-      final @Nullable DeployedProcess from, final @Nullable DeployedProcess to) {}
+  private void moveStartEventSubscriptions(
+      final @Nullable DeployedProcess from, final @Nullable DeployedProcess to) {
+    startEventSubscriptions.moveStartEventSubscriptions(from, to);
+  }
 
   private void reject(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command,

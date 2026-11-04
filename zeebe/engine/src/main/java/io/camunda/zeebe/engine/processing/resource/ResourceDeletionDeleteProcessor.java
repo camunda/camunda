@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.core.authz.TenantAccess;
@@ -63,11 +62,9 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -126,7 +123,10 @@ public class ResourceDeletionDeleteProcessor
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
         new StartEventSubscriptions(
-            bpmnBehaviors.expressionProcessor(), catchEventBehavior, startEventSubscriptionManager);
+            bpmnBehaviors.expressionProcessor(),
+            catchEventBehavior,
+            startEventSubscriptionManager,
+            timerInstanceState);
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
@@ -414,22 +414,20 @@ public class ResourceDeletionDeleteProcessor
     final var processIdBuffer = process.getBpmnProcessId();
     final var tenantId = process.getTenantId();
     final var processRecord = toProcessRecord(process);
-    final String processId = processRecord.getBpmnProcessId();
-    final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
 
     processRecord.setDrainPartitions(routingInfo.desiredPartitions());
     processRecord.setDeleteHistory(command.getValue().isDeleteHistory());
+
+    // The latest active version owns the start event subscriptions. Draining a version removes it
+    // (and its suspension marker) from the candidates, so the subscriptions are handed down to the
+    // next active, non-suspended version; DRAINING and suspended versions reject new instances and
+    // must stay unsubscribed.
+    final var ownerBefore =
+        processState.getLatestActiveProcessVersionByProcessId(processIdBuffer, tenantId);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
-
-    // If we are deleting the latest version we must unsubscribe the start events
-    if (latestVersion == process.getVersion()) {
-      unsubscribeStartEvents(process);
-
-      // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
-      // reject new instances so must stay unsubscribed.
-      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
-          .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
-    }
+    final var ownerAfter =
+        processState.getLatestActiveProcessVersionByProcessId(processIdBuffer, tenantId);
+    startEventSubscriptions.moveStartEventSubscriptions(ownerBefore, ownerAfter);
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
     final boolean finalizedImmediately =
@@ -505,48 +503,6 @@ public class ResourceDeletionDeleteProcessor
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
-  }
-
-  /**
-   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
-   * Skips draining versions so they do not hold start-event subscriptions.
-   *
-   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
-   * skipped because that version is already draining.
-   */
-  private Optional<DeployedProcess> findLatestActiveVersionBelow(
-      final DirectBuffer processIdBuffer,
-      final String processId,
-      final int version,
-      final String tenantId) {
-    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
-    for (int i = knownVersions.size() - 1; i >= 0; i--) {
-      final int candidateVersion = knownVersions.get(i).intValue();
-      if (candidateVersion >= version) {
-        continue;
-      }
-      final var process =
-          processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
-      if (process != null && process.isActive()) {
-        return Optional.of(process);
-      }
-    }
-    return Optional.empty();
-  }
-
-  private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
-    final var process = deployedProcess.getProcess();
-    if (process.hasTimerStartEvent()) {
-      timerInstanceState.forEachTimerForElementInstance(
-          NO_ELEMENT_INSTANCE,
-          timer -> {
-            if (timer.getProcessDefinitionKey() == deployedProcess.getKey()) {
-              catchEventBehavior.unsubscribeFromTimerEvent(timer);
-            }
-          });
-    }
-
-    startEventSubscriptionManager.closeStartEventSubscriptions(deployedProcess);
   }
 
   private void deleteForm(final PersistedForm persistedForm) {

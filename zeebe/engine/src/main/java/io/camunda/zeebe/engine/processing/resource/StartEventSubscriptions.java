@@ -16,25 +16,65 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.jspecify.annotations.Nullable;
 
 public final class StartEventSubscriptions {
 
   private final ExpressionProcessor expressionProcessor;
   private final CatchEventBehavior catchEventBehavior;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
+  private final TimerInstanceState timerInstanceState;
 
   public StartEventSubscriptions(
       final ExpressionProcessor expressionProcessor,
       final CatchEventBehavior catchEventBehavior,
-      final StartEventSubscriptionManager startEventSubscriptionManager) {
+      final StartEventSubscriptionManager startEventSubscriptionManager,
+      final TimerInstanceState timerInstanceState) {
     this.expressionProcessor = expressionProcessor;
     this.catchEventBehavior = catchEventBehavior;
     this.startEventSubscriptionManager = startEventSubscriptionManager;
+    this.timerInstanceState = timerInstanceState;
+  }
+
+  /** Closes the message, signal, conditional and timer start event subscriptions of a version. */
+  public void unsubscribeFromStartEvents(final DeployedProcess deployedProcess) {
+    final var process = deployedProcess.getProcess();
+    if (process.hasTimerStartEvent()) {
+      timerInstanceState.forEachTimerForElementInstance(
+          NO_ELEMENT_INSTANCE,
+          timer -> {
+            if (timer.getProcessDefinitionKey() == deployedProcess.getKey()) {
+              catchEventBehavior.unsubscribeFromTimerEvent(timer);
+            }
+          });
+    }
+
+    startEventSubscriptionManager.closeStartEventSubscriptions(deployedProcess);
+  }
+
+  /**
+   * Hands the start event subscriptions from the previous owner (latest active version) to the new
+   * one. Timers are cancelled and created fresh from the model; missed occurrences are not caught
+   * up.
+   */
+  public void moveStartEventSubscriptions(
+      final @Nullable DeployedProcess from, final @Nullable DeployedProcess to) {
+    if (from == null && to == null) {
+      return;
+    }
+    if (from != null && to != null && from.getKey() == to.getKey()) {
+      return;
+    }
+    if (from != null) {
+      unsubscribeFromStartEvents(from);
+    }
+    resubscribeToStartEvents(to);
   }
 
   public void resubscribeToStartEvents(final DeployedProcess deployedProcess) {

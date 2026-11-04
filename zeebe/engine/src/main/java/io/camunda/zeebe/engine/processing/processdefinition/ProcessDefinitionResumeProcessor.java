@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processdefinition;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
@@ -25,7 +26,8 @@ public final class ProcessDefinitionResumeProcessor
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CslTenantCheck tenantCheck,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final StartEventSubscriptions startEventSubscriptions) {
     super(
         "resume",
         ProcessDefinitionSuspensionIntent.RESUMED,
@@ -33,7 +35,8 @@ public final class ProcessDefinitionResumeProcessor
         keyGenerator,
         processingState,
         tenantCheck,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        startEventSubscriptions);
   }
 
   @Override

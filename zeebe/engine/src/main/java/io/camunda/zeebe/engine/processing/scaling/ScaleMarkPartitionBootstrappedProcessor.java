@@ -65,7 +65,8 @@ public class ScaleMarkPartitionBootstrappedProcessor
         new StartEventSubscriptions(
             bpmnBehaviors.expressionProcessor(),
             bpmnBehaviors.catchEventBehavior(),
-            startEventSubscriptionManager);
+            startEventSubscriptionManager,
+            processingState.getTimerState());
     processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
   }
 
