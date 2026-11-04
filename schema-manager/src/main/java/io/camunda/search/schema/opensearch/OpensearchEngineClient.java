@@ -31,6 +31,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
+import java.time.Duration;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -438,6 +439,32 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final IOException ioe) {
       final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       throw new SearchEngineException(errMsg, ioe);
+    }
+  }
+
+  @Override
+  public void awaitActivePrimaries(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return;
+    }
+    final var timeout = Duration.ofSeconds(10);
+    try {
+      final HealthResponse response =
+          client
+              .cluster()
+              .health(
+                  h ->
+                      h.index(List.copyOf(indexNames))
+                          .waitForStatus(HealthStatus.Yellow)
+                          .timeout(t -> t.time(timeout.toMillis() + "ms")));
+      if (response.timedOut()) {
+        throw new SearchEngineException(
+            "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                .formatted(indexNames, timeout, response.status()));
+      }
+    } catch (final IOException | OpenSearchException e) {
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
     }
   }
 

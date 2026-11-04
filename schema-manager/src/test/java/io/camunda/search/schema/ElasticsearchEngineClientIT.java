@@ -14,15 +14,18 @@ import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FI
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.json.JsonData;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -72,6 +75,38 @@ public class ElasticsearchEngineClientIT {
   public void refresh() throws IOException {
     elsClient.indices().delete(req -> req.index("*"));
     elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+  }
+
+  @Test
+  void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
+    // given
+    elsClient.indices().create(req -> req.index("await_active"));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of("await_active")));
+  }
+
+  @Test
+  void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
+    // given an index that exists but whose primary can never be allocated, like one whose
+    // creation request timed out on the client while its shards were still initializing
+    elsClient
+        .indices()
+        .create(
+            req ->
+                req.index("await_unassigned")
+                    .waitForActiveShards(w -> w.count(0))
+                    .settings(
+                        s ->
+                            s.otherSettings(
+                                "index.routing.allocation.require._name",
+                                JsonData.of("no-such-node"))));
+
+    // when / then
+    assertThatThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of("await_unassigned")))
+        .isInstanceOf(SearchEngineException.class)
+        .hasMessageContaining("await_unassigned");
   }
 
   @Test

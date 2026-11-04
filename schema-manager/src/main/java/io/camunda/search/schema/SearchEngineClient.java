@@ -92,6 +92,15 @@ public interface SearchEngineClient extends CloseableSilently {
   boolean isHealthy();
 
   /**
+   * Blocks until every primary shard of the given indices is active.
+   *
+   * @param indexNames index names
+   * @throws io.camunda.search.schema.exceptions.SearchEngineException if the shards are not active
+   *     within the timeout
+   */
+  void awaitActivePrimaries(final Collection<String> indexNames);
+
+  /**
    * Check if an index exists
    *
    * @param indexName the name of the index to check
