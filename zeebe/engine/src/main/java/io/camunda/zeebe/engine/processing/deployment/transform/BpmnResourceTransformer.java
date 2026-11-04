@@ -327,6 +327,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         // A DRAINING latest would vanish once its drain completes, so it can never be a duplicate;
         // mint a fresh version. A resting PENDING_DELETION counts as active and stays eligible.
         && lastProcess.isActive()
+        // A suspended latest version accepts no instances; redeploying must yield a usable version
+        && !processState.isProcessDefinitionSuspended(lastProcess.getKey())
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }

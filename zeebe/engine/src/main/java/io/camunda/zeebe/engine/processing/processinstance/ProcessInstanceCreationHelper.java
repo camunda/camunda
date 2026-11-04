@@ -50,6 +50,8 @@ import org.agrona.DirectBuffer;
 public class ProcessInstanceCreationHelper {
   public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
       "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
+  public static final String ERROR_MESSAGE_PROCESS_IS_SUSPENDED =
+      "Expected to create an instance of process with key '%d', but the process definition is suspended";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
@@ -118,7 +120,7 @@ public class ProcessInstanceCreationHelper {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
-    return process.flatMap(this::rejectIfDraining);
+    return process.flatMap(this::rejectIfDraining).flatMap(this::rejectIfSuspended);
   }
 
   private Either<Rejection, DeployedProcess> findProcessById(
@@ -178,6 +180,17 @@ public class ProcessInstanceCreationHelper {
                   bufferAsString(process.getBpmnProcessId()),
                   process.getVersion(),
                   process.getKey())));
+    }
+    return Either.right(process);
+  }
+
+  /** A suspended process definition version accepts no new instances until it is resumed. */
+  private Either<Rejection, DeployedProcess> rejectIfSuspended(final DeployedProcess process) {
+    if (processState.isProcessDefinitionSuspended(process.getKey())) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              String.format(ERROR_MESSAGE_PROCESS_IS_SUSPENDED, process.getKey())));
     }
     return Either.right(process);
   }
