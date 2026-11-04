@@ -37,6 +37,12 @@ import org.slf4j.LoggerFactory;
  * more, so this handler keeps the exchange's runtime in the request context, where {@link
  * #abort(HttpContext)} finds it.
  *
+ * <p>The handler also records that the exchange was aborted, so that {@link HttpRetryStrategy} does
+ * not send the request again when the abort makes the download fail. The context keeps its
+ * attributes in a plain map, which the thread that aborts must not change while the I/O thread may
+ * use it. So the handler puts an object into the context before the request goes out, and aborting
+ * only changes that object.
+ *
  * <p>Aborting discards the connection: it is closed right away and its lease is released. This
  * closes the whole connection, which is only safe as long as HTTP/2 multiplexing is off, i.e. one
  * exchange per connection at a time; {@code HttpClientFactory} turns it off.
@@ -45,8 +51,8 @@ final class ExchangeAbortChainHandler implements AsyncExecChainHandler {
 
   static final String NAME = "exchange-abort";
 
-  private static final String EXEC_RUNTIME_ATTRIBUTE =
-      ExchangeAbortChainHandler.class.getName() + ".execRuntime";
+  private static final String EXCHANGE_ATTRIBUTE =
+      ExchangeAbortChainHandler.class.getName() + ".exchange";
 
   private static final Logger LOG = LoggerFactory.getLogger(ExchangeAbortChainHandler.class);
 
@@ -58,7 +64,7 @@ final class ExchangeAbortChainHandler implements AsyncExecChainHandler {
       final AsyncExecChain chain,
       final AsyncExecCallback callback)
       throws HttpException, IOException {
-    scope.clientContext.setAttribute(EXEC_RUNTIME_ATTRIBUTE, scope.execRuntime);
+    scope.clientContext.setAttribute(EXCHANGE_ATTRIBUTE, new AbortableExchange(scope.execRuntime));
     chain.proceed(request, entityProducer, scope, callback);
   }
 
@@ -67,14 +73,37 @@ final class ExchangeAbortChainHandler implements AsyncExecChainHandler {
    * connection has been released then, or if the request did not go through this handler.
    */
   static void abort(final HttpContext context) {
-    final Object execRuntime = context.getAttribute(EXEC_RUNTIME_ATTRIBUTE);
-    if (!(execRuntime instanceof AsyncExecRuntime)) {
+    final AbortableExchange exchange = exchange(context);
+    if (exchange == null) {
       return;
     }
+    // set before the connection is closed, so the I/O thread sees it once it fails on the closed
+    // connection and asks the retry strategy whether to send the request again
+    exchange.aborted = true;
     try {
-      ((AsyncExecRuntime) execRuntime).discardEndpoint();
+      exchange.execRuntime.discardEndpoint();
     } catch (final RuntimeException e) {
       LOG.debug("Failed to discard the connection of an aborted exchange", e);
+    }
+  }
+
+  /** Returns whether {@link #abort(HttpContext)} was called for the exchange of this context. */
+  static boolean isAborted(final HttpContext context) {
+    final AbortableExchange exchange = exchange(context);
+    return exchange != null && exchange.aborted;
+  }
+
+  private static AbortableExchange exchange(final HttpContext context) {
+    final Object exchange = context.getAttribute(EXCHANGE_ATTRIBUTE);
+    return exchange instanceof AbortableExchange ? (AbortableExchange) exchange : null;
+  }
+
+  private static final class AbortableExchange {
+    private final AsyncExecRuntime execRuntime;
+    private volatile boolean aborted;
+
+    private AbortableExchange(final AsyncExecRuntime execRuntime) {
+      this.execRuntime = execRuntime;
     }
   }
 }
