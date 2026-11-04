@@ -67,6 +67,8 @@ runs:
         # it matters for caching as absolute paths on self-hosted and GitHub runners differ
         # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
         KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+        # Fall back to the busy `shared` slot when LRU evicts a low-traffic one
+        FALLBACK_KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-shared
       shell: sh
       run: |
         maven_version=$(./mvnw --version | head -n 1 | sed "s/Apache Maven \([[:digit:]]\.[[:digit:]]\.[[:digit:]]\).*/\1/g")
@@ -80,10 +82,12 @@ runs:
           echo "MAVEN_CACHE_PATH=~/.m2/repository/cached/releases/" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_FALLBACK_KEY_PREFIX=${FALLBACK_KEY_PREFIX}" >> $GITHUB_ENV
         else
           echo "MAVEN_CACHE_PATH=~/.m2/repository/" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_FALLBACK_KEY_PREFIX=${FALLBACK_KEY_PREFIX}-full" >> $GITHUB_ENV
         fi
 
       # Check if PR contains a label to disable the cache
@@ -117,6 +121,7 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+          ${{ env.MAVEN_CACHE_FALLBACK_KEY_PREFIX }}
 
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
@@ -130,3 +135,4 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+          ${{ env.MAVEN_CACHE_FALLBACK_KEY_PREFIX }}
