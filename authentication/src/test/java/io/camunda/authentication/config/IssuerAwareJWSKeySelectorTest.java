@@ -79,8 +79,8 @@ class IssuerAwareJWSKeySelectorTest {
 
   /**
    * camunda/camunda#61896: the provider is configured with a trailing slash its tokens don't carry.
-   * Discovery resolves the registration to the provider's issuer, and the additional keys are found
-   * by registration, so they still apply.
+   * Discovery resolves the registration to the provider's issuer, and the additional keys are
+   * grouped by that resolved issuer, so they still apply.
    */
   @Test
   void shouldKeepTheAdditionalKeysOfARegistrationResolvedToTheProvidersIssuer() throws Exception {
@@ -124,9 +124,9 @@ class IssuerAwareJWSKeySelectorTest {
   }
 
   /**
-   * Two client IDs of the same identity provider, only one with additional keys. As before keys
-   * were bound to registrations, the keys apply to every token of that issuer, whichever
-   * registration the token is routed to.
+   * Two client IDs of the same identity provider, only one with additional keys. The keys apply to
+   * every token of that issuer, whichever registration the token is routed to, as they did when
+   * they were keyed by the configured issuer.
    */
   @ParameterizedTest
   @ValueSource(booleans = {true, false})

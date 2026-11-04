@@ -935,8 +935,8 @@ public class WebSecurityConfig {
                 oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
                     clientRegistration, additionalUris));
       } else {
-        // Keyed by registration id, not issuer: the key selector takes the additional keys of the
-        // registration it routed the token to, so a token can never reach another provider's keys.
+        // Configured per registration id. The key selector groups them by each registration's
+        // exact resolved issuer, so a token never reaches the keys of a look-alike issuer.
         final var additionalJwkSetUrisByRegistrationId =
             buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository);
         // Checked here, at startup, not first inside the lazily created decoder.
@@ -958,9 +958,9 @@ public class WebSecurityConfig {
      * Builds the additional-JWKS lookup, keyed by registration id, for the interactive login flow
      * and the multi-provider access token decoder. It does not require an {@code issuer-uri}:
      * {@link OidcUserAuthenticationConverter#getJwtDecoder} resolves its decoder per registration
-     * id, and {@link IssuerAwareJWSKeySelector} looks the URIs up by the registration it routed a
-     * token to. Keying by issuer instead would let a token reach the keys of another provider whose
-     * issuer differs only by a trailing slash.
+     * id, and {@link IssuerAwareJWSKeySelector} groups the URIs by each registration's exact
+     * resolved issuer. A lookup by configured issuer that tolerates a trailing slash would instead
+     * let a token reach the keys of another provider whose issuer differs only by that slash.
      */
     private Map<String, List<String>> buildAdditionalJwkSetUrisByRegistrationId(
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
