@@ -964,17 +964,30 @@ jobs:
         id: copilot_review
         if: always()
         continue-on-error: true
+        # The poll loop stops itself at COPILOT_WAIT_SECONDS, but a single `gh`
+        # call has no timeout of its own, so a hung connection could still sit
+        # here until the JOB times out — which continue-on-error cannot survive,
+        # and which would take the finalize, artifact and Slack steps with it.
+        timeout-minutes: 20
         env:
           GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
           COPILOT_WAIT_SECONDS: ${{ vars.COPILOT_REVIEW_WAIT_SECONDS || '900' }}
         run: |
           set -uo pipefail
+          # Matched EXACTLY, never as a prefix. A real user account called
+          # copilot-pull-request-reviewer-qa would satisfy a startswith() test,
+          # and its review of the current head would then drive the privileged
+          # responder below — arbitrary comments turning into commits and thread
+          # resolutions. REST reports the login as "<slug>[bot]"; GraphQL strips
+          # the suffix for a Bot author, so both spellings are accepted, and
+          # nothing else is.
           COPILOT="copilot-pull-request-reviewer"
           pr_num=""
           thread_count=0
+          head_sha=""
           finish() {
-            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; } >> "$GITHUB_OUTPUT"
+            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; echo "head=${head_sha}"; } >> "$GITHUB_OUTPUT"
             exit 0
           }
 
@@ -1005,7 +1018,7 @@ jobs:
           # --jq runs once PER PAGE, so sort across pages.
           copilot_review_of_head() {
             gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
-              --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
+              --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
               2>/dev/null | sort | tail -1
           }
 
@@ -1045,7 +1058,7 @@ jobs:
           echo "Copilot reviewed #${pr_num} at ${latest}."
 
           gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
-            --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
+            --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
             > /tmp/copilot-review-summary.md 2>/dev/null || : > /tmp/copilot-review-summary.md
 
           # Every Copilot review of THIS head, not just the newest: a re-request
@@ -1062,7 +1075,7 @@ jobs:
           # silence — the exact opposite of the fail-open it is meant to be.
           review_ids='[]'
           if raw_ids=$(gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
-               --jq "[.[] | select(.user.login | startswith(\"${COPILOT}\")) | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
+               --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
                2>/dev/null); then
             parsed_ids=$(printf '%s\n' "$raw_ids" | grep -E '^[0-9]+$' | sort -u | jq -R . | jq -sc '.' 2>/dev/null) || parsed_ids=""
             [ -n "$parsed_ids" ] && review_ids="$parsed_ids"
@@ -1107,7 +1120,7 @@ jobs:
           jq --arg bot "$COPILOT" --argjson ids "$review_ids" '[
             .[]?
             | select(.isResolved == false)
-            | select(((.comments.nodes[0].author.login) // "") | startswith($bot))
+            | select(((.comments.nodes[0].author.login) // "") | . == $bot or . == $bot + "[bot]")
             | ((.comments.nodes[0].pullRequestReview.fullDatabaseId // "") | tostring) as $rid
             | select(($ids | length) == 0 or ($ids | index($rid)) != null)
             | {id,
@@ -1138,6 +1151,12 @@ jobs:
         id: review_response
         if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         continue-on-error: true
+        # A stalled agent must not eat the rest of the job budget: everything
+        # that reports this run — the artifact upload and the Slack thread reply
+        # — runs after this step, and continue-on-error does not save them from a
+        # JOB-level timeout. 20 minutes is ample for a handful of threads and
+        # still leaves the reporting steps room.
+        timeout-minutes: 20
         env:
           ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
@@ -1151,6 +1170,20 @@ jobs:
           set -uo pipefail
           ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
           suite_dir="$ws_dir/qa/c8-orchestration-cluster-e2e-test-suite"
+
+          # The job-wide "Configure git with GitHub App token" step baked the
+          # ORIGINAL installation token into a global insteadOf rewrite. That
+          # token is an hour old by the time this round runs, so both the agent's
+          # push and the backstop push below would fail against it — accepted
+          # fixes would be replied to and resolved without ever reaching the PR.
+          # Point this repository's origin at the refreshed token instead. The
+          # explicit credential in the URL does not match the rewrite's
+          # "https://github.com/" prefix, so it wins without having to unpick the
+          # global config; GH_TOKEN falls back to the original token when the
+          # refresh failed, which is no worse than before.
+          git -C "$ws_dir" remote set-url origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+
           threads=$(cat /tmp/copilot-threads.json)
           review_summary=$(cat /tmp/copilot-review-summary.md 2>/dev/null || echo "")
 
@@ -1223,7 +1256,16 @@ jobs:
           )
 
           cd "$ws_dir"
-          claude -p "$prompt" --dangerously-skip-permissions 2>&1 | tee /tmp/claude-review-response.md
+          # `shell: bash` means `bash -e`, which `set -uo pipefail` above does not
+          # undo — so an unguarded failing pipeline here would end the step right
+          # now and skip everything below it: the unpushed-commit backstop, the
+          # fix-meta fold, and the step summary. That is precisely the case those
+          # exist for. Capturing the status keeps the pipeline out of -e's reach.
+          claude_rc=0
+          claude -p "$prompt" --dangerously-skip-permissions 2>&1 \
+            | tee /tmp/claude-review-response.md || claude_rc=$?
+          [ "$claude_rc" -eq 0 ] \
+            || echo "::warning::the review-response agent exited ${claude_rc}; recovering whatever it left behind."
 
           {
             echo "## Copilot review round"
@@ -1257,6 +1299,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
+          COPILOT_ROUND_PR:   ${{ steps.copilot_review.outputs.pr }}
+          COPILOT_ROUND_HEAD: ${{ steps.copilot_review.outputs.head }}
         run: |
           set -euo pipefail
           gh label create "verified" --repo "$REPO" --color "0E8A16" \
@@ -1277,15 +1321,45 @@ jobs:
           # verified: it leaves the PR ready for its human review (an unverified
           # demotion to draft would undo the round) while claiming nothing that
           # was not measured.
+          #
+          # Decided from the HEAD, not only from the round's own manifest. A
+          # responder that pushed a commit and then died before writing
+          # /tmp/review-response.json leaves review_round.commit empty while the
+          # PR carries changed, unverified code — the one case where a false
+          # `verified` would be worst. So compare the PR's head against the one
+          # the review step recorded before the round, and withhold verification
+          # whenever it moved, or whenever it cannot be read at all.
+          #
+          # The downgrade is written back into fix-meta.json, not just held in a
+          # shell variable: the job summary and the uploaded artifact both read
+          # that file afterwards, and would otherwise keep reporting a
+          # verification this step just decided not to stand behind.
           rr_commit=$(jq -r '.review_round.commit // "" | select(. != "null")' /tmp/fix-meta.json 2>/dev/null || echo "")
+          round_pr="${COPILOT_ROUND_PR}"
+          pre_round_head="${COPILOT_ROUND_HEAD}"
+          if [ -n "$round_pr" ]; then
+            current_head=$(gh pr view "$round_pr" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+            head_moved=false
+            if [ -z "$current_head" ]; then
+              head_moved=true
+            elif [ -n "$pre_round_head" ] && [ "$current_head" != "$pre_round_head" ]; then
+              head_moved=true
+            fi
+            if [ -n "$rr_commit" ] || [ "$head_moved" = true ]; then
+              if jq -e --arg n "$round_pr" \
+                   '[.prs[]? | select((.number|tostring) == $n and .verify == "verified")] | length > 0' \
+                   /tmp/fix-meta.json >/dev/null 2>&1; then
+                echo "::warning::live verification predates the Copilot round on PR #${round_pr} (commit='${rr_commit}', head '${pre_round_head:-unknown}' -> '${current_head:-unreadable}') — not labelling it verified."
+                jq --arg n "$round_pr" \
+                  '(.prs[]? | select((.number|tostring) == $n and .verify == "verified") | .verify) = "skipped"' \
+                  /tmp/fix-meta.json > /tmp/fix-meta.next && mv /tmp/fix-meta.next /tmp/fix-meta.json
+              fi
+            fi
+          fi
 
           jq -c '.prs[]?' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_num=$(echo "$pr_obj" | jq -r '.number')
             verify=$(echo "$pr_obj" | jq -r '.verify // "skipped"')
-            if [ "$verify" = "verified" ] && [ -n "$rr_commit" ]; then
-              echo "::warning::live verification predates the Copilot round's commit ${rr_commit} — not labelling PR #${pr_num} verified."
-              verify="skipped"
-            fi
             echo "PR #${pr_num}: verify=${verify}"
             case "$verify" in
               verified)
