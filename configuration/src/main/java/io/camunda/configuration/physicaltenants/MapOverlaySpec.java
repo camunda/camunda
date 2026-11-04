@@ -23,9 +23,9 @@ import org.springframework.boot.context.properties.bind.Binder;
  * deep-merged — both the overlay engine and the override golden test derive their surface from it.
  *
  * @param configPath property path of the config root below the {@code camunda} root (e.g. {@code
- *     document}, {@code security.authentication}); the shared root prefix and the per-tenant
- *     overlay prefix are both derived from it, because the resolver's two-bind requires the tenant
- *     override to live at the same relative path re-rooted under {@code physical-tenants.<id>}
+ *     document}, {@code secrets}); the shared root prefix and the per-tenant overlay prefix are
+ *     both derived from it, because the resolver's two-bind requires the tenant override to live at
+ *     the same relative path re-rooted under {@code physical-tenants.<id>}
  * @param rootType type the root prefix binds to
  * @param defaultFactory fallback when nothing is bound under the root prefix
  * @param maps the {@code Map<String, V>} properties reachable from the root that need the
@@ -62,7 +62,7 @@ record MapOverlaySpec<R>(
    * is not recursively merged — {@code MapOverlayNestedMapGuardTest} rejects such value types.
    *
    * @param subPath property path of the map relative to the root prefix (may span segments, e.g.
-   *     {@code providers.oidc})
+   *     {@code stores.file})
    * @param valueType the map's value type, used to guard/enumerate its per-field surface
    * @param accessor reads the live map from the bound root instance
    */

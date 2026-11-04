@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.pt;
+package io.camunda.spring.utils;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
@@ -13,7 +13,6 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -65,13 +64,10 @@ import org.springframework.core.env.Environment;
  * to an empty instance), and CSL's {@code flatten} ignores a slot or provider with no usable
  * config, so a content-less slot is simply not turned into a chain.
  *
- * <p>Note: {@code io.camunda.configuration.physicaltenants
- * .PhysicalTenantAuthenticationProviderConfigurations} in the configuration module solves the same
- * provider merge for the unified-configuration tree via the generic spec-driven overlay engine
- * (rooted at {@code .providers}, empty-map case additionally covered by an empty-tolerant bind
- * handler). The two must stay behavior-equivalent; behavioral fixes here likely apply there too.
- * Harmonizing them into one mechanism is tracked in <a
- * href="https://github.com/camunda/camunda/issues/56964">#56964</a>.
+ * <p>This is the only resolution of a physical tenant's authentication configuration. The
+ * authentication module uses it for the security filter chains, and {@code PhysicalTenantResolver}
+ * in the configuration module uses it for the broker and the gateways (#68207). It lives in
+ * spring-utils because the authentication module must not depend on the configuration module.
  */
 public final class PhysicalTenantAuthConfigurations {
 
@@ -125,11 +121,8 @@ public final class PhysicalTenantAuthConfigurations {
    * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This matches the
    * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
    * the same tenant.
-   *
-   * <p>Package-private so {@code PhysicalTenantScopeProvider} can delegate to it; must not be
-   * tightened to {@code private}.
    */
-  static Set<String> discoverExplicitTenantIds(final Environment environment) {
+  private static Set<String> discoverExplicitTenantIds(final Environment environment) {
     return PhysicalTenantConfigUtil.discover(environment);
   }
 
@@ -226,10 +219,6 @@ public final class PhysicalTenantAuthConfigurations {
    * {@code user-info-augmentation} and the principal claims also apply to the tenant's named
    * providers, so they are kept; without a {@code client-id} CSL's {@code flatten} does not treat
    * the slot as a provider.
-   *
-   * <p>Keep this equal to {@code
-   * PhysicalTenantAuthenticationProviderConfigurations#withoutProvider} in the configuration
-   * module, so gRPC and REST read the same claims for a tenant.
    */
   private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
     final OidcConfiguration tenantSettings = new OidcConfiguration();

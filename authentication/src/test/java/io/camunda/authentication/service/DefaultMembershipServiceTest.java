@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.authentication.utils.TransientRetry;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
@@ -37,6 +36,7 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.ArrayList;
 import java.util.List;

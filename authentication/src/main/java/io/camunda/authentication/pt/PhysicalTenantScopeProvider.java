@@ -13,6 +13,8 @@ import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PAT
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -137,6 +139,6 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
   }
 
   private static Set<String> discoverExplicitTenantIds(final Environment environment) {
-    return PhysicalTenantAuthConfigurations.discoverExplicitTenantIds(environment);
+    return PhysicalTenantConfigUtil.discover(environment);
   }
 }

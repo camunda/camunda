@@ -9,10 +9,10 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.net.URI;
 import java.util.List;

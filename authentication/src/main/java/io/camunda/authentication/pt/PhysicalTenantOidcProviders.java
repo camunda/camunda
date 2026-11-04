@@ -17,6 +17,7 @@ import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;

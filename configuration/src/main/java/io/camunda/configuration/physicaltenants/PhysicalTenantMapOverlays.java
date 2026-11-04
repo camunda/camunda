@@ -27,10 +27,7 @@ final class PhysicalTenantMapOverlays {
    * merge and by the override golden test to guard the per-field surface.
    */
   static final List<MapOverlaySpec<?>> REGISTRY =
-      List.of(
-          PhysicalTenantDocumentConfigurations.SPEC,
-          PhysicalTenantAuthenticationProviderConfigurations.SPEC,
-          PhysicalTenantSecretConfigurations.SPEC);
+      List.of(PhysicalTenantDocumentConfigurations.SPEC, PhysicalTenantSecretConfigurations.SPEC);
 
   private PhysicalTenantMapOverlays() {}
 

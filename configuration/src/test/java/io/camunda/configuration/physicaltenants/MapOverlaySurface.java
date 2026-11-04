@@ -29,9 +29,11 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyN
  * tenant in exactly one of two ways:
  *
  * <ul>
- *   <li><b>deep-merged</b> by {@link PhysicalTenantMapOverlay} — the map is declared in a {@link
- *       MapOverlaySpec} registered in {@link PhysicalTenantMapOverlays#REGISTRY}, so a partial
- *       tenant override of one entry keeps that entry's unrestated root fields;
+ *   <li><b>deep-merged</b> — a partial tenant override of one entry keeps that entry's unrestated
+ *       root fields. Either {@link PhysicalTenantMapOverlay} merges it, because the map is declared
+ *       in a {@link MapOverlaySpec} registered in {@link PhysicalTenantMapOverlays#REGISTRY}, or,
+ *       for the named OIDC providers ({@link #OIDC_PROVIDERS}), {@code
+ *       PhysicalTenantAuthConfigurations} does;
  *   <li><b>default-merged</b> — the map keeps Spring's entry-level {@code MapBinder} merge, where a
  *       touched entry is rebuilt from just the tenant's sub-keys. This is only safe when losing an
  *       entry's unrestated sibling fields does no harm, e.g. an opaque {@code Map<String, Object>}
@@ -82,15 +84,23 @@ final class MapOverlaySurface {
           "camunda.security.authentication.providers.oidc.*.authorize-request-configuration.additional-parameters",
           "camunda.data.primary-storage.rocks-db.column-family-options");
 
+  /**
+   * The named OIDC providers. {@link PhysicalTenantResolver} takes a tenant's whole authentication
+   * configuration from {@code PhysicalTenantAuthConfigurations}, which merges each provider field
+   * by field like the overlay engine.
+   */
+  static final String OIDC_PROVIDERS = "camunda.security.authentication.providers.oidc";
+
   private MapOverlaySurface() {}
 
   /**
-   * Property paths of every map deep-merged by the overlay engine, derived from the live {@link
-   * PhysicalTenantMapOverlays#REGISTRY}. Canonical dashed names below the {@code camunda} root,
-   * e.g. {@code camunda.document.aws}, {@code camunda.security.authentication.providers.oidc}.
+   * Property paths of every deep-merged map: the maps of the live {@link
+   * PhysicalTenantMapOverlays#REGISTRY}, and {@link #OIDC_PROVIDERS}. Canonical dashed names below
+   * the {@code camunda} root, e.g. {@code camunda.document.aws}.
    */
   static Set<String> deepMergedMapPaths() {
     final Set<String> paths = new LinkedHashSet<>();
+    paths.add(OIDC_PROVIDERS);
     for (final MapOverlaySpec<?> spec : PhysicalTenantMapOverlays.REGISTRY) {
       for (final MapDescriptor<?, ?> descriptor : spec.maps()) {
         paths.add(Camunda.PREFIX + "." + spec.configPath() + "." + descriptor.subPath());
