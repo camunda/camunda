@@ -154,6 +154,18 @@ public final class MessageEventProcessors {
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,
-                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()));
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
+        .withListener(
+            newPendingSubscriptionRecoveryScheduler(
+                scheduledTaskStateFactory.get(),
+                config.getMessagesPendingSubscriptionRecoveryBatchLimit()));
+  }
+
+  private static PendingSubscriptionRecoveryScheduler newPendingSubscriptionRecoveryScheduler(
+      final ScheduledTaskState scheduledTaskState, final int batchLimit) {
+    return new PendingSubscriptionRecoveryScheduler(
+        scheduledTaskState.getPendingProcessMessageSubscriptionState(),
+        scheduledTaskState.getPendingMessageSubscriptionState(),
+        batchLimit);
   }
 }
