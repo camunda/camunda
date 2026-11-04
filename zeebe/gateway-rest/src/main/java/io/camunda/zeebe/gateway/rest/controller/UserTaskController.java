@@ -308,7 +308,7 @@ public class UserTaskController {
                     request.userTaskKey(),
                     request.fetchVariables(),
                     authenticationProvider.getCamundaAuthentication())
-                .thenApply(ResponseMapper::toUserTaskLookupResult),
+                .thenApplyAsync(ResponseMapper::toUserTaskLookupResult),
         Function.identity(),
         HttpStatus.OK);
   }
