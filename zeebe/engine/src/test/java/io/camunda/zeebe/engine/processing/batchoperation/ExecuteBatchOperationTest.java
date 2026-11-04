@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -92,11 +91,16 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
           .withBatchOperationKey(batchOperationKey)
           .await();
 
+      final var executeCommand =
+          RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+              .withBatchOperationKey(batchOperationKey)
+              .getFirst();
+
       // then
       assertThat(logs.messagesAt(Level.DEBUG))
           .contains(
               "Batch operation %d on partition %d has executed 1000 of 1000 items."
-                  .formatted(batchOperationKey, Protocol.decodePartitionId(batchOperationKey)));
+                  .formatted(batchOperationKey, executeCommand.getPartitionId()));
     }
   }
 
