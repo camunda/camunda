@@ -16,7 +16,7 @@ import {ForbiddenError} from '#/shared/errors';
 import {cn} from '#/shared/cn';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
-import {HistoryRowLabel} from './HistoryRowLabel';
+import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';
 import {useInstanceHistory} from '../useInstanceHistory';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {buildElementSearchRequest, useElementSearchResults} from '../useElementSearchResults';
@@ -208,6 +208,7 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 					label={t('operate.processInstance.history.search.results')}
 					hideLabel
 					size="sm"
+					className={HISTORY_TREE_CLASS_NAME}
 					data={data}
 					selected={selected}
 					onSelect={(_, node) => {
