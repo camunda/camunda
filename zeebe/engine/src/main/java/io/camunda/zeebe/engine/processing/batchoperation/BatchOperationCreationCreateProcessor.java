@@ -183,7 +183,7 @@ public final class BatchOperationCreationCreateProcessor
           MsgPackConverter.convertToObject(
               command.getValue().getAuthorizationCheckBuffer(),
               BatchOperationAuthorizationCheck.class);
-      // the check carries no resource id supplier or condition, as before
+      // the resource id supplier and condition are not part of the wire format
       final RequiredAuthorization<?> authorization =
           new RequiredAuthorization<>(
               check.resourceType(),
