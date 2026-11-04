@@ -117,18 +117,6 @@ final class PolicyUpdateCommandMapperTest {
       assertThat(((MappingRuleRecord) commands.get(3).value()).getMappingRuleKey())
           .isEqualTo(rule.key());
     }
-
-    @Test
-    void shouldCarryThePolicyVersionOfTheChunk() {
-      // given
-      final var chunk = chunk().setRoles(List.<RoleRecordValue>of(role("role-" + uid())));
-
-      // when
-      final var commands = mapper.toCommands(chunk).get();
-
-      // then
-      assertThat(((RoleRecord) commands.getFirst().value()).getPolicyVersion()).isEqualTo(VERSION);
-    }
   }
 
   @Nested

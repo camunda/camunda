@@ -69,13 +69,11 @@ public final class PolicyUpdateCommandMapper {
     if (!unmappable.isEmpty()) {
       return Either.left(unmappable);
     }
-
-    final long version = chunk.getPolicyVersion();
     final var commands = new ArrayList<IdentityCommand>();
-    chunk.getTenants().forEach(tenant -> commands.add(tenantUpsert(tenant, version)));
-    chunk.getRoles().forEach(role -> commands.add(roleUpsert(role, version)));
-    chunk.getGroups().forEach(group -> commands.add(groupUpsert(group, version)));
-    chunk.getMappingRules().forEach(rule -> commands.add(mappingRuleUpsert(rule, version)));
+    chunk.getTenants().forEach(tenant -> commands.add(tenantUpsert(tenant)));
+    chunk.getRoles().forEach(role -> commands.add(roleUpsert(role)));
+    chunk.getGroups().forEach(group -> commands.add(groupUpsert(group)));
+    chunk.getMappingRules().forEach(rule -> commands.add(mappingRuleUpsert(rule)));
     chunk
         .getMemberships()
         .forEach(
@@ -85,14 +83,13 @@ public final class PolicyUpdateCommandMapper {
                         membership,
                         RoleIntent.ADD_ENTITY,
                         GroupIntent.ADD_ENTITY,
-                        TenantIntent.ADD_ENTITY,
-                        version)));
+                        TenantIntent.ADD_ENTITY)));
     chunk
         .getAuthorizations()
-        .forEach(authorization -> commands.add(authorizationUpsert(authorization, version)));
+        .forEach(authorization -> commands.add(authorizationUpsert(authorization)));
     chunk
         .getAuthorizationDeletes()
-        .forEach(authorization -> commands.add(authorizationDelete(authorization, version)));
+        .forEach(authorization -> commands.add(authorizationDelete(authorization)));
     chunk
         .getMembershipDeletes()
         .forEach(
@@ -102,9 +99,8 @@ public final class PolicyUpdateCommandMapper {
                         membership,
                         RoleIntent.REMOVE_ENTITY,
                         GroupIntent.REMOVE_ENTITY,
-                        TenantIntent.REMOVE_ENTITY,
-                        version)));
-    chunk.getDeletes().forEach(delete -> commands.add(entityDelete(delete, version)));
+                        TenantIntent.REMOVE_ENTITY)));
+    chunk.getDeletes().forEach(delete -> commands.add(entityDelete(delete)));
     return Either.right(commands);
   }
 
@@ -146,13 +142,12 @@ public final class PolicyUpdateCommandMapper {
             membership.getTargetType());
   }
 
-  private IdentityCommand tenantUpsert(final TenantRecordValue tenant, final long version) {
+  private IdentityCommand tenantUpsert(final TenantRecordValue tenant) {
     final var record =
         new TenantRecord()
             .setTenantId(tenant.getTenantId())
             .setName(tenant.getName())
-            .setDescription(tenant.getDescription())
-            .setPolicyVersion(version);
+            .setDescription(tenant.getDescription());
     final var existing = state.getTenantState().getTenantById(tenant.getTenantId());
     if (existing.isPresent()) {
       record.setTenantKey(existing.get().getTenantKey());
@@ -161,13 +156,12 @@ public final class PolicyUpdateCommandMapper {
     return new IdentityCommand(NO_KEY, TenantIntent.CREATE, record);
   }
 
-  private IdentityCommand roleUpsert(final RoleRecordValue role, final long version) {
+  private IdentityCommand roleUpsert(final RoleRecordValue role) {
     final var record =
         new RoleRecord()
             .setRoleId(role.getRoleId())
             .setName(role.getName())
-            .setDescription(role.getDescription())
-            .setPolicyVersion(version);
+            .setDescription(role.getDescription());
     final var existing = state.getRoleState().getRole(role.getRoleId());
     if (existing.isPresent()) {
       record.setRoleKey(existing.get().getRoleKey());
@@ -176,13 +170,12 @@ public final class PolicyUpdateCommandMapper {
     return new IdentityCommand(NO_KEY, RoleIntent.CREATE, record);
   }
 
-  private IdentityCommand groupUpsert(final GroupRecordValue group, final long version) {
+  private IdentityCommand groupUpsert(final GroupRecordValue group) {
     final var record =
         new GroupRecord()
             .setGroupId(group.getGroupId())
             .setName(group.getName())
-            .setDescription(group.getDescription())
-            .setPolicyVersion(version);
+            .setDescription(group.getDescription());
     final var existing = state.getGroupState().get(group.getGroupId());
     if (existing.isPresent()) {
       record.setGroupKey(existing.get().getGroupKey());
@@ -191,14 +184,13 @@ public final class PolicyUpdateCommandMapper {
     return new IdentityCommand(NO_KEY, GroupIntent.CREATE, record);
   }
 
-  private IdentityCommand mappingRuleUpsert(final MappingRuleRecordValue rule, final long version) {
+  private IdentityCommand mappingRuleUpsert(final MappingRuleRecordValue rule) {
     final var record =
         new MappingRuleRecord()
             .setMappingRuleId(rule.getMappingRuleId())
             .setName(rule.getName())
             .setClaimName(rule.getClaimName())
-            .setClaimValue(rule.getClaimValue())
-            .setPolicyVersion(version);
+            .setClaimValue(rule.getClaimValue());
     final var existing = state.getMappingRuleState().get(rule.getMappingRuleId());
     if (existing.isPresent()) {
       record.setMappingRuleKey(existing.get().getMappingRuleKey());
@@ -215,8 +207,7 @@ public final class PolicyUpdateCommandMapper {
       final PolicyMembershipEntryValue membership,
       final RoleIntent roleIntent,
       final GroupIntent groupIntent,
-      final TenantIntent tenantIntent,
-      final long version) {
+      final TenantIntent tenantIntent) {
     final var targetId = membership.getTargetId();
     final long targetKey = findEntityKey(membership.getTargetType(), targetId).orElse(NO_KEY);
     return switch (membership.getTargetType()) {
@@ -228,8 +219,7 @@ public final class PolicyUpdateCommandMapper {
                   .setRoleKey(targetKey)
                   .setRoleId(targetId)
                   .setEntityType(membership.getMemberType())
-                  .setEntityId(membership.getMemberId())
-                  .setPolicyVersion(version));
+                  .setEntityId(membership.getMemberId()));
       case GROUP ->
           new IdentityCommand(
               NO_KEY,
@@ -238,8 +228,7 @@ public final class PolicyUpdateCommandMapper {
                   .setGroupKey(targetKey)
                   .setGroupId(targetId)
                   .setEntityType(membership.getMemberType())
-                  .setEntityId(membership.getMemberId())
-                  .setPolicyVersion(version));
+                  .setEntityId(membership.getMemberId()));
       case TENANT ->
           new IdentityCommand(
               NO_KEY,
@@ -248,8 +237,7 @@ public final class PolicyUpdateCommandMapper {
                   .setTenantKey(targetKey)
                   .setTenantId(targetId)
                   .setEntityType(membership.getMemberType())
-                  .setEntityId(membership.getMemberId())
-                  .setPolicyVersion(version));
+                  .setEntityId(membership.getMemberId()));
       default ->
           throw new IllegalStateException(
               "Expected a membership in a role, group or tenant, but got %s"
@@ -258,12 +246,10 @@ public final class PolicyUpdateCommandMapper {
   }
 
   /** Creates the authorization, or reconciles the one with the same owner and resource. */
-  private IdentityCommand authorizationUpsert(
-      final AuthorizationRecordValue authorization, final long version) {
+  private IdentityCommand authorizationUpsert(final AuthorizationRecordValue authorization) {
     final var record =
         authorizationRecord(authorization)
-            .setPermissionTypes(new HashSet<>(authorization.getPermissionTypes()))
-            .setPolicyVersion(version);
+            .setPermissionTypes(new HashSet<>(authorization.getPermissionTypes()));
     final var existingKey = findAuthorizationKey(authorization);
     if (existingKey.isPresent()) {
       record.setAuthorizationKey(existingKey.getAsLong());
@@ -276,42 +262,31 @@ public final class PolicyUpdateCommandMapper {
    * Deletes the authorization with the same owner and resource. If there is none, the command
    * carries no authorization key and the authorization processor rejects it.
    */
-  private IdentityCommand authorizationDelete(
-      final AuthorizationRecordValue authorization, final long version) {
+  private IdentityCommand authorizationDelete(final AuthorizationRecordValue authorization) {
     final var record =
         authorizationRecord(authorization)
-            .setAuthorizationKey(findAuthorizationKey(authorization).orElse(NO_KEY))
-            .setPolicyVersion(version);
+            .setAuthorizationKey(findAuthorizationKey(authorization).orElse(NO_KEY));
     return new IdentityCommand(NO_KEY, AuthorizationIntent.DELETE, record);
   }
 
-  private IdentityCommand entityDelete(final PolicyDeleteEntryValue delete, final long version) {
+  private IdentityCommand entityDelete(final PolicyDeleteEntryValue delete) {
     final var id = delete.getId();
     final long key = findEntityKey(delete.getEntityType(), id).orElse(NO_KEY);
     return switch (delete.getEntityType()) {
       case TENANT ->
           new IdentityCommand(
-              NO_KEY,
-              TenantIntent.DELETE,
-              new TenantRecord().setTenantKey(key).setTenantId(id).setPolicyVersion(version));
+              NO_KEY, TenantIntent.DELETE, new TenantRecord().setTenantKey(key).setTenantId(id));
       case ROLE ->
           new IdentityCommand(
-              NO_KEY,
-              RoleIntent.DELETE,
-              new RoleRecord().setRoleKey(key).setRoleId(id).setPolicyVersion(version));
+              NO_KEY, RoleIntent.DELETE, new RoleRecord().setRoleKey(key).setRoleId(id));
       case GROUP ->
           new IdentityCommand(
-              NO_KEY,
-              GroupIntent.DELETE,
-              new GroupRecord().setGroupKey(key).setGroupId(id).setPolicyVersion(version));
+              NO_KEY, GroupIntent.DELETE, new GroupRecord().setGroupKey(key).setGroupId(id));
       case MAPPING_RULE ->
           new IdentityCommand(
               NO_KEY,
               MappingRuleIntent.DELETE,
-              new MappingRuleRecord()
-                  .setMappingRuleKey(key)
-                  .setMappingRuleId(id)
-                  .setPolicyVersion(version));
+              new MappingRuleRecord().setMappingRuleKey(key).setMappingRuleId(id));
       default ->
           throw new IllegalStateException(
               "Expected a delete of a tenant, role, group or mapping rule, but got %s"
