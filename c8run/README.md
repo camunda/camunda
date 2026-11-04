@@ -32,7 +32,7 @@ Reference it in Process Models with `=camunda.secrets.OPENAI_API_KEY`. To set se
 
 Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` refuses to import the c8run `.env` because that file can contain runtime, download, and packaging credentials.
 
-`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=env` with `C8RUN_SECRETS_ENV_PREFIX=C8_` to read secrets from environment variables instead: `C8_DEFAULT_<NAME>` for the default tenant and `C8_<ID>_<NAME>` for each physical tenant. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
+`C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=env` with `C8RUN_SECRETS_ENV_PREFIX=C8_` to read secrets from environment variables instead: `C8_DEFAULT_<NAME>` for the default tenant and `C8_<ID>_<NAME>` for each physical tenant. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode. In env mode, `c8run secrets list` asks the running c8run for the names it resolves (pass `--port`, `--username` and `--password` if c8run was started with other values), and the other `c8run secrets` commands name the variable to set instead.
 
 ## Physical tenants
 
