@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.useFastClusterBootstrap;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -224,6 +225,7 @@ final class PartitionLeaveTest {
   private static Broker buildBroker(final Path tmp, final Consumer<BrokerCfg> configure) {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
+    useFastClusterBootstrap().accept(brokerCfg);
     configure.accept(brokerCfg);
     brokerCfg.init(tmp.toAbsolutePath().toString());
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
