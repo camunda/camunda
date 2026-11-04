@@ -1083,6 +1083,10 @@ public final class EventAppliers implements EventApplier {
         2,
         new BatchOperationCreatedV2Applier(state.getBatchOperationState()));
     register(
+        BatchOperationIntent.CREATED,
+        3,
+        new BatchOperationCreatedV3Applier(state.getBatchOperationState()));
+    register(
         BatchOperationIntent.INITIALIZING,
         new BatchOperationInitializingApplier(state.getBatchOperationState()));
     register(
@@ -1100,6 +1104,10 @@ public final class EventAppliers implements EventApplier {
         BatchOperationChunkIntent.CREATED,
         2,
         new BatchOperationChunkCreatedV2Applier(state.getBatchOperationState()));
+    register(
+        BatchOperationChunkIntent.CREATED,
+        3,
+        new BatchOperationChunkCreatedV3Applier(state.getBatchOperationState()));
     register(
         BatchOperationExecutionIntent.EXECUTING,
         new BatchOperationExecutingApplier(state.getBatchOperationState()));

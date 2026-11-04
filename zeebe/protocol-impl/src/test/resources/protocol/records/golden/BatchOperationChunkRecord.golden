@@ -22,18 +22,21 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_ITEMS_LIST = "items";
+  public static final String PROP_BATCH_ITEMS_STORAGE_ORDINAL = "batchItemsStorageOrdinal";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp =
-      new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
   private final ArrayProperty<BatchOperationItem> itemsProp =
       new ArrayProperty<>(PROP_ITEMS_LIST, BatchOperationItem::new);
+  private final IntegerProperty batchItemsStorageOrdinalProp =
+      new IntegerProperty(PROP_BATCH_ITEMS_STORAGE_ORDINAL, 0);
 
   public BatchOperationChunkRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(itemsProp);
+        .declareProperty(itemsProp)
+        .declareProperty(batchItemsStorageOrdinalProp);
   }
 
   @Override
@@ -68,9 +71,20 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getBatchItemsStorageOrdinal() {
+    return batchItemsStorageOrdinalProp.getValue();
+  }
+
+  public BatchOperationChunkRecord setBatchItemsStorageOrdinal(final int batchItemsStorageOrdinal) {
+    batchItemsStorageOrdinalProp.setValue(batchItemsStorageOrdinal);
+    return this;
+  }
+
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setStorageOrdinal(record.getStorageOrdinal());
     setItems(record.getItems());
+    setBatchItemsStorageOrdinal(record.getBatchItemsStorageOrdinal());
   }
 }

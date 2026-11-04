@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 class BatchOperationChunkAppenderTest {
 
   private static final long BATCH_OPERATION_KEY = 123L;
+  private static final int STORAGE_ORDINAL = 7;
   private static final int CHUNK_SIZE = 2;
 
   private BatchOperationChunkAppender processor;
@@ -198,12 +199,14 @@ class BatchOperationChunkAppenderTest {
 
     // First chunk should have 2 items (chunk size)
     assertThat(capturedChunks.get(0).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(0).getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(capturedChunks.get(0).getItems())
         .containsExactlyInAnyOrder(
             new BatchOperationItem(100L, 200L, -1L), new BatchOperationItem(101L, 201L, 111L));
 
     // Second chunk should have 1 item (remainder)
     assertThat(capturedChunks.get(1).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(1).getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(capturedChunks.get(1).getItems())
         .containsExactly(new BatchOperationItem(102L, 202L, 112L));
   }
@@ -276,7 +279,10 @@ class BatchOperationChunkAppenderTest {
   }
 
   private static InitializationContext createContext(final String cursor, final int pageSize) {
-    final var batchOperation = new PersistedBatchOperation().setKey(BATCH_OPERATION_KEY);
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStorageOrdinal(STORAGE_ORDINAL);
     return new InitializationContext(batchOperation, cursor, pageSize, 0, false);
   }
 }

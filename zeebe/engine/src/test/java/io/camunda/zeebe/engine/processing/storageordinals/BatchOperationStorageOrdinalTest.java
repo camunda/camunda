@@ -1,0 +1,700 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.storageordinals;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+public final class BatchOperationStorageOrdinalTest {
+
+  private static final int PARTITION_COUNT = 2;
+  private static final int FIXED_ORDINAL = 1234;
+  // the follower partition runs under its own ordinal, so a follower that stamped from its own
+  // provider instead of the lead's batch operation would show up in every assertion below
+  private static final int FOLLOWER_PARTITION_ORDINAL = 4321;
+
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+  private static final ConfiguredUser USER_WITHOUT_PERMISSIONS =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+
+  // static so they can sit above the public rules that reference them, checkstyle wants instance
+  // fields ordered by visibility and a rule initializer cannot reference a field declared below
+  private static final SearchClientsProxy SEARCH_CLIENTS_PROXY =
+      Mockito.mock(SearchClientsProxy.class);
+  private static final BrokerRequestAuthorizationConverter BROKER_REQUEST_AUTHORIZATION_CONVERTER =
+      Mockito.mock(BrokerRequestAuthorizationConverter.class);
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.multiplePartition(PARTITION_COUNT)
+          .withIdentitySetup()
+          .withAuthorizationsEnabled(true)
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization().setUsers(List.of(DEFAULT_USER, USER_WITHOUT_PERMISSIONS)))
+          .withSecurityConfig(
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              })
+          .withEngineConfig(
+              config ->
+                  config
+                      .setArchiverlessEnabled(true)
+                      .setFixedStorageOrdinal(FIXED_ORDINAL)
+                      .setBatchOperationQueryRetryMax(10)
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMinutes(5))
+                      .setBatchOperationQueryRetryMaxDelay(Duration.ofMinutes(5)))
+          .withPartitionEngineConfig(
+              (partitionId, config) -> {
+                if (partitionId != 1) {
+                  config.setFixedStorageOrdinal(FOLLOWER_PARTITION_ORDINAL);
+                }
+              })
+          .withSearchClientsProxy(SEARCH_CLIENTS_PROXY)
+          .withBrokerRequestAuthorizationConverter(BROKER_REQUEST_AUTHORIZATION_CONVERTER);
+
+  @Before
+  public void setUp() {
+    Mockito.reset(SEARCH_CLIENTS_PROXY);
+    when(SEARCH_CLIENTS_PROXY.withSecurityContext(any())).thenReturn(SEARCH_CLIENTS_PROXY);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToBatchOperationCreatedRecord() {
+    // given
+    stubProcessInstanceSearch(Set.of());
+
+    // when
+    final var response = createBatchOperationRecord();
+    final long batchOperationKey = response.getValue().getBatchOperationKey();
+
+    // then
+    assertThat(response.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    final var created =
+        RecordingExporter.batchOperationCreationRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.CREATED)
+            .getFirst();
+    assertThat(created.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToDistributedBatchOperationCreatedRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of());
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationCreationRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(2)
+                .limit(record -> record.getIntent() == BatchOperationIntent.CREATED)
+                .collect(Collectors.toList()))
+        .hasSize(2)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToInitializationRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var records =
+          RecordingExporter.batchOperationInitializationRecords()
+              .withBatchOperationKey(batchOperationKey)
+              .withPartitionId(partitionId)
+              .limit(record -> record.getIntent() == BatchOperationIntent.INITIALIZED)
+              .collect(Collectors.toList());
+
+      assertThat(records).extracting(Record::getIntent).contains(BatchOperationIntent.INITIALIZED);
+      assertThat(records)
+          .extracting(record -> record.getValue().getStorageOrdinal())
+          .containsOnly(FIXED_ORDINAL);
+    }
+  }
+
+  @Test
+  public void shouldCarryOrdinalToInitializingRecord() {
+    // given
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
+        .thenReturn(processInstancePage(Set.of(1L, 2L, 3L), 10000))
+        .thenThrow(new RuntimeException("search unavailable"));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var initializing =
+        RecordingExporter.batchOperationInitializationRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withIntent(BatchOperationIntent.INITIALIZING)
+            .getFirst();
+    assertThat(initializing.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToChunkRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var records =
+          RecordingExporter.batchOperationChunkRecords()
+              .withBatchOperationKey(batchOperationKey)
+              .withPartitionId(partitionId)
+              .limit(record -> record.getIntent() == BatchOperationChunkIntent.CREATED)
+              .collect(Collectors.toList());
+
+      assertThat(records)
+          .extracting(Record::getIntent)
+          .containsExactly(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
+      assertThat(records)
+          .extracting(record -> record.getValue().getStorageOrdinal())
+          .containsOnly(FIXED_ORDINAL);
+    }
+  }
+
+  @Test
+  public void shouldCarryOrdinalToExecutionRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var records =
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .limit(
+                record ->
+                    record.getIntent() == BatchOperationExecutionIntent.EXECUTED
+                        && record.getValue().getItemKeys().isEmpty())
+            .collect(Collectors.toList());
+
+    assertThat(records)
+        .extracting(record -> record.getIntent())
+        .contains(BatchOperationExecutionIntent.EXECUTING, BatchOperationExecutionIntent.EXECUTED);
+    assertThat(records)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    // the item providers do not supply an ordinal yet, so the items' ordinal is 0 = unknown
+    assertThat(records)
+        .extracting(record -> record.getValue().getBatchItemsStorageOrdinal())
+        .containsOnly(0);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToCompletionRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .limitByCount(
+                    record -> record.getIntent() == BatchOperationIntent.PARTITION_COMPLETED,
+                    PARTITION_COUNT)
+                .collect(Collectors.toList()))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(2)
+                .limit(record -> record.getIntent() == BatchOperationIntent.PARTITION_COMPLETED)
+                .collect(Collectors.toList()))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    final var completed =
+        RecordingExporter.batchOperationLifecycleRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.COMPLETED)
+            .getFirst();
+    assertThat(completed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToCanceledRecords() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+
+    // when
+    final var response =
+        engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).cancel();
+
+    // then
+    assertThat(response.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    final var canceled =
+        RecordingExporter.batchOperationLifecycleRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.CANCELED)
+            .getFirst();
+    assertThat(canceled.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(2)
+                .limit(record -> record.getIntent() == BatchOperationIntent.CANCELED)
+                .collect(Collectors.toList()))
+        .hasSize(2)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToSuspendedAndResumedRecords() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+
+    // when
+    final var suspendResponse =
+        engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
+    final var resumeResponse =
+        engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+
+    // then
+    assertThat(suspendResponse.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(resumeResponse.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    final var suspended =
+        RecordingExporter.batchOperationLifecycleRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.SUSPENDED)
+            .getFirst();
+    assertThat(suspended.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    final var resumed =
+        RecordingExporter.batchOperationLifecycleRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.RESUMED)
+            .getFirst();
+    assertThat(resumed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(2)
+                .limit(record -> record.getIntent() == BatchOperationIntent.SUSPENDED)
+                .collect(Collectors.toList()))
+        .hasSize(2)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(2)
+                .skipUntil(record -> record.getIntent() == BatchOperationIntent.SUSPENDED)
+                .limit(record -> record.getIntent() == BatchOperationIntent.RESUMED)
+                .collect(Collectors.toList()))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToRejectedLifecycleCommand() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
+
+    // when
+    final var rejection =
+        engine
+            .batchOperation()
+            .newLifecycle()
+            .withBatchOperationKey(batchOperationKey)
+            .expectRejection()
+            .suspend();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToForbiddenLifecycleCommands() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+    final var lifecycle =
+        engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey);
+
+    // when
+    final var forbiddenCancel =
+        lifecycle.expectRejection().cancel(USER_WITHOUT_PERMISSIONS.getUsername());
+    final var forbiddenSuspend =
+        lifecycle.expectRejection().suspend(USER_WITHOUT_PERMISSIONS.getUsername());
+    final var forbiddenResume =
+        lifecycle.expectRejection().resume(USER_WITHOUT_PERMISSIONS.getUsername());
+
+    // then
+    assertThat(List.of(forbiddenCancel, forbiddenSuspend, forbiddenResume))
+        .allSatisfy(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+              assertThat(rejection.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+            });
+  }
+
+  @Test
+  public void shouldCarryOrdinalToRejectedCreateCommands() {
+    // when
+    final var invalidFilter =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
+            .expectRejection()
+            .create();
+    final var forbidden =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(processInstanceFilter())
+            .expectRejection()
+            .create(USER_WITHOUT_PERMISSIONS.getUsername());
+
+    // then
+    assertThat(invalidFilter.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(forbidden.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(List.of(invalidFilter, forbidden))
+        .extracting(rejection -> rejection.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToFailedRecords() {
+    // given
+    stubProcessInstanceSearchFailure();
+    final long batchOperationKey = createBatchOperation();
+
+    // when
+    final var followerFailed =
+        engine
+            .batchOperation()
+            .newPartitionLifecycle()
+            .withBatchOperationKey(batchOperationKey)
+            .onPartition(2)
+            .fail();
+    final var leadFailed =
+        engine
+            .batchOperation()
+            .newPartitionLifecycle()
+            .withBatchOperationKey(batchOperationKey)
+            .onPartition(1)
+            .fail();
+
+    // then
+    assertThat(followerFailed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(leadFailed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .onlyEvents()
+                .limitByCount(
+                    record -> record.getIntent() == BatchOperationIntent.PARTITION_FAILED,
+                    PARTITION_COUNT)
+                .collect(Collectors.toList()))
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    final var failed =
+        RecordingExporter.batchOperationLifecycleRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .withIntent(BatchOperationIntent.FAILED)
+            .getFirst();
+    assertThat(failed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldChunkItemsByStorageOrdinal() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var chunks =
+          RecordingExporter.batchOperationChunkRecords()
+              .withBatchOperationKey(batchOperationKey)
+              .withPartitionId(partitionId)
+              .withIntent(BatchOperationChunkIntent.CREATED)
+              .limit(2)
+              .collect(Collectors.toList());
+
+      assertThat(chunks).hasSize(2);
+      assertThat(chunks)
+          .extracting(chunk -> chunk.getValue().getStorageOrdinal())
+          .containsOnly(FIXED_ORDINAL);
+      assertThat(chunks)
+          .extracting(chunk -> chunk.getValue().getBatchItemsStorageOrdinal())
+          .containsExactlyInAnyOrder(5, 9);
+      assertThat(chunks)
+          .filteredOn(chunk -> chunk.getValue().getBatchItemsStorageOrdinal() == 9)
+          .flatExtracting(chunk -> chunk.getValue().getItems())
+          .extracting(BatchOperationItemValue::getItemKey)
+          .containsExactly(3L);
+    }
+  }
+
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldCarryItemStorageOrdinalToExecutionRecords() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var records =
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .withPartitionId(1)
+            .limit(
+                record ->
+                    record.getIntent() == BatchOperationExecutionIntent.EXECUTED
+                        && record.getValue().getItemKeys().isEmpty())
+            .collect(Collectors.toList());
+    final var itemRecords =
+        records.stream().filter(record -> !record.getValue().getItemKeys().isEmpty()).toList();
+
+    assertThat(itemRecords).isNotEmpty();
+    assertThat(records)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    assertThat(itemRecords)
+        .extracting(record -> record.getValue().getBatchItemsStorageOrdinal())
+        .containsOnly(5, 9);
+    assertThat(itemRecords)
+        .filteredOn(record -> record.getValue().getItemKeys().contains(3L))
+        .extracting(record -> record.getValue().getBatchItemsStorageOrdinal())
+        .containsOnly(9);
+    assertThat(itemRecords)
+        .filteredOn(
+            record ->
+                record.getValue().getItemKeys().contains(1L)
+                    || record.getValue().getItemKeys().contains(2L))
+        .extracting(record -> record.getValue().getBatchItemsStorageOrdinal())
+        .containsOnly(5);
+  }
+
+  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
+  @Test
+  public void shouldStampItemCommandsWithItemStorageOrdinal() {
+    // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
+    stubProcessInstanceSearch(Map.of(1L, 5, 2L, 5, 3L, 9));
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    final var commands =
+        RecordingExporter.processInstanceRecords()
+            .withIntent(ProcessInstanceIntent.CANCEL)
+            .onlyCommands()
+            .withPartitionId(1)
+            .filter(record -> record.getBatchOperationReference() == batchOperationKey)
+            .limit(3)
+            .collect(Collectors.toList());
+
+    assertThat(commands)
+        .extracting(
+            record -> record.getValue().getProcessInstanceKey(),
+            record -> record.getValue().getStorageOrdinal())
+        .containsExactlyInAnyOrder(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
+  }
+
+  @Test
+  public void shouldNotStampFollowerRecordsWithFollowerPartitionOrdinal() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+    final long batchOperationKey = createBatchOperation();
+
+    // then every batch operation record on the follower carries the lead's ordinal
+    final var followerRecords =
+        RecordingExporter.records()
+            .withPartitionId(2)
+            .limit(
+                record ->
+                    record.getIntent() == BatchOperationIntent.PARTITION_COMPLETED
+                        && belongsTo(record, batchOperationKey))
+            .filter(record -> belongsTo(record, batchOperationKey))
+            .collect(Collectors.toList());
+
+    assertThat(followerRecords).isNotEmpty();
+    assertThat(followerRecords)
+        .extracting(record -> ((StorageOrdinalRelated) record.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL)
+        .doesNotContain(FOLLOWER_PARTITION_ORDINAL);
+  }
+
+  private static boolean belongsTo(final Record<?> record, final long batchOperationKey) {
+    return record.getValue() instanceof BatchOperationRelated related
+        && related.getBatchOperationKey() == batchOperationKey;
+  }
+
+  private long createBatchOperation() {
+    final long batchOperationKey = createBatchOperationRecord().getValue().getBatchOperationKey();
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      RecordingExporter.batchOperationCreationRecords()
+          .withBatchOperationKey(batchOperationKey)
+          .withPartitionId(partitionId)
+          .withIntent(BatchOperationIntent.CREATED)
+          .await();
+    }
+    return batchOperationKey;
+  }
+
+  private Record<BatchOperationCreationRecordValue> createBatchOperationRecord() {
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .withFilter(processInstanceFilter())
+        .create();
+  }
+
+  private static DirectBuffer processInstanceFilter() {
+    return new UnsafeBuffer(
+        MsgPackConverter.convertToMsgPack(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build()));
+  }
+
+  private void stubProcessInstanceSearch(final Set<Long> processInstanceKeys) {
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
+        .thenReturn(processInstancePage(processInstanceKeys, processInstanceKeys.size()));
+  }
+
+  // TODO(#57006): place the ordinal on the ProcessInstanceEntity once the item providers read it,
+  // until then the search result carries no ordinal and every item is stamped with 0.
+  private void stubProcessInstanceSearch(final Map<Long, Integer> processInstanceOrdinals) {
+    stubProcessInstanceSearch(processInstanceOrdinals.keySet());
+  }
+
+  private SearchQueryResult<ProcessInstanceEntity> processInstancePage(
+      final Set<Long> processInstanceKeys, final long total) {
+    return new SearchQueryResult.Builder<ProcessInstanceEntity>()
+        .items(processInstanceKeys.stream().map(this::fakeProcessInstanceEntity).toList())
+        .total(total)
+        .build();
+  }
+
+  private void stubProcessInstanceSearchFailure() {
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
+        .thenThrow(new RuntimeException("search unavailable"));
+  }
+
+  private ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
+    return new ProcessInstanceEntity(
+        processInstanceKey,
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
+        -1L, // processDefinitionKey
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        null, // treePath
+        Set.of(), // tags
+        null, // businessId
+        null); // suspendedDate
+  }
+}
