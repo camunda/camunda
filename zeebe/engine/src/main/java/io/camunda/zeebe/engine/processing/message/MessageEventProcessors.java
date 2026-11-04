@@ -268,6 +268,10 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
         .withListener(
+            newPendingSubscriptionRecoveryScheduler(
+                scheduledTaskStateFactory.get(),
+                config.getMessagesPendingSubscriptionRecoveryBatchLimit()))
+        .withListener(
             new MessageStartDedupExpirationSweepScheduler(
                 config.getMessageStartDedupExpirationSweepInterval(),
                 scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
@@ -289,5 +293,13 @@ public final class MessageEventProcessors {
         // Clears the recorder's in-memory ask-duration samples on recovery: they belong to the
         // previous leadership term and must not be recorded (M7).
         .withListener(metrics);
+  }
+
+  private static PendingSubscriptionRecoveryScheduler newPendingSubscriptionRecoveryScheduler(
+      final ScheduledTaskState scheduledTaskState, final int batchLimit) {
+    return new PendingSubscriptionRecoveryScheduler(
+        scheduledTaskState.getPendingProcessMessageSubscriptionState(),
+        scheduledTaskState.getPendingMessageSubscriptionState(),
+        batchLimit);
   }
 }
