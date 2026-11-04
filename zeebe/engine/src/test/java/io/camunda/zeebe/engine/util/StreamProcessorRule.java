@@ -423,7 +423,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   public void snapshot() {
-    final var partitionId = startPartitionId;
+    snapshot(startPartitionId);
+  }
+
+  public void snapshot(final int partitionId) {
     streamProcessingComposite.snapshot(partitionId);
   }
 

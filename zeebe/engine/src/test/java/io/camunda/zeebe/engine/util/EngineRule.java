@@ -420,6 +420,10 @@ public final class EngineRule extends ExternalResource {
     environmentRule.snapshot();
   }
 
+  public void snapshot(final int partitionId) {
+    environmentRule.snapshot(partitionId);
+  }
+
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
     int partitionId = PARTITION_ID;
     for (int i = 0; i < partitionCount; i++) {
