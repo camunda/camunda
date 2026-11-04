@@ -14,7 +14,10 @@ import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.ui
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -55,5 +58,26 @@ public final class PolicyUpdateApplyMultiPartitionTest {
           .describedAs("role created on partition %d", partitionId)
           .isTrue();
     }
+  }
+
+  @Test
+  public void shouldRejectAChunkOnAnotherPartition() {
+    // given
+    final var chunk = chunk();
+
+    // when
+    engine.writeRecordsOnPartition(
+        2,
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+
+    // then
+    final var rejection =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+            .onlyCommandRejections()
+            .withPartitionId(2)
+            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("partition 1");
   }
 }

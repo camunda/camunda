@@ -21,6 +21,8 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypes;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -235,6 +237,32 @@ public final class PolicyUpdateApplyTest {
     assertThat(rejection.getRejectionReason()).contains("single chunk");
   }
 
+  @Test
+  public void shouldRejectAChunkSentAsClientRequest() {
+    // given
+    final var chunk = chunk();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.commandFromRequest("user-" + uid())
+            .policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+
+    // then
+    final var rejection =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+            .onlyCommandRejections()
+            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("client request");
+  }
+
+  @Test
+  public void shouldNotAcceptPolicyUpdatesThroughTheCommandApi() {
+    // policy updates skip the user authorization check, so clients must not be able to send them
+    assertThat(ValueTypes.isUserCommand(ValueType.POLICY_UPDATE)).isFalse();
+  }
+
   static PolicyUpdateRecord chunk() {
     return new PolicyUpdateRecord()
         .setPolicyId("policy-" + uid())
@@ -246,7 +274,7 @@ public final class PolicyUpdateApplyTest {
 
   static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
     engine.writeRecords(
-        RecordToWrite.command().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
   }
 
   private static void apply(final PolicyUpdateRecord chunk) {
