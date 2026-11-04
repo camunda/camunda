@@ -14,6 +14,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
 import {TasklistIndexPage} from '#/pages/tasklist/TasklistIndex.page';
 import {TasklistProcessesPage} from '#/pages/tasklist/TasklistProcesses.page';
+import {TasklistCasesPage} from '#/pages/tasklist/TasklistCases.page';
 import {TaskDetailPage} from '#/pages/tasklist/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/operate/OperateIndex.page';
 import {OperatePreviewPage} from '#/pages/operate/OperatePreview.page';
@@ -55,6 +56,7 @@ type Fixtures = {
 	tasklistLoginPage: TasklistLoginPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
+	tasklistCasesPage: TasklistCasesPage;
 	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
 	operatePreviewPage: OperatePreviewPage;
@@ -108,6 +110,9 @@ const test = base.extend<Fixtures>({
 	},
 	tasklistProcessesPage: async ({page}, use) => {
 		await use(new TasklistProcessesPage(page));
+	},
+	tasklistCasesPage: async ({page}, use) => {
+		await use(new TasklistCasesPage(page));
 	},
 	taskDetailPage: async ({page}, use) => {
 		await use(new TaskDetailPage(page));
