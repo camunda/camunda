@@ -36,9 +36,10 @@ class OperateHomePage {
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
+    // Matches the toggle before and after @camunda/design-system 0.81, because
+    // this suite runs against the published SNAPSHOT image, not the PR build.
     this.operationsMenuButton = page.getByRole('button', {
-      name: 'Operations',
-      exact: true,
+      name: /^(Toggle )?Operations$/,
     });
     this.batchOperationsNavItem = page.getByRole('link', {
       name: 'Batch operations',
