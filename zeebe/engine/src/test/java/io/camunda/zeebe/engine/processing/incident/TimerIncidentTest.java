@@ -43,9 +43,8 @@ public final class TimerIncidentTest {
   private static final String DATETIME_EXPRESSION =
       "date and time(date(" + DURATION_VARIABLE + "),time(\"T00:00:00@UTC\"))";
   private static final String DUE_DATE_OUT_OF_RANGE_MESSAGE =
-      "Expected the due date of timer '%s' to be between '-292275055-05-16T16:47:04.192Z' and "
-          + "'+292278994-08-17T07:12:55.807Z', but the evaluated timer results in a due date "
-          + "outside of this range.";
+      "Expected the due date of timer '%s' to be within the supported range, but the evaluated "
+          + "timer results in a due date that is too far in the past or future.";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

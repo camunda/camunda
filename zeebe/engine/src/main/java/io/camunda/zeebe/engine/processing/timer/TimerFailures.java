@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.timer;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 
@@ -19,8 +18,8 @@ import org.jspecify.annotations.NullMarked;
 public final class TimerFailures {
 
   private static final String DUE_DATE_OUT_OF_RANGE_MESSAGE =
-      "Expected the due date of timer '%s' to be between '%s' and '%s', but the evaluated timer "
-          + "results in a due date outside of this range.";
+      "Expected the due date of timer '%s' to be within the supported range, but the evaluated "
+          + "timer results in a due date that is too far in the past or future.";
 
   private TimerFailures() {}
 
@@ -30,10 +29,7 @@ public final class TimerFailures {
    */
   public static Failure dueDateOutOfRange(final DirectBuffer timerId, final long scopeKey) {
     return new Failure(
-        DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted(
-            BufferUtil.bufferAsString(timerId),
-            Instant.ofEpochMilli(Long.MIN_VALUE),
-            Instant.ofEpochMilli(Long.MAX_VALUE)),
+        DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted(BufferUtil.bufferAsString(timerId)),
         ErrorType.EXTRACT_VALUE_ERROR,
         scopeKey);
   }
