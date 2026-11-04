@@ -739,6 +739,140 @@ public class UserTaskIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfCamundaUserTaskDueDateIsNotADate() {
+    // given: a Camunda user task, which evaluates its dates separately from a job-based one
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(u -> u.zeebeUserTask().zeebeDueDateExpression("not_a_date")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("not_a_date", "tomorrow")
+            .create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid date-time format 'tomorrow' for the due date expression 'not_a_date' of user task 'user-task'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCamundaUserTaskFollowUpDateIsNotADate() {
+    // given: a Camunda user task, which evaluates its dates separately from a job-based one
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(u -> u.zeebeUserTask().zeebeFollowUpDateExpression("not_a_date")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("not_a_date", "tomorrow")
+            .create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid date-time format 'tomorrow' for the follow-up date expression 'not_a_date' of user task 'user-task'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCamundaUserTaskDueDateEvaluationFailed() {
+    // given: a Camunda user task, which evaluates its dates separately from a job-based one
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(
+                u ->
+                    u.zeebeUserTask()
+                        .zeebeDueDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            (due date expression of user task 'user-task') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [ASSERT_FAILURE] The condition is not fulfilled""");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCamundaUserTaskFollowUpDateEvaluationFailed() {
+    // given: a Camunda user task, which evaluates its dates separately from a job-based one
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(
+                u ->
+                    u.zeebeUserTask()
+                        .zeebeFollowUpDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            (follow-up date expression of user task 'user-task') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [ASSERT_FAILURE] The condition is not fulfilled""");
+  }
+
+  @Test
   public void shouldCreateIncidentOnUserTaskForCustomTenant() {
     // given
     final String tenantId = "acme";
