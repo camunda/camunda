@@ -25,18 +25,18 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.LangUtil;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
@@ -92,8 +92,7 @@ public final class RaftRolesTest {
   public void testStepDownInRoleChangedListener() throws Exception {
     // given
     final CompletableFuture<Void> roleChanged = new CompletableFuture<>();
-    final CountDownLatch followerLatch = new CountDownLatch(2);
-    final List<Role> roles = new ArrayList<>();
+    final List<Role> roles = new CopyOnWriteArrayList<>();
 
     startSingleNodeSinglePartitionWithPartitionConsumer(
             partition -> {
@@ -106,8 +105,6 @@ public final class RaftRolesTest {
 
                       // when
                       raftPartition.stepDown();
-                    } else if (role == Role.FOLLOWER) {
-                      followerLatch.countDown();
                     }
                   });
             })
@@ -115,10 +112,11 @@ public final class RaftRolesTest {
 
     // then
     roleChanged.get(60, TimeUnit.SECONDS);
-    followerLatch.await(10, TimeUnit.SECONDS);
 
     // single node becomes directly leader again
-    assertThat(roles).containsSequence(Role.INACTIVE, Role.LEADER, Role.LEADER);
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(roles).containsSequence(Role.INACTIVE, Role.LEADER, Role.LEADER));
   }
 
   private CompletableFuture<Void> startSingleNodeSinglePartitionWithPartitionConsumer(
