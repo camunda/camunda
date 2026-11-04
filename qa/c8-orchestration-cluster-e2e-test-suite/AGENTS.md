@@ -1346,6 +1346,11 @@ Work the threads **one at a time**, and **reply in each thread separately**. Nev
 threads in one issue comment, never answer in the PR body, and never leave a thread with no reply:
 an unanswered thread is indistinguishable from one nobody read.
 
+You only ever see threads Copilot opened and nobody else has touched: the workflow drops any
+thread carrying a non-Copilot comment, and forwards only Copilot-authored bodies from the rest.
+Anything a person wrote — a reply on a Copilot thread, a thread of their own, or a thread an
+earlier round left open — is theirs, stays out of your prompt, and must not be answered by you.
+
 Judge each comment on its merits. A fair share of Copilot comments are wrong, already handled
 elsewhere, or out of scope for this PR. Read the surrounding code before deciding — never apply a
 suggestion because it was made, and never dismiss one unread.
