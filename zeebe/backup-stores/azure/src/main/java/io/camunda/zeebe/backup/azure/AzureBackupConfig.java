@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -26,7 +27,17 @@ public record AzureBackupConfig(
    * Optional limits on how the client retries failing requests. Empty values leave the SDK defaults
    * in place.
    */
-  public record Retry(Optional<Integer> maxAttempts) {}
+  public record Retry(Optional<Integer> maxAttempts) {
+    public Retry {
+      maxAttempts.ifPresent(
+          attempts -> {
+            if (attempts <= 0) {
+              throw new ConfigurationException(
+                  "Expected retry maxAttempts to be > 0, but got " + attempts);
+            }
+          });
+    }
+  }
 
   public static class Builder {
 

@@ -120,21 +120,27 @@ public final class AzureBackupStore implements BackupStore {
     manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
-  public static BlobServiceClient buildClient(
-      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
-    final var builder = new BlobServiceClientBuilder();
-
-    httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
-    // The SDK default of 4 attempts with exponential backoff delays reporting an unreachable
-    // endpoint.
-    config
+  /**
+   * Retry options bounding the attempts of a failing request, or empty to leave the SDK defaults in
+   * place. The SDK default of 4 attempts with exponential backoff delays reporting an unreachable
+   * endpoint.
+   */
+  static Optional<RequestRetryOptions> retryOptions(final AzureBackupConfig config) {
+    return config
         .retry()
         .maxAttempts()
         .map(
             maxAttempts ->
                 new RequestRetryOptions(
-                    RetryPolicyType.EXPONENTIAL, maxAttempts, (Integer) null, null, null, null))
-        .ifPresent(builder::retryOptions);
+                    RetryPolicyType.EXPONENTIAL, maxAttempts, (Integer) null, null, null, null));
+  }
+
+  public static BlobServiceClient buildClient(
+      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
+    final var builder = new BlobServiceClientBuilder();
+
+    httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
+    retryOptions(config).ifPresent(builder::retryOptions);
 
     // BlobServiceClientBuilder has their own validations, for building the client
     if (config.sasTokenConfig() != null) {

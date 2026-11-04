@@ -66,7 +66,18 @@ public record GcsBackupConfig(
    * Optional limits on how the client retries failing requests. Empty values leave the library
    * defaults in place.
    */
-  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {
+    public Retry {
+      // gax treats 0 as "no limit on attempts", which would silently not bound the retries
+      maxAttempts.ifPresent(
+          attempts -> {
+            if (attempts <= 0) {
+              throw new ConfigurationException(
+                  "Expected retry maxAttempts to be > 0, but got " + attempts);
+            }
+          });
+    }
+  }
 
   public static final class Builder {
     private String bucketName;

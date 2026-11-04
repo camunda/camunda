@@ -18,6 +18,8 @@ import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ConfigTest {
 
@@ -189,5 +191,50 @@ final class ConfigTest {
     // then
     Assertions.assertThat(config.connection().auth())
         .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
+  }
+
+  @Test
+  void shouldApplyRetryTotalTimeoutAndMaxAttempts() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withRetryTotalTimeout(Duration.ofSeconds(5))
+            .withRetryMaxAttempts(3)
+            .build();
+
+    // when
+    final var settings = GcsBackupStore.retrySettings(config);
+
+    // then
+    Assertions.assertThat(settings).isPresent();
+    Assertions.assertThat(settings.get().getTotalTimeoutDuration())
+        .isEqualTo(Duration.ofSeconds(5));
+    Assertions.assertThat(settings.get().getMaxAttempts()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldKeepLibraryDefaultsWhenNoRetryIsSet() {
+    // given
+    final var config = new GcsBackupConfig.Builder().withBucketName("test").build();
+
+    // when
+    final var settings = GcsBackupStore.retrySettings(config);
+
+    // then
+    Assertions.assertThat(settings).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldRejectNonPositiveRetryMaxAttempts(final int maxAttempts) {
+    // given
+    final var builder =
+        new GcsBackupConfig.Builder().withBucketName("test").withRetryMaxAttempts(maxAttempts);
+
+    // when / then
+    Assertions.assertThatThrownBy(builder::build)
+        .isInstanceOf(ConfigurationException.class)
+        .hasMessageContaining("maxAttempts");
   }
 }
