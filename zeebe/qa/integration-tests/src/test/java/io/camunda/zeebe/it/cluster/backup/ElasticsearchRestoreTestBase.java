@@ -56,7 +56,7 @@ abstract class ElasticsearchRestoreTestBase {
    * Backup ids restart at 1 in every test, and a backup that already completed is accepted without
    * saving anything new, so each test instance keeps its backups in a directory of its own.
    */
-  private final String backupSubdirectory = UUID.randomUUID().toString();
+  protected final String backupSubdirectory = UUID.randomUUID().toString();
 
   @TestZeebe(partitionCount = PARTITION_COUNT)
   protected final TestStandaloneBroker broker =
