@@ -54,9 +54,11 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
@@ -2034,6 +2036,79 @@ public final class StorageOrdinalAssignmentTest {
     assertThat(reopenRecords)
         .extracting(r -> r.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToUserTaskSuspendAndResumeRecords() {
+    // given: an instance waiting at a user task
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-suspend-resume-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-suspend-resume-process").create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final var resumed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var recordsUpToResumed = recordsUpTo(resumed);
+
+    // then: the user task SUSPENDED and RESUMED events carry the ordinal
+    final var userTaskRecords =
+        recordsUpToResumed.stream()
+            .filter(r -> r.getValueType() == ValueType.USER_TASK)
+            .filter(
+                r ->
+                    ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .filter(
+                r ->
+                    r.getIntent() == UserTaskIntent.SUSPENDED
+                        || r.getIntent() == UserTaskIntent.RESUMED)
+            .toList();
+    assertThat(userTaskRecords)
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.SUSPENDED, UserTaskIntent.RESUMED);
+    assertThat(userTaskRecords)
+        .extracting(r -> ((UserTaskRecordValue) r.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // and: the element instance walk records carry the ordinal
+    final var walkRecords =
+        recordsUpToResumed.stream()
+            .filter(r -> r.getValueType() == ValueType.ELEMENT_INSTANCE_WALK)
+            .filter(
+                r ->
+                    ((ElementInstanceWalkRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .toList();
+    assertThat(walkRecords).isNotEmpty();
+    assertThat(walkRecords)
+        .extracting(r -> ((ElementInstanceWalkRecordValue) r.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // and: the resume hand-off command for user tasks carries the ordinal
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUME_USER_TASKS)
+                .onlyCommands()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
