@@ -38,15 +38,41 @@ func TestTenantConnectorsPidPath(t *testing.T) {
 
 func TestConnectorsEnvDropsTenantProperties(t *testing.T) {
 	t.Setenv("CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "secret")
-	for _, kv := range connectorsEnv(nil) {
+	for _, kv := range connectorsEnv(nil, types.C8RunSettings{}, "default") {
 		assert.NotContains(t, kv, "CAMUNDA_PHYSICALTENANTS_")
 	}
 }
 
 func TestDefaultConnectorsEnvSetsPortOnlyWhenChanged(t *testing.T) {
-	assert.NotContains(t, defaultConnectorsEnv([]string{"PATH=/bin"}, 8086), "SERVER_PORT=8086")
-	env := defaultConnectorsEnv([]string{"PATH=/bin", "CAMUNDA_PHYSICALTENANTS_A_X=1"}, 9086)
+	assert.NotContains(t, defaultConnectorsEnv([]string{"PATH=/bin"}, types.C8RunSettings{ConnectorsPort: 8086}), "SERVER_PORT=8086")
+	env := defaultConnectorsEnv([]string{"PATH=/bin", "CAMUNDA_PHYSICALTENANTS_A_X=1"}, types.C8RunSettings{ConnectorsPort: 9086})
 	assert.Equal(t, []string{"PATH=/bin", "SERVER_PORT=9086"}, env)
+}
+
+func TestConnectorsEnvKeepsOnlyTheRuntimesOwnSecretVariables(t *testing.T) {
+	// given
+	settings := types.C8RunSettings{ConnectorsPort: 8086, SecretsEnvPrefix: "C8_", PhysicalTenants: []types.PhysicalTenant{{ID: "tenanta"}}}
+	env := []string{"PATH=/bin", "C8_DEFAULT_DB=d", "C8_TENANTA_DB=a", "c8_tenanta_x=a", "C8_DEFAULT_=d", "C8_OTHER=o"}
+
+	// when
+	defaultEnv := defaultConnectorsEnv(env, settings)
+	tenantEnv := connectorsEnv(env, settings, "tenanta")
+
+	// then
+	assert.Equal(t, []string{"PATH=/bin", "C8_DEFAULT_DB=d", "C8_DEFAULT_=d", "C8_OTHER=o"}, defaultEnv)
+	assert.Equal(t, []string{"PATH=/bin", "C8_TENANTA_DB=a", "c8_tenanta_x=a", "C8_OTHER=o"}, tenantEnv)
+}
+
+func TestConnectorsEnvKeepsSecretVariablesOutsideEnvMode(t *testing.T) {
+	// given
+	settings := types.C8RunSettings{ConnectorsPort: 8086, PhysicalTenants: []types.PhysicalTenant{{ID: "tenanta"}}}
+	env := []string{"C8_DEFAULT_DB=d", "C8_TENANTA_DB=a"}
+
+	// when
+	defaultEnv := defaultConnectorsEnv(env, settings)
+
+	// then
+	assert.Equal(t, env, defaultEnv)
 }
 
 func TestWithTenantEnvOnlyAddsToCamunda(t *testing.T) {
