@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.clock;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -79,11 +80,26 @@ public final class ClockRecoveryTest {
   }
 
   private void assertClockAfterRestart(final Modification expected) {
-    assertThat(engine.getProcessingState().getClockState().getModification())
-        .describedAs("the stored clock after the restart")
-        .isEqualTo(expected);
     assertThat(((ControllableStreamClock) engine.getStreamClock()).currentModification())
         .describedAs("the running clock after the restart")
         .isEqualTo(expected);
+    assertThat(storedClockAfterRestart())
+        .describedAs("the stored clock after the restart")
+        .isEqualTo(expected);
+  }
+
+  /**
+   * Adding to the clock builds on the stored clock rather than the running one, so adding nothing
+   * shows the stored clock without moving it.
+   */
+  private Modification storedClockAfterRestart() {
+    final var added = engine.clock().add(Duration.ZERO);
+    final long time = added.getValue().getTime();
+    return switch ((ClockIntent) added.getIntent()) {
+      case PINNED -> Modification.pinAt(Instant.ofEpochMilli(time));
+      case OFFSETTED ->
+          time == 0 ? Modification.none() : Modification.offsetBy(Duration.ofMillis(time));
+      default -> throw new IllegalStateException("Unexpected clock event " + added);
+    };
   }
 }

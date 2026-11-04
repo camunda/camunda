@@ -13,7 +13,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -43,9 +45,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -68,9 +68,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -93,9 +91,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -118,9 +114,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -143,9 +137,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -168,9 +160,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -202,9 +192,7 @@ public class UsageMetricRpiTest {
             .filterRootScope()
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
   }
 
   @Test
@@ -238,9 +226,7 @@ public class UsageMetricRpiTest {
             .skipUntil(r -> r.getKey() != firstJob.getKey())
             .getFirst());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L);
   }
 
   @Test
@@ -272,8 +258,19 @@ public class UsageMetricRpiTest {
     assertThat(activatedRecords).hasSize(2);
     engine.awaitProcessingOf(activatedRecords.getLast());
 
-    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
-    assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L);
+    assertThat(exportRpiCountPerTenant()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L);
+  }
+
+  /** Exports the active usage metrics bucket and returns the RPI count it held per tenant. */
+  private Map<String, Long> exportRpiCountPerTenant() {
+    final long exportPosition = engine.usageMetrics().export().getSourceRecordPosition();
+    final var rpiExports =
+        RecordingExporter.usageMetricsRecords(UsageMetricIntent.EXPORTED)
+            .withSourceRecordPosition(exportPosition)
+            .limit(record -> record.getValue().getEventType() == EventType.NONE)
+            .withEventType(EventType.RPI)
+            .toList();
+    assertThat(rpiExports).hasSize(1);
+    return rpiExports.getFirst().getValue().getCounterValues();
   }
 }
