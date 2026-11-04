@@ -71,7 +71,7 @@ const ProcessInstance: React.FC<Props> = ({
 				onValueChange={(tab) => onTabChange?.(tab as ProcessInstanceTab)}
 				className="flex min-h-0 grow flex-col gap-0"
 			>
-				<div className="flex h-12 min-h-12 items-center px-4">
+				<div className="flex h-12 min-h-12 items-center bg-[var(--neutral-background-subtle)] px-4">
 					<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
 						{visibleTabs.map((tab) => (
 							<TabsTrigger key={tab} value={tab}>
