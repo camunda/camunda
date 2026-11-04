@@ -163,9 +163,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private boolean isEntityPresent(final EntityType entityType, final String entityId) {
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    // The groups of an IdP's groups claim exist only in the IdP, so they can't be required to exist
+    // here. With several IdPs, a group can't be told apart from a group of one of them.
+    final boolean groupMustExist = !securityConfig.getAuthentication().isExternalGroupsEnabled();
     return switch (entityType) {
-      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> !groupMustExist || groupState.get(entityId).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();

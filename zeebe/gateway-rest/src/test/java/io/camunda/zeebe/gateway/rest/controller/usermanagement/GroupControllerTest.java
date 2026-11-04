@@ -61,7 +61,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groupsClaim=g1"
+      })
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
     private static final String FORBIDDEN_MESSAGE =
@@ -238,7 +242,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groups-claim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
   public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
 
     private static final String FORBIDDEN_MESSAGE =
@@ -252,11 +260,9 @@ public class GroupControllerTest {
         }"""
             .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
 
-    // GroupController's own @ConditionalOnCamundaGroupsEnabled (from the CSL library) does not
-    // yet relax-match the kebab-case property, so the controller bean is still created here
-    // (unlike CamundaGroupsDisabledTest above) and needs the same mocks as
-    // CamundaGroupsEnabledTest. This test only verifies that ApiFiltersConfiguration's Groups API
-    // filter correctly blocks the request regardless.
+    // The mocks let the context start whether or not GroupController's own
+    // @ConditionalOnCamundaGroupsEnabled creates the controller bean. This test only verifies that
+    // ApiFiltersConfiguration's Groups API filter blocks the request.
     @MockitoBean private ServiceRegistry serviceRegistry;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private UserServices userServices;
@@ -275,6 +281,74 @@ public class GroupControllerTest {
 
     @Test
     void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
+      // given
+      final var groupName = "testGroup";
+      final var description = "description";
+      final var groupId = "g1";
+      // when
+      webClient
+          .post()
+          .uri(GROUP_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              GroupCreateRequest.Builder.create()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.providers.oidc.keycloak.client-id=client",
+        "camunda.security.authentication.providers.oidc.keycloak.groups-claim=groups"
+      })
+  public class CamundaGroupsDisabledViaNamedProviderTest extends RestControllerTest {
+
+    private static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+
+    // The mocks let the context start whether or not GroupController's own
+    // @ConditionalOnCamundaGroupsEnabled creates the controller bean. This test only verifies that
+    // ApiFiltersConfiguration's Groups API filter blocks the request.
+    @MockitoBean private ServiceRegistry serviceRegistry;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+
+    @BeforeEach
+    void setup() {
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+    }
+
+    @Test
+    void shouldReturnErrorOnCreateWhenTheOnlyNamedProviderHasAGroupsClaim() {
       // given
       final var groupName = "testGroup";
       final var description = "description";

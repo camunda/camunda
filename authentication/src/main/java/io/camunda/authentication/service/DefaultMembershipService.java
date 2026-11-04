@@ -21,7 +21,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
-import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -112,18 +111,12 @@ public class DefaultMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    final var tenantGroupsClaims = groupsClaims.current();
-    if (tenantGroupsClaims.groupsClaimConfigured()) {
-      // OIDC groups-claim path: groups come from the token directly, with no DB lookup. distinct()
-      // removes duplicates, keeping parity with NoDBMembershipService and the original Set-based
-      // result.
-      return OidcClaimExtractor.extractOrFallback(
-              () -> tenantGroupsClaims.extract(query.tokenClaims()),
-              List.<String>of(),
-              "membership.groupIds.default")
-          .stream()
-          .distinct()
-          .toList();
+    // OIDC groups-claim path: when the provider of the user's token has a groups claim, the groups
+    // come from the token directly, with no DB lookup.
+    final var claimGroupIds =
+        groupsClaims.current().groupIds(query.tokenClaims(), "membership.groupIds.default");
+    if (claimGroupIds.isPresent()) {
+      return claimGroupIds.get();
     }
     final var owners = buildOwners(query);
     return resolveWithRetry(

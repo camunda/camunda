@@ -238,6 +238,31 @@ public class AddEntityTenantTest {
   }
 
   @Test
+  public void shouldRejectAddingGroupToTenantIfGroupDoesNotExist() {
+    // given - Camunda groups only, so an assigned group must exist
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+
+    // when
+    final var rejection =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(groupId)
+            .withEntityType(GROUP)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add group with ID '%s' to tenant with ID '%s', but the group doesn't exist."
+                .formatted(groupId, tenantId));
+  }
+
+  @Test
   public void shouldRejectAddingRoleToTenantIfRoleDoesNotExist() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();

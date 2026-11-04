@@ -117,10 +117,28 @@ class PhysicalTenantGroupsClaimsTest {
   }
 
   @Test
+  void shouldLeaveGroupsToCamundaForProviderWithoutGroupsClaim() {
+    // given - one provider with a groups claim and one without
+    final var config = config(defaultSlot(null, null, null));
+    providers(config).put("okta", provider(ISSUER, "roles"));
+    providers(config).put("partner", provider("https://partner.example.com", null));
+
+    // when
+    final var oktaGroups = inDefaultTenant(config, token(ISSUER));
+    final var partnerGroups = inDefaultTenant(config, token("https://partner.example.com"));
+
+    // then - the partner's users get their groups from Camunda
+    assertThat(oktaGroups).containsExactly("role");
+    assertThat(partnerGroups).isNull();
+  }
+
+  @Test
   void shouldUseDefaultTenantSettingsForUnconfiguredPhysicalTenant() {
     // given
     final var config = config(defaultSlot(null, null, "groups"));
     final var environment = new MockEnvironment();
+    // groups claims apply only with OIDC
+    environment.setProperty("camunda.security.authentication.method", "oidc");
     environment.setProperty(
         "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim", "teams");
 
@@ -168,7 +186,7 @@ class PhysicalTenantGroupsClaimsTest {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    return groupsClaims.current().extract(token);
+    return groupsClaims.current().groupIds(token, "test").orElse(null);
   }
 
   private static Map<String, Object> token(final String issuer) {
