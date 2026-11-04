@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -530,6 +531,36 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
     assertRestoredEveryPartitionAfterAScaleUp();
   }
 
+  @Test
+  void shouldRejectATimeRangeSpanningAScaleUp() throws Exception {
+    // given - a time range starting at a backup of the 2 partitions, and ending at a backup taken
+    // after the cluster was scaled up to 3. A range of
+    // backups starts at its first backup, so `from` is its timestamp
+    final Instant from;
+    final long lastBackup;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstances(client);
+      from = checkpointTimestamp(takeAndAwaitBackup());
+    }
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final Instant to;
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+      lastBackup = takeAndAwaitBackup();
+      to = currentTime(broker);
+    }
+
+    // when / then - the backups of the range do not hold the same partitions
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    assertRestoreRejected(
+        RestoreRequest.timeRange(from, to),
+        IllegalStateException.class,
+        "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
+            .formatted(lastBackup, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+  }
+
   private void assertRestoredEveryPartitionAfterAScaleUp() {
     InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
         broker.getWorkingDirectory(),
@@ -636,6 +667,19 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
           .send()
           .join();
     }
+  }
+
+  /**
+   * The timestamp of the checkpoint the backup was taken at, on the partition that took it last. A
+   * range of backups starts at its first backup, so a time range that is to start there has to
+   * start at that exact timestamp: the checkpoint's id is not it.
+   */
+  private Instant checkpointTimestamp(final long checkpointId) {
+    return backupActuator.state().getCheckpointStates().stream()
+        .filter(state -> state.getCheckpointId() == checkpointId)
+        .map(state -> state.getCheckpointTimestamp().toInstant())
+        .max(Comparator.naturalOrder())
+        .orElseThrow();
   }
 
   private long takeAndAwaitBackup() {

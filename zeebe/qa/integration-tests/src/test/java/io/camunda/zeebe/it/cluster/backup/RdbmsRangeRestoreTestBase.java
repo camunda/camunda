@@ -42,6 +42,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -585,6 +586,41 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   }
 
   @Test
+  void shouldRejectATimeRangeSpanningAScaleUp() throws Exception {
+    // given - a time range starting at a backup of the 2 partitions, covering the exported
+    // positions, and ending at a backup taken after the cluster was scaled up to 3. A range of
+    // backups starts at its first backup, so `from` is its timestamp
+    final Instant from;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      createInstancesOnEveryPartition(client);
+      from = checkpointTimestamp(takeAndAwaitBackup().getBackupId());
+    }
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPositionsOnEveryPartition();
+    scaleUp(ClusterActuator.of(broker), SCALED_PARTITION_COUNT);
+    final long lastBackup;
+    try (final var client = broker.newClientBuilder().build()) {
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+          client, PROCESS_ID, SCALED_PARTITION_COUNT);
+    }
+    lastBackup = takeAndAwaitBackup().getBackupId();
+    final Instant to = currentTime(broker);
+
+    // and - the RDBMS is restored to the point of the 2 partitions, so it only holds exported
+    // positions for them, not for the one added by the scale up
+    deleteExportedPositionsOfScaledUpPartitions();
+
+    // when / then - the backups of the range do not hold the same partitions
+    configuredPartitionCount = SCALED_PARTITION_COUNT;
+    assertRestoreRejected(
+        RestoreTarget.timeRange(from, to),
+        IllegalStateException.class,
+        "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
+            .formatted(lastBackup, SCALED_PARTITION_COUNT, PARTITION_COUNT));
+  }
+
+  @Test
   void shouldRestoreEveryPartitionPastItsExportedPositionAndResumeExporting() throws Exception {
     // given - backups covering what the RDBMS holds, and an exporter that is stopped, so the
     // exported positions stay where they are
@@ -939,6 +975,19 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
     return RestoreTarget.timeRange(from, to);
+  }
+
+  /**
+   * The timestamp of the checkpoint the backup was taken at, on the partition that took it last. A
+   * range of backups starts at its first backup, so a time range that is to start there has to
+   * start at that exact timestamp: the checkpoint's id is not it.
+   */
+  private Instant checkpointTimestamp(final long checkpointId) {
+    return backupActuator.state().getCheckpointStates().stream()
+        .filter(state -> state.getCheckpointId() == checkpointId)
+        .map(state -> state.getCheckpointTimestamp().toInstant())
+        .max(Comparator.naturalOrder())
+        .orElseThrow();
   }
 
   /**
