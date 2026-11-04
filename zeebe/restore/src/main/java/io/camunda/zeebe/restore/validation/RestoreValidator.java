@@ -247,13 +247,13 @@ public final class RestoreValidator
    */
   private int timeRangePartitionCount(final Instant from, final @Nullable Instant to) {
     final var store =
-        requireNonNull(backupStore, "Backup store must be configured to load backups");
+        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
     final var firstPartition =
         RestorePointResolver.resolve(loadMetadataForAllPartitions(1), from, to, null)
             .partitions()
             .get(1);
     final var firstBackup =
-        requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().first();
+        Objects.requireNonNull(firstPartition, "Partition 1 must be resolved").backupIds().first();
     return backupPartitionCount(store, firstBackup);
   }
 
