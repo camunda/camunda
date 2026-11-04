@@ -315,7 +315,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
         .setEnableProcessDefinitionRestore(startup.isProcessDefinitionRestoreEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
-        .setFixedStorageOrdinal(storageOrdinals.getFixedStorageOrdinal())
+        .setFixedStorageOrdinals(storageOrdinals.getFixedStorageOrdinals())
         .setInputMappingMode(inputMappingMode)
         .setInputComparisonMode(inputComparisonMode)
         .setOutputMappingMode(outputMappingMode)

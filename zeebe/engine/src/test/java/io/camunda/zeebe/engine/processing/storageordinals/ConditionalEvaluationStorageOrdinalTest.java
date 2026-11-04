@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ConditionalStartedProcessInstanceValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public final class ConditionalEvaluationStorageOrdinalTest {
       EngineRule.singlePartition()
           .maxCommandsInBatch(1)
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Test
   public void shouldAssignInstanceOrdinalToStartedProcessInstanceEntries() {

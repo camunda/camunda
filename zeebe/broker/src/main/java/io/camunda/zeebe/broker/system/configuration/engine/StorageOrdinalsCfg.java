@@ -9,13 +9,14 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import java.util.List;
 
 public class StorageOrdinalsCfg implements ConfigurationEntry {
 
   private boolean enableArchiverless =
       EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
-  private int fixedStorageOrdinal =
-      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
+  private List<Integer> fixedStorageOrdinals =
+      EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS;
 
   public boolean isEnableArchiverless() {
     return enableArchiverless;
@@ -25,12 +26,12 @@ public class StorageOrdinalsCfg implements ConfigurationEntry {
     this.enableArchiverless = enableArchiverless;
   }
 
-  public int getFixedStorageOrdinal() {
-    return fixedStorageOrdinal;
+  public List<Integer> getFixedStorageOrdinals() {
+    return fixedStorageOrdinals;
   }
 
-  public void setFixedStorageOrdinal(final int fixedStorageOrdinal) {
-    this.fixedStorageOrdinal = fixedStorageOrdinal;
+  public void setFixedStorageOrdinals(final List<Integer> fixedStorageOrdinals) {
+    this.fixedStorageOrdinals = fixedStorageOrdinals;
   }
 
   @Override
@@ -38,8 +39,8 @@ public class StorageOrdinalsCfg implements ConfigurationEntry {
     return "StorageOrdinalsCfg{"
         + "enableArchiverless="
         + enableArchiverless
-        + ", fixedStorageOrdinal="
-        + fixedStorageOrdinal
+        + ", fixedStorageOrdinals="
+        + fixedStorageOrdinals
         + '}';
   }
 }

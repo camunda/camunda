@@ -51,4 +51,4 @@ zeebe:
           processDefinitionRestoreEnabled: false
         storageOrdinals:
           enableArchiverless: true
-          fixedStorageOrdinal: 1001
+          fixedStorageOrdinals: 1001,1002

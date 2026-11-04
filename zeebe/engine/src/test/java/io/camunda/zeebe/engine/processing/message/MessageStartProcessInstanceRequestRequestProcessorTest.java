@@ -31,6 +31,7 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modificat
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -76,7 +77,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setArchiverlessEnabled(true)
-                      .setFixedStorageOrdinal(FIXED_ORDINAL));
+                      .setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Test
   public void shouldStartProcessInstanceAndReplyStartedWhenSubscriptionExistsAndBusinessIdIsFree() {

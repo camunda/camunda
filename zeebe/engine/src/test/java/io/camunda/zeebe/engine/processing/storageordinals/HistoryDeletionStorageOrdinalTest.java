@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,7 +40,7 @@ public final class HistoryDeletionStorageOrdinalTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
