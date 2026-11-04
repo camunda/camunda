@@ -748,4 +748,23 @@ public class DataBackupS3Test {
       assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.s3.defaults-mode=standard",
+      })
+  class WithDefaultsMode {
+    final BrokerBasedProperties brokerCfg;
+
+    WithDefaultsMode(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetDefaultsMode() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode()).isEqualTo("standard");
+    }
+  }
 }

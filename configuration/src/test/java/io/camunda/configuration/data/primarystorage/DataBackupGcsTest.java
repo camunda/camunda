@@ -13,7 +13,9 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -378,6 +380,27 @@ public class DataBackupGcsTest {
     @Test
     void shouldSetBufferSize() {
       assertThat(brokerCfg.getData().getBackup().getGcs().getBufferSize()).isEqualTo(4194304);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.gcs.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.gcs.retry.total-timeout=5s",
+        "camunda.data.primary-storage.backup.gcs.retry.max-attempts=2",
+      })
+  class WithRetrySettings {
+    final BrokerBasedProperties brokerCfg;
+
+    WithRetrySettings(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetRetry() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getRetry())
+          .isEqualTo(new GcsBackupStoreConfig.Retry(Duration.ofSeconds(5), 2));
     }
   }
 }

@@ -9,8 +9,11 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Gcs {
   private static final String PREFIX = "camunda.data.primary-storage.backup.gcs";
@@ -68,6 +71,12 @@ public class Gcs {
 
   /** Size of the buffer (in bytes) used when uploading files to GCS. */
   private int bufferSize = 2 * 1024 * 1024;
+
+  /**
+   * Limits on how the GCS client retries failing requests. When not set, the GCS client defaults
+   * apply.
+   */
+  @NestedConfigurationProperty private Retry retry = new Retry();
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
@@ -140,5 +149,37 @@ public class Gcs {
   public enum GcsBackupStoreAuth {
     NONE,
     AUTO
+  }
+
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
+  public static class Retry {
+    /** Maximum total time the client keeps retrying a failing request. */
+    private @Nullable Duration totalTimeout;
+
+    /** Maximum number of attempts the client makes for a failing request. */
+    private @Nullable Integer maxAttempts;
+
+    public @Nullable Duration getTotalTimeout() {
+      return totalTimeout;
+    }
+
+    public void setTotalTimeout(final @Nullable Duration totalTimeout) {
+      this.totalTimeout = totalTimeout;
+    }
+
+    public @Nullable Integer getMaxAttempts() {
+      return maxAttempts;
+    }
+
+    public void setMaxAttempts(final @Nullable Integer maxAttempts) {
+      this.maxAttempts = maxAttempts;
+    }
   }
 }

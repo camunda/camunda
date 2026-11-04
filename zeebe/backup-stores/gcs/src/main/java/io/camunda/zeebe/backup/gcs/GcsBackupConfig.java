@@ -47,12 +47,6 @@ public record GcsBackupConfig(
     this.retry = requireNonNull(retry);
   }
 
-  /**
-   * Optional limits on how the client retries failing requests. Empty values leave the library
-   * defaults in place.
-   */
-  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
-
   private static String requireBucketName(final String bucketName) {
     if (bucketName == null || bucketName.isBlank()) {
       throw new ConfigurationException("bucketName must be provided");
@@ -67,6 +61,12 @@ public record GcsBackupConfig(
       throw new ConfigurationException(e.getMessage(), e);
     }
   }
+
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the library
+   * defaults in place.
+   */
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
 
   public static final class Builder {
     private String bucketName;
