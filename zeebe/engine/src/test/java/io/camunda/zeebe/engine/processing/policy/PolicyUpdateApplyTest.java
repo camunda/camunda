@@ -48,6 +48,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,12 @@ import org.junit.Test;
 public final class PolicyUpdateApplyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  /**
+   * Every applied chunk switches to its policy version, and a switch is only accepted to a newer
+   * version, so each chunk gets the next one.
+   */
+  private static final AtomicLong NEXT_POLICY_VERSION = new AtomicLong();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -103,7 +110,8 @@ public final class PolicyUpdateApplyTest {
     apply(chunk);
 
     // then
-    assertThat(appliedRecord(chunk.getUpdateId()).getValue().getPolicyVersion()).isEqualTo(1L);
+    assertThat(appliedRecord(chunk.getUpdateId()).getValue().getPolicyVersion())
+        .isEqualTo(chunk.getPolicyVersion());
     assertThat(
             RecordingExporter.tenantRecords(TenantIntent.CREATED).withTenantId(tenantId).exists())
         .isTrue();
@@ -160,7 +168,6 @@ public final class PolicyUpdateApplyTest {
 
     final var second =
         chunk()
-            .setPolicyVersion(2)
             .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName("after")))
             .setAuthorizations(
                 List.<AuthorizationRecordValue>of(
@@ -266,7 +273,7 @@ public final class PolicyUpdateApplyTest {
   static PolicyUpdateRecord chunk() {
     return new PolicyUpdateRecord()
         .setPolicyId("policy-" + uid())
-        .setPolicyVersion(1)
+        .setPolicyVersion(NEXT_POLICY_VERSION.incrementAndGet())
         .setUpdateId("update-" + uid())
         .setChunkIndex(0)
         .setChunkCount(1);
