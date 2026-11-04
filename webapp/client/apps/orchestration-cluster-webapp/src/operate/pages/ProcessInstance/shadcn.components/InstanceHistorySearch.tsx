@@ -62,18 +62,20 @@ const InstanceHistorySearch: React.FC = () => {
 	return (
 		<div className="flex flex-col gap-2 border-b border-border p-2">
 			<div className="flex items-center gap-2">
-				<SearchInput
-					size="sm"
-					aria-label={t('operate.processInstance.history.search.label')}
-					placeholder={t('operate.processInstance.history.search.placeholder')}
-					value={draft}
-					onChange={(event) => setDraft(event.target.value)}
-					onBlur={() => setDraft(draft.trim())}
-					onClear={() => {
-						setDraft('');
-						updateSearch({elementSearch: undefined});
-					}}
-				/>
+				<div className="min-w-0 flex-1">
+					<SearchInput
+						size="sm"
+						aria-label={t('operate.processInstance.history.search.label')}
+						placeholder={t('operate.processInstance.history.search.placeholder')}
+						value={draft}
+						onChange={(event) => setDraft(event.target.value)}
+						onBlur={() => setDraft(draft.trim())}
+						onClear={() => {
+							setDraft('');
+							updateSearch({elementSearch: undefined});
+						}}
+					/>
+				</div>
 				<Button
 					variant="ghost"
 					size="sm"
