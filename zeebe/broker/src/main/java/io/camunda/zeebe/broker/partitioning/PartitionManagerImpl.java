@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.ecv.PartitionCapabilitiesRegistry;
 import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
@@ -311,6 +312,12 @@ public final class PartitionManagerImpl
         // zeebePartition may be null before the partition is fully started
         .filter(Objects::nonNull)
         .toList();
+  }
+
+  /** Hands the engine of each partition what it needs for the ECV commit. */
+  public void setPartitionCapabilities(final PartitionCapabilitiesRegistry registry) {
+    zeebePartitionFactory.setPartitionCapabilities(
+        partitionId -> registry.forPartition(partitionGroup, partitionId));
   }
 
   @Override

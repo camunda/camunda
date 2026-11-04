@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.ecv.EcvManagement;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -40,6 +41,16 @@ public class SpringBrokerBridge {
   private Function<String, Runnable> tenantSchemaInitializer;
 
   private BiConsumer<Integer, String> shutdownHelper;
+  private Supplier<EcvManagement> ecvManagementSupplier;
+
+  public void registerEcvManagementSupplier(final Supplier<EcvManagement> ecvManagementSupplier) {
+    this.ecvManagementSupplier = ecvManagementSupplier;
+  }
+
+  /** The ECV management of this broker; empty if the system partition is not enabled. */
+  public Optional<EcvManagement> getEcvManagement() {
+    return Optional.ofNullable(ecvManagementSupplier).map(Supplier::get);
+  }
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {

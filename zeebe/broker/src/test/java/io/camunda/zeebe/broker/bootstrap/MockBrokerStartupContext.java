@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.ecv.EcvManagement;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -60,6 +61,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public class MockBrokerStartupContext implements BrokerStartupContext {
   private SystemPartition systemPartition;
+  private EcvManagement ecvManagement;
 
   private BrokerInfo brokerInfo = mock(BrokerInfo.class);
   private BrokerCfg brokerConfiguration = mock(BrokerCfg.class);
@@ -305,6 +307,16 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void removeBrokerAdminService(final String physicalTenantId) {
     brokerAdminServices.remove(physicalTenantId);
+  }
+
+  @Override
+  public EcvManagement getEcvManagement() {
+    return ecvManagement;
+  }
+
+  @Override
+  public void setEcvManagement(final EcvManagement ecvManagement) {
+    this.ecvManagement = ecvManagement;
   }
 
   @Override

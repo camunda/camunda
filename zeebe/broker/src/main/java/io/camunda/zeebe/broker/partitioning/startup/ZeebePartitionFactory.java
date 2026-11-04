@@ -76,6 +76,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.ecv.PartitionCapabilities;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -85,6 +86,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.IntFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +117,9 @@ public final class ZeebePartitionFactory {
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
+
+  private IntFunction<PartitionCapabilities> partitionCapabilities =
+      partitionId -> PartitionCapabilities.NOOP;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -155,6 +160,12 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
+  }
+
+  /** Sets what the engine of each partition gets for the ECV commit, by partition id. */
+  public void setPartitionCapabilities(
+      final IntFunction<PartitionCapabilities> partitionCapabilities) {
+    this.partitionCapabilities = partitionCapabilities;
   }
 
   public ZeebePartition constructPartition(
@@ -302,7 +313,8 @@ public final class ZeebePartitionFactory {
           jobStreamer,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
+          secretStoreRegistry,
+          partitionCapabilities.apply(recordProcessorContext.getPartitionId()));
     };
   }
 }

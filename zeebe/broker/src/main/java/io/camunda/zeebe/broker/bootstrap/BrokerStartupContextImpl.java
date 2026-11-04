@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.ecv.EcvManagement;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -57,6 +58,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private SystemPartition systemPartition;
+  private EcvManagement ecvManagement;
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
@@ -267,6 +269,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public EcvManagement getEcvManagement() {
+    return ecvManagement;
+  }
+
+  @Override
+  public void setEcvManagement(final EcvManagement ecvManagement) {
+    this.ecvManagement = ecvManagement;
   }
 
   @Override

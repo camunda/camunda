@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -66,7 +67,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                     // We intentionally do not wait for start() to complete: broker startup only
                     // needs the partition manager registered. Individual partitions bootstrap
                     // asynchronously afterwards
-                    partitionManager.start();
+                    startAfterEcvCheck(brokerStartupContext, partitionManager);
                   });
 
       concurrencyControl.runOnCompletion(
@@ -81,6 +82,42 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     } catch (final Exception e) {
       startupFuture.completeExceptionally(e);
     }
+  }
+
+  /**
+   * Starts the partitions of this physical tenant only once the broker supports all enabled
+   * capabilities (design section 6). A refused broker keeps its partition manager registered but
+   * does not start its partitions: it does not become a leader, process records or write to a
+   * partition (R23). Without the system partition there is no check.
+   */
+  private void startAfterEcvCheck(
+      final BrokerStartupContext brokerStartupContext, final PartitionManager partitionManager) {
+    final var ecvManagement = brokerStartupContext.getEcvManagement();
+    if (ecvManagement == null) {
+      partitionManager.start();
+      return;
+    }
+    ecvManagement
+        .selfCheck()
+        .thenAccept(
+            result -> {
+              if (brokerStartupContext.getPartitionManagers().get(physicalTenantId)
+                  != partitionManager) {
+                return; // the broker is shutting down
+              }
+              if (result.passed()) {
+                LOGGER.info(
+                    "Starting the partitions of physical tenant {}: the ECV check passed",
+                    physicalTenantId);
+                partitionManager.start();
+                ecvManagement.onTenantPartitionsStarted();
+              } else {
+                LOGGER.error(
+                    "Not starting the partitions of physical tenant {}: {}",
+                    physicalTenantId,
+                    result.reason());
+              }
+            });
   }
 
   @Override
@@ -124,8 +161,14 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   PartitionManager partitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-    return PartitionManager.createPartitionManager(
-        brokerStartupContext, physicalTenantId, topologyManager);
+    final var partitionManager =
+        PartitionManager.createPartitionManager(
+            brokerStartupContext, physicalTenantId, topologyManager);
+    final var ecvManagement = brokerStartupContext.getEcvManagement();
+    if (ecvManagement != null && partitionManager instanceof final PartitionManagerImpl impl) {
+      impl.setPartitionCapabilities(ecvManagement.partitionRegistry());
+    }
+    return partitionManager;
   }
 
   PartitionManager recoveryPartitionManager(

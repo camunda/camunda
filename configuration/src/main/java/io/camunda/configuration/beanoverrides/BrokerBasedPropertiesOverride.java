@@ -580,6 +580,12 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .getSystemPartition()
         .setSnapshotPeriod(cluster.getSystemPartition().getSnapshotPeriod());
+    final var ecv = cluster.getSystemPartition().getEcv();
+    final var ecvOverride = override.getCluster().getSystemPartition().getEcv();
+    ecvOverride.setCommitMode(ecv.getCommitMode());
+    ecvOverride.setCommitCheckInterval(ecv.getCommitCheckInterval());
+    ecvOverride.setRequestTimeout(ecv.getRequestTimeout());
+    ecvOverride.setSupportedCapabilities(ecv.getSupportedCapabilities());
     final var failureDetector = cluster.getSystemPartition().getFailureDetector();
     final var failureDetectorOverride =
         override.getCluster().getSystemPartition().getFailureDetector();

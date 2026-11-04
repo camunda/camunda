@@ -48,6 +48,14 @@ public final class BrokerStartupProcess {
     final var config = startupContext.getBrokerConfiguration();
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
+    // before any step writes the cluster configuration: tells an upgraded cluster from a new one
+    final var existingCluster =
+        java.nio.file.Files.exists(
+            java.nio.file.Path.of(config.getData().getDirectory())
+                .resolve(
+                    io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration
+                        .TOPOLOGY_FILE_NAME));
+
     result.add(new ClusterServicesStep());
     result.add(new ClusterConfigurationManagerStep());
 
@@ -57,6 +65,7 @@ public final class BrokerStartupProcess {
     result.add(new MonitoringServerStep());
 
     result.add(new SystemPartitionStep());
+    result.add(new EcvManagementStep(existingCluster));
 
     result.add(new ApiMessagingServiceStep());
     result.add(new RequestIdGeneratorStep());

@@ -31,7 +31,12 @@ public enum SystemPartitionKeyType {
    * The decision to fail over from a failed region to a surviving one, put once by the failure
    * detector's leader together with the tick that made the decision.
    */
-  REGION_FAILOVER(5);
+  REGION_FAILOVER(5),
+  /**
+   * The committed ECV: the enabled capabilities of the cluster, as an encoded capability set. Its
+   * format is fixed in 8.11, and it only grows: every writer puts the union with the current value.
+   */
+  ENABLED_CAPABILITIES(6);
 
   private final long id;
 

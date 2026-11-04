@@ -49,6 +49,17 @@ public class SystemPartition {
   /** Experimental, opt-in detection of brokers gone from the cluster. */
   @NestedConfigurationProperty private FailureDetector failureDetector = new FailureDetector();
 
+  /** The ECV tracking and commit, which runs on top of the system partition. */
+  @NestedConfigurationProperty private Ecv ecv = new Ecv();
+
+  public Ecv getEcv() {
+    return ecv;
+  }
+
+  public void setEcv(final Ecv ecv) {
+    this.ecv = ecv;
+  }
+
   public boolean isEnabled() {
     return enabled;
   }

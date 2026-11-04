@@ -29,6 +29,7 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
   private DataSize logSegmentSize = DEFAULT_LOG_SEGMENT_SIZE;
   private Duration snapshotPeriod = DEFAULT_SNAPSHOT_PERIOD;
   private FailureDetectorCfg failureDetector = new FailureDetectorCfg();
+  private EcvCfg ecv = new EcvCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -97,6 +98,14 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
     this.failureDetector = failureDetector;
   }
 
+  public EcvCfg getEcv() {
+    return ecv;
+  }
+
+  public void setEcv(final EcvCfg ecv) {
+    this.ecv = ecv;
+  }
+
   @Override
   public String toString() {
     return "SystemPartitionCfg{"
@@ -110,6 +119,8 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
         + snapshotPeriod
         + ", failureDetector="
         + failureDetector
+        + ", ecv="
+        + ecv
         + '}';
   }
 }

@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.ecv.EcvManagement;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -123,6 +124,10 @@ public interface BrokerStartupContext {
 
   /** Returns the system partition, or {@code null} if it is disabled. */
   SystemPartition getSystemPartition();
+
+  EcvManagement getEcvManagement();
+
+  void setEcvManagement(EcvManagement ecvManagement);
 
   void setSystemPartition(SystemPartition systemPartition);
 
