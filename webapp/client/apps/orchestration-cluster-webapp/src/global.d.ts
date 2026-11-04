@@ -34,5 +34,6 @@ export declare global {
 		readonly VITE_OSANO_DEV_ENV_URL: string;
 		readonly VITE_OSANO_INT_ENV_URL: string;
 		readonly VITE_OSANO_PROD_ENV_URL: string;
+		readonly VITE_ENABLE_CASE_MANAGEMENT?: string;
 	}
 }

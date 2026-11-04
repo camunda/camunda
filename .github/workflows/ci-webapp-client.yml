@@ -404,6 +404,8 @@ jobs:
           timeout_minutes: "6"
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
+        env:
+          VITE_ENABLE_CASE_MANAGEMENT: "true"
       - name: Accessibility tests
         run: npm run test:a11y -w @camunda/orchestration-cluster-webapp -- test/a11y/${{ matrix.component }}/
       - name: Upload Playwright report
