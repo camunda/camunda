@@ -805,4 +805,41 @@ public final class InProcessRestoreTestUtil {
   private static RequestHandlingAllPartitions requestHandlingOver(final int partitionCount) {
     return new RequestHandlingAllPartitions(partitionCount).strategy("AllPartitions");
   }
+
+  /**
+   * Deletes a backup from the middle of a range of backups, which splits that range in two: one
+   * ending at the previous backup and one starting at the next. Waits until the backup store's
+   * metadata of every partition holds both ranges, as a time-range restore resolves from it.
+   */
+  static void deleteBackupSplittingItsRange(
+      final BackupActuator backupActuator,
+      final int partitionCount,
+      final long previousBackup,
+      final long deletedBackup,
+      final long nextBackup) {
+    backupActuator.delete(deletedBackup);
+    Awaitility.await("the range of backups is split around backup %d".formatted(deletedBackup))
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var rangesByPartition =
+                  backupActuator.syncMetadata().getRanges().stream()
+                      .collect(Collectors.groupingBy(PartitionBackupRange::getPartitionId));
+              assertThat(rangesByPartition)
+                  .hasSize(partitionCount)
+                  .allSatisfy(
+                      (partition, ranges) ->
+                          assertThat(ranges)
+                              .describedAs("backup ranges of partition %d", partition)
+                              .anySatisfy(
+                                  range ->
+                                      assertThat(range.getEnd().getCheckpointId())
+                                          .isEqualTo(previousBackup))
+                              .anySatisfy(
+                                  range ->
+                                      assertThat(range.getStart().getCheckpointId())
+                                          .isEqualTo(nextBackup)));
+            });
+  }
 }
