@@ -113,6 +113,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableClockState getClockState();
 
   @Override
+  MutableClusterCapabilitiesState getClusterCapabilitiesState();
+
+  @Override
   MutableRoleState getRoleState();
 
   @Override

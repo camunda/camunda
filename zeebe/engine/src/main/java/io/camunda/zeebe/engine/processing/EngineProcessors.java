@@ -42,6 +42,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProc
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.capabilities.ClusterCapabilitiesCommitter;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClusterCapabilitiesIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -125,6 +127,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.camunda.zeebe.util.ecv.PartitionCapabilities;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Supplier;
@@ -143,6 +146,30 @@ public final class EngineProcessors {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SecretStoreRegistry secretStoreRegistry) {
+    return createEngineProcessors(
+        typedRecordProcessorContext,
+        partitionsCount,
+        subscriptionCommandSender,
+        interPartitionCommandSender,
+        featureFlags,
+        jobStreamer,
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter,
+        secretStoreRegistry,
+        PartitionCapabilities.NOOP);
+  }
+
+  public static TypedRecordProcessors createEngineProcessors(
+      final TypedRecordProcessorContext typedRecordProcessorContext,
+      final int partitionsCount,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final InterPartitionCommandSender interPartitionCommandSender,
+      final FeatureFlags featureFlags,
+      final JobStreamer jobStreamer,
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final SecretStoreRegistry secretStoreRegistry,
+      final PartitionCapabilities partitionCapabilities) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -459,6 +486,9 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         permissionsBehavior);
+
+    addClusterCapabilitiesProcessors(
+        typedRecordProcessors, processingState, writers, partitionCapabilities);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors,
@@ -1065,5 +1095,20 @@ public final class EngineProcessors {
         new CommandDistributionContinueProcessor(distributionState, writers));
 
     typedRecordProcessors.withListener(commandDistributionBehavior);
+  }
+
+  private static void addClusterCapabilitiesProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final Writers writers,
+      final PartitionCapabilities partitionCapabilities) {
+    final var state = processingState.getClusterCapabilitiesState();
+    state.setSupportedCapabilities(partitionCapabilities.supported());
+    final var committer =
+        new ClusterCapabilitiesCommitter(
+            state, partitionCapabilities, writers, processingState.getKeyGenerator());
+    typedRecordProcessors.onCommand(
+        ValueType.CLUSTER_CAPABILITIES, ClusterCapabilitiesIntent.COMMIT, committer);
+    typedRecordProcessors.withListener(committer);
   }
 }

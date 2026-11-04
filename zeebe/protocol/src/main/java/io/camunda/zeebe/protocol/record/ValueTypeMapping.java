@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterCapabilitiesIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -107,6 +108,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterCapabilitiesRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -327,6 +329,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.USER_TASK_LOOKUP,
         new Mapping<>(UserTaskLookupRecordValue.class, UserTaskLookupIntent.class));
+    mapping.put(
+        ValueType.CLUSTER_CAPABILITIES,
+        new Mapping<>(ClusterCapabilitiesRecordValue.class, ClusterCapabilitiesIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new Mapping<>(

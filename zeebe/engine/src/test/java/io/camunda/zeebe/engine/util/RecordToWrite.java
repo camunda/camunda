@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.capabilities.ClusterCapabilitiesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterCapabilitiesIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -216,6 +218,13 @@ public final class RecordToWrite implements LogAppendEntry {
   public RecordToWrite timer(final TimerIntent intent, final TimerRecordValue value) {
     recordMetadata.valueType(ValueType.TIMER).intent(intent);
     unifiedRecordValue = (TimerRecord) value;
+    return this;
+  }
+
+  public RecordToWrite clusterCapabilities(
+      final ClusterCapabilitiesIntent intent, final ClusterCapabilitiesRecord value) {
+    recordMetadata.valueType(ValueType.CLUSTER_CAPABILITIES).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 

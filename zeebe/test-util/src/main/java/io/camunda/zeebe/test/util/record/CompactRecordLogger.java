@@ -91,6 +91,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterCapabilitiesRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -315,6 +316,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
+    valueLoggers.put(ValueType.CLUSTER_CAPABILITIES, this::summarizeClusterCapabilities);
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
@@ -1588,6 +1590,11 @@ public class CompactRecordLogger {
         .append(formatVariables(value));
 
     return result.toString();
+  }
+
+  private String summarizeClusterCapabilities(final Record<?> record) {
+    final var value = (ClusterCapabilitiesRecordValue) record.getValue();
+    return "enabled:" + value.getEnabledCapabilities();
   }
 
   private String summarizeClock(final Record<?> record) {

@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterCapabilitiesIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -1034,6 +1035,9 @@ public final class EventAppliers implements EventApplier {
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
     register(ClockIntent.FETCHED, NOOP_EVENT_APPLIER);
     register(ClockIntent.OFFSETTED, new ClockOffsettedApplier(state.getClockState()));
+    register(
+        ClusterCapabilitiesIntent.COMMITTED,
+        new ClusterCapabilitiesCommittedApplier(state.getClusterCapabilitiesState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {

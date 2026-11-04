@@ -404,7 +404,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
    * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
    */
-  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  /**
+   * The enabled capabilities of the partition: the cluster-wide ECV as this partition applied it.
+   * Partition-local: each partition, including a new one, gets the commit decision itself.
+   */
+  CLUSTER_CAPABILITIES(167, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

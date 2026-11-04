@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
+import io.camunda.zeebe.engine.state.capabilities.DbClusterCapabilitiesState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
@@ -67,6 +68,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterCapabilitiesState;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState;
@@ -155,6 +157,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
   private final MutableClockState clockState;
+  private final MutableClusterCapabilitiesState clusterCapabilitiesState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
@@ -234,6 +237,7 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
+    clusterCapabilitiesState = new DbClusterCapabilitiesState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
@@ -429,6 +433,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClockState getClockState() {
     return clockState;
+  }
+
+  @Override
+  public MutableClusterCapabilitiesState getClusterCapabilitiesState() {
+    return clusterCapabilitiesState;
   }
 
   @Override

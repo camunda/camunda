@@ -92,6 +92,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher.ResetMode;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.ecv.PartitionCapabilities;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -136,6 +137,7 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
   private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
+  private PartitionCapabilities partitionCapabilities = PartitionCapabilities.NOOP;
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
@@ -253,6 +255,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
+    return this;
+  }
+
+  public EngineRule withPartitionCapabilities(final PartitionCapabilities partitionCapabilities) {
+    this.partitionCapabilities = partitionCapabilities;
     return this;
   }
 
@@ -388,7 +395,8 @@ public final class EngineRule extends ExternalResource {
                         jobStreamer,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
-                        secretStoreRegistry)
+                        secretStoreRegistry,
+                        partitionCapabilities)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

@@ -129,6 +129,7 @@ public interface Intent {
     map.put(ValueType.USER, UserIntent.class);
     map.put(ValueType.USER_TASK, UserTaskIntent.class);
     map.put(ValueType.USER_TASK_LOOKUP, UserTaskLookupIntent.class);
+    map.put(ValueType.CLUSTER_CAPABILITIES, ClusterCapabilitiesIntent.class);
     map.put(ValueType.VARIABLE, VariableIntent.class);
     map.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.class);
     return map;

@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterCapabilitiesIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
@@ -80,6 +81,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterCapabilitiesRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -691,6 +693,16 @@ public final class RecordingExporter implements Exporter {
   public static UserTaskLookupRecordStream userTaskLookupRecords() {
     return new UserTaskLookupRecordStream(
         records(ValueType.USER_TASK_LOOKUP, UserTaskLookupRecordValue.class));
+  }
+
+  public static ClusterCapabilitiesRecordStream clusterCapabilitiesRecords(
+      final ClusterCapabilitiesIntent intent) {
+    return clusterCapabilitiesRecords().withIntent(intent);
+  }
+
+  public static ClusterCapabilitiesRecordStream clusterCapabilitiesRecords() {
+    return new ClusterCapabilitiesRecordStream(
+        records(ValueType.CLUSTER_CAPABILITIES, ClusterCapabilitiesRecordValue.class));
   }
 
   public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {
