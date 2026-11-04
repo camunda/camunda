@@ -63,6 +63,156 @@ final class PolicyUpdateCommandMapperTest {
     nextKey = 1000L;
   }
 
+  @Test
+  void shouldMapAllSectionsInApplyOrder() {
+    // given
+    final var tenantId = createTenant("tenant-" + uid()).id();
+    final var groupId = createGroup("group-" + uid()).id();
+    final var oldRoleId = createRole("role-" + uid()).id();
+    final var processId = "process-" + uid();
+    createAuthorization(oldRoleId, processId, PermissionType.READ_PROCESS_DEFINITION);
+    processingState
+        .getMembershipState()
+        .insertRelation(EntityType.CLIENT, "client", RelationType.GROUP, groupId);
+    final var newRoleId = "role-" + uid();
+    final var chunk =
+        chunk()
+            .setDeletes(
+                List.<PolicyDeleteEntryValue>of(delete(PolicyUpdateEntityType.ROLE, oldRoleId)))
+            .setMembershipDeletes(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(PolicyUpdateEntityType.GROUP, groupId, EntityType.CLIENT, "client")))
+            .setAuthorizationDeletes(
+                List.<AuthorizationRecordValue>of(
+                    authorization(oldRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
+            .setAuthorizations(
+                List.<AuthorizationRecordValue>of(
+                    authorization(newRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(
+                        PolicyUpdateEntityType.TENANT, tenantId, EntityType.ROLE, newRoleId)))
+            .setRoles(List.<RoleRecordValue>of(role(newRoleId)));
+
+    // when
+    final var commands = mapper.toCommands(chunk).get();
+
+    // then
+    assertThat(commands)
+        .extracting(IdentityCommand::intent)
+        .containsExactly(
+            RoleIntent.CREATE,
+            TenantIntent.ADD_ENTITY,
+            AuthorizationIntent.CREATE,
+            AuthorizationIntent.DELETE,
+            GroupIntent.REMOVE_ENTITY,
+            RoleIntent.DELETE);
+  }
+
+  // ------------------------------------------------------------------------------------------
+
+  private static PolicyUpdateRecord chunk() {
+    return new PolicyUpdateRecord()
+        .setPolicyId("policy-" + uid())
+        .setPolicyVersion(VERSION)
+        .setUpdateId("update-" + uid())
+        .setChunkIndex(0)
+        .setChunkCount(1);
+  }
+
+  private static TenantRecord tenant(final String tenantId) {
+    return new TenantRecord().setTenantId(tenantId).setName(tenantId);
+  }
+
+  private static RoleRecord role(final String roleId) {
+    return new RoleRecord().setRoleId(roleId).setName(roleId);
+  }
+
+  private static GroupRecord group(final String groupId) {
+    return new GroupRecord().setGroupId(groupId).setName(groupId);
+  }
+
+  private static MappingRuleRecord mappingRule(
+      final String mappingRuleId, final String claimValue) {
+    return new MappingRuleRecord()
+        .setMappingRuleId(mappingRuleId)
+        .setName(mappingRuleId)
+        .setClaimName("department")
+        .setClaimValue(claimValue);
+  }
+
+  private static PolicyMembershipEntry membership(
+      final PolicyUpdateEntityType targetType,
+      final String targetId,
+      final EntityType memberType,
+      final String memberId) {
+    return new PolicyMembershipEntry()
+        .setTargetType(targetType)
+        .setTargetId(targetId)
+        .setMemberType(memberType)
+        .setMemberId(memberId);
+  }
+
+  private static AuthorizationRecord authorization(
+      final String roleId, final String processId, final PermissionType permission) {
+    return new AuthorizationRecord()
+        .setOwnerType(AuthorizationOwnerType.ROLE)
+        .setOwnerId(roleId)
+        .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .setResourceMatcher(AuthorizationResourceMatcher.ID)
+        .setResourceId(processId)
+        .setPermissionTypes(Set.of(permission));
+  }
+
+  private static PolicyDeleteEntry delete(final PolicyUpdateEntityType type, final String id) {
+    return new PolicyDeleteEntry().setEntityType(type).setId(id);
+  }
+
+  private Created createTenant(final String tenantId) {
+    final long key = nextKey++;
+    processingState
+        .getTenantState()
+        .createTenant(new TenantRecord().setTenantKey(key).setTenantId(tenantId).setName(tenantId));
+    return new Created(key, tenantId);
+  }
+
+  private Created createRole(final String roleId) {
+    final long key = nextKey++;
+    processingState
+        .getRoleState()
+        .create(new RoleRecord().setRoleKey(key).setRoleId(roleId).setName(roleId));
+    return new Created(key, roleId);
+  }
+
+  private Created createGroup(final String groupId) {
+    final long key = nextKey++;
+    processingState
+        .getGroupState()
+        .create(new GroupRecord().setGroupKey(key).setGroupId(groupId).setName(groupId));
+    return new Created(key, groupId);
+  }
+
+  private Created createMappingRule(final String mappingRuleId, final String claimValue) {
+    final long key = nextKey++;
+    processingState
+        .getMappingRuleState()
+        .create(mappingRule(mappingRuleId, claimValue).setMappingRuleKey(key));
+    return new Created(key, mappingRuleId);
+  }
+
+  private long createAuthorization(
+      final String roleId, final String processId, final PermissionType permission) {
+    final long key = nextKey++;
+    processingState
+        .getAuthorizationState()
+        .create(key, authorization(roleId, processId, permission).setAuthorizationKey(key));
+    return key;
+  }
+
+  private static String uid() {
+    return UUID.randomUUID().toString().substring(0, 8);
+  }
+
   @Nested
   final class EntityUpserts {
 
@@ -365,155 +515,5 @@ final class PolicyUpdateCommandMapperTest {
     }
   }
 
-  @Test
-  void shouldMapAllSectionsInApplyOrder() {
-    // given
-    final var tenantId = createTenant("tenant-" + uid()).id();
-    final var groupId = createGroup("group-" + uid()).id();
-    final var oldRoleId = createRole("role-" + uid()).id();
-    final var processId = "process-" + uid();
-    createAuthorization(oldRoleId, processId, PermissionType.READ_PROCESS_DEFINITION);
-    processingState
-        .getMembershipState()
-        .insertRelation(EntityType.CLIENT, "client", RelationType.GROUP, groupId);
-    final var newRoleId = "role-" + uid();
-    final var chunk =
-        chunk()
-            .setDeletes(
-                List.<PolicyDeleteEntryValue>of(delete(PolicyUpdateEntityType.ROLE, oldRoleId)))
-            .setMembershipDeletes(
-                List.<PolicyMembershipEntryValue>of(
-                    membership(PolicyUpdateEntityType.GROUP, groupId, EntityType.CLIENT, "client")))
-            .setAuthorizationDeletes(
-                List.<AuthorizationRecordValue>of(
-                    authorization(oldRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
-            .setAuthorizations(
-                List.<AuthorizationRecordValue>of(
-                    authorization(newRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
-            .setMemberships(
-                List.<PolicyMembershipEntryValue>of(
-                    membership(
-                        PolicyUpdateEntityType.TENANT, tenantId, EntityType.ROLE, newRoleId)))
-            .setRoles(List.<RoleRecordValue>of(role(newRoleId)));
-
-    // when
-    final var commands = mapper.toCommands(chunk).get();
-
-    // then
-    assertThat(commands)
-        .extracting(IdentityCommand::intent)
-        .containsExactly(
-            RoleIntent.CREATE,
-            TenantIntent.ADD_ENTITY,
-            AuthorizationIntent.CREATE,
-            AuthorizationIntent.DELETE,
-            GroupIntent.REMOVE_ENTITY,
-            RoleIntent.DELETE);
-  }
-
-  // ------------------------------------------------------------------------------------------
-
-  private static PolicyUpdateRecord chunk() {
-    return new PolicyUpdateRecord()
-        .setPolicyId("policy-" + uid())
-        .setPolicyVersion(VERSION)
-        .setUpdateId("update-" + uid())
-        .setChunkIndex(0)
-        .setChunkCount(1);
-  }
-
-  private static TenantRecord tenant(final String tenantId) {
-    return new TenantRecord().setTenantId(tenantId).setName(tenantId);
-  }
-
-  private static RoleRecord role(final String roleId) {
-    return new RoleRecord().setRoleId(roleId).setName(roleId);
-  }
-
-  private static GroupRecord group(final String groupId) {
-    return new GroupRecord().setGroupId(groupId).setName(groupId);
-  }
-
-  private static MappingRuleRecord mappingRule(
-      final String mappingRuleId, final String claimValue) {
-    return new MappingRuleRecord()
-        .setMappingRuleId(mappingRuleId)
-        .setName(mappingRuleId)
-        .setClaimName("department")
-        .setClaimValue(claimValue);
-  }
-
-  private static PolicyMembershipEntry membership(
-      final PolicyUpdateEntityType targetType,
-      final String targetId,
-      final EntityType memberType,
-      final String memberId) {
-    return new PolicyMembershipEntry()
-        .setTargetType(targetType)
-        .setTargetId(targetId)
-        .setMemberType(memberType)
-        .setMemberId(memberId);
-  }
-
-  private static AuthorizationRecord authorization(
-      final String roleId, final String processId, final PermissionType permission) {
-    return new AuthorizationRecord()
-        .setOwnerType(AuthorizationOwnerType.ROLE)
-        .setOwnerId(roleId)
-        .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .setResourceMatcher(AuthorizationResourceMatcher.ID)
-        .setResourceId(processId)
-        .setPermissionTypes(Set.of(permission));
-  }
-
-  private static PolicyDeleteEntry delete(final PolicyUpdateEntityType type, final String id) {
-    return new PolicyDeleteEntry().setEntityType(type).setId(id);
-  }
-
-  private Created createTenant(final String tenantId) {
-    final long key = nextKey++;
-    processingState
-        .getTenantState()
-        .createTenant(new TenantRecord().setTenantKey(key).setTenantId(tenantId).setName(tenantId));
-    return new Created(key, tenantId);
-  }
-
-  private Created createRole(final String roleId) {
-    final long key = nextKey++;
-    processingState
-        .getRoleState()
-        .create(new RoleRecord().setRoleKey(key).setRoleId(roleId).setName(roleId));
-    return new Created(key, roleId);
-  }
-
-  private Created createGroup(final String groupId) {
-    final long key = nextKey++;
-    processingState
-        .getGroupState()
-        .create(new GroupRecord().setGroupKey(key).setGroupId(groupId).setName(groupId));
-    return new Created(key, groupId);
-  }
-
-  private Created createMappingRule(final String mappingRuleId, final String claimValue) {
-    final long key = nextKey++;
-    processingState
-        .getMappingRuleState()
-        .create(mappingRule(mappingRuleId, claimValue).setMappingRuleKey(key));
-    return new Created(key, mappingRuleId);
-  }
-
-  private long createAuthorization(
-      final String roleId, final String processId, final PermissionType permission) {
-    final long key = nextKey++;
-    processingState
-        .getAuthorizationState()
-        .create(key, authorization(roleId, processId, permission).setAuthorizationKey(key));
-    return key;
-  }
-
   private record Created(long key, String id) {}
-
-  private static String uid() {
-    return UUID.randomUUID().toString().substring(0, 8);
-  }
 }
