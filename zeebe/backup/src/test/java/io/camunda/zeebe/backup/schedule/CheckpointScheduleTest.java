@@ -52,13 +52,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CheckpointScheduleTest {
 
-  private BackupRequestHandler backupRequestHandler;
-  private BrokerClient brokerClient;
-
   @RegisterExtension
   public final ControlledActorSchedulerExtension actorScheduler =
       new ControlledActorSchedulerExtension();
 
+  private BackupRequestHandler backupRequestHandler;
+  private BrokerClient brokerClient;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private CheckpointScheduler checkpointScheduler;
   private BrokerTopologyManager topologyManager;
