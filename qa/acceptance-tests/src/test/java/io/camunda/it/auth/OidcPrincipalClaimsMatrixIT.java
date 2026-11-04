@@ -169,7 +169,7 @@ final class OidcPrincipalClaimsMatrixIT {
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER_WITH_ROOT_CLAIMS =
-      WITH_ROOT_CLAIMS_TENANTS.configure(oidcBroker());
+      WITH_ROOT_CLAIMS_TENANTS.configureStatic(oidcBroker());
 
   // the root default slot sets no claim, so the library defaults apply
   private static final PhysicalTenantsITHelper WITHOUT_ROOT_CLAIMS_TENANTS =
@@ -180,7 +180,7 @@ final class OidcPrincipalClaimsMatrixIT {
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER_WITHOUT_ROOT_CLAIMS =
-      WITHOUT_ROOT_CLAIMS_TENANTS.configure(oidcBroker());
+      WITHOUT_ROOT_CLAIMS_TENANTS.configureStatic(oidcBroker());
 
   // the root default slot sets only the client ID claim
   private static final PhysicalTenantsITHelper PARTIAL_ROOT_CLAIMS_TENANTS =
@@ -190,7 +190,7 @@ final class OidcPrincipalClaimsMatrixIT {
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER_PARTIAL_ROOT_CLAIMS =
-      PARTIAL_ROOT_CLAIMS_TENANTS.configure(oidcBroker());
+      PARTIAL_ROOT_CLAIMS_TENANTS.configureStatic(oidcBroker());
 
   @BeforeAll
   static void startBrokers() {
@@ -207,6 +207,11 @@ final class OidcPrincipalClaimsMatrixIT {
     configureWithRootClaims();
     configureWithoutRootClaims();
     rootDefaultSlot(BROKER_PARTIAL_ROOT_CLAIMS, ROOT_DEFAULT_PARTIAL);
+    // fresh H2 databases on every start, so that a rerun in the same JVM does not recover the
+    // exporter positions of the previous run against a new log
+    WITH_ROOT_CLAIMS_TENANTS.refreshSecondaryStorage(BROKER_WITH_ROOT_CLAIMS);
+    WITHOUT_ROOT_CLAIMS_TENANTS.refreshSecondaryStorage(BROKER_WITHOUT_ROOT_CLAIMS);
+    PARTIAL_ROOT_CLAIMS_TENANTS.refreshSecondaryStorage(BROKER_PARTIAL_ROOT_CLAIMS);
     BROKER_WITH_ROOT_CLAIMS.start();
     BROKER_WITHOUT_ROOT_CLAIMS.start();
     BROKER_PARTIAL_ROOT_CLAIMS.start();
