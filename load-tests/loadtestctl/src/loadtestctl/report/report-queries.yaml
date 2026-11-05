@@ -277,3 +277,43 @@ queries:
     description: jvm
     query: |-
       count by (version) (max_over_time(jvm_info{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S]))
+  - key: restarted_pod
+    header: restarted_pod
+    valueLabel: pod
+    description: restarted_pod
+    query: |-
+      topk(1, max by (pod) (max_over_time(kube_pod_container_status_restarts_total{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
+  - key: restarted_container
+    header: restarted_container
+    valueLabel: container
+    description: restarted_container
+    query: |-
+      topk(1, max by (container) (max_over_time(kube_pod_container_status_restarts_total{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
+  - key: restarted_reason
+    header: restarted_reason
+    valueLabel: reason
+    description: restarted_reason
+    query: |-
+      topk(1, max by (reason) (max_over_time(kube_pod_container_status_last_terminated_reason{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
+  - key: k6_check_failing_series
+    header: k6_check_failing_series
+    description: k6 check series whose cumulative pass ratio was below 1 at any point in the window
+    query: |-
+      count(min_over_time(k6_checks_rate{namespace="$NAMESPACE"}[$DURATION_S]) < 1) or vector(0)
+  - key: k6_check_failing_series_at_start
+    header: k6_check_failing_series_at_start
+    description: same, evaluated at the window start
+    query: |-
+      count(last_over_time(k6_checks_rate{namespace="$NAMESPACE"}[$DURATION_S] offset $DURATION_S) < 1) or vector(0)
+  - key: k6_check_failing_target
+    header: k6_check_failing_target
+    valueLabel: target
+    description: target tag of a failing k6 check series
+    query: |-
+      topk(1, 1 - min by (target, check) (min_over_time(k6_checks_rate{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
+  - key: k6_check_failing_check
+    header: k6_check_failing_check
+    valueLabel: check
+    description: check name of a failing k6 check series
+    query: |-
+      topk(1, 1 - min by (target, check) (min_over_time(k6_checks_rate{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
