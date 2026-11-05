@@ -646,8 +646,13 @@ public final class DbJobState implements JobState, MutableJobState {
     //   Phase 3: new jobs with priority <= 0, highest first
     // Each phase returns true if the batch still wants more jobs. Subsequent phases are skipped
     // when the batch is full to avoid redundant state reads.
-    if (visitHighPriorityJobs(tenantIds, callback)
-        && (isLegacyCfDrained || visitLegacyActivatableJobs(type, tenantIds, callback))) {
+    //
+    // Once the legacy CF is globally drained, Phase 2 can never yield a job again, so Phases 1
+    // and 3 collapse into the single scan below instead of two separate seeks.
+    if (isLegacyCfDrained) {
+      visitAllPriorityJobs(tenantIds, callback);
+    } else if (visitHighPriorityJobs(tenantIds, callback)
+        && visitLegacyActivatableJobs(type, tenantIds, callback)) {
       visitNonPositivePriorityJobs(tenantIds, callback);
     }
   }
@@ -725,6 +730,27 @@ public final class DbJobState implements JobState, MutableJobState {
           return batchNotFull[0];
         });
     return batchNotFull[0];
+  }
+
+  /**
+   * Drained-path scan — yields all jobs of this type from {@code JOB_ACTIVATABLE_BY_PRIORITY} in
+   * one pass, in descending priority order, with no priority=0 boundary check. Only used once
+   * {@link #isLegacyCfDrained} is set.
+   *
+   * <p>Assumes {@code jobTypeKey} is already set by the caller (i.e., from {@link
+   * #forEachActivatableJobs}).
+   */
+  private void visitAllPriorityJobs(
+      final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
+    priorityActivatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        entry -> {
+          if (!tenantIds.contains(entry.tenantKey().toString())) {
+            return true;
+          }
+          final var invertedPriorityAndJob = entry.wrappedKey().second();
+          return visitJob(invertedPriorityAndJob.second().inner().getValue(), callback::apply);
+        });
   }
 
   /**
