@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.JobSelector;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to complete a job. */
@@ -39,6 +41,15 @@ public interface CompleteJobInstruction extends TestCaseInstruction {
    * @return the job selector
    */
   JobSelector getJobSelector();
+
+  /**
+   * The token the job's process instance reserved the job with. Use {@link
+   * TestCaseJobReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run
+   * for it. Optional; required only to act on a reserved job.
+   *
+   * @return the job reservation token or empty if not set
+   */
+  Optional<String> getJobReservationToken();
 
   /**
    * The variables to complete the job with. Defaults to an empty map.

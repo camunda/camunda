@@ -15,7 +15,13 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.client.CamundaClient;
@@ -24,11 +30,10 @@ import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.testCases.ImmutableJobSelector;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CompleteJobInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -36,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -60,18 +66,96 @@ public class IsolatedJobInstructionsTest {
       ImmutableJobSelector.builder().jobKind("CALL_ACTIVITY_STUB").elementId(ELEMENT_ID).build();
 
   @Test
-  void shouldReleaseJob() {
+  void shouldSendTheRunsTokenForThePlaceholder() {
+    // given
+    final TestRunContext runContext = TestRunContext.disabled();
+
     // when
-    new ReleaseJobInstructionHandler()
+    new CompleteJobInstructionHandler(runContext)
         .execute(
-            ImmutableReleaseJobInstruction.builder().jobSelector(byElementId).build(),
+            ImmutableCompleteJobInstruction.builder()
+                .jobSelector(byElementId)
+                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .build(),
+            processTestContext,
+            camundaClient,
+            assertionFacade);
+
+    // then the saved placeholder never reaches the cluster: the run's token is set for the command
+    // and cleared right after it, so it cannot leak to the next instruction
+    final String runToken =
+        runContext.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
+    assertThat(runToken).isNotEqualTo(TestCaseJobReservationToken.PLACEHOLDER);
+    final InOrder inOrder = inOrder(processTestContext);
+    inOrder.verify(processTestContext).setJobReservationToken(runToken);
+    inOrder.verify(processTestContext).completeJob(any(JobSelector.class), anyMap());
+    inOrder.verify(processTestContext).setJobReservationToken(null);
+  }
+
+  @Test
+  void shouldSendTheSameTokenFromCompleteAndThrowInOneRun() {
+    // given
+    final TestRunContext runContext = TestRunContext.disabled();
+
+    // when
+    new CompleteJobInstructionHandler(runContext)
+        .execute(
+            ImmutableCompleteJobInstruction.builder()
+                .jobSelector(byElementId)
+                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .build(),
+            processTestContext,
+            camundaClient,
+            assertionFacade);
+    new ThrowBpmnErrorFromJobInstructionHandler(runContext)
+        .execute(
+            ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                .jobSelector(byElementId)
+                .errorCode("ERROR")
+                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .build(),
             processTestContext,
             camundaClient,
             assertionFacade);
 
     // then
-    verify(processTestContext).releaseJob(jobSelectorCaptor.capture());
-    assertSelectsElement();
+    final String runToken =
+        runContext.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
+    verify(processTestContext, times(2)).setJobReservationToken(runToken);
+    verify(processTestContext, times(2)).setJobReservationToken(null);
+  }
+
+  @Test
+  void shouldSendNoTokenWhenTheInstructionHasNone() {
+    // when
+    new CompleteJobInstructionHandler(TestRunContext.disabled())
+        .execute(
+            ImmutableCompleteJobInstruction.builder().jobSelector(byElementId).build(),
+            processTestContext,
+            camundaClient,
+            assertionFacade);
+
+    // then
+    verify(processTestContext, never()).setJobReservationToken(any());
+  }
+
+  @Test
+  void shouldSendALiteralTokenAsWritten() {
+    // when
+    new CompleteJobInstructionHandler(TestRunContext.disabled())
+        .execute(
+            ImmutableCompleteJobInstruction.builder()
+                .jobSelector(byElementId)
+                .jobReservationToken("literal-token")
+                .build(),
+            processTestContext,
+            camundaClient,
+            assertionFacade);
+
+    // then
+    final InOrder inOrder = inOrder(processTestContext);
+    inOrder.verify(processTestContext).setJobReservationToken("literal-token");
+    inOrder.verify(processTestContext).setJobReservationToken(null);
   }
 
   @Test
@@ -112,11 +196,6 @@ public class IsolatedJobInstructionsTest {
         .throwBpmnErrorFromJob(
             jobSelectorCaptor.capture(), eq("SHIPPING_DECLINED"), eq(Collections.emptyMap()));
     assertSelectsStubJobOfElement();
-  }
-
-  private void assertSelectsElement() {
-    jobSelectorCaptor.getValue().applyFilter(jobFilter);
-    verify(jobFilter).elementId(ELEMENT_ID);
   }
 
   private void assertSelectsStubJobOfElement() {

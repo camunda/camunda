@@ -39,6 +39,7 @@ import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
@@ -66,7 +67,6 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockDmnDecisi
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
@@ -78,7 +78,7 @@ import io.camunda.process.test.api.testCases.instructions.assertElementInstances
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
-import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
@@ -188,8 +188,9 @@ public class PojoCompatibilityTest {
                             .afterElementId("task2")
                             .build())
                     .addRuntimeInstructions(
-                        ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                            .reserveJobs(true)
+                        ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                            .addJobTypes("charge-card", "send-invoice")
+                            .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
                             .build())
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
@@ -463,12 +464,21 @@ public class PojoCompatibilityTest {
                     .errorMessage("Nope.")
                     .putVariables("x", 1)
                     .build())),
-        // ===== RELEASE_JOB =====
+        // ===== COMPLETE_JOB / THROW_BPMN_ERROR_FROM_JOB: reserved job =====
         Arguments.of(
-            "release job",
+            "complete job: with reservation token",
             singleTestCase(
-                ImmutableReleaseJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().elementId("send-invoice").build())
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
+                    .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with reservation token",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
+                    .errorCode("invalid")
+                    .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
                     .build())),
         // ===== COMPLETE_JOB: call activity stub =====
         Arguments.of(
