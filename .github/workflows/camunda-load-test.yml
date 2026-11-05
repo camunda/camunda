@@ -589,6 +589,11 @@ jobs:
         run: .github/scripts/load-test-print-tool-versions.sh
 
       - name: Scaffold load-test folder
+        env:
+          # Stress (max) runs saturate the brokers, so a slow host decides whether the cluster
+          # gets stuck at ~50% rejected (INC-8994). Zone c had no slow hosts in any sample;
+          # other scenarios keep the zone picked from the namespace name.
+          ZONE: ${{ inputs.scenario == 'max' && 'europe-west1-c' || '' }}
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered
@@ -596,7 +601,9 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+          zone_args=()
+          [[ -n "${ZONE}" ]] && zone_args+=(--zone "${ZONE}")
+          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${zone_args[@]}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
 
       - name: Install latest Camunda Platform
         shell: bash --noprofile --norc -exo pipefail {0}

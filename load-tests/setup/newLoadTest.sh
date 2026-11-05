@@ -87,6 +87,9 @@ Arguments:
 Options:
   --target-version|-t <version>    Version-specific setup to use. Default: main.
                                     Available versions: ${AVAILABLE_VERSIONS[*]}
+  --zone <zone>                    Pin the load test to this zone (europe-west1-b|c|d) instead of
+                                    the zone picked from the namespace name. Used for stress runs,
+                                    see "Zone pinning" in README.md.
   --use-pgbouncer                  Route Postgres traffic through a CNPG Pooler (PgBouncer,
                                     transaction-pooling mode) instead of connecting straight
                                     to the Cluster's \`-rw\` Service. Requires
@@ -110,6 +113,7 @@ EOF
 }
 
 use_pgbouncer=false
+zone=""
 remaining_args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -119,6 +123,10 @@ while [[ $# -gt 0 ]]; do
     --use-pgbouncer)
       use_pgbouncer=true
       shift
+      ;;
+    --zone)
+      zone="${2:-}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -173,7 +181,16 @@ fi
 # `hashmod_zone` is deterministic, so the zone baked into namespace.yaml and
 # the values files matches any re-applied manifest after TTL deletion. Every
 # load test pins its workloads to one zone; there is no unpinned mode.
-availability_zone="$(hashmod_zone "$namespace")"
+# `--zone` overrides the hash: stress runs are pinned to a zone with fast hosts.
+if [[ -n "$zone" ]]; then
+  if [[ ! "$zone" =~ ^europe-west1-[bcd]$ ]]; then
+    echo "Error: --zone must be one of europe-west1-b, europe-west1-c, europe-west1-d (got: $zone)." >&2
+    exit 1
+  fi
+  availability_zone="$zone"
+else
+  availability_zone="$(hashmod_zone "$namespace")"
+fi
 
 git_author=${GIT_AUTHOR:-$(compute_git_author)}
 deadline_date="$(compute_deadline_date "$ttl_days")"

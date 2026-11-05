@@ -161,6 +161,10 @@ It is parameterized by a values file baked at scaffold time:
 
 Reruns `make install-load-test-setup` after a TTL deletion reinstall the same chart, so the orchestration OIDC secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
 
+### Zone pinning
+
+Every load test is pinned to one zone, by default `europe-west1-{b,c,d}` chosen from the namespace name (`hashmod_zone` in `utils.sh`). Pass `--zone europe-west1-c` to choose it. `camunda-load-test.yml` does this for the `max` scenario: Spot hosts in zone d (and sometimes b) are often about 2.7x slower per core than in zone c, which pushes saturated 3 CPU brokers into a stuck state with about 50% rejected requests.
+
 If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
