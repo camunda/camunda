@@ -68,7 +68,7 @@ final class CommitEvaluatorTest {
     // given - broker 1 restarted; its old readiness key is still in the gossip data
     final var stale =
         new MemberData(
-            new SupportedData("new-start", ALL.encode(), true),
+            new SupportedData("new-start", ALL.encode()),
             new ReadinessData("old-start", Map.of("engine", new ComponentReadiness(true, null))));
 
     // when
@@ -132,7 +132,7 @@ final class CommitEvaluatorTest {
             B1,
             ready("b", ALL),
             gateway,
-            new MemberData(new SupportedData("g", BASE.encode(), false), null));
+            new MemberData(new SupportedData("g", BASE.encode()), null));
 
     // when
     final var evaluation = evaluate(BASE, members, appliedEverywhere(BASE));
@@ -171,7 +171,7 @@ final class CommitEvaluatorTest {
 
   private static MemberData ready(final String instance, final CapabilitySet supported) {
     return new MemberData(
-        new SupportedData(instance, supported.encode(), true),
+        new SupportedData(instance, supported.encode()),
         new ReadinessData(instance, Map.of("engine", new ComponentReadiness(true, null))));
   }
 

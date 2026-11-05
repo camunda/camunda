@@ -27,7 +27,7 @@ public enum Capability {
   POC_812_DEPENDENT_BEHAVIOR(
       2, "8.12", "POC: a behavior that needs the 8.12 format change", POC_812_FORMAT_CHANGE);
 
-  /** The minor that every cluster upgraded from 8.10 starts with (R29). */
+  /** The minor of the base set: the set for data without an ECV. */
   public static final String BASE_MINOR = "8.11";
 
   private final int id;
@@ -74,7 +74,7 @@ public enum Capability {
     return CapabilitySet.of(values());
   }
 
-  /** Returns the base set: what a cluster upgraded from 8.10 starts with (R29). */
+  /** Returns the base set: the set for data without an ECV. It is not the initial set (R29). */
   public static CapabilitySet base() {
     return CapabilitySet.of(
         Arrays.stream(values())

@@ -39,20 +39,20 @@ Open points and contradictions in the documents, and what the POC does:
 - **Open point 13, members of the system partition.** The system partition POC takes its members
   from the static configuration, so the system partition does not depend on the dynamic
   configuration and a new cluster starts.
-- **R29, upgraded or new cluster.** The leader writes the initial set only if the system partition
-  has none. Each broker gossips whether it had a cluster configuration file on disk before this
-  start. If the leader or any member it sees had one, the cluster existed before the system
-  partition, so it is upgraded from 8.10 and starts with the base set (the capabilities introduced
-  in 8.11). Otherwise it is a new cluster and starts with all capabilities that the leader
-  supports. Known gap: a leader with an empty data directory that is elected before it sees the
-  gossip of the other brokers takes the cluster as new.
+- **R29, initial enabled set.** When the system partition has no set, the cluster is bootstrapping:
+  a new cluster, an upgrade from 8.10 (8.10 has no system partition) or a restore (a backup does
+  not include the system partition). The leader writes all capabilities that it supports. When the
+  system partition has a set, the leader keeps it. Raft elects only a broker with an up-to-date
+  log, so the decision does not depend on the disk of the leader (design section 11, Nov 5, 2026).
 - **Requirements open point 7, the base set.** The catalog marks each capability with the minor
-  that introduced it. The base set is every capability introduced in 8.11.
+  that introduced it. The base set is every capability introduced in 8.11. It is no longer the
+  initial set; the POC uses it only in tests.
 - **Open point 10, an 8.11 leader of a tenant partition.** The leader writes the commit command only
   if its broker supports the whole view. Otherwise it waits for a leader that does.
 - **Open point 11, an 8.11 leader of the system partition.** A request to a broker that is not the
   leader, or not initialized, answers "not the leader"; the requester asks the next member, and
-  the API returns `UNAVAILABLE` (HTTP 503) if no leader answered.
+  the API returns `UNAVAILABLE` (HTTP 503) if no leader answered. The implementation can find the leader through the
+  gossip of the partition leaders instead, as for the other partitions (see `askLeader`).
 - **Contradiction: "the gateway gates on capabilities" (API decision) against "only the engine and
   the data layer check capabilities".** The POC does not gate the gateway.
 - **Contradiction: the data layer stops the whole node against "a refused broker keeps running".**

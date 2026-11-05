@@ -40,14 +40,12 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
-import io.camunda.zeebe.util.ecv.Capability;
 import io.camunda.zeebe.util.ecv.CapabilitySet;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +78,6 @@ public final class EcvManagement extends Actor
   private final List<MemberId> systemPartitionMembers;
   private final @Nullable SystemPartition systemPartition;
   private final CapabilitySet supported;
-  private final boolean existingCluster;
   private final LocalEnabledCapabilitiesView view;
   private final UpgradeReadinessRegistry readinessRegistry;
   private final PartitionCapabilitiesRegistry partitionRegistry;
@@ -111,7 +108,6 @@ public final class EcvManagement extends Actor
       final Set<MemberId> systemPartitionMembers,
       final @Nullable SystemPartition systemPartition,
       final CapabilitySet supported,
-      final boolean existingCluster,
       final LocalEnabledCapabilitiesView view,
       final UpgradeReadinessRegistry readinessRegistry) {
     super("EcvManagement");
@@ -122,7 +118,6 @@ public final class EcvManagement extends Actor
     this.systemPartitionMembers = systemPartitionMembers.stream().sorted().toList();
     this.systemPartition = systemPartition;
     this.supported = supported;
-    this.existingCluster = existingCluster;
     this.view = view;
     enabledWatch = (key, value) -> view.merge(decodeValue(value));
     this.readinessRegistry = readinessRegistry;
@@ -342,15 +337,12 @@ public final class EcvManagement extends Actor
       onInitialized(writer);
       return;
     }
-    // 8.10 has no system partition: a cluster that has data from before is upgraded from 8.10.
-    // Any member with such data decides it, so a leader with an empty data directory does not
-    // enable capabilities without a commit.
-    final var upgraded = existingCluster || anyMemberHasExistingData();
-    final var initial = upgraded ? Capability.base() : supported;
-    LOG.info(
-        "Writing the initial enabled capabilities {} to the system partition ({})",
-        initial,
-        upgraded ? "base set of a cluster upgraded from 8.10" : "new cluster");
+    // An empty system partition means the cluster is bootstrapping: a new cluster, an upgrade
+    // from 8.10 (which has no system partition) or a restore (a backup does not include it). Raft
+    // elects only a broker with an up-to-date log, so this does not depend on the disk of the
+    // leader.
+    final var initial = supported;
+    LOG.info("Writing the initial enabled capabilities {} to the empty system partition", initial);
     actor.runOnCompletion(
         writer.put(
             SystemPartitionKeyType.ENABLED_CAPABILITIES,
@@ -411,16 +403,6 @@ public final class EcvManagement extends Actor
                             response.failedChecks());
                       }
                     }));
-  }
-
-  private boolean anyMemberHasExistingData() {
-    return membershipService.getMembers().stream()
-        .map(
-            member ->
-                EcvProtocol.readProperty(
-                    member, EcvProtocol.SUPPORTED_PROPERTY, SupportedData.class))
-        .flatMap(Optional::stream)
-        .anyMatch(SupportedData::existingData);
   }
 
   private boolean isLeader() {
@@ -688,6 +670,12 @@ public final class EcvManagement extends Actor
   /**
    * Sends the request to each member of the system partition until the leader answers. Returns null
    * if no leader answered.
+   *
+   * <p>Alternative for the implementation: find the leader through the gossip of the partition
+   * leaders, as for the other partitions (the leader and its term in {@code BrokerInfo}, read
+   * through the topology manager), and send the request to that broker only. Then the system
+   * partition must be published in that gossip. A stale entry still answers "not the leader", and
+   * the caller asks again later.
    */
   private <R> CompletableFuture<@Nullable R> askLeader(
       final String subject, final Class<R> type, final Function<R, Boolean> isLeaderAnswer) {
@@ -741,9 +729,7 @@ public final class EcvManagement extends Actor
   }
 
   private void publishSupported() {
-    setProperty(
-        EcvProtocol.SUPPORTED_PROPERTY,
-        new SupportedData(instance, supported.encode(), existingCluster));
+    setProperty(EcvProtocol.SUPPORTED_PROPERTY, new SupportedData(instance, supported.encode()));
   }
 
   private void publishReadiness() {

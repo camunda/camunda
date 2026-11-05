@@ -29,16 +29,6 @@ final class EcvManagementStep extends AbstractBrokerStartupStep {
   static final String DIRECTORY = "ecv";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private final boolean existingCluster;
-
-  /**
-   * @param existingCluster whether the broker had a cluster configuration on disk before this
-   *     start, which tells a cluster upgraded from 8.10 from a new cluster (R29)
-   */
-  EcvManagementStep(final boolean existingCluster) {
-    this.existingCluster = existingCluster;
-  }
-
   @Override
   public String getName() {
     return "ECV Management";
@@ -75,7 +65,6 @@ final class EcvManagementStep extends AbstractBrokerStartupStep {
             SystemPartition.members(brokerCfg),
             context.getSystemPartition(),
             supported,
-            existingCluster,
             view,
             new UpgradeReadinessRegistry());
     final var configurationService = context.getClusterConfigurationService();

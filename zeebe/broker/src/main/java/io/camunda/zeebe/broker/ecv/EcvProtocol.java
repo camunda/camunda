@@ -80,12 +80,8 @@ final class EcvProtocol {
     }
   }
 
-  /**
-   * The capabilities that a broker or gateway supports, gossiped by 8.11 and later.
-   *
-   * @param existingData the broker had a cluster configuration on disk before this start (R29)
-   */
-  record SupportedData(String instance, String supported, boolean existingData) {
+  /** The capabilities that a broker or gateway supports, gossiped by 8.11 and later. */
+  record SupportedData(String instance, String supported) {
     CapabilitySet set() {
       return CapabilitySet.decode(supported);
     }
