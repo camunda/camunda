@@ -12,7 +12,6 @@ plugins {
 sbe {
   schemaFiles.from(
     layout.projectDirectory.file("src/main/resources/snapshot-schema.xml"),
-    layout.projectDirectory.file("src/main/resources/raft-entry-schema.xml"),
     layout.projectDirectory.file("src/main/resources/cluster-messaging.xml"),
   )
 }
@@ -32,6 +31,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-journal"))
+  implementation(project(":zeebe-log-schemas"))
   api(libs.org.agrona.agrona)
   api(libs.io.netty.netty.transport)
   api(libs.io.netty.netty.codec.base)

@@ -182,6 +182,8 @@ registerProject(":zeebe-gateway-protocol", "zeebe/gateway-protocol")
 
 registerProject(":zeebe-protocol-impl", "zeebe/protocol-impl")
 
+registerProject(":zeebe-log-schemas", "zeebe/log-schemas")
+
 registerProject(":zeebe-log-records", "zeebe/log-records")
 
 registerProject(":zeebe-exporter-filter", "zeebe/exporter-filter")

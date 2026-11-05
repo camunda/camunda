@@ -1,10 +1,4 @@
-plugins { id("buildlogic.sbe-conventions") }
-
-sbe {
-  schemaFiles.from(layout.projectDirectory.file("src/main/resources/journal-schema.xml"))
-  // SBE also emits a package-info.java for this package, which already has a hand-written one.
-  generatedFilesToDelete.add("io/camunda/zeebe/journal/file/package-info.java")
-}
+plugins { id("buildlogic.server-conventions") }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
@@ -13,7 +7,7 @@ dependencies {
   api(libs.com.google.guava.guava)
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
-  implementation(project(":zeebe-protocol"))
+  implementation(project(":zeebe-log-schemas"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
   api(libs.com.github.jnr.jnr.ffi)

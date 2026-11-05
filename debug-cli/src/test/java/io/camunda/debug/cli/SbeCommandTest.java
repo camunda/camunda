@@ -114,15 +114,7 @@ public class SbeCommandTest {
 
   private Path schemaPath() {
     final var schemaPath =
-        Path.of(
-                "..",
-                "zeebe",
-                "atomix",
-                "cluster",
-                "src",
-                "main",
-                "resources",
-                "raft-entry-schema.xml")
+        Path.of("..", "zeebe", "log-schemas", "src", "main", "resources", "raft-entry-schema.xml")
             .toAbsolutePath()
             .normalize();
     assertThat(schemaPath).exists();

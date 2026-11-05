@@ -82,6 +82,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-log-schemas</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
@@ -359,7 +364,6 @@
             <configuration>
               <arguments>
                 <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
-                <argument>${project.build.resources[0].directory}/raft-entry-schema.xml</argument>
                 <argument>${project.build.resources[0].directory}/cluster-messaging.xml</argument>
               </arguments>
             </configuration>
