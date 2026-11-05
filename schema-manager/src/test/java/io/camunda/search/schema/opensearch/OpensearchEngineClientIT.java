@@ -82,6 +82,11 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason =
+          "Creates an unallocatable primary shard, which turns the shared cluster red; unsafe for shared AWS OpenSearch")
   void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
     // given an index that exists but whose primary can never be allocated, like one whose
     // creation request timed out on the client while its shards were still initializing
