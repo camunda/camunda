@@ -77,6 +77,8 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
+  public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
+
   private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
       "GET /_cluster/health returned HTTP 403: the OpenSearch service account lacks the "
           + "'monitor' cluster privilege required to verify cluster health during startup. "
@@ -84,8 +86,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
           + "To fix: grant the 'monitor' cluster privilege to the service account, "
           + "or disable the check by setting "
           + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.";
-
-  public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
