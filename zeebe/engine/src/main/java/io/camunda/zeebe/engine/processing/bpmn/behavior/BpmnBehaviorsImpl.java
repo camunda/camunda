@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -81,6 +82,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final AgentInstanceBehavior agentInstanceBehavior;
   private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final StorageOrdinalProvider storageOrdinalProvider;
+  private final CaseCreationBehavior caseCreationBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -199,6 +201,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnEventSubscriptionBehavior(
             catchEventBehavior, eventTriggerBehavior, processingState);
 
+    caseCreationBehavior = new CaseCreationBehavior(writers.command());
+
     incidentBehavior =
         new BpmnIncidentBehavior(
             processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
@@ -210,7 +214,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             storageOrdinalProvider,
-            writers);
+            writers,
+            caseCreationBehavior);
 
     processResultSenderBehavior =
         new BpmnProcessResultSenderBehavior(processingState, writers.response());
@@ -227,7 +232,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             routingInfo,
             clock,
             config.isBusinessIdUniquenessEnabled(),
-            messageCorrelationMetrics);
+            messageCorrelationMetrics,
+            caseCreationBehavior);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -497,6 +503,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnProcessDeletionBehavior processDeletionBehavior() {
     return processDeletionBehavior;
+  }
+
+  @Override
+  public CaseCreationBehavior caseCreationBehavior() {
+    return caseCreationBehavior;
   }
 
   @Override

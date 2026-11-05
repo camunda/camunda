@@ -985,13 +985,10 @@ public final class EngineProcessors {
             writers,
             processingState.getKeyGenerator(),
             processingState,
-            bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors,
             commandDistributionBehavior,
             cslCheck,
-            tenantCheck,
-            bpmnBehaviors.variableBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            tenantCheck);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
@@ -1008,12 +1005,9 @@ public final class EngineProcessors {
             writers,
             processingState.getKeyGenerator(),
             processingState,
-            bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors,
             cslCheck,
-            tenantCheck,
-            bpmnBehaviors.expressionProcessor(),
-            bpmnBehaviors.storageOrdinalProvider());
+            tenantCheck);
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

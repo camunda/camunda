@@ -68,7 +68,8 @@ public final class EventHandle {
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final StorageOrdinalProvider storageOrdinalProvider) {
+      final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseCreationBehavior caseCreationBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
@@ -77,7 +78,7 @@ public final class EventHandle {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateBehavior = stateBehavior;
     this.storageOrdinalProvider = storageOrdinalProvider;
-    caseCreationBehavior = new CaseCreationBehavior(commandWriter);
+    this.caseCreationBehavior = caseCreationBehavior;
   }
 
   public boolean canTriggerElement(

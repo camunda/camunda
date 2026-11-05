@@ -10,9 +10,8 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.RequestOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -120,11 +119,9 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final MessageStartProcessInstanceDedupState dedupState,
       final EventScopeInstanceState eventScopeInstanceState,
       final ProcessState processState,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final BpmnStateBehavior stateBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
-      final StorageOrdinalProvider storageOrdinalProvider,
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled,
       final Writers writers,
@@ -139,16 +136,17 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     this.clock = clock;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.metrics = metrics;
-    this.storageOrdinalProvider = storageOrdinalProvider;
+    storageOrdinalProvider = bpmnBehaviors.storageOrdinalProvider();
     eventHandle =
         new EventHandle(
             keyGenerator,
             eventScopeInstanceState,
             writers,
             processState,
-            eventTriggerBehavior,
-            stateBehavior,
-            storageOrdinalProvider);
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior(),
+            storageOrdinalProvider,
+            bpmnBehaviors.caseCreationBehavior());
   }
 
   @Override

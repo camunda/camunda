@@ -397,7 +397,11 @@ public final class BpmnProcessors {
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper);
+            keyGenerator,
+            writers,
+            metrics,
+            processInstanceCreationHelper,
+            bpmnBehaviors.caseCreationBehavior());
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -405,7 +409,12 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper, elementInstanceState));
+            keyGenerator,
+            writers,
+            metrics,
+            processInstanceCreationHelper,
+            elementInstanceState,
+            bpmnBehaviors.caseCreationBehavior()));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
