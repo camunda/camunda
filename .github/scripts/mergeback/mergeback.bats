@@ -249,15 +249,6 @@ make_remote() {
   [ "$output" = $'release-8.9.0\tstable/8.9' ]
 }
 
-@test "resolve: a released branch already merged back drops out of the active set" {
-  # 8.9.0 is tagged and its tip is already in stable/8.9 (make_remote points both at base) -> merged
-  # back, so nothing is emitted.
-  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0
-  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
-}
-
 # release_tip <remote> <branch> <tag> [committer-date] — add a release-only commit on <branch> and tag
 # it, so the branch is NOT merged into its target. The date backdates the tag for the grace window.
 release_tip() {
@@ -267,12 +258,31 @@ release_tip() {
   git -C "$1" checkout -q main
 }
 
+@test "resolve: by default the final release tag retires the branch, merge-back pending or not" {
+  # The nightly-fix backport gate reads the default output as "where do fixes still ship"; a tagged
+  # release must not appear there, even before its merge-back.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 release-8.9.1 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
+  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.1\tstable/8.9' ]
+}
+
+@test "resolve: a released branch already merged back drops out of the active set" {
+  # 8.9.0 is tagged and its tip is already in stable/8.9 (make_remote points both at base) -> merged
+  # back, so nothing is emitted.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 @test "resolve: a just-released branch stays active until merged back" {
   # 8.10.0 shape: the tag landed, the merge-back has not. Conflicts added on release day (late
   # backports, the release version bump) only show up after the tag, so the check must keep watching.
   make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
   release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
-  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
   [ "$status" -eq 0 ]
   [ "$output" = $'release-8.9.0\tstable/8.9' ]
 }
@@ -281,7 +291,7 @@ release_tip() {
   # Old leftovers like release-8.3.20 were never merged back; they must not alert forever.
   make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
   release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0 "2020-01-01T00:00:00Z"
-  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
@@ -289,7 +299,7 @@ release_tip() {
 @test "resolve: a pending merge-back and a newer in-flight release on one line are both checked" {
   make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 release-8.9.1 stable/8.9
   release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
-  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
   [ "$status" -eq 0 ]
   [ "$output" = $'release-8.9.0\tstable/8.9\nrelease-8.9.1\tstable/8.9' ]
 }

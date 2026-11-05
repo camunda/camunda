@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
 # Resolve the currently-active release branches and their merge-back targets.
 #
-# A branch `release-X.Y.Z[-alphaN]` is ACTIVE when either:
-#   - its version is strictly greater than the highest release tag on its X.Y line (not yet
-#     released), or
-#   - its version IS that highest tag, it was tagged at most `released_grace_days` ago, and it is not
-#     yet merged into its target (released, merge-back pending). The merge-back always happens after
-#     the tag, and release-day backports plus the release plugin's version bump can add conflicts the
-#     last pre-tag run never saw. The age bound keeps old, never-merged release branches quiet.
-# Any older version on the line is stale and filtered out with no allowlist.
+# A branch `release-X.Y.Z[-alphaN]` is ACTIVE when its version is strictly greater than the highest
+# release tag on its X.Y line (not yet released). Any older version on the line is stale and filtered
+# out with no allowlist. This default is the "in-flight release" contract other callers rely on (the
+# nightly-fix backport gate picks the release to backport to and reconciles labels from it).
+#
+# With --include-pending-merge-back (the merge-back conflict check only), a branch whose version IS
+# the highest tag is also active while the tag is at most `released_grace_days` old and the branch is
+# not yet merged into its target. The merge-back always happens after the tag, and release-day
+# backports plus the release plugin's version bump can add conflicts the last pre-tag run never saw.
+# The age bound keeps old, never-merged release branches quiet.
 #
 # Target mapping:
 #   - stable/X.Y exists -> target = stable/X.Y  (maintenance release merges back to its stable line)
 #   - else              -> target = main        (pre-branch alpha of the next minor merges to main)
 #
-# Read-only towards the remote: git ls-remote, plus a fetch into the private refs/mergeback-resolve/
-# namespace for a just-released branch only. Must run inside a git repository. Prints one
-# "release_ref<TAB>target_ref" per line; no output means no active release (quiet no-op).
+# Read-only towards the remote: git ls-remote, plus (with --include-pending-merge-back) a fetch into
+# the private refs/mergeback-resolve/ namespace for a just-released branch only, which needs a git
+# repository. Prints one "release_ref<TAB>target_ref" per line; no output means no active release
+# (quiet no-op).
+#
+#   resolve-active-release-pairs.sh [--include-pending-merge-back] [remote]
 set -euo pipefail
 
 released_grace_days=7
@@ -42,9 +47,12 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   return 0 2>/dev/null || exit 0
 fi
 
-remote="${1:-origin}"
-
-# Map an X.Y minor to its merge-back target: stable/X.Y if it exists, else main. Fail CLOSED: a
+include_pending_merge_back=false
+if [ "${1:-}" = "--include-pending-merge-back" ]; then
+  include_pending_merge_back=true
+  shift
+fi
+remote="${1:-origin}" # Map an X.Y minor to its merge-back target: stable/X.Y if it exists, else main. Fail CLOSED: a
 # failed check must abort, not fall through to main and merge the release in the WRONG direction.
 target_for_minor() {
   local stable_ls
@@ -126,11 +134,13 @@ while IFS= read -r branch; do
     greatest="$(version_max "$version" "$highest_tag")"
     { [ "$greatest" = "$highest_tag" ] && [ "$version" != "$highest_tag" ]; } && continue
     if [ "$version" = "$highest_tag" ]; then
-      target="$(target_for_minor "$minor")" || exit 1
-      rc=0
-      awaiting_merge_back "$branch" "$version" "$target" || rc=$?
-      [ "$rc" -gt 1 ] && exit 1
-      [ "$rc" -eq 0 ] && released_for_minor[$minor]="$version"
+      if [ "$include_pending_merge_back" = true ]; then
+        target="$(target_for_minor "$minor")" || exit 1
+        rc=0
+        awaiting_merge_back "$branch" "$version" "$target" || rc=$?
+        [ "$rc" -gt 1 ] && exit 1
+        [ "$rc" -eq 0 ] && released_for_minor[$minor]="$version"
+      fi
       continue
     fi
   fi

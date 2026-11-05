@@ -99,7 +99,8 @@ jobs:
             fi
             printf '%s\t%s\n' "${INPUT_RELEASE_REF}" "$target" > pairs.tsv
           else
-            .github/scripts/mergeback/resolve-active-release-pairs.sh origin > pairs.tsv
+            # Merge-back only: also keep a just-released branch until its merge-back lands.
+            .github/scripts/mergeback/resolve-active-release-pairs.sh --include-pending-merge-back origin > pairs.tsv
           fi
           echo "Active pairs (release -> target):"
           cat pairs.tsv || true
