@@ -320,7 +320,17 @@ public final class StreamPlatform {
     if (awaitOpening) { // and recovery
       verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
     }
-    openFuture.join(15, TimeUnit.SECONDS);
+    try {
+      openFuture.join(15, TimeUnit.SECONDS);
+    } catch (final RuntimeException e) {
+      // Only an opened processor is registered for cleanup below, so close its database here.
+      try {
+        zeebeDb.close();
+      } catch (final Exception closeError) {
+        e.addSuppressed(closeError);
+      }
+      throw e;
+    }
 
     processorContext = new ProcessorContext(streamProcessor, zeebeDb, storage, snapshot);
     closeables.add(processorContext);
