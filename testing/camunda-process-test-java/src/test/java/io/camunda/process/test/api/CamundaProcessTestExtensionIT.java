@@ -55,15 +55,9 @@ import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.api.mock.VariablesTable;
-import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
-import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
-import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
-import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -690,6 +684,8 @@ public class CamundaProcessTestExtensionIT {
           Bpmn.createExecutableProcess("process")
               .startEvent("start")
               .name("Start")
+              .serviceTask("task", task -> task.zeebeJobType("test"))
+              .name("Task")
               .endEvent("end")
               .name("End")
               .done();
