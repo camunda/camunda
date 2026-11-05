@@ -166,3 +166,22 @@ export async function deployUserTaskProcess(
   });
   return deployment.processes[0];
 }
+
+export async function partitionsCount(
+  request: APIRequestContext,
+): Promise<number> {
+  const res = await request.get(buildUrl('/topology'), {
+    headers: jsonHeaders(),
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).partitionsCount as number;
+}
+
+/**
+ * The partition that minted a key, encoded in its high bits. A definition key
+ * is minted on the deployment partition, which therefore serves every delete of
+ * that definition.
+ */
+export function partitionOf(key: string): number {
+  return Number(BigInt(key) >> 51n);
+}
