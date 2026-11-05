@@ -13,6 +13,7 @@ import {PanelTitle} from '#/operate/shared/PanelTitle/shadcn.components/PanelTit
 
 type Props = {
 	title?: string;
+	titleAttribute?: string;
 	count?: number;
 	hasMoreTotalItems?: boolean;
 	children?: React.ReactNode;
@@ -27,7 +28,7 @@ const SIZE_CLASSES: Record<NonNullable<Props['size']>, string> = {
 };
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
-	({title, count = 0, hasMoreTotalItems = false, children, className, size = 'md'}, ref) => {
+	({title, titleAttribute, count = 0, hasMoreTotalItems = false, children, className, size = 'md'}, ref) => {
 		const {t} = useTranslation();
 		return (
 			<header
@@ -38,7 +39,7 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
 					className,
 				)}
 			>
-				<PanelTitle>
+				<PanelTitle titleAttribute={titleAttribute}>
 					{title}
 					{count > 0 && (
 						<>

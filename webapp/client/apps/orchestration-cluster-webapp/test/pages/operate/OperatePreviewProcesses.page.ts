@@ -28,8 +28,8 @@ class OperatePreviewProcessesPage extends BasePage {
 		return this.page.getByLabel('Name');
 	}
 
-	get diagramPanelPlaceholder() {
-		return this.page.getByText('Diagram panel placeholder');
+	get diagramPanel() {
+		return this.page.getByRole('region', {name: 'Diagram Panel'});
 	}
 
 	get instancesTable() {

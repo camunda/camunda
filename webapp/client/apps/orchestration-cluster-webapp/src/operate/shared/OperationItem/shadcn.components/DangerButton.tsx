@@ -16,6 +16,7 @@ type ItemProps = {
 	title: string;
 	disabled?: boolean;
 	isIconOnly?: boolean;
+	hasResponsiveLabel?: boolean;
 	size?: NonNullable<React.ComponentProps<typeof Button>['size']> & React.ComponentProps<typeof IconButton>['size'];
 };
 
@@ -23,13 +24,38 @@ const TYPE_DETAILS: Readonly<Record<ItemProps['type'], {testId: string}>> = {
 	DELETE: {testId: 'delete-operation'},
 };
 
-const DangerButton: React.FC<ItemProps> = ({title, onClick, type, disabled, isIconOnly = false, size = 'default'}) => {
+const DangerButton: React.FC<ItemProps> = ({
+	title,
+	onClick,
+	type,
+	disabled,
+	isIconOnly = false,
+	hasResponsiveLabel = false,
+	size = 'default',
+}) => {
 	const {t} = useTranslation();
 	const {testId} = TYPE_DETAILS[type];
+	const label = t('operate.shared.operations.deleteButtonLabel');
+	const accessibleName = title.includes(label) ? title : `${label}. ${title}`;
 
 	return (
 		<li>
-			{isIconOnly ? (
+			{hasResponsiveLabel ? (
+				<Button
+					variant="destructive"
+					size={size}
+					title={title}
+					aria-label={accessibleName}
+					onClick={onClick}
+					disabled={disabled}
+					data-testid={testId}
+				>
+					<Trash2 aria-hidden />
+					<span className="-ml-1.5 grid grid-cols-[0fr] transition-[grid-template-columns,margin] duration-150 ease-out lg:ml-0 lg:grid-cols-[1fr]">
+						<span className="overflow-hidden whitespace-nowrap">{label}</span>
+					</span>
+				</Button>
+			) : isIconOnly ? (
 				<IconButton
 					icon={Trash2}
 					label={title}
