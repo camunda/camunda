@@ -494,15 +494,30 @@ final class OidcPrincipalClaimsMatrixIT {
             .preferRestOverGrpc(path == Path.REST)
             .credentialsProvider(bearer(token))
             .build()) {
-      matrixCase
-          .cluster()
-          .tenants()
-          .deploy(
-              client,
-              Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-              processId);
+      deploy(client, processId);
     }
     return brokerPrincipal(processId);
+  }
+
+  /**
+   * Deploys a process through {@code client}, retrying because the tenant's partition group may
+   * still be electing a leader right after startup.
+   */
+  private static void deploy(final CamundaClient client, final String processId) {
+    Awaitility.await("deployment of '%s' succeeds".formatted(processId))
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .until(
+            () ->
+                client
+                    .newDeployResourceCommand()
+                    .addProcessModel(
+                        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                        processId + ".bpmn")
+                    .send()
+                    .join()
+                    .getProcesses(),
+            processes -> !processes.isEmpty());
   }
 
   /**
