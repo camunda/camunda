@@ -42,7 +42,7 @@ on:
         default: ""
         required: false
       build-frontend:
-        description: 'Build frontend assets as part of the load test image build'
+        description: 'Build frontend assets as part of the load test image build. Ignored when stable-branch is set, the stable workflows build without the frontend.'
         type: boolean
         default: true
         required: false
@@ -82,7 +82,7 @@ on:
         default: ""
         required: false
       build-frontend:
-        description: 'Build frontend assets as part of the load test image build'
+        description: 'Build frontend assets as part of the load test image build. Ignored when stable-branch is set, the stable workflows build without the frontend.'
         type: boolean
         default: true
         required: false
