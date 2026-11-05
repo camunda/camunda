@@ -209,6 +209,7 @@ export type ApiPath =
   | '/user-tasks/{userTaskKey}/completion'
   | '/user-tasks/{userTaskKey}/effective-variables/search'
   | '/user-tasks/{userTaskKey}/form'
+  | '/user-tasks/{userTaskKey}/lookup'
   | '/user-tasks/{userTaskKey}/variables/search'
   | '/users'
   | '/users/search'
