@@ -40,7 +40,7 @@ engine:
   id: copilot
   # Scoped PIT runs and a few inline comments do not need a frontier model, and Luna costs a
   # fraction of Sonnet per token.
-  model: gpt-5.6-luna
+  model: gpt-6.1-luna
 timeout-minutes: 45
 env:
   TEST_OWNER: '@camunda/zeebe-distributed-platform'
