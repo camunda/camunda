@@ -357,6 +357,15 @@ release_tip() {
   [[ "$output" == *"act now on a missing required change"* ]]
 }
 
+@test "render: discloses unlisted conflicts and leaves unclear ones to the release manager" {
+  # 8.10.0 shape: one actionable path, but the merge-back also hit a mechanical pom conflict.
+  echo '{"release_ref":"release-8.10.0","target_ref":"stable/8.10","conflicting_paths":2,"action_count":1,"verdict":"v","source_missing":[{"path":"ci.yml","owner":"","commits":[]}],"version_build_gap":[],"needs_review":[],"source_drift":[],"version_build":["pom.xml"]}' > t.json
+  run_json "$RENDER" t.json
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1 more conflicting path(s)"* ]]
+  [[ "$output" == *"left to the release manager to resolve at merge-back"* ]]
+}
+
 @test "render: flags truncation when a path carries more than max_commits" {
   commits=$(jq -nc '[range(6) | {sha:("c"+(.|tostring)),author:"d",subject:"s"}]')
   jq -nc --argjson commits "$commits" '{
