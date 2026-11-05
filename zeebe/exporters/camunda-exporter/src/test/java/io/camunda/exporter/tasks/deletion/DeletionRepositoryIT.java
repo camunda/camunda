@@ -70,7 +70,10 @@ abstract class DeletionRepositoryIT {
 
   @BeforeEach
   void beforeEach() {
-    engineClient.createIndex(operationTemplate, new IndexConfiguration());
+    final var indexConfig = new IndexConfiguration();
+    indexConfig.setNumberOfShards(
+        3); // force more shards so we can verify routing used for deletes etc
+    engineClient.createIndex(operationTemplate, indexConfig);
   }
 
   @AfterEach
