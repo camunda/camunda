@@ -323,6 +323,174 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+<<<<<<< HEAD
+=======
+  surefire-excludes-check:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Lint / Surefire Default Excludes"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      # renovate: datasource=github-tags depName=open-policy-agent/conftest
+      CONFTEST_VERSION: '0.69.0'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Check Surefire/Failsafe excludes keep the nested class default
+        run: |
+          .github/scripts/download-with-retry.sh \
+            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            "${RUNNER_TEMP}/conftest.tar.gz"
+          tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
+          rm -f "${RUNNER_TEMP}/conftest.tar.gz"
+          git ls-files -z '*pom.xml' | xargs -0 "${RUNNER_TEMP}/conftest" test --rego-version v0 -o github --parser xml --policy .github/conftest-pom
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-golden-tests:
+    if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Golden File Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: load-tests/setup/test/go.mod
+          cache-dependency-path: load-tests/setup/test/go.sum
+      - name: Set up Helm
+        uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
+        with:
+          minimum_release_age: 15d
+          install_args: helm
+          cache_save: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/') }}
+      - name: Run golden file tests
+        working-directory: load-tests/setup/test
+        run: make test
+      - name: How to update golden files
+        if: failure()
+        run: |
+          echo "::notice::Golden files differ from the rendered manifests."
+          echo "If the change is intentional, regenerate and commit them:"
+          echo "  cd load-tests/setup/test"
+          echo "  make update-golden"
+          echo "  git diff golden/    # review the change"
+          echo "  git add golden/ && git commit -m 'test: update golden files'"
+          echo "Or apply the 'generate-golden' label. Renovate PRs touching load-tests/setup/** are handled automatically."
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-k6-prettier:
+    if: needs.detect-changes.outputs.load-test-k6-changes == 'true'
+    name: "Load Test / k6"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: load-tests/setup/charts/load-test-setup/k6
+          max_attempts: "2"
+          timeout_minutes: "3"
+      - name: Check formatting
+        run: make -C load-tests/setup/charts/load-test-setup/k6 check
+      - name: Run k6 script unit tests
+        env:
+          # The node.js test runner only colors its output on a TTY.
+          FORCE_COLOR: 1
+        run: make -C load-tests/setup/charts/load-test-setup/k6 test
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-helm-lockfile:
+    if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Helm Chart Lock"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Set up Helm
+        uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
+        with:
+          minimum_release_age: 15d
+          install_args: helm
+          cache_save: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/') }}
+      - name: Update Helm dependencies
+        run: helm dependency update load-tests/setup/charts/load-test-setup/
+      - name: Check Chart.lock is up to date
+        run: |
+          if ! git diff --exit-code load-tests/setup/charts/load-test-setup/Chart.lock; then
+            echo "::error::Chart.lock is out of date. Run 'helm dependency update load-tests/setup/charts/load-test-setup/' and commit the updated Chart.lock."
+            exit 1
+          fi
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+>>>>>>> ce3ce01c (ci: fail PRs whose Surefire excludes drop the nested-class default)
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -2521,8 +2689,12 @@ jobs:
       - renovatelint
       - setup-tests
       - shell-script-tests
+<<<<<<< HEAD
       - spring-boot-compatibility-tests
       - tasklist-ci
+=======
+      - surefire-excludes-check
+>>>>>>> ce3ce01c (ci: fail PRs whose Surefire excludes drop the nested-class default)
       - validate-pom-metadata
       - zeebe-ci
       - zeebe-unit-tests
