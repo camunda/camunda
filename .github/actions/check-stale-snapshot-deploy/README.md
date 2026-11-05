@@ -1,16 +1,24 @@
-# Check Stale Re-run Action
+# Check Stale Snapshot Deploy Action
 
 ## Intro
 
-Fails a job early when it runs as a re-run (attempt 2 or later) of a workflow run older than
-`max-age-hours`, and tells the user to start a new run instead.
+Fails a snapshot deploy job early when it runs as a re-run (attempt 2 or later) of a workflow run
+older than `max-age-hours`, and tells the user to start a new run instead.
 
 The snapshot deploy jobs in [`ci.yml`](../../workflows/ci.yml) download frontend bundles that are
 kept for only 2 days (`retention-days: 2`). If someone re-runs an older run, those downloads fail.
 Even if they didn't, the jobs would publish an outdated snapshot. Each failed job used to raise its
 own L1 `base-branch-unsuccessful-job` incident (INC-8805, INC-8806, INC-8807). This action makes the
-failure explicit, and gives callers a `stale` output they use to skip `observe-build-status`, so no
-alert fires.
+failure explicit, and gives callers a `stale` output. They use it to report the failure to CI
+analytics with `user_reason: stale-rerun`, which the alert query (in `camunda/infra-core`) can
+exclude.
+
+## Scope
+
+Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.yml):
+`deploy-snapshots`, `deploy-camunda-docker-snapshot` and `deploy-optimize-docker-snapshot`. They
+are the only jobs that download the `fe-*-<run_id>` artifacts. It isn't a general re-run guard: its
+message assumes a snapshot deploy.
 
 ## Prerequisites
 
@@ -50,8 +58,9 @@ alert fires.
 - **Add it as a step in each job that needs it, not as a separate guard job.** With "Re-run failed
   jobs", GitHub doesn't re-run jobs that already passed and reuses their old outputs, so a guard job
   would keep reporting "not stale".
-- **Skip `observe-build-status` when `stale` is `'true'`.** Reporting `aborted` or `cancelled`
-  instead isn't enough: the base-branch alert counts any unsuccessful job.
+- **Keep reporting to `observe-build-status`, with `user_reason: stale-rerun` when `stale` is
+  `'true'`.** Don't skip the step: CI analytics should still see the failure. The reason lets the
+  `base-branch-unsuccessful-job` alert exclude it by cause, as it does for `agent-disconnected`.
 - **It fails open.** An API error must never block a legitimate deploy, so the worst case is the
   previous behavior.
 - **Age is measured from the run's `created_at`**, not from the commit time or `run_started_at`
@@ -66,22 +75,23 @@ alert fires.
 jobs:
   deploy-snapshot:
     permissions:
-      actions: read  # check-stale-rerun reads the run's creation time
+      actions: read  # check-stale-snapshot-deploy reads the run's creation time
     steps:
       - uses: actions/checkout@v6
       - name: Check for stale re-run
         id: stale-rerun
-        uses: ./.github/actions/check-stale-rerun
+        uses: ./.github/actions/check-stale-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       # ... download artifacts and deploy ...
-      # A stale re-run fails by design; don't page the medic for it.
+      # A stale re-run fails by design; tag it so the base-branch alert can ignore it.
       - name: Observe build status
-        if: always() && steps.stale-rerun.outputs.stale != 'true'
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
 ```
 
 See also the runbook entry

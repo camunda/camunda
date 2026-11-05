@@ -294,10 +294,10 @@ created days ago and the failed attempt is a manual re-run (attempt 2 or later).
 **Cause:** the deploy jobs download frontend bundles that are kept for only 2 days
 (`retention-days: 2`). A re-run of an older run cannot get them, and it would publish an outdated
 snapshot even if it could. The
-[`check-stale-rerun`](https://github.com/camunda/camunda/tree/main/.github/actions/check-stale-rerun)
-action fails these jobs early with a clear
-message and skips `observe-build-status`, so newer branches should no longer raise this alert.
-Branches without that action still do (e.g. INC-8805, INC-8806, INC-8807).
+[`check-stale-snapshot-deploy`](https://github.com/camunda/camunda/tree/main/.github/actions/check-stale-snapshot-deploy)
+action fails these jobs early with a clear message and reports them to CI analytics with
+`user_reason: stale-rerun`, so the alert can exclude them by that reason. Branches without that
+action still raise this alert (e.g. INC-8805, INC-8806, INC-8807).
 
 **How to confirm:** the run's `created_at` is days before its `run_started_at`, and
 `run_attempt` is greater than 1:
