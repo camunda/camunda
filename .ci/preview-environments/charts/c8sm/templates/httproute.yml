@@ -45,18 +45,6 @@ spec:
   hostnames:
   - {{ include "ingress.domain" $ | quote }}
   rules:
-  # app-root: redirect "/" to Web Modeler.
-  - matches:
-    - path:
-        type: Exact
-        value: /
-    filters:
-    - type: RequestRedirect
-      requestRedirect:
-        statusCode: 302
-        path:
-          type: ReplaceFullPath
-          replaceFullPath: {{ .Values.camundaPlatform.webModeler.contextPath | quote }}
   # Orchestration (REST gateway)
   - matches:
     - path:
