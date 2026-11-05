@@ -89,7 +89,7 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	if mode, err := localsecrets.Mode(); err != nil {
 		return err
 	} else if mode == "env" {
-		return c.runEnvMode(args)
+		return c.runEnvMode(baseDir, args)
 	}
 	store := localsecrets.New(baseDir)
 	c.warnPathChanged(baseDir)
@@ -473,7 +473,7 @@ Local secret commands do not manage stores configured explicitly through --confi
 
 var secretsCommandHelp = map[string]string{
 	"set":    "Usage: c8run secrets set <name> [name...] [--stdin]\nPrompts without echo for each value. --stdin accepts exactly one secret.\n",
-	"list":   "Usage: c8run secrets list\nLists names only. Secret values are never displayed.\nIn C8RUN_SECRETS_MODE=env, lists the variables in this shell's environment; c8run sees them only if started from it.\n",
+	"list":   "Usage: c8run secrets list\nLists names only. Secret values are never displayed.\nIn C8RUN_SECRETS_MODE=env, lists the variables in this shell's environment; c8run sees them only if started from it.\nWarns when --physical-tenant names a physical tenant that is neither saved nor running.\n",
 	"path":   "Usage: c8run secrets path\nShows the c8run-managed local directory without creating it.\n",
 	"delete": "Usage: c8run secrets delete (<name>|--all) [--yes]\nInteractive use asks for confirmation. Non-interactive use requires --yes.\n",
 	"import": "Usage: c8run secrets import [dotenv-file]\nImports dotenv entries from a file, or from stdin when no file is provided. Import is additive.\n",
