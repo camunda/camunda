@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.deletion;
 
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.util.SearchAfter;
 import java.util.concurrent.CompletableFuture;
 
 /**

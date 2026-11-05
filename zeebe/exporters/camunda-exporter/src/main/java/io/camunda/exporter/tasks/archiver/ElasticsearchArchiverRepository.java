@@ -45,6 +45,8 @@ import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.util.SearchAfter;
+import io.camunda.exporter.tasks.util.SearchAfterES;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -344,7 +346,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
 
     if (searchAfter != null) {
-      ((SearchAfterImpl) searchAfter).apply(requestBuilder);
+      ((SearchAfterES) searchAfter).apply(requestBuilder);
     }
 
     final var timer = Timer.start();
@@ -362,7 +364,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                   hits.stream()
                       .map(h -> new IdWithRouting(h.id(), h.routing(), h.seqNo(), h.primaryTerm()))
                       .toList(),
-                  new SearchAfterImpl(hits.getLast().sort()));
+                  new SearchAfterES(hits.getLast().sort()));
             });
   }
 
@@ -775,13 +777,5 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(size)
         .build();
-  }
-
-  record SearchAfterImpl(List<FieldValue> values) implements SearchAfter {
-    void apply(final Builder requestBuilder) {
-      if (values != null && !values.isEmpty()) {
-        requestBuilder.searchAfter(values);
-      }
-    }
   }
 }
