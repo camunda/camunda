@@ -613,7 +613,14 @@ class CslChainIntegrationTest {
     runner.run(
         ctx -> {
           final Filter proxy = resolveSecurityFilter(ctx);
-          for (final String path : List.of("/api/public/collection", "/api/ingestion/variable")) {
+          // Spring decodes path segments before routing, so the encoded forms reach the same
+          // endpoints and must be rejected too.
+          for (final String path :
+              List.of(
+                  "/api/public/collection",
+                  "/api/ingestion/variable",
+                  "/api/p%75blic/collection",
+                  "/api/ingestion/vari%61ble")) {
             final MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
             request.setCookies(authenticatedSessionCookie());
             final MockHttpServletResponse response = new MockHttpServletResponse();
