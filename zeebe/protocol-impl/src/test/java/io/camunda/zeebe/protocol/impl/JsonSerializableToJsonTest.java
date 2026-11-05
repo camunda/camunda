@@ -1840,7 +1840,8 @@ final class JsonSerializableToJsonTest {
                           "foo",
                           new VariableMetadataRecord()
                               .setProtectionModes(Set.of(ProtectionMode.REDACT))))
-                  .setScopeKey(scopeKey);
+                  .setScopeKey(scopeKey)
+                  .setStorageOrdinal(1234);
             },
         """
                 {
@@ -1849,6 +1850,7 @@ final class JsonSerializableToJsonTest {
                     "foo": 1
                   },
                   "scopeKey": 3,
+                  "storageOrdinal": 1234,
                   "tenantId": "<default>",
                   "variablesMetadata": {
                     "foo": {
@@ -1877,6 +1879,7 @@ final class JsonSerializableToJsonTest {
                   "updateSemantics": "PROPAGATE",
                   "variables": {},
                   "scopeKey": 3,
+                  "storageOrdinal": 0,
                   "tenantId": "<default>",
                   "variablesMetadata": {}
                 }
