@@ -77,6 +77,14 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
+  private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
+      "GET /_cluster/health returned HTTP 403: the OpenSearch service account lacks the "
+          + "'monitor' cluster privilege required to verify cluster health during startup. "
+          + "The Camunda readiness probe will not pass until this is resolved. "
+          + "To fix: grant the 'monitor' cluster privilege to the service account, "
+          + "or disable the check by setting "
+          + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.";
+
   public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
@@ -465,7 +473,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   .formatted(batch, timeout, response.status()));
         }
       }
-    } catch (final IOException | OpenSearchException e) {
+    } catch (final OpenSearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to wait for active primary shards of indices " + indexNames, e);
     }
@@ -480,14 +494,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
           && !response.status().equals(HealthStatus.Red);
     } catch (final OpenSearchException e) {
       if (e.status() == 403) {
-        throw new SearchEngineHealthCheckPermissionException(
-            "GET /_cluster/health returned HTTP 403: the OpenSearch service account lacks the "
-                + "'monitor' cluster privilege required to verify cluster health during startup. "
-                + "The Camunda readiness probe will not pass until this is resolved. "
-                + "To fix: grant the 'monitor' cluster privilege to the service account, "
-                + "or disable the check by setting "
-                + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.",
-            e);
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
       }
       LOG.warn(
           "OpenSearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
