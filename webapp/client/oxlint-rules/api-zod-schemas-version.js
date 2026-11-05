@@ -19,6 +19,7 @@ function getAPIVersion() {
 
 const PACKAGE_NAME = '@camunda/camunda-api-zod-schemas';
 const VERSIONED_SOURCE = new RegExp(`^${PACKAGE_NAME}/\\d+\\.\\d+(?=/|$)`);
+const EXPECTED_PREFIX = `${PACKAGE_NAME}/${getAPIVersion()}`;
 
 export default {
 	meta: {
@@ -33,8 +34,6 @@ export default {
 		},
 	},
 	create(context) {
-		const expectedPrefix = `${PACKAGE_NAME}/${getAPIVersion()}`;
-
 		function check(sourceNode) {
 			if (sourceNode?.type !== 'Literal' || typeof sourceNode.value !== 'string') {
 				return;
@@ -44,13 +43,13 @@ export default {
 			if (source !== PACKAGE_NAME && !source.startsWith(`${PACKAGE_NAME}/`)) {
 				return;
 			}
-			if (source === expectedPrefix || source.startsWith(`${expectedPrefix}/`)) {
+			if (source === EXPECTED_PREFIX || source.startsWith(`${EXPECTED_PREFIX}/`)) {
 				return;
 			}
 
 			const fixedSource = VERSIONED_SOURCE.test(source)
-				? source.replace(VERSIONED_SOURCE, expectedPrefix)
-				: source.replace(PACKAGE_NAME, expectedPrefix);
+				? source.replace(VERSIONED_SOURCE, EXPECTED_PREFIX)
+				: source.replace(PACKAGE_NAME, EXPECTED_PREFIX);
 			const quote = sourceNode.raw[0];
 
 			context.report({
