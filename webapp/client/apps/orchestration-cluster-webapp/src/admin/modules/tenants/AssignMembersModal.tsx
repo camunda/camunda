@@ -59,7 +59,7 @@ const AssignMembersModal: React.FC<Props> = ({tab, tenantId, isOpen, isFreeText,
 			onAssign={(ids) =>
 				assign
 					.mutateAsync(ids.map((id) => listedMembersById.current.get(id) ?? createMember(tab, id)))
-					.then(() => ({failed: []}))
+					.then(({failed}) => ({failed}))
 					.catch(() => ({failed: ids.map((id) => ({id}))}))
 			}
 			onClose={onClose}

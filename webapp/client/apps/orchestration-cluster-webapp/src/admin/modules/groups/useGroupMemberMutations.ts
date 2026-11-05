@@ -21,6 +21,7 @@ import {
 	type MemberPage,
 	type MembersResponse,
 } from './members';
+import {dismissSuperseded, notifyAssigned} from '../shared/notifyAssigned';
 import {request} from '#/shared/http/request';
 import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -63,6 +64,7 @@ function useGroupMemberMutations(groupId: string) {
 	const reconcile = async (
 		direction: Direction,
 		{kind, ids, activeLists}: Awaited<ReturnType<ReturnType<typeof mutate>>>,
+		superseded?: Promise<string | number | undefined>,
 	) => {
 		const confirmations = await Promise.all(
 			activeLists.map(({queryKey, totalItems}) =>
@@ -76,6 +78,7 @@ function useGroupMemberMutations(groupId: string) {
 		);
 
 		if (confirmations.some((confirmed) => confirmed === undefined)) {
+			await dismissSuperseded(superseded);
 			toast.warning(t('admin.groups.changeNotConfirmed'), {
 				description: t('admin.groups.changeNotConfirmedDescription'),
 			});
@@ -97,14 +100,15 @@ function useGroupMemberMutations(groupId: string) {
 							isFirstPageWithRoom((queryKey[3] as MemberPage).page, itemCount),
 					});
 				}
-				toast.success(t(`admin.groups.members.${result.kind}.assigned`, {id}));
 			}
-			for (const {error} of result.failed) {
-				void getErrorMessage(error).then((description) =>
-					toast.error(t('admin.groups.members.assignFailed'), {description}),
-				);
-			}
-			void reconcile('assign', result);
+			const summary = notifyAssigned({
+				t,
+				scope: 'admin.groups.members',
+				assigned: result.ids.length,
+				errors: result.failed.map(({error}) => error),
+				single: t(`admin.groups.members.${result.kind}.assigned`, {id: result.ids[0]}),
+			});
+			void reconcile('assign', result, summary);
 		},
 		onError: async (error) => {
 			toast.error(t('admin.groups.members.assignFailed'), {description: await getErrorMessage(error)});

@@ -11,10 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {toast} from '@camunda/design-system';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
+import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilReady} from '#/shared/http/waitUntilReady';
+import {dismissSuperseded, notifyAssigned} from '../shared/notifyAssigned';
 import type {TenantTab} from './detailSearchSchema';
 
 const QUERY_KEY_BY_TAB: Record<TenantTab, string> = {
@@ -34,16 +36,6 @@ const MEMBER_ID_KEY: Record<TenantTab, string> = {
 };
 
 type TenantMember = Record<string, unknown>;
-
-// Carries the members that were assigned before a batch failed, so they still show up in the list.
-class AssignFailedError extends Error {
-	assigned: TenantMember[];
-
-	constructor(assigned: TenantMember[], cause: unknown) {
-		super('Failed to assign tenant members', {cause});
-		this.assigned = assigned;
-	}
-}
 
 type MembersListBody = {sort?: {field: string; order?: string}[]; page?: {from?: number; limit?: number}};
 
@@ -132,7 +124,11 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 
 	const invalidateMembers = () => queryClient.invalidateQueries({queryKey: queryKeyPrefix});
 
-	const reconcileMembers = async (isReady: (totalItems: number) => boolean, baseline: number | undefined) => {
+	const reconcileMembers = async (
+		isReady: (totalItems: number) => boolean,
+		baseline: number | undefined,
+		superseded?: Promise<string | number | undefined>,
+	) => {
 		if (baseline === undefined) {
 			void invalidateMembers();
 			return;
@@ -145,13 +141,14 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 		if (ready !== undefined) {
 			void invalidateMembers();
 		} else {
+			await dismissSuperseded(superseded);
 			toast.warning(t('admin.tenants.changeNotConfirmed'), {
 				description: t('admin.tenants.changeNotConfirmedDescription'),
 			});
 		}
 	};
 
-	const applyAssigned = (assigned: TenantMember[]) => {
+	const applyAssigned = (assigned: TenantMember[], summary: Promise<string | number | undefined>) => {
 		const baseline = getCachedTotalItems(queryClient, tab, tenantId);
 		for (const member of assigned) {
 			patchListCaches(queryClient, {
@@ -164,35 +161,48 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 			});
 		}
 
-		void reconcileMembers((totalItems) => totalItems >= (baseline ?? 0) + assigned.length, baseline);
+		void reconcileMembers((totalItems) => totalItems >= (baseline ?? 0) + assigned.length, baseline, summary);
 	};
 
 	const assign = useMutation({
-		// Members are assigned one by one. A member that is already assigned (409) counts as done, so
-		// retrying a batch that failed halfway does not trip over the members that went through.
 		mutationFn: async (members: TenantMember[]) => {
-			const assigned: TenantMember[] = [];
-			for (const member of members) {
-				const {error} = await request(assignEndpoint(tab, tenantId, getMemberId(tab, member)));
-				if (error === null) {
-					assigned.push(member);
-				} else if (error.response?.status !== 409) {
-					throw new AssignFailedError(assigned, mapQueryError(error));
-				}
+			const outcomes = await Promise.all(
+				members.map(async (member) => {
+					const {error} = await request(assignEndpoint(tab, tenantId, getMemberId(tab, member)));
+					// A member that is already assigned (409) counts as done, so retrying a batch that
+					// partly failed does not trip over the members that went through.
+					if (error === null) {
+						return {member, status: 'assigned' as const};
+					}
+					return error.response?.status === 409
+						? {member, status: 'alreadyAssigned' as const}
+						: {member, status: 'failed' as const, error: mapQueryError(error)};
+				}),
+			);
+
+			const assigned = outcomes.flatMap(({member, status}) => (status === 'assigned' ? [member] : []));
+			const failed = outcomes.flatMap((outcome) =>
+				outcome.status === 'failed' ? [{id: getMemberId(tab, outcome.member), error: outcome.error}] : [],
+			);
+			const [firstFailure] = failed;
+			if (failed.length === members.length && firstFailure !== undefined) {
+				throw firstFailure.error;
 			}
-			return assigned;
+			return {assigned, failed, confirmedCount: members.length - failed.length};
 		},
-		onSuccess: (assigned) => {
-			toast.success(t('admin.tenants.assignSuccess'));
-			applyAssigned(assigned);
+		onSuccess: ({assigned, failed, confirmedCount}) => {
+			const summary = notifyAssigned({
+				t,
+				scope: 'admin.tenants',
+				assigned: confirmedCount,
+				errors: failed.map(({error}) => error),
+				single: t('admin.tenants.assignSuccess'),
+			});
+			applyAssigned(assigned, summary);
 		},
-		onError: (error) => {
-			toast.error(t('admin.tenants.assignError'));
-			if (error instanceof AssignFailedError && error.assigned.length > 0) {
-				applyAssigned(error.assigned);
-			} else {
-				void invalidateMembers();
-			}
+		onError: async (error) => {
+			toast.error(t('admin.tenants.assignError'), {description: await getErrorMessage(error)});
+			void invalidateMembers();
 		},
 	});
 

@@ -254,6 +254,8 @@
 				"members": {
 					"tabsLabel": "Gruppenmitglieder",
 					"assignFailed": "Zuweisung fehlgeschlagen",
+					"assignedMany": "{{count}} Mitglieder zugewiesen",
+					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
 					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
@@ -517,6 +519,8 @@
 				"members": {
 					"tabsLabel": "Rollenmitglieder",
 					"assignFailed": "Zuweisung fehlgeschlagen",
+					"assignedMany": "{{count}} Mitglieder zugewiesen",
+					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
 					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
@@ -680,6 +684,8 @@
 					}
 				},
 				"assignSuccess": "Zuweisung gespeichert",
+				"assignedMany": "{{count}} Mitglieder zugewiesen",
+				"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 				"assignError": "Zuweisung fehlgeschlagen",
 				"unassignSuccess": "Aus Mandant entfernt",
 				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen",
