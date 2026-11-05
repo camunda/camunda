@@ -9,6 +9,7 @@ package io.camunda.identity.webapp.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
 import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,25 +50,29 @@ public class AdminClientConfigController {
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
   private final CamundaSecurityLibraryProperties cslProperties;
+  private final PhysicalTenantSecurityProperties tenantSecurityProperties;
   private final PhysicalTenantCamundaGroups camundaGroups;
-  // Only the groups mode is resolved per physical tenant, so the script is built once with each
-  // value. The additional IdP still comes from the cluster configuration (#68209).
-  private final String clientConfigWithCamundaGroups;
-  private final String clientConfigWithoutCamundaGroups;
+  private final boolean isNewDesignSystemEnabled;
+  private final boolean isAdditionalIdpConfigured;
+  // The groups mode and the ID pattern are resolved per physical tenant, so a script is built
+  // once for each combination. The additional IdP still comes from the cluster configuration
+  // (#68209).
+  private final Map<TenantSettings, String> clientConfigs = new ConcurrentHashMap<>();
   private final ObjectMapper objectMapper;
 
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
+      @Autowired(required = false) final PhysicalTenantSecurityProperties tenantSecurityProperties,
       final Environment environment) {
     this.cslProperties = cslProperties;
+    this.tenantSecurityProperties = tenantSecurityProperties;
     camundaGroups = new PhysicalTenantCamundaGroups(environment);
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
-    final boolean isNewDesignSystemEnabled =
-        resolvedWebappConfiguration.resolveNewDesignSystemEnabled();
+    isNewDesignSystemEnabled = resolvedWebappConfiguration.resolveNewDesignSystemEnabled();
     final var namedProviders = namedProviders(cslProperties);
-    final boolean isAdditionalIdpConfigured = isAdditionalIdpConfigured(namedProviders);
+    isAdditionalIdpConfigured = isAdditionalIdpConfigured(namedProviders);
 
     LOG.info(
         "Admin new design system resolved to {} (explicit override={})",
@@ -78,26 +84,11 @@ public class AdminClientConfigController {
         namedProviders.keySet());
 
     objectMapper = new ObjectMapper();
-    clientConfigWithCamundaGroups =
-        generateClientConfig(
-            cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured, true);
-    clientConfigWithoutCamundaGroups =
-        generateClientConfig(
-            cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured, false);
   }
 
-  private String generateClientConfig(
-      final CamundaSecurityLibraryProperties cslProperties,
-      final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured,
-      final boolean isCamundaGroupsEnabled) {
+  private String generateClientConfig(final TenantSettings tenantSettings) {
     try {
-      final Map<String, Object> config =
-          createConfigMap(
-              cslProperties,
-              isNewDesignSystemEnabled,
-              isAdditionalIdpConfigured,
-              isCamundaGroupsEnabled);
+      final Map<String, Object> config = createConfigMap(tenantSettings);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -106,22 +97,18 @@ public class AdminClientConfigController {
     }
   }
 
-  private Map<String, Object> createConfigMap(
-      final CamundaSecurityLibraryProperties cslProperties,
-      final boolean isNewDesignSystemEnabled,
-      final boolean isAdditionalIdpConfigured,
-      final boolean isCamundaGroupsEnabled) {
+  private Map<String, Object> createConfigMap(final TenantSettings tenantSettings) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = cslProperties.getSaas();
 
     config.put(IS_OIDC, String.valueOf(isOidcAuthentication(cslProperties)));
-    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled));
+    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(tenantSettings.isCamundaGroupsEnabled()));
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
-    config.put(ID_PATTERN, cslProperties.getIdValidationPattern());
+    config.put(ID_PATTERN, tenantSettings.idPattern());
     config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
     config.put(DEFAULT_ROLE_IDS, DefaultRole.ids());
     config.put(IS_NEW_DESIGN_SYSTEM_ENABLED, String.valueOf(isNewDesignSystemEnabled));
@@ -152,11 +139,27 @@ public class AdminClientConfigController {
   @ResponseBody
   @Hidden
   public String getClientConfig(final HttpServletRequest request) {
-    final boolean isCamundaGroupsEnabled =
-        camundaGroups.isCamundaGroupsEnabled(
-            PhysicalTenantContext.getPhysicalTenantId(request), cslProperties.getAuthentication());
-    return isCamundaGroupsEnabled
-        ? clientConfigWithCamundaGroups
-        : clientConfigWithoutCamundaGroups;
+    final String physicalTenantId = PhysicalTenantContext.getPhysicalTenantId(request);
+    final var tenantSettings =
+        new TenantSettings(
+            camundaGroups.isCamundaGroupsEnabled(
+                physicalTenantId, cslProperties.getAuthentication()),
+            idPattern(physicalTenantId));
+    return clientConfigs.computeIfAbsent(tenantSettings, this::generateClientConfig);
   }
+
+  /**
+   * The ID pattern of the request tenant, which its API validates IDs with. A tenant that is not
+   * configured, or a setup without physical tenants, uses the cluster configuration.
+   */
+  private String idPattern(final String physicalTenantId) {
+    final var tenantProperties =
+        tenantSecurityProperties != null && physicalTenantId != null
+            ? tenantSecurityProperties.propertiesByPhysicalTenant().get(physicalTenantId)
+            : null;
+    return (tenantProperties != null ? tenantProperties : cslProperties).getIdValidationPattern();
+  }
+
+  /** The settings of the script that differ between physical tenants. */
+  private record TenantSettings(boolean isCamundaGroupsEnabled, String idPattern) {}
 }
