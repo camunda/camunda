@@ -71,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -876,8 +875,7 @@ public final class S3BackupStore implements BackupStore {
     final var builder = S3AsyncClient.builder();
 
     // Enable auto-tuning of various parameters based on the environment
-    builder.defaultsMode(
-        config.defaultsMode().map(S3BackupConfig.DefaultsMode::toSdk).orElse(DefaultsMode.AUTO));
+    builder.defaultsMode(config.defaultsMode().toSdk());
 
     // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
     // compatible storage systems that expect MD5 checksums in the request.

@@ -33,7 +33,7 @@ final class S3BackupConfigTest {
     final var config = new Builder().withBucketName("bucket").build();
 
     // then
-    assertThat(config.defaultsMode()).isEmpty();
+    assertThat(config.defaultsMode()).isEqualTo(DefaultsMode.defaultValue());
   }
 
   @ParameterizedTest

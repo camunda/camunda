@@ -67,7 +67,7 @@ public record S3BackupConfig(
     Optional<String> ssecKey,
     Optional<Duration> readTimeout,
     Optional<Duration> writeTimeout,
-    Optional<DefaultsMode> defaultsMode) {
+    DefaultsMode defaultsMode) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -142,7 +142,7 @@ public record S3BackupConfig(
     private @Nullable String ssecKey;
     private @Nullable Duration readTimeout;
     private @Nullable Duration writeTimeout;
-    private Optional<DefaultsMode> defaultsMode = Optional.empty();
+    private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -221,7 +221,7 @@ public record S3BackupConfig(
     }
 
     public Builder withDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
-      this.defaultsMode = defaultsMode;
+      this.defaultsMode = defaultsMode.orElse(DefaultsMode.defaultValue());
       return this;
     }
 
@@ -248,28 +248,6 @@ public record S3BackupConfig(
     }
   }
 
-  /**
-   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
-   * client for mobile applications, which a broker is not.
-   */
-  public enum DefaultsMode {
-    LEGACY,
-    STANDARD,
-    CROSS_REGION,
-    IN_REGION,
-    AUTO;
-
-    public software.amazon.awssdk.awscore.defaultsmode.DefaultsMode toSdk() {
-      return switch (this) {
-        case LEGACY -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.LEGACY;
-        case STANDARD -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.STANDARD;
-        case CROSS_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.CROSS_REGION;
-        case IN_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.IN_REGION;
-        case AUTO -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.AUTO;
-      };
-    }
-  }
-
   record Credentials(String accessKey, String secretKey) {
     @Override
     public String toString() {
@@ -281,6 +259,32 @@ public record S3BackupConfig(
           + "<redacted>"
           + '\''
           + '}';
+    }
+  }
+
+  /**
+   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
+   * client for mobile applications, which a broker is not.
+   */
+  public enum DefaultsMode {
+    LEGACY,
+    STANDARD,
+    CROSS_REGION,
+    IN_REGION,
+    AUTO;
+
+    public static DefaultsMode defaultValue() {
+      return AUTO;
+    }
+
+    public software.amazon.awssdk.awscore.defaultsmode.DefaultsMode toSdk() {
+      return switch (this) {
+        case LEGACY -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.LEGACY;
+        case STANDARD -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.STANDARD;
+        case CROSS_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.CROSS_REGION;
+        case IN_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.IN_REGION;
+        case AUTO -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.AUTO;
+      };
     }
   }
 }
