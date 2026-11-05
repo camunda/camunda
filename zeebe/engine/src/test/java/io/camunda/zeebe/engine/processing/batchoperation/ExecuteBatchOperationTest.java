@@ -22,11 +22,13 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -72,6 +74,34 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
           assertThat(cancelCommand.getIntent()).isEqualTo(ProcessInstanceIntent.CANCEL);
           assertThat(cancelCommand.getAuthorizations()).isEqualTo(claims);
         });
+  }
+
+  @Test
+  public void shouldLogPartitionIdInHeartbeat() {
+    try (final var logs =
+        LogCapturer.capturing(BatchOperationExecutionExecuteProcessor.class, Level.DEBUG)) {
+      // given - the heartbeat is logged every 1000 executed items
+      final var processInstanceKeys =
+          LongStream.rangeClosed(1, 1000).boxed().collect(Collectors.toSet());
+      final var batchOperationKey =
+          createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+      // when
+      RecordingExporter.batchOperationLifecycleRecords(BatchOperationIntent.COMPLETED)
+          .withBatchOperationKey(batchOperationKey)
+          .await();
+
+      final var executeCommand =
+          RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+              .withBatchOperationKey(batchOperationKey)
+              .getFirst();
+
+      // then
+      assertThat(logs.messagesAt(Level.DEBUG))
+          .contains(
+              "Batch operation %d on partition %d has executed 1000 of 1000 items."
+                  .formatted(batchOperationKey, executeCommand.getPartitionId()));
+    }
   }
 
   @Test
