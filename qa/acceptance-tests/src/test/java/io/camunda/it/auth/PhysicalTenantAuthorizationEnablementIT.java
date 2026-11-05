@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -22,10 +23,17 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -70,6 +78,9 @@ final class PhysicalTenantAuthorizationEnablementIT {
 
   private static final String RESTRICTED_PASSWORD = "restricted";
   private static final Duration PROPAGATION_TIMEOUT = Duration.ofSeconds(30);
+  private static final ObjectMapper JSON = new ObjectMapper();
+
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void shouldEnforceAuthorizationPerTenantEnablement() {
@@ -100,6 +111,40 @@ final class PhysicalTenantAuthorizationEnablementIT {
           .hasMessageContaining("status: 403")
           .hasMessageContaining("FORBIDDEN");
     }
+  }
+
+  @Test
+  void shouldReportTheTenantAuthorizationsFlagForOwnAuthorizations() throws Exception {
+    // given — authorizations are on at the root and on tenant-on, and off on tenant-off
+    final String userOff = createRestrictedUser(ptClients.admin(TENANT_OFF_ID), "off");
+    final String userOn = createRestrictedUser(ptClients.admin(TENANT_ON_ID), "on");
+
+    // when / then — each tenant reports its own flag, not the root one
+    assertThat(ownAuthorizationsEnabled(TENANT_OFF_ID, userOff)).isFalse();
+    assertThat(ownAuthorizationsEnabled(TENANT_ON_ID, userOn)).isTrue();
+  }
+
+  private boolean ownAuthorizationsEnabled(final String tenantId, final String username)
+      throws Exception {
+    final String base = BROKER.restAddress().toString().replaceAll("/+$", "");
+    final String credentials =
+        Base64.getEncoder()
+            .encodeToString(
+                (username + ":" + RESTRICTED_PASSWORD).getBytes(StandardCharsets.UTF_8));
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    base
+                        + "/physical-tenants/"
+                        + tenantId
+                        + "/v2/authentication/me/authorizations/search"))
+            .header("Authorization", "Basic " + credentials)
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).as(response.body()).isEqualTo(HttpURLConnection.HTTP_OK);
+    return JSON.readTree(response.body()).path("authorizationsEnabled").asBoolean();
   }
 
   private static String createRestrictedUser(final CamundaClient admin, final String prefix) {

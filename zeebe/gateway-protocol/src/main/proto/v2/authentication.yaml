@@ -74,7 +74,7 @@ components:
         - authorizationsEnabled
       properties:
         authorizationsEnabled:
-          description: Indicates whether authorization checks are enabled for the cluster.
+          description: Indicates whether authorization checks are enabled for the physical tenant of the request.
           type: boolean
 
     CamundaUserResult:
