@@ -365,6 +365,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
+            <!-- Overriding <excludes> drops Surefire's default, which keeps nested classes from being scheduled on their own -->
+            <exclude>**/*$*</exclude>
             <!-- Exclude tests that require file system access to configuration metadata in JAR -->
             <!-- Low risk on those, given they are not tightly coupled to spring classes -->
             <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
