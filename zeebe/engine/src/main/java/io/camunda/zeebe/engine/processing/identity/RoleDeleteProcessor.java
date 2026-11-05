@@ -22,14 +22,11 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -47,7 +44,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   public static final String ROLE_PROTECTED_ERROR_MESSAGE =
       "Expected to delete role with ID '%s', which is a default role and cannot be deleted.";
   private final RoleState roleState;
-  private final TenantState tenantState;
+  private final EntityMembershipsRemover membershipsRemover;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
   private final PermissionsBehavior permissionsBehavior;
@@ -67,12 +64,12 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
     roleState = state.getRoleState();
-    tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     membershipState = state.getMembershipState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    membershipsRemover = new EntityMembershipsRemover(state, stateWriter);
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -116,7 +113,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     record.setRoleKey(roleKey);
 
     removeMembers(record);
-    removeTenantMemberships(record);
+    membershipsRemover.removeRoleAndTenantMemberships(EntityType.ROLE, roleId);
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
@@ -138,7 +135,8 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
         .ifPresentOrElse(
             role -> {
               removeMembers(command.getValue());
-              removeTenantMemberships(command.getValue());
+              membershipsRemover.removeRoleAndTenantMemberships(
+                  EntityType.ROLE, command.getValue().getRoleId());
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), RoleIntent.DELETED, command.getValue());
@@ -161,25 +159,6 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
         () -> {
           membershipStateAdapter.invalidateAll();
         });
-  }
-
-  /**
-   * Removes the role from the tenants it is a member of. The memberships are keyed by the role ID,
-   * so a role created later with the same ID would otherwise inherit them.
-   */
-  private void removeTenantMemberships(final RoleRecord record) {
-    final var roleId = record.getRoleId();
-    for (final var tenantId :
-        membershipState.getMemberships(EntityType.ROLE, roleId, RelationType.TENANT)) {
-      final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
-      stateWriter.appendFollowUpEvent(
-          tenant.getTenantKey(),
-          TenantIntent.ENTITY_REMOVED,
-          new TenantRecord()
-              .setTenantId(tenantId)
-              .setEntityId(roleId)
-              .setEntityType(EntityType.ROLE));
-    }
   }
 
   private void removeMembers(final RoleRecord record) {

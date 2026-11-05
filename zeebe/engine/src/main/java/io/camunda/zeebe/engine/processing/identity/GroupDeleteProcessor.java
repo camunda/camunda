@@ -21,17 +21,11 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -47,8 +41,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete group with ID '%s', but a group with this ID does not exist.";
   private final GroupState groupState;
-  private final RoleState roleState;
-  private final TenantState tenantState;
+  private final EntityMembershipsRemover membershipsRemover;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
   private final PermissionsBehavior permissionsBehavior;
@@ -68,13 +61,12 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
     groupState = processingState.getGroupState();
-    roleState = processingState.getRoleState();
-    tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
     membershipState = processingState.getMembershipState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    membershipsRemover = new EntityMembershipsRemover(processingState, stateWriter);
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -109,7 +101,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     record.setGroupKey(groupKey);
 
     removeAssignedEntities(record);
-    removeMemberships(record);
+    membershipsRemover.removeRoleAndTenantMemberships(EntityType.GROUP, record.getGroupId());
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
@@ -131,7 +123,8 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
         .ifPresentOrElse(
             group -> {
               removeAssignedEntities(command.getValue());
-              removeMemberships(command.getValue());
+              membershipsRemover.removeRoleAndTenantMemberships(
+                  EntityType.GROUP, command.getValue().getGroupId());
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
               invalidateMembershipCache();
@@ -169,38 +162,6 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
                   .setEntityType(entityType)
                   .setEntityId(entityId));
         });
-  }
-
-  /**
-   * Removes the group from the roles and tenants it is a member of. The memberships are keyed by
-   * the group ID, so a group created later with the same ID would otherwise inherit them.
-   */
-  private void removeMemberships(final GroupRecord record) {
-    final var groupId = record.getGroupId();
-    for (final var roleId :
-        membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.ROLE)) {
-      final var role = roleState.getRole(roleId).orElseThrow();
-      stateWriter.appendFollowUpEvent(
-          role.getRoleKey(),
-          RoleIntent.ENTITY_REMOVED,
-          new RoleRecord()
-              .setRoleKey(role.getRoleKey())
-              .setRoleId(roleId)
-              .setEntityId(groupId)
-              .setEntityType(EntityType.GROUP));
-    }
-
-    for (final var tenantId :
-        membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.TENANT)) {
-      final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
-      stateWriter.appendFollowUpEvent(
-          tenant.getTenantKey(),
-          TenantIntent.ENTITY_REMOVED,
-          new TenantRecord()
-              .setTenantId(tenantId)
-              .setEntityId(groupId)
-              .setEntityType(EntityType.GROUP));
-    }
   }
 
   private void deleteAuthorizations(final GroupRecord record) {
