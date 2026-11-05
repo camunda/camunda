@@ -17,7 +17,7 @@ class FilterByKeysQueryTest {
   @Test
   void shouldDefaultToEmptyInclusionFilters() {
     // given
-    final var filter = new FilterByKeysQuery(Map.of("processInstanceKey", List.of("1")));
+    final var filter = FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("1")));
 
     // when/then
     assertThat(filter.inclusionFilters()).isEmpty();
@@ -26,7 +26,7 @@ class FilterByKeysQueryTest {
   @Test
   void shouldDefaultToEmptyExclusionFilters() {
     // given
-    final var filter = new FilterByKeysQuery(Map.of("processInstanceKey", List.of("1")));
+    final var filter = FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("1")));
 
     // when/then
     assertThat(filter.exclusionFilters()).isEmpty();
@@ -35,7 +35,7 @@ class FilterByKeysQueryTest {
   @Test
   void shouldCreateKeysByFieldWhenUsingSingleFieldConstructor() {
     // given
-    final var filter = new FilterByKeysQuery("processInstanceKey", List.of("1"));
+    final var filter = FilterByKeysQuery.of("processInstanceKey", List.of("1"));
 
     // when/then
     assertThat(filter.keysByField()).isEqualTo(Map.of("processInstanceKey", List.of("1")));
@@ -44,7 +44,7 @@ class FilterByKeysQueryTest {
   @Test
   void shouldAddInclusionFilter() {
     // given
-    final var filter = new FilterByKeysQuery("processInstanceKey", List.of("1"));
+    final var filter = FilterByKeysQuery.of("processInstanceKey", List.of("1"));
 
     // when
     final var newFilter = filter.inclusion("joinRelation", "processInstance");
@@ -56,7 +56,7 @@ class FilterByKeysQueryTest {
   @Test
   void shouldAddExclusionFilter() {
     // given
-    final var filter = new FilterByKeysQuery("processInstanceKey", List.of("1"));
+    final var filter = FilterByKeysQuery.of("processInstanceKey", List.of("1"));
 
     // when
     final var newFilter = filter.exclusion("joinRelation", "processInstance");
