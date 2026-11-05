@@ -377,7 +377,7 @@ jobs:
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
       # instead of rebuilding (see issue #52693).
-      # Keep retention-days in sync with check-stale-rerun's max-age-hours (default 48h) in those jobs.
+      # Keep retention-days in sync with check-stale-snapshot-deploy's max-age-hours (default 48h) in those jobs.
       - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-operate-${{ github.run_id }}
@@ -2399,7 +2399,7 @@ jobs:
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions:
-      actions: read  # check-stale-rerun reads the run's creation time
+      actions: read  # check-stale-snapshot-deploy reads the run's creation time
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
@@ -2413,7 +2413,7 @@ jobs:
           persist-credentials: false
       - name: Check for stale re-run
         id: stale-rerun
-        uses: ./.github/actions/check-stale-rerun
+        uses: ./.github/actions/check-stale-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - name: Import Nexus credentials
@@ -2493,13 +2493,15 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 20
           command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true -Ddistro.zip.attach=false -Doptimize.distro.attach=false compile generate-sources source:jar javadoc:jar deploy
-      # A stale re-run fails by design (see check-stale-rerun); don't page the medic for it.
+      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
+      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
       - name: Observe build status
-        if: always() && steps.stale-rerun.outputs.stale != 'true'
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -2530,7 +2532,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      actions: read  # check-stale-rerun reads the run's creation time
+      actions: read  # check-stale-snapshot-deploy reads the run's creation time
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
@@ -2544,7 +2546,7 @@ jobs:
           persist-credentials: false
       - name: Check for stale re-run
         id: stale-rerun
-        uses: ./.github/actions/check-stale-rerun
+        uses: ./.github/actions/check-stale-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - uses: ./.github/actions/setup-build
@@ -2584,13 +2586,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
-      # A stale re-run fails by design (see check-stale-rerun); don't page the medic for it.
+      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
+      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
       - name: Observe build status
-        if: always() && steps.stale-rerun.outputs.stale != 'true'
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -2611,7 +2615,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      actions: read  # check-stale-rerun reads the run's creation time
+      actions: read  # check-stale-snapshot-deploy reads the run's creation time
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
@@ -2627,7 +2631,7 @@ jobs:
           persist-credentials: false
       - name: Check for stale re-run
         id: stale-rerun
-        uses: ./.github/actions/check-stale-rerun
+        uses: ./.github/actions/check-stale-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - uses: ./.github/actions/setup-build
@@ -2662,13 +2666,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: optimize.Dockerfile
           push: true
-      # A stale re-run fails by design (see check-stale-rerun); don't page the medic for it.
+      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
+      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
       - name: Observe build status
-        if: always() && steps.stale-rerun.outputs.stale != 'true'
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

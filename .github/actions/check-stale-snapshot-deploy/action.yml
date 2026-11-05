@@ -1,15 +1,9 @@
 ---
-name: Check Stale Re-run
+name: Check Stale Snapshot Deploy
 
 # owner: @camunda/engineering-operations
 
-description: |
-  Fails fast when the current job is a manual re-run (run_attempt > 1) of a workflow run older than
-  max-age-hours. Such re-runs cannot download the run's short-lived artifacts and would publish
-  outdated snapshots. Callers skip observe-build-status when output `stale` is 'true', so the
-  expected failure does not raise a base-branch-unsuccessful-job alert.
-  Requires `actions: read` on the job's GITHUB_TOKEN. Uses curl and jq only, so it works on
-  self-hosted runners without the gh CLI.
+description: Fails a Unified CI snapshot deploy job on a re-run of a workflow run older than max-age-hours. See README.md.
 
 inputs:
   github-token:
