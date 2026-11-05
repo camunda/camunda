@@ -13,6 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -36,7 +37,13 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/api/public/collection", "/api/public", "/api/ingestion/variable"})
+  @ValueSource(
+      strings = {
+        "/api/public/collection",
+        "/api/public",
+        "/api/ingestion/variable",
+        "/api/p%75blic/collection"
+      })
   void shouldAcceptBearerTokenWithThePublicApiAudience(final String path) throws Exception {
     // given
     authenticate(bearer(PUBLIC_API_AUDIENCE));
@@ -50,7 +57,13 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/api/public/collection", "/api/ingestion/variable"})
+  @ValueSource(
+      strings = {
+        "/api/public/collection",
+        "/api/ingestion/variable",
+        "/api/p%75blic/collection",
+        "/api/ingestion/vari%61ble"
+      })
   void shouldRejectTheSession(final String path) throws Exception {
     // given a webapp session, which is not a bearer token
     authenticate(new TestingAuthenticationToken("alice", null, "ROLE_USER"));
@@ -91,11 +104,14 @@ class OptimizePublicApiAccessFilterTest {
     assertThat(result.chain().getRequest()).isNull();
   }
 
-  @Test
-  void shouldRejectEveryRequestWhenNoPublicApiAudienceIsConfigured() throws Exception {
-    // given
-    final var unconfigured = new OptimizePublicApiAccessFilter(null);
-    authenticate(bearer(PUBLIC_API_AUDIENCE));
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"", " "})
+  void shouldRejectEveryRequestWhenNoPublicApiAudienceIsConfigured(final String audience)
+      throws Exception {
+    // given a token that carries the same blank audience
+    final var unconfigured = new OptimizePublicApiAccessFilter(audience);
+    authenticate(bearer(audience == null ? PUBLIC_API_AUDIENCE : audience));
     final var request = new MockHttpServletRequest("GET", "/api/public/collection");
     final var response = new MockHttpServletResponse();
     final var chain = new MockFilterChain();

@@ -17,6 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -34,8 +37,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizePublicApiAccessFilter.class);
-  private static final String PUBLIC_API_PATH = "/api/public";
-  private static final String INGESTION_VARIABLE_PATH = "/api/ingestion/variable";
+  private static final String PUBLIC_API_PATTERN = "/api/public/**";
+  private static final String INGESTION_VARIABLE_PATTERN = "/api/ingestion/variable";
+
+  /**
+   * Spring's path patterns decode each path segment before they match, as the request mapping does,
+   * so an encoded path such as {@code /api/p%75blic/collection} cannot skip this filter.
+   */
+  private static final RequestMatcher PUBLIC_API_PATHS =
+      new OrRequestMatcher(
+          PathPatternRequestMatcher.withDefaults().matcher(PUBLIC_API_PATTERN),
+          PathPatternRequestMatcher.withDefaults().matcher(INGESTION_VARIABLE_PATTERN));
 
   private final String publicApiAudience;
 
@@ -44,22 +56,21 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
    *     request on the public paths is denied, as the legacy audience validation did
    */
   public OptimizePublicApiAccessFilter(final String publicApiAudience) {
-    this.publicApiAudience = publicApiAudience;
     if (publicApiAudience == null || publicApiAudience.isBlank()) {
+      this.publicApiAudience = null;
       LOG.warn(
           "No public API audience is configured, so every request to {} and {} is denied."
               + " Configure the audience that the public API clients' tokens carry.",
-          PUBLIC_API_PATH + "/**",
-          INGESTION_VARIABLE_PATH);
+          PUBLIC_API_PATTERN,
+          INGESTION_VARIABLE_PATTERN);
+    } else {
+      this.publicApiAudience = publicApiAudience;
     }
   }
 
   @Override
   protected boolean shouldNotFilter(final HttpServletRequest request) {
-    final String path = request.getRequestURI().substring(request.getContextPath().length());
-    return !(path.equals(PUBLIC_API_PATH)
-        || path.startsWith(PUBLIC_API_PATH + "/")
-        || path.equals(INGESTION_VARIABLE_PATH));
+    return !PUBLIC_API_PATHS.matches(request);
   }
 
   @Override
