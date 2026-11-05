@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -29,7 +30,8 @@ import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
 public final class ProcessMessageSubscriptionCreateProcessor
-    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
+    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord>,
+        StorageOrdinalAware<ProcessMessageSubscriptionRecord> {
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to create process message subscription with element key '%d' and message name '%s', "
@@ -258,5 +260,11 @@ public final class ProcessMessageSubscriptionCreateProcessor
       final var reason = String.format(NOT_OPENING_MSG, elementInstanceKey, messageName, state);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
     }
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessMessageSubscriptionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

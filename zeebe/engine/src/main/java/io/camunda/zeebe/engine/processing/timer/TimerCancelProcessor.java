@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -22,7 +23,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
 public final class TimerCancelProcessor
-    implements TypedRecordProcessor<TimerRecord>, SuspensionAware<TimerRecord> {
+    implements TypedRecordProcessor<TimerRecord>,
+        SuspensionAware<TimerRecord>,
+        StorageOrdinalAware<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to cancel timer with key '%d', but no such timer was found";
 
@@ -65,5 +68,11 @@ public final class TimerCancelProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<TimerRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

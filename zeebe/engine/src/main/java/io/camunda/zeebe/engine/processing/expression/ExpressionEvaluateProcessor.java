@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.Validat
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,7 +32,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<ExpressionRecord> {
+public final class ExpressionEvaluateProcessor
+    implements TypedRecordProcessor<ExpressionRecord>, StorageOrdinalAware<ExpressionRecord> {
 
   private static final String ERROR_MESSAGE_NOT_FOUND_FOR_TENANT =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
@@ -202,5 +204,11 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
     stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
     responseWriter.writeAcceptedResponseOnCommand(
         key, ExpressionIntent.EVALUATED, resolvedValue, command);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ExpressionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

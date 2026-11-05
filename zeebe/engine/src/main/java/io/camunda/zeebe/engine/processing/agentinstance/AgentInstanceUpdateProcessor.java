@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -43,7 +44,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public final class AgentInstanceUpdateProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>,
+        SuspensionAware<AgentInstanceRecord>,
+        StorageOrdinalAware<AgentInstanceRecord> {
 
   private static final Set<String> ALLOWED_REQUEST_LEVEL_ATTRIBUTES =
       Set.of(AgentInstanceRecord.ATTR_STATUS);
@@ -391,5 +394,11 @@ public final class AgentInstanceUpdateProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
     return SuspensionAware.processInternalOnly(record);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<AgentInstanceRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

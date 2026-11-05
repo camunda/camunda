@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -83,7 +84,8 @@ import org.slf4j.Logger;
 
 public final class ProcessInstanceModificationModifyProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord>,
-        SuspensionAware<ProcessInstanceModificationRecord> {
+        SuspensionAware<ProcessInstanceModificationRecord>,
+        StorageOrdinalAware<ProcessInstanceModificationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
@@ -1589,6 +1591,12 @@ public final class ProcessInstanceModificationModifyProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
     return SuspensionAware.processInternalOnly(record);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceModificationRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 
   /**

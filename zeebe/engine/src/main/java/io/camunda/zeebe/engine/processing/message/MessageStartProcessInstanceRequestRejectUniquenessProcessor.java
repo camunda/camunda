@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -45,7 +46,8 @@ import org.slf4j.LoggerFactory;
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
-    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord>,
+        StorageOrdinalAware<MessageStartProcessInstanceRequestRecord> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(MessageStartProcessInstanceRequestRejectUniquenessProcessor.class);
@@ -95,5 +97,12 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
         RejectionType.NOT_FOUND,
         BLOCKED_BY_ACTIVE_INSTANCE.formatted(
             reply.getMessageName(), reply.getBusinessId(), Set.of(reply.getBpmnProcessId())));
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
+      final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

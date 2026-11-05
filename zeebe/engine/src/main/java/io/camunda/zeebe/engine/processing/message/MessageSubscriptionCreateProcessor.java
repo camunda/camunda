@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -26,7 +27,8 @@ import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionCreateProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements TypedRecordProcessor<MessageSubscriptionRecord>,
+        StorageOrdinalAware<MessageSubscriptionRecord> {
 
   private static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
       "Expected to open a new message subscription for element with key '%d' and message name '%s', "
@@ -115,5 +117,11 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getBusinessIdBuffer(),
         subscriptionKey,
         subscriptionRecord.getStorageOrdinal());
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<MessageSubscriptionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -49,7 +50,9 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class JobFailProcessor
-    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
+    implements TypedRecordProcessor<JobRecord>,
+        SuspensionAware<JobRecord>,
+        StorageOrdinalAware<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
@@ -244,5 +247,11 @@ public final class JobFailProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<JobRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

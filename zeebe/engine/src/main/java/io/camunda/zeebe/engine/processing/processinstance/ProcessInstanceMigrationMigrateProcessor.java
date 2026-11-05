@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMul
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -67,7 +68,8 @@ import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord>,
-        SuspensionAware<ProcessInstanceMigrationRecord> {
+        SuspensionAware<ProcessInstanceMigrationRecord>,
+        StorageOrdinalAware<ProcessInstanceMigrationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -761,6 +763,12 @@ public class ProcessInstanceMigrationMigrateProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceMigrationRecord> record) {
     return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceMigrationRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 
   /**

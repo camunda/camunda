@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -19,7 +20,8 @@ import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class BatchOperationInitializationInitializeProcessor
-    implements TypedRecordProcessor<BatchOperationInitializationRecord> {
+    implements TypedRecordProcessor<BatchOperationInitializationRecord>,
+        StorageOrdinalAware<BatchOperationInitializationRecord> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationInitializationInitializeProcessor.class);
@@ -38,5 +40,11 @@ public final class BatchOperationInitializationInitializeProcessor
 
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.INITIALIZING, recordValue);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<BatchOperationInitializationRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

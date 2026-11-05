@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -36,7 +37,9 @@ import java.util.List;
  */
 @ExcludeAuthorizationCheck
 public final class AgentInstanceCompleteProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>,
+        SuspensionAware<AgentInstanceRecord>,
+        StorageOrdinalAware<AgentInstanceRecord> {
 
   private static final String ERROR_MSG_NONE_REMAINING =
       "No remaining agent instances to complete for process instance with key '%d'.";
@@ -95,5 +98,11 @@ public final class AgentInstanceCompleteProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<AgentInstanceRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

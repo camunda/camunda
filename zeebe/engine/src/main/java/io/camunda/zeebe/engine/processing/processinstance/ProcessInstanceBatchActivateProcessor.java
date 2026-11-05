@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -29,7 +30,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord>,
-        SuspensionAware<ProcessInstanceBatchRecord> {
+        SuspensionAware<ProcessInstanceBatchRecord>,
+        StorageOrdinalAware<ProcessInstanceBatchRecord> {
 
   public static final String PARENT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to activate child for batch element instance, but no parent element instance found for key '%s'. The parent was likely terminated before processing this batch activation.";
@@ -142,5 +144,11 @@ public final class ProcessInstanceBatchActivateProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceBatchRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

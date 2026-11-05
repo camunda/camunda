@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.BatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -67,7 +68,8 @@ import org.slf4j.LoggerFactory;
  */
 @ExcludeAuthorizationCheck
 public final class BatchOperationExecutionExecuteProcessor
-    implements TypedRecordProcessor<BatchOperationExecutionRecord> {
+    implements TypedRecordProcessor<BatchOperationExecutionRecord>,
+        StorageOrdinalAware<BatchOperationExecutionRecord> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationExecutionExecuteProcessor.class);
@@ -304,5 +306,11 @@ public final class BatchOperationExecutionExecuteProcessor
    */
   private static boolean isLeadPartition(final TypedRecord<BatchOperationExecutionRecord> command) {
     return getLeadPartition(command.getValue()) == command.getPartitionId();
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<BatchOperationExecutionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

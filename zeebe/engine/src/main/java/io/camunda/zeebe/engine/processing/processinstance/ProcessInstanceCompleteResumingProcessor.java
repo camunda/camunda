@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -38,7 +39,9 @@ import org.jspecify.annotations.NullMarked;
 @ExcludeAuthorizationCheck
 @NullMarked
 public final class ProcessInstanceCompleteResumingProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>,
+        SuspensionAware<ProcessInstanceRecord>,
+        StorageOrdinalAware<ProcessInstanceRecord> {
 
   private static final String INSTANCE_GONE_MESSAGE =
       "Expected to finish resuming process instance '%d', but it no longer exists — likely "
@@ -104,6 +107,12 @@ public final class ProcessInstanceCompleteResumingProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 
   private void reject(final TypedRecord<ProcessInstanceRecord> command, final String reason) {

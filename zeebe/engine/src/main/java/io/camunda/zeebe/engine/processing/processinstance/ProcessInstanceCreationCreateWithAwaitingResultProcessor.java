@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,7 +35,8 @@ import io.camunda.zeebe.util.Either;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
-    implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceCreationRecord>,
+        StorageOrdinalAware<ProcessInstanceCreationRecord> {
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -143,5 +145,11 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     metrics.processInstanceCreated(record);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceCreationRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

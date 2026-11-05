@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -31,7 +32,8 @@ import io.camunda.zeebe.util.Either;
 @ExcludeAuthorizationCheck
 public class AdHocSubProcessInstructionCompleteProcessor
     implements TypedRecordProcessor<AdHocSubProcessInstructionRecord>,
-        SuspensionAware<AdHocSubProcessInstructionRecord> {
+        SuspensionAware<AdHocSubProcessInstructionRecord>,
+        StorageOrdinalAware<AdHocSubProcessInstructionRecord> {
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -128,5 +130,11 @@ public class AdHocSubProcessInstructionCompleteProcessor
     }
 
     return Either.right(elementInstance);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<AdHocSubProcessInstructionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

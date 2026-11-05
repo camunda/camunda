@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -36,7 +37,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 public class ProcessInstanceBusinessIdAssignProcessor
     implements TypedRecordProcessor<ProcessInstanceBusinessIdRecord>,
-        SuspensionAware<ProcessInstanceBusinessIdRecord> {
+        SuspensionAware<ProcessInstanceBusinessIdRecord>,
+        StorageOrdinalAware<ProcessInstanceBusinessIdRecord> {
 
   private static final String ERROR_NOT_FOUND =
       "Expected to assign a business id to process instance with key '%d', but no such process instance was found";
@@ -170,5 +172,11 @@ public class ProcessInstanceBusinessIdAssignProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ProcessInstanceBusinessIdRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

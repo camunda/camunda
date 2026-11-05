@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -45,7 +46,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
 public final class IncidentResolveProcessor
-    implements TypedRecordProcessor<IncidentRecord>, SuspensionAware<IncidentRecord> {
+    implements TypedRecordProcessor<IncidentRecord>,
+        SuspensionAware<IncidentRecord>,
+        StorageOrdinalAware<IncidentRecord> {
 
   public static final String NO_RETRIES_LEFT_MSG =
       "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
@@ -320,5 +323,11 @@ public final class IncidentResolveProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<IncidentRecord> record) {
     return SuspensionAware.processInternalOnly(record);
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<IncidentRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

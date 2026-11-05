@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,7 +31,9 @@ import org.slf4j.Logger;
 // through the public API, so there is no user to authorize against.
 @ExcludeAuthorizationCheck
 public final class AgentHistoryCommitProcessor
-    implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
+    implements TypedRecordProcessor<AgentHistoryRecord>,
+        SuspensionAware<AgentHistoryRecord>,
+        StorageOrdinalAware<AgentHistoryRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
 
@@ -116,5 +119,11 @@ public final class AgentHistoryCommitProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<AgentHistoryRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }

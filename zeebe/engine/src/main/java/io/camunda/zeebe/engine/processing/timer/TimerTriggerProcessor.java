@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -40,7 +41,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 @ExcludeAuthorizationCheck
 public final class TimerTriggerProcessor
-    implements TypedRecordProcessor<TimerRecord>, SuspensionAware<TimerRecord> {
+    implements TypedRecordProcessor<TimerRecord>,
+        SuspensionAware<TimerRecord>,
+        StorageOrdinalAware<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
@@ -100,7 +103,7 @@ public final class TimerTriggerProcessor
       return;
     }
 
-    restoreStorageOrdinal(timer, timerInstance);
+    restoreStorageOrdinalFromState(timer, timerInstance);
 
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances
@@ -215,7 +218,7 @@ public final class TimerTriggerProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
-    restoreStorageOrdinal(record);
+    restoreStorageOrdinalFromState(record);
     stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
     return SuspensionAction.BUFFER;
   }
@@ -224,19 +227,25 @@ public final class TimerTriggerProcessor
   public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
     final long timerKey = record.getKey();
     final var timer = record.getValue();
-    restoreStorageOrdinal(record);
+    restoreStorageOrdinalFromState(record);
     // RESUMED restores a missing due-date entry before the drained TRIGGER removes the timer.
     stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
     return SuspensionAction.PROCESS;
   }
 
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<TimerRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
+  }
+
   /** Variant for the suspension callbacks, which run without the NOT_FOUND check above. */
-  private void restoreStorageOrdinal(final TypedRecord<TimerRecord> record) {
+  private void restoreStorageOrdinalFromState(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();
     final var timerInstance =
         timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());
     if (timerInstance != null) {
-      restoreStorageOrdinal(timer, timerInstance);
+      restoreStorageOrdinalFromState(timer, timerInstance);
     }
   }
 
@@ -248,7 +257,7 @@ public final class TimerTriggerProcessor
    * ordinal existed carries 0, and every follow-up event (SUSPENDED, RESUMED, TRIGGERED, the
    * rescheduled CREATED) reuses this record.
    */
-  private static void restoreStorageOrdinal(
+  private static void restoreStorageOrdinalFromState(
       final TimerRecord timer, final TimerInstance timerInstance) {
     timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
   }

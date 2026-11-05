@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -29,7 +30,8 @@ import org.agrona.DirectBuffer;
 @ExcludeAuthorizationCheck
 public class ConditionalSubscriptionTriggerProcessor
     implements TypedRecordProcessor<ConditionalSubscriptionRecord>,
-        SuspensionAware<ConditionalSubscriptionRecord> {
+        SuspensionAware<ConditionalSubscriptionRecord>,
+        StorageOrdinalAware<ConditionalSubscriptionRecord> {
 
   private static final String NO_CONDITIONAL_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to trigger condition subscription with key '%d', but no such subscription was found "
@@ -120,5 +122,11 @@ public class ConditionalSubscriptionTriggerProcessor
   @Override
   public SuspensionAction onResuming(final TypedRecord<ConditionalSubscriptionRecord> record) {
     return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public void restoreStorageOrdinal(
+      final TypedRecord<ConditionalSubscriptionRecord> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
   }
 }
