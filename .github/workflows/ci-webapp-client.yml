@@ -50,8 +50,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  eslint:
-    name: "ESLint"
+  oxlint:
+    name: "oxlint"
     runs-on: ubuntu-latest
     timeout-minutes: 14
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -72,8 +72,8 @@ jobs:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
           timeout_minutes: "6"
-      - name: ESLint
-        run: npm run lint:eslint
+      - name: oxlint
+        run: npm run lint:oxlint
       - name: Observe build status
         if: always()
         continue-on-error: true

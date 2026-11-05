@@ -1,6 +1,6 @@
 # @camunda/lint-config
 
-Shared ESLint and Prettier configuration package for Camunda frontend projects, including the orchestration-cluster webapp, `operate/client`, and `identity/client`.
+Shared ESLint and Prettier configuration package for Camunda frontend projects outside this workspace, such as `operate/client` and `identity/client`. The orchestration-cluster webapp lints with oxlint instead (see `webapp/client/oxlint.config.ts`).
 
 ## Package structure
 

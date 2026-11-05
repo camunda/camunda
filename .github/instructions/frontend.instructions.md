@@ -71,7 +71,7 @@ see `docs/monorepo-docs/frontend/`.
 npm ci                    # Install dependencies (workspace)
 npm run dev:oc            # Dev server on :3000
 npm run prettier:format   # Auto-format with Prettier (always use this script, never npx prettier)
-npm run lint              # ESLint + Prettier + Knip (unused exports/dependencies)
+npm run lint              # oxlint + Prettier + Knip (unused exports/dependencies)
 
 # From webapp/client/apps/orchestration-cluster-webapp/
 npm run typecheck         # TypeScript across all tsconfigs (always use this script, never npx tsc)

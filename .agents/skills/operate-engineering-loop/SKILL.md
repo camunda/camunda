@@ -37,7 +37,7 @@ For bugs, ask about backports before opening the PR.
 
    | Tier | Commands | Max rounds |
    | --- | --- | --- |
-   | Edit | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp` | 5 |
+   | Edit | `npm run lint:prettier`; `npm run lint:oxlint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp` | 5 |
    | Component | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip` | 5 |
    | PR | Rebuild current source; `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI | 3 |
 

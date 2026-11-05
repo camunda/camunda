@@ -6,10 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {readFileSync} from 'node:fs';
+
+function getAPIVersion() {
+	const {version} = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+	const [, major, minor] = /^(\d+)\.(\d+)/.exec(version) ?? [];
+	if (major === undefined) {
+		throw new Error(`Cannot derive the API version from webapp/client/package.json version '${version}'`);
+	}
+	return `${major}.${minor}`;
+}
+
 const PACKAGE_NAME = '@camunda/camunda-api-zod-schemas';
 const VERSIONED_SOURCE = new RegExp(`^${PACKAGE_NAME}/\\d+\\.\\d+(?=/|$)`);
+const EXPECTED_PREFIX = `${PACKAGE_NAME}/${getAPIVersion()}`;
 
-/** @type {import('eslint').Rule.RuleModule} */
 export default {
 	meta: {
 		type: 'problem',
@@ -17,29 +28,12 @@ export default {
 		docs: {
 			description: `Enforce importing ${PACKAGE_NAME} from the API version matching the current Camunda version`,
 		},
-		schema: {
-			type: 'array',
-			items: [
-				{
-					type: 'object',
-					properties: {
-						version: {type: 'string', pattern: '^\\d+\\.\\d+$'},
-					},
-					required: ['version'],
-					additionalProperties: false,
-				},
-			],
-			minItems: 1,
-			maxItems: 1,
-		},
+		schema: [],
 		messages: {
 			wrongVersion: `Import from '{{expected}}' instead of '{{actual}}'. The API version must match the version in webapp/client/package.json.`,
 		},
 	},
 	create(context) {
-		const [{version}] = context.options;
-		const expectedPrefix = `${PACKAGE_NAME}/${version}`;
-
 		function check(sourceNode) {
 			if (sourceNode?.type !== 'Literal' || typeof sourceNode.value !== 'string') {
 				return;
@@ -49,13 +43,13 @@ export default {
 			if (source !== PACKAGE_NAME && !source.startsWith(`${PACKAGE_NAME}/`)) {
 				return;
 			}
-			if (source === expectedPrefix || source.startsWith(`${expectedPrefix}/`)) {
+			if (source === EXPECTED_PREFIX || source.startsWith(`${EXPECTED_PREFIX}/`)) {
 				return;
 			}
 
 			const fixedSource = VERSIONED_SOURCE.test(source)
-				? source.replace(VERSIONED_SOURCE, expectedPrefix)
-				: source.replace(PACKAGE_NAME, expectedPrefix);
+				? source.replace(VERSIONED_SOURCE, EXPECTED_PREFIX)
+				: source.replace(PACKAGE_NAME, EXPECTED_PREFIX);
 			const quote = sourceNode.raw[0];
 
 			context.report({
