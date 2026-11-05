@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.github.netmikey.logunit.api.LogCapturer;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -26,10 +27,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 
 class DatabaseImportJobTest {
 
   private static final String VARIABLE = ValueType.VARIABLE.name();
+
+  @RegisterExtension
+  final LogCapturer logs = LogCapturer.create().captureForType(FailingImportJob.class, Level.WARN);
 
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
   // each test reports under its own partition, as metrics are global and outlive a test
@@ -107,6 +113,22 @@ class DatabaseImportJobTest {
 
     // then
     assertThat(elapsedMillis).isGreaterThanOrEqualTo(1_400);
+  }
+
+  @Test
+  void shouldLogTheStackTraceOnlyForTheFirstFailedAttempt() {
+    // given
+    final var job =
+        new FailingImportJob(2, partitionId, new OptimizeRuntimeException("Request timed out"));
+    job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+
+    // when
+    job.run();
+
+    // then
+    assertThat(logs.getEvents())
+        .extracting(event -> event.getThrowable() != null)
+        .containsExactly(true, false);
   }
 
   private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
