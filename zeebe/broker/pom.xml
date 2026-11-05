@@ -118,11 +118,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-grpc</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 

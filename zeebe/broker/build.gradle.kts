@@ -35,7 +35,6 @@ dependencies {
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-expression-language"))
-  implementation(project(":zeebe-gateway-grpc"))
   implementation(project(":zeebe-logstreams"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-protocol-impl"))
