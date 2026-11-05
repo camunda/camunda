@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -49,22 +49,20 @@ public class ProcessDefinitionRestoreTest {
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
 
-    // then - the cleanup runs its full lifecycle and flips the stray row back to ACTIVE
-    awaitRestoreFinishedAndCommitted();
-
+    // then - the cleanup runs its full lifecycle and flips the stray row back to ACTIVE, which
+    // the RESTORED event's applier does
     final var restored =
         RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.RESTORED)
             .withRecordKey(v1.getProcessDefinitionKey())
             .getFirst();
     assertThat(restored.getValue().getTenantId()).isEqualTo(v1.getTenantId());
-
     assertThat(
-            engine
-                .getProcessingState()
-                .getProcessState()
-                .getProcessByKeyAndTenant(v1.getProcessDefinitionKey(), v1.getTenantId())
-                .getState())
-        .isEqualTo(PersistedProcessState.ACTIVE);
+            RecordingExporter.processDefinitionRestoreRecords(
+                    ProcessDefinitionRestoreIntent.FINISHED)
+                .getFirst()
+                .getValue()
+                .getRestoredCount())
+        .isEqualTo(1);
   }
 
   @Test
@@ -148,29 +146,15 @@ public class ProcessDefinitionRestoreTest {
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
 
-    // then - only the stray is restored
-    awaitRestoreFinishedAndCommitted();
+    // then - only the stray is restored; the DRAINING and ACTIVE definitions get no RESTORED
+    // event, so their state is left as it was
     final var restoredKeys =
-        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.RESTORED)
-            .limit(1)
-            .asList()
-            .stream()
+        RecordingExporter.processDefinitionRestoreRecords()
+            .limit(r -> r.getIntent() == ProcessDefinitionRestoreIntent.FINISHED)
+            .withIntent(ProcessDefinitionRestoreIntent.RESTORED)
             .map(r -> r.getValue().getProcessDefinitionKey())
             .toList();
     assertThat(restoredKeys).containsExactly(stray.getProcessDefinitionKey());
-
-    final var processState = engine.getProcessingState().getProcessState();
-    assertThat(
-            processState
-                .getProcessByKeyAndTenant(
-                    draining.getProcessDefinitionKey(), draining.getTenantId())
-                .getState())
-        .isEqualTo(PersistedProcessState.DRAINING);
-    assertThat(
-            processState
-                .getProcessByKeyAndTenant(active.getProcessDefinitionKey(), active.getTenantId())
-                .getState())
-        .isEqualTo(PersistedProcessState.ACTIVE);
   }
 
   @Test
@@ -334,9 +318,8 @@ public class ProcessDefinitionRestoreTest {
             .filter(r -> r.getKey() == markerKey)
             .getFirst();
 
-    awaitCommitted(markerRecord);
-
-    // then - no PROCESS_DEFINITION_RESTORE records were ever written
+    // then - no PROCESS_DEFINITION_RESTORE records were ever written, so the stray row is left
+    // untouched
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getPosition() >= markerRecord.getPosition())
@@ -344,15 +327,7 @@ public class ProcessDefinitionRestoreTest {
                     io.camunda.zeebe.protocol.record.ValueType.PROCESS_DEFINITION_RESTORE)
                 .asList())
         .isEmpty();
-
-    // and the stray row is left untouched
-    assertThat(
-            engine
-                .getProcessingState()
-                .getProcessState()
-                .getProcessByKeyAndTenant(v1.getProcessDefinitionKey(), v1.getTenantId())
-                .getState())
-        .isEqualTo(PersistedProcessState.PENDING_DELETION);
+    assertThat(keysStillPendingDeletion()).containsExactly(v1.getProcessDefinitionKey());
   }
 
   @Test
@@ -399,19 +374,34 @@ public class ProcessDefinitionRestoreTest {
     engine.stop();
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
-    awaitRestoreFinishedAndCommitted();
+    awaitRestoreFinished();
+    // a snapshot after the restore keeps recovery from replaying RESTORED, whose applier would
+    // fill the in-memory cache again
+    Awaitility.await("until the engine has reached the end of the log after the restore")
+        .until(engine::hasReachedEnd);
+    engine.snapshot();
 
-    // when - the in-memory cache is cleared, forcing a reload through the by-version lookup path
-    final var processState = engine.getProcessingState().getProcessState();
-    processState.clearCache();
-    final var byVersion =
-        processState.getProcessByProcessIdAndVersion(
-            io.camunda.zeebe.util.buffer.BufferUtil.wrapString(v1.getBpmnProcessId()),
-            v1.getVersion(),
-            v1.getTenantId());
+    // when - a restart empties the in-memory cache, so creating an instance of that version
+    // reloads the definition through the by-version lookup path
+    engine.stop();
+    engine.start();
+    final var instanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(v1.getBpmnProcessId())
+            .withVersion(v1.getVersion())
+            .create();
 
-    // then - the by-version reader resolves through to the restored by-key row
-    assertThat(byVersion.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+    // then - the by-version lookup resolves through to the restored definition
+    final var started =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(instanceKey)
+            .getFirst();
+    assertThat(started.getValue().getProcessDefinitionKey())
+        .isEqualTo(v1.getProcessDefinitionKey());
+    // instance creation also accepts PENDING_DELETION, so check the definition left that state
+    assertThat(keysStillPendingDeletion()).isEmpty();
   }
 
   @Test
@@ -424,20 +414,13 @@ public class ProcessDefinitionRestoreTest {
     engine.stop();
     engine.withEngineConfig(cfg -> cfg.setEnableProcessDefinitionRestore(true));
     engine.start();
-    awaitRestoreFinishedAndCommitted();
+    awaitRestoreFinished();
 
-    // when - "latest" is resolved and an instance is created
-    final var latest =
-        engine
-            .getProcessingState()
-            .getProcessState()
-            .getLatestProcessVersionByProcessId(
-                io.camunda.zeebe.util.buffer.BufferUtil.wrapString(processId), v1.getTenantId());
+    // when - an instance of the latest version is created
     final var instanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
     // then - latest still resolves to the (now ACTIVE again) only version, and instance creation,
     // already allowed against a resting PENDING_DELETION definition, keeps working
-    assertThat(latest.getKey()).isEqualTo(v1.getProcessDefinitionKey());
     final var started =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.PROCESS)
@@ -445,24 +428,34 @@ public class ProcessDefinitionRestoreTest {
             .getFirst();
     assertThat(started.getValue().getProcessDefinitionKey())
         .isEqualTo(v1.getProcessDefinitionKey());
+    assertThat(keysStillPendingDeletion()).isEmpty();
+  }
+
+  private void awaitRestoreFinished() {
+    RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
+        .await();
   }
 
   /**
-   * Records are exported before the state transaction commits, so reading the state right after
-   * seeing a record races with the stream processor's own transaction.
+   * Runs one more restore pass from the first definition and returns the keys it restores. A pass
+   * only restores definitions that still rest in {@code PENDING_DELETION}, so these are the ones.
    */
-  private void awaitRestoreFinishedAndCommitted() {
-    awaitCommitted(
-        RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
-            .getFirst());
-  }
+  private List<Long> keysStillPendingDeletion() {
+    final long lastPosition =
+        RecordingExporter.getRecords().stream().mapToLong(Record::getPosition).max().orElse(-1L);
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.command()
+            .processDefinitionRestore(
+                ProcessDefinitionRestoreIntent.CONTINUE, new ProcessDefinitionRestoreRecord()));
+    engine.start();
 
-  private void awaitCommitted(final Record<?> record) {
-    Awaitility.await("Await the command that produced the record to be fully processed")
-        .untilAsserted(
-            () ->
-                assertThat(engine.getLastProcessedPosition())
-                    .isGreaterThanOrEqualTo(record.getSourceRecordPosition()));
+    return RecordingExporter.processDefinitionRestoreRecords()
+        .filter(r -> r.getPosition() > lastPosition)
+        .limit(r -> r.getIntent() == ProcessDefinitionRestoreIntent.FINISHED)
+        .withIntent(ProcessDefinitionRestoreIntent.RESTORED)
+        .map(r -> r.getValue().getProcessDefinitionKey())
+        .toList();
   }
 
   private static BpmnModelInstance simpleProcess(final String processId) {
