@@ -98,6 +98,22 @@ class DatabaseImportJobTest {
     assertThat(errorCount(ErrorType.UNKNOWN)).isEqualTo(errorsBefore + 1);
   }
 
+  @Test
+  void shouldWaitAboutOneAndAHalfSecondsBeforeTheFirstRetry() {
+    // given
+    final var job =
+        new FailingImportJob(1, partitionId, new OptimizeRuntimeException("Request timed out"));
+    job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+
+    // when
+    final long start = System.nanoTime();
+    job.run();
+    final long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
+
+    // then
+    assertThat(elapsedMillis).isGreaterThanOrEqualTo(1_400);
+  }
+
   private double errorCount(final ErrorType errorType) {
     final Counter counter =
         registry.find(ERROR_METRIC.getName()).tag(ERROR_TYPE_TAG, errorType.getValue()).counter();
