@@ -164,6 +164,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private void validate(final ElasticsearchExporterConfiguration configuration) {
     final String prefix = configuration.index.prefix;
     IndexPrefixValidation.validateIndexPrefix("Elasticsearch prefix", prefix, true);
@@ -205,8 +206,7 @@ public class ElasticsearchExporter implements Exporter {
 
     final String indexSuffixDatePattern = configuration.index.indexSuffixDatePattern;
     try {
-      final var unused =
-          DateTimeFormatter.ofPattern(indexSuffixDatePattern).withZone(ZoneOffset.UTC);
+      DateTimeFormatter.ofPattern(indexSuffixDatePattern).withZone(ZoneOffset.UTC);
     } catch (final IllegalArgumentException iae) {
       throw new ExporterException(
           String.format(

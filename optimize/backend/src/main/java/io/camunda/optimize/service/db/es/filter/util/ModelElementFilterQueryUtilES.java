@@ -105,6 +105,7 @@ public final class ModelElementFilterQueryUtilES {
 
   private ModelElementFilterQueryUtilES() {}
 
+  @SuppressWarnings("ReturnValueIgnored")
   public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
@@ -138,10 +139,9 @@ public final class ModelElementFilterQueryUtilES {
                       filterContext.getTimezone(),
                       viewFilterInstanceQuery);
             } else {
-              final var unused =
-                  FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
-                      .get(filter.getClass())
-                      .apply(viewFilterInstanceQuery);
+              FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
+                  .get(filter.getClass())
+                  .apply(viewFilterInstanceQuery);
             }
           });
       final NestedQuery.Builder builder = new NestedQuery.Builder();

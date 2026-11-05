@@ -106,6 +106,7 @@ public final class ModelElementFilterQueryUtilOS {
 
   private ModelElementFilterQueryUtilOS() {}
 
+  @SuppressWarnings("ReturnValueIgnored")
   public static Optional<Query> instanceFilterForRelevantViewLevelFiltersQuery(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
@@ -139,10 +140,9 @@ public final class ModelElementFilterQueryUtilOS {
                       filterContext.getTimezone(),
                       viewFilterInstanceQueryBuilder);
             } else {
-              final var unused =
-                  FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
-                      .get(filter.getClass())
-                      .apply(viewFilterInstanceQueryBuilder);
+              FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
+                  .get(filter.getClass())
+                  .apply(viewFilterInstanceQueryBuilder);
             }
           });
       return Optional.of(

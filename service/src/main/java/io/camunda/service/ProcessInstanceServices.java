@@ -624,6 +624,7 @@ public final class ProcessInstanceServices
         authentication);
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
       final BrokerRequest<R> brokerRequest,
       final ProcessDefinitionIdentifier identifier,
@@ -634,8 +635,7 @@ public final class ProcessInstanceServices
         .whenComplete(
             (response, error) -> {
               if (error == null && identifier != null) {
-                final var unused =
-                    definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
+                definitionKeyToRetryHandler.get(identifier, ignored -> createRetryHandler());
               }
             });
   }

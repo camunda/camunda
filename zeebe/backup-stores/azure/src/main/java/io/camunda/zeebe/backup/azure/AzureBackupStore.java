@@ -395,15 +395,15 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  @SuppressWarnings("ReturnValueIgnored")
   public CompletableFuture<Void> verifyConnection() {
     return CompletableFuture.runAsync(
             () -> {
               try {
-                final var unused =
-                    blobContainerClient
-                        .listBlobs(new ListBlobsOptions().setMaxResultsPerPage(1), null)
-                        .stream()
-                        .findFirst();
+                blobContainerClient
+                    .listBlobs(new ListBlobsOptions().setMaxResultsPerPage(1), null)
+                    .stream()
+                    .findFirst();
               } catch (final Exception e) {
                 throw new ConfigurationException(
                     "Failed to connect to Azure Blob Storage with the provided configuration", e);
