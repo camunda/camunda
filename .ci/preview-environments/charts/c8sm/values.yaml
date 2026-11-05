@@ -231,12 +231,7 @@ camunda-platform:
       -XX:+ExitOnOutOfMemoryError
     security:
       authentication:
-        method: oidc
-        oidc:
-          redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
-          secret:
-            existingSecret: camunda-credentials
-            existingSecretKey: identity-orchestration-client-token
+        method: basic
     data:
       disk:
         ## Adjustement required due to PVC size
