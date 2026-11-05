@@ -199,6 +199,8 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <excludes>
+            <!-- Overriding <excludes> drops Failsafe's default, which keeps nested classes from being scheduled on their own -->
+            <exclude>**/*$*</exclude>
             <exclude>io.camunda.zeebe.test.migration.**</exclude>
           </excludes>
           <systemPropertyVariables>
