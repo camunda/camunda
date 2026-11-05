@@ -38,9 +38,9 @@ on:
       - "zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/**"
 engine:
   id: copilot
-  # Alias resolved at runtime to a Sonnet model the Actions token can use: with
-  # copilot-requests: write, claude-sonnet-5.5 is rejected as unsupported for this tier.
-  model: sonnet
+  # Scoped PIT runs and a few inline comments do not need a frontier model, and Luna costs a
+  # fraction of Sonnet per token.
+  model: gpt-5.6-luna
 timeout-minutes: 45
 env:
   TEST_OWNER: '@camunda/zeebe-distributed-platform'
