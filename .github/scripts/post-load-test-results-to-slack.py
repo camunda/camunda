@@ -3,8 +3,8 @@
 
 Renders a side-by-side metrics table — one column per variant — from the end-of-soak metric
 snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
-by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml` and
-`.github/workflows/camunda-stable-stress-tests.yml`.
+by the `notify-results` job of `.github/workflows/load-test-publish-results.yml`, which
+`camunda-daily-load-tests.yml` and `camunda-stable-stress-tests.yml` call.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml`, which holds the
 display metadata of the metrics that `loadtestctl report` collects with
@@ -12,7 +12,7 @@ display metadata of the metrics that `loadtestctl report` collects with
 for a no-secondary-storage variant.
 
 The table has one column per entry in the variants manifest (VARIANTS_JSON_FILE, or VARIANTS_JSON
-as a fallback) — adding a variant (a new matrix entry in camunda-daily-load-tests.yml or
+as a fallback). Adding a variant (a new matrix entry in camunda-daily-load-tests.yml or
 camunda-stable-stress-tests.yml) needs no change here.
 
 Required environment variables:
@@ -24,7 +24,7 @@ Required environment variables:
 Optional:
   SLACK_TITLE         Message title, default "Daily Load Test Results".
   VARIANTS_JSON_FILE  Path to the variants manifest JSON file (see aggregate-metrics in
-                      camunda-daily-load-tests.yml and camunda-stable-stress-tests.yml). Falls back to the VARIANTS_JSON env var
+                      load-test-publish-results.yml). Falls back to the VARIANTS_JSON env var
                       (a literal JSON string) if unset, for manual/local invocation. Empty or
                       missing data exits cleanly without posting to Slack.
   QUERIES_YAML        Path to queries.yaml. Default:

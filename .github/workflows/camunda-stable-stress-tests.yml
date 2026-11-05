@@ -9,7 +9,7 @@
 #              posts; a manual run only when opted in via post-to-slack).
 #              Runs on Mondays only, since stable branches see few changes between runs.
 #              Naming pattern: medic-stable-YYYY-MM-DD-<sha>-<key>
-# calls: stress-load-test.yml (per leg)
+# calls: stress-load-test.yml (per leg), load-test-publish-results.yml
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stable Branches Stress Tests

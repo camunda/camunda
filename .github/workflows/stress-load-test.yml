@@ -265,7 +265,7 @@ jobs:
       duration-seconds: '10800'
       at: ${{ needs.soak.outputs.soak_end_epoch }}
 
-  # Upload this variant's metrics as its own artifact for the caller's aggregate-metrics job to
+  # Upload this variant's metrics as its own artifact for the aggregate-metrics job of load-test-publish-results.yml to
   # re-read. Matrix job outputs are not reliably fanned out per-leg via `needs.<job>.outputs` (the
   # value returned is undefined/arbitrary across legs), so the artifact is the source of truth —
   # not the workflow_call `soak-end-epoch` output above. The artifact name is

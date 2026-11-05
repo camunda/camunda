@@ -153,8 +153,8 @@ and the
   main. Add the job to the `setup-done` job's `needs:` list. Forward `load-test-setup-helm-values` only
   if the branch's workflow has that input.
 - In [`camunda-stable-stress-tests.yml`](../../.github/workflows/camunda-stable-stress-tests.yml): add the
-  branch's legs to the `run-variant` matrix and their `key:label` pairs to `VARIANT_ORDER` in
-  `aggregate-metrics`.
+  branch's legs to the `run-variant` matrix and their `key:label` pairs to the `variant-order`
+  input of the `publish-results` job.
 
 This step needs no later backport.
 
