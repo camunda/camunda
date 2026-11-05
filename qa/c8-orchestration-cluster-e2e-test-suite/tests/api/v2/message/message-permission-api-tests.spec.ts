@@ -96,14 +96,16 @@ test.describe.serial('Message Permission API - Forbidden', () => {
     request,
   }) => {
     // given a user with only RESOURCE READ permission
-    // when the user publishes a message
-    const res = await request.post(buildUrl('/messages/publication'), {
-      headers: jsonHeaders(userWithoutPermissionsToken),
-      data: PUBLISH_NEW_MESSAGE(),
-    });
+    await expect(async () => {
+      // when the user publishes a message
+      const res = await request.post(buildUrl('/messages/publication'), {
+        headers: jsonHeaders(userWithoutPermissionsToken),
+        data: PUBLISH_NEW_MESSAGE(),
+      });
 
-    // then the request is rejected with 403 FORBIDDEN
-    await assertForbiddenRequest(res, PUBLISH_FORBIDDEN_DETAIL);
+      // then the request is rejected with 403 FORBIDDEN
+      await assertForbiddenRequest(res, PUBLISH_FORBIDDEN_DETAIL);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Correlate message to intermediate event - forbidden without UPDATE_PROCESS_INSTANCE permission', async ({
