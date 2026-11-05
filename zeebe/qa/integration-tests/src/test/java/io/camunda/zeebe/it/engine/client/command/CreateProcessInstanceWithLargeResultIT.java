@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
-final class CreateProcessInstanceWithLargeResultTest {
+final class CreateProcessInstanceWithLargeResultIT {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =

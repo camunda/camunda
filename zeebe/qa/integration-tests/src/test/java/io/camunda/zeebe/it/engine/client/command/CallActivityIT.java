@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
-final class CallActivityTest {
+final class CallActivityIT {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =

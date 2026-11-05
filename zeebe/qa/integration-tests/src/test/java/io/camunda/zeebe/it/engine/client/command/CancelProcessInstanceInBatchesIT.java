@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
-final class CancelProcessInstanceInBatchesTest {
+final class CancelProcessInstanceInBatchesIT {
 
   private static final int AMOUNT_OF_ELEMENT_INSTANCES = 100;
   private static final int MAX_MESSAGE_SIZE_KB = 32;

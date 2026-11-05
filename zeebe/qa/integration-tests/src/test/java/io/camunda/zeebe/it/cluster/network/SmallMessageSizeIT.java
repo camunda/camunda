@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
-final class SmallMessageSizeTest {
+final class SmallMessageSizeIT {
   private static final int VARIABLE_COUNT = 4;
   private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(12);
   private static final String LARGE_TEXT =

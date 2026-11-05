@@ -39,7 +39,7 @@ import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
 @Timeout(120)
-final class DiskSpaceRecoveryTest {
+final class DiskSpaceMonitorIT {
 
   // the test leaves the broker without disk space, so every test needs its own broker
   @TestZeebe

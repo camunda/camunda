@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 /** No broker is started: the client is pointed at an address nobody listens on. */
-final class ClientExceptionHandlingTest {
+final class ClientExceptionHandlingIT {
 
   private final InetSocketAddress invalidGatewayAddress = SocketUtil.getNextAddress();
 

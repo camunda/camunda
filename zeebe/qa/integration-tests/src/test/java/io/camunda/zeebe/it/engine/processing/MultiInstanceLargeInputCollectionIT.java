@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
 @ZeebeIntegration
-final class MultiInstanceLargeInputCollectionTest {
+final class MultiInstanceLargeInputCollectionIT {
   private static final int INPUT_COLLECTION_SIZE = 100;
   private static final String INPUT_ELEMENT = "inputElement";
   private static final int MAX_MESSAGE_SIZE_KB = 16;

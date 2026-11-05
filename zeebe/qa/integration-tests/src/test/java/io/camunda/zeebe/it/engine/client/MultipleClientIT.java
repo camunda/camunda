@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-final class MultipleClientTest {
+final class MultipleClientIT {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
