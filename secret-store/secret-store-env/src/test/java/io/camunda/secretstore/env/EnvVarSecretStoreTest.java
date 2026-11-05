@@ -242,17 +242,33 @@ class EnvVarSecretStoreTest {
   }
 
   @Test
-  void shouldListNamesWithoutThePrefixAndWithoutValues() {
+  void shouldListSortedNamesWithoutThePrefixAndWithoutValues() {
     // given
     final var store =
         new EnvVarSecretStore(
-            Map.of("SECRET_API_KEY", "s3cr3t", "SECRET_DB_PASSWORD", "s3cr3t"), "SECRET_");
+            Map.of(
+                "SECRET_DB_PASSWORD", "s3cr3t",
+                "SECRET_API_KEY", "s3cr3t",
+                "SECRET_CLIENT_ID", "s3cr3t"),
+            "SECRET_");
 
     // when
     final var names = store.list();
 
     // then
-    assertThat(names).containsExactlyInAnyOrder("API_KEY", "DB_PASSWORD");
+    assertThat(names).containsExactly("API_KEY", "CLIENT_ID", "DB_PASSWORD");
+  }
+
+  @Test
+  void shouldListNoNamesWithoutPrefixedVariables() {
+    // given
+    final var store = new EnvVarSecretStore(Map.of("PATH", "/usr/bin"), "SECRET_");
+
+    // when
+    final var names = store.list();
+
+    // then
+    assertThat(names).isEmpty();
   }
 
   @Test
@@ -293,7 +309,7 @@ class EnvVarSecretStoreTest {
     final var names = store.list();
 
     // then
-    assertThat(names).containsExactlyInAnyOrder("API_KEY", "tls.crt");
+    assertThat(names).containsExactly("API_KEY", "tls.crt");
   }
 
   @Test
