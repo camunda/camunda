@@ -23,6 +23,7 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {clearSessionState, storeSessionState} from '#/shared/browser-storage/session-storage';
 import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 import {
 	processInstanceQuery,
@@ -36,6 +37,7 @@ const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}})
 const PROCESS_INSTANCE_KEY = '123';
 
 afterEach(async () => {
+	clearSessionState('operateClientConfig');
 	await cleanup();
 	queryClient.clear();
 });
@@ -328,3 +330,32 @@ it.for(['ACTIVE', 'COMPLETED', 'TERMINATED', 'SUSPENDED'] as const)(
 		}
 	},
 );
+
+it('should neither fetch nor show waiting state when the wait-states flag is off', async ({worker}) => {
+	const requests = vi.fn();
+	const onRequest = ({request}: {request: Request}) => {
+		if (request.url.endsWith('/statistics/wait-states')) {
+			requests();
+		}
+	};
+	const items = [{elementId: 'process', waitingCount: 2}];
+	worker.use(
+		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items})),
+		}),
+	);
+	worker.events.on('request:start', onRequest);
+	try {
+		storeSessionState('operateClientConfig', {waitStatesEnabled: false});
+		queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, items);
+		const screen = await render(
+			<QueryClientProvider client={queryClient}>
+				<WaitStatePreview />
+			</QueryClientProvider>,
+		);
+		await expect.element(screen.getByText('No waiting')).toBeVisible();
+		expect(requests).not.toHaveBeenCalled();
+	} finally {
+		worker.events.removeListener('request:start', onRequest);
+	}
+});

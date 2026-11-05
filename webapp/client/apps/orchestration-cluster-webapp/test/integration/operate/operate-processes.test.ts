@@ -18,6 +18,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockOperateClientConfigEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -40,6 +41,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	createProcessDefinition,
@@ -94,13 +96,22 @@ function getProcessInstanceShellHandlers({
 	] as const;
 }
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.route('**/operate/client-config.js', (route) =>
+		route.fulfill({
+			contentType: 'text/javascript',
+			body: createOperateClientConfigScript(),
+		}),
+	);
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockOperateClientConfigEndpoint({
+			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
@@ -1134,6 +1145,45 @@ test.describe('Operate processes page', () => {
 			expect(filter).not.toHaveProperty('hasRetriesLeft');
 			expect(filter).not.toHaveProperty('processDefinitionVersion');
 		}
+	});
+
+	test('should not request wait states and should open the variables tab when the flag is off', async ({
+		network,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		const statisticsRequests: string[] = [];
+		page.on('request', (request) => {
+			if (request.url().endsWith('/statistics/wait-states')) {
+				statisticsRequests.push(request.url());
+			}
+		});
+		network.use(
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionId: 'order-process',
+					processDefinitionName: 'Order Process',
+					hasIncident: false,
+				}),
+			}),
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({items: [{elementId: 'order-process', waitingCount: 1}]}),
+				),
+			}),
+		);
+
+		await page.goto('/operate/processes/1001');
+
+		await expect(page).toHaveURL('/operate/processes/1001/variables');
+		await expect(page.getByText('Waiting', {exact: true})).toHaveCount(0);
+		expect(statisticsRequests).toHaveLength(0);
 	});
 
 	test('should recover waiting statistics before choosing the default tab', async ({

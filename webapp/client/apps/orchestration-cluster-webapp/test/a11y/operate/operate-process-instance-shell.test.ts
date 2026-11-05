@@ -11,6 +11,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
@@ -20,6 +21,7 @@ import {
 	mockCurrentUserEndpoint,
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
+	mockOperateClientConfigEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
@@ -45,6 +47,9 @@ test('should have no accessibility violations on the process instance shell page
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockOperateClientConfigEndpoint({
+			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({

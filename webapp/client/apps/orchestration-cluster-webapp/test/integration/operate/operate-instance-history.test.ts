@@ -12,11 +12,17 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
+import {
+	createElementInstanceInspection,
+	createQueryElementInstanceInspectionResponse,
+} from '#/shared-test-modules/api-mocks/element-instance-inspection';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {
 	mockQueryElementInstancesEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
 test('should preserve legacy history bookmarks and their tenant and element selection on mobile', async ({
@@ -251,3 +257,82 @@ test('should show pending history, recover a failed read, and propagate forbidde
 	await expect(page.getByText('You do not have permission to view instance history', {exact: true})).toBeVisible();
 	await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
 });
+
+const waitStatesCases = [
+	{
+		title: 'show element wait states in the details tab when the flag is on',
+		waitStatesEnabled: true,
+		configStatus: 200,
+	},
+	{
+		title: 'neither request nor show element wait states in the details tab when the flag is off',
+		waitStatesEnabled: false,
+		configStatus: 200,
+	},
+	{
+		title: 'show element wait states in the details tab when the client config cannot be loaded',
+		waitStatesEnabled: true,
+		configStatus: 503,
+	},
+];
+
+for (const {title, waitStatesEnabled, configStatus} of waitStatesCases) {
+	test(`should ${title}`, async ({network, page, operateProcessInstancePage}) => {
+		const instance = createProcessInstance({processInstanceKey: '2251799813756091', state: 'ACTIVE'});
+		const element = createElementInstance({
+			elementInstanceKey: '2251799813756092',
+			processInstanceKey: instance.processInstanceKey,
+			elementInstanceScopeKey: instance.processInstanceKey,
+			elementId: 'task-1',
+			elementName: 'Review invoice',
+			state: 'ACTIVE',
+		});
+		const waitStateRequests: string[] = [];
+		page.on('request', (request) => {
+			if (request.url().endsWith('/element-instances/wait-states/search')) {
+				waitStateRequests.push(request.url());
+			}
+		});
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				status: configStatus,
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled}),
+			}),
+		);
+		network.use(
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse({items: [element]})),
+			}),
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(element)}),
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstanceInspectionResponse([
+						createElementInstanceInspection({
+							processInstanceKey: instance.processInstanceKey,
+							elementInstanceKey: element.elementInstanceKey,
+							elementId: 'task-1',
+							details: {waitStateType: 'MESSAGE', messageName: 'payment-received', correlationKey: 'order-1'},
+						}),
+					]),
+				),
+			}),
+			...processInstanceHeaderHandlers(instance),
+		);
+
+		await operateProcessInstancePage.goto(
+			instance.processInstanceKey,
+			`/details?elementId=task-1&elementInstanceKey=${element.elementInstanceKey}`,
+		);
+		await expect(page.getByRole('link', {name: 'Details', exact: true})).toHaveAttribute('aria-current', 'page');
+
+		if (waitStatesEnabled) {
+			await expect(page.getByText('Waiting for message: payment-received')).toBeVisible();
+			expect(waitStateRequests.length).toBeGreaterThan(0);
+		} else {
+			await expect(page.getByText('Review invoice').first()).toBeVisible();
+			await expect(page.getByText(/Waiting for message/)).toHaveCount(0);
+			expect(waitStateRequests).toHaveLength(0);
+		}
+	});
+}

@@ -13,23 +13,34 @@ import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockOperateClientConfigEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.route('**/operate/client-config.js', (route) =>
+		route.fulfill({
+			contentType: 'text/javascript',
+			body: createOperateClientConfigScript(),
+		}),
+	);
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockOperateClientConfigEndpoint({
+			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
@@ -84,5 +95,36 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details`);
+	});
+
+	test('should not request wait states and should redirect to variables when the flag is off', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		const statisticsRequests: string[] = [];
+		page.on('request', (request) => {
+			if (request.url().endsWith('/statistics/wait-states')) {
+				statisticsRequests.push(request.url());
+			}
+		});
+		network.use(
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({items: [{elementId: 'my-process', waitingCount: 1}]}),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		expect(statisticsRequests).toHaveLength(0);
 	});
 });
