@@ -11,16 +11,22 @@ import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.search.schema.config.DeleterConfiguration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 
 class DeleteByIdPipeline {
+  private static final int MINIMUM_BATCH_SIZE = 50;
+
+  private final DeleterConfiguration config;
   private final DeleteByIdSupport support;
   private final Logger logger;
 
-  DeleteByIdPipeline(final DeleteByIdSupport support, final Logger logger) {
+  DeleteByIdPipeline(
+      final DeleterConfiguration config, final DeleteByIdSupport support, final Logger logger) {
+    this.config = config;
     this.support = support;
     this.logger = logger;
   }
@@ -35,7 +41,10 @@ class DeleteByIdPipeline {
         .statsConsumer(statsConsumer::set)
         .logger(logger)
         .addRetryableException(DocumentDeletionException.class)
-        // TODO configure batch sizes etc
+        .minBatchSize(MINIMUM_BATCH_SIZE)
+        .batchSize(config.getDocumentBatchSize())
+        .maxRetryAttempts(config.getMaxRetryAttempts())
+        .retryDelayMs(config.getRetryDelayMs())
         .buildAndExecute()
         .thenAccept(
             stats -> {
