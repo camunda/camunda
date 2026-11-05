@@ -1632,6 +1632,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "No tiene permiso para ver esta información"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Marcador de posición del panel de diagrama",
 					"bottomPanelPlaceholder": "Marcador de posición del panel inferior"
