@@ -655,9 +655,10 @@ final class JsonSerializableToJsonTest {
               final ErrorRecord record = new ErrorRecord();
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               record.setProcessInstanceKey(4321);
+              record.setStorageOrdinal(1234);
               return record;
             },
-        errorRecordAsJson(4321)
+        errorRecordAsJson(4321, 1234)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// Empty ErrorRecord
@@ -672,7 +673,7 @@ final class JsonSerializableToJsonTest {
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               return record;
             },
-        errorRecordAsJson(-1)
+        errorRecordAsJson(-1, 0)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ExpressionRecord
@@ -5990,12 +5991,13 @@ final class JsonSerializableToJsonTest {
     };
   }
 
-  private static String errorRecordAsJson(final long processInstanceKey) {
+  private static String errorRecordAsJson(final long processInstanceKey, final int storageOrdinal) {
     final Map<String, Object> params = new HashMap<>();
     params.put("exceptionMessage", "test");
     params.put("processInstanceKey", processInstanceKey);
     params.put("errorEventPosition", 123);
     params.put("stacktrace", STACK_TRACE);
+    params.put("storageOrdinal", storageOrdinal);
 
     try {
       return new ObjectMapper().writeValueAsString(params);
