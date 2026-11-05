@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.search.schema.config.DeleterConfiguration;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
