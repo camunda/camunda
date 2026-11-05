@@ -1,402 +1,279 @@
-# Packaged Camunda 8.8+ query set for loadtestctl report.
-#
-# Current orchestration cluster layout plus common load-test metrics.
-# Pass --queries <path> to use one custom file with the same top-level `queries:` schema.
-#
-# Variables are substituted by loadtestctl report before this file is decoded:
-#   $NAMESPACE       the exact load-test namespace, e.g. c8-ck-baseline-20260814.
-#   $DURATION_S      the report window duration with an `s` suffix, e.g. 600s.
-#   $RATE_INTERVAL   the short --rate-interval used for dashboard-style rate samples.
-#   $SAMPLE_STEP     the --sample-step subquery resolution used for window summaries.
-#
-# Naming convention: columns computed from a seconds-denominated histogram but
-# labeled "... ms" multiply the query by 1000 to convert seconds to milliseconds.
-
+# Scratch query set for the DMN 8.9 vs 8.10 benchmark review (not for merge).
 queries:
   - key: namespace
-    description: The load-test namespace this report was generated for. Read from the namespace label over
-      the full report window, so a namespace that has already been deleted still resolves as long as the
-      metric series hasn't expired from Prometheus's retention.
     header: Namespace
     valueLabel: namespace
+    description: namespace
     query: |-
       max_over_time(kube_namespace_created{namespace="$NAMESPACE"}[$DURATION_S])
-
-  - key: docker_image
-    description: Deployed Docker image tag(s), read from the image label rather than a value field. Extracted
-      from container info over the full report window rather than only the end timestamp, so a namespace
-      that has already been deleted still resolves to the image it ran, as long as the metric series hasn't
-      expired from Prometheus's retention.
-    header: Version
-    valueLabel: image
+  - key: k6_evaluations
+    header: k6_evaluations
+    description: k6_evaluations
     query: |-
-      count by (image) (max_over_time(kube_pod_container_info{namespace="$NAMESPACE", pod=~"(camunda|zeebe)-[0-9]+", container=~".*(orchestration|zeebe|camunda).*"}[$DURATION_S]))
-
-  - key: camunda_nodes
-    description: Number of running Camunda pods. Counted from the Kubernetes pod-phase gauge (Running) at
-      every --sample-step sample across the report window, so a pod that briefly restarted mid-run still
-      counts as present.
-    header: Nodes
+      sum(increase(k6_http_reqs_total{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))
+  - key: k6_evaluations_non_200
+    header: k6_evaluations_non_200
+    description: k6_evaluations_non_200
     query: |-
-      count(max_over_time((kube_pod_status_phase{namespace="$NAMESPACE", pod=~"(camunda|zeebe)-[0-9]+", phase="Running"} == 1)[$DURATION_S:$SAMPLE_STEP]))
-
-  - key: secondary_storage_nodes
-    description: Number of running Secondary Storage pods. Counted from the Kubernetes pod-phase gauge (Running)
-      at every --sample-step sample across the report window, so a pod that briefly restarted mid-run still
-      counts as present.
-    header: Nodes
+      sum(increase(k6_http_reqs_total{namespace="$NAMESPACE", size=~".+", status!="200"}[$DURATION_S])) or vector(0)
+  - key: k6_requests_by_status_200
+    header: k6_requests_by_status_200
+    description: k6_requests_by_status_200
     query: |-
-      count(max_over_time((kube_pod_status_phase{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", phase="Running"} == 1)[$DURATION_S:$SAMPLE_STEP]))
-
-  - key: camunda_cpu_limit
-    description: CPU limit assigned to the Camunda container, in cores. Read as a Kubernetes gauge, taking
-      the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: limit
+      sum(increase(k6_http_reqs_total{namespace="$NAMESPACE", size=~".+", status="200"}[$DURATION_S]))
+  - key: k6_check_status_200_min
+    header: k6_check_status_200_min
+    description: k6_check_status_200_min
     query: |-
-      max(max_over_time(kube_pod_container_resource_limits{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*", resource="cpu", unit="core"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*"}[$DURATION_S]))
-
-  - key: camunda_cpu_used_p50
-    description: p50 of Camunda CPU usage, in cores, sampled across the report window. Computed by taking
-      a rate() at every --rate-interval sample, then computing the quantile of those samples across the
-      full report window via quantile_over_time - this captures burst behavior a single average would hide.
-    header: used (p50)
+      min(min_over_time(k6_checks_rate{namespace="$NAMESPACE", check="status is 200"}[$DURATION_S]))
+  - key: k6_check_status_200_avg
+    header: k6_check_status_200_avg
+    description: k6_check_status_200_avg
     query: |-
-      quantile_over_time(0.50, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container!=""}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: camunda_cpu_used_p99
-    description: p99 of Camunda CPU usage, in cores, sampled across the report window. Computed by taking
-      a rate() at every --rate-interval sample, then computing the quantile of those samples across the
-      full report window via quantile_over_time - this captures burst behavior a single average would hide.
-    header: used(p99)
+      avg(avg_over_time(k6_checks_rate{namespace="$NAMESPACE", check="status is 200"}[$DURATION_S]))
+  - key: k6_check_rate_expected_min
+    header: k6_check_rate_expected_min
+    description: k6_check_rate_expected_min
     query: |-
-      quantile_over_time(0.99, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container!=""}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: camunda_cpu_throttling_percent
-    description: Percentage of time the Camunda container is throttled by the CFS scheduler. Computed as
-      the ratio of throttled to total CFS periods at every --rate-interval sample, averaged across the report
-      window via avg_over_time. Values above ~0% indicate the CPU limit is too tight for the current load.
-    header: throttling (%)
+      min(min_over_time(k6_checks_rate{namespace="$NAMESPACE", check="rate is expected"}[$DURATION_S]))
+  - key: k6_check_rate_expected_avg
+    header: k6_check_rate_expected_avg
+    description: k6_check_rate_expected_avg
     query: |-
-      avg_over_time((avg(100 * sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container!=""}[$RATE_INTERVAL])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container!=""}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: camunda_memory_limit_gib
-    description: Memory limit assigned to the Camunda container, in GiB. Read as a Kubernetes gauge, taking
-      the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: limit
+      avg(avg_over_time(k6_checks_rate{namespace="$NAMESPACE", check="rate is expected"}[$DURATION_S]))
+  - key: k6_check_series
+    header: k6_check_series
+    description: k6_check_series
     query: |-
-      (max(max_over_time(kube_pod_container_resource_limits{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*", resource="memory", unit="byte"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_memory_bytes{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*"}[$DURATION_S]))) / 1024 / 1024 / 1024
-
-  - key: camunda_memory_rss_gib
-    description: Camunda container RSS memory usage, in GiB. Read as a Kubernetes gauge, taking the max
-      over the report window so a pod restart mid-run doesn't hide the value.
-    header: RSS (GB)
+      count(last_over_time(k6_checks_rate{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: k6_checks_total_any
+    header: k6_checks_total_any
+    description: k6_checks_total_any
     query: |-
-      max(max_over_time(container_memory_rss{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container=~".*(orchestration|zeebe|camunda).*"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: camunda_heap_gib
-    description: Camunda JVM heap memory usage, in GiB. Read as the JVM heap-used gauge, summed across pods
-      at every --sample-step sample and taking the max over the report window. Compare against the memory
-      limit to detect leak trends across long-running (weekly/release) tests.
-    header: heap
+      sum(increase(k6_checks_total{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: k6_http_req_failed_max
+    header: k6_http_req_failed_max
+    description: k6_http_req_failed_max
     query: |-
-      (max(max_over_time((sum by (pod) (jvm_memory_bytes_used{namespace="$NAMESPACE", area="heap", pod=~"(camunda|zeebe).*"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (pod) (jvm_memory_used_bytes{namespace="$NAMESPACE", area="heap", pod=~"(camunda|zeebe).*"}))[$DURATION_S:$SAMPLE_STEP]))) / 1024 / 1024 / 1024
-
-  - key: camunda_disk_capacity_gib
-    description: Camunda persistent volume disk capacity, in GiB. Read as a Kubernetes gauge, taking the
-      max over the report window so a pod restart mid-run doesn't hide the value.
-    header: capacity
+      max(max_over_time(k6_http_req_failed_rate{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))
+  - key: k6_dropped_iterations
+    header: k6_dropped_iterations
+    description: k6_dropped_iterations
     query: |-
-      max(max_over_time(kubelet_volume_stats_capacity_bytes{namespace="$NAMESPACE", persistentvolumeclaim=~".*(camunda|zeebe).*"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: camunda_disk_used_gib
-    description: Camunda persistent volume disk usage, in GiB. Read as a Kubernetes gauge, taking the max
-      over the report window so a pod restart mid-run doesn't hide the value. Compare against capacity to
-      see how close the run is to filling its disk.
-    header: used
+      sum(increase(k6_dropped_iterations_total{namespace="$NAMESPACE"}[$DURATION_S])) or vector(0)
+  - key: k6_iterations
+    header: k6_iterations
+    description: k6_iterations
     query: |-
-      max(max_over_time(kubelet_volume_stats_used_bytes{namespace="$NAMESPACE", persistentvolumeclaim=~".*(camunda|zeebe).*"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: camunda_write_iops
-    description: Camunda filesystem write operations per second. Computed as a Prometheus rate() sampled
-      every --rate-interval, then averaged across the full report window via avg_over_time, so a long report
-      window doesn't flatten into one coarse counter-rate.
-    header: write IOPS
+      sum(increase(k6_iterations_total{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: k6_req_duration_p50_ms
+    header: k6_req_duration_p50_ms
+    description: k6_req_duration_p50_ms
     query: |-
-      avg_over_time((sum(rate(container_fs_writes_total{namespace="$NAMESPACE", pod=~"(camunda|zeebe).*", container!=""}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: secondary_storage_cpu_limit
-    description: CPU limit assigned to the Secondary Storage container, in cores. Read as a Kubernetes gauge,
-      taking the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: limit
+      histogram_quantile(0.50, sum(rate(k6_http_req_duration_seconds{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))) * 1000
+  - key: k6_req_duration_p99_ms
+    header: k6_req_duration_p99_ms
+    description: k6_req_duration_p99_ms
     query: |-
-      max(max_over_time(kube_pod_container_resource_limits{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)", resource="cpu", unit="core"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_cpu_cores{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$DURATION_S]))
-
-  - key: secondary_storage_cpu_used_p50
-    description: p50 of Secondary Storage CPU usage, in cores, sampled across the report window. Computed
-      by taking a rate() at every --rate-interval sample, then computing the quantile of those samples across
-      the full report window via quantile_over_time - this captures burst behavior a single average would
-      hide.
-    header: used (p50)
+      histogram_quantile(0.99, sum(rate(k6_http_req_duration_seconds{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))) * 1000
+  - key: k6_req_duration_avg_ms
+    header: k6_req_duration_avg_ms
+    description: k6_req_duration_avg_ms
     query: |-
-      quantile_over_time(0.50, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: secondary_storage_cpu_used_p99
-    description: p99 of Secondary Storage CPU usage, in cores, sampled across the report window. Computed
-      by taking a rate() at every --rate-interval sample, then computing the quantile of those samples across
-      the full report window via quantile_over_time - this captures burst behavior a single average would
-      hide.
-    header: used(p99)
+      histogram_avg(sum(rate(k6_http_req_duration_seconds{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))) * 1000
+  - key: k6_req_duration_p99_ms_classic
+    header: k6_req_duration_p99_ms_classic
+    description: k6_req_duration_p99_ms_classic
     query: |-
-      quantile_over_time(0.99, (max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: secondary_storage_cpu_throttling_percent
-    description: Percentage of time the Secondary Storage container is throttled by the CFS scheduler. Computed
-      as the ratio of throttled to total CFS periods at every --rate-interval sample, averaged across the
-      report window via avg_over_time. Values above ~0% indicate the CPU limit is too tight for the current
-      load.
-    header: throttling (%)
+      histogram_quantile(0.99, sum by (le) (rate(k6_http_req_duration_seconds_bucket{namespace="$NAMESPACE", size=~".+"}[$DURATION_S]))) * 1000
+  - key: k6_req_duration_p99_gauge_ms
+    header: k6_req_duration_p99_gauge_ms
+    description: k6_req_duration_p99_gauge_ms
     query: |-
-      avg_over_time((avg(100 * sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$RATE_INTERVAL])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: secondary_storage_memory_limit_gib
-    description: Memory limit assigned to the Secondary Storage container, in GiB. Read as a Kubernetes
-      gauge, taking the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: limit
+      max(max_over_time(k6_http_req_duration_p99{namespace="$NAMESPACE", size=~".+"}[$DURATION_S])) * 1000
+  - key: broker_restarts_in_window
+    header: broker_restarts_in_window
+    description: broker_restarts_in_window
     query: |-
-      (max(max_over_time(kube_pod_container_resource_limits{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)", resource="memory", unit="byte"}[$DURATION_S])) or max(max_over_time(kube_pod_container_resource_limits_memory_bytes{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$DURATION_S]))) / 1024 / 1024 / 1024
-
-  - key: secondary_storage_memory_rss_gib
-    description: Secondary Storage container RSS memory usage, in GiB. Read as a Kubernetes gauge, taking
-      the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: RSS (GB)
+      sum(increase(kube_pod_container_status_restarts_total{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])) or vector(0)
+  - key: broker_restarts_total
+    header: broker_restarts_total
+    description: broker_restarts_total
     query: |-
-      max(max_over_time(container_memory_rss{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: secondary_storage_heap_gib
-    description: Secondary Storage JVM heap memory usage, in GiB. Read as the JVM heap-used gauge, summed
-      across pods at every --sample-step sample and taking the max over the report window. Compare against
-      the memory limit to detect leak trends across long-running (weekly/release) tests.
-    header: heap (GB)
+      sum(max_over_time(kube_pod_container_status_restarts_total{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S]))
+  - key: all_pod_restarts_total
+    header: all_pod_restarts_total
+    description: all_pod_restarts_total
     query: |-
-      (max(max_over_time((sum by (pod) (jvm_memory_bytes_used{namespace="$NAMESPACE", area="heap", pod=~"(elastic|elasticsearch|opensearch).*"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (pod) (jvm_memory_used_bytes{namespace="$NAMESPACE", area="heap", pod=~"(elastic|elasticsearch|opensearch).*"}))[$DURATION_S:$SAMPLE_STEP])) or max(max_over_time((sum by (name) (elasticsearch_jvm_memory_used_bytes{namespace="$NAMESPACE", area="heap", name=~"(elastic|elasticsearch|opensearch).*"}))[$DURATION_S:$SAMPLE_STEP]))) / 1024 / 1024 / 1024
-
-  - key: secondary_storage_disk_capacity_gib
-    description: Secondary Storage persistent volume disk capacity, in GiB. Read as a Kubernetes gauge,
-      taking the max over the report window so a pod restart mid-run doesn't hide the value.
-    header: capacity
+      sum(max_over_time(kube_pod_container_status_restarts_total{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: broker_oom_killed
+    header: broker_oom_killed
+    description: broker_oom_killed
     query: |-
-      max(max_over_time(kubelet_volume_stats_capacity_bytes{namespace="$NAMESPACE", persistentvolumeclaim=~".*(elastic|opensearch).*"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: secondary_storage_disk_used_gib
-    description: Secondary Storage persistent volume disk usage, in GiB. Read as a Kubernetes gauge, taking
-      the max over the report window so a pod restart mid-run doesn't hide the value. Compare against capacity
-      to see how close the run is to filling its disk.
-    header: used
+      max(max_over_time(kube_pod_container_status_last_terminated_reason{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", reason="OOMKilled"}[$DURATION_S])) or vector(0)
+  - key: broker_cpu_total_avg
+    header: broker_cpu_total_avg
+    description: broker_cpu_total_avg
     query: |-
-      max(max_over_time(kubelet_volume_stats_used_bytes{namespace="$NAMESPACE", persistentvolumeclaim=~".*(elastic|opensearch).*"}[$DURATION_S])) / 1024 / 1024 / 1024
-
-  - key: secondary_storage_write_iops
-    description: Secondary Storage filesystem write operations per second. Computed as a Prometheus rate()
-      sampled every --rate-interval, then averaged across the full report window via avg_over_time, so a
-      long report window doesn't flatten into one coarse counter-rate.
-    header: write IOPS
+      sum(rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", container!=""}[$DURATION_S]))
+  - key: broker_cpu_busiest_avg
+    header: broker_cpu_busiest_avg
+    description: broker_cpu_busiest_avg
     query: |-
-      avg_over_time((sum(rate(container_fs_writes_total{namespace="$NAMESPACE", pod=~"(elastic|elasticsearch|opensearch).*", container=~"(elasticsearch|opensearch)"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: records_processed_per_second
-    description: Average number of records processed per second - the most atomic metric for processing
-      throughput, since every state change in the engine produces one processed record. Computed as a Prometheus
-      rate() sampled every --rate-interval, then averaged across the full report window via avg_over_time,
-      so a long report window doesn't flatten into one coarse counter-rate.
-    header: Proc rec
+      max(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", container!=""}[$DURATION_S])))
+  - key: proc_busy_seconds_per_second
+    header: proc_busy_seconds_per_second
+    description: proc_busy_seconds_per_second
     query: |-
-      avg_over_time((sum(rate(zeebe_stream_processor_records_total{namespace="$NAMESPACE", action="processed"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: records_exported_per_second
-    description: Average number of records exported per second - the most atomic metric for export throughput.
-      Computed as a Prometheus rate() sampled every --rate-interval, then averaged across the full report
-      window via avg_over_time, so a long report window doesn't flatten into one coarse counter-rate. A
-      rate persistently lower than processed-records/s means the exporter cannot keep up and the exporting
-      backlog will grow.
-    header: Export rec
+      sum(rate(zeebe_stream_processor_processing_duration_seconds_sum{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: proc_mean_ms_all
+    header: proc_mean_ms_all
+    description: proc_mean_ms_all
     query: |-
-      avg_over_time((sum(rate(zeebe_exporter_events_total{namespace="$NAMESPACE", action=~"EXPORTED|exported"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: secondary_storage_indexed_documents_per_second
-    description: Average number of documents indexed per second in the secondary storage (Elasticsearch/OpenSearch).
-      Computed as a Prometheus rate() sampled every --rate-interval, then averaged across the full report
-      window via avg_over_time, so a long report window doesn't flatten into one coarse counter-rate. Records
-      don't map 1:1 to documents - data is duplicated across indices and some records get merged, so this
-      isn't directly comparable to processed-records/s.
-    header: ES idx docs
+      sum(rate(zeebe_stream_processor_processing_duration_seconds_sum{namespace="$NAMESPACE"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_processing_duration_seconds_count{namespace="$NAMESPACE"}[$DURATION_S])) * 1000
+  - key: proc_mean_ms_decision
+    header: proc_mean_ms_decision
+    description: proc_mean_ms_decision
     query: |-
-      avg_over_time((avg(rate(elasticsearch_indices_indexing_index_total{namespace="$NAMESPACE"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: process_instances_per_second
-    description: Average process instances completed per second, counting both root and sub-process instances.
-      Computed as a Prometheus rate() sampled every --rate-interval, then averaged across the full report
-      window via avg_over_time, so a long report window doesn't flatten into one coarse counter-rate. This
-      is the primary throughput SLO metric - compare against the scenario's target in docs/metrics.md (e.g.
-      50 PI/s for the realistic variant).
-    header: PI
+      sum(rate(zeebe_stream_processor_processing_duration_seconds_sum{namespace="$NAMESPACE", valueType="DECISION_EVALUATION"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_processing_duration_seconds_count{namespace="$NAMESPACE", valueType="DECISION_EVALUATION"}[$DURATION_S])) * 1000
+  - key: proc_p99_ms_decision
+    header: proc_p99_ms_decision
+    description: proc_p99_ms_decision
     query: |-
-      avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace="$NAMESPACE", action="completed", type="PROCESS"}[$RATE_INTERVAL])) or sum(rate(zeebe_executed_instances_total{namespace="$NAMESPACE", action="completed", type="ROOT_PROCESS_INSTANCE"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: archived_process_instances_per_second
-    description: Average number of process instances archived per second by the exporter's archiver. Computed
-      as a Prometheus rate() sampled every --rate-interval, then averaged across the full report window
-      via avg_over_time, so a long report window doesn't flatten into one coarse counter-rate.
-    header: Archived PI
+      histogram_quantile(0.99, sum by (le) (rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace="$NAMESPACE", valueType="DECISION_EVALUATION"}[$DURATION_S]))) * 1000
+  - key: proc_decision_count
+    header: proc_decision_count
+    description: proc_decision_count
     query: |-
-      avg_over_time((sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace="$NAMESPACE", state="archived"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: flow_node_instances_per_second
-    description: Average number of flow node instances (every element type except PROCESS) completed per
-      second. Computed as a Prometheus rate() sampled every --rate-interval, then averaged across the full
-      report window via avg_over_time, so a long report window doesn't flatten into one coarse counter-rate.
-      Together with PI/s, this shows whether a run met its SLO.
-    header: FNI
+      sum(increase(zeebe_stream_processor_processing_duration_seconds_count{namespace="$NAMESPACE", valueType="DECISION_EVALUATION"}[$DURATION_S]))
+  - key: proc_decision_seconds_per_second
+    header: proc_decision_seconds_per_second
+    description: proc_decision_seconds_per_second
     query: |-
-      avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace="$NAMESPACE", type!="PROCESS", action="completed"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: service_task_instances_per_second
-    description: Average number of service task instances completed per second. Computed as a Prometheus
-      rate() sampled every --rate-interval, then averaged across the full report window via avg_over_time,
-      so a long report window doesn't flatten into one coarse counter-rate.
-    header: STI
+      sum(rate(zeebe_stream_processor_processing_duration_seconds_sum{namespace="$NAMESPACE", valueType="DECISION_EVALUATION"}[$DURATION_S]))
+  - key: proc_count_by_type
+    header: proc_count_by_type
+    description: proc_count_by_type
     query: |-
-      avg_over_time((sum(rate(zeebe_element_instance_events_total{namespace="$NAMESPACE", action="completed", type="SERVICE_TASK"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: jobs_per_second
-    description: Average number of jobs completed per second. Computed as a Prometheus rate() sampled every
-      --rate-interval, then averaged across the full report window via avg_over_time, so a long report window
-      doesn't flatten into one coarse counter-rate.
-    header: Job
+      count(sum by (valueType, intent) (increase(zeebe_stream_processor_processing_duration_seconds_count{namespace="$NAMESPACE"}[$DURATION_S])) > 0)
+  - key: queue_wait_le_25ms_ratio
+    header: queue_wait_le_25ms_ratio
+    description: queue_wait_le_25ms_ratio
     query: |-
-      avg_over_time((sum(rate(zeebe_job_events_total{namespace="$NAMESPACE", action="completed"}[$RATE_INTERVAL])))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: processing_latency_p50_ms
-    description: 'Time from writing a user command to the append-only log until the processing engine starts
-      processing it (p50, in milliseconds). Computed via histogram_quantile over the underlying histogram''s
-      rate() across the entire report window - one quantile for the whole window, not a windowed series
-      of quantiles like the CPU/resource metrics. High values indicate a growing processing backlog. Threshold
-      in docs/metrics.md: p99 < 250 ms.'
-    header: ProcLat p50 (ms)
+      sum(rate(zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE", le="0.025"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: queue_wait_le_100ms_ratio
+    header: queue_wait_le_100ms_ratio
+    description: queue_wait_le_100ms_ratio
     query: |-
-      1000 * histogram_quantile(0.50, sum(rate(zeebe_stream_processor_latency_bucket{namespace="$NAMESPACE"}[$DURATION_S]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: processing_latency_p99_ms
-    description: 'Time from writing a user command to the append-only log until the processing engine starts
-      processing it (p99, in milliseconds). Computed via histogram_quantile over the underlying histogram''s
-      rate() across the entire report window - one quantile for the whole window, not a windowed series
-      of quantiles like the CPU/resource metrics. High values indicate a growing processing backlog. Threshold
-      in docs/metrics.md: p99 < 250 ms.'
-    header: ProcLat p99 (ms)
+      sum(rate(zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE", le="0.1"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: queue_wait_le_1s_ratio
+    header: queue_wait_le_1s_ratio
+    description: queue_wait_le_1s_ratio
     query: |-
-      1000 * histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace="$NAMESPACE"}[$DURATION_S]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: exporting_latency_p50_ms
-    description: Time from writing an event to the append-only log until the exporter starts exporting it
-      (p50, in milliseconds). Computed via histogram_quantile over the underlying histogram's rate() across
-      the entire report window - one quantile for the whole window, not a windowed series of quantiles like
-      the CPU/resource metrics. High values indicate a processing and/or exporting backlog.
-    header: ExportLat p50 (ms)
+      sum(rate(zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE", le="1.0"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: queue_wait_mean_ms
+    header: queue_wait_mean_ms
+    description: queue_wait_mean_ms
     query: |-
-      1000 * histogram_quantile(0.50, sum(rate(zeebe_exporting_latency_bucket{namespace="$NAMESPACE"}[$DURATION_S]) or rate(zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: exporting_latency_p99_ms
-    description: Time from writing an event to the append-only log until the exporter starts exporting it
-      (p99, in milliseconds). Computed via histogram_quantile over the underlying histogram's rate() across
-      the entire report window - one quantile for the whole window, not a windowed series of quantiles like
-      the CPU/resource metrics. High values indicate a processing and/or exporting backlog.
-    header: ExportLat p99 (ms)
+      sum(rate(zeebe_stream_processor_latency_seconds_sum{namespace="$NAMESPACE"}[$DURATION_S])) / sum(rate(zeebe_stream_processor_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S])) * 1000
+  - key: export_pickup_le_25ms_ratio
+    header: export_pickup_le_25ms_ratio
+    description: export_pickup_le_25ms_ratio
     query: |-
-      1000 * histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace="$NAMESPACE"}[$DURATION_S]) or rate(zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: process_instance_execution_p50_ms
-    description: 'Full end-to-end process execution time, from instance creation to completion (p50, in
-      milliseconds). Computed via histogram_quantile over the underlying histogram''s rate() across the
-      entire report window - one quantile for the whole window, not a windowed series of quantiles like
-      the CPU/resource metrics. Threshold in docs/metrics.md: p99 < 1 s.'
-    header: PIExec p50
+      sum(rate(zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE", le="0.025"}[$DURATION_S])) / sum(rate(zeebe_exporting_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: export_pickup_le_100ms_ratio
+    header: export_pickup_le_100ms_ratio
+    description: export_pickup_le_100ms_ratio
     query: |-
-      1000 * histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: process_instance_execution_p99_ms
-    description: 'Full end-to-end process execution time, from instance creation to completion (p99, in
-      milliseconds). Computed via histogram_quantile over the underlying histogram''s rate() across the
-      entire report window - one quantile for the whole window, not a windowed series of quantiles like
-      the CPU/resource metrics. Threshold in docs/metrics.md: p99 < 1 s.'
-    header: PIExec p99
+      sum(rate(zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE", le="0.1"}[$DURATION_S])) / sum(rate(zeebe_exporting_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: export_pickup_le_1s_ratio
+    header: export_pickup_le_1s_ratio
+    description: export_pickup_le_1s_ratio
     query: |-
-      1000 * histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
-
-  - key: data_availability_p50_seconds
-    description: 'Time from creating an instance in the client until it is available via the REST API (p50,
-      in seconds). Computed via histogram_quantile over the underlying histogram''s rate() across the entire
-      report window - one quantile for the whole window, not a windowed series of quantiles like the CPU/resource
-      metrics. The strongest end-to-end signal - it covers the full round-trip: processing, exporting, secondary-storage
-      indexing, and the REST layer. Threshold in docs/metrics.md: p99 < 5 s.'
-    header: DataAvail p50 (sec)
+      sum(rate(zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE", le="1.0"}[$DURATION_S])) / sum(rate(zeebe_exporting_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: export_pickup_mean_ms
+    header: export_pickup_mean_ms
+    description: export_pickup_mean_ms
     query: |-
-      histogram_quantile(0.50, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
-
-  - key: data_availability_p99_seconds
-    description: 'Time from creating an instance in the client until it is available via the REST API (p99,
-      in seconds). Computed via histogram_quantile over the underlying histogram''s rate() across the entire
-      report window - one quantile for the whole window, not a windowed series of quantiles like the CPU/resource
-      metrics. The strongest end-to-end signal - it covers the full round-trip: processing, exporting, secondary-storage
-      indexing, and the REST layer. Threshold in docs/metrics.md: p99 < 5 s.'
-    header: DataAvail p99 (sec)
+      sum(rate(zeebe_exporting_latency_seconds_sum{namespace="$NAMESPACE"}[$DURATION_S])) / sum(rate(zeebe_exporting_latency_seconds_count{namespace="$NAMESPACE"}[$DURATION_S])) * 1000
+  - key: gc_pause_fraction_max_pod
+    header: gc_pause_fraction_max_pod
+    description: gc_pause_fraction_max_pod
     query: |-
-      histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
-
-  - key: response_latency_p50_ms
-    description: 'Time from sending a request in the client to receiving a response (p50, in milliseconds).
-      Computed via histogram_quantile over the underlying histogram''s rate() across the entire report window
-      - one quantile for the whole window, not a windowed series of quantiles like the CPU/resource metrics.
-      Includes processing latency (and its queue) plus authentication/authorization overhead. Threshold
-      in docs/metrics.md: p99 < 5 s.'
-    header: Response p50 (ms)
+      max(sum by (pod) (rate(jvm_gc_pause_seconds_sum{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])))
+  - key: gc_pauses_per_second_max_pod
+    header: gc_pauses_per_second_max_pod
+    description: gc_pauses_per_second_max_pod
     query: |-
-      1000 * histogram_quantile(0.50, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
-
-  - key: response_latency_p99_ms
-    description: 'Time from sending a request in the client to receiving a response (p99, in milliseconds).
-      Computed via histogram_quantile over the underlying histogram''s rate() across the entire report window
-      - one quantile for the whole window, not a windowed series of quantiles like the CPU/resource metrics.
-      Includes processing latency (and its queue) plus authentication/authorization overhead. Threshold
-      in docs/metrics.md: p99 < 5 s.'
-    header: Response p99 (ms)
+      max(sum by (pod) (rate(jvm_gc_pause_seconds_count{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])))
+  - key: gc_pause_max_ms
+    header: gc_pause_max_ms
+    description: gc_pause_max_ms
     query: |-
-      1000 * histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
-
-  - key: backpressure_percent
-    description: Percentage of requests dropped due to backpressure. Computed as the dropped/received request
-      ratio per partition at every --rate-interval sample, taking the worst (highest) partition value at
-      each sample, then averaging across the report window - one struggling partition dominates the reported
-      value rather than being diluted by healthy ones. Values above ~0% indicate the system is actively
-      rejecting work and is at or near capacity.
-    header: Backpressure (max of 3)
+      max(max_over_time(jvm_gc_pause_seconds_max{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])) * 1000
+  - key: gc_concurrent_fraction_max_pod
+    header: gc_concurrent_fraction_max_pod
+    description: gc_concurrent_fraction_max_pod
     query: |-
-      avg_over_time((max(100 * sum by (partition) (rate(zeebe_dropped_request_count_total{namespace="$NAMESPACE"}[$RATE_INTERVAL])) / sum by (partition) (rate(zeebe_received_request_count_total{namespace="$NAMESPACE"}[$RATE_INTERVAL]))))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: processing_backlog
-    description: Records appended to the log but not yet processed by the engine. Computed as the difference
-      between the log's last-appended/last-committed position and the last-processed/last-exported position,
-      per partition, taking the highest partition value at every --sample-step sample and averaging across
-      the report window. A stable backlog is normal; a growing one means the engine can't keep up and processing
-      latency will worsen over time.
-    header: Proc backlog
+      max(sum by (pod) (rate(jvm_gc_concurrent_phase_time_seconds_sum{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])))
+  - key: gc_collectors
+    header: gc_collectors
+    description: gc_collectors
     query: |-
-      avg_over_time((max(max by (partition) (zeebe_log_appender_last_appended_position{namespace="$NAMESPACE"}) - max by (partition) (zeebe_stream_processor_last_processed_position{namespace="$NAMESPACE"})))[$DURATION_S:$SAMPLE_STEP])
-
-  - key: exporting_backlog
-    description: Records committed to the log but not yet exported. Computed as the difference between the
-      log's last-appended/last-committed position and the last-processed/last-exported position, per partition,
-      taking the highest partition value at every --sample-step sample and averaging across the report window.
-      A growing exporting backlog drives higher data-availability latency and is decoupled from processing
-      throughput - the engine can be healthy while the exporter falls behind.
-    header: Export backlog
+      count(sum by (gc) (rate(jvm_gc_pause_seconds_count{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])) > 0)
+  - key: heap_live_after_gc_gib_max
+    header: heap_live_after_gc_gib_max
+    description: heap_live_after_gc_gib_max
     query: |-
-      avg_over_time((max(max by (partition) (zeebe_log_appender_last_committed_position{namespace="$NAMESPACE"}) - max by (partition) (zeebe_exporter_last_exported_position{namespace="$NAMESPACE"})))[$DURATION_S:$SAMPLE_STEP])
+      max(max_over_time(jvm_gc_live_data_size_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S])) / 1024 / 1024 / 1024
+  - key: heap_floor_gib_max_pod
+    header: heap_floor_gib_max_pod
+    description: heap_floor_gib_max_pod
+    query: |-
+      max(min_over_time((sum by (pod) (jvm_memory_used_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", area="heap"}))[$DURATION_S:15s])) / 1024 / 1024 / 1024
+  - key: heap_committed_gib_max
+    header: heap_committed_gib_max
+    description: heap_committed_gib_max
+    query: |-
+      max(max_over_time((sum by (pod) (jvm_memory_committed_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", area="heap"}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: heap_max_gib
+    header: heap_max_gib
+    description: heap_max_gib
+    query: |-
+      max(max_over_time((sum by (pod) (jvm_memory_max_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", area="heap"}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: nonheap_used_gib_max
+    header: nonheap_used_gib_max
+    description: nonheap_used_gib_max
+    query: |-
+      max(max_over_time((sum by (pod) (jvm_memory_used_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", area="nonheap"}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: direct_buffers_gib_max
+    header: direct_buffers_gib_max
+    description: direct_buffers_gib_max
+    query: |-
+      max(max_over_time((sum by (pod) (jvm_buffer_memory_used_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", id="direct"}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: rss_avg_gib_max_pod
+    header: rss_avg_gib_max_pod
+    description: rss_avg_gib_max_pod
+    query: |-
+      max(avg_over_time((sum by (pod) (container_memory_rss{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", container!=""}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: working_set_gib_max
+    header: working_set_gib_max
+    description: working_set_gib_max
+    query: |-
+      max(max_over_time((sum by (pod) (container_memory_working_set_bytes{namespace="$NAMESPACE", pod=~"camunda-[0-9]+", container!=""}))[$DURATION_S:1m])) / 1024 / 1024 / 1024
+  - key: es_docs_indexed_total
+    header: es_docs_indexed_total
+    description: es_docs_indexed_total
+    query: |-
+      sum(increase(elasticsearch_indices_indexing_index_total{namespace="$NAMESPACE"}[$DURATION_S]))
+  - key: jvm_info_version
+    header: jvm_info_version
+    description: jvm_info_version
+    query: |-
+      count by (version, runtime) (jvm_info{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"})
+  - key: jvm_version
+    header: jvm_version
+    valueLabel: version
+    description: jvm
+    query: |-
+      count by (version) (max_over_time(jvm_info{namespace="$NAMESPACE", pod=~"camunda-[0-9]+"}[$DURATION_S]))
