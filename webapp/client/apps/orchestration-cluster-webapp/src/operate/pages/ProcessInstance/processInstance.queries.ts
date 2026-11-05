@@ -152,17 +152,23 @@ function processInstanceWaitStateStatisticsQuery(processInstanceKey: string) {
 	});
 }
 
+function getProcessInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' | 'generic' {
+	if (error instanceof ForbiddenError) {
+		return 'forbidden';
+	}
+	const requestError = requestErrorSchema.safeParse(error);
+	return requestError.success && requestError.data.response?.status === 404 ? 'notFound' : 'generic';
+}
+
 function useProcessInstance(processInstanceKey: string) {
 	const query = useQuery(processInstanceQuery(processInstanceKey));
-	const requestError = requestErrorSchema.safeParse(query.error);
-	const isUnauthorized = query.error instanceof ForbiddenError;
-	const isNotFound = requestError.success && requestError.data.response?.status === 404;
+	const errorKind = query.isError ? getProcessInstanceErrorKind(query.error) : null;
 
 	return {
 		query,
-		isUnauthorized,
-		isNotFound,
-		isGenericError: query.isError && !isUnauthorized && !isNotFound,
+		isUnauthorized: errorKind === 'forbidden',
+		isNotFound: errorKind === 'notFound',
+		isGenericError: errorKind === 'generic',
 	};
 }
 
@@ -183,6 +189,7 @@ export {
 	POLLING_INTERVAL_MS,
 	PROCESS_INSTANCE_INCIDENTS_COUNT_KEY,
 	SELECTION_INCIDENTS_COUNT_KEY,
+	getProcessInstanceErrorKind,
 	historySort,
 	instanceLastMigrationQuery,
 	instanceRequest,

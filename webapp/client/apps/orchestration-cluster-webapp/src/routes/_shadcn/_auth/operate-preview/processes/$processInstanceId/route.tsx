@@ -6,8 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet, useLocation, useNavigate} from '@tanstack/react-router';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {
+	createFileRoute,
+	Outlet,
+	useLocation,
+	useNavigate,
+	useRouter,
+	type ErrorComponentProps,
+} from '@tanstack/react-router';
+import {useQueryClient, useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
 import {ProcessInstanceWithVisibleTabs} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceWithVisibleTabs';
@@ -20,6 +27,7 @@ import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.
 import {InstanceHistory} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceHistory';
 import {isWidthAboveBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceDiagram';
+import {ProcessInstanceError} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceError';
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
@@ -64,6 +72,23 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 			header={<ProcessInstanceHeaderSkeleton />}
 		/>
 	),
+	errorComponent: function ProcessInstanceRouteError({error}: ErrorComponentProps) {
+		const {processInstanceId} = Route.useParams();
+		const router = useRouter();
+		const queryClient = useQueryClient();
+
+		if (error !== queryClient.getQueryState(processInstanceQuery(processInstanceId).queryKey)?.error) {
+			throw error;
+		}
+
+		return (
+			<ProcessInstanceError
+				error={error}
+				processInstanceId={processInstanceId}
+				onRetry={() => void router.invalidate({filter: (match) => match.routeId === Route.id})}
+			/>
+		);
+	},
 	component: function ProcessInstanceRoute() {
 		const {processInstanceId} = Route.useParams();
 		const search = Route.useSearch();
