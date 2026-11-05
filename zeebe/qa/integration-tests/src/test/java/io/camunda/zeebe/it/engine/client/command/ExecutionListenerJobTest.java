@@ -12,39 +12,53 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ExecutionListenerJobTest {
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+@ZeebeIntegration
+final class ExecutionListenerJobTest {
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withRecordingExporter(true);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @BeforeEach
+  void createClient() {
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
+
+  @AfterEach
+  void closeClient() {
+    client.close();
+  }
 
   @Test
-  public void shouldCompleteFirstExecutionListenerJobWithoutVariables() {
+  void shouldCompleteFirstExecutionListenerJobWithoutVariables() {
     // given
-    final String startElJobType = helper.getStartExecutionListenerType();
-    final String serviceTaskJobType = helper.getJobType();
+    final String startElJobType = uniqueType("start-el");
+    final String serviceTaskJobType = uniqueType("job");
 
     // create model with 1 start EL for service task
     final BpmnModelInstance modelInstance =
@@ -54,18 +68,18 @@ public class ExecutionListenerJobTest {
                 "task",
                 t -> t.zeebeJobType(serviceTaskJobType).zeebeStartExecutionListener(startElJobType))
             .done();
-    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
-    CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+    final long processDefinitionKey = resourcesHelper.deployProcess(modelInstance);
+    resourcesHelper.createProcessInstance(processDefinitionKey, "{}");
 
     final RecordingJobHandler elJobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(startElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(startElJobType).handler(elJobHandler).open();
 
     waitUntil(() -> !elJobHandler.getHandledJobs().isEmpty());
 
     final long elJobKey = getHandledJobKey(elJobHandler, startElJobType);
 
     // when
-    CLIENT_RULE.getClient().newCompleteCommand(elJobKey).send().join();
+    client.newCompleteCommand(elJobKey).send().join();
 
     // then: start EL job completed
     ZeebeAssertHelper.assertJobCompleted(
@@ -77,11 +91,11 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCompleteFirstExecutionListenerJobWithVariablesAndNextElShouldAccessThem() {
+  void shouldCompleteFirstExecutionListenerJobWithVariablesAndNextElShouldAccessThem() {
     // given
-    final String firstStartElJobType = helper.getStartExecutionListenerType().concat("-1");
-    final String secondStartElJobType = helper.getStartExecutionListenerType().concat("-2");
-    final String serviceTaskJobType = helper.getJobType();
+    final String firstStartElJobType = uniqueType("start-el").concat("-1");
+    final String secondStartElJobType = uniqueType("start-el").concat("-2");
+    final String serviceTaskJobType = uniqueType("job");
 
     // create model with 2 start ELs
     final BpmnModelInstance modelInstance =
@@ -94,23 +108,18 @@ public class ExecutionListenerJobTest {
                         .zeebeStartExecutionListener(firstStartElJobType)
                         .zeebeStartExecutionListener(secondStartElJobType))
             .done();
-    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
-    CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+    final long processDefinitionKey = resourcesHelper.deployProcess(modelInstance);
+    resourcesHelper.createProcessInstance(processDefinitionKey, "{}");
 
     final RecordingJobHandler elJobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(firstStartElJobType).handler(elJobHandler).open();
-    CLIENT_RULE.getClient().newWorker().jobType(secondStartElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(firstStartElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(secondStartElJobType).handler(elJobHandler).open();
 
     waitUntil(() -> !elJobHandler.getHandledJobs().isEmpty());
     final long firstElJobKey = getHandledJobKey(elJobHandler, firstStartElJobType);
 
     // when
-    CLIENT_RULE
-        .getClient()
-        .newCompleteCommand(firstElJobKey)
-        .variable("el1_var_a", "value_a")
-        .send()
-        .join();
+    client.newCompleteCommand(firstElJobKey).variable("el1_var_a", "value_a").send().join();
 
     waitUntil(() -> elJobHandler.getHandledJobs().size() == 2);
 
@@ -132,11 +141,11 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCompleteProcessWithExecutionListeners() {
+  void shouldCompleteProcessWithExecutionListeners() {
     // given
-    final String processStartElJobType = helper.getStartExecutionListenerType();
-    final String processEndElJobType = helper.getEndExecutionListenerType();
-    final String serviceTaskJobType = helper.getJobType();
+    final String processStartElJobType = uniqueType("start-el");
+    final String processEndElJobType = uniqueType("end-el");
+    final String serviceTaskJobType = uniqueType("job");
 
     // create process model with `start` and `end` ELs
     final BpmnModelInstance modelInstance =
@@ -147,13 +156,14 @@ public class ExecutionListenerJobTest {
             .serviceTask("task", t -> t.zeebeJobType(serviceTaskJobType))
             .endEvent("end")
             .done();
-    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+    final long processDefinitionKey = resourcesHelper.deployProcess(modelInstance);
+    final long processInstanceKey =
+        resourcesHelper.createProcessInstance(processDefinitionKey, "{}");
 
     final RecordingJobHandler elJobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(processStartElJobType).handler(elJobHandler).open();
-    CLIENT_RULE.getClient().newWorker().jobType(serviceTaskJobType).handler(elJobHandler).open();
-    CLIENT_RULE.getClient().newWorker().jobType(processEndElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(processStartElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(serviceTaskJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(processEndElJobType).handler(elJobHandler).open();
 
     // when
     // complete process start EL job
@@ -185,10 +195,10 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCompleteBeforeAllExecutionListenerJobOnMultiInstanceActivity() {
+  void shouldCompleteBeforeAllExecutionListenerJobOnMultiInstanceActivity() {
     // given - multi-instance service task with a single beforeAll execution listener
-    final String beforeAllElJobType = helper.getBeforeAllExecutionListenerType();
-    final String serviceTaskJobType = helper.getJobType();
+    final String beforeAllElJobType = uniqueType("before-all-el");
+    final String serviceTaskJobType = uniqueType("job");
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -204,18 +214,14 @@ public class ExecutionListenerJobTest {
                                     .zeebeInputElement("item")))
             .endEvent()
             .done();
-    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+    final long processDefinitionKey = resourcesHelper.deployProcess(modelInstance);
+    final long processInstanceKey =
+        resourcesHelper.createProcessInstance(processDefinitionKey, "{}");
 
     final RecordingJobHandler elJobHandler = new RecordingJobHandler();
     final RecordingJobHandler serviceTaskHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(beforeAllElJobType).handler(elJobHandler).open();
-    CLIENT_RULE
-        .getClient()
-        .newWorker()
-        .jobType(serviceTaskJobType)
-        .handler(serviceTaskHandler)
-        .open();
+    client.newWorker().jobType(beforeAllElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(serviceTaskJobType).handler(serviceTaskHandler).open();
 
     // when
     waitUntilJobHandled(elJobHandler, beforeAllElJobType);
@@ -229,8 +235,7 @@ public class ExecutionListenerJobTest {
         .isEmpty();
 
     final List<Integer> items = List.of(1, 2, 3);
-    CLIENT_RULE
-        .getClient()
+    client
         .newCompleteCommand(beforeAllJob.getKey())
         .variables(Map.of("items", items))
         .send()
@@ -240,7 +245,7 @@ public class ExecutionListenerJobTest {
     waitUntil(() -> serviceTaskHandler.getHandledJobs().size() == items.size());
     serviceTaskHandler
         .getHandledJobs()
-        .forEach(j -> CLIENT_RULE.getClient().newCompleteCommand(j.getKey()).send().join());
+        .forEach(j -> client.newCompleteCommand(j.getKey()).send().join());
 
     waitUntil(
         () ->
@@ -263,10 +268,10 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCompleteBeforeAllJobVariablesAreVisibleToInnerInstanceWorkers() {
+  void shouldCompleteBeforeAllJobVariablesAreVisibleToInnerInstanceWorkers() {
     // given - multi-instance service task with a beforeAll execution listener
-    final String beforeAllElJobType = helper.getBeforeAllExecutionListenerType();
-    final String serviceTaskJobType = helper.getJobType();
+    final String beforeAllElJobType = uniqueType("before-all-el");
+    final String serviceTaskJobType = uniqueType("job");
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -282,18 +287,13 @@ public class ExecutionListenerJobTest {
                                     .zeebeInputElement("item")))
             .endEvent()
             .done();
-    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
-    CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+    final long processDefinitionKey = resourcesHelper.deployProcess(modelInstance);
+    resourcesHelper.createProcessInstance(processDefinitionKey, "{}");
 
     final RecordingJobHandler elJobHandler = new RecordingJobHandler();
     final RecordingJobHandler serviceTaskHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(beforeAllElJobType).handler(elJobHandler).open();
-    CLIENT_RULE
-        .getClient()
-        .newWorker()
-        .jobType(serviceTaskJobType)
-        .handler(serviceTaskHandler)
-        .open();
+    client.newWorker().jobType(beforeAllElJobType).handler(elJobHandler).open();
+    client.newWorker().jobType(serviceTaskJobType).handler(serviceTaskHandler).open();
 
     waitUntilJobHandled(elJobHandler, beforeAllElJobType);
     final ActivatedJob beforeAllJob = elJobHandler.getHandledJobs().getFirst();
@@ -302,8 +302,7 @@ public class ExecutionListenerJobTest {
     final List<Integer> items = List.of(1, 2, 3);
     final String varName = "foo";
     final String varValue = "bar";
-    CLIENT_RULE
-        .getClient()
+    client
         .newCompleteCommand(beforeAllJob.getKey())
         .variables(Map.of("items", items, varName, varValue))
         .send()
@@ -317,12 +316,16 @@ public class ExecutionListenerJobTest {
         .allSatisfy(job -> assertThat(job.getVariablesAsMap()).containsEntry(varName, varValue));
   }
 
-  private static void completeJobWithType(
+  private void completeJobWithType(
       final RecordingJobHandler elJobHandler, final String processStartElJobType) {
     waitUntilJobHandled(elJobHandler, processStartElJobType);
     final long processStartElJobKey = getHandledJobKey(elJobHandler, processStartElJobType);
 
-    CLIENT_RULE.getClient().newCompleteCommand(processStartElJobKey).send().join();
+    client.newCompleteCommand(processStartElJobKey).send().join();
+  }
+
+  private static String uniqueType(final String prefix) {
+    return prefix + "-" + UUID.randomUUID();
   }
 
   private static void waitUntilJobHandled(
