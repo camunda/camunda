@@ -220,8 +220,8 @@ public record S3BackupConfig(
       return this;
     }
 
-    public Builder withDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
-      this.defaultsMode = defaultsMode.orElse(DefaultsMode.defaultValue());
+    public Builder withDefaultsMode(final DefaultsMode defaultsMode) {
+      this.defaultsMode = defaultsMode;
       return this;
     }
 

@@ -13,7 +13,6 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 public class S3BackupStoreConfig implements ConfigurationEntry {
@@ -27,7 +26,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private boolean forcePathStyleAccess = false;
   private String compression;
   private boolean supportLegacyMd5;
-  private Optional<DefaultsMode> defaultsMode = Optional.empty();
+  private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
   /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
   private int maxConcurrentConnections = 50;
@@ -147,11 +146,11 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.ssecKey = ssecKey;
   }
 
-  public Optional<DefaultsMode> getDefaultsMode() {
+  public DefaultsMode getDefaultsMode() {
     return defaultsMode;
   }
 
-  public void setDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
+  public void setDefaultsMode(final DefaultsMode defaultsMode) {
     this.defaultsMode = defaultsMode;
   }
 

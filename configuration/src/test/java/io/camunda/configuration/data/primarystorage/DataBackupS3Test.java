@@ -766,7 +766,7 @@ public class DataBackupS3Test {
     @Test
     void shouldSetDefaultsMode() {
       assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode())
-          .hasValue(DefaultsMode.STANDARD);
+          .isEqualTo(DefaultsMode.STANDARD);
     }
   }
 }

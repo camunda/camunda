@@ -12,7 +12,6 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 
 public class S3 {
@@ -154,7 +153,7 @@ public class S3 {
    * uses 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment
    * and can block for a couple of seconds when not running on AWS.
    */
-  private Optional<DefaultsMode> defaultsMode = Optional.empty();
+  private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
   /**
    * Maximum number of connections allowed in a connection pool. This is used to restrict the
@@ -328,11 +327,11 @@ public class S3 {
     this.supportLegacyMd5 = supportLegacyMd5;
   }
 
-  public Optional<DefaultsMode> getDefaultsMode() {
+  public DefaultsMode getDefaultsMode() {
     return defaultsMode;
   }
 
-  public void setDefaultsMode(final Optional<DefaultsMode> defaultsMode) {
+  public void setDefaultsMode(final DefaultsMode defaultsMode) {
     this.defaultsMode = defaultsMode;
   }
 
