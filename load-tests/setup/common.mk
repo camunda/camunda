@@ -138,7 +138,7 @@ else ifeq ($(scenario),dmn-large)
 # evaluations per second: the rate ramps slowly to find that capacity; override it with
 # additional_load_test_setup_configuration="--set-string k6.tests.dmn-large.env.DMN_RATE=<rate>".
 ifeq ($(wildcard camunda-platform-values-dmn-large.yaml),)
-$(error scenario=dmn-large requires camunda-platform-values-dmn-large.yaml, only provided by the main setup)
+$(error scenario=dmn-large requires camunda-platform-values-dmn-large.yaml, only provided by the main, stable-810 and stable-89 setups)
 endif
 _scenario_load_test_flags = --set load-tester.enabled=false \
 	--set k6.tests.default.enabled=false \

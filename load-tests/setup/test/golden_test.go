@@ -116,10 +116,11 @@ var defaultScenarios = []scenario{
 		PathFilter:   []string{"templates/k6", "charts/load-tester", "templates/orchestration"},
 		OnlyVersions: []string{"main"}},
 	// The dmn-large workload adds a k6 test whose runners generate their data in an init
-	// container, and its own platform overlay (main only, like dmn).
+	// container, and its own platform overlay, also shipped by stable-810 and stable-89 to compare
+	// DMN performance across versions.
 	{Name: "dmn-large", Storage: "none", Optimize: false, Stable: false, Workload: "dmn-large", RenderPlatform: true,
 		PathFilter:   []string{"templates/k6", "charts/load-tester", "templates/orchestration"},
-		OnlyVersions: []string{"main"}},
+		OnlyVersions: []string{"main", "stable-810", "stable-89"}},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.

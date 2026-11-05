@@ -200,8 +200,9 @@ cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 
-# Platform files of the `dmn` and `dmn-large` scenarios (see common.mk). Only main provides them;
-# the scenarios fail fast on a namespace scaffolded without them.
+# Platform files of the `dmn` and `dmn-large` scenarios (see common.mk). Only main provides the
+# `dmn` ones; main, stable-810 and stable-89 provide the `dmn-large` one, to compare versions. The
+# scenarios fail fast on a namespace scaffolded without them.
 if [[ -f "$VERSION_DIR/values/camunda-platform-values-dmn.yaml" ]]; then
   cp -v "$VERSION_DIR/values/camunda-platform-values-dmn.yaml"                  "$TARGET_DIRECTORY/"
   cp -v "$VERSION_DIR/values/camunda-platform-dmn-override-values.yaml"         "$TARGET_DIRECTORY/"
