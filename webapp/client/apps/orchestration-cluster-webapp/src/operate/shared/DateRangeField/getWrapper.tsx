@@ -9,6 +9,7 @@
 import {Form} from 'react-final-form';
 
 function getWrapper(initialValues?: {[key: string]: string}) {
+	// eslint-disable-next-line react-refresh/only-export-components -- local test wrapper returned by a factory; oxlint flags it but the ESLint plugin did not
 	const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 		return (
 			<>

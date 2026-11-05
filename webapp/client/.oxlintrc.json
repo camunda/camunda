@@ -277,6 +277,7 @@
 				"apps/orchestration-cluster-webapp/src/**/*.test.{ts,tsx}",
 				"apps/orchestration-cluster-webapp/src/vitest-modules/**/*"
 			],
+			"plugins": ["react"],
 			"rules": {
 				"camunda-ds/no-direct-lucide-import": "warn",
 				"camunda-ds/no-deep-import": "error",
