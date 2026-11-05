@@ -34,8 +34,8 @@ import java.util.Map;
  * instead.
  *
  * <p>A class serves a tenant's request when it uses {@code PhysicalTenantContext} or has a
- * {@code @PhysicalTenantId} parameter. The check works per class: a nested class counts on its own,
- * and is listed by its outer class's name.
+ * {@code @PhysicalTenantId} parameter. The check works per class: a nested class counts on its own
+ * and needs its own exception, so an exception for an outer class doesn't cover new nested classes.
  *
  * <p>{@link #EXCEPTIONS} lists the classes that the rule flagged when it was added. Each entry
  * gives its reason or the issue that removes it. A class may read a property that can't be
@@ -59,7 +59,7 @@ public final class PhysicalTenantRootSecurityConfigArchTest {
   private static final String PHYSICAL_TENANT_ID =
       "io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId";
 
-  /** Top-level class name to the reason it may read the root configuration, or its issue. */
+  /** Full class name to the reason it may read the root configuration, or its issue. */
   private static final Map<String, String> EXCEPTIONS =
       Map.of(
           "io.camunda.zeebe.gateway.rest.controller.authentication.AuthenticationController",
@@ -97,7 +97,7 @@ public final class PhysicalTenantRootSecurityConfigArchTest {
         @Override
         public void check(final JavaClass javaClass, final ConditionEvents events) {
           if (dependsOn(javaClass, ROOT_SECURITY_CONFIG)
-              && !EXCEPTIONS.containsKey(topLevelName(javaClass))) {
+              && !EXCEPTIONS.containsKey(javaClass.getName())) {
             events.add(
                 violated(
                     javaClass,
@@ -150,7 +150,7 @@ public final class PhysicalTenantRootSecurityConfigArchTest {
     for (final var exception : EXCEPTIONS.keySet()) {
       assertThat(
               classes.stream()
-                  .filter(javaClass -> topLevelName(javaClass).equals(exception))
+                  .filter(javaClass -> javaClass.getName().equals(exception))
                   .anyMatch(
                       javaClass ->
                           SERVES_A_PHYSICAL_TENANT_REQUEST.test(javaClass)
@@ -194,11 +194,5 @@ public final class PhysicalTenantRootSecurityConfigArchTest {
   private static boolean hasPhysicalTenantIdParameter(final JavaCodeUnit codeUnit) {
     return codeUnit.getParameters().stream()
         .anyMatch(parameter -> parameter.isAnnotatedWith(PHYSICAL_TENANT_ID));
-  }
-
-  private static String topLevelName(final JavaClass javaClass) {
-    final String name = javaClass.getName();
-    final int nested = name.indexOf('$');
-    return nested < 0 ? name : name.substring(0, nested);
   }
 }
