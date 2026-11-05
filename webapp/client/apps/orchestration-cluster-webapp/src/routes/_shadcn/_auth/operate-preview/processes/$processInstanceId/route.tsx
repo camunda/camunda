@@ -22,6 +22,10 @@ import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
+import {ProcessInstanceModificationFooter} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceModificationFooter';
+import {ModificationLeaveDialog} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationLeaveDialog';
+import {useModificationController} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
+import {useModificationLeaveBlocker} from '#/operate/pages/ProcessInstance/useModificationLeaveBlocker';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 import {
@@ -65,6 +69,9 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const navigate = useNavigate();
 		const {data: processInstance} = useSuspenseQuery(processInstanceQuery(processInstanceId));
 		const {data: hierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
+		const modification = useModificationController(processInstanceId);
+		const {isModificationModeEnabled} = modification;
+		const blocker = useModificationLeaveBlocker({processInstanceId, disabled: !isModificationModeEnabled});
 
 		const changeTab = (tab: ProcessInstanceTab) => {
 			switch (tab) {
@@ -143,9 +150,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				processInstanceId={processInstanceId}
 				processInstance={processInstance}
 				search={search}
+				modification={modification}
 			>
 				<ProcessInstance
 					activeTab={activeTab}
+					isModificationModeEnabled={isModificationModeEnabled}
+					isApplyingModifications={modification.state.status === 'applying-modifications'}
+					footer={isModificationModeEnabled ? <ProcessInstanceModificationFooter /> : undefined}
 					isDesktop={isDesktop}
 					visibleTabs={visibleTabs}
 					onTabChange={(tab) => void changeTab(tab)}
@@ -160,6 +171,11 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				>
 					{!isActiveTabHidden && <Outlet />}
 				</ProcessInstance>
+				<ModificationLeaveDialog
+					open={blocker.status === 'blocked'}
+					onStay={() => blocker.reset?.()}
+					onLeave={() => blocker.proceed?.()}
+				/>
 			</ProcessInstancePageProvider>
 		);
 	},

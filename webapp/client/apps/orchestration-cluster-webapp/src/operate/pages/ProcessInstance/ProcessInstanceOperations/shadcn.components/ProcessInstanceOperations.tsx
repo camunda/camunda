@@ -17,6 +17,7 @@ import {
 	LoaderCircle,
 	RotateCcw,
 	Trash2,
+	Wrench,
 } from '@camunda/design-system/icons';
 import {useMachine} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
@@ -24,8 +25,12 @@ import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {CancelConfirmationModal} from '#/operate/shared/Operations/shadcn.components/CancelConfirmationModal';
 import {DeleteConfirmationModal} from '#/operate/shared/Operations/shadcn.components/DeleteConfirmationModal';
+import {ENABLE_PROCESS_INSTANCE_MODIFICATION} from '#/shared/feature-flags';
 import {useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
+import {useProcessInstanceModification} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
+import {isModificationHelperHidden} from '#/operate/pages/ProcessInstance/modificationHelperPreference';
+import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationHelperModal';
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
 
@@ -60,6 +65,8 @@ const ProcessInstanceOperations: React.FC = () => {
 	const {processInstance} = useProcessInstancePage();
 	const {processInstanceKey, state, hasIncident} = processInstance;
 	const {t} = useTranslation();
+	const {isModificationModeEnabled, enterModificationMode} = useProcessInstanceModification();
+	const [isModificationHelperOpen, setIsModificationHelperOpen] = useState(false);
 	const isCollapsed = useMatchMedia(COLLAPSED_LAYOUT_QUERY);
 	const [confirmation, setConfirmation] = useState<'cancel' | 'delete' | null>(null);
 	const retry = useHeaderOperation('retry', processInstanceKey);
@@ -125,6 +132,21 @@ const ProcessInstanceOperations: React.FC = () => {
 
 	const activeOperation = operations.find(({status}) => status !== 'idle');
 
+	const openModification = () => {
+		if (isModificationHelperHidden()) {
+			enterModificationMode();
+		} else {
+			setIsModificationHelperOpen(true);
+		}
+	};
+	const modifyLabel = t('operate.processInstance.modification.modify');
+	const modifyTitle = t('operate.shared.operations.modifyTitle', {processInstanceKey});
+	const canModify = ENABLE_PROCESS_INSTANCE_MODIFICATION && state === 'ACTIVE';
+
+	if (isModificationModeEnabled) {
+		return null;
+	}
+
 	return (
 		<>
 			{isCollapsed && isRunning ? (
@@ -145,6 +167,12 @@ const ProcessInstanceOperations: React.FC = () => {
 									</DropdownMenuItem>
 								);
 							})}
+							{canModify && (
+								<DropdownMenuItem onSelect={openModification}>
+									<Wrench aria-hidden="true" />
+									{modifyLabel}
+								</DropdownMenuItem>
+							)}
 						</DropdownMenuContent>
 					</DropdownMenu>
 					<span role="status" aria-live="polite" className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -192,6 +220,22 @@ const ProcessInstanceOperations: React.FC = () => {
 						</Button>
 					);
 				})
+			)}
+			{!(isCollapsed && isRunning) && canModify && (
+				<Button variant="ghost" size="sm" title={modifyTitle} aria-label={modifyTitle} onClick={openModification}>
+					<Wrench aria-hidden="true" data-icon="inline-start" />
+					{modifyLabel}
+				</Button>
+			)}
+			{isModificationHelperOpen && state === 'ACTIVE' && (
+				<ModificationHelperModal
+					open
+					onClose={() => setIsModificationHelperOpen(false)}
+					onSubmit={() => {
+						setIsModificationHelperOpen(false);
+						enterModificationMode();
+					}}
+				/>
 			)}
 			{confirmation === 'cancel' && isRunning && (
 				<CancelConfirmationModal

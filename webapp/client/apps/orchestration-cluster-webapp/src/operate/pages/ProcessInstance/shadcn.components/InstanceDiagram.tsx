@@ -11,6 +11,7 @@ import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {useQueryClient} from '@tanstack/react-query';
 import kebabCase from 'lodash/kebabCase';
+import {Alert, Button} from '@camunda/design-system';
 import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
@@ -26,18 +27,24 @@ import {
 	calledProcessQuery,
 	calledDecisionQuery,
 } from '../instanceDiagram.queries';
-import {useInstanceDiagramOverlays, type ModificationBadge} from '../useInstanceDiagramOverlays';
+import {useInstanceDiagramOverlays} from '../useInstanceDiagramOverlays';
+import {useProcessInstanceModification} from '../useProcessInstanceModification';
+import {useInstanceDiagramModification} from '../useInstanceDiagramModification';
 import {InstanceHistoryContext} from '../useInstanceHistory';
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
 import {anchorStateOverlaysToCorners} from './anchorStateOverlaysToCorners';
-
-const NO_MODIFICATION_BADGES: ModificationBadge[] = [];
+import {ModificationDropdown} from './ModificationDropdown';
 
 const InstanceDiagram: React.FC = () => {
 	const {processInstanceId, processInstance, selection} = useProcessInstancePage();
 	const history = useContext(InstanceHistoryContext);
 	const isExecutionCountVisible = history?.executionCount ?? false;
 	const {t} = useTranslation();
+	const {
+		isModificationModeEnabled,
+		state: modificationState,
+		dispatch: dispatchModification,
+	} = useProcessInstanceModification();
 	const navigate = useNavigate();
 	const router = useRouter();
 	const queryClient = useQueryClient();
@@ -76,17 +83,6 @@ const InstanceDiagram: React.FC = () => {
 	const {statistics, sequenceFlows, agents} = useInstanceDiagramData(processInstance, hasDiagram);
 	const {data: waitStates} = useProcessInstanceWaitStateStatistics(processInstance);
 	const isRunning = isInstanceRunning(processInstance);
-	const overlaysData = useInstanceDiagramOverlays({
-		statistics: statistics.data,
-		waitStates: isRunning ? waitStates : undefined,
-		agents: agents.data,
-		businessObjects: diagram?.businessObjects,
-		processDefinitionId: processInstance.processDefinitionId,
-		isModificationModeEnabled: false,
-		isExecutionCountVisible,
-		modificationBadges: NO_MODIFICATION_BADGES,
-	});
-	const anchoredOverlaysData = useMemo(() => anchorStateOverlaysToCorners(overlaysData), [overlaysData]);
 	const selectableElements = useMemo(() => statistics.data?.map(({elementId}) => elementId) ?? [], [statistics.data]);
 	const selectedElementIds = useMemo(() => (selectedElementId ? [selectedElementId] : undefined), [selectedElementId]);
 	const highlightedElementIds = useMemo(
@@ -104,7 +100,7 @@ const InstanceDiagram: React.FC = () => {
 		return [...new Set([...(sequenceFlows.data?.map(({elementId}) => elementId) ?? []), ...compensationAssociations])];
 	}, [diagram?.diagramModel, highlightedElementIds, sequenceFlows.data]);
 	const customElementClasses = useMemo<[string, string][]>(() => {
-		if (!diagram) {
+		if (isModificationModeEnabled || !diagram) {
 			return [];
 		}
 		const drilldownElements: [string, string][] = Object.entries(diagram.businessObjects)
@@ -114,7 +110,7 @@ const InstanceDiagram: React.FC = () => {
 			drilldownElements.push([pendingDrillDownElementId, 'op-drilldown-loading']);
 		}
 		return drilldownElements;
-	}, [diagram, pendingDrillDownElementId]);
+	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId]);
 
 	const clearSelection = useCallback(
 		(shouldClear?: (elementId?: string) => boolean) => {
@@ -169,8 +165,33 @@ const InstanceDiagram: React.FC = () => {
 		});
 	};
 
+	const {
+		runningInstancesByElement,
+		modificationsByElement,
+		modificationBadges,
+		modifiableElements,
+		finishMovingToken,
+		handleModificationElementSelection,
+	} = useInstanceDiagramModification({
+		businessObjects: diagram?.businessObjects,
+		statistics: statistics.data,
+		selectElement,
+		clearSelection,
+	});
+	const overlaysData = useInstanceDiagramOverlays({
+		statistics: statistics.data,
+		waitStates: isRunning ? waitStates : undefined,
+		agents: agents.data,
+		businessObjects: diagram?.businessObjects,
+		processDefinitionId: processInstance.processDefinitionId,
+		isModificationModeEnabled,
+		isExecutionCountVisible,
+		modificationBadges,
+	});
+	const anchoredOverlaysData = useMemo(() => anchorStateOverlaysToCorners(overlaysData), [overlaysData]);
+
 	const handleDrillDown = async (elementId: string) => {
-		if (pendingDrillDownElementId !== null) {
+		if (isModificationModeEnabled || pendingDrillDownElementId !== null) {
 			return;
 		}
 		const elementType = diagram?.businessObjects[elementId]?.$type;
@@ -279,8 +300,34 @@ const InstanceDiagram: React.FC = () => {
 			? ({status, emptyMessage: {message: t('operate.processInstance.diagram.noDiagram')}} as const)
 			: ({status} as const);
 
+	const banner =
+		modificationState.status === 'moving-token'
+			? {
+					text: t('operate.processInstance.modification.selectTarget'),
+					onDiscard: () => finishMovingToken(),
+				}
+			: modificationState.status === 'adding-token'
+				? {
+						text: t('operate.processInstance.modification.selectParentScope'),
+						onDiscard: () => dispatchModification({type: 'finishAddingToken'}),
+					}
+				: undefined;
+
 	return (
 		<section aria-label={t('operate.processInstance.diagram.panelLabel')} className="flex h-full min-h-0 flex-col">
+			{banner !== undefined && diagram !== undefined && (
+				<Alert
+					variant="info"
+					description={
+						<div className="flex items-center justify-between gap-2">
+							<span>{banner.text}</span>
+							<Button variant="ghost" size="sm" onClick={banner.onDiscard}>
+								{t('operate.processInstance.modification.discard')}
+							</Button>
+						</div>
+					}
+				/>
+			)}
 			<DiagramShell {...shellProps}>
 				{diagram && hasDiagram && (
 					<Diagram
@@ -290,9 +337,13 @@ const InstanceDiagram: React.FC = () => {
 							xml: diagram.xml,
 							filename: `${kebabCase(processInstance.processDefinitionName ?? processInstance.processDefinitionId)}_v${processInstance.processDefinitionVersion}.bpmn`,
 						}}
-						selectableElements={selectableElements}
+						selectableElements={isModificationModeEnabled ? modifiableElements : selectableElements}
 						selectedElementIds={selectedElementIds}
 						onElementSelection={(elementId, isMultiInstance, clickedElementId) => {
+							if (isModificationModeEnabled) {
+								handleModificationElementSelection(elementId, isMultiInstance);
+								return;
+							}
 							if (elementId) {
 								selectElement(elementId, isMultiInstance);
 							} else if (clickedElementId && selectedElementIds?.includes(clickedElementId)) {
@@ -309,6 +360,24 @@ const InstanceDiagram: React.FC = () => {
 							clearSelection((elementId) => elementId !== undefined && rootElementId !== getSelectionRootId(elementId));
 						}}
 						overlaysData={anchoredOverlaysData}
+						selectedElementOverlay={
+							isModificationModeEnabled && (
+								<ModificationDropdown
+									businessObjects={diagram.businessObjects}
+									statistics={statistics.data}
+									runningInstancesByElement={runningInstancesByElement}
+									modificationsByElement={modificationsByElement}
+								/>
+							)
+						}
+						nonSelectableNodeTooltipText={
+							isModificationModeEnabled ? t('operate.processInstance.diagram.notModifiable') : undefined
+						}
+						hasOuterBorderOnSelection={
+							!isModificationModeEnabled ||
+							(!selection.elementInstanceKey &&
+								(selection.elementId === undefined ? 0 : (runningInstancesByElement[selection.elementId] ?? 0)) > 1)
+						}
 						highlightedSequenceFlows={highlightedSequenceFlows}
 						highlightedElementIds={highlightedElementIds}
 						customElementClasses={customElementClasses}

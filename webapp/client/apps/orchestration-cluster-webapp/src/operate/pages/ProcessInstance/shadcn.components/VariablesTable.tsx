@@ -11,7 +11,7 @@ import {keepPreviousData, useInfiniteQuery, useQueryClient} from '@tanstack/reac
 import {useForm, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {IconButton, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
+import {IconButton, SearchInput, Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
 import {Pencil} from '@camunda/design-system/icons';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {PreviewDocumentButton} from '#/operate/shared/Documents/shadcn.components/PreviewDocumentButton';
@@ -116,23 +116,16 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 						}}
 						onClear={() => setSearchValue('')}
 					/>
-					<ToggleGroup
-						type="single"
-						variant="outline"
-						size="sm"
-						aria-label={t('operate.processInstance.variables.filter')}
+					<Tabs
 						value={showDocumentsOnly ? 'documents' : 'all'}
-						onValueChange={(value) => {
-							if (value !== '') {
-								setShowDocumentsOnly(value === 'documents');
-							}
-						}}
+						onValueChange={(value) => setShowDocumentsOnly(value === 'documents')}
 					>
-						<ToggleGroupItem value="all">{t('operate.processInstance.variables.filterAll')}</ToggleGroupItem>
-						<ToggleGroupItem value="documents">
-							{t('operate.processInstance.variables.filterDocuments')}
-						</ToggleGroupItem>
-					</ToggleGroup>
+						<TabsList variant="line" aria-label={t('operate.processInstance.variables.filter')}>
+							<TabsTrigger value="all">{t('operate.processInstance.variables.filterAll')}</TabsTrigger>
+							<TabsTrigger value="documents">{t('operate.processInstance.variables.filterDocuments')}</TabsTrigger>
+						</TabsList>
+						<TabsContent value={showDocumentsOnly ? 'documents' : 'all'} className="hidden" />
+					</Tabs>
 				</div>
 			)}
 			<div

@@ -1949,6 +1949,7 @@
 					"discard": "Verwerfen",
 					"discardDescription": "Alle hinzugefügten Änderungen für die Instanz {{processInstanceKey}} werden verworfen.",
 					"discardHint": "Klicken Sie auf „Verwerfen“, um fortzufahren.",
+					"applying": "Änderungen werden angewendet",
 					"leaveTitle": "Änderungsmodus verlassen",
 					"stay": "Bleiben",
 					"leave": "Verlassen",

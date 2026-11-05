@@ -9,7 +9,7 @@
 import {useContext, useLayoutEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import {Text} from '@camunda/design-system';
+import {Badge, Text} from '@camunda/design-system';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
@@ -17,6 +17,7 @@ import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay} from '#/operate/shared/StateOverlay/shadcn.components/StateOverlay';
 import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 import {cn} from '#/shared/cn';
+import {ModificationBadgeOverlay} from '#/operate/pages/Processes/shadcn.components/ModificationBadgeOverlay';
 
 type StatePayload = {elementState: React.ComponentProps<typeof StateOverlay>['state']; count?: number};
 type WaitingPayload = {waitingCount: number; centered: boolean};
@@ -79,16 +80,9 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 		if (type === 'instance-waiting') {
 			const {waitingCount, centered} = payload as WaitingPayload;
 			return createPortal(
-				<Text
-					as="span"
-					variant="label-md-strong"
-					className={cn(
-						'inline-flex items-center rounded-full bg-warning-background-strong px-3 py-1 whitespace-nowrap text-warning-foreground-strong tabular-nums',
-						centered && '-translate-x-1/2',
-					)}
-				>
+				<Badge variant="warning" className={cn('tabular-nums', centered && '-translate-x-1/2')}>
 					{getWaitStateLabel(waitingCount)}
-				</Text>,
+				</Badge>,
 				container,
 				`waiting-${elementId}`,
 			);
@@ -123,6 +117,17 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 		if (type === 'instance-agent-shine') {
 			const {agentInstanceKey} = payload as AgentPayload;
 			return <AgentShineOverlay key={`${agentInstanceKey}-shine`} container={container} elementId={elementId} />;
+		}
+		if (type === 'instance-modification') {
+			const {newTokenCount, cancelledTokenCount} = payload as {newTokenCount: number; cancelledTokenCount: number};
+			return (
+				<ModificationBadgeOverlay
+					key={`modification-${elementId}`}
+					container={container}
+					newTokenCount={newTokenCount}
+					cancelledTokenCount={cancelledTokenCount}
+				/>
+			);
 		}
 		return null;
 	});

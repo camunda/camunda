@@ -7,6 +7,7 @@
  */
 
 import {describe, expect, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {ProcessInstance} from './ProcessInstance';
@@ -152,5 +153,28 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		await expect.element(screen.getByRole('tab', {name: 'Instance History'})).toHaveAttribute('aria-selected', 'true');
 		await expect.element(screen.getByText('History tab content')).toBeVisible();
 		await expect.element(screen.getByText('History panel')).not.toBeInTheDocument();
+	});
+
+	it('should announce applying and make the page content inert while modifications are applied', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance
+						activeTab="variables"
+						header={<button type="button">Instance action</button>}
+						visibleTabs={PROCESS_INSTANCE_TABS}
+						isApplyingModifications
+					/>
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByRole('status')).toHaveTextContent('Applying modifications');
+		await userEvent.tab();
+		await expect.element(screen.getByRole('button', {name: 'Instance action'})).not.toHaveFocus();
 	});
 });
