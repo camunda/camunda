@@ -2082,7 +2082,7 @@ zeebe: # Type:
     exporters: null # Type: Map<String,io.camunda.zeebe.broker.system.configuration.ExporterCfg>, Env: ZEEBE_BROKER_EXPORTERS
     exporting: null # Type: io.camunda.zeebe.broker.system.configuration.ExportingCfg, Env: ZEEBE_BROKER_EXPORTING
     flow-control: null # Type: io.camunda.zeebe.broker.system.configuration.FlowControlCfg, Env: ZEEBE_BROKER_FLOWCONTROL
-    gateway: null # Type: io.camunda.zeebe.broker.system.configuration.EmbeddedGatewayCfg, Env: ZEEBE_BROKER_GATEWAY
+    gateway: null # Type: io.camunda.configuration.beans.EmbeddedGatewayCfg, Env: ZEEBE_BROKER_GATEWAY
     license-key: null # Type: String, Env: ZEEBE_BROKER_LICENSEKEY
     network: null # Type: io.camunda.zeebe.broker.system.configuration.NetworkCfg, Env: ZEEBE_BROKER_NETWORK
     processing: null # Type: io.camunda.zeebe.broker.system.configuration.ProcessingCfg, Env: ZEEBE_BROKER_PROCESSING

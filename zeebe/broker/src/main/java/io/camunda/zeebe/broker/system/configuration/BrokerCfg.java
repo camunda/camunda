@@ -26,7 +26,6 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private ExportingCfg exporting = ExportingCfg.defaultExportingCfg();
-  private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
@@ -55,7 +54,6 @@ public class BrokerCfg {
     threads.init(this, brokerBase);
     data.init(this, brokerBase);
     exporters.values().forEach(e -> e.init(this, brokerBase));
-    gateway.init(this, brokerBase);
     flowControl.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
@@ -114,15 +112,6 @@ public class BrokerCfg {
 
   public void setExporting(final ExportingCfg exporting) {
     this.exporting = exporting;
-  }
-
-  public EmbeddedGatewayCfg getGateway() {
-    return gateway;
-  }
-
-  public BrokerCfg setGateway(final EmbeddedGatewayCfg gateway) {
-    this.gateway = gateway;
-    return this;
   }
 
   public FlowControlCfg getFlowControl() {
@@ -197,8 +186,6 @@ public class BrokerCfg {
         + exporters
         + ", exporting="
         + exporting
-        + ", gateway="
-        + gateway
         + ", flowControl="
         + flowControl
         + ", backpressure="

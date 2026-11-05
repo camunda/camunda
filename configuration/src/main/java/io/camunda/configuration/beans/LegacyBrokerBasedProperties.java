@@ -7,8 +7,7 @@
  */
 package io.camunda.configuration.beans;
 
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("zeebe.broker")
-public class LegacyBrokerBasedProperties extends BrokerCfg {}
+public class LegacyBrokerBasedProperties extends BrokerBasedProperties {}

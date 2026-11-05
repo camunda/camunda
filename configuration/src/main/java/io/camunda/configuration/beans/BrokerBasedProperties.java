@@ -9,6 +9,7 @@ package io.camunda.configuration.beans;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.util.Environment;
 
 /**
  * NOTE #1: Some of the fields of this object are overridden with values coming from the Unified
@@ -28,6 +29,23 @@ import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
  * https://github.com/camunda/camunda/issues/39045
  */
 public class BrokerBasedProperties extends BrokerCfg {
+
+  private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
+
+  @Override
+  public void init(final String brokerBase, final Environment environment) {
+    super.init(brokerBase, environment);
+    gateway.init(this, brokerBase);
+  }
+
+  public EmbeddedGatewayCfg getGateway() {
+    return gateway;
+  }
+
+  public BrokerBasedProperties setGateway(final EmbeddedGatewayCfg gateway) {
+    this.gateway = gateway;
+    return this;
+  }
 
   public ExporterCfg getCamundaExporter() {
     return getExporters().get("camundaexporter");
