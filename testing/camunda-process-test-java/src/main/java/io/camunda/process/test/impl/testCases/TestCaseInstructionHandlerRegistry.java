@@ -42,7 +42,6 @@ import io.camunda.process.test.impl.testCases.instructions.MockDmnDecisionInstru
 import io.camunda.process.test.impl.testCases.instructions.MockJobWorkerCompleteJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.MockJobWorkerThrowBpmnErrorInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.PublishMessageInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.ReleaseJobInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ResolveIncidentInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
@@ -107,7 +106,6 @@ public class TestCaseInstructionHandlerRegistry {
     register(new MockJobWorkerThrowBpmnErrorInstructionHandler());
     register(new PublishMessageInstructionHandler(runContext));
     register(new CorrelateMessageInstructionHandler(runContext));
-    register(new ReleaseJobInstructionHandler());
     register(new ResolveIncidentInstructionHandler(runContext));
     register(new SetTimeInstructionHandler());
     register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));

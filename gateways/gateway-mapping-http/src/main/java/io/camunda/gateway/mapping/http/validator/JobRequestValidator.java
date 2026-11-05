@@ -21,7 +21,6 @@ import io.camunda.gateway.protocol.model.JobChangeset;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
-import io.camunda.gateway.protocol.model.JobReleaseRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import java.util.List;
 import java.util.Optional;
@@ -92,18 +91,6 @@ public final class JobRequestValidator {
           } else {
             validateBusinessId(businessId, violations);
           }
-        });
-  }
-
-  public static Optional<ProblemDetail> validateJobReleaseRequest(
-      final JobReleaseRequest releaseRequest) {
-    return validate(
-        violations -> {
-          if (releaseRequest == null || releaseRequest.getJobReservationToken() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
-            return;
-          }
-          validateJobReservationToken(releaseRequest.getJobReservationToken(), violations);
         });
   }
 

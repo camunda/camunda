@@ -243,10 +243,6 @@ public final class JobClient {
     return expectation.apply(writeJobCommand(JobIntent.UPDATE));
   }
 
-  public Record<JobRecordValue> release() {
-    return expectation.apply(writeJobCommand(JobIntent.RELEASE));
-  }
-
   public Record<JobRecordValue> throwError() {
     return expectation.apply(writeJobCommand(JobIntent.THROW_ERROR));
   }

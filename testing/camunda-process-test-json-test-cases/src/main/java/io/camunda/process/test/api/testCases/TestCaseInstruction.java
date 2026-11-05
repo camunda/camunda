@@ -42,7 +42,6 @@ import io.camunda.process.test.api.testCases.instructions.MockDmnDecisionInstruc
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.PublishMessageInstruction;
-import io.camunda.process.test.api.testCases.instructions.ReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ResolveIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.SetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ThrowBpmnErrorFromJobInstruction;
@@ -128,9 +127,6 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = CorrelateMessageInstruction.class,
       name = TestCaseInstructionType.CORRELATE_MESSAGE),
-  @JsonSubTypes.Type(
-      value = ReleaseJobInstruction.class,
-      name = TestCaseInstructionType.RELEASE_JOB),
   @JsonSubTypes.Type(
       value = ResolveIncidentInstruction.class,
       name = TestCaseInstructionType.RESOLVE_INCIDENT),
