@@ -46,7 +46,7 @@ on:
         default: ""
         required: false
       build-frontend:
-        description: 'Build frontend assets as part of the load test image build. Ignored when stable-branch is set, the stable workflows build without the frontend.'
+        description: 'Build frontend assets as part of the load test image build.'
         type: boolean
         default: true
         required: false
@@ -86,7 +86,7 @@ on:
         default: ""
         required: false
       build-frontend:
-        description: 'Build frontend assets as part of the load test image build. Ignored when stable-branch is set, the stable workflows build without the frontend.'
+        description: 'Build frontend assets as part of the load test image build.'
         type: boolean
         default: true
         required: false
@@ -140,6 +140,7 @@ jobs:
     with:
       name: ${{ inputs.name }}
       scenario: max
+      build-frontend: ${{ inputs.build-frontend }}
       enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       load-test-load: ${{ inputs.load-test-load }}
@@ -155,6 +156,7 @@ jobs:
     with:
       name: ${{ inputs.name }}
       scenario: max
+      build-frontend: ${{ inputs.build-frontend }}
       enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       load-test-load: ${{ inputs.load-test-load }}
@@ -170,6 +172,7 @@ jobs:
     with:
       name: ${{ inputs.name }}
       scenario: max
+      build-frontend: ${{ inputs.build-frontend }}
       enable-optimize: ${{ inputs.secondary-storage-type != 'none' }}
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       load-test-load: ${{ inputs.load-test-load }}
