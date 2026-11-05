@@ -112,6 +112,9 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.disableAllChecks.set(true)
   } else {
     options.errorprone.disableAllWarnings.set(true)
+    // Off-by-default checks promoted to errors; keep in sync with error-prone.checks in
+    // parent/pom.xml.
+    options.errorprone.error("LockNotBeforeTry")
   }
   options.errorprone.error("NullAway")
   options.errorprone.excludedPaths.set(
