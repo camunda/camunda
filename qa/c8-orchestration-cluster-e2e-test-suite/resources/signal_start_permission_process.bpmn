@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="SignalStartPermission" targetNamespace="http://bpmn.io/schema/bpmn">
+  <signal id="SignalStartPermissionSig" name="SignalStartPermissionSignal"/>
+  <process id="signal_start_permission_process" name="Signal start permission" isExecutable="true">
+    <startEvent id="signalStart" name="Signal start">
+      <outgoing>f1</outgoing>
+      <signalEventDefinition id="sed1" signalRef="SignalStartPermissionSig"/>
+    </startEvent>
+    <sequenceFlow id="f1" sourceRef="signalStart" targetRef="end"/>
+    <endEvent id="end"><incoming>f1</incoming></endEvent>
+  </process>
+
+  <bpmndi:BPMNDiagram id="Diagram_signal_start_permission_process">
+    <bpmndi:BPMNPlane id="Plane_signal_start_permission_process" bpmnElement="signal_start_permission_process">
+      <bpmndi:BPMNShape id="signalStart_di" bpmnElement="signalStart">
+        <dc:Bounds x="180" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="380" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="216" y="168" />
+        <di:waypoint x="380" y="168" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
