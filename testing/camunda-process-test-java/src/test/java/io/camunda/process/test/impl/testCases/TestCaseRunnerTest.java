@@ -35,12 +35,13 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
-import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -84,7 +85,6 @@ public class TestCaseRunnerTest {
     // given
     final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
     when(processTestContext.createClient()).thenReturn(camundaClient);
-    when(processTestContext.getJobReservationToken()).thenReturn("cpt-1234");
 
     final ProcessInstanceEvent processInstance = mock(ProcessInstanceEvent.class);
     when(processInstance.getProcessInstanceKey()).thenReturn(42L);
@@ -105,8 +105,9 @@ public class TestCaseRunnerTest {
                         .processDefinitionId("process")
                         .build())
                 .addRuntimeInstructions(
-                    ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                        .reserveJobs(true)
+                    ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                        .addJobTypes("send-invoice")
+                        .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
                         .build())
                 .build());
 
@@ -122,7 +123,6 @@ public class TestCaseRunnerTest {
     // given
     final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
     when(processTestContext.createClient()).thenReturn(camundaClient);
-    when(processTestContext.getJobReservationToken()).thenReturn("cpt-1234");
 
     final ProcessInstanceEvent processInstance = mock(ProcessInstanceEvent.class);
     when(processInstance.getProcessInstanceKey()).thenReturn(42L);
@@ -145,8 +145,9 @@ public class TestCaseRunnerTest {
                             .processDefinitionId("process")
                             .build())
                     .addRuntimeInstructions(
-                        ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                            .reserveJobs(true)
+                        ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                            .addJobTypes("send-invoice")
+                            .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
                             .build())
                     .build())
             .addInstructions(mock(TestCaseInstruction.class))
@@ -260,7 +261,7 @@ public class TestCaseRunnerTest {
     final TestCase testCase =
         ImmutableTestCase.builder()
             .name("test")
-            .addInstructions(createProcessInstance(true))
+            .addInstructions(createProcessInstance("charge-card"))
             .addInstructions(
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("charge-card")
@@ -272,12 +273,29 @@ public class TestCaseRunnerTest {
   }
 
   @Test
+  void shouldNotDetectMockedJobWorkerOfAnUnreservedJobType() {
+    // given a mock for a type the instance does not reserve: the engine hands it to workers
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstance("send-invoice"))
+            .addInstructions(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("charge-card")
+                    .build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
+  }
+
+  @Test
   void shouldNotDetectMockedJobWorkerWithoutReservation() {
     // given
     final TestCase testCase =
         ImmutableTestCase.builder()
             .name("test")
-            .addInstructions(createProcessInstance(false))
+            .addInstructions(createProcessInstance())
             .addInstructions(
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("charge-card")
@@ -291,21 +309,30 @@ public class TestCaseRunnerTest {
   @Test
   void shouldNotDetectReservationWithoutMockedJobWorker() {
     // given
-    final TestCase testCase = createTestCase(createProcessInstance(true));
+    final TestCase testCase = createTestCase(createProcessInstance("charge-card"));
 
     // when/then
     assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
   }
 
-  private static TestCaseInstruction createProcessInstance(final boolean reserveJobs) {
-    return ImmutableCreateProcessInstanceInstruction.builder()
-        .processDefinitionSelector(
-            ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
-        .addRuntimeInstructions(
-            ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                .reserveJobs(reserveJobs)
-                .build())
-        .build();
+  /**
+   * Creates a process instance that reserves the given job types, or none when no type is given.
+   */
+  private static TestCaseInstruction createProcessInstance(final String... reservedJobTypes) {
+    final ImmutableCreateProcessInstanceInstruction.Builder builder =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId("process")
+                    .build());
+    if (reservedJobTypes.length > 0) {
+      builder.addRuntimeInstructions(
+          ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+              .addJobTypes(reservedJobTypes)
+              .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+              .build());
+    }
+    return builder.build();
   }
 
   private static TestCase createTestCase(final TestCaseInstruction instruction) {

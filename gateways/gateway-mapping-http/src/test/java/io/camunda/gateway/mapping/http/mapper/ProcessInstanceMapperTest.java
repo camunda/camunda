@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
@@ -35,12 +35,16 @@ class ProcessInstanceMapperTest {
 
   private final ProcessInstanceMapper mapper = new ProcessInstanceMapper();
 
-  private static ProcessInstanceCreationConfigureExecutionInstruction reserveJobs(
-      final String token) {
-    return ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
-        .type("CONFIGURE_EXECUTION")
-        .reserveJobs(true)
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
+    return reserveJobs(List.of("send-invoice"), token);
+  }
+
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(
+      final List<String> jobTypes, final String token) {
+    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
+        .jobTypes(jobTypes)
         .jobReservationToken(token)
+        .type("RESERVE_JOBS")
         .build();
   }
 
@@ -56,9 +60,10 @@ class ProcessInstanceMapperTest {
     // when
     final var result = mapper.toCreateProcessInstance(instruction, false);
 
-    // then the configure-execution switches are lifted onto the request, not kept as instructions
+    // then the reserve-jobs switches are lifted onto the request, not kept as instructions
     assertThat(result.isRight()).isTrue();
     assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().reservedJobTypes()).containsExactly("send-invoice");
     assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 
@@ -81,7 +86,7 @@ class ProcessInstanceMapperTest {
   }
 
   @Test
-  void shouldMapTerminateAndConfigureExecutionInstructionsTogether() {
+  void shouldMapTerminateAndReserveJobsInstructionsTogether() {
     // given
     final var instruction =
         ProcessInstanceCreationInstructionById.Builder.create()

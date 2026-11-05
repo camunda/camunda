@@ -87,11 +87,11 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
      * Sets the reservation token of the process instance the job belongs to, proving this command
      * comes from the caller that reserved the instance's jobs (alpha).
      *
-     * <p>A job of an instance created with {@link
-     * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String)
-     * reserveJobs} is served to no job worker, and every command on it must carry the same token
-     * the instance was created with; a command with no token, or with a different one, is rejected.
-     * A job of an unreserved instance requires no token.
+     * <p>A job of a type reserved by an instance created with {@link
+     * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String,
+     * String...) reserveJobs} is served to no job worker, and every command on it must carry the
+     * same token the instance was created with; a command with no token, or with a different one,
+     * is rejected. A job that is not reserved requires no token.
      *
      * <p>This is a separate value from the lease token: the lease token is minted by the engine per
      * activation, while the reservation token is chosen by the caller and lives for the instance. A

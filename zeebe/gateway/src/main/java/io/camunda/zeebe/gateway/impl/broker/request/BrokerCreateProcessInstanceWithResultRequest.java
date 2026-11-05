@@ -72,6 +72,12 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setReservedJobTypes(
+      final List<String> reservedJobTypes) {
+    requestDto.setReservedJobTypes(reservedJobTypes);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setJobReservationToken(
       final String jobReservationToken) {
     requestDto.setJobReservationToken(jobReservationToken);

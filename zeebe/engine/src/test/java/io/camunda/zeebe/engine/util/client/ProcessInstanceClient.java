@@ -136,6 +136,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withReservedJobTypes(final String... jobTypes) {
+      processInstanceCreationRecord.setReservedJobTypes(List.of(jobTypes));
+      return this;
+    }
+
     public ProcessInstanceCreationClient withStubbedCallActivities(final String... processIds) {
       processInstanceCreationRecord.setStubbedCallActivityProcessIds(List.of(processIds));
       return this;

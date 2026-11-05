@@ -1435,11 +1435,11 @@ components:
         propertyName: type
         mapping:
           TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
-          CONFIGURE_EXECUTION: "#/components/schemas/ProcessInstanceCreationConfigureExecutionInstruction"
+          RESERVE_JOBS: "#/components/schemas/ProcessInstanceCreationReserveJobsInstruction"
           STUB_CALL_ACTIVITIES: "#/components/schemas/ProcessInstanceCreationStubCallActivitiesInstruction"
       oneOf:
         - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
-        - $ref: "#/components/schemas/ProcessInstanceCreationConfigureExecutionInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceCreationReserveJobsInstruction"
         - $ref: "#/components/schemas/ProcessInstanceCreationStubCallActivitiesInstruction"
 
     ProcessInstanceCreationTerminateInstruction:
@@ -1463,43 +1463,50 @@ components:
         - propertyName: type
           addedInVersion: "8.9"
 
-    ProcessInstanceCreationConfigureExecutionInstruction:
+    ProcessInstanceCreationReserveJobsInstruction:
       type: object
       description: |
-        Configures how this process instance executes, for test and debugging tools rather than
-        production traffic (alpha).
+        Reserves the jobs of this process instance whose type is listed, so no job worker is handed
+        them, for test and debugging tools rather than production traffic (alpha).
 
-        A single instance-wide instruction that reserves this instance's jobs so no worker is handed
-        them. The switch defaults off, so a configure-execution instruction with it unset does
-        nothing. At most one may be given per process instance. Stubbing call activities is a
-        separate `STUB_CALL_ACTIVITIES` instruction.
+        A reserved job is served to no worker, not by poll and not by push, and can be completed,
+        failed, error-thrown or updated only by a caller that supplies the matching
+        `jobReservationToken`. Only jobs of a listed type are hidden; every other job of the
+        instance goes to workers as usual. Selection is by job type, so every job of a listed type
+        is reserved, including those of called child instances. A job whose type is a FEEL
+        expression is reserved only when its resolved value is listed.
 
-        This instruction is an alpha feature and may be subject to change in future releases.
+        To let a job run for real, leave its type off the list. There is no release step.
+
+        This instruction is an alpha feature and may be subject to change in future releases. At most
+        one may be given per process instance.
+      required:
+        - jobTypes
+        - jobReservationToken
       properties:
         type:
           description: The type of the runtime instruction
           type: string
-          example: CONFIGURE_EXECUTION
-        reserveJobs:
+          example: RESERVE_JOBS
+        jobTypes:
           description: |
-            Hides every job this process instance creates from job workers, so the caller that
-            created the instance drives them instead. A reserved job cannot be completed, failed,
-            or error-thrown without the matching `jobReservationToken`, and a single job can be
-            handed back to the workers with the release endpoint. Requires `jobReservationToken`.
-          type: boolean
-          default: false
-          example: true
+            The job types whose jobs are reserved. A job is reserved when its type is in this list.
+          type: array
+          items:
+            type: string
+          example:
+            - send-invoice
+            - io.camunda:http-json:1
         jobReservationToken:
           description: |
-            The token that reserves this process instance's jobs. Required when `reserveJobs` is
-            true, and rejected when it is not. Pass it back on every command against one of those
-            jobs.
+            The token that reserves the listed jobs for the caller. Pass it back on every command
+            against one of those jobs.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.11"
-        - propertyName: reserveJobs
+        - propertyName: jobTypes
           addedInVersion: "8.11"
         - propertyName: jobReservationToken
           addedInVersion: "8.11"

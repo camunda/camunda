@@ -9,10 +9,10 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
@@ -85,7 +85,7 @@ class ProcessInstanceRequestValidatorTest {
         .get()
         .extracting(ProblemDetail::getDetail)
         .asString()
-        .contains("2 instructions of type CONFIGURE_EXECUTION");
+        .contains("2 instructions of type RESERVE_JOBS");
   }
 
   @Test
@@ -225,13 +225,64 @@ class ProcessInstanceRequestValidatorTest {
         .contains("exceeds the limit of 128 characters");
   }
 
-  private static ProcessInstanceCreationConfigureExecutionInstruction reserveJobs(
-      final String token) {
-    return ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
-        .type("CONFIGURE_EXECUTION")
-        .reserveJobs(true)
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
+    return reserveJobs(List.of("send-invoice"), token);
+  }
+
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(
+      final List<String> jobTypes, final String token) {
+    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
+        .jobTypes(jobTypes)
         .jobReservationToken(token)
+        .type("RESERVE_JOBS")
         .build();
+  }
+
+  @Test
+  @DisplayName("Should reject a reserve-jobs instruction without job types")
+  void shouldRejectReserveJobsWithoutJobTypes() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(reserveJobs(List.of(), "recorder-session-1")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("jobTypes");
+  }
+
+  @Test
+  @DisplayName("Should reject a reserve-jobs instruction with a blank job type")
+  void shouldRejectReserveJobsWithBlankJobType() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(
+                List.of(reserveJobs(List.of("send-invoice", " "), "recorder-session-1")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("jobTypes must not contain blank values");
   }
 
   private static ProcessInstanceCreationStubCallActivitiesInstruction stubCallActivities(
