@@ -53,7 +53,6 @@ public class TriggerTimerTest {
 
   private static final Long PROCESS_INSTANCE_KEY = 100L;
   private static final Long TIMER_KEY = 777L;
-  private static final Long OTHER_TIMER_KEY = 778L;
   private static final String PROCESS_DEFINITION_ID = "test-process";
   private static final String ELEMENT_ID = "escalation";
 
@@ -121,6 +120,7 @@ public class TriggerTimerTest {
     when(camundaClient
             .newTimerSearchRequest()
             .filter(timerFilterCaptor.capture())
+            .page(any(Consumer.class))
             .send()
             .join()
             .items())
@@ -135,28 +135,26 @@ public class TriggerTimerTest {
   }
 
   @Test
-  void shouldFailIfMoreThanOneTimerMatches() {
+  void shouldTriggerFirstMatchWhenSeveralTimersWait() {
     // given
     createContext(DevAwaitBehavior.expectSuccess());
     stubProcessInstanceIsPresent();
     when(timer.getTimerKey()).thenReturn(TIMER_KEY);
-    when(otherTimer.getTimerKey()).thenReturn(OTHER_TIMER_KEY);
     when(camundaClient
             .newTimerSearchRequest()
             .filter(timerFilterCaptor.capture())
+            .page(any(Consumer.class))
             .send()
             .join()
             .items())
         .thenReturn(Arrays.asList(timer, otherTimer));
 
-    // when/then
-    assertThatThrownBy(
-            () ->
-                camundaProcessTestContext.triggerTimer(
-                    ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID), ELEMENT_ID))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(String.valueOf(TIMER_KEY))
-        .hasMessageContaining(String.valueOf(OTHER_TIMER_KEY));
+    // when
+    camundaProcessTestContext.triggerTimer(
+        ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID), ELEMENT_ID);
+
+    // then
+    verify(camundaClient.newTriggerTimerCommand(TIMER_KEY)).send();
   }
 
   @Test
@@ -167,6 +165,7 @@ public class TriggerTimerTest {
     when(camundaClient
             .newTimerSearchRequest()
             .filter(timerFilterCaptor.capture())
+            .page(any(Consumer.class))
             .send()
             .join()
             .items())

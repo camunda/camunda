@@ -31,6 +31,7 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.TimerFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
@@ -40,6 +41,7 @@ import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.TimerSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionInstance;
@@ -49,6 +51,7 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.Timer;
 import io.camunda.client.api.search.response.UserTask;
 import java.time.Instant;
 import java.util.Collections;
@@ -455,6 +458,63 @@ public class CamundaDataSourceTest {
 
       // when
       dataSource.findJobs(f -> {});
+
+      // then
+      verify(searchRequest).page(pageCaptor.capture());
+      pageCaptor.getValue().accept(page);
+      verify(page).limit(QUERY_PAGE_LIMIT);
+    }
+  }
+
+  @Nested
+  class TimerTests {
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private TimerSearchRequest searchRequest;
+
+    @Mock private CamundaFuture<SearchResponse<Timer>> future;
+    @Mock private SearchResponse<Timer> searchResponse;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private TimerFilter timerFilter;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private AnyPage page;
+
+    @Captor private ArgumentCaptor<Consumer<TimerFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<AnyPage>> pageCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newTimerSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldForwardTheGivenFilter() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findTimers(f -> f.elementId("escalation"));
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(timerFilter);
+      verify(timerFilter).elementId("escalation");
+    }
+
+    @Test
+    void shouldApplyConfiguredPageLimitToTimers() {
+      // given
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(client, START_TIME, QUERY_PAGE_LIMIT);
+
+      // when
+      dataSource.findTimers(f -> {});
 
       // then
       verify(searchRequest).page(pageCaptor.capture());

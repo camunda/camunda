@@ -80,6 +80,14 @@ recording switch ([ADR 0015](0015-811-per-instance-recording-switches.md)).
   triggers by key. The trigger command itself is strongly consistent.
 - **A client trigger against a suspended instance is rejected, not buffered**, so a recorder is not
   left waiting for a resume that never comes.
+- **CPT resolves the recorded `elementId` to a timer key at replay, taking the first `CREATED` timer
+  of the run's instance** — the same resolve-selector-to-key-then-command-by-key shape CPT already
+  uses for jobs, user tasks, and incidents, each a first match inside an await block. A recording
+  stores neither the timer key nor the element instance key, because both are assigned per run and
+  are not stable across recordings. When one element has several waiting timers in the same instance
+  (multi-instance, loops), they are interchangeable for replay, so CPT fires the first and does not
+  attempt to single one out — the search does expose `elementInstanceKey` for a client that needs to
+  pick a specific one by key within a single run.
 - **No migration backfill of the `timerKey -> elementInstanceKey` index.** The index is populated on
   timer creation, so a timer already created before the upgrade has no entry and `getByKey` returns
   `NOT_FOUND` for it. Acceptable while the feature is alpha and the index is new; a migration task

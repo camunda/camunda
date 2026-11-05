@@ -78,7 +78,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -424,38 +423,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitProcessInstance(
         processInstanceSelector,
         pi -> {
-          final List<Timer> waitingTimers =
-              client
-                  .newTimerSearchRequest()
-                  .filter(
-                      f ->
-                          f.processInstanceKey(pi.getProcessInstanceKey())
-                              .elementId(elementId)
-                              .state(TimerState.CREATED))
-                  .send()
-                  .join()
-                  .items();
+          final Optional<Timer> waitingTimer = findTimer(pi.getProcessInstanceKey(), elementId);
 
-          assertThat(waitingTimers)
+          assertThat(waitingTimer)
               .withFailMessage(
                   "Expected to trigger a waiting timer [elementId: '%s'] of process instance [%s, processInstanceKey: %s], but found none. It may not be indexed yet, or it has already fired.",
                   elementId, processInstanceSelector.describe(), pi.getProcessInstanceKey())
-              .isNotEmpty();
+              .isPresent();
 
-          if (waitingTimers.size() > 1) {
-            throw new IllegalStateException(
-                String.format(
-                    "Expected a single waiting timer [elementId: '%s'] of process instance [processInstanceKey: %s], but found %d (timer keys: %s). Refine the selector so it addresses exactly one timer.",
-                    elementId,
-                    pi.getProcessInstanceKey(),
-                    waitingTimers.size(),
-                    waitingTimers.stream()
-                        .map(Timer::getTimerKey)
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(", "))));
-          }
-
-          final long timerKey = waitingTimers.get(0).getTimerKey();
+          final long timerKey = waitingTimer.get().getTimerKey();
           LOGGER.debug(
               "Mock: Trigger timer [elementId: '{}', timerKey: '{}'] of process instance [{}, processInstanceKey: '{}']",
               elementId,
@@ -962,6 +938,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .findProcessInstances(processInstanceSelector::applyFilter)
         .stream()
         .filter(processInstanceSelector::test)
+        .findFirst();
+  }
+
+  private Optional<Timer> findTimer(final long processInstanceKey, final String elementId) {
+    return dataSourceSupplier
+        .get()
+        .findTimers(
+            filter ->
+                filter
+                    .processInstanceKey(processInstanceKey)
+                    .elementId(elementId)
+                    .state(TimerState.CREATED))
+        .stream()
         .findFirst();
   }
 
