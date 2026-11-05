@@ -18,6 +18,8 @@ import type {
 	QueryVariablesByUserTaskResponseBody,
 	QueryProcessDefinitionsRequestBody,
 	QueryProcessDefinitionsResponseBody,
+	QueryProcessInstancesRequestBody,
+	QueryProcessInstancesResponseBody,
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
@@ -119,6 +121,7 @@ const queryKeys = {
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	queryProcessDefinitionsInfinite: (body: QueryProcessDefinitionsRequestBody) =>
 		['queryProcessDefinitionsInfinite', body] as const,
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) => ['queryProcessInstances', body] as const,
 	processDefinition: (processDefinitionKey: string) => ['processDefinition', processDefinitionKey] as const,
 	processStartForm: (processDefinitionKey: string) => ['processStartForm', processDefinitionKey] as const,
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
@@ -495,6 +498,18 @@ const queries = {
 			},
 			initialPageParam: null as string | null,
 			getNextPageParam: (lastPage) => lastPage.page.endCursor ?? undefined,
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessInstances(body),
+			queryFn: async (): Promise<QueryProcessInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
 		}),
 
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
