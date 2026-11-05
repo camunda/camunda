@@ -2621,13 +2621,15 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(4L)
                     .setEscalationCode("escalation")
                     .setThrowElementId(wrapString("throw"))
-                    .setCatchElementId(wrapString("catch")),
+                    .setCatchElementId(wrapString("catch"))
+                    .setStorageOrdinal(1234),
         """
                 {
                   "processInstanceKey":4,
                   "escalationCode": "escalation",
                   "throwElementId": "throw",
                   "catchElementId": "catch",
+                  "storageOrdinal":1234,
                   "tenantId": "<default>"
                 }
                 """
@@ -2647,6 +2649,7 @@ final class JsonSerializableToJsonTest {
                   "escalationCode": "",
                   "throwElementId": "",
                   "catchElementId": "",
+                  "storageOrdinal":0,
                   "tenantId": "<default>"
                 }
                 """
