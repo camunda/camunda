@@ -9,50 +9,67 @@ package io.camunda.zeebe.it.engine.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public final class MultiInstanceLargeInputCollectionTest {
+@ZeebeIntegration
+final class MultiInstanceLargeInputCollectionTest {
   private static final int INPUT_COLLECTION_SIZE = 100;
   private static final String INPUT_ELEMENT = "inputElement";
   private static final int MAX_MESSAGE_SIZE_KB = 16;
   private static final CamundaObjectMapper OBJECT_MAPPER = new CamundaObjectMapper();
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          cfg -> {
-            cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
-            cfg.getProcessing().setMaxCommandsInBatch(1);
-          });
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              c -> {
+                c.getCluster()
+                    .getNetwork()
+                    .setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
+                c.getProcessing().setMaxCommandsInBatch(1);
+              });
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
+
+  @BeforeEach
+  void createClient() {
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
+
+  @AfterEach
+  void closeClient() {
+    client.close();
+  }
 
   @Test
-  public void shouldCompleteParallelMultiInstanceWithLargeInputCollection() {
+  void shouldCompleteParallelMultiInstanceWithLargeInputCollection() {
     // given
     final long processKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("PROCESS")
                 .startEvent()
                 .serviceTask(
@@ -69,7 +86,7 @@ public final class MultiInstanceLargeInputCollectionTest {
                 .done());
 
     // when
-    final var processInstanceKey = CLIENT_RULE.createProcessInstance(processKey);
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processKey);
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementId("task")
@@ -93,8 +110,7 @@ public final class MultiInstanceLargeInputCollectionTest {
 
   private Set<Integer> completeJobs() {
     final ActivateJobsResponse activatedJobs =
-        CLIENT_RULE
-            .getClient()
+        client
             .newActivateJobsCommand()
             .jobType("task")
             .maxJobsToActivate(INPUT_COLLECTION_SIZE)
@@ -108,7 +124,7 @@ public final class MultiInstanceLargeInputCollectionTest {
         .forEach(
             job -> {
               inputElements.add((Integer) job.getVariablesAsMap().get(INPUT_ELEMENT));
-              CLIENT_RULE.getClient().newCompleteCommand(job.getKey()).send().join();
+              client.newCompleteCommand(job.getKey()).send().join();
             });
     return inputElements;
   }
