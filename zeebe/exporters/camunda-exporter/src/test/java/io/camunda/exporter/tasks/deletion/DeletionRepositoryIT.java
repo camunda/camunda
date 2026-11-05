@@ -10,13 +10,14 @@ package io.camunda.exporter.tasks.deletion;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,7 +41,6 @@ abstract class DeletionRepositoryIT {
   protected final DeleterConfiguration deleterConfig = new DeleterConfiguration();
   protected final CamundaExporterMetrics metrics =
       new CamundaExporterMetrics(new SimpleMeterRegistry());
-  @AutoClose protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final SearchClientAdapter searchClientAdapter;
   protected final OperationTemplate operationTemplate;
@@ -55,12 +54,14 @@ abstract class DeletionRepositoryIT {
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
     config.getConnect().setAwsEnabled(searchDB.isAws());
 
-    clientAdapter = ClientAdapter.of(config.getConnect());
-    engineClient = clientAdapter.getSearchEngineClient();
-    searchClientAdapter =
-        isElastic
-            ? new SearchClientAdapter(searchDB.esClient(), searchDB.objectMapper())
-            : new SearchClientAdapter(searchDB.osClient(), searchDB.objectMapper());
+    final var objectMapper = searchDB.objectMapper();
+    if (isElastic) {
+      engineClient = new ElasticsearchEngineClient(searchDB.esClient(), objectMapper);
+      searchClientAdapter = new SearchClientAdapter(searchDB.esClient(), objectMapper);
+    } else {
+      engineClient = new OpensearchEngineClient(searchDB.osClient(), objectMapper);
+      searchClientAdapter = new SearchClientAdapter(searchDB.osClient(), objectMapper);
+    }
 
     operationTemplate = new OperationTemplate(indexPrefix, isElastic);
   }
