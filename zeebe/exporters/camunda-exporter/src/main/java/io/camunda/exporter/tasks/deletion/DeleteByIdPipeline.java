@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.search.schema.config.DeleterConfiguration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
