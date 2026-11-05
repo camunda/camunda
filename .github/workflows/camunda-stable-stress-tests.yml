@@ -130,7 +130,7 @@ jobs:
       # missing here is dropped from the results). The key is the -<key> suffix of the leg's name.
       variant-order: '88-grpc:8.8-gRPC 88-none:8.8-None-gRPC 89-grpc:8.9-gRPC 89-none:8.9-None-gRPC 810-grpc:8.10-gRPC 810-none:8.10-None-gRPC'
       metrics-artifact-name: stable-stress-metrics-${{ needs.benchmark-data.outputs.benchmark }}
-      gcs-path: automated/stress-stable
+      gcs-path: automated/weekly/stress-stable
       slack-title: Stable Branch Stress Test Results
       post-to-slack: ${{ github.event_name != 'workflow_dispatch' || inputs.post-to-slack }}
 
