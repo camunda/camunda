@@ -42,7 +42,7 @@ use in webapp tests.
 ESLint and Prettier configuration for the Camunda
 frontends outside this workspace, such as `operate/client` and
 `identity/client`. The workspace itself lints with oxlint
-(`webapp/client/.oxlintrc.json`). Consumers
+(`webapp/client/oxlint.config.ts`). Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
 
