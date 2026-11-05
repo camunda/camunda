@@ -41,7 +41,7 @@ graph TD
         SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 00:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
-        STABLE_STRESS["camunda-stable-stress-tests.yml<br/><i>Monday 04:00 UTC</i>"]
+        STABLE_STRESS["camunda-stable-stress-tests.yml<br/><i>Monday 07:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
         CLEANUP["camunda-load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
     end
@@ -110,8 +110,8 @@ graph TD
 | 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`            | Weekly    |
 | 00:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
-| 04:00 UTC Monday  | `camunda-stable-stress-tests.yml`          | Weekly    |
 | 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
+| 07:00 UTC Monday  | `camunda-stable-stress-tests.yml`          | Weekly    |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 

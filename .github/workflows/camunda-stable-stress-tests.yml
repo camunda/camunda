@@ -23,8 +23,9 @@ on:
         default: false
         required: false
   schedule:
-    # Runs at 4 am on Mondays https://crontab.guru/#0_4_*_*_1
-    - cron: 0 4 * * 1
+    # Runs at 7 am on Mondays, after the daily soak (2 am start, about 3.5 h) has released its
+    # cluster capacity https://crontab.guru/#0_7_*_*_1
+    - cron: 0 7 * * 1
 
 defaults:
   run:
