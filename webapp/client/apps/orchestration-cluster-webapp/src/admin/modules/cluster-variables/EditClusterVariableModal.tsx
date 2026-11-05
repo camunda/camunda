@@ -62,6 +62,7 @@ const EditForm: React.FC<{clusterVariable: ClusterVariable; onClose: () => void}
 						scope: clusterVariable.scope,
 						tenantId: clusterVariable.tenantId,
 						value: JSON.parse(value.trim()),
+						metadata: data.metadata,
 					},
 					{onSuccess: onClose},
 				);
