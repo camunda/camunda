@@ -133,12 +133,19 @@ public class MockJobWorkerTest {
   @Test
   void shouldOpenJobWorkerWithThenCompleteWithVariablesSupplierFunction() throws Exception {
     // given
-    when(activatedJob.getVariablesAsMap()).thenReturn(Collections.singletonMap("loopCounter", 1));
+    final Map<String, Object> jobVariables = Collections.singletonMap("loopCounter", 1);
+    when(activatedJob.getVariablesAsMap()).thenReturn(jobVariables);
 
     // when
+    final Map<String, Object> capturedInput = new HashMap<>();
+    final Map<String, Object> outputVariables = Collections.singletonMap("sampleType", "regolith");
+
     processTestContext
         .mockJobWorker(JOB_TYPE)
-        .thenComplete(jobVariables -> Collections.singletonMap("sampleType", "regolith"));
+        .thenComplete(variables -> {
+          capturedInput.putAll(variables);
+          return outputVariables;
+        });
 
     // then: the client opened the job worker with the expected job type
     verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
@@ -151,6 +158,8 @@ public class MockJobWorkerTest {
                 .newCompleteCommand(activatedJob)
                 .variables(Collections.singletonMap("sampleType", "regolith")))
         .send();
+
+    assertThat(capturedInput).isEqualTo(jobVariables);
   }
 
   @Test
