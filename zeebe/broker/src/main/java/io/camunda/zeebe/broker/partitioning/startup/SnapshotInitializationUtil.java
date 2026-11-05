@@ -85,7 +85,7 @@ public final class SnapshotInitializationUtil {
     }
   }
 
-  /** Fetches the latest snapshot from the leader and restores it if available. */
+  /** Fetches the latest snapshot from the leader and restores it; fails if there is none. */
   private static ActorFuture<Void> fetchAndRestoreSnapshot(
       final SnapshotTransfer snapshotTransfer,
       final FileBasedSnapshotStore snapshotStore,
@@ -97,8 +97,13 @@ public final class SnapshotInitializationUtil {
     return fetchFuture.andThen(
         snapshot -> {
           if (snapshot == null) {
-            LOG.info("Received no snapshot from leader, skipping restore from snapshot");
-            return CompletableActorFuture.completed();
+            // Starting without it would leave this partition without the global state of
+            // partition 1 (deployments, identity, routing). Fail so the bootstrap is retried.
+            return CompletableActorFuture.completedExceptionally(
+                new IllegalStateException(
+                    "Expected to receive a bootstrap snapshot from the leader of partition "
+                        + Protocol.DEPLOYMENT_PARTITION
+                        + ", but received no snapshot"));
           } else {
             LOG.info("Received snapshot {} from leader, restoring from snapshot", snapshot.getId());
             return snapshotStore.restore(snapshot);
