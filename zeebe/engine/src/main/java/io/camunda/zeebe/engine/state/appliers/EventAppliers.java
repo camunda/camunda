@@ -582,7 +582,6 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.PRIORITY_UPDATED, new JobPriorityUpdatedApplier(state));
     register(JobIntent.SUSPENDED, new JobSuspendedApplier(state));
     register(JobIntent.RESUMED, new JobResumedApplier(state));
-    register(JobIntent.RELEASED, new JobReleasedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {

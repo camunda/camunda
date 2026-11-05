@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobErrorRequest;
 import io.camunda.client.protocol.rest.JobFailRequest;
-import io.camunda.client.protocol.rest.JobReleaseRequest;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -78,16 +77,6 @@ public class ReservedJobRestTest extends ClientRestTest {
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
-  }
-
-  @Test
-  public void shouldReleaseReservedJob() {
-    // when
-    client.newReleaseJobCommand(JOB_KEY).withJobReservationToken(TOKEN).send().join();
-
-    // then
-    final JobReleaseRequest request = gatewayService.getLastRequest(JobReleaseRequest.class);
     assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
   }
 

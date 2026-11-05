@@ -34,7 +34,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerReleaseJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -182,14 +181,6 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       request.setBusinessId(businessId);
     }
     return sendBrokerRequest(request, authentication);
-  }
-
-  public CompletableFuture<JobRecord> releaseJob(
-      final long jobKey,
-      final String jobReservationToken,
-      final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerReleaseJobRequest(jobKey, jobReservationToken), authentication);
   }
 
   public CompletableFuture<JobRecord> updateJob(

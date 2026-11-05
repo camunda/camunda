@@ -368,49 +368,6 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReleaseJob() {
-    // given
-    when(jobServices.releaseJob(anyLong(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
-
-    final var request =
-        """
-          {
-            "jobReservationToken": "recorder-session-1"
-          }
-        """;
-
-    // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/1/release")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    Mockito.verify(jobServices).releaseJob(eq(1L), eq("recorder-session-1"), any());
-  }
-
-  @Test
-  void shouldRejectReleaseJobWithoutReservationToken() {
-    // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/1/release")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{}")
-        .exchange()
-        .expectStatus()
-        .isBadRequest();
-
-    Mockito.verifyNoInteractions(jobServices);
-  }
-
-  @Test
   void shouldCompleteJobWithResultDeniedTrue() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any(), any(), any(), any(), any()))

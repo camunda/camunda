@@ -21,7 +21,6 @@ import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.vali
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobFailRequest;
-import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobReleaseRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessagePublicationRequest;
@@ -58,7 +57,6 @@ import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
-import io.camunda.gateway.protocol.model.JobReleaseRequest;
 import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
 import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
@@ -299,13 +297,6 @@ public class RequestMapper {
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
                 completionRequest == null ? null : completionRequest.getJobReservationToken(),
                 completionRequest == null ? null : completionRequest.getBusinessId()));
-  }
-
-  public static Either<ProblemDetail, ReleaseJobRequest> toJobReleaseRequest(
-      final JobReleaseRequest releaseRequest, final long jobKey) {
-    return getResult(
-        validateJobReleaseRequest(releaseRequest),
-        () -> new ReleaseJobRequest(jobKey, releaseRequest.getJobReservationToken()));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -1005,8 +996,6 @@ public class RequestMapper {
       @Nullable String jobLeaseToken,
       @Nullable String jobReservationToken,
       @Nullable String businessId) {}
-
-  public record ReleaseJobRequest(long jobKey, String jobReservationToken) {}
 
   public record UpdateJobRequest(
       long jobKey,

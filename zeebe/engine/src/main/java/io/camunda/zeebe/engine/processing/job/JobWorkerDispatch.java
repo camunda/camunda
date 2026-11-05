@@ -25,8 +25,7 @@ public final class JobWorkerDispatch {
    *
    * <p>A job stands in for the process a stubbed call activity calls: no worker could run it, and
    * whoever created the process instance completes it. A job carrying a reservation token belongs
-   * to an instance whose creator claimed its jobs: that creator drives it, or hands it back with a
-   * release.
+   * to an instance whose creator claimed that job type: that creator drives it.
    *
    * <p>Returns a {@link JobAction} rather than a boolean because both callers count the reason, and
    * {@code null} rather than an {@link java.util.Optional} because the poll asks this once per
