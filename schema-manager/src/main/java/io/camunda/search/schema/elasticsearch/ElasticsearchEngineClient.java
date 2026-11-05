@@ -68,6 +68,14 @@ import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+  private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
+      "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
+          + "'monitor' cluster privilege required to verify cluster health during startup. "
+          + "The Camunda readiness probe will not pass until this is resolved. "
+          + "To fix: grant the 'monitor' cluster privilege to the service account, "
+          + "or disable the check by setting "
+          + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.";
+
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
   private static final Slices AUTO_SLICES =
@@ -456,7 +464,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   .formatted(batch, timeout, response.status()));
         }
       }
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to wait for active primary shards of indices " + indexNames, e);
     }
@@ -471,14 +485,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           && !response.status().equals(HealthStatus.Red);
     } catch (final ElasticsearchException e) {
       if (e.status() == 403) {
-        throw new SearchEngineHealthCheckPermissionException(
-            "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
-                + "'monitor' cluster privilege required to verify cluster health during startup. "
-                + "The Camunda readiness probe will not pass until this is resolved. "
-                + "To fix: grant the 'monitor' cluster privilege to the service account, "
-                + "or disable the check by setting "
-                + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.",
-            e);
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
       }
       LOG.warn(
           "Elasticsearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
