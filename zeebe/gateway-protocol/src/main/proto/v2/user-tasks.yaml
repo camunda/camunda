@@ -705,7 +705,6 @@ components:
             Whether the user task is suspended because its owning process instance is
             suspended.
           type: boolean
-          nullable: true
         assignee:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
