@@ -88,7 +88,7 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	}
 	if mode, err := localsecrets.Mode(); err != nil {
 		return err
-	} else if mode == "env" {
+	} else if mode == localsecrets.EnvMode {
 		return c.runEnvMode(baseDir, args)
 	}
 	store := localsecrets.New(baseDir)

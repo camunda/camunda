@@ -26,23 +26,20 @@ func (c *secretsCommand) runEnvMode(baseDir string, args []string) error {
 	case "list":
 		return c.listFromEnvironment(baseDir, args[1:])
 	case "set", "delete":
-		return envModeWriteError(args[0], c.tenantScoped, firstName(args[1:]))
+		return envModeUnavailableError(args[0], c.listTenant(), firstName(args[1:]))
 	case "import", "path":
-		return envModeWriteError(args[0], c.tenantScoped, "")
+		return envModeUnavailableError(args[0], c.listTenant(), "")
 	default:
 		return fmt.Errorf("unsupported secrets operation: %s", args[0])
 	}
 }
 
-func envModeWriteError(operation, tenant, name string) error {
+func envModeUnavailableError(operation, tenant, name string) error {
 	message := fmt.Sprintf("%s=env reads secrets from the environment c8run starts from, so `c8run secrets %s` is not available.\n",
 		localsecrets.ModeEnv, operation)
 	prefix, err := localsecrets.EnvPrefix()
 	if err != nil {
 		return errors.New(message + fmt.Sprintf("Set %s to the prefix c8run starts with to see which variable holds a secret.", localsecrets.EnvPrefixEnv))
-	}
-	if tenant == "" {
-		tenant = physicaltenants.DefaultID
 	}
 	if name == "" {
 		name = "<NAME>"
@@ -59,10 +56,10 @@ func firstName(args []string) string {
 	return ""
 }
 
-// listFromEnvironment prints the secret names this shell's environment holds for the tenant,
-// under the rules EnvVarSecretStore applies: the prefix matches case included, empty values are
-// no secret, and names outside the reference charset are skipped. c8run snapshots its environment
-// at start, so this matches what it resolves when it was started from this environment.
+// listFromEnvironment prints the secret names this shell's environment holds for the tenant, as the
+// secrets API lists them: EnvVarSecretStore matches the prefix case included and treats an empty
+// value as no secret, and the API drops names outside the reference charset. c8run snapshots its
+// environment at start, so this matches what it resolves when it was started from this environment.
 func (c *secretsCommand) listFromEnvironment(baseDir string, args []string) error {
 	if len(args) != 0 {
 		return errors.New("usage: c8run secrets list")
