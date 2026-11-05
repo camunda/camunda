@@ -249,7 +249,8 @@ class EnvVarSecretStoreTest {
             Map.of(
                 "SECRET_DB_PASSWORD", "s3cr3t",
                 "SECRET_API_KEY", "s3cr3t",
-                "SECRET_CLIENT_ID", "s3cr3t"),
+                "SECRET_CLIENT_ID", "s3cr3t",
+                "PATH", "/usr/bin"),
             "SECRET_");
 
     // when
@@ -269,19 +270,6 @@ class EnvVarSecretStoreTest {
 
     // then
     assertThat(names).isEmpty();
-  }
-
-  @Test
-  void shouldNotListVariablesWithoutThePrefix() {
-    // given
-    final var store =
-        new EnvVarSecretStore(Map.of("SECRET_API_KEY", "s3cr3t", "PATH", "/usr/bin"), "SECRET_");
-
-    // when
-    final var names = store.list();
-
-    // then
-    assertThat(names).containsExactly("API_KEY");
   }
 
   @Test
