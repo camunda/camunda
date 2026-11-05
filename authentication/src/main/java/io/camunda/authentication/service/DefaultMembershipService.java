@@ -19,7 +19,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.oidc.OidcClaimExtractor;
@@ -39,6 +38,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -75,15 +75,14 @@ public class DefaultMembershipService implements MembershipPort {
   final Map<String, OutageLog> lookupOutages = new ConcurrentHashMap<>();
 
   private final ServiceRegistry serviceRegistry;
-  private final OidcGroupsExtractor oidcGroupsExtractor;
-  private final boolean isGroupsClaimConfigured;
+  private final PhysicalTenantGroupsClaims groupsClaims;
 
   public DefaultMembershipService(
-      final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
+      final ServiceRegistry serviceRegistry,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final Environment environment) {
     this.serviceRegistry = serviceRegistry;
-    oidcGroupsExtractor =
-        new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured = cslProperties.getAuthentication().getOidc().isGroupsClaimConfigured();
+    groupsClaims = new PhysicalTenantGroupsClaims(cslProperties, environment);
   }
 
   @Override
@@ -113,12 +112,13 @@ public class DefaultMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    if (isGroupsClaimConfigured) {
+    final var tenantGroupsClaims = groupsClaims.current();
+    if (tenantGroupsClaims.groupsClaimConfigured()) {
       // OIDC groups-claim path: groups come from the token directly, with no DB lookup. distinct()
       // removes duplicates, keeping parity with NoDBMembershipService and the original Set-based
       // result.
       return OidcClaimExtractor.extractOrFallback(
-              () -> oidcGroupsExtractor.extract(query.tokenClaims()),
+              () -> tenantGroupsClaims.extract(query.tokenClaims()),
               List.<String>of(),
               "membership.groupIds.default")
           .stream()
