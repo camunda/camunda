@@ -144,7 +144,7 @@ public final class EnvVarSecretStore implements LocallyCachedSecretStore {
       return Map.of();
     }
     LOG.debug(
-        "Resolving {} secrets from environment variables prefixed '{}'", names.size(), prefix);
+        "Resolving {} secret names from environment variables prefixed '{}'", names.size(), prefix);
     return names.stream().collect(toMap(name -> name, this::resolveOne));
   }
 
@@ -178,7 +178,7 @@ public final class EnvVarSecretStore implements LocallyCachedSecretStore {
   }
 
   private static SecretResolutionResult notFound(final String name) {
-    return new SecretResolutionResult.Failed(NOT_FOUND, "Secret not found: " + name, null);
+    return new SecretResolutionResult.Failed(NOT_FOUND, "Secret not found or empty: " + name, null);
   }
 
   private static void requireValidPrefix(final String prefix) {

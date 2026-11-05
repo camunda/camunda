@@ -74,6 +74,10 @@ class EnvVarSecretStoreTest {
 
     // then
     assertFailed(result, "API_KEY", NOT_FOUND);
+    assertThat(result.get("API_KEY"))
+        .isInstanceOfSatisfying(
+            SecretResolutionResult.Failed.class,
+            failed -> assertThat(failed.message()).isEqualTo("Secret not found or empty: API_KEY"));
   }
 
   @Test
