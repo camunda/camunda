@@ -89,7 +89,7 @@ Run these commands:
 
     # From webapp/client/
     npm run prettier:format  # Auto-format with Prettier (always use this script, never npx prettier)
-    npm run lint             # ESLint + Prettier + Knip (workspace; Knip fails on unused exports/dependencies)
+    npm run lint             # oxlint + Prettier + Knip (workspace; Knip fails on unused exports/dependencies)
 
     # From webapp/client/apps/orchestration-cluster-webapp/
     npm run typecheck        # TypeScript across all tsconfigs (always use this script, never npx tsc)

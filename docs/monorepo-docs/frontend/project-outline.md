@@ -39,9 +39,10 @@ use in webapp tests.
 
 ### `@camunda/lint-config`
 
-ESLint and Prettier configuration shared across
-the Camunda frontends — also consumed outside this workspace by
-`operate/client` and `identity/client`. Consumers
+ESLint and Prettier configuration for the Camunda
+frontends outside this workspace, such as `operate/client` and
+`identity/client`. The workspace itself lints with oxlint
+(`webapp/client/.oxlintrc.json`). Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
 
