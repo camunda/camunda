@@ -26,6 +26,12 @@ on:
     # cluster capacity https://crontab.guru/#0_7_*_*_1
     - cron: 0 7 * * 1
 
+# Namespace names derive from the date and commit, so a second run on the same day would collide
+# with the first. Queue it instead of letting its cleanup delete the namespaces of the running one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
