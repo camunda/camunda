@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockRele
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -514,6 +516,15 @@ public final class RecordingExporter implements Exporter {
 
   public static EscalationRecordStream escalationRecords(final EscalationIntent intent) {
     return escalationRecords().withIntent(intent);
+  }
+
+  public static MultiInstanceRecordStream multiInstanceRecords() {
+    return new MultiInstanceRecordStream(
+        records(ValueType.MULTI_INSTANCE, MultiInstanceRecordValue.class));
+  }
+
+  public static MultiInstanceRecordStream multiInstanceRecords(final MultiInstanceIntent intent) {
+    return multiInstanceRecords().withIntent(intent);
   }
 
   public static VariableRecordStream variableRecords() {
