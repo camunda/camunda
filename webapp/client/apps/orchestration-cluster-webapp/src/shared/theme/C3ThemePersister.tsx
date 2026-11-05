@@ -8,13 +8,16 @@
 
 import {useC3Profile} from '@camunda/camunda-composite-components';
 import {themeStore} from './theme';
+import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {useEffect} from 'react';
 
 const C3ThemePersister: React.FC = () => {
 	const {theme} = useC3Profile();
 
 	useEffect(() => {
-		themeStore.changeTheme(theme);
+		if (getStateLocally('theme') === null) {
+			themeStore.seedTheme(theme);
+		}
 	}, [theme]);
 
 	return null;
