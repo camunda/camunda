@@ -26,6 +26,7 @@ class Theme {
 		makeObservable(this, {
 			selectedTheme: observable,
 			changeTheme: action,
+			seedTheme: action,
 			actualTheme: computed,
 			reset: action,
 		});
@@ -34,6 +35,10 @@ class Theme {
 	changeTheme = (theme: ThemeOption) => {
 		this.selectedTheme = theme;
 		storeStateLocally('theme', theme);
+	};
+
+	seedTheme = (theme: ThemeOption) => {
+		this.selectedTheme = theme;
 	};
 
 	get actualTheme() {
