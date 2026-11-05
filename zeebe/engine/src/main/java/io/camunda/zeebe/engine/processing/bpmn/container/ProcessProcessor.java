@@ -107,7 +107,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    final var droppedCommands = finishResumingIfPending(context);
+    final var droppedCommands = writeResumedIfStillResuming(context);
     final var result =
         transitionTo(
             element,
@@ -142,7 +142,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   public void finalizeTermination(
       final ExecutableProcess element, final BpmnElementContext terminationContext) {
     final long piKey = terminationContext.getElementInstanceKey();
-    final var resumeDroppedCommands = finishResumingIfPending(terminationContext);
+    final var resumeDroppedCommands = writeResumedIfStillResuming(terminationContext);
 
     // capture suspension state before finalization — the applier clears it
     final boolean wasSuspended = suspensionState.getSuspensionState(piKey) != null;
@@ -172,7 +172,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
    *
    * @return the number of buffered commands dropped with the marker, or empty if not resuming
    */
-  private OptionalInt finishResumingIfPending(final BpmnElementContext context) {
+  private OptionalInt writeResumedIfStillResuming(final BpmnElementContext context) {
     final long piKey = context.getElementInstanceKey();
     if (suspensionState.getSuspensionState(piKey) != SuspensionState.State.RESUMING) {
       return OptionalInt.empty();
