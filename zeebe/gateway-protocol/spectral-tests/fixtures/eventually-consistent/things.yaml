@@ -1,0 +1,111 @@
+# Domain file for eventually-consistent rule test fixture.
+openapi: "3.0.3"
+info:
+  title: Things domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: query declares x-eventually-consistent: true ──────
+  /valid/thing/{thingKey}:
+    get:
+      operationId: getThing
+      summary: Get a thing
+      description: Gets a thing by key.
+      x-added-in-version: "8.7"
+      x-scope: physical-tenant
+      x-eventually-consistent: true
+      tags:
+        - Test
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The thing.
+
+  # ── Valid: command declares x-eventually-consistent: false ───
+  /valid/thing:
+    post:
+      operationId: createThing
+      summary: Create a thing
+      description: Creates a new thing.
+      x-added-in-version: "8.6"
+      x-scope: physical-tenant
+      x-eventually-consistent: false
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Valid: path-level keys are not operations ────────────────
+  /valid/path-level/{thingKey}:
+    parameters:
+      - name: thingKey
+        in: path
+        required: true
+        schema:
+          type: string
+    servers:
+      - url: /
+    get:
+      operationId: getPathLevelThing
+      summary: Get a thing with path-level parameters and servers
+      description: Gets a thing by key.
+      x-added-in-version: "8.7"
+      x-scope: physical-tenant
+      x-eventually-consistent: true
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing.
+
+  # ── Invalid: x-eventually-consistent missing ─────────────────
+  /invalid/missing:
+    post:
+      operationId: createMissingThing
+      summary: Create a thing without the extension
+      description: Missing x-eventually-consistent.
+      x-added-in-version: "8.6"
+      x-scope: physical-tenant
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Invalid: x-eventually-consistent is a string ─────────────
+  /invalid/string:
+    post:
+      operationId: createStringThing
+      summary: Create a thing with a quoted boolean
+      description: x-eventually-consistent is the string "true".
+      x-added-in-version: "8.6"
+      x-scope: physical-tenant
+      x-eventually-consistent: "true"
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Invalid: x-eventually-consistent has no value ────────────
+  /invalid/null:
+    post:
+      operationId: createNullThing
+      summary: Create a thing with an empty extension
+      description: x-eventually-consistent is declared without a value.
+      x-added-in-version: "8.6"
+      x-scope: physical-tenant
+      x-eventually-consistent:
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
