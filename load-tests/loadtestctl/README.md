@@ -27,6 +27,16 @@ resolved dependency graph.
 
 ## Features
 
+### nodes
+
+Benchmarks the CPU of the nodes that host the brokers of a load test (`sysbench cpu`, 1 thread, about 10 seconds, one pod per node) and reports slow ones. Fresh Spot nodes of the benchmark cluster come in two classes with identical CPU info: fast (about 2600 events/s) and slow (about 980). A saturated 3 CPU broker on a slow node can keep a stress cluster stuck at around 50% rejected requests.
+
+```sh
+./loadtestctl nodes <namespace> [--min-events-per-second 1500] [--result-file "$GITHUB_OUTPUT"]
+```
+
+The result is `status=healthy` or `status=degraded` with `slow_nodes=<list>`. Slow nodes do not fail the command, only a benchmark that could not run does (`status=failure`, exit code 1). Run it before the load starts: the pods use one core of each broker node. Pods are pinned with `nodeName` and need `kubectl` access to create pods in the namespace, and the image `alpine:3.20` installs `sysbench` at start.
+
 ### verify
 
 `loadtestctl verify` checks that a deployed load test is up and running: the Camunda platform and load test client pods are ready, the k6 TestRuns (if any) are healthy, the client is connected to the gateway, and k6 reports metrics to Prometheus.
