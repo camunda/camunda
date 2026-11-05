@@ -123,7 +123,8 @@ const ProcessInstanceOperations: React.FC = () => {
 		);
 	};
 
-	const activeOperation = operations.find(({status}) => status !== 'idle');
+	const activeOperation =
+		operations.find(({status}) => status === 'pending') ?? operations.find(({status}) => status !== 'idle');
 
 	return (
 		<>
