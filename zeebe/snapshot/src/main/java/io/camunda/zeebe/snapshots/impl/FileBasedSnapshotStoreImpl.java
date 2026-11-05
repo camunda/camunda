@@ -114,17 +114,19 @@ public final class FileBasedSnapshotStoreImpl {
    */
   private void deleteLeftoverBootstrapSnapshots() {
     try {
-      final boolean isEmpty;
-      try (final var stream = Files.list(bootstrapSnapshotsDirectory)) {
-        isEmpty = stream.findAny().isEmpty();
-      }
-      if (isEmpty) {
+      if (isEmptyDirectory(bootstrapSnapshotsDirectory)) {
         return;
       }
       LOGGER.info("Deleting leftover bootstrap snapshots in {}", bootstrapSnapshotsDirectory);
       FileUtil.deleteFolderContents(bootstrapSnapshotsDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to delete leftover bootstrap snapshots", e);
+    }
+  }
+
+  private static boolean isEmptyDirectory(final Path directory) throws IOException {
+    try (final var stream = Files.list(directory)) {
+      return stream.findAny().isEmpty();
     }
   }
 
