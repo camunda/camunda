@@ -10,46 +10,56 @@ package io.camunda.zeebe.it.engine.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.time.Duration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public final class ClientReconnectTest {
+@ZeebeIntegration
+final class ClientReconnectTest {
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @TestZeebe
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  private CamundaClient client;
   private long processDefinitionKey;
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     processDefinitionKey =
-        clientRule.deployProcess(
-            Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+        new ZeebeResourcesHelper(client)
+            .deployProcess(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+  }
+
+  @AfterEach
+  void closeClient() {
+    client.close();
   }
 
   @Test
-  public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss() {
+  void shouldTransparentlyReconnectOnUnexpectedConnectionLoss() {
     // given
     createProcessInstance(processDefinitionKey);
 
     // when
-    brokerRule.stopBroker();
+    zeebe.stop();
 
     assertThatThrownBy(() -> createProcessInstance(processDefinitionKey))
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("io exception");
 
-    brokerRule.startBroker();
+    zeebe.start();
 
     TestUtil.doRepeatedly(
             () -> {
@@ -73,8 +83,7 @@ public final class ClientReconnectTest {
   }
 
   private long createProcessInstance(final long processDefinitionKey) {
-    return clientRule
-        .getClient()
+    return client
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .send()
