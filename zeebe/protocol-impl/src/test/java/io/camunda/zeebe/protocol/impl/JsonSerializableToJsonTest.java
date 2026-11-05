@@ -4980,19 +4980,21 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setProcessDefinitionKey(456L)
                     .setVariables(VARIABLES_MSGPACK)
-                    .addStartedProcessInstance(123L, 789L)
-                    .addStartedProcessInstance(456L, 999L),
+                    .addStartedProcessInstance(123L, 789L, 1234)
+                    .addStartedProcessInstance(456L, 999L, 1234),
         """
                 {
                   "processDefinitionKey": 456,
                   "startedProcessInstances": [
                     {
                       "processDefinitionKey": 123,
-                      "processInstanceKey": 789
+                      "processInstanceKey": 789,
+                      "storageOrdinal": 1234
                     },
                     {
                       "processDefinitionKey": 456,
-                      "processInstanceKey": 999
+                      "processInstanceKey": 999,
+                      "storageOrdinal": 1234
                     }
                   ],
                   "tenantId": "tenant-1",
