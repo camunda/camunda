@@ -111,7 +111,6 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
-        bsc.getEmbeddedGatewayService(),
         bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),

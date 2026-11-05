@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -36,7 +35,6 @@ public class SpringBrokerBridge {
   private Supplier<Set<String>> adminServiceTenantIdsSupplier;
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
-  private Supplier<JobStreamClient> jobStreamClientSupplier;
   private Function<String, Runnable> tenantSchemaInitializer;
 
   private BiConsumer<Integer, String> shutdownHelper;
@@ -87,15 +85,6 @@ public class SpringBrokerBridge {
   /** Returns every physical tenant ID that has a {@link BrokerAdminService} registered. */
   public Set<String> getBrokerAdminServiceTenantIds() {
     return Optional.ofNullable(adminServiceTenantIdsSupplier).map(Supplier::get).orElse(Set.of());
-  }
-
-  public void registerJobStreamClientSupplier(
-      final Supplier<JobStreamClient> jobStreamClientSupplier) {
-    this.jobStreamClientSupplier = jobStreamClientSupplier;
-  }
-
-  public Optional<JobStreamClient> getJobStreamClient() {
-    return Optional.ofNullable(jobStreamClientSupplier).map(Supplier::get);
   }
 
   public void registerJobStreamServicesSupplier(

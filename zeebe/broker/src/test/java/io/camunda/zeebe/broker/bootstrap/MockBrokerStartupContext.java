@@ -29,7 +29,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -73,7 +72,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private AdminApiRequestHandler adminApiService = mock(AdminApiRequestHandler.class);
   private AtomixServerTransport gatewayBrokerTransport = mock(AtomixServerTransport.class);
   private ManagedMessagingService apiMessagingService = mock(ManagedMessagingService.class);
-  private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
@@ -241,16 +239,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void setApiMessagingService(final ManagedMessagingService apiMessagingService) {
     this.apiMessagingService = apiMessagingService;
-  }
-
-  @Override
-  public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return embeddedGatewayService;
-  }
-
-  @Override
-  public void setEmbeddedGatewayService(final EmbeddedGatewayService embeddedGatewayService) {
-    this.embeddedGatewayService = embeddedGatewayService;
   }
 
   @Override
