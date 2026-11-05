@@ -161,8 +161,7 @@ if [[ -n "${SECRETS_LIST_EXPECT:-}" ]]; then
         printf "\nTest: c8run secrets list prints names and no values\n"
         c8run="${C8RUN_DIR:?C8RUN_DIR is required with SECRETS_LIST_EXPECT}/c8run"
         [[ -x "$c8run" ]] || c8run="$c8run.exe"
-        names="$("$c8run" secrets list --username "${default_auth%%:*}" --password "${default_auth#*:}")" \
-                || fail "c8run secrets list failed"
+        names="$("$c8run" secrets list)" || fail "c8run secrets list failed"
         grep -qx "$SECRETS_LIST_EXPECT" <<<"$names" || fail "c8run secrets list did not print $SECRETS_LIST_EXPECT: $names"
         for value in "${DEFAULT_SECRET_VALUE:-}" "${TENANT_SECRET_VALUE:-}"; do
                 if [[ -n "$value" ]] && grep -qF "$value" <<<"$names"; then
