@@ -114,13 +114,6 @@ public final class UserTaskLookupFetchProcessor
     final long userTaskKey = command.getKey();
     final List<String> fetchVariables = command.getValue().getFetchVariables();
 
-    // built from scratch, so response fields sent with the command never reach the FETCHED event
-    final var fetched =
-        new UserTaskLookupRecord()
-            .setFetchVariables(fetchVariables)
-            .setTenantId(userTask.getTenantId());
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskLookupIntent.FETCHED, fetched);
-
     final UserTaskLookupRecord response =
         new UserTaskLookupRecord()
             .setFetchVariables(fetchVariables)
@@ -131,6 +124,13 @@ public final class UserTaskLookupFetchProcessor
     final DirectBuffer variables =
         BufferUtil.cloneBuffer(collectVariables(userTask.getElementInstanceKey(), fetchVariables));
     response.getUserTask().setVariables(variables);
+
+    // built from scratch, so response fields sent with the command never reach the FETCHED event
+    final var fetched =
+        new UserTaskLookupRecord()
+            .setFetchVariables(fetchVariables)
+            .setTenantId(userTask.getTenantId());
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskLookupIntent.FETCHED, fetched);
     responseWriter.writeAcceptedResponseOnCommand(
         userTaskKey, UserTaskLookupIntent.FETCHED, response, command);
   }
