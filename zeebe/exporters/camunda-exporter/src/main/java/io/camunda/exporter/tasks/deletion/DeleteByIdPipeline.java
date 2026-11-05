@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
@@ -22,12 +23,17 @@ class DeleteByIdPipeline {
 
   private final DeleterConfiguration config;
   private final DeleteByIdSupport support;
+  private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
   DeleteByIdPipeline(
-      final DeleterConfiguration config, final DeleteByIdSupport support, final Logger logger) {
+      final DeleterConfiguration config,
+      final DeleteByIdSupport support,
+      final CamundaExporterMetrics metrics,
+      final Logger logger) {
     this.config = config;
     this.support = support;
+    this.metrics = metrics;
     this.logger = logger;
   }
 
@@ -40,11 +46,12 @@ class DeleteByIdPipeline {
     return AsyncDocumentPipeline.builder(idsSupplier, support::deleteDocBatch, executor)
         .statsConsumer(statsConsumer::set)
         .logger(logger)
-        .addRetryableException(DocumentDeletionException.class)
         .minBatchSize(MINIMUM_BATCH_SIZE)
         .batchSize(config.getDocumentBatchSize())
+        .addRetryableException(DocumentDeletionException.class)
         .maxRetryAttempts(config.getMaxRetryAttempts())
         .retryDelayMs(config.getRetryDelayMs())
+        .retryRecorder(metrics::recordDeletionBatchRetry)
         .buildAndExecute()
         .thenAccept(
             stats -> {

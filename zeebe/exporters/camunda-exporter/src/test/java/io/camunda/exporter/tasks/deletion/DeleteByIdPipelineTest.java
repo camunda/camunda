@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.search.schema.config.DeleterConfiguration;
@@ -41,6 +42,7 @@ class DeleteByIdPipelineTest {
 
   private final Logger logger = mock(Logger.class);
   private final DeleteByIdSupport support = mock(DeleteByIdSupport.class);
+  private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
 
   private DeleterConfiguration config;
   private DeleteByIdPipeline pipeline;
@@ -49,7 +51,7 @@ class DeleteByIdPipelineTest {
   void setup() {
     config = new DeleterConfiguration();
     config.setRetryDelayMs(1);
-    pipeline = new DeleteByIdPipeline(config, support, logger);
+    pipeline = new DeleteByIdPipeline(config, support, metrics, logger);
   }
 
   @Test
@@ -90,9 +92,10 @@ class DeleteByIdPipelineTest {
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(5));
 
-    final var inOrder = Mockito.inOrder(support);
+    final var inOrder = Mockito.inOrder(support, metrics);
     inOrder.verify(support).searchDocumentsToDelete("test-index", filter, null, firstBatchSize);
     inOrder.verify(support).deleteDocBatch(batch);
+    inOrder.verify(metrics).recordDeletionBatchRetry();
     inOrder.verify(support).searchDocumentsToDelete("test-index", filter, null, secondBatchSize);
     inOrder.verify(support).deleteDocBatch(batch);
     verifyNoMoreInteractions(support);
