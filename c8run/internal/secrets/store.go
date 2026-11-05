@@ -26,10 +26,14 @@ import (
 )
 
 const (
-	DirectoryName       = "secrets"
-	DirectoryEnv        = "C8RUN_SECRETS_DIR"
-	ModeEnv             = "C8RUN_SECRETS_MODE"
-	EnvPrefixEnv        = "C8RUN_SECRETS_ENV_PREFIX"
+	DirectoryName = "secrets"
+	DirectoryEnv  = "C8RUN_SECRETS_DIR"
+	ModeEnv       = "C8RUN_SECRETS_MODE"
+	EnvPrefixEnv  = "C8RUN_SECRETS_ENV_PREFIX"
+	// LocalMode, ExternalMode and EnvMode are the values of ModeEnv.
+	LocalMode           = "local"
+	ExternalMode        = "external"
+	EnvMode             = "env"
 	secretReferenceBase = "camunda.secrets."
 	maxReferenceLength  = 256
 	MaxSecretSize       = 1024 * 1024
@@ -52,7 +56,7 @@ func ResolveDirectory(baseDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if mode == "external" {
+	if mode == ExternalMode {
 		return "", errors.New("local secret commands are disabled because C8RUN_SECRETS_MODE=external")
 	}
 	directory := strings.TrimSpace(os.Getenv(DirectoryEnv))
@@ -68,9 +72,9 @@ func ResolveDirectory(baseDir string) (string, error) {
 func Mode() (string, error) {
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv(ModeEnv)))
 	if mode == "" {
-		return "local", nil
+		return LocalMode, nil
 	}
-	if mode != "local" && mode != "external" && mode != "env" {
+	if mode != LocalMode && mode != ExternalMode && mode != EnvMode {
 		return "", fmt.Errorf("%s must be local, external or env", ModeEnv)
 	}
 	return mode, nil

@@ -97,12 +97,12 @@ func CredentialEnv(tenants []types.PhysicalTenant) map[string]string {
 
 // SecretStoreEnv is the property that points a tenant's file secret store at its directory.
 func SecretStoreEnv(id string) string {
-	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_FILE_DEFAULT_PATH"
+	return TenantEnvPrefix + strings.ToUpper(id) + "_SECRETS_STORES_FILE_DEFAULT_PATH"
 }
 
 // SecretStorePrefixEnv is the property that sets a tenant's environment-variable secret store prefix.
 func SecretStorePrefixEnv(id string) string {
-	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_ENV_DEFAULT_PREFIX"
+	return TenantEnvPrefix + strings.ToUpper(id) + "_SECRETS_STORES_ENV_DEFAULT_PREFIX"
 }
 
 // SecretVariablePrefix is the prefix of a tenant's secret variables in C8RUN_SECRETS_MODE=env:

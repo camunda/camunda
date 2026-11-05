@@ -28,9 +28,9 @@ func configureSecretStores(baseDir string, settings *types.C8RunSettings) error 
 		return err
 	}
 	switch mode {
-	case "local":
+	case localsecrets.LocalMode:
 		return configureLocalSecretStores(baseDir, settings)
-	case "env":
+	case localsecrets.EnvMode:
 		return configureEnvSecretStores(settings)
 	default:
 		if len(settings.PhysicalTenants) > 0 {
