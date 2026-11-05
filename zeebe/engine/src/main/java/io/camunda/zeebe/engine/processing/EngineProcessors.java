@@ -42,6 +42,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProc
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseCreateProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CaseIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -411,6 +413,11 @@ public final class EngineProcessors {
         ValueType.USER_TASK_LOOKUP,
         UserTaskLookupIntent.FETCH,
         new UserTaskLookupFetchProcessor(processingState, writers, tenantCheck));
+
+    typedRecordProcessors.onCommand(
+        ValueType.CASE,
+        CaseIntent.CREATE,
+        new CaseCreateProcessor(writers, keyGenerator, processingState.getElementInstanceState()));
 
     addIncidentProcessors(
         processingState,
