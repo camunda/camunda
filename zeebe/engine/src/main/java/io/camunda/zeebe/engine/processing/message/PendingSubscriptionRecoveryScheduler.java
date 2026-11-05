@@ -31,7 +31,6 @@ import org.slf4j.Logger;
  */
 public final class PendingSubscriptionRecoveryScheduler implements StreamProcessorLifecycleAware {
 
-  static final Duration RETRY_DELAY = Duration.ofSeconds(1);
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final PendingProcessMessageSubscriptionState processSubscriptionState;
@@ -76,9 +75,13 @@ public final class PendingSubscriptionRecoveryScheduler implements StreamProcess
       try {
         nextElementInstanceKey = recovery.recoverPending(nextElementInstanceKey, batchLimit);
       } catch (final RuntimeException e) {
-        // nothing else rebuilds the pending subscriptions in this leader term
-        LOG.warn("Failed to recover a chunk of pending {}, retrying in {}", name, RETRY_DELAY, e);
-        scheduleService.runDelayedAsync(RETRY_DELAY, this);
+        // reading local state fails persistently (e.g. corruption), so retrying wouldn't help
+        LOG.error(
+            "Failed to recover pending {} at element instance {}; subscriptions from there on won't"
+                + " be resent until the next leader change",
+            name,
+            nextElementInstanceKey,
+            e);
         return taskResultBuilder.build();
       }
       chunks++;
