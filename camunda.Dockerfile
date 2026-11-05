@@ -3,8 +3,8 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:4103bf065c47f43d0d80aebf9258fec411585ed6fd6ed397115092727d6f0171"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:b516bb84b4641b88759bf2274e41868d39d467ea435c2c0f9d9bf3d21a717149"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.5_8-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.13_9-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:0eda5830ed7b669abc246a8dc520ea8a23cab06f9a8d4b6964109e2f2394e46f"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -217,7 +217,6 @@ RUN set -eu; \
     rm -rf "$tmp"
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
-COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 # Install the RocksDB native lib into the default Linux java.library.path entry so
 # RocksDB.loadLibrary() resolves it via System.loadLibrary without unpacking the jar.
