@@ -59,7 +59,7 @@ describe('<AdminMcpProcessesPage />', () => {
 		// then
 		await expect
 			.element(screen.getByRole('link', {name: 'MCP processes guide'}))
-			.toHaveAttribute('href', 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/');
+			.toHaveAttribute('href', 'https://docs.camunda.io/docs/next/apis-tools/processes-mcp/processes-mcp-overview/');
 	});
 
 	it('should list the tools a process exposes', async () => {
