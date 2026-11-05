@@ -316,6 +316,18 @@
       is set explicitly in the surefire/failsafe plugin configuration.
     -->
     <jvm.test.extra.args/>
+    <!--
+      Parameters handed to the JUnit platform of the unit tests of a single module. Empty by default.
+      A module whose test classes can safely run concurrently opts in by setting
+      <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+      in its own pom. Unlike a junit-platform.properties file, this never reaches modules that depend
+      on the module's test-jar.
+    -->
+    <junit.module.configurationParameters/>
+    <!-- Run test classes in parallel, while methods within a class stay sequential. -->
+    <junit.parallel.classes.configurationParameters>junit.jupiter.execution.parallel.enabled = true
+      junit.jupiter.execution.parallel.mode.default = same_thread
+      junit.jupiter.execution.parallel.mode.classes.default = concurrent</junit.parallel.classes.configurationParameters>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2608,6 +2620,7 @@
                 <name>listener</name>
                 <value>io.camunda.zeebe.ZeebeTestListener</value>
               </property>
+              <configurationParameters>${junit.module.configurationParameters}</configurationParameters>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
             <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
@@ -3250,6 +3263,7 @@
           junit.jupiter.execution.parallel.enabled = true
           junit.jupiter.execution.parallel.config.strategy = fixed
           junit.jupiter.execution.parallel.config.fixed.parallelism = ${junitThreadCount}
+          ${junit.module.configurationParameters}
         </junitConfigurationParameters>
       </properties>
       <build>

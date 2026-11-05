@@ -1,4 +1,7 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+}
 
 dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)

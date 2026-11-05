@@ -18,6 +18,10 @@
   <artifactId>zeebe-cluster-config-rest</artifactId>
   <name>Zeebe Dynamic Cluster Configuration REST</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>

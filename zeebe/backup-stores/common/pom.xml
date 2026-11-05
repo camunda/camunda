@@ -20,6 +20,10 @@
 
   <name>Zeebe Backup Store Common</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>

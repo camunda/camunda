@@ -1,4 +1,7 @@
-plugins { id("buildlogic.sbe-conventions") }
+plugins {
+  id("buildlogic.sbe-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+}
 
 sbe {
   schemaFiles.from(layout.projectDirectory.file("src/main/resources/journal-schema.xml"))

@@ -16,6 +16,7 @@
   <name>Zeebe Journal</name>
 
   <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
   </properties>
 
