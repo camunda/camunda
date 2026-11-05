@@ -50,6 +50,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -177,6 +178,28 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // then
+    verify(mockProcessorLifecycleAware, TIMEOUT).onFailed();
+  }
+
+  @Test
+  public void shouldFailOpeningWhenSnapshotPositionIsNotInLog() throws Exception {
+    // given - a snapshot that claims a position which does not exist in the log
+    streamPlatform.startStreamProcessor();
+    final var zeebeDb = streamPlatform.getZeebeDb();
+    new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext()).markAsProcessed(1_000L);
+    streamPlatform.snapshot();
+    streamPlatform.closeStreamProcessor();
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    Mockito.clearInvocations(mockProcessorLifecycleAware);
+
+    // when - recovering from that snapshot
+    final var startingProcessor =
+        Assertions.assertThatThrownBy(() -> streamPlatform.startStreamProcessorNotAwaitOpening());
+
+    // then - opening fails with the recovery error, not an NPE or a timeout, and listeners know
+    startingProcessor
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("Expected to find event with the snapshot position 1000");
     verify(mockProcessorLifecycleAware, TIMEOUT).onFailed();
   }
 
