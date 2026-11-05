@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -51,6 +52,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
 
   public RoleDeleteProcessor(
       final ProcessingState state,
@@ -68,6 +70,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
@@ -108,6 +111,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeAcceptedResponseOnCommand(roleKey, RoleIntent.DELETED, record, command);
+    clearAuthorizationsCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -128,6 +132,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), RoleIntent.DELETED, command.getValue());
+              clearAuthorizationsCache();
             },
             () -> {
               final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
@@ -135,6 +140,19 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Clears the authorization cache of {@link AuthorizationCheckBehavior} after the role deletion
+   * is committed, so that no cached authorization result relies on the memberships that the
+   * deletion removed.
+   */
+  private void clearAuthorizationsCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 
   /**
