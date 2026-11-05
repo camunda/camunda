@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-67146/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-67146/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-67146/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-67146/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-67146/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-67146/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-67146/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-67146/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-67146/assets/js/runtime~main.cd09b17b.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-67146/assets/js/main.e543d140.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-67146/assets/js/runtime~main.054f9ce8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-67146/assets/js/main.f62fccff.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -274,10 +274,10 @@ created days ago and the failed attempt is a manual re-run (attempt 2 or later).
 <p><strong>Cause:</strong> the deploy jobs download frontend bundles that are kept for only 2 days
 (<code>retention-days: 2</code>). A re-run of an older run cannot get them, and it would publish an outdated
 snapshot even if it could. The
-<a href="https://github.com/camunda/camunda/tree/main/.github/actions/check-stale-rerun" target="_blank" rel="noopener noreferrer" class=""><code>check-stale-rerun</code></a>
-action fails these jobs early with a clear
-message and skips <code>observe-build-status</code>, so newer branches should no longer raise this alert.
-Branches without that action still do (e.g. INC-8805, INC-8806, INC-8807).</p>
+<a href="https://github.com/camunda/camunda/tree/main/.github/actions/check-stale-snapshot-deploy" target="_blank" rel="noopener noreferrer" class=""><code>check-stale-snapshot-deploy</code></a>
+action fails these jobs early with a clear message and reports them to CI analytics with
+<code>user_reason: stale-rerun</code>, so the alert can exclude them by that reason. Branches without that
+action still raise this alert (e.g. INC-8805, INC-8806, INC-8807).</p>
 <p><strong>How to confirm:</strong> the run&#x27;s <code>created_at</code> is days before its <code>run_started_at</code>, and
 <code>run_attempt</code> is greater than 1:</p>
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">gh api repos/camunda/camunda/actions/runs/&lt;run_id&gt; \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --jq &#x27;{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}&#x27;</span><br></div></code></pre></div></div>
