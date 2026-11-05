@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 # Resolve the currently-active release branches and their merge-back targets.
 #
-# A branch `release-X.Y.Z[-alphaN]` is ACTIVE when its version is strictly greater than the highest
-# release tag on its X.Y line — i.e. not yet released. A stale branch is stale precisely because its
-# version is already tagged, so this one comparison filters them out with no allowlist.
+# A branch `release-X.Y.Z[-alphaN]` is ACTIVE when either:
+#   - its version is strictly greater than the highest release tag on its X.Y line (not yet
+#     released), or
+#   - its version IS that highest tag, it was tagged at most `released_grace_days` ago, and it is not
+#     yet merged into its target (released, merge-back pending). The merge-back always happens after
+#     the tag, and release-day backports plus the release plugin's version bump can add conflicts the
+#     last pre-tag run never saw. The age bound keeps old, never-merged release branches quiet.
+# Any older version on the line is stale and filtered out with no allowlist.
 #
 # Target mapping:
 #   - stable/X.Y exists -> target = stable/X.Y  (maintenance release merges back to its stable line)
 #   - else              -> target = main        (pre-branch alpha of the next minor merges to main)
 #
-# Read-only: git ls-remote only. Prints one "release_ref<TAB>target_ref" per line; no output means
-# no active release (quiet no-op).
+# Read-only towards the remote: git ls-remote, plus a fetch into the private refs/mergeback-resolve/
+# namespace for a just-released branch only. Must run inside a git repository. Prints one
+# "release_ref<TAB>target_ref" per line; no output means no active release (quiet no-op).
 set -euo pipefail
+
+released_grace_days=7
 
 # Echo the greater of two versions, treating an -alpha suffix as LESS than the same core release
 # (X.Y.Z-alphaN < X.Y.Z). `sort -V` gets that ordering wrong, so equal cores are handled here.
@@ -36,6 +44,34 @@ fi
 
 remote="${1:-origin}"
 
+# Map an X.Y minor to its merge-back target: stable/X.Y if it exists, else main. Fail CLOSED: a
+# failed check must abort, not fall through to main and merge the release in the WRONG direction.
+target_for_minor() {
+  local stable_ls
+  if ! stable_ls="$(git ls-remote --heads "$remote" "stable/$1")"; then
+    echo "resolve-active-release-pairs: 'git ls-remote --heads $remote stable/$1' failed" >&2
+    return 1
+  fi
+  if [ -n "$stable_ls" ]; then echo "stable/$1"; else echo main; fi
+}
+
+# Is the just-released <branch> (tagged <version>) still waiting for its merge-back into <target>?
+# 0 = yes (tagged within the grace window, tip not yet in target), 1 = no, 2 = fetch failed.
+awaiting_merge_back() {
+  local branch="$1" version="$2" target="$3" ns="refs/mergeback-resolve" tagged_at
+  if ! git fetch -q --no-tags "$remote" \
+      "+refs/heads/${branch}:${ns}/release" \
+      "+refs/heads/${target}:${ns}/target" \
+      "+refs/tags/${version}:${ns}/tag" 2>/dev/null; then
+    echo "resolve-active-release-pairs: fetching ${branch}, ${target} and tag ${version} failed" >&2
+    return 2
+  fi
+  tagged_at="$(git log -1 --format=%ct "${ns}/tag^{commit}")"
+  [ $(( $(date +%s) - tagged_at )) -le $(( released_grace_days * 86400 )) ] || return 1
+  if git merge-base --is-ancestor "${ns}/release" "${ns}/target"; then return 1; fi
+  return 0
+}
+
 # Strict: X.Y.Z or X.Y.Z-alphaN only. Deliberately excludes the junk namespace
 # (release-*-benchmark, release-*-workflow, backport/release-*, docs/release-*, etc.).
 release_regex='^release-[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]+)?$'
@@ -55,6 +91,8 @@ branches="$(printf '%s\n' "$raw_branches" \
 
 # minor "X.Y" -> highest active (untagged, ahead-of-latest-tag) release version on that line.
 declare -A active_for_minor
+# minor "X.Y" -> the released version on that line whose merge-back is still pending.
+declare -A released_for_minor
 
 while IFS= read -r branch; do
   [ -z "$branch" ] && continue
@@ -87,7 +125,14 @@ while IFS= read -r branch; do
   if [ -n "$highest_tag" ]; then
     greatest="$(version_max "$version" "$highest_tag")"
     { [ "$greatest" = "$highest_tag" ] && [ "$version" != "$highest_tag" ]; } && continue
-    [ "$version" = "$highest_tag" ] && continue   # already released
+    if [ "$version" = "$highest_tag" ]; then
+      target="$(target_for_minor "$minor")" || exit 1
+      rc=0
+      awaiting_merge_back "$branch" "$version" "$target" || rc=$?
+      [ "$rc" -gt 1 ] && exit 1
+      [ "$rc" -eq 0 ] && released_for_minor[$minor]="$version"
+      continue
+    fi
   fi
 
   # Keep only the HIGHEST active branch per X.Y line. Multiple untagged release branches can coexist
@@ -101,22 +146,11 @@ while IFS= read -r branch; do
   fi
 done <<< "$branches"
 
-# Emit one pair per active line: map the winning release branch to its merge-back target.
-for minor in "${!active_for_minor[@]}"; do
-  version="${active_for_minor[$minor]}"
-  branch="release-${version}"
-
-  # Map to target: stable/X.Y if it exists, else main. Fail CLOSED: a failed check must abort, not
-  # fall through to main and merge the release in the WRONG direction.
-  if ! stable_ls="$(git ls-remote --heads "$remote" "stable/${minor}")"; then
-    echo "resolve-active-release-pairs: 'git ls-remote --heads $remote stable/${minor}' failed" >&2
-    exit 1
-  fi
-  if [ -n "$stable_ls" ]; then
-    target="stable/${minor}"
-  else
-    target="main"
-  fi
-
-  printf '%s\t%s\n' "$branch" "$target"
+# Emit one pair per active branch: a line can have both a released branch awaiting merge-back and a
+# newer in-flight one, and both merge into the same target.
+for minor in $(printf '%s\n' "${!released_for_minor[@]}" "${!active_for_minor[@]}" | sort -u); do
+  target="$(target_for_minor "$minor")" || exit 1
+  for version in ${released_for_minor[$minor]:-} ${active_for_minor[$minor]:-}; do
+    printf '%s\t%s\n' "release-${version}" "$target"
+  done
 done

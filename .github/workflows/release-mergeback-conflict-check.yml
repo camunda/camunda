@@ -1,5 +1,6 @@
 # description: Read-only early detection of release->target merge-back conflicts (issue #51430).
-#   For every currently-active release branch (version not yet released on its X.Y line), it checks
+#   For every currently-active release branch (version not yet released on its X.Y line, or released
+#   within the last 7 days and not yet merged back), it checks
 #   whether merging it forward into its target (stable/X.Y, or main for a pre-branch alpha) would
 #   conflict, and posts a Block Kit alert to Slack only when a human actually needs to act. A clean
 #   or mechanical-only result is a quiet success; no active release branch is a no-op. If an

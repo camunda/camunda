@@ -415,7 +415,7 @@ Ownership model:
 
 The **[Release Merge-back Conflict Check](https://github.com/camunda/camunda/blob/main/.github/workflows/release-mergeback-conflict-check.yml)** (`release-mergeback-conflict-check.yml`) is a read-only, scheduled early-warning for release→target merge-back conflicts. It never mutates a branch, opens a PR, or merges — it only surfaces what a human should look at before the final merge-back.
 
-**What it does**, for every currently-active release branch (a `release-X.Y.Z` — including pre-branch alphas named `release-X.Y.Z-alphaN` — whose version is not yet tagged on its line):
+**What it does.** It checks every currently-active release branch: a `release-X.Y.Z` (including pre-branch alphas named `release-X.Y.Z-alphaN`) whose version is not yet tagged on its line, **or** that was tagged within the last 7 days and is not yet merged back into its target. The merge-back happens after the tag, and late backports plus the release version bump can add conflicts on release day, so the check keeps watching until the merge-back lands. Older, never-merged release branches stay quiet. For each branch it does the following:
 
 1. **Resolve the target.** `stable/X.Y` if it exists, otherwise `main` (a pre-branch alpha of the next minor merges back to `main`).
 2. **Detect** whether merging the release tip forward into the target would conflict (`git merge-tree`, read-only).
