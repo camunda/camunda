@@ -603,6 +603,8 @@ jobs:
           C8RUN_SECRETS_ENV_PREFIX: ${{ matrix.secrets_mode == 'env' && 'C8E2E_' || '' }}
           DEFAULT_SECRET_VALUE: ${{ matrix.secrets_mode == 'env' && 'default-env-secret-value' || '' }}
           SECRETS_LIST_EXPECT: ${{ matrix.secrets_mode == 'env' && 'C8RUN_E2E_SECRET' || '' }}
+          # secrets list reads this step's environment, so it needs the variable c8run started with
+          C8E2E_DEFAULT_C8RUN_E2E_SECRET: ${{ matrix.secrets_mode == 'env' && 'default-env-secret-value' || '' }}
           CONNECTOR_ENV_PREFIX: ${{ matrix.secrets_mode == 'env' && 'C8E2E_' || '' }}
         working-directory: ./c8run/e2e_tests
 
