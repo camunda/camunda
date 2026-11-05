@@ -487,7 +487,7 @@ jobs:
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
       # instead of rebuilding (see issue #52693).
-      # Keep retention-days in sync with check-stale-snapshot-deploy's max-age-hours (default 48h) in those jobs.
+      # Keep retention-days in sync with check-snapshot-deploy's max-age-hours (default 48h) in those jobs.
       - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-operate-${{ github.run_id }}
@@ -2686,7 +2686,8 @@ jobs:
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions:
-      actions: read  # check-stale-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy reads the run's creation time
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
@@ -2698,12 +2699,13 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - name: Check for stale re-run
-        id: stale-rerun
-        uses: ./.github/actions/check-stale-snapshot-deploy
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - name: Import Nexus credentials
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: nexus-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
@@ -2716,6 +2718,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Check time since last snapshot deploy
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: snapshot-gate
         env:
           NEXUS_USR: ${{ steps.nexus-secrets.outputs.NEXUS_USR }}
@@ -2740,6 +2743,7 @@ jobs:
             echo "fresh=false" >> "$GITHUB_OUTPUT"
           fi
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           maven-cache-key-modifier: snapshots
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -2748,14 +2752,17 @@ jobs:
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). mvn runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-tasklist-${{ github.run_id }}
           path: tasklist/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
@@ -2772,7 +2779,7 @@ jobs:
       # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
       # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
-        if: github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true'
+        if: steps.deploy-check.outputs.deploy == 'true' && (github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true')
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
@@ -2780,15 +2787,15 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 20
           command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true -Ddistro.zip.attach=false -Doptimize.distro.attach=false compile generate-sources source:jar javadoc:jar deploy
-      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
-      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -2819,7 +2826,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      actions: read  # check-stale-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy reads the run's creation time
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
@@ -2831,12 +2839,13 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - name: Check for stale re-run
-        id: stale-rerun
-        uses: ./.github/actions/check-stale-snapshot-deploy
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           minimus: true
           dockerhub: true
@@ -2846,18 +2855,22 @@ jobs:
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). build-zeebe runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-tasklist-${{ github.run_id }}
           path: tasklist/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
       - uses: ./.github/actions/build-zeebe
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
@@ -2865,6 +2878,7 @@ jobs:
           retry-max-attempts: 2
           retry-timeout-minutes: 7
       - uses: ./.github/actions/build-platform-docker
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-camunda-docker
         with:
           repository: camunda/camunda
@@ -2873,15 +2887,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
-      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
-      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -2902,7 +2916,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      actions: read  # check-stale-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy reads the run's creation time
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
@@ -2916,12 +2931,13 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - name: Check for stale re-run
-        id: stale-rerun
-        uses: ./.github/actions/check-stale-snapshot-deploy
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -2931,20 +2947,24 @@ jobs:
       # Optimize frontend bundle is built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). The Optimize assembly runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
       # Builds io.camunda deps from source instead of Nexus to avoid a race with deploy-snapshots.
       # See https://github.com/camunda/camunda/pull/59937 for details.
       - uses: ./.github/actions/build-zeebe
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           maven-extra-args: -Dquickly
       - name: Generate Optimize production .tar.gz
+        if: steps.deploy-check.outputs.deploy == 'true'
         uses: ./.github/actions/run-maven
         with:
           parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly
           threads: 1
       - uses: ./.github/actions/build-platform-docker
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-optimize-docker
         with:
           repository: camunda/optimize
@@ -2953,15 +2973,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: optimize.Dockerfile
           push: true
-      # A stale re-run fails by design (see check-stale-snapshot-deploy). The stale-rerun reason
-      # keeps it in CI analytics, and the base-branch alert can ignore it by that reason.
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          user_reason: ${{ steps.stale-rerun.outputs.stale == 'true' && 'stale-rerun' || '' }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
