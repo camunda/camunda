@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -5345,6 +5346,30 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "tenantId": "",
           "restoredCount": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////// CaseRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "CaseRecord",
+        (Supplier<CaseRecord>)
+            () -> new CaseRecord().setProcessInstanceKey(123L).setTitle("Order #42 for ACME"),
+        """
+        {
+          "processInstanceKey": 123,
+          "title": "Order #42 for ACME"
+        }
+        """
+      },
+      {
+        "Empty CaseRecord",
+        (Supplier<CaseRecord>) CaseRecord::new,
+        """
+        {
+          "processInstanceKey": -1,
+          "title": ""
         }
         """
       },

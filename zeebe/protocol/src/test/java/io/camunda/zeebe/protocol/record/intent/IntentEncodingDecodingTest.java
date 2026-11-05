@@ -84,6 +84,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(
             BatchOperationExecutionIntent.class, BatchOperationExecutionIntent::from));
+    result.addAll(buildParameterSets(CaseIntent.class, CaseIntent::from));
     result.addAll(buildParameterSets(CheckpointIntent.class, CheckpointIntent::from));
     result.addAll(buildParameterSets(ClockIntent.class, ClockIntent::from));
     result.addAll(buildParameterSets(ClusterVariableIntent.class, ClusterVariableIntent::from));
