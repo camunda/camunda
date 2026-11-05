@@ -1,0 +1,81 @@
+---
+name: Check Snapshot Deploy
+
+# owner: @camunda/engineering-operations
+
+description: Decides whether a Unified CI snapshot deploy job may publish its snapshot on a re-run. See README.md.
+
+inputs:
+  github-token:
+    description: 'Token with contents: read and actions: read, used to read the branch head and the run creation time'
+    required: true
+  max-age-hours:
+    description: 'Maximum run age in hours for a re-run of the branch head; keep in sync with the retention-days of the artifacts the job downloads'
+    required: false
+    default: '48'
+
+outputs:
+  deploy:
+    description: "'false' when this re-run's commit is no longer the branch head, so the snapshot deploy must be skipped; otherwise 'true'"
+    value: ${{ steps.check.outputs.deploy }}
+  stale:
+    description: "'true' when this is a re-run of the branch head older than max-age-hours (the job fails), otherwise 'false'"
+    value: ${{ steps.check.outputs.stale }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check branch head and run age on re-run
+      id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        MAX_AGE_HOURS: ${{ inputs.max-age-hours }}
+      run: |
+        set -euo pipefail
+        echo "deploy=true" >> "$GITHUB_OUTPUT"
+        echo "stale=false" >> "$GITHUB_OUTPUT"
+
+        if [[ -z "${GH_TOKEN}" ]]; then
+          echo "::error::Input github-token is required."
+          exit 1
+        fi
+        # First attempts deploy in commit order through the jobs' concurrency queue.
+        if [[ "${GITHUB_RUN_ATTEMPT}" == "1" ]]; then
+          exit 0
+        fi
+
+        api() {
+          curl -sf --retry 3 --retry-all-errors \
+            -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/$1"
+        }
+
+        # Fail open on API errors: an API hiccup must never block a legitimate deploy.
+        head_sha=$(api "git/ref/heads/${GITHUB_REF_NAME}" | jq -r '.object.sha // empty') || true
+        if [[ -z "${head_sha}" ]]; then
+          echo "::warning::Could not determine the head of ${GITHUB_REF_NAME}; skipping the branch head check."
+        elif [[ "${head_sha}" != "${GITHUB_SHA}" ]]; then
+          echo "deploy=false" >> "$GITHUB_OUTPUT"
+          msg="Skipping snapshot deploy: this re-run's commit ${GITHUB_SHA:0:11} is no longer the head of ${GITHUB_REF_NAME} (now ${head_sha:0:11}), so deploying it would roll the snapshot back. The run for the newer commit deploys the snapshot."
+          echo "::notice::${msg}"
+          echo "### :information_source: ${msg}" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+
+        created_at=$(api "actions/runs/${GITHUB_RUN_ID}" | jq -r '.created_at // empty') || true
+        if [[ -z "${created_at}" ]]; then
+          echo "::warning::Could not determine creation time of run ${GITHUB_RUN_ID}; skipping the stale re-run check."
+          exit 0
+        fi
+        age_hours=$(( ($(date -u +%s) - $(date -u -d "${created_at}" +%s)) / 3600 ))
+        if (( age_hours <= MAX_AGE_HOURS )); then
+          exit 0
+        fi
+
+        echo "deploy=false" >> "$GITHUB_OUTPUT"
+        echo "stale=true" >> "$GITHUB_OUTPUT"
+        msg="Stale re-run: run ${GITHUB_RUN_ID} was created at ${created_at} (${age_hours}h ago, limit ${MAX_AGE_HOURS}h) and its artifacts have expired. Start a new run on ${GITHUB_REF_NAME} instead (push or workflow_dispatch)."
+        echo "::error::${msg}"
+        echo "### :warning: ${msg}" >> "$GITHUB_STEP_SUMMARY"
+        exit 1
