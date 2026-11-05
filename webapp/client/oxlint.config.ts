@@ -125,6 +125,7 @@ export default defineConfig({
 		'no-unused-private-class-members': 'error',
 		'no-useless-backreference': 'error',
 		'no-useless-catch': 'error',
+		'no-useless-assignment': 'error',
 		'no-useless-escape': 'error',
 		'preserve-caught-error': 'error',
 		'require-yield': 'error',
