@@ -85,6 +85,17 @@ cross-partition message-start `REQUEST` carries the scope so the remotely create
 - **Reusing `businessId` as the run carrier.** `businessId` enforces one-active-instance uniqueness and is
   user-facing domain semantics; reusing it would forbid multiple instances per run and change routing. The
   run scope must be orthogonal.
+- **A symmetric match, where a scoped subscription ignores an unset selector (D3).** This would stop an
+  unscoped — global — signal or message from waking a scoped run's catch events, closing the cross-run leak
+  that the asymmetric rule accepts (see Consequences). Rejected because the matcher sees only the selector,
+  not the sender's origin: a scoped run's *own* unscoped sends arrive unset, indistinguishable from an
+  outsider's, so the rule is all-or-nothing per subscription type. For messages this breaks the normal path —
+  a message throw is always a job, so it is worker/connector-published and unscoped; a scoped run's own
+  message would then stop correlating to its own instances. The only way to scope worker sends is to
+  propagate the run-scope tag into worker and connector code, which pushes test concerns into production
+  implementations and violates CPT's "run your real implementation unchanged" promise. The asymmetric rule is
+  kept for both signals and messages so models and workers run unchanged; a dedicated tenant per run remains
+  the escape hatch for callers that need hard isolation.
 - **Composing the run scope into the correlation-key value (D7).** Keeps the shipped families but requires
   an encoding scheme on a released key and disturbs its on-disk bytes. The parallel column family was
   chosen instead to leave released lock state byte-for-byte untouched, at the cost of new permanent column
@@ -94,6 +105,10 @@ cross-partition message-start `REQUEST` carries the scope so the remotely create
 
 - An unset selector preserves today's behaviour exactly for signals and messages, so existing models and
   mixed-version clusters are unaffected.
+- The match is asymmetric (D3): an unset selector matches any subscription, so an unscoped — global — signal
+  or message still wakes a scoped run's catch events. A stray broadcast from another run or process can cross
+  in. Isolation therefore holds only when every sender scopes; this leak is accepted (a symmetric match was
+  rejected — see Alternatives). A tenant-per-run avoids it.
 - Run-scoped search of process instances and user tasks needs no key resolution: the scope rides the
   inherited `tags` field those searches filter on. Jobs and incidents have no tag filter on their search,
   so their instances are still resolved by tag first and the search scoped to those keys.
