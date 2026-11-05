@@ -73,22 +73,24 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
     // given
-    openSearchClient.indices().create(req -> req.index("await_active"));
+    final var indexName = "await_active-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(indexName));
 
     // when / then
     assertThatNoException()
-        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of("await_active")));
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)));
   }
 
   @Test
   void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
     // given an index that exists but whose primary can never be allocated, like one whose
     // creation request timed out on the client while its shards were still initializing
+    final var indexName = "await_unassigned-" + ENGINE_CLIENT_TEST_MARKERS;
     openSearchClient
         .indices()
         .create(
             req ->
-                req.index("await_unassigned")
+                req.index(indexName)
                     .waitForActiveShards(w -> w.count(0))
                     .settings(
                         s ->
@@ -97,10 +99,9 @@ public class OpensearchEngineClientIT {
                                 JsonData.of("no-such-node"))));
 
     // when / then
-    assertThatThrownBy(
-            () -> opensearchEngineClient.awaitActivePrimaries(List.of("await_unassigned")))
+    assertThatThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)))
         .isInstanceOf(SearchEngineException.class)
-        .hasMessageContaining("await_unassigned");
+        .hasMessageContaining(indexName);
   }
 
   @Test
