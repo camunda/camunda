@@ -78,6 +78,7 @@ public class RoleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            membershipStateAdapter));
   }
 }
