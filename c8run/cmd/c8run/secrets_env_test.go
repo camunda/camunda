@@ -9,170 +9,87 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
-	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type listRequest struct {
-	path, username, password string
-}
-
-// fakeCluster serves the secrets list endpoint with the given status and body and records the
-// last request.
-func fakeCluster(t *testing.T, status int, body string) (string, *listRequest) {
-	t.Helper()
+func TestEnvModeListPrintsTheDefaultTenantsNamesFromTheEnvironment(t *testing.T) {
+	// given
 	t.Setenv(localsecrets.ModeEnv, "env")
 	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
-	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
-	last := &listRequest{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		last.path = r.URL.Path
-		last.username, last.password, _ = r.BasicAuth()
-		w.WriteHeader(status)
-		_, _ = fmt.Fprint(w, body)
-	}))
-	t.Cleanup(server.Close)
-	u, err := url.Parse(server.URL)
-	require.NoError(t, err)
-	return u.Port(), last
-}
-
-func TestEnvModeListPrintsTheDefaultTenantsNamesFromTheCluster(t *testing.T) {
-	// given
-	port, last := fakeCluster(t, http.StatusOK, `{"references":["camunda.secrets.DB_PASSWORD","camunda.secrets.db-user"]}`)
+	t.Setenv("C8_DEFAULT_DB_PASSWORD", "s3cr3t")
+	t.Setenv("C8_DEFAULT_db-user", "admin")
+	t.Setenv("C8_TENANTA_HR_KEY", "hr")
 	command, output, _ := testSecretsCommand("", false)
 
 	// when
-	err := command.run(t.TempDir(), []string{"list", "--port", port})
+	err := command.run(t.TempDir(), []string{"list"})
 
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, "DB_PASSWORD\ndb-user\n", output.String())
-	assert.Equal(t, listRequest{"/v2/secrets/list", "demo", "demo"}, *last)
+	assert.NotContains(t, output.String(), "s3cr3t")
 }
 
-func TestEnvModeListUsesThePhysicalTenantsSavedLogin(t *testing.T) {
+func TestEnvModeListPrintsAPhysicalTenantsNames(t *testing.T) {
 	// given
-	port, last := fakeCluster(t, http.StatusOK, `{"references":["camunda.secrets.HR_KEY"]}`)
-	require.NoError(t, pt.NewStore(os.Getenv(pt.FileEnv)).Add([]pt.Tenant{{ID: "tenanta", Username: "alice"}}, map[string]string{"tenanta": "pw"}))
+	t.Setenv(localsecrets.ModeEnv, "env")
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	t.Setenv("C8_DEFAULT_DB_PASSWORD", "s3cr3t")
+	t.Setenv("C8_TENANTA_HR_KEY", "hr")
 	command, output, _ := testSecretsCommand("", false)
 
 	// when
-	err := command.run(t.TempDir(), []string{"--physical-tenant", "tenanta", "list", "--port=" + port})
+	err := command.run(t.TempDir(), []string{"--physical-tenant", "tenanta", "list"})
 
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, "HR_KEY\n", output.String())
-	assert.Equal(t, listRequest{"/physical-tenants/tenanta/v2/secrets/list", "alice", "pw"}, *last)
 }
 
-func TestEnvModeListPrefersTheGivenLogin(t *testing.T) {
-	// given
-	port, last := fakeCluster(t, http.StatusOK, `{"references":[]}`)
-	require.NoError(t, pt.NewStore(os.Getenv(pt.FileEnv)).Add([]pt.Tenant{{ID: "tenanta", Username: "alice"}}, map[string]string{"tenanta": "pw"}))
-	command, _, _ := testSecretsCommand("", false)
-
-	// when
-	err := command.run(t.TempDir(), []string{"--physical-tenant", "tenanta", "list", "--port", port, "--username", "bob", "--password=other"})
-
-	// then
-	require.NoError(t, err)
-	assert.Equal(t, "bob", last.username)
-	assert.Equal(t, "other", last.password)
-}
-
-func TestEnvModeListPrintsNothingWithoutSecrets(t *testing.T) {
-	// given
-	port, _ := fakeCluster(t, http.StatusOK, `{"references":[]}`)
-	command, output, _ := testSecretsCommand("", false)
-
-	// when
-	err := command.run(t.TempDir(), []string{"list", "--port", port})
-
-	// then
-	require.NoError(t, err)
-	assert.Empty(t, output.String())
-}
-
-func TestEnvModeListNamesTheLoginFlagsWhenRejected(t *testing.T) {
-	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
-		t.Run(strconv.Itoa(status), func(t *testing.T) {
-			// given
-			port, _ := fakeCluster(t, status, "")
-			command, _, _ := testSecretsCommand("", false)
-
-			// when
-			err := command.run(t.TempDir(), []string{"list", "--port", port})
-
-			// then
-			assert.ErrorContains(t, err, "--username and --password")
-		})
+func TestEnvironmentSecretNamesFollowTheEnvStoresRules(t *testing.T) {
+	env := []string{
+		"PATH=/bin",
+		"C8_DEFAULT_B=2",
+		"C8_DEFAULT_A=1",
+		"C8_DEFAULT_EMPTY=",
+		"c8_default_LOWER=x",
+		"C8_DEFAULT_has.dot=x",
+		"C8_DEFAULT_=x",
+		"C8_DEFAULT_WITH_EQUALS=a=b",
 	}
+
+	assert.Equal(t, []string{"A", "B", "WITH_EQUALS"}, environmentSecretNames(env, "C8_DEFAULT_"))
 }
 
-func TestEnvModeListNamesAnUnknownPhysicalTenant(t *testing.T) {
-	// given
-	port, _ := fakeCluster(t, http.StatusNotFound, "")
-	command, _, _ := testSecretsCommand("", false)
-
-	// when
-	err := command.run(t.TempDir(), []string{"--physical-tenant", "nope", "list", "--port", port})
-
-	// then
-	assert.ErrorContains(t, err, `physical tenant "nope"`)
-}
-
-func TestEnvModeListReportsOtherFailures(t *testing.T) {
-	// given
-	port, _ := fakeCluster(t, http.StatusServiceUnavailable, "")
-	command, _, _ := testSecretsCommand("", false)
-
-	// when
-	err := command.run(t.TempDir(), []string{"list", "--port", port})
-
-	// then
-	assert.ErrorContains(t, err, "HTTP 503")
-}
-
-func TestEnvModeListSaysC8RunMustBeRunning(t *testing.T) {
+func TestEnvModeListAsksForThePrefixWhenUnset(t *testing.T) {
 	// given
 	t.Setenv(localsecrets.ModeEnv, "env")
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
-	require.NoError(t, listener.Close())
+	t.Setenv(localsecrets.EnvPrefixEnv, "")
 	command, _, _ := testSecretsCommand("", false)
 
 	// when
-	err = command.run(t.TempDir(), []string{"list", "--port", port})
+	err := command.run(t.TempDir(), []string{"list"})
 
 	// then
-	assert.ErrorContains(t, err, "needs c8run running")
+	assert.ErrorContains(t, err, localsecrets.EnvPrefixEnv)
 }
 
-func TestEnvModeListRejectsInvalidArguments(t *testing.T) {
+func TestEnvModeListRejectsArguments(t *testing.T) {
+	// given
 	t.Setenv(localsecrets.ModeEnv, "env")
-	for _, args := range [][]string{{"--port", "x"}, {"--port", "70000"}, {"--port"}, {"--verbose"}, {"DB_PASSWORD"}} {
-		t.Run(fmt.Sprint(args), func(t *testing.T) {
-			command, _, _ := testSecretsCommand("", false)
-			assert.Error(t, command.run(t.TempDir(), append([]string{"list"}, args...)))
-		})
-	}
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	command, _, _ := testSecretsCommand("", false)
+
+	// when
+	err := command.run(t.TempDir(), []string{"list", "--port", "8080"})
+
+	// then
+	assert.ErrorContains(t, err, "usage: c8run secrets list")
 }
 
 func TestEnvModeWriteCommandsNameTheVariableToSet(t *testing.T) {
