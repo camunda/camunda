@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "local",
-    "generatedAt": "2026-10-28T03:49:47.482Z",
+    "commit": "dd5ffdb2404cb872989d52e6627142d8fc667faf",
+    "generatedAt": "2026-11-05T12:08:35.279Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "9319f06233999c797df97e33eab25c6fee7d568b5e9141954d3d0505a234ec04"
+    "specSha256": "aac0dfa23cdb955d21de78b40b65ad0b3afa005775f6c182bf6a98a84b3b6058"
   },
   "responses": [
     {
@@ -12267,6 +12267,128 @@
           {
             "name": "version",
             "type": "number"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}/lookup",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "assignee",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "candidateGroups",
+            "type": "array<string>"
+          },
+          {
+            "name": "candidateUsers",
+            "type": "array<string>"
+          },
+          {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
+            "name": "customHeaders",
+            "type": "object"
+          },
+          {
+            "name": "dueDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "externalFormReference",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "followUpDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "formKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "CREATING",
+              "CREATED",
+              "ASSIGNING",
+              "CLAIMING",
+              "UPDATING",
+              "COMPLETING",
+              "CANCELING"
+            ]
+          },
+          {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
+          },
+          {
+            "name": "userTaskKey",
+            "type": "string"
+          },
+          {
+            "name": "variables",
+            "type": "object"
           }
         ],
         "optional": []
