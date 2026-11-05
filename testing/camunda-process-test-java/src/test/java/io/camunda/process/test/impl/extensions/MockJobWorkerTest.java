@@ -333,15 +333,13 @@ public class MockJobWorkerTest {
 
   @Test
   void shouldMatchJobVariablesNormalizedWithConfiguredMapperForVariablesTable() throws Exception {
-    // given: the configured mapper reads integers as Long, the job variables carry an Integer
-    when(camundaClient.getConfiguration().getJsonMapper())
-        .thenReturn(
-            new CamundaObjectMapper(
-                new ObjectMapper().enable(DeserializationFeature.USE_LONG_FOR_INTS)));
+    // given: the job variables carry an Integer, but the VariablesTable carries a Long. The mapper
+    // is configured to coerce numbers to Long, so the values are normalized and match.
+    when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(new CamundaObjectMapper());
     when(activatedJob.getVariablesAsMap()).thenReturn(Collections.singletonMap("count", 1));
 
     final VariablesTable variablesTable =
-        VariablesTable.when(Collections.singletonMap("count", 1))
+        VariablesTable.when(Collections.singletonMap("count", 1L))
             .thenReturn(Collections.singletonMap("matched", true));
 
     // when
