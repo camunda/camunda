@@ -951,10 +951,15 @@ func BuildJRE(camundaVersion string) error {
 	return nil
 }
 
-// distrustedCACommonNames lists root CAs that chain to the compromised eMudhra intermediates.
-// The JDK alias differs between vendors, so entries are matched by subject common name.
+// distrustedCACommonNames lists the roots that CVE-2026-114820 removes from the JDK cacerts
+// (emSign G1, G2, ECC G3 and AAA Certificate Services), plus the other emSign G3 roots that
+// chain to the compromised eMudhra intermediates. The JDK alias differs between vendors, so
+// entries are matched by exact subject common name.
 var distrustedCACommonNames = []string{
+	"emSign Root CA - G1",
+	"emSign Root CA - G2",
 	"emSign ECC Root CA - G3",
+	"AAA Certificate Services",
 	"emSign Root TLS CA - G3",
 	"emSign Root CS CA - G3",
 }
