@@ -24,8 +24,8 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStubCallActivitiesInstruction;
@@ -321,7 +321,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(123)
-        .reserveJobs("ts-8f2c")
+        .reserveJobs("ts-8f2c", "send-invoice", "io.camunda:http-json:1")
         .send()
         .join();
 
@@ -332,18 +332,23 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructions).hasSize(1);
-    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
-        (ProcessInstanceCreationConfigureExecutionInstruction) runtimeInstructions.get(0);
-    assertThat(runtimeInstruction.getReserveJobs()).isTrue();
+    final ProcessInstanceCreationReserveJobsInstruction runtimeInstruction =
+        (ProcessInstanceCreationReserveJobsInstruction) runtimeInstructions.get(0);
+    assertThat(runtimeInstruction.getJobTypes())
+        .containsExactly("send-invoice", "io.camunda:http-json:1");
     assertThat(runtimeInstruction.getJobReservationToken()).isEqualTo("ts-8f2c");
-    assertThat(runtimeInstruction.getType()).isEqualTo("CONFIGURE_EXECUTION");
+    assertThat(runtimeInstruction.getType()).isEqualTo("RESERVE_JOBS");
   }
 
   @Test
   public void shouldRejectBlankJobReservationToken() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateInstanceCommand().processDefinitionKey(123).reserveJobs(""))
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .processDefinitionKey(123)
+                    .reserveJobs("", "send-invoice"))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -379,7 +384,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
                     .newCreateInstanceCommand()
                     .useGrpc()
                     .processDefinitionKey(123)
-                    .reserveJobs("ts-8f2c")
+                    .reserveJobs("ts-8f2c", "send-invoice")
                     .send())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("reserveJobs");

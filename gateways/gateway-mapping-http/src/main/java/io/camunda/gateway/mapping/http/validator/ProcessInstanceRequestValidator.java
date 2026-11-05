@@ -26,11 +26,11 @@ import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
@@ -462,22 +462,22 @@ public class ProcessInstanceRequestValidator {
     if (instructions == null) {
       return;
     }
-    var configureExecutionCount = 0;
+    var reserveJobsCount = 0;
     var stubCallActivitiesCount = 0;
     for (final var instruction : instructions) {
-      if (instruction
-          instanceof final ProcessInstanceCreationConfigureExecutionInstruction config) {
-        configureExecutionCount++;
-        final var reserveJobs = Boolean.TRUE.equals(config.getReserveJobs());
-        final var token = config.getJobReservationToken();
-        if (reserveJobs) {
-          if (token == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
-          } else {
-            validateJobReservationToken(token, violations);
-          }
-        } else if (token != null && !token.isBlank()) {
-          violations.add("jobReservationToken may only be set when reserveJobs is true");
+      if (instruction instanceof final ProcessInstanceCreationReserveJobsInstruction reserve) {
+        reserveJobsCount++;
+        final var jobTypes = reserve.getJobTypes();
+        if (jobTypes == null || jobTypes.isEmpty()) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobTypes"));
+        } else if (jobTypes.stream().anyMatch(type -> type == null || type.isBlank())) {
+          violations.add("jobTypes must not contain blank values");
+        }
+        final var token = reserve.getJobReservationToken();
+        if (token == null) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
+        } else {
+          validateJobReservationToken(token, violations);
         }
       } else if (instruction
           instanceof final ProcessInstanceCreationStubCallActivitiesInstruction stub) {
@@ -490,10 +490,10 @@ public class ProcessInstanceRequestValidator {
         }
       }
     }
-    if (configureExecutionCount > 1) {
+    if (reserveJobsCount > 1) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
-              configureExecutionCount, "CONFIGURE_EXECUTION"));
+              reserveJobsCount, "RESERVE_JOBS"));
     }
     if (stubCallActivitiesCount > 1) {
       violations.add(

@@ -20,7 +20,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreatePro
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
-import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceReserveJobsRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
@@ -79,21 +79,18 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    final Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction> config =
-        configureExecutionOf(instruction);
-
-    final boolean reserveJobs =
-        config
-            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
-            .orElse(false);
+    final Optional<CreateProcessInstanceReserveJobsRuntimeInstruction> reserveJobs =
+        reserveJobsOf(instruction);
     final List<String> stubbedCallActivityProcessIds = stubbedCallActivityProcessIdsOf(instruction);
     final boolean stubCallActivities = !stubbedCallActivityProcessIds.isEmpty();
 
-    final boolean isolated = reserveJobs || stubCallActivities;
+    final boolean isolated = reserveJobs.isPresent() || stubCallActivities;
 
-    if (reserveJobs) {
-      command.reserveJobs(context.getJobReservationToken());
-    }
+    reserveJobs.ifPresent(
+        reserve ->
+            command.reserveJobs(
+                runContext.resolveJobReservationToken(reserve.getJobReservationToken()),
+                reserve.getJobTypes().toArray(new String[0])));
     if (stubCallActivities) {
       command.stubCallActivities(stubbedCallActivityProcessIds.toArray(new String[0]));
     }
@@ -104,11 +101,11 @@ public class CreateProcessInstanceInstructionHandler
     createdProcessInstances.register(processInstance.getProcessInstanceKey(), isolated);
   }
 
-  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
-      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
+  private static Optional<CreateProcessInstanceReserveJobsRuntimeInstruction> reserveJobsOf(
+      final CreateProcessInstanceInstruction instruction) {
     return instruction.getRuntimeInstructions().stream()
-        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
-        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
+        .filter(CreateProcessInstanceReserveJobsRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceReserveJobsRuntimeInstruction.class::cast)
         .findFirst();
   }
 
@@ -136,8 +133,7 @@ public class CreateProcessInstanceInstructionHandler
           (CreateProcessInstanceTerminateRuntimeInstruction) runtimeInstruction;
       command.terminateAfterElement(terminateInstruction.getAfterElementId());
 
-    } else if (runtimeInstruction
-            instanceof CreateProcessInstanceConfigureExecutionRuntimeInstruction
+    } else if (runtimeInstruction instanceof CreateProcessInstanceReserveJobsRuntimeInstruction
         || runtimeInstruction
             instanceof CreateProcessInstanceStubCallActivitiesRuntimeInstruction) {
       // instance-wide switches are applied in execute(), not as a per-element command instruction

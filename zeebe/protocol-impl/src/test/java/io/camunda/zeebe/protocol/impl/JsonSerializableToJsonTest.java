@@ -1923,6 +1923,7 @@ final class JsonSerializableToJsonTest {
                           .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                           .setAfterElementId("element"))
                   .setJobReservationToken("recorder-session-1")
+                  .setReservedJobTypes(List.of("send-invoice"))
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
@@ -1963,6 +1964,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
                   "stubbedCallActivityProcessIds": [],
+                  "reservedJobTypes": ["send-invoice"],
                   "jobReservationToken": "recorder-session-1",
                   "variablesMetadata": {
                     "foo": {
@@ -1998,6 +2000,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "versionTag": "",
                   "stubbedCallActivityProcessIds": [],
+                  "reservedJobTypes": [],
                   "jobReservationToken": "",
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
@@ -2189,6 +2192,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
+                  "reservedJobTypes": [],
                   "elementInstanceKey": -1
                 }
                 """
@@ -2225,6 +2229,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
+                  "reservedJobTypes": [],
                   "elementInstanceKey": -1
                 }
                 """
@@ -3073,6 +3078,7 @@ final class JsonSerializableToJsonTest {
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubbedCallActivityProcessIds": [],
+                  "reservedJobTypes": [],
                     "elementInstanceKey": -1
                   }
                 }

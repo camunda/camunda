@@ -53,6 +53,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new StringValue("stubbedCallActivityProcessIds");
   private static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
+  private static final StringValue RESERVED_JOB_TYPES_KEY = new StringValue("reservedJobTypes");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -84,9 +85,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
   private final StringProperty jobReservationTokenProperty =
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+  private final ArrayProperty<StringValue> reservedJobTypesProperty =
+      new ArrayProperty<>(RESERVED_JOB_TYPES_KEY, StringValue::new);
 
   public ProcessInstanceCreationRecord() {
-    super(16);
+    super(17);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -101,7 +104,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
         .declareProperty(stubbedCallActivityProcessIdsProperty)
-        .declareProperty(jobReservationTokenProperty);
+        .declareProperty(jobReservationTokenProperty)
+        .declareProperty(reservedJobTypesProperty);
     declareProperties(variablesPropertyGroup);
   }
 
@@ -368,6 +372,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getJobReservationTokenBuffer() {
     return jobReservationTokenProperty.getValue();
+  }
+
+  @Override
+  public List<String> getReservedJobTypes() {
+    return StreamSupport.stream(reservedJobTypesProperty.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public ProcessInstanceCreationRecord setReservedJobTypes(final List<String> reservedJobTypes) {
+    reservedJobTypesProperty.reset();
+    if (reservedJobTypes != null) {
+      reservedJobTypes.forEach(type -> reservedJobTypesProperty.add().wrap(wrapString(type)));
+    }
+    return this;
   }
 
   @Override

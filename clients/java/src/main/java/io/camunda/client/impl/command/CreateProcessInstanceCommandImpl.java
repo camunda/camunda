@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.command;
 
-import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.CONFIGURE_EXECUTION;
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.RESERVE_JOBS;
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.STUB_CALL_ACTIVITIES;
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.TERMINATE_PROCESS_INSTANCE;
 
@@ -35,8 +35,8 @@ import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -73,7 +73,6 @@ public final class CreateProcessInstanceCommandImpl
       new ProcessInstanceCreationInstruction();
   private final CamundaClientConfiguration config;
   private String restOnlyProperty;
-  private ProcessInstanceCreationConfigureExecutionInstruction configureExecutionInstruction;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -129,10 +128,16 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CreateProcessInstanceCommandStep3 reserveJobs(final String jobReservationToken) {
+  public CreateProcessInstanceCommandStep3 reserveJobs(
+      final String jobReservationToken, final String... jobTypes) {
     ArgumentUtil.ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+    ArgumentUtil.ensureNotNull("jobTypes", jobTypes);
     restOnlyProperty = "reserveJobs";
-    configureExecution().reserveJobs(true).jobReservationToken(jobReservationToken);
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationReserveJobsInstruction()
+            .jobTypes(Arrays.asList(jobTypes))
+            .jobReservationToken(jobReservationToken)
+            .type(RESERVE_JOBS.name()));
     return this;
   }
 
@@ -145,21 +150,6 @@ public final class CreateProcessInstanceCommandImpl
             .processIds(Arrays.asList(processIds))
             .type(STUB_CALL_ACTIVITIES.name()));
     return this;
-  }
-
-  /**
-   * Returns the single configure-execution runtime instruction for this command, creating it and
-   * adding it to the request on first use, so the reserve-jobs switch is carried on one
-   * instruction.
-   */
-  private ProcessInstanceCreationConfigureExecutionInstruction configureExecution() {
-    if (configureExecutionInstruction == null) {
-      configureExecutionInstruction =
-          new ProcessInstanceCreationConfigureExecutionInstruction()
-              .type(CONFIGURE_EXECUTION.name());
-      httpRequestObject.addRuntimeInstructionsItem(configureExecutionInstruction);
-    }
-    return configureExecutionInstruction;
   }
 
   @Override

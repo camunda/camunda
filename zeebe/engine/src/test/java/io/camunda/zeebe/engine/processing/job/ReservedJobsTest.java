@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -120,6 +121,7 @@ public final class ReservedJobsTest {
     ENGINE
         .processInstance()
         .ofBpmnProcessId(parentProcessId)
+        .withReservedJobTypes(childJobType)
         .withJobReservationToken(RESERVATION_TOKEN)
         .create();
 
@@ -364,6 +366,7 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(processId)
             .withRuntimeTerminateInstruction("task")
+            .withReservedJobTypes(jobType)
             .withJobReservationToken(RESERVATION_TOKEN)
             .create();
 
@@ -373,10 +376,181 @@ public final class ReservedJobsTest {
         .isEqualTo(RESERVATION_TOKEN);
   }
 
+  @Test
+  public void shouldOnlyReserveJobsOfListedTypes() {
+    // given a process with two service tasks of different types, only one type listed
+    final String otherProcessId = Strings.newRandomValidBpmnId();
+    final String listedType = Strings.newRandomValidBpmnId();
+    final String unlistedType = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(otherProcessId)
+                .startEvent()
+                .serviceTask("listed", t -> t.zeebeJobType(listedType))
+                .serviceTask("unlisted", t -> t.zeebeJobType(unlistedType))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(otherProcessId)
+            .withReservedJobTypes(listedType)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .create();
+    final var listedJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listedType)
+            .getFirst();
+
+    // when the holder completes the listed job so the instance reaches the unlisted task
+    ENGINE.job().withKey(listedJob.getKey()).withJobReservationToken(RESERVATION_TOKEN).complete();
+
+    // then
+    final var unlistedJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(unlistedType)
+            .getFirst();
+    assertThat(listedJob.getValue().getJobReservationToken())
+        .describedAs("a job of a listed type carries the reservation token")
+        .isEqualTo(RESERVATION_TOKEN);
+    assertThat(unlistedJob.getValue().getJobReservationToken())
+        .describedAs("a job of an unlisted type is not reserved")
+        .isEmpty();
+    assertThat(ENGINE.jobs().withType(unlistedType).activate().getValue().getJobs())
+        .describedAs("a worker is served the job of an unlisted type")
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldReserveEveryJobOfAListedType() {
+    // given two parallel service tasks of one listed type
+    final String parallelProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parallelProcessId)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("first", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask("second", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parallelProcessId)
+            .withReservedJobTypes(jobType)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .create();
+
+    // then
+    assertThat(
+            jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(jobType)
+                .limit(2))
+        .describedAs("selection is by job type, so both jobs of the type are reserved")
+        .extracting(r -> r.getValue().getJobReservationToken())
+        .containsExactly(RESERVATION_TOKEN, RESERVATION_TOKEN);
+  }
+
+  @Test
+  public void shouldReserveJobWhoseTypeIsAnExpression() {
+    // given a service task whose job type is a FEEL expression, listed by its resolved value
+    final String expressionProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(expressionProcessId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobTypeExpression("typeVariable"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(expressionProcessId)
+            .withVariable("typeVariable", jobType)
+            .withReservedJobTypes(jobType)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .create();
+
+    // then
+    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+        .describedAs("the evaluated job type is matched against the list")
+        .isEqualTo(RESERVATION_TOKEN);
+  }
+
+  @Test
+  public void shouldNotReserveStubJobOfStubbedCallActivity() {
+    // given a stubbed call activity, with even the stub job's type listed
+    final String calledProcessId = Strings.newRandomValidBpmnId();
+    final String callerProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(callerProcessId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(calledProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(callerProcessId)
+            .withStubbedCallActivities(calledProcessId)
+            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .create();
+
+    // then the stub job is withheld from workers by its kind, so it needs no reservation token
+    final var stubJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .getFirst();
+    assertThat(stubJob.getValue().getJobReservationToken()).isEmpty();
+    Assertions.assertThat(ENGINE.job().withKey(stubJob.getKey()).complete())
+        .describedAs("the stub job is completed without a token")
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldNotReserveWithoutListedTypes() {
+    // when a token is given but no job type is listed
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .create();
+
+    // then
+    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+        .describedAs("an empty type list reserves nothing")
+        .isEmpty();
+  }
+
   private long createReservedInstance() {
     return ENGINE
         .processInstance()
         .ofBpmnProcessId(processId)
+        .withReservedJobTypes(jobType)
         .withJobReservationToken(RESERVATION_TOKEN)
         .create();
   }

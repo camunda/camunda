@@ -698,7 +698,7 @@ public final class BpmnJobBehavior {
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(getBusinessIdFromProcessInstance(context))
-        .setJobReservationToken(getJobReservationTokenFromProcessInstance(context));
+        .setJobReservationToken(getJobReservationToken(context, props.getType(), jobKind));
     setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
@@ -740,15 +740,29 @@ public final class BpmnJobBehavior {
     return elementInstance.getValue().getBusinessId();
   }
 
-  private String getJobReservationTokenFromProcessInstance(final BpmnElementContext context) {
-    // the root instance, not this one: a reservation covers the jobs of the child instances a call
-    // activity starts too, and only the root's record was given the token at creation
+  /**
+   * Returns the reservation token a job gets, or an empty string when the job is not reserved. A
+   * job is reserved when its type is among the root instance's reserved job types.
+   *
+   * <p>The root instance, not this one, because a reservation covers the jobs of the child
+   * instances a call activity starts too, and only the root's record was given the list and token
+   * at creation. A stub job is never reserved: it is withheld from workers by its kind,
+   * independently of the reservation.
+   */
+  private String getJobReservationToken(
+      final BpmnElementContext context, final String jobType, final JobKind jobKind) {
+    if (jobKind == JobKind.CALL_ACTIVITY_STUB) {
+      return "";
+    }
     final var elementInstance =
         stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
     if (elementInstance == null) {
       return "";
     }
-    return elementInstance.getValue().getJobReservationToken();
+    final var rootInstance = elementInstance.getValue();
+    return rootInstance.getReservedJobTypes().contains(jobType)
+        ? rootInstance.getJobReservationToken()
+        : "";
   }
 
   private DirectBuffer encodeHeaders(

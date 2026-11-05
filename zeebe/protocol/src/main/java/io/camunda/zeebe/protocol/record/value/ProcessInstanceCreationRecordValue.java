@@ -115,16 +115,28 @@ public interface ProcessInstanceCreationRecordValue
   }
 
   /**
-   * Returns the token that reserves this process instance's jobs for the caller, set from the
-   * configure-execution instruction when {@code reserveJobs} is requested. Reserved jobs are not
-   * handed to job workers that activate normally, and their complete, fail and throw-error commands
-   * are rejected unless the same token is supplied.
+   * Returns the token that reserves this process instance's jobs of the {@link
+   * #getReservedJobTypes() reserved job types} for the caller, set from the {@code RESERVE_JOBS}
+   * runtime instruction. Reserved jobs are not handed to job workers, and their complete, fail,
+   * throw-error and update commands are rejected unless the same token is supplied.
    *
-   * @return the job reservation token, or an empty string if the instance was not reserved
+   * @return the job reservation token, or an empty string if the instance reserves no jobs
    * @since 8.11
    */
   default String getJobReservationToken() {
     return "";
+  }
+
+  /**
+   * Returns the job types whose jobs are reserved for this process instance's caller. Only jobs of
+   * a listed type are hidden from job workers; every other job of the instance runs for real. An
+   * empty list reserves nothing.
+   *
+   * @return the reserved job types, or an empty list
+   * @since 8.11
+   */
+  default List<String> getReservedJobTypes() {
+    return Collections.emptyList();
   }
 
   @Value.Immutable

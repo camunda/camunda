@@ -32,11 +32,11 @@ import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
@@ -125,6 +125,7 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -153,6 +154,7 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -180,6 +182,7 @@ public class ProcessInstanceMapper {
                     request.getTags(),
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
                     jobReservationTokenOf(request.getRuntimeInstructions())));
   }
 
@@ -209,9 +212,9 @@ public class ProcessInstanceMapper {
   private static List<ProcessInstanceCreationRuntimeInstruction> toRuntimeInstructions(
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
-    // The configure-execution instruction carries instance-wide switches rather than an
-    // element-triggered action; its fields are lifted onto the record (see the *Of helpers below),
-    // so only the element-triggered terminate instructions are kept in the stored list.
+    // The reserve-jobs and stub-call-activities instructions carry instance-wide switches rather
+    // than an element-triggered action; their fields are lifted onto the record (see the *Of
+    // helpers below), so only the element-triggered terminate instructions are kept in the list.
     return instructions.stream()
         .filter(ProcessInstanceCreationTerminateInstruction.class::isInstance)
         .map(ProcessInstanceMapper::toRuntimeInstruction)
@@ -232,16 +235,15 @@ public class ProcessInstanceMapper {
     };
   }
 
-  private static @Nullable ProcessInstanceCreationConfigureExecutionInstruction
-      configureExecutionOf(
-          final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
-              instructions) {
+  private static @Nullable ProcessInstanceCreationReserveJobsInstruction reserveJobsOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
     if (instructions == null) {
       return null;
     }
     return instructions.stream()
-        .filter(ProcessInstanceCreationConfigureExecutionInstruction.class::isInstance)
-        .map(ProcessInstanceCreationConfigureExecutionInstruction.class::cast)
+        .filter(ProcessInstanceCreationReserveJobsInstruction.class::isInstance)
+        .map(ProcessInstanceCreationReserveJobsInstruction.class::cast)
         .findFirst()
         .orElse(null);
   }
@@ -263,11 +265,15 @@ public class ProcessInstanceMapper {
   private static @Nullable String jobReservationTokenOf(
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
-    final var config = configureExecutionOf(instructions);
-    if (config == null || !Boolean.TRUE.equals(config.getReserveJobs())) {
-      return null;
-    }
-    return config.getJobReservationToken();
+    final var reserveJobs = reserveJobsOf(instructions);
+    return reserveJobs == null ? null : reserveJobs.getJobReservationToken();
+  }
+
+  private static @Nullable List<String> reservedJobTypesOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    final var reserveJobs = reserveJobsOf(instructions);
+    return reserveJobs == null ? null : reserveJobs.getJobTypes();
   }
 
   public Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(

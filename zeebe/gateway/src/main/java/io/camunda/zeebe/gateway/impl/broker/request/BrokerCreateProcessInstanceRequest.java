@@ -119,6 +119,12 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setReservedJobTypes(
+      final List<String> reservedJobTypes) {
+    requestDto.setReservedJobTypes(reservedJobTypes);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceRequest setJobReservationToken(
       final String jobReservationToken) {
     requestDto.setJobReservationToken(jobReservationToken);

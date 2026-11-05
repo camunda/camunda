@@ -26,26 +26,22 @@ import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
-import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceReserveJobsRuntimeInstruction;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CamundaTestCaseRunner implements TestCaseRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestCaseRunner.class);
-
-  private static final List<String> MOCK_JOB_WORKER_INSTRUCTIONS =
-      Arrays.asList(
-          TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB,
-          TestCaseInstructionType.MOCK_JOB_WORKER_THROW_BPMN_ERROR);
 
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
@@ -116,42 +112,44 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
   private void warnIfReservedJobsAreMocked(final TestCase testCase) {
     if (reservesJobsAndMocksJobWorkers(testCase)) {
       LOGGER.warn(
-          "Test case '{}' reserves a process instance's jobs and mocks a job worker. A reserved job"
-              + " is hidden from every job worker, including the mock. If the mock is meant to"
+          "Test case '{}' reserves a job type and mocks a job worker for the same type. A reserved"
+              + " job is hidden from every job worker, including the mock. If the mock is meant to"
               + " serve the reserved instance, use COMPLETE_JOB or THROW_BPMN_ERROR_FROM_JOB"
               + " instead; otherwise the test case waits for a job nobody takes.",
           testCase.getName());
     }
   }
 
+  /**
+   * Returns whether the test case mocks a job worker for a job type it also reserves. Only a mock
+   * for a reserved type is affected: the engine hands every other type to workers as usual.
+   */
   static boolean reservesJobsAndMocksJobWorkers(final TestCase testCase) {
-    final boolean reservesJobs =
+    final Set<String> reservedJobTypes =
         testCase.getInstructions().stream()
             .filter(CreateProcessInstanceInstruction.class::isInstance)
             .map(CreateProcessInstanceInstruction.class::cast)
-            .anyMatch(CamundaTestCaseRunner::instructionReservesJobs);
+            .flatMap(instruction -> instruction.getRuntimeInstructions().stream())
+            .filter(CreateProcessInstanceReserveJobsRuntimeInstruction.class::isInstance)
+            .map(CreateProcessInstanceReserveJobsRuntimeInstruction.class::cast)
+            .flatMap(reserve -> reserve.getJobTypes().stream())
+            .collect(Collectors.toSet());
 
-    final boolean mocksJobWorkers =
-        testCase.getInstructions().stream()
-            .map(TestCaseInstruction::getType)
-            .anyMatch(MOCK_JOB_WORKER_INSTRUCTIONS::contains);
-
-    return reservesJobs && mocksJobWorkers;
+    return testCase.getInstructions().stream()
+        .map(CamundaTestCaseRunner::mockedJobTypeOf)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .anyMatch(reservedJobTypes::contains);
   }
 
-  private static boolean instructionReservesJobs(
-      final CreateProcessInstanceInstruction instruction) {
-    return configureExecutionOf(instruction)
-        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
-        .orElse(false);
-  }
-
-  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
-      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
-    return instruction.getRuntimeInstructions().stream()
-        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
-        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
-        .findFirst();
+  private static Optional<String> mockedJobTypeOf(final TestCaseInstruction instruction) {
+    if (instruction instanceof MockJobWorkerCompleteJobInstruction) {
+      return Optional.of(((MockJobWorkerCompleteJobInstruction) instruction).getJobType());
+    }
+    if (instruction instanceof MockJobWorkerThrowBpmnErrorInstruction) {
+      return Optional.of(((MockJobWorkerThrowBpmnErrorInstruction) instruction).getJobType());
+    }
+    return Optional.empty();
   }
 
   /**

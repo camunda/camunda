@@ -75,6 +75,9 @@
             "jobReservationToken": {
               "type": "keyword"
             },
+            "reservedJobTypes": {
+              "type": "keyword"
+            },
             "stubbedCallActivityProcessIds": {
               "type": "keyword"
             },

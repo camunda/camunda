@@ -13,13 +13,15 @@ Read more about the library and how to use it in our documentation: https://docs
 
 `isolated-order.bpmn` and the test cases in
 [src/test/resources/test-cases-isolated](src/test/resources/test-cases-isolated) exercise the
-recording switches, which ride on a `CONFIGURE_EXECUTION` runtime instruction of
-`CREATE_PROCESS_INSTANCE`:
+recording switches, which ride on runtime instructions of `CREATE_PROCESS_INSTANCE`:
 
-- `reserveJobs` — every job the instance creates is served to no job worker, so the test drives it
-  by key. A reserved job is hidden from CPT's own `mockJobWorker` too, so mock those jobs with
-  `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` rather than `MOCK_JOB_WORKER_*`, or
-  release them with `RELEASE_JOB`.
+- `RESERVE_JOBS` — every job of a listed job type is served to no job worker, so the test drives it
+  by key. Jobs of any other type go to the workers as usual, so to let a job run for real, leave its
+  type off the list. A reserved job is hidden from CPT's own `mockJobWorker` too, so mock those jobs
+  with `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` rather than `MOCK_JOB_WORKER_*`. The instruction
+  carries a `jobReservationToken`, and so does every job instruction that acts on a reserved job.
+  Write the placeholder `${jobReservationToken}` for it: the runner substitutes a fresh token on each
+  run, so no real token is ever saved with a test case.
 - `STUB_CALL_ACTIVITIES` — each call activity calling a listed process id activates without starting
   the process it calls and waits on a stand-in job instead. Complete that job with `COMPLETE_JOB` to stand in for the called
   process, or `THROW_BPMN_ERROR_FROM_JOB` to make it go wrong — selecting it by
@@ -28,8 +30,8 @@ recording switches, which ride on a `CONFIGURE_EXECUTION` runtime instruction of
   stubbed too.
 
 `COMPLETE_JOB` and `THROW_BPMN_ERROR_FROM_JOB` select the stand-in job directly, by its
-`CALL_ACTIVITY_STUB` kind and the call activity's `elementId` — the job the stub waits on, hidden by
-reservation too. `RUN_CALLED_PROCESS` selects the call activity by its `elementId`.
+`CALL_ACTIVITY_STUB` kind and the call activity's `elementId` — the job the stub waits on. A stub job
+is hidden from workers by its kind, independently of `RESERVE_JOBS`, so it needs no token. `RUN_CALLED_PROCESS` selects the call activity by its `elementId`.
 
 The processes are `isolated-order` → `shipping` → `notification`, so the nesting and the error
 boundary event on the call activity are both covered.

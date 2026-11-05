@@ -226,14 +226,27 @@ public interface ProcessInstanceRecordValue
   }
 
   /**
-   * Returns the job lease token that pre-claims every job this process instance creates. Only the
-   * root element instance record of an instance created with a token carries it.
+   * Returns the token that reserves the jobs of the {@link #getReservedJobTypes() reserved job
+   * types} for the caller that created this process instance. Only the root element instance record
+   * carries it.
    *
-   * @return the job lease token, or an empty string if not set
+   * @return the job reservation token, or an empty string if not set
    * @since 8.11
    */
   default String getJobReservationToken() {
     return "";
+  }
+
+  /**
+   * Returns the job types whose jobs are reserved for the caller that created this process
+   * instance. Only the root element instance record carries it. A job is reserved when its type is
+   * contained in this list.
+   *
+   * @return the reserved job types, or an empty list
+   * @since 8.11
+   */
+  default List<String> getReservedJobTypes() {
+    return Collections.emptyList();
   }
 
   /**

@@ -340,6 +340,10 @@ public final class ProcessInstanceServices
       brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
     }
 
+    if (request.reservedJobTypes() != null) {
+      brokerRequest.setReservedJobTypes(request.reservedJobTypes());
+    }
+
     if (request.jobReservationToken() != null) {
       brokerRequest.setJobReservationToken(request.jobReservationToken());
     }
@@ -374,6 +378,10 @@ public final class ProcessInstanceServices
 
     if (request.stubbedCallActivityProcessIds() != null) {
       brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
+    }
+
+    if (request.reservedJobTypes() != null) {
+      brokerRequest.setReservedJobTypes(request.reservedJobTypes());
     }
 
     if (request.jobReservationToken() != null) {
@@ -722,6 +730,7 @@ public final class ProcessInstanceServices
       Set<String> tags,
       String businessId,
       List<String> stubbedCallActivityProcessIds,
+      List<String> reservedJobTypes,
       String jobReservationToken) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {

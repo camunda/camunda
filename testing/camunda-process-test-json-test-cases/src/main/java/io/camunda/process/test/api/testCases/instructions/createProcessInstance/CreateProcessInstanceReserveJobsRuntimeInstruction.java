@@ -16,38 +16,39 @@
 package io.camunda.process.test.api.testCases.instructions.createProcessInstance;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import java.util.List;
 import org.immutables.value.Value;
 
 /**
- * An instruction to configure instance-wide execution switches on the process instance.
- *
- * <p>Unlike {@link CreateProcessInstanceTerminateRuntimeInstruction}, which is triggered by an
- * element, this instruction carries switches that apply to the whole instance and has no {@code
- * afterElementId}.
+ * A runtime instruction that reserves the process instance's jobs of the listed job types, so that
+ * no job worker is served them. Jobs of any other type run for real.
  */
 @Value.Immutable
 @JsonDeserialize(
-    builder = ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.Builder.class)
-public interface CreateProcessInstanceConfigureExecutionRuntimeInstruction
+    builder = ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.Builder.class)
+public interface CreateProcessInstanceReserveJobsRuntimeInstruction
     extends CreateProcessInstanceRuntimeInstruction {
 
   @Value.Default
   @Override
   default String getType() {
-    return CreateProcessInstanceRuntimeInstructionType.CONFIGURE_EXECUTION;
+    return CreateProcessInstanceRuntimeInstructionType.RESERVE_JOBS;
   }
 
   /**
-   * Whether to reserve every job the process instance creates for the test, so that no job worker
-   * is served them. Defaults to false.
+   * The job types whose jobs are reserved. A job is reserved when its type is in this list;
+   * selection is by job type, so every job of a listed type is reserved.
    *
-   * <p>The reservation token itself is not part of the test case: it is a runtime value, minted
-   * when the test case runs.
-   *
-   * @return true if the instance's jobs are reserved, false otherwise
+   * @return the job types to reserve
    */
-  @Value.Default
-  default boolean getReserveJobs() {
-    return false;
-  }
+  List<String> getJobTypes();
+
+  /**
+   * The token that reserves the listed jobs. Use {@link TestCaseJobReservationToken#PLACEHOLDER}:
+   * the runner substitutes a fresh token for it on each run.
+   *
+   * @return the job reservation token
+   */
+  String getJobReservationToken();
 }

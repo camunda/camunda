@@ -36,16 +36,15 @@ messages is a separate carrier ([ADR 0014](0014-811-tag-scoped-run-isolation.md)
 instance it is set on, not the cluster, so concurrent recorders do not interfere. The engine hands
 the recorder exclusive control of that instance's jobs and call activities.
 
-**D2. The payload-free switches ride one `CONFIGURE_EXECUTION` runtime instruction; call-activity
-stubbing is its own `STUB_CALL_ACTIVITIES` instruction.** The create request carries runtime
-instructions in its `runtimeInstructions` list. `CONFIGURE_EXECUTION` holds the boolean switch
-`reserveJobs` (+ `jobReservationToken`); it defaults off, and at most one is allowed per instance.
-Keeping it a payload-free instruction leaves room to bundle further bare booleans here rather than
-forcing an empty-object instruction each. Stubbing instead carries a `processIds` list
-([ADR 0017](0017-811-stubbed-call-activities.md) D1), a real payload of its own, so it is a separate
-`STUB_CALL_ACTIVITIES` instruction (also at most one per instance) rather than a field whose value
-would sit oddly next to the bare booleans. Splitting the concern this way also keeps each instruction
-independently extensible.
+**D2. Each switch is its own runtime instruction that names what the engine stands aside for:
+`RESERVE_JOBS` and `STUB_CALL_ACTIVITIES`.** The create request carries runtime instructions in its
+`runtimeInstructions` list. `RESERVE_JOBS` carries a `jobTypes` list and a `jobReservationToken`
+([ADR 0016](0016-811-reserved-jobs.md) D1); `STUB_CALL_ACTIVITIES` carries a `processIds` list
+([ADR 0017](0017-811-stubbed-call-activities.md) D1). At most one of each is allowed per instance, and
+omitting an instruction leaves that switch off. Both use the same shape on purpose: an explicit list
+of the job types or called processes the recorder drives, so everything not listed runs for real. The
+token is written on the create request and on every job command that needs it, rather than being
+minted by the client.
 
 **D3. Switches are read at the root instance and inherited by call-activity children.** The engine
 reads the switch from the root element instance's record, so a called process's jobs and call
@@ -71,12 +70,11 @@ default, so this only affects a caller who opted into gRPC and asked for a REST-
 - **Process-instance suspension.** Per-instance, but it pauses rather than steps (resume releases
   everything at once) and blocks job completion while suspended, so a recorder cannot drive the
   instance. Unusable for interleaved recording.
-- **Top-level boolean fields, or a separate runtime instruction per switch.** Top-level fields scatter
-  related switches across the request; a per-switch instruction for a payload-free boolean forces an
-  empty-object instruction carrying only its own type. `CONFIGURE_EXECUTION` gives the bare booleans one
-  consistent shape; a switch that does carry a payload (`STUB_CALL_ACTIVITIES` with its `processIds`
-  list) earns its own instruction, so the split is by whether the switch has a payload, not one
-  instruction for everything.
+- **Top-level boolean fields, or one shared `CONFIGURE_EXECUTION` instruction of bare booleans.** The
+  first design reserved every job with a `reserveJobs: true` boolean on a shared instruction. Rejected
+  once reservation became selective: both switches now name what they act on (job types, called
+  process ids), so a boolean no longer fits either, and a shared instruction left holding no switch of
+  its own had no reason to exist.
 
 ## Consequences
 

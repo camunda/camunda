@@ -21,8 +21,9 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
- * The worker the isolated-order example hands the invoice job back to with a {@code RELEASE_JOB}
- * instruction. Every other job of a reserved instance is hidden from it.
+ * The worker the isolated-order example leaves the invoice job to, by not listing the {@code
+ * send-invoice} job type in its {@code RESERVE_JOBS} instruction. Every job of a listed type is
+ * hidden from it.
  */
 @Component
 public class SendInvoiceWorker {

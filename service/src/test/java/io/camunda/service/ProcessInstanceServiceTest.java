@@ -821,6 +821,7 @@ public final class ProcessInstanceServiceTest {
         null, // tags
         null, // businessId
         null, // stubbedCallActivityProcessIds
+        null, // reservedJobTypes
         null // jobReservationToken
         );
   }
@@ -845,6 +846,7 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
             null // jobReservationToken
             );
 
@@ -886,6 +888,7 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
             null // jobReservationToken
             );
 
@@ -928,6 +931,7 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
             null // jobReservationToken
             );
 
@@ -1188,6 +1192,7 @@ public final class ProcessInstanceServiceTest {
           null, // tags
           businessId, // businessId
           null, // stubbedCallActivityProcessIds
+          null, // reservedJobTypes
           null // jobReservationToken
           );
     }
@@ -1210,6 +1215,7 @@ public final class ProcessInstanceServiceTest {
           null, // tags
           businessId, // businessId
           null, // stubbedCallActivityProcessIds
+          null, // reservedJobTypes
           null // jobReservationToken
           );
     }

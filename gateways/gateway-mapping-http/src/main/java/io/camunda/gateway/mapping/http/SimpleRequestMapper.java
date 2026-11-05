@@ -114,12 +114,12 @@ public class SimpleRequestMapper {
       mapCreateProcessInstanceRuntimeInstruction(
           final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction
               instruction) {
-    if ("CONFIGURE_EXECUTION".equals(instruction.getType())) {
-      return io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction
-          .Builder.create()
-          .type(instruction.getType())
-          .reserveJobs(instruction.getReserveJobs())
+    if ("RESERVE_JOBS".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction.Builder
+          .create()
+          .jobTypes(instruction.getJobTypes())
           .jobReservationToken(instruction.getJobReservationToken())
+          .type(instruction.getType())
           .build();
     }
     if ("STUB_CALL_ACTIVITIES".equals(instruction.getType())) {

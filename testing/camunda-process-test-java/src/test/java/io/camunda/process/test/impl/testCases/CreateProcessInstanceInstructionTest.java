@@ -25,7 +25,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
-import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
@@ -141,7 +141,6 @@ public class CreateProcessInstanceInstructionTest {
   void shouldReserveJobsAndStubCallActivities() {
     // given
     final String token = "cpt-1234";
-    org.mockito.Mockito.when(processTestContext.getJobReservationToken()).thenReturn(token);
 
     final CreateProcessInstanceInstruction instruction =
         ImmutableCreateProcessInstanceInstruction.builder()
@@ -150,8 +149,9 @@ public class CreateProcessInstanceInstructionTest {
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
             .addRuntimeInstructions(
-                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
-                    .reserveJobs(true)
+                ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                    .addJobTypes("send-invoice", "charge-card")
+                    .jobReservationToken(token)
                     .build())
             .addRuntimeInstructions(
                 ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
@@ -170,7 +170,7 @@ public class CreateProcessInstanceInstructionTest {
             .latestVersion()
             .variables(Collections.emptyMap());
 
-    verify(mockCommand).reserveJobs(token);
+    verify(mockCommand).reserveJobs(token, "send-invoice", "charge-card");
     verify(mockCommand).stubCallActivities("shipping", "notification");
     verify(mockCommand).send();
   }

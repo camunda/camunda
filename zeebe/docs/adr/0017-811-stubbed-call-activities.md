@@ -48,9 +48,11 @@ variables to its parent only under its model's output-mapping conditions; stub c
 condition, so it never propagates variables the model says to drop and cannot drift from real
 completion.
 
-**D4. A stub job is not releasable.** No worker can run it, so handing it back would park the call
-activity forever. To run a call activity's real child, omit its process id from the stub list rather
-than stub-then-override.
+**D4. A stub job is never reserved and nothing hands it back.** No worker can run it, so handing it
+back would park the call activity forever; it is withheld from workers by its kind, independently of
+[reservation](0016-811-reserved-jobs.md), so it carries no reservation token even when its instance
+reserves other job types. To run a call activity's real child, omit its process id from the stub list
+rather than stub-then-override.
 
 **D5. CPT drives the stub entirely through the generic job instructions, with no stub-specific
 instruction.** Standing in for the called process is a `COMPLETE_JOB`, and failing it a

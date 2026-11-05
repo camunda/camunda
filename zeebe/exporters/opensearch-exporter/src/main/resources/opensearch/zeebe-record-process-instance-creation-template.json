@@ -83,6 +83,9 @@
             "jobReservationToken": {
               "type": "keyword"
             },
+            "reservedJobTypes": {
+              "type": "keyword"
+            },
             "elementInstanceKey": {
               "enabled": false
             }
