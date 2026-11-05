@@ -124,6 +124,8 @@ jobs:
       load-test-load: ${{ inputs.load-test-load }}
       load-test-setup-helm-values: ${{ inputs.load-test-setup-helm-values }}
 
+  # A `uses:` path cannot be dynamic, so each stable branch has its own setup job, and one runs per call.
+  # enable-optimize is off without secondary storage, as newLoadTest.sh then skips Optimize's values file.
   setup-88:
     name: Setup (stable/8.8)
     if: inputs.stable-branch == '8.8'
@@ -170,16 +172,8 @@ jobs:
       load-test-load: ${{ inputs.load-test-load }}
       load-test-setup-helm-values: ${{ inputs.load-test-setup-helm-values }}
 
-  # A `uses:` path cannot be dynamic, so every stable branch has its own setup job above (a stable
-  # branch builds and deploys with its own copy of camunda-load-test.yml; the stable branches have
-  # no load-tests/setup folder, it lives on main). Exactly one setup job runs per call. The jobs
-  # below depend on this single join so their gating is the same for main and stable branches.
-  # load-test-setup-helm-values is only forwarded to 8.10, the older stable workflows lack that input.
-  # build-frontend is not forwarded: the stable workflows default to false, as in the weekly load tests.
-  # enable-optimize is false without secondary storage: the stable workflows default it to true, but
-  # newLoadTest.sh then skips Optimize's values file and the later helm install fails on the missing file.
-  # Every job below the join carries an explicit `!cancelled()`: without a status function GitHub adds
-  # an implicit success() that also looks at skipped ancestors (the unused setup jobs) and would skip it.
+  # Joins the setup jobs. The jobs below use an explicit `!cancelled()`: the implicit success()
+  # would skip them because the unused setup jobs are skipped.
   setup-done:
     name: Setup done
     runs-on: ubuntu-latest
