@@ -26,7 +26,7 @@ public final class ClusterConfigurationGossipState {
 
   @Override
   public int hashCode() {
-    return Objects.hash(currentClusterConfiguration);
+    return Objects.hashCode(currentClusterConfiguration);
   }
 
   @Override

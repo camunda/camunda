@@ -57,7 +57,7 @@ public final class BooleanValue extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(val);
+    return Objects.hashCode(val);
   }
 
   @Override

@@ -60,7 +60,7 @@ public class NodeId extends AbstractIdentifier<String> implements Comparable<Nod
 
   @Override
   public int hashCode() {
-    return Objects.hash(id());
+    return Objects.hashCode(id());
   }
 
   @Override

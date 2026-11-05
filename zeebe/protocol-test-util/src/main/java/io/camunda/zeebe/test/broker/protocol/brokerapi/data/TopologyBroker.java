@@ -49,7 +49,7 @@ public final class TopologyBroker {
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodeId);
+    return Objects.hashCode(nodeId);
   }
 
   @Override

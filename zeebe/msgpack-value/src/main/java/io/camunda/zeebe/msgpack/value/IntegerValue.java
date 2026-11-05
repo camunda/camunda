@@ -64,7 +64,7 @@ public final class IntegerValue extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getValue());
+    return Objects.hashCode(getValue());
   }
 
   @Override
