@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -43,8 +44,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -307,6 +310,125 @@ public final class EngineErrorHandlingTest {
     assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessageBuffer()))
         .isEqualTo("expected");
     assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldAssignOrdinalOfPersistedInstanceToErrorRecordOnBan() {
+    // given
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              processingState
+                  .getElementInstanceState()
+                  .newInstance(
+                      1,
+                      Records.processInstance(1).setStorageOrdinal(7),
+                      ProcessInstanceIntent.ELEMENT_ACTIVATED);
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      new ErrorProneProcessor());
+            });
+
+    // a client command arrives with the default ordinal 0
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(1);
+    assertThat(errorRecord.getStorageOrdinal()).isEqualTo(7);
+  }
+
+  @Test
+  public void shouldAssignCommandOrdinalToErrorRecordOnBanWhenInstanceIsNotPersisted() {
+    // given
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      new ErrorProneProcessor());
+            });
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1).setStorageOrdinal(7))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(1);
+    assertThat(errorRecord.getStorageOrdinal()).isEqualTo(7);
+  }
+
+  @Test
+  public void shouldMarkErrorRecordAsNotOrdinalControlledOnBanWhenCommandHasNoProcessInstance() {
+    // given
+    // MultiInstanceIntent bans the instance on error, but its record carries no process instance
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.MULTI_INSTANCE,
+                      MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,
+                      new TypedRecordProcessor<MultiInstanceRecord>() {
+                        @Override
+                        public void processRecord(final TypedRecord<MultiInstanceRecord> record) {
+                          throw new RuntimeException("expected");
+                        }
+                      });
+            });
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(new MultiInstanceRecord())
+        .recordType(RecordType.COMMAND)
+        .intent(MultiInstanceIntent.INPUT_COLLECTION_EVALUATED)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(-1);
+    assertThat(errorRecord.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test
