@@ -440,18 +440,21 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
     final var timeout = Duration.ofSeconds(10);
     try {
-      final HealthResponse response =
-          client
-              .cluster()
-              .health(
-                  h ->
-                      h.index(List.copyOf(indexNames))
-                          .waitForStatus(HealthStatus.Yellow)
-                          .timeout(t -> t.time(timeout.toMillis() + "ms")));
-      if (response.timedOut()) {
-        throw new SearchEngineException(
-            "Expected primary shards of indices %s to be active within %s, but status is '%s'"
-                .formatted(indexNames, timeout, response.status()));
+      for (final String batch :
+          SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final HealthResponse response =
+            client
+                .cluster()
+                .health(
+                    h ->
+                        h.index(List.of(batch.split(",")))
+                            .waitForStatus(HealthStatus.Yellow)
+                            .timeout(t -> t.time(timeout.toMillis() + "ms")));
+        if (response.timedOut()) {
+          throw new SearchEngineException(
+              "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                  .formatted(batch, timeout, response.status()));
+        }
       }
     } catch (final IOException | OpenSearchException e) {
       throw new SearchEngineException(

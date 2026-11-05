@@ -440,18 +440,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
     final var timeout = Duration.ofSeconds(10);
     try {
-      final var response =
-          client
-              .cluster()
-              .health(
-                  r ->
-                      r.index(List.copyOf(indexNames))
-                          .waitForStatus(HealthStatus.Yellow)
-                          .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
-      if (response.timedOut()) {
-        throw new SearchEngineException(
-            "Expected primary shards of indices %s to be active within %s, but status is '%s'"
-                .formatted(indexNames, timeout, response.status()));
+      for (final String batch :
+          SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var response =
+            client
+                .cluster()
+                .health(
+                    r ->
+                        r.index(List.of(batch.split(",")))
+                            .waitForStatus(HealthStatus.Yellow)
+                            .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
+        if (response.timedOut()) {
+          throw new SearchEngineException(
+              "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                  .formatted(batch, timeout, response.status()));
+        }
       }
     } catch (final IOException | ElasticsearchException e) {
       throw new SearchEngineException(
