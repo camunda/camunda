@@ -74,7 +74,9 @@ awaiting_merge_back() {
     echo "resolve-active-release-pairs: fetching ${branch}, ${target} and tag ${version} failed" >&2
     return 2
   fi
-  tagged_at="$(git log -1 --format=%ct "${ns}/tag^{commit}")"
+  # creatordate is the tagger date of an annotated tag (when the release was cut), falling back to
+  # the commit date for a lightweight tag; the tagged commit itself can be older than the release.
+  tagged_at="$(git for-each-ref --format='%(creatordate:unix)' "${ns}/tag")"
   [ $(( $(date +%s) - tagged_at )) -le $(( released_grace_days * 86400 )) ] || return 1
   if git merge-base --is-ancestor "${ns}/release" "${ns}/target"; then return 1; fi
   return 0

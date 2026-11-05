@@ -249,12 +249,13 @@ make_remote() {
   [ "$output" = $'release-8.9.0\tstable/8.9' ]
 }
 
-# release_tip <remote> <branch> <tag> [committer-date] — add a release-only commit on <branch> and tag
-# it, so the branch is NOT merged into its target. The date backdates the tag for the grace window.
+# release_tip <remote> <branch> <tag> [commit-date] [annotated] — add a release-only commit on
+# <branch> and tag it, so the branch is NOT merged into its target. The date backdates the commit;
+# "annotated" makes an annotated tag dated now instead of a lightweight one.
 release_tip() {
   git -C "$1" checkout -q "$2"
   GIT_COMMITTER_DATE="${4:-$(date -R)}" git -C "$1" commit -q --allow-empty -m "[maven-release-plugin] prepare release $3"
-  git -C "$1" tag "$3"
+  if [ "${5:-}" = annotated ]; then git -C "$1" tag -a -m "$3" "$3"; else git -C "$1" tag "$3"; fi
   git -C "$1" checkout -q main
 }
 
@@ -282,6 +283,15 @@ release_tip() {
   # backports, the release version bump) only show up after the tag, so the check must keep watching.
   make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
   release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.0\tstable/8.9' ]
+}
+
+@test "resolve: the grace window starts when the release is tagged, not at the tagged commit" {
+  # An annotated tag cut today on an older commit is a fresh release; its merge-back is still due.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0 "2020-01-01T00:00:00Z" annotated
   run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
   [ "$status" -eq 0 ]
   [ "$output" = $'release-8.9.0\tstable/8.9' ]
