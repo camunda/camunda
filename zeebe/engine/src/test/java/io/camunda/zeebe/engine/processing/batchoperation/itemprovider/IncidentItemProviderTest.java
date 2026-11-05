@@ -12,17 +12,21 @@ import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
@@ -40,6 +44,8 @@ class IncidentItemProviderTest {
   private IncidentItemProvider provider;
 
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+  private final ProcessInstanceFilter filter =
+      new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build();
 
   @BeforeEach
   void setUp() {
@@ -51,12 +57,7 @@ class IncidentItemProviderTest {
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
-    provider =
-        new IncidentItemProvider(
-            searchClientsProxy,
-            metrics,
-            new ProcessInstanceFilter.Builder().build(),
-            authentication);
+    provider = new IncidentItemProvider(searchClientsProxy, metrics, filter, authentication);
   }
 
   @Test
@@ -76,7 +77,7 @@ class IncidentItemProviderTest {
                     createProcessInstanceEntity(5L, null)))
             .total(5)
             .build();
-    when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(piResult);
 
     final var incidentResult1 =
         new SearchQueryResult.Builder<IncidentEntity>()
@@ -88,6 +89,7 @@ class IncidentItemProviderTest {
                     mockIncidentEntity(22, 2, 1L, null),
                     mockIncidentEntity(31, 3, 3L, 123)))
             .total(10)
+            .endCursor("cursor-1")
             .build();
     final var incidentResult2 =
         new SearchQueryResult.Builder<IncidentEntity>()
@@ -99,11 +101,12 @@ class IncidentItemProviderTest {
                     mockIncidentEntity(51, 5, null, 456),
                     mockIncidentEntity(52, 5, null, 456)))
             .total(10)
+            .endCursor("cursor-2")
             .build();
     final var incidentResult3 =
         new SearchQueryResult.Builder<IncidentEntity>().items(List.of()).total(10).build();
 
-    when(searchClientsProxy.searchIncidents(incidentQueryCaptor.capture()))
+    when(searchClientsProxy.searchIncidents(any()))
         .thenReturn(incidentResult1)
         .thenReturn(incidentResult2)
         .thenReturn(incidentResult3);
@@ -112,6 +115,19 @@ class IncidentItemProviderTest {
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(piQueryCaptor.capture());
+    assertProcessInstancesSearchedWith(piQueryCaptor.getValue(), "-1", 5);
+
+    verify(searchClientsProxy, times(3)).searchIncidents(incidentQueryCaptor.capture());
+    final var expectedIncidentFilter = activeIncidentsOf(List.of(1L, 2L, 3L, 4L, 5L));
+    assertThat(incidentQueryCaptor.getAllValues())
+        .extracting(IncidentQuery::filter)
+        .containsOnly(expectedIncidentFilter);
+    assertThat(incidentQueryCaptor.getAllValues())
+        .extracting(q -> q.page().after())
+        .containsExactly(null, "cursor-1", "cursor-2");
+    assertThat(incidentQueryCaptor.getAllValues()).extracting(q -> q.page().size()).containsOnly(5);
+
     assertThat(resultPage.items())
         .containsExactly(
             new Item(11, 1, 1L, null),
@@ -144,18 +160,26 @@ class IncidentItemProviderTest {
                     createProcessInstanceEntity(5L, null)))
             .total(5)
             .build();
-    when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(piResult);
 
     final var incidentResult =
         new SearchQueryResult.Builder<IncidentEntity>().items(List.of()).total(0).build();
 
-    when(searchClientsProxy.searchIncidents(incidentQueryCaptor.capture()))
-        .thenReturn(incidentResult);
+    when(searchClientsProxy.searchIncidents(any())).thenReturn(incidentResult);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(piQueryCaptor.capture());
+    assertProcessInstancesSearchedWith(piQueryCaptor.getValue(), "-1", 5);
+
+    verify(searchClientsProxy).searchIncidents(incidentQueryCaptor.capture());
+    assertThat(incidentQueryCaptor.getValue().filter())
+        .isEqualTo(activeIncidentsOf(List.of(1L, 2L, 3L, 4L, 5L)));
+    assertThat(incidentQueryCaptor.getValue().page().after()).isNull();
+    assertThat(incidentQueryCaptor.getValue().page().size()).isEqualTo(5);
+
     assertThat(resultPage.items()).isEmpty();
     assertThat(resultPage.isLastPage()).isFalse(); // because processInstances are still 5
   }
@@ -167,16 +191,33 @@ class IncidentItemProviderTest {
     // given
     final var piResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>().items(List.of()).total(0).build();
-    when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
-
-    verify(searchClientsProxy, never()).searchIncidents(any());
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(piResult);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(piQueryCaptor.capture());
+    assertProcessInstancesSearchedWith(piQueryCaptor.getValue(), "-1", 5);
+    verify(searchClientsProxy, never()).searchIncidents(any());
+
     assertThat(resultPage.items()).isEmpty();
     assertThat(resultPage.isLastPage()).isTrue();
+  }
+
+  private void assertProcessInstancesSearchedWith(
+      final ProcessInstanceQuery query, final String expectedCursor, final int expectedPageSize) {
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.page().after()).isEqualTo(expectedCursor);
+    assertThat(query.page().size()).isEqualTo(expectedPageSize);
+    assertThat(query.resultConfig().onlyKeys()).isTrue();
+  }
+
+  private IncidentFilter activeIncidentsOf(final List<Long> processInstanceKeys) {
+    return new IncidentFilter.Builder()
+        .processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(processInstanceKeys))
+        .states(IncidentState.ACTIVE.name())
+        .build();
   }
 
   private ProcessInstanceEntity createProcessInstanceEntity(

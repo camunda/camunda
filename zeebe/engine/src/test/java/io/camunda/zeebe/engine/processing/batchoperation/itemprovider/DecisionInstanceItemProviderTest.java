@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -36,6 +37,8 @@ class DecisionInstanceItemProviderTest {
   private DecisionInstanceItemProvider provider;
 
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+  private final DecisionInstanceFilter filter =
+      new DecisionInstanceFilter.Builder().decisionDefinitionIds("test-decision").build();
 
   @BeforeEach
   void setUp() {
@@ -48,11 +51,7 @@ class DecisionInstanceItemProviderTest {
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
     provider =
-        new DecisionInstanceItemProvider(
-            searchClientsProxy,
-            metrics,
-            new DecisionInstanceFilter.Builder().build(),
-            authentication);
+        new DecisionInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
   }
 
   @Test
@@ -72,12 +71,14 @@ class DecisionInstanceItemProviderTest {
             .total(5)
             .endCursor("5")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
     assertThat(resultPage.items())
@@ -101,12 +102,14 @@ class DecisionInstanceItemProviderTest {
             .total(0)
             .endCursor("0")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.items()).hasSize(0);
     assertThat(resultPage.endCursor()).isEqualTo("0");
     assertThat(resultPage.isLastPage()).isTrue();
@@ -127,12 +130,14 @@ class DecisionInstanceItemProviderTest {
             .total(3)
             .endCursor("3")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), null, 5);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
@@ -141,6 +146,13 @@ class DecisionInstanceItemProviderTest {
                 new Item(1, 10L, null, null),
                 new Item(2, 20L, null, 123),
                 new Item(3, 30L, null, 456)));
+  }
+
+  private void assertSearchedWith(
+      final DecisionInstanceQuery query, final String expectedCursor, final int expectedPageSize) {
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.page().after()).isEqualTo(expectedCursor);
+    assertThat(query.page().size()).isEqualTo(expectedPageSize);
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(

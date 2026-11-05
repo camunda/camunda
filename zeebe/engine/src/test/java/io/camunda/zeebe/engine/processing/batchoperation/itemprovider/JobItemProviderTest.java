@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -35,14 +36,13 @@ class JobItemProviderTest {
   private JobItemProvider provider;
 
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+  private final JobFilter filter = new JobFilter.Builder().types("test-job-type").build();
 
   @BeforeEach
   void setUp() {
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
-    provider =
-        new JobItemProvider(
-            searchClientsProxy, metrics, new JobFilter.Builder().build(), authentication);
+    provider = new JobItemProvider(searchClientsProxy, metrics, filter, authentication);
   }
 
   @Test
@@ -62,12 +62,14 @@ class JobItemProviderTest {
             .total(5)
             .endCursor("5")
             .build();
-    when(searchClientsProxy.searchJobs(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchJobs(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchJobs(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
     assertThat(resultPage.items())
@@ -87,12 +89,14 @@ class JobItemProviderTest {
     // given
     final var result =
         new SearchQueryResult.Builder<JobEntity>().items(List.of()).total(0).endCursor("0").build();
-    when(searchClientsProxy.searchJobs(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchJobs(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchJobs(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.items()).hasSize(0);
     assertThat(resultPage.endCursor()).isEqualTo("0");
     assertThat(resultPage.isLastPage()).isTrue();
@@ -113,12 +117,14 @@ class JobItemProviderTest {
             .total(3)
             .endCursor("3")
             .build();
-    when(searchClientsProxy.searchJobs(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchJobs(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
+    verify(searchClientsProxy).searchJobs(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), null, 5);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
@@ -127,6 +133,13 @@ class JobItemProviderTest {
                 new Item(1L, 10L, null, null),
                 new Item(2L, 20L, null, 123),
                 new Item(3L, 30L, null, 456)));
+  }
+
+  private void assertSearchedWith(
+      final JobQuery query, final String expectedCursor, final int expectedPageSize) {
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.page().after()).isEqualTo(expectedCursor);
+    assertThat(query.page().size()).isEqualTo(expectedPageSize);
   }
 
   private JobEntity createJobEntity(
