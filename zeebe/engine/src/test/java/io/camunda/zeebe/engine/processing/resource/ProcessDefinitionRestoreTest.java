@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -152,9 +154,7 @@ public class ProcessDefinitionRestoreTest {
             .withIntent(ProcessDefinitionRestoreIntent.RESTORED)
             .map(r -> r.getValue().getProcessDefinitionKey())
             .toList();
-    assertThat(restoredKeys)
-        .containsExactly(stray.getProcessDefinitionKey())
-        .doesNotContain(draining.getProcessDefinitionKey(), active.getProcessDefinitionKey());
+    assertThat(restoredKeys).containsExactly(stray.getProcessDefinitionKey());
   }
 
   @Test
@@ -327,6 +327,7 @@ public class ProcessDefinitionRestoreTest {
                     io.camunda.zeebe.protocol.record.ValueType.PROCESS_DEFINITION_RESTORE)
                 .asList())
         .isEmpty();
+    assertThat(keysStillPendingDeletion()).containsExactly(v1.getProcessDefinitionKey());
   }
 
   @Test
@@ -399,6 +400,8 @@ public class ProcessDefinitionRestoreTest {
             .getFirst();
     assertThat(started.getValue().getProcessDefinitionKey())
         .isEqualTo(v1.getProcessDefinitionKey());
+    // instance creation also accepts PENDING_DELETION, so check the definition left that state
+    assertThat(keysStillPendingDeletion()).isEmpty();
   }
 
   @Test
@@ -425,11 +428,34 @@ public class ProcessDefinitionRestoreTest {
             .getFirst();
     assertThat(started.getValue().getProcessDefinitionKey())
         .isEqualTo(v1.getProcessDefinitionKey());
+    assertThat(keysStillPendingDeletion()).isEmpty();
   }
 
   private void awaitRestoreFinished() {
     RecordingExporter.processDefinitionRestoreRecords(ProcessDefinitionRestoreIntent.FINISHED)
         .await();
+  }
+
+  /**
+   * Runs one more restore pass from the first definition and returns the keys it restores. A pass
+   * only restores definitions that still rest in {@code PENDING_DELETION}, so these are the ones.
+   */
+  private List<Long> keysStillPendingDeletion() {
+    final long lastPosition =
+        RecordingExporter.getRecords().stream().mapToLong(Record::getPosition).max().orElse(-1L);
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.command()
+            .processDefinitionRestore(
+                ProcessDefinitionRestoreIntent.CONTINUE, new ProcessDefinitionRestoreRecord()));
+    engine.start();
+
+    return RecordingExporter.processDefinitionRestoreRecords()
+        .filter(r -> r.getPosition() > lastPosition)
+        .limit(r -> r.getIntent() == ProcessDefinitionRestoreIntent.FINISHED)
+        .withIntent(ProcessDefinitionRestoreIntent.RESTORED)
+        .map(r -> r.getValue().getProcessDefinitionKey())
+        .toList();
   }
 
   private static BpmnModelInstance simpleProcess(final String processId) {

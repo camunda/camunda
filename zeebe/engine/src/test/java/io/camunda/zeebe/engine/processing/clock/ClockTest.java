@@ -74,6 +74,7 @@ public final class ClockTest {
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
         .tryWriteResponse(anyInt(), anyLong());
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test
@@ -132,7 +133,7 @@ public final class ClockTest {
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertStoredClockPinnedAt(fakeNow);
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test
@@ -151,6 +152,7 @@ public final class ClockTest {
     assertThat(ENGINE.getStreamClock().instant()).isAfter(fakeNow);
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
         .tryWriteResponse(anyInt(), anyLong());
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.none());
   }
 
   @Test
@@ -214,7 +216,7 @@ public final class ClockTest {
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertStoredClockPinnedAt(fakeNow);
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test
@@ -442,17 +444,5 @@ public final class ClockTest {
     final var record = new ClockRecord();
     record.wrap(buffer);
     return record;
-  }
-
-  /**
-   * Adding to the clock builds on the stored clock rather than the running one, so adding nothing
-   * shows whether the stored clock is pinned, without moving it.
-   */
-  private void assertStoredClockPinnedAt(final Instant pinnedAt) {
-    final var added = clockClient.add(Duration.ZERO);
-    Assertions.assertThat(added).hasIntent(ClockIntent.PINNED);
-    assertThat(added.getValue().getTime())
-        .describedAs("the stored pin time")
-        .isEqualTo(pinnedAt.toEpochMilli());
   }
 }
