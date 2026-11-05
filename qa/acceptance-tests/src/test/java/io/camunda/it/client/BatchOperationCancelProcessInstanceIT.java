@@ -313,6 +313,73 @@ public class BatchOperationCancelProcessInstanceIT {
                     .isEqualTo(ProcessInstanceState.ACTIVE));
   }
 
+  @Test
+  void shouldCancelOnlyRootInstances() {
+    // given
+    final var scenario = startParentWithChildAndUnrelatedRoot();
+
+    // when - the definition filter matches both the child and the unrelated root instance
+    final var batchOperationKey =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(f -> f.processDefinitionId(scenario.childProcessId()))
+            .send()
+            .join()
+            .getBatchOperationKey();
+
+    // then - the child is left to be cancelled together with its root instance
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 1);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    assertThat(getBatchItemKeys(batchOperationKey)).containsExactly(scenario.unrelatedRootKey());
+    waitForProcessInstanceToBeTerminated(camundaClient, scenario.unrelatedRootKey());
+    assertThat(
+            camundaClient
+                .newProcessInstanceGetRequest(scenario.childKey())
+                .send()
+                .join()
+                .getState())
+        .isEqualTo(ProcessInstanceState.ACTIVE);
+  }
+
+  @Test
+  void shouldAcceptNonCancellableStateInOrBranchAndCancelOnlyOtherBranchMatches() {
+    // given
+    final var activeKeys =
+        activeProcessInstances.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
+    final long unrelatedKey =
+        startScopedProcessInstance(
+                camundaClient, "service_tasks_v1", UUID.randomUUID().toString(), Map.of())
+            .getProcessInstanceKey();
+
+    // when - unlike a top-level state, a non-cancellable state inside an $or branch is accepted;
+    // that branch can never match a cancellable instance
+    final var batchOperationKey =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            b -> b.state(ProcessInstanceState.COMPLETED),
+                            b -> b.processInstanceKey(k -> k.in(activeKeys)))))
+            .send()
+            .join()
+            .getBatchOperationKey();
+
+    // then - only the instances matched by the key branch are cancelled
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, activeKeys.size());
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, activeKeys.size(), 0);
+    for (final Long key : activeKeys) {
+      waitForProcessInstanceToBeTerminated(camundaClient, key);
+    }
+    assertThat(getBatchItemKeys(batchOperationKey))
+        .containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
+    assertThat(camundaClient.newProcessInstanceGetRequest(unrelatedKey).send().join().getState())
+        .isEqualTo(ProcessInstanceState.ACTIVE);
+  }
+
   private List<Long> getBatchItemKeys(final String batchOperationKey) {
     return camundaClient
         .newBatchOperationItemsSearchRequest()
