@@ -595,11 +595,30 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Resolve this area's triage owner
+        id: triage-owner
+        # always(), because the steps that consume this run on always() too.
+        # The agent failing is precisely the case with no fix PR and a thread
+        # that needs a person -- the default success() would skip the lookup
+        # exactly when the owner matters most.
+        if: always()
+        # Best-effort by contract: emits found=false rather than failing, so a
+        # roster that is missing or stale leaves the thread unmentioned and the
+        # PR unassigned instead of turning a nightly red.
+        #
+        # @main, not a SHA: the assignment data ships inside the action, so a
+        # pin would freeze ownership at whoever held the area that day.
+        continue-on-error: true
+        uses: camunda/team-test-automation/.github/actions/resolve-triage-owner@main
+        with:
+          area: oc
+
       - name: Post initial Slack message
         id: slack
         continue-on-error: true
         if: github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true'
         env:
+          OWNER_SLACK_ID: ${{ steps.triage-owner.outputs.slack_user_id }}
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           REPO: ${{ github.repository }}
@@ -648,6 +667,12 @@ jobs:
           header=":mag: *C8 Orchestration Cluster Nightly Triage -- ${date_str}*"
           base_text="${header}"$'\n'"${stats_line}"
           [ -n "$failing_list" ] && base_text="${base_text}"$'\n\n'"*Failing runs:*${failing_list}"
+          # Appended to base_text, not to the final text: base_text is exported
+          # as a job output and the dispatch job rebuilds its chat.update from
+          # it, so putting the owner here is what makes it survive the rebuild.
+          if [ -n "${OWNER_SLACK_ID:-}" ]; then
+            base_text="${base_text}"$'\n\n'":bust_in_silhouette: Owner: <@${OWNER_SLACK_ID}>"
+          fi
 
           # Append dispatching status
           if [ "$failed_count" -gt 0 ]; then

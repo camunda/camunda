@@ -757,15 +757,54 @@ jobs:
             printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
           done
 
+      - name: Resolve this area's triage owner
+        id: triage-owner
+        # always(), because the steps that consume this run on always() too.
+        # The agent failing is precisely the case with no fix PR and a thread
+        # that needs a person -- the default success() would skip the lookup
+        # exactly when the owner matters most.
+        if: always()
+        # Best-effort by contract: emits found=false rather than failing, so a
+        # roster that is missing or stale leaves the thread unmentioned and the
+        # PR unassigned instead of turning a nightly red.
+        #
+        # @main, not a SHA: the assignment data ships inside the action, so a
+        # pin would freeze ownership at whoever held the area that day.
+        continue-on-error: true
+        uses: camunda/team-test-automation/.github/actions/resolve-triage-owner@main
+        with:
+          area: oc
+
       - name: Re-label PRs (idempotent)
         if: always()
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TRIAGE_OWNER_LOGIN: ${{ steps.triage-owner.outputs.login }}
+          # The job's own token, not the App token minted at the start of the
+          # job: the agent can run past that token's one-hour life, and the
+          # refresh below happens later still -- so both edits would fail auth
+          # and leave the PRs unlabelled and unassigned. The workflow already
+          # grants pull-requests: write, which is all this step needs.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           if [ -f /tmp/fix-meta.json ]; then
+            # Assignee rather than reviewer: the bot authors these PRs, so a
+            # review request from it is refused as a self-review.
+            #
+            # `if`, not `[ ... ] && ...`: Actions runs run-steps under `bash -e`,
+            # and an empty owner is the expected state, not an error.
+            # An array, not a string: the flag and its value are two argv
+            # entries, so an unquoted string would rely on word splitting
+            # (SC2086) and a quoted one would pass "--add-assignee login" as a
+            # single argument.
+            assignee=()
+            if [ -n "${TRIAGE_OWNER_LOGIN:-}" ]; then
+              assignee=(--add-assignee "${TRIAGE_OWNER_LOGIN}")
+            fi
             jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_num; do
-              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null || true
+              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" "${assignee[@]}" 2>/dev/null \
+                || gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null \
+                || true
             done
           fi
 
@@ -1616,6 +1655,7 @@ jobs:
       - name: Slack thread reply
         if: always() && github.event.inputs.send_slack_notification == 'true'
         env:
+          OWNER_SLACK_ID: ${{ steps.triage-owner.outputs.slack_user_id }}
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
           SLACK_CHANNEL:              ${{ github.event.inputs.slack_channel }}
@@ -1782,6 +1822,11 @@ jobs:
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
+          # No PR means nothing was fixed and this thread needs a person --
+          # exactly the case that used to name nobody at all.
+          if [ "$pr_count" -eq 0 ] && [ -n "${OWNER_SLACK_ID:-}" ]; then
+            text="${text}"$'\n'":bust_in_silhouette: <@${OWNER_SLACK_ID}> please take a look."
+          fi
           payload=$(jq -nc \
             --arg channel    "$SLACK_CHANNEL" \
             --arg thread_ts  "$SLACK_THREAD_TS" \
