@@ -46,6 +46,9 @@ env:
   TEST_OWNER: '@camunda/reliability-testing'
   REUSE_TAG: ${{ inputs.reuse-tag }}
   GCS_LOAD_TEST_RESULTS_BUCKET: camunda-benchmark-load-test-results-prod
+  # Must match the soak and metrics window in stress-load-test.yml (SOAK_SECONDS = warmup + window).
+  WARMUP_SECONDS: 900
+  METRICS_WINDOW_SECONDS: 1800
 
 jobs:
   benchmark-data:

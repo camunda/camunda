@@ -233,15 +233,16 @@ class TestResolve:
     _SOAK_START = "2026-07-01T02:45:00Z"
     _BENCHMARK = "medic-daily-2026-07-01-abc1234-test"
     _NOW = _utc(2026, 7, 1, hour=12)
+    _OFFSET = 2700  # 900 s warmup + 1800 s window
 
     def test_anchor_is_soak_start_plus_warmup_plus_window(self):
-        """anchor = soak.started_at + WARMUP_SECONDS(900) + METRICS_WINDOW_SECONDS(1800) = +45min"""
+        """anchor = soak.started_at + the given offset (warmup + window) = +45min"""
         # given: a completed daily run with a known soak start time
         with mock.patch.object(r, "find_run_id", return_value="42"), \
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when
-            result = r.resolve(self._NOW, "rest")
+            result = r.resolve(self._NOW, "rest", self._OFFSET)
         # then: anchor = 02:45:00 + 900s (warmup) + 1800s (window) = 03:30:00
         assert result is not None
         namespace, anchor = result
@@ -254,7 +255,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START) as soak, \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when
-            namespace, _ = r.resolve(self._NOW, "none-rest")
+            namespace, _ = r.resolve(self._NOW, "none-rest", self._OFFSET)
         # then
         assert namespace == f"c8-{self._BENCHMARK}-none-rest"
         soak.assert_called_once_with("42", "none-rest")
@@ -263,7 +264,7 @@ class TestResolve:
         # given: no completed run exists for any candidate date
         with mock.patch.object(r, "find_run_id", return_value=None):
             # when / then
-            assert r.resolve(self._NOW, "rest") is None
+            assert r.resolve(self._NOW, "rest", self._OFFSET) is None
 
     def test_skips_candidate_missing_soak_time(self):
         # given: run found but soak job has no started_at (e.g. job was cancelled)
@@ -271,7 +272,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=None), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when / then
-            assert r.resolve(self._NOW, "rest") is None
+            assert r.resolve(self._NOW, "rest", self._OFFSET) is None
 
     def test_skips_candidate_missing_artifact(self):
         # given: run found but metrics artifact has expired or was never uploaded
@@ -279,7 +280,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=None):
             # when / then
-            assert r.resolve(self._NOW, "rest") is None
+            assert r.resolve(self._NOW, "rest", self._OFFSET) is None
 
     def test_skips_candidate_with_unparseable_timestamp(self):
         # given: soak.started_at is present but not a valid ISO-8601 timestamp
@@ -287,7 +288,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value="not-a-timestamp"), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when / then
-            assert r.resolve(self._NOW, "rest") is None
+            assert r.resolve(self._NOW, "rest", self._OFFSET) is None
 
     def test_falls_back_to_next_candidate_on_no_run(self):
         """First candidate has no run ID; resolver must try the next one."""
@@ -302,7 +303,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", return_value=self._BENCHMARK):
             # when
-            result = r.resolve(self._NOW, "rest")
+            result = r.resolve(self._NOW, "rest", self._OFFSET)
         # then: succeeded after falling back to the second candidate
         assert result is not None
         assert len(calls) == 2
@@ -320,7 +321,7 @@ class TestResolve:
              mock.patch.object(r, "soak_started_at", return_value=self._SOAK_START), \
              mock.patch.object(r, "benchmark_from_artifacts", side_effect=artifact_side_effect):
             # when
-            result = r.resolve(self._NOW, "rest")
+            result = r.resolve(self._NOW, "rest", self._OFFSET)
         # then: succeeded after falling back to the second candidate
         assert result is not None
         assert len(calls) == 2

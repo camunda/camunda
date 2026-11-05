@@ -19,6 +19,8 @@ Required environment variables:
   SLACK_WEBHOOK_URL   Incoming-webhook URL to post to.
   REPO                GitHub repo slug, e.g. camunda/camunda.
   RUN_ID              GitHub Actions run id (used to link the workflow run).
+  WARMUP_SECONDS      Warmup before the metrics window, as the stress test applies it.
+  METRICS_WINDOW_SECONDS  Length of the metrics window.
 
 Optional:
   VARIANTS_JSON_FILE  Path to the variants manifest JSON file (see aggregate-metrics in
@@ -58,6 +60,8 @@ if not variants:
 bench    = os.environ['BENCHMARK']
 repo     = os.environ['REPO']
 run_id   = os.environ['RUN_ID']
+warmup_s = int(os.environ['WARMUP_SECONDS'])
+window_s = int(os.environ['METRICS_WINDOW_SECONDS'])
 webhook  = os.environ['SLACK_WEBHOOK_URL']
 flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
 
@@ -110,7 +114,7 @@ table  = '\n'.join([header, sep] + rows)
 # All variants' Grafana links share one time range, anchored to the first (primary) variant's
 # soak end — mirrors prior behavior, which always anchored the range on gRPC's soak end.
 soak_end = int(variants[0]['soakEndEpoch']) if variants else int(time.time())
-from_ms  = (soak_end - 2700) * 1000
+from_ms  = (soak_end - warmup_s - window_s) * 1000
 to_ms    = soak_end * 1000
 run_url  = f'https://github.com/{repo}/actions/runs/{run_id}'
 
@@ -124,7 +128,7 @@ blocks = [
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f':bar_chart: *Daily Load Test Results — {date}*\nMetrics: 30 min after 15 min warmup · <{run_url}|Workflow run>',
+            'text': f':bar_chart: *Daily Load Test Results — {date}*\nMetrics: {window_s // 60} min after {warmup_s // 60} min warmup · <{run_url}|Workflow run>',
         },
     },
 ]

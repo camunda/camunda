@@ -2,12 +2,13 @@
 """Resolve the daily-on-main load-test namespace + post-warmup anchor.
 
 Emits `namespace` (`c8-medic-daily-<date>-<sha>-test-<variant>`) and `at`
-(RFC3339 = soak.started_at + 45 min, so PromQL `[1800s] @ at` evaluates
-the first 30 min after the 15-min warmup) to `$GITHUB_OUTPUT`. Empty on
+(RFC3339 = soak.started_at + WARMUP_SECONDS + METRICS_WINDOW_SECONDS, so PromQL
+`[METRICS_WINDOW_SECONDS] @ at` evaluates the window after the warmup) to `$GITHUB_OUTPUT`. Empty on
 miss so the downstream comparison job skips cleanly. Falls back to the
 previous business day when today's daily isn't yet complete.
 
-Reads `SECONDARY_STORAGE_TYPE` and `PROTOCOL` of the PR benchmark. A daily
+Requires `WARMUP_SECONDS` and `METRICS_WINDOW_SECONDS`, which the PR load test workflow defines
+once for its own sleeps. Reads `SECONDARY_STORAGE_TYPE` and `PROTOCOL` of the PR benchmark. A daily
 variant with a different setup gives deltas that do not come from the PR.
 """
 
@@ -30,8 +31,6 @@ VARIANT_LABELS = {
     "none-grpc": "None-gRPC",
     "none-rest": "None-REST",
 }
-WARMUP_SECONDS = 900           # mirrors sleep 900 in await-benchmark (PR side)
-METRICS_WINDOW_SECONDS = 1800  # PromQL [1800s] @ at evaluates [at-1800, at]
 TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 45 min soak → ~03:30
 LOOKBACK_BUSINESS_DAYS = 7
 
@@ -137,7 +136,7 @@ def benchmark_from_artifacts(run_id: str) -> str | None:
     return None
 
 
-def resolve(now: datetime, variant: str) -> tuple[str, str] | None:
+def resolve(now: datetime, variant: str, anchor_offset_seconds: int) -> tuple[str, str] | None:
     for d in candidate_dates(now):
         rid = find_run_id(d)
         if not rid:
@@ -152,7 +151,7 @@ def resolve(now: datetime, variant: str) -> tuple[str, str] | None:
         except ValueError:
             warn(f"unparseable soak.started_at={soak_start!r} for run {rid}")
             continue
-        anchor = (start_dt + timedelta(seconds=WARMUP_SECONDS + METRICS_WINDOW_SECONDS)).strftime(
+        anchor = (start_dt + timedelta(seconds=anchor_offset_seconds)).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
         namespace = f"c8-{benchmark}-{variant}"
@@ -179,7 +178,9 @@ def main() -> int:
     variant = daily_variant(
         os.environ.get("SECONDARY_STORAGE_TYPE", ""), os.environ.get("PROTOCOL") or "rest"
     )
-    result = resolve(datetime.now(timezone.utc), variant)
+    # The PR workflow's own warmup and window, so both tests measure the same minutes of a run.
+    offset = int(os.environ["WARMUP_SECONDS"]) + int(os.environ["METRICS_WINDOW_SECONDS"])
+    result = resolve(datetime.now(timezone.utc), variant, offset)
     if result is None:
         warn("no usable daily-on-main run found; daily comparison skipped")
         emit("", "")

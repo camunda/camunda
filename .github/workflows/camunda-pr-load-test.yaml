@@ -45,6 +45,11 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
+  # Warmup and metrics window of a load test. The daily stress test uses the same values (see
+  # stress-load-test.yml), so keep them in sync. The `duration-seconds` inputs below stay literal
+  # because the env context is not available in a reusable workflow call's `with:`.
+  WARMUP_SECONDS: 900
+  METRICS_WINDOW_SECONDS: 1800
 
 
 jobs:
@@ -146,9 +151,9 @@ jobs:
           persist-credentials: false
       # Warmup before metrics start, then the 30-min window get-pr-metrics queries.
       - name: Warmup sleep
-        run: sleep 900  # 15 minutes
+        run: sleep "${WARMUP_SECONDS}"
       - name: Accumulate metrics window
-        run: sleep 1800  # 30 minutes
+        run: sleep "${METRICS_WINDOW_SECONDS}"
       - name: Observe build status
         if: always()
         continue-on-error: true
