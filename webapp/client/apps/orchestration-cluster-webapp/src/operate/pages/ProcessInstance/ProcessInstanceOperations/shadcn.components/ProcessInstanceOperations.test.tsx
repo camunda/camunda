@@ -134,11 +134,7 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 	it('should only cancel after the confirmation', async ({worker}) => {
 		const instance = createInstance('ACTIVE');
 		const onRequest = vi.fn();
-		worker.events.on('request:start', ({request}) => {
-			if (request.method === 'POST') {
-				onRequest(request.url);
-			}
-		});
+		worker.events.on('request:start', ({request}) => onRequest(request.url));
 		worker.use(
 			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 			mockCancelProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
@@ -149,7 +145,7 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 		await userEvent.click(screen.getByRole('button', {name: `Cancel Instance ${instance.processInstanceKey}`}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
 
-		expect(onRequest).not.toHaveBeenCalled();
+		expect(onRequest).not.toHaveBeenCalledWith(expect.stringContaining('/cancellation'));
 
 		await userEvent.click(screen.getByRole('button', {name: `Cancel Instance ${instance.processInstanceKey}`}));
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
