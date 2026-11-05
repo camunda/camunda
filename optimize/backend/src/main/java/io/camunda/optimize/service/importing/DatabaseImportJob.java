@@ -64,6 +64,7 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   protected void executeImport() {
     if (!newOptimizeEntities.isEmpty()) {
       boolean success = false;
+      int failedAttempts = 0;
       do {
         try {
           final long persistStart = System.currentTimeMillis();
@@ -72,7 +73,15 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
           logger.debug("Executing import to database took [{}] ms", persistEnd - persistStart);
           success = true;
         } catch (final Exception e) {
-          logger.error("Error while executing import to database", e);
+          failedAttempts++;
+          if (failedAttempts == 1) {
+            logger.error("Error while executing import to database", e);
+          } else {
+            logger.warn(
+                "Error while executing import to database, failed attempts so far: {}, cause: {}",
+                failedAttempts,
+                e.toString());
+          }
           OptimizeMetrics.recordDbWriteFailure(recordType, partitionId, e);
           final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
