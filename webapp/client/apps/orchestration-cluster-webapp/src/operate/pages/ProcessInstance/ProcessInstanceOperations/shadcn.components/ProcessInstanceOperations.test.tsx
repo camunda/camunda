@@ -21,6 +21,7 @@ import {
 	mockCancelProcessInstanceEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
+	mockResumeProcessInstanceEndpoint,
 	mockSuspendProcessInstanceEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -199,6 +200,36 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 		await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
 		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
+	});
+
+	it('should show a permission warning when suspending is forbidden', async ({worker}) => {
+		const instance = createInstance('ACTIVE');
+		worker.use(
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+			}),
+		);
+		const screen = await renderOperations(instance);
+
+		await userEvent.click(screen.getByRole('button', {name: `Suspend Instance ${instance.processInstanceKey}`}));
+
+		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
+	});
+
+	it('should show a permission warning when resuming is forbidden', async ({worker}) => {
+		const instance = createInstance('SUSPENDED');
+		worker.use(
+			mockResumeProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+			}),
+		);
+		const screen = await renderOperations(instance);
+
+		await userEvent.click(screen.getByRole('button', {name: `Resume Instance ${instance.processInstanceKey}`}));
+
+		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
 	});
 
 	it('should keep the delete button visible for finished instances when collapsed', async () => {
