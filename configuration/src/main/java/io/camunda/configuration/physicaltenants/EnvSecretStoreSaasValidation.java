@@ -20,8 +20,9 @@ import org.jspecify.annotations.NullMarked;
  * any physical tenant. SaaS tenants share one process environment that the platform, not the
  * tenant, controls, so SaaS stays on the file store.
  *
- * <p>The cluster counts as SaaS if any tenant resolves {@code camunda.security.saas.cluster-id},
- * since that property can be overridden per tenant.
+ * <p>The cluster counts as SaaS if any tenant resolves {@code camunda.security.saas.cluster-id}. A
+ * tenant cannot override {@code security.saas} (see {@link
+ * PhysicalTenantOverridePolicyValidation}), so every tenant resolves the root value.
  */
 @NullMarked
 class EnvSecretStoreSaasValidation implements CrossTenantValidation {

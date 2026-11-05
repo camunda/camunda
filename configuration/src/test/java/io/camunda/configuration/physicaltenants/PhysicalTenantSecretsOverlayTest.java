@@ -513,22 +513,20 @@ class PhysicalTenantSecretsOverlayTest {
   }
 
   @Test
-  void shouldRefuseEnvStoreWhenOnlyAPhysicalTenantSetsTheSaasClusterId() {
-    // given tenanta alone overrides the SaaS cluster id, while the default tenant uses an env store
+  void shouldRefuseAPhysicalTenantThatSetsTheSaasClusterId() {
+    // given tenanta alone sets the SaaS cluster id
     setProperties(
         new HashMap<>(
             Map.of(
                 "camunda.secrets.stores.env.default.prefix", "SECRET_",
-                "camunda.physical-tenants.tenanta.security.saas.cluster-id", "cluster-1",
-                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
-                    "TENANTA_SECRET_")),
+                "camunda.physical-tenants.tenanta.security.saas.cluster-id", "cluster-1")),
         "tenanta");
 
-    // when / then the message names tenanta as the tenant that sets SaaS
+    // when / then resolution fails on the override, not on the secret store
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(this::newResolver)
-        .withMessageContaining("not supported in SaaS")
-        .withMessageContaining("camunda.security.saas.cluster-id for physical tenants [tenanta]");
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta=[security.saas.cluster-id]");
   }
 
   @Test
