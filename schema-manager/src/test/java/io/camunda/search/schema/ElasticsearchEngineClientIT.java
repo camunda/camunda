@@ -80,7 +80,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
     // given
-    final var indexName = "index_name-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var indexName = "await_active-" + ENGINE_CLIENT_TEST_MARKERS;
     elsClient.indices().create(req -> req.index(indexName));
 
     // when / then
@@ -92,7 +92,7 @@ public class ElasticsearchEngineClientIT {
   void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
     // given an index that exists but whose primary can never be allocated, like one whose
     // creation request timed out on the client while its shards were still initializing
-    final var indexName = "index_name-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var indexName = "await_unassigned-" + ENGINE_CLIENT_TEST_MARKERS;
     elsClient
         .indices()
         .create(
