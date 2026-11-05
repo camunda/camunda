@@ -34,12 +34,43 @@ runs:
         secrets: |
           secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
           secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
-    - name: Authenticate to GCS via WIF
-      # Not retried. An earlier attempt to wrap this in Wandalen/wretry.action broke SA
-      # impersonation -- gcloud ran as the bare WIF identity and every storage call 403'd
-      # (INC-7417). That specific defect is gone now that retries are plain repeated steps, so if
-      # this step ever turns flaky it can be given the same treatment as setup-java.
+    # Each attempt is a literal copy gated on its predecessor's outcome -- keep the `with:` blocks
+    # identical. The last attempt omits `continue-on-error` so an exhausted retry fails the job.
+    - name: Authenticate to GCS via WIF (attempt 1 of 3)
+      id: auth-attempt-1
       if: steps.is-fork.outputs.is-fork != 'true'
+      continue-on-error: true
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+        service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+    # The auth post hook only removes the last attempt's credentials file.
+    - name: Clean up and wait before attempt 2
+      if: steps.auth-attempt-1.outcome == 'failure'
+      shell: bash
+      env:
+        CREDS_FILE: ${{ steps.auth-attempt-1.outputs.credentials_file_path }}
+      run: |
+        if [[ -n "${CREDS_FILE}" ]]; then rm -f "${CREDS_FILE}"; fi
+        sleep 10
+    - name: Authenticate to GCS via WIF (attempt 2 of 3)
+      id: auth-attempt-2
+      if: steps.auth-attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+        service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+    - name: Clean up and wait before attempt 3
+      if: steps.auth-attempt-2.outcome == 'failure'
+      shell: bash
+      env:
+        CREDS_FILE: ${{ steps.auth-attempt-2.outputs.credentials_file_path }}
+      run: |
+        if [[ -n "${CREDS_FILE}" ]]; then rm -f "${CREDS_FILE}"; fi
+        sleep 10
+    - name: Authenticate to GCS via WIF (attempt 3 of 3)
+      if: steps.auth-attempt-2.outcome == 'failure'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
