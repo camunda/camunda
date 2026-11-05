@@ -254,6 +254,7 @@
 				"react/purity": "error",
 				"react/set-state-in-render": "error",
 				"react/unsupported-syntax": "warn",
+				// Copied from @tanstack/eslint-plugin-query configs["flat/recommended"]; re-sync when bumping the plugin.
 				"@tanstack/query/exhaustive-deps": "error",
 				"@tanstack/query/no-rest-destructuring": "warn",
 				"@tanstack/query/stable-query-client": "error",
@@ -279,6 +280,7 @@
 			],
 			"plugins": ["react"],
 			"rules": {
+				// Copied from @camunda/design-system/eslint-plugin configs.recommended; re-sync when bumping the design system.
 				"camunda-ds/no-direct-lucide-import": "warn",
 				"camunda-ds/no-deep-import": "error",
 				"camunda-ds/no-carbon-compat-import": "warn",
@@ -337,6 +339,7 @@
 				"apps/orchestration-cluster-webapp/src/vitest-modules/**/*"
 			],
 			"rules": {
+				// Copied from @camunda/design-system/eslint-plugin configs.tailwind; re-sync when bumping the design system.
 				"camunda-ds/no-primitive-tailwind-colors": "error",
 				"camunda-ds/no-raw-color-in-classname": "error",
 				"camunda-ds/no-adhoc-typography": "error",
