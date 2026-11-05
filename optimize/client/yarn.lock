@@ -7876,10 +7876,10 @@ eslint-plugin-license-header@^0.9.0:
   dependencies:
     requireindex "^1.2.0"
 
-eslint-plugin-playwright@2.12.1:
-  version "2.12.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-playwright/-/eslint-plugin-playwright-2.12.1.tgz#3f27c41be3f0c95389b80478d6cf0191b94ff548"
-  integrity sha512-JhavNuYBIq7SE/Zg9Esf9RGHkXoDbzrEKS383cowzMyvZ4JMbmdNCN6CoW+RU1Cjzwcoea1tou0je58uXmT/9A==
+eslint-plugin-playwright@2.12.2:
+  version "2.12.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-playwright/-/eslint-plugin-playwright-2.12.2.tgz#125af8e8e0bc123f17d14e5f55ecd02eed400a09"
+  integrity sha512-sYRCyAEACD3URVoFTfldZcvZNdlJ1r5414gilOTsDCu26PY7l4dUl/3o9ohIEltZgaDS1VXD1mG5xU1KlIGJSw==
   dependencies:
     globals "^17.3.0"
 
