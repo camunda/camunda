@@ -57,6 +57,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         VARIANT["stress-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        PUBLISH["load-test-publish-results.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
@@ -73,6 +74,9 @@ graph TD
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
+    DAILY -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
+    STABLE_STRESS -- "one call per stable<br/>branch and storage" --> VARIANT
+    STABLE_STRESS -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
     VARIANT -- "scenario: max" --> CORE
     VARIANT -- "profiles each variant<br/>after the soak" --> PROFILE
     VARIANT -- "45 min soak, then<br/>snapshot metrics" --> METRICS
@@ -180,8 +184,9 @@ For a full list of Prometheus metrics, SLO targets, and PromQL queries used to e
 
 ### Historical results archive (GCS)
 
-The daily stress-test workflow (`camunda-daily-load-tests.yml`) persists each run's aggregated
-metrics, variant manifest, and flamegraphs to
+The daily stress-test workflow (`camunda-daily-load-tests.yml`, through the shared
+`load-test-publish-results.yml`) persists each run's aggregated metrics, variant manifest, and
+flamegraphs to
 `gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/`, outliving both
 the 90-day GH Actions artifact retention and the Prometheus retention window.
 
