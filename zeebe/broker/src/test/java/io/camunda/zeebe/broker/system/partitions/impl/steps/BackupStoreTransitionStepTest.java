@@ -194,11 +194,14 @@ class BackupStoreTransitionStepTest {
     assertThat(transitionFuture)
         .describedAs(
             "Expected to fail installation when backup is required and Azure is not reachable.")
-        .failsWithin(Duration.ofSeconds(11))
+        .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
-        .withMessageContaining(AzureBackupStoreException.ConfigurationException.class.getName())
-        .withRootCauseInstanceOf(ConnectException.class);
-    assertThat(transitionContext.getBackupStore()).isNull();
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasRootCauseInstanceOf(ConnectException.class)
+                    .hasStackTraceContaining(AzureBackupStoreException.ConfigurationException.class.getName()));
+        assertThat(transitionContext.getBackupStore()).isNull();
   }
 
   @Test
@@ -223,8 +226,12 @@ class BackupStoreTransitionStepTest {
             "Expected to fail installation when backup is required and GCS is not reachable.")
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
-        .withMessageContaining(ConfigurationException.class.getName())
-        .withRootCauseInstanceOf(ConnectException.class);
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasRootCauseInstanceOf(ConnectException.class)
+                    .hasStackTraceContaining(ConfigurationException.class.getName()));
+
     assertThat(transitionContext.getBackupStore()).isNull();
   }
 
