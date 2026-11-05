@@ -127,13 +127,40 @@ class DeleteByIdPipelineTest {
     verifyNoMoreInteractions(support);
   }
 
+  @Test
+  void shouldRetryBatchIfNotAllDocsDeleted() {
+    // given
+    final var filter = FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("1", "2", "3")));
+    when(support.searchDocumentsToDelete(any(), any(), any(), anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(batch));
+    when(support.deleteDocBatch(any()))
+        .thenReturn(CompletableFuture.completedFuture(0))
+        .thenReturn(CompletableFuture.completedFuture(1));
+
+    // when
+    final var result = pipeline.deleteDocumentsById("test-index", filter, Runnable::run);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(support, metrics);
+    inOrder.verify(support).searchDocumentsToDelete("test-index", filter, null, 2500);
+    inOrder.verify(support).deleteDocBatch(batch);
+    inOrder.verify(metrics).recordDeletionBatchRetry();
+    inOrder.verify(support).searchDocumentsToDelete("test-index", filter, null, 2500);
+    inOrder.verify(support).deleteDocBatch(batch);
+    verifyNoMoreInteractions(support);
+  }
+
   static Stream<Arguments> retryableErrors() {
     return Stream.of(
         Arguments.of(
-            new CompletionException(new DocumentDeletionException("conflict")), 2500, 2500),
+            new CompletionException(new IncompleteDocumentDeletionException("conflict")),
+            2500,
+            2500),
         Arguments.of(new CompletionException(mock(ElasticsearchException.class)), 2500, 2500),
         Arguments.of(new CompletionException(mock(OpenSearchException.class)), 2500, 2500),
-        Arguments.of(new DocumentDeletionException("conflict"), 2500, 2500),
+        Arguments.of(new IncompleteDocumentDeletionException("conflict"), 2500, 2500),
         Arguments.of(mock(ElasticsearchException.class), 2500, 2500),
         Arguments.of(mock(OpenSearchException.class), 2500, 2500),
         // causes batch to be reduced in size on second retry
