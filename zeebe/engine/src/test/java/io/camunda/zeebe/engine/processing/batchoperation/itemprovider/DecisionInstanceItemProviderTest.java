@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -36,6 +37,8 @@ class DecisionInstanceItemProviderTest {
   private DecisionInstanceItemProvider provider;
 
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+  private final DecisionInstanceFilter filter =
+      new DecisionInstanceFilter.Builder().decisionDefinitionIds("test-decision").build();
 
   @BeforeEach
   void setUp() {
@@ -48,11 +51,7 @@ class DecisionInstanceItemProviderTest {
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
     provider =
-        new DecisionInstanceItemProvider(
-            searchClientsProxy,
-            metrics,
-            new DecisionInstanceFilter.Builder().build(),
-            authentication);
+        new DecisionInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
   }
 
   @Test
@@ -64,30 +63,32 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, 10L, null),
-                    createDecisionInstanceEntity(2L, 20L, 20L),
-                    createDecisionInstanceEntity(3L, 30L, 20L),
-                    createDecisionInstanceEntity(4L, 40L, 40L),
-                    createDecisionInstanceEntity(5L, 50L, 50L)))
+                    createDecisionInstanceEntity(1L, 10L, null, null),
+                    createDecisionInstanceEntity(2L, 20L, 20L, null),
+                    createDecisionInstanceEntity(3L, 30L, 20L, 123),
+                    createDecisionInstanceEntity(4L, 40L, 40L, 456),
+                    createDecisionInstanceEntity(5L, 50L, 50L, 456)))
             .total(5)
             .endCursor("5")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
     assertThat(resultPage.items())
         .isEqualTo(
             List.of(
-                new Item(1, 10L, null),
-                new Item(2, 20L, 20L),
-                new Item(3, 30L, 20L),
-                new Item(4, 40L, 40L),
-                new Item(5, 50L, 50L)));
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, 20L, null),
+                new Item(3, 30L, 20L, 123),
+                new Item(4, 40L, 40L, 456),
+                new Item(5, 50L, 50L, 456)));
   }
 
   @Test
@@ -101,12 +102,14 @@ class DecisionInstanceItemProviderTest {
             .total(0)
             .endCursor("0")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.items()).hasSize(0);
     assertThat(resultPage.endCursor()).isEqualTo("0");
     assertThat(resultPage.isLastPage()).isTrue();
@@ -121,32 +124,47 @@ class DecisionInstanceItemProviderTest {
         new SearchQueryResult.Builder<DecisionInstanceEntity>()
             .items(
                 List.of(
-                    createDecisionInstanceEntity(1L, 10L, null),
-                    createDecisionInstanceEntity(2L, 20L, null),
-                    createDecisionInstanceEntity(3L, 30L, null)))
+                    createDecisionInstanceEntity(1L, 10L, null, null),
+                    createDecisionInstanceEntity(2L, 20L, null, 123),
+                    createDecisionInstanceEntity(3L, 30L, null, 456)))
             .total(3)
             .endCursor("3")
             .build();
-    when(searchClientsProxy.searchDecisionInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
+    verify(searchClientsProxy).searchDecisionInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), null, 5);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
-        .isEqualTo(List.of(new Item(1, 10L, null), new Item(2, 20L, null), new Item(3, 30L, null)));
+        .isEqualTo(
+            List.of(
+                new Item(1, 10L, null, null),
+                new Item(2, 20L, null, 123),
+                new Item(3, 30L, null, 456)));
+  }
+
+  private void assertSearchedWith(
+      final DecisionInstanceQuery query, final String expectedCursor, final int expectedPageSize) {
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.page().after()).isEqualTo(expectedCursor);
+    assertThat(query.page().size()).isEqualTo(expectedPageSize);
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(
       final long decisionInstanceKey,
       final long processInstanceKey,
-      final Long rootProcessInstanceKey) {
+      final Long rootProcessInstanceKey,
+      final Integer storageOrdinal) {
     return Instancio.of(DecisionInstanceEntity.class)
         .set(field(DecisionInstanceEntity::decisionInstanceKey), decisionInstanceKey)
         .set(field(DecisionInstanceEntity::processInstanceKey), processInstanceKey)
         .set(field(DecisionInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
+        .set(field(DecisionInstanceEntity::storageOrdinal), storageOrdinal)
         .create();
   }
 }

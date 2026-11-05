@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -36,6 +37,8 @@ class ProcessInstanceItemProviderTest {
   private ProcessInstanceItemProvider provider;
 
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+  private final ProcessInstanceFilter filter =
+      new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build();
 
   @BeforeEach
   void setUp() {
@@ -47,12 +50,7 @@ class ProcessInstanceItemProviderTest {
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
-    provider =
-        new ProcessInstanceItemProvider(
-            searchClientsProxy,
-            metrics,
-            new ProcessInstanceFilter.Builder().build(),
-            authentication);
+    provider = new ProcessInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
   }
 
   @Test
@@ -64,30 +62,32 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L, null),
-                    createProcessInstanceEntity(2L, 2L),
-                    createProcessInstanceEntity(3L, 2L),
-                    createProcessInstanceEntity(4L, 4L),
-                    createProcessInstanceEntity(5L, 4L)))
+                    createProcessInstanceEntity(1L, null, null),
+                    createProcessInstanceEntity(2L, 2L, null),
+                    createProcessInstanceEntity(3L, 2L, null),
+                    createProcessInstanceEntity(4L, 4L, 123),
+                    createProcessInstanceEntity(5L, 4L, 123)))
             .total(5)
             .endCursor("5")
             .build();
-    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.endCursor()).isEqualTo("5");
     assertThat(resultPage.isLastPage()).isFalse();
     assertThat(resultPage.items())
         .isEqualTo(
             List.of(
-                new Item(1L, 1L, null),
-                new Item(2L, 2L, 2L),
-                new Item(3L, 3L, 2L),
-                new Item(4L, 4L, 4L),
-                new Item(5L, 5L, 4L)));
+                new Item(1L, 1L, null, null),
+                new Item(2L, 2L, 2L, null),
+                new Item(3L, 3L, 2L, null),
+                new Item(4L, 4L, 4L, 123),
+                new Item(5L, 5L, 4L, 123)));
   }
 
   @Test
@@ -101,12 +101,14 @@ class ProcessInstanceItemProviderTest {
             .total(0)
             .endCursor("0")
             .build();
-    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage("-1", 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), "-1", 5);
     assertThat(resultPage.items()).hasSize(0);
     assertThat(resultPage.endCursor()).isEqualTo("0");
     assertThat(resultPage.isLastPage()).isTrue();
@@ -121,29 +123,46 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    createProcessInstanceEntity(1L, null),
-                    createProcessInstanceEntity(2L, 2L),
-                    createProcessInstanceEntity(3L, 3L)))
+                    createProcessInstanceEntity(1L, null, null),
+                    createProcessInstanceEntity(2L, 2L, null),
+                    createProcessInstanceEntity(3L, 3L, 321)))
             .total(3)
             .endCursor("3")
             .build();
-    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(result);
 
     // when
     final var resultPage = provider.fetchItemPage(null, 5);
 
     // then
+    verify(searchClientsProxy).searchProcessInstances(queryCaptor.capture());
+    assertSearchedWith(queryCaptor.getValue(), null, 5);
     assertThat(resultPage.endCursor()).isEqualTo("3");
     assertThat(resultPage.isLastPage()).isTrue();
     assertThat(resultPage.items())
-        .isEqualTo(List.of(new Item(1L, 1L, null), new Item(2L, 2L, 2L), new Item(3L, 3L, 3L)));
+        .isEqualTo(
+            List.of(
+                new Item(1L, 1L, null, null),
+                new Item(2L, 2L, 2L, null),
+                new Item(3L, 3L, 3L, 321)));
+  }
+
+  private void assertSearchedWith(
+      final ProcessInstanceQuery query, final String expectedCursor, final int expectedPageSize) {
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.page().after()).isEqualTo(expectedCursor);
+    assertThat(query.page().size()).isEqualTo(expectedPageSize);
+    assertThat(query.resultConfig().onlyKeys()).isTrue();
   }
 
   private ProcessInstanceEntity createProcessInstanceEntity(
-      final long processInstanceKey, final Long rootProcessInstanceKey) {
+      final long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final Integer storageOrdinal) {
     return Instancio.of(ProcessInstanceEntity.class)
         .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
         .set(field(ProcessInstanceEntity::rootProcessInstanceKey), rootProcessInstanceKey)
+        .set(field(ProcessInstanceEntity::storageOrdinal), storageOrdinal)
         .create();
   }
 }
