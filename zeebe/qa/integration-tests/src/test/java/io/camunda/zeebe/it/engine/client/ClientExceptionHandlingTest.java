@@ -10,57 +10,59 @@ package io.camunda.zeebe.it.engine.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
-public final class ClientExceptionHandlingTest {
+/** No broker is started: the client is pointed at an address nobody listens on. */
+final class ClientExceptionHandlingTest {
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   private final InetSocketAddress invalidGatewayAddress = SocketUtil.getNextAddress();
 
-  public final GrpcClientRule clientRule =
-      new GrpcClientRule(
-          brokerRule, clientBuilder -> clientBuilder.grpcAddress(getInvalidGrpcAddress()));
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
   @Test
-  public void shouldContainRootCauses() {
-    final Throwable throwable = catchThrowable(clientRule::getPartitions);
+  void shouldContainRootCauses() {
+    // given
+    try (final var client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
+            .defaultRequestTimeout(Duration.ofSeconds(10))
+            .grpcAddress(
+                AddressUtil.composeGrpcAddress(
+                    invalidGatewayAddress.getHostName() + ":" + invalidGatewayAddress.getPort(),
+                    true))
+            .build()) {
 
-    assertThat(throwable).isInstanceOf(ClientException.class).hasMessageContaining("io exception");
+      // when
+      final Throwable throwable = catchThrowable(() -> client.newTopologyRequest().send().join());
 
-    final Throwable firstCause = throwable.getCause();
-    assertThat(firstCause)
-        .isInstanceOf(ExecutionException.class)
-        .hasMessageContaining("io.grpc.StatusRuntimeException: UNAVAILABLE: io exception");
+      // then
+      assertThat(throwable)
+          .isInstanceOf(ClientException.class)
+          .hasMessageContaining("io exception");
 
-    final Throwable secondCause = firstCause.getCause();
-    assertThat(secondCause)
-        .isInstanceOf(StatusRuntimeException.class)
-        .hasMessageContaining("UNAVAILABLE: io exception");
+      final Throwable firstCause = throwable.getCause();
+      assertThat(firstCause)
+          .isInstanceOf(ExecutionException.class)
+          .hasMessageContaining("io.grpc.StatusRuntimeException: UNAVAILABLE: io exception");
 
-    final Throwable thirdCause = secondCause.getCause();
-    assertThat(thirdCause)
-        .hasCauseInstanceOf(ConnectException.class)
-        .hasMessageContaining("Connection refused:")
-        .hasMessageContaining(invalidGatewayAddress.getHostName())
-        .hasMessageContaining(":" + invalidGatewayAddress.getPort());
-  }
+      final Throwable secondCause = firstCause.getCause();
+      assertThat(secondCause)
+          .isInstanceOf(StatusRuntimeException.class)
+          .hasMessageContaining("UNAVAILABLE: io exception");
 
-  private URI getInvalidGrpcAddress() {
-    return AddressUtil.composeGrpcAddress(
-        invalidGatewayAddress.getHostName() + ":" + invalidGatewayAddress.getPort(), true);
+      final Throwable thirdCause = secondCause.getCause();
+      assertThat(thirdCause)
+          .hasCauseInstanceOf(ConnectException.class)
+          .hasMessageContaining("Connection refused:")
+          .hasMessageContaining(invalidGatewayAddress.getHostName())
+          .hasMessageContaining(":" + invalidGatewayAddress.getPort());
+    }
   }
 }
