@@ -70,6 +70,7 @@ import io.camunda.client.api.command.GloballyScopedClusterVariableCreationComman
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ListSecretsCommandStep1;
+import io.camunda.client.api.command.LookupUserTaskCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -2232,6 +2233,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a user task
    */
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
+
+  /**
+   * Command to look up an active user task together with the variables visible to it, read from the
+   * engine's state instead of the secondary storage.
+   *
+   * <pre>
+   * long userTaskKey = ...;
+   *
+   * LookupUserTaskResponse userTask = camundaClient
+   *  .newLookupUserTaskCommand(userTaskKey)
+   *  .fetchVariables("recommendation", "applicant")
+   *  .send()
+   *  .join();
+   * </pre>
+   *
+   * <p>Unlike {@link #newUserTaskGetRequest(long)}, the task and its variables reflect every
+   * command the engine has already processed, for example the completion of a previous task, and
+   * are consistent with each other. Only active tasks can be looked up: a completed or canceled
+   * task is not found, use {@link #newUserTaskGetRequest(long)} or the user task search for those.
+   * Each lookup is processed by the engine, so use it when a task is opened, not for polling.
+   *
+   * <p>The response includes the task's lifecycle state: while a change to the task is in progress,
+   * the task fields and variables are the ones from before the change.
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/66211")
+  LookupUserTaskCommandStep1 newLookupUserTaskCommand(long userTaskKey);
 
   /**
    * Executes a search request to query variables.
