@@ -11,6 +11,7 @@ import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabl
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
+import io.camunda.application.commons.security.EngineSecurityConfigFactory;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -20,7 +21,6 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentDefinitionServices;
@@ -192,13 +192,7 @@ public class CamundaServicesConfiguration {
               final var tenantSecurity = tenantConfig.getSecurity();
               final var converter =
                   new BrokerRequestAuthorizationConverter(
-                      new EngineSecurityConfig(
-                          tenantSecurity.getAuthentication(),
-                          tenantSecurity.getAuthorizations().isEnabled(),
-                          tenantSecurity.getMultiTenancy().isChecksEnabled(),
-                          tenantSecurity.getInitialization(),
-                          tenantSecurity.getCompiledIdValidationPattern(),
-                          tenantSecurity.getCompiledGroupIdValidationPattern()));
+                      EngineSecurityConfigFactory.create(tenantSecurity));
 
               // -- per-tenant restore environment: which backup store this tenant runs and
               // whether it takes continuous backups, both deployment-time choices --
