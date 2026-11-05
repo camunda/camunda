@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.search.schema.config.DeleterConfiguration;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.List;
@@ -41,11 +42,14 @@ class DeleteByIdPipelineTest {
   private final Logger logger = mock(Logger.class);
   private final DeleteByIdSupport support = mock(DeleteByIdSupport.class);
 
+  private DeleterConfiguration config;
   private DeleteByIdPipeline pipeline;
 
   @BeforeEach
   void setup() {
-    pipeline = new DeleteByIdPipeline(support, logger);
+    config = new DeleterConfiguration();
+    config.setRetryDelayMs(1);
+    pipeline = new DeleteByIdPipeline(config, support, logger);
   }
 
   @Test
