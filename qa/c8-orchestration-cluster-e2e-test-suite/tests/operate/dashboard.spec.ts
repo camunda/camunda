@@ -172,6 +172,9 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.getIncidentRow(typeALink),
+      ).toBeVisible();
       // Instances with an incident open on the Incidents tab by default;
       // switch to Variables before asserting on the variable value.
       await operateProcessInstancePage.clickVariablesTab();
@@ -188,6 +191,9 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.getIncidentRow(typeBLink),
+      ).toBeVisible();
       await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variablesList.getByText('"Incident Type B"'),
