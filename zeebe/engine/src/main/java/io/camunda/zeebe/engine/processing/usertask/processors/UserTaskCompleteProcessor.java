@@ -81,7 +81,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), userTaskRecord.getStorageOrdinal(), command);
 
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));

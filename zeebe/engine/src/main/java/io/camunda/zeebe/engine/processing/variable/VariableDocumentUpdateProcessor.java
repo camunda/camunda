@@ -161,7 +161,8 @@ public final class VariableDocumentUpdateProcessor
       }
 
       final var asyncRequest =
-          asyncRequestBehavior.writeAsyncRequestReceived(value.getScopeKey(), record);
+          asyncRequestBehavior.writeAsyncRequestReceived(
+              value.getScopeKey(), scope.getValue().getStorageOrdinal(), record);
       final long variableDocKey = keyGenerator.nextKey();
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATING, value);
 
