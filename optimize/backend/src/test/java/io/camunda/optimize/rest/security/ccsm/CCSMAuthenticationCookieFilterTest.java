@@ -19,6 +19,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -26,15 +27,19 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.optimize.service.util.configuration.security.CookieConfiguration;
+import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.event.Level;
 import org.springframework.security.authentication.AuthenticationManager;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +48,10 @@ public class CCSMAuthenticationCookieFilterTest {
   @Mock private ConfigurationService configurationService;
   @Mock private CCSMTokenService ccsmTokenService;
   @Mock private AuthenticationManager authenticationManager;
+
+  @RegisterExtension
+  private final LogCapturer logs =
+      LogCapturer.create().captureForType(CCSMAuthenticationCookieFilter.class, Level.DEBUG);
 
   private CCSMAuthenticationCookieFilter filter;
   private HttpServletRequest mockRequest;
@@ -294,5 +303,114 @@ public class CCSMAuthenticationCookieFilterTest {
     verify(ccsmTokenService, times(1)).renewToken(refreshToken);
     verify(ccsmTokenService, times(1)).createOptimizeDeleteAuthCookies();
     verify(mockFilterChain, times(1)).doFilter(mockRequest, mockResponse);
+  }
+
+  @Test
+  public void shouldLogReasonWhenUserLacksOptimizePermission() throws Exception {
+    // given
+    givenAccessTokenCookie("token.without.permission");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(new NotAuthorizedException("User is not authorized to access Optimize"));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains(
+        "Token verification failed: NotAuthorizedException (User is not authorized to access"
+            + " Optimize)");
+  }
+
+  @Test
+  public void shouldLogCauseTypeWhenTokenCannotBeVerified() throws Exception {
+    // given
+    givenAccessTokenCookie("unverifiable.token");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(
+            new NotAuthorizedException(
+                "Token could not be verified", new TokenVerificationException("expired")));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains(
+        "Token verification failed: NotAuthorizedException (Token could not be verified, cause:"
+            + " TokenVerificationException)");
+    logs.assertDoesNotContain("expired");
+  }
+
+  @Test
+  public void shouldHideNotAuthorizedMessageThatIsNotKnownToBeSafe() throws Exception {
+    // given
+    givenAccessTokenCookie("entra.v1.token");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(
+            new NotAuthorizedException(
+                "Microsoft Entra token rejected: 'ver' claim is '1.0' but '2.0' is required."));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains("Token verification failed: NotAuthorizedException (reason hidden)");
+    logs.assertDoesNotContain("'ver' claim");
+  }
+
+  @Test
+  public void shouldLogOnlyStatusCodeWhenIdentityPermissionCallFails() throws Exception {
+    // given
+    final String token = "secret.access.token";
+    givenAccessTokenCookie(token);
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(
+            new RestException(
+                "request failed with status code '500' and body '{\"claims\":\"sensitive\"}'"));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains("Token verification failed: RestException (status code 500)");
+    logs.assertDoesNotContain("sensitive");
+    logs.assertDoesNotContain(token);
+  }
+
+  @Test
+  public void shouldLogOnlyClassNameWhenIdentityPermissionCallHasNoStatusCode() throws Exception {
+    // given
+    givenAccessTokenCookie("access.token");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(new RestException("request failed", new IOException("connection refused")));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains("Token verification failed: RestException");
+    logs.assertDoesNotContain("request failed");
+  }
+
+  @Test
+  public void shouldLogOnlyClassNameForUnexpectedException() throws Exception {
+    // given
+    givenAccessTokenCookie("access.token");
+    when(ccsmTokenService.verifyToken(anyString()))
+        .thenThrow(new IllegalStateException("claim sub=someone@example.com"));
+
+    // when
+    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+    // then
+    logs.assertContains("Token verification failed: IllegalStateException");
+    logs.assertDoesNotContain("someone@example.com");
+  }
+
+  private void givenAccessTokenCookie(final String token) {
+    final Cookie accessTokenCookie =
+        new Cookie(
+            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
+            AUTH_COOKIE_TOKEN_VALUE_PREFIX + token);
+    when(mockRequest.getCookies()).thenReturn(new Cookie[] {accessTokenCookie});
   }
 }
