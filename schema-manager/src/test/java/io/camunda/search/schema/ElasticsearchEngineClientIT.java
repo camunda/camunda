@@ -80,22 +80,24 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
     // given
-    elsClient.indices().create(req -> req.index("await_active"));
+    final var indexName = "index_name-" + ENGINE_CLIENT_TEST_MARKERS;
+    elsClient.indices().create(req -> req.index(indexName));
 
     // when / then
     assertThatNoException()
-        .isThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of("await_active")));
+        .isThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of(indexName)));
   }
 
   @Test
   void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
     // given an index that exists but whose primary can never be allocated, like one whose
     // creation request timed out on the client while its shards were still initializing
+    final var indexName = "index_name-" + ENGINE_CLIENT_TEST_MARKERS;
     elsClient
         .indices()
         .create(
             req ->
-                req.index("await_unassigned")
+                req.index(indexName)
                     .waitForActiveShards(w -> w.count(0))
                     .settings(
                         s ->
@@ -104,9 +106,9 @@ public class ElasticsearchEngineClientIT {
                                 JsonData.of("no-such-node"))));
 
     // when / then
-    assertThatThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of("await_unassigned")))
+    assertThatThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of(indexName)))
         .isInstanceOf(SearchEngineException.class)
-        .hasMessageContaining("await_unassigned");
+        .hasMessageContaining(indexName);
   }
 
   @Test
