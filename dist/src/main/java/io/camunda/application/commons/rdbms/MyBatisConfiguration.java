@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
+import io.camunda.db.rdbms.exception.TranslatingMapperProxy;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
@@ -345,7 +346,14 @@ public class MyBatisConfiguration {
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(
       final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
-    final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
+    // Wrap so DB errors thrown by any mapper call are translated to CamundaSearchException
+    final MapperFactoryBean<T> factoryBean =
+        new MapperFactoryBean<>(clazz) {
+          @Override
+          public T getObject() throws Exception {
+            return TranslatingMapperProxy.wrap(clazz, super.getObject());
+          }
+        };
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }

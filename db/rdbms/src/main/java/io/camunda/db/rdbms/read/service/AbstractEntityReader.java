@@ -7,7 +7,6 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.exception.DatabaseExceptionTranslator;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
@@ -231,30 +230,11 @@ abstract class AbstractEntityReader<T> {
       final Supplier<List<T>> resultsSupplier,
       final DbQueryPage page,
       final DbQuerySorting<T> dbSort) {
-    final long totalHits = executeQuery(countSupplier);
+    final long totalHits = countSupplier.get();
     if (shouldReturnEmptyPage(page, totalHits)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
-    final List<T> results = executeQuery(resultsSupplier);
+    final List<T> results = resultsSupplier.get();
     return buildSearchQueryResult(totalHits, restoreDisplayOrder(page, results), dbSort);
-  }
-
-  /**
-   * Executes an arbitrary database query, translating known vendor-specific exceptions into {@link
-   * io.camunda.search.exception.CamundaSearchException}.
-   *
-   * @param <R> the result type
-   * @param query supplier that performs the query
-   * @return the query result
-   * @throws io.camunda.search.exception.CamundaSearchException with {@link
-   *     io.camunda.search.exception.CamundaSearchException.Reason#INVALID_ARGUMENT} when a
-   *     database-specific constraint is violated (e.g. an IN-list size limit)
-   */
-  protected <R> R executeQuery(final Supplier<R> query) {
-    try {
-      return query.get();
-    } catch (final RuntimeException e) {
-      throw DatabaseExceptionTranslator.translateIfNeeded(e);
-    }
   }
 }
