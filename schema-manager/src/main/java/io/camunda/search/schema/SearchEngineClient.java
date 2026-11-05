@@ -96,7 +96,7 @@ public interface SearchEngineClient extends CloseableSilently {
    *
    * @param indexNames index names
    * @throws io.camunda.search.schema.exceptions.SearchEngineException if the shards are not active
-   *     within the timeout
+   *     within the implementation-defined timeout
    */
   void awaitActivePrimaries(final Collection<String> indexNames);
 
