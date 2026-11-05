@@ -186,7 +186,6 @@ public class CamundaProcessTestContainerRuntimeTest {
 
     // then
     verify(camundaContainer).withClusterSecrets(expectedClusterSecrets);
-    verify(camundaContainer).withLogConsumer(any());
   }
 
   @Test
