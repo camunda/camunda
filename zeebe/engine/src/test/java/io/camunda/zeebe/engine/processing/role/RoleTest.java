@@ -13,8 +13,10 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
@@ -498,6 +500,39 @@ public class RoleTest {
     // when
     final var deletedRole = engine.role().deleteRole(roleId).delete().getValue();
     assertThat(deletedRole).hasRoleId(roleId);
+  }
+
+  @Test
+  public void shouldRemoveDeletedRoleFromItsTenants() {
+    // given a role that is a member of a tenant
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.tenant().addEntity(tenantId).withEntityId(roleId).withEntityType(EntityType.ROLE).add();
+
+    // when
+    engine.role().deleteRole(roleId).delete();
+
+    // then the role is no longer a member of the tenant
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantId(tenantId)
+                .withEntityId(roleId)
+                .exists())
+        .isTrue();
+
+    // and a role created again with the same ID can be assigned anew, so it inherited nothing
+    engine.role().newRole(roleId).create();
+    Assertions.assertThat(
+            engine
+                .tenant()
+                .addEntity(tenantId)
+                .withEntityId(roleId)
+                .withEntityType(EntityType.ROLE)
+                .add()
+                .getIntent())
+        .isEqualTo(TenantIntent.ENTITY_ADDED);
   }
 
   @Test

@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -395,6 +397,62 @@ public class GroupTest {
     assertThat(groupRecords)
         .extracting(Record::getIntent)
         .containsExactly(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED);
+  }
+
+  @Test
+  public void shouldRemoveDeletedGroupFromItsRolesAndTenants() {
+    // given a group that is a member of a role and of a tenant
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidIdentityId();
+    engine.group().newGroup(groupId).withName("group").create();
+    engine.role().newRole(roleId).create();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.role().addEntity(roleId).withEntityId(groupId).withEntityType(EntityType.GROUP).add();
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(groupId)
+        .withEntityType(EntityType.GROUP)
+        .add();
+
+    // when
+    engine.group().deleteGroup(groupId).delete();
+
+    // then the group is no longer a member of the role or the tenant
+    Assertions.assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
+                .withRoleId(roleId)
+                .withEntityId(groupId)
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantId(tenantId)
+                .withEntityId(groupId)
+                .exists())
+        .isTrue();
+
+    // and a group created again with the same ID can be assigned anew, so it inherited nothing
+    engine.group().newGroup(groupId).withName("new group").create();
+    assertThat(
+            engine
+                .role()
+                .addEntity(roleId)
+                .withEntityId(groupId)
+                .withEntityType(EntityType.GROUP)
+                .add()
+                .getIntent())
+        .isEqualTo(RoleIntent.ENTITY_ADDED);
+    assertThat(
+            engine
+                .tenant()
+                .addEntity(tenantId)
+                .withEntityId(groupId)
+                .withEntityType(EntityType.GROUP)
+                .add()
+                .getIntent())
+        .isEqualTo(TenantIntent.ENTITY_ADDED);
   }
 
   @Test
