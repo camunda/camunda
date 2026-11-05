@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.exception;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 
 /**
  * Translates vendor-specific database exceptions into {@link CamundaSearchException} instances with
@@ -26,8 +27,11 @@ public final class DatabaseExceptionTranslator {
   /** Oracle error code for "maximum number of expressions in a list is 1000". */
   static final int ORA_01795_IN_LIST_TOO_LARGE = 1795;
 
-  /** SQL state prefix for connection errors. */
-  static final String RDBMS_CONNECTION_ERROR_SQL_STATE_PREFIX = "08";
+  /**
+   * SQL state prefix for connection errors, see <a
+   * href="https://en.wikipedia.org/wiki/SQLSTATE">SQLSTATE values</a>.
+   */
+  static final String CONNECTION_ERROR_SQL_STATE_PREFIX = "08";
 
   private DatabaseExceptionTranslator() {}
 
@@ -66,10 +70,14 @@ public final class DatabaseExceptionTranslator {
   private static boolean isConnectionException(final Throwable e) {
     Throwable cause = e;
     while (cause != null) {
-      if (cause instanceof final SQLException sqlException
-          && sqlException.getSQLState() != null
-          && sqlException.getSQLState().startsWith(RDBMS_CONNECTION_ERROR_SQL_STATE_PREFIX)) {
+      if (cause instanceof SQLTransientConnectionException) {
         return true;
+      }
+      if (cause instanceof final SQLException sqlException) {
+        final var state = sqlException.getSQLState();
+        if (state != null && state.startsWith(CONNECTION_ERROR_SQL_STATE_PREFIX)) {
+          return true;
+        }
       }
       cause = cause.getCause();
     }
