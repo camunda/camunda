@@ -9,8 +9,13 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
+import io.camunda.gateway.protocol.model.VariableMetadata;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +23,93 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("RequestValidator Tests")
 class RequestValidatorTest {
+
+  private static List<ProtectionModeEnum> protectionModes(final VariableMetadata metadata) {
+    return metadata.getProtectionModes();
+  }
+
+  @Test
+  @DisplayName("Should accept variables metadata with protection modes")
+  void shouldAcceptVariablesMetadataWithProtectionModes() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final var metadata =
+        Map.of(
+            "card",
+            VariableMetadata.Builder.create()
+                .protectionModes(List.of(ProtectionModeEnum.REDACT))
+                .build());
+
+    // when
+    RequestValidator.validateVariablesMetadata(
+        metadata, RequestValidatorTest::protectionModes, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept absent variables metadata")
+  void shouldAcceptAbsentVariablesMetadata() {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateVariablesMetadata(
+        null, RequestValidatorTest::protectionModes, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should reject a null variables metadata entry")
+  void shouldRejectNullVariablesMetadataEntry() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final Map<String, VariableMetadata> metadata = new HashMap<>();
+    metadata.put("card", null);
+
+    // when
+    RequestValidator.validateVariablesMetadata(
+        metadata, RequestValidatorTest::protectionModes, violations);
+
+    // then
+    assertThat(violations).singleElement().asString().contains("'card'");
+  }
+
+  @Test
+  @DisplayName("Should reject null protection modes in a variables metadata entry")
+  void shouldRejectNullProtectionModes() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final var entry = VariableMetadata.Builder.create().protectionModes(null).build();
+
+    // when
+    RequestValidator.validateVariablesMetadata(
+        Map.of("card", entry), RequestValidatorTest::protectionModes, violations);
+
+    // then
+    assertThat(violations).singleElement().asString().contains("'card'");
+  }
+
+  @Test
+  @DisplayName("Should reject a null element in the protection modes")
+  void shouldRejectNullProtectionMode() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final var entry =
+        VariableMetadata.Builder.create()
+            .protectionModes(Arrays.asList(ProtectionModeEnum.REDACT, null))
+            .build();
+
+    // when
+    RequestValidator.validateVariablesMetadata(
+        Map.of("card", entry), RequestValidatorTest::protectionModes, violations);
+
+    // then
+    assertThat(violations).singleElement().asString().contains("'card'");
+  }
 
   @Test
   @DisplayName("Should accept valid Long string format")

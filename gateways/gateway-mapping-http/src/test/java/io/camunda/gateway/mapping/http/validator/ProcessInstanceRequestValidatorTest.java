@@ -15,7 +15,9 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVer
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.search.filter.Operation;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -28,6 +30,42 @@ import org.springframework.http.ProblemDetail;
 
 @DisplayName("ProcessInstanceRequestValidator Tests")
 class ProcessInstanceRequestValidatorTest {
+
+  @Test
+  @DisplayName("Should reject a null variablesMetadata entry on create")
+  void shouldRejectNullVariablesMetadataEntryOnCreate() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
+    request.setVariablesMetadata(Collections.singletonMap("card", null));
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).contains("'card'");
+  }
+
+  @Test
+  @DisplayName("Should reject a null variablesMetadata entry on simple create")
+  void shouldRejectNullVariablesMetadataEntryOnSimpleCreate() {
+    // given
+    final var request = new ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process");
+    request.setVariablesMetadata(Collections.singletonMap("card", null));
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).contains("'card'");
+  }
 
   @Test
   @DisplayName("Should accept valid processDefinitionKey format")

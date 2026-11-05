@@ -14,6 +14,8 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_DECISION_EVALUATION_INSTANCE_KEY_FORMAT;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_PROTECTION_MODES;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLES_METADATA_ENTRY;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
@@ -23,9 +25,13 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -107,6 +113,35 @@ public final class RequestValidator {
 
   public static Optional<ProblemDetail> validate(final Supplier<List<String>> customValidation) {
     return createProblemDetail(customValidation.get());
+  }
+
+  /**
+   * Validates the per-variable metadata of a request, so that a malformed entry is rejected with a
+   * 400 instead of failing with a {@link NullPointerException} while the request is mapped.
+   *
+   * @param variablesMetadata the metadata keyed by variable name, may be {@code null}
+   * @param protectionModes reads the protection modes of an entry, as the strict and the simple
+   *     request models use different entry types
+   * @param violations the list to add validation errors to
+   */
+  public static <V> void validateVariablesMetadata(
+      final @Nullable Map<String, V> variablesMetadata,
+      final Function<? super V, ? extends @Nullable Collection<?>> protectionModes,
+      final List<String> violations) {
+    if (variablesMetadata == null) {
+      return;
+    }
+    variablesMetadata.forEach(
+        (name, metadata) -> {
+          if (metadata == null) {
+            violations.add(ERROR_MESSAGE_NULL_VARIABLES_METADATA_ENTRY.formatted(name));
+            return;
+          }
+          final var modes = protectionModes.apply(metadata);
+          if (modes == null || modes.stream().anyMatch(Objects::isNull)) {
+            violations.add(ERROR_MESSAGE_INVALID_PROTECTION_MODES.formatted(name));
+          }
+        });
   }
 
   public static void validateOperationReference(
