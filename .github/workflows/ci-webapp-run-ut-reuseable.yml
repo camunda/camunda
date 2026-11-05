@@ -92,6 +92,7 @@ jobs:
           test_product: "${{ inputs.componentName }}"
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
           build-tool: ${{ inputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}

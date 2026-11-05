@@ -74,6 +74,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
           build-tool: ${{ inputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -411,6 +412,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           build-tool: ${{ inputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}

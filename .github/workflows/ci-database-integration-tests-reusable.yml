@@ -176,6 +176,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
