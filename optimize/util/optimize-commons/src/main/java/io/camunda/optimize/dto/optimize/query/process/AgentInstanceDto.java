@@ -348,7 +348,7 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
 
     @Override
     public int hashCode() {
-      return Objects.hash(name);
+      return Objects.hashCode(name);
     }
 
     @Override

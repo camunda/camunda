@@ -36,7 +36,7 @@ public class ExternalVariableCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled);
+    return Objects.hashCode(enabled);
   }
 
   @Override

@@ -29,7 +29,7 @@ public class CountDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(count);
+    return Objects.hashCode(count);
   }
 
   @Override

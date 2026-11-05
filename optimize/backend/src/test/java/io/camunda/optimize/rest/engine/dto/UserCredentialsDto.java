@@ -33,7 +33,7 @@ public class UserCredentialsDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(password);
+    return Objects.hashCode(password);
   }
 
   @Override

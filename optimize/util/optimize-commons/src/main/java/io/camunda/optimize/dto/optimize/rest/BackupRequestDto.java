@@ -37,7 +37,7 @@ public class BackupRequestDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(backupId);
+    return Objects.hashCode(backupId);
   }
 
   @Override

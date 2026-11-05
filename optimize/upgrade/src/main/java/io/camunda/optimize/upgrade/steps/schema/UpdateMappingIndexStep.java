@@ -36,7 +36,7 @@ public class UpdateMappingIndexStep extends UpgradeStep {
 
   @Override
   public int hashCode() {
-    return Objects.hash(index);
+    return Objects.hashCode(index);
   }
 
   @Override
