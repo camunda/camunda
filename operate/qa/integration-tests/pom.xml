@@ -458,6 +458,8 @@
             <include>${includeITNames}</include>
           </includes>
           <excludes>
+            <!-- Overriding <excludes> drops Failsafe's default, which keeps nested classes from being scheduled on their own -->
+            <exclude>**/*$*</exclude>
             <exclude>${excludeITNames}</exclude>
           </excludes>
           <forkCount>1</forkCount>
