@@ -143,6 +143,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
         filter(r -> r.getValueType() == ValueType.SIGNAL).map(Record.class::cast));
   }
 
+  public CaseRecordStream caseRecords() {
+    return new CaseRecordStream(
+        filter(r -> r.getValueType() == ValueType.CASE).map(Record.class::cast));
+  }
+
   public UserTaskRecordStream userTaskRecords() {
     return new UserTaskRecordStream(
         filter(r -> r.getValueType() == ValueType.USER_TASK).map(Record.class::cast));

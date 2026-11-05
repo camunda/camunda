@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.deployment.model.element.CaseProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCase;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -40,6 +44,7 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
     context.addProcess(process);
     context.setCurrentProcess(process);
     transformDefaultJobPriority(element, process, context.getExpressionLanguage());
+    transformCase(element, process);
     transformExecutionListeners(element, process, context.getExpressionLanguage());
   }
 
@@ -53,6 +58,20 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
         .map(ZeebeJobPriorityDefinition::getPriority)
         .filter(raw -> !ZeebeJobPriorityDefinition.DEFAULT_LITERAL_PRIORITY.equals(raw))
         .ifPresent(raw -> process.setDefaultJobPriority(expressionLanguage.parseExpression(raw)));
+  }
+
+  private void transformCase(final Process element, final ExecutableProcess process) {
+    final var zeebeCase = element.getSingleExtensionElement(ZeebeCase.class);
+    if (zeebeCase == null) {
+      return;
+    }
+
+    final var caseProperties = new CaseProperties();
+    final var title = zeebeCase.getTitle();
+    if (title != null && !title.isEmpty()) {
+      caseProperties.setTitleVariable(wrapString(title));
+    }
+    process.setCaseProperties(caseProperties);
   }
 
   private void transformExecutionListeners(

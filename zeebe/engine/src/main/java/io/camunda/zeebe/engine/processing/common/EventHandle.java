@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -58,6 +59,7 @@ public final class EventHandle {
   private final EventTriggerBehavior eventTriggerBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final StorageOrdinalProvider storageOrdinalProvider;
+  private final CaseCreationBehavior caseCreationBehavior;
 
   public EventHandle(
       final KeyGenerator keyGenerator,
@@ -75,6 +77,7 @@ public final class EventHandle {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateBehavior = stateBehavior;
     this.storageOrdinalProvider = storageOrdinalProvider;
+    caseCreationBehavior = new CaseCreationBehavior(commandWriter);
   }
 
   public boolean canTriggerElement(
@@ -351,6 +354,10 @@ public final class EventHandle {
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+
+    // must be written after the process activation, as the case requires the process instance
+    caseCreationBehavior.createCaseIfMarked(
+        process.getProcess(), processInstanceKey, variablesBuffer);
 
     // emit CREATED event to indicate instance creation by an event trigger
     // picked up by appliers and exporters accordingly, e.g., for metrics and audit logs

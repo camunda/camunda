@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -44,6 +45,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
   private final ProcessInstanceCreationHelper helper;
+  private final CaseCreationBehavior caseCreationBehavior;
   private final MutableElementInstanceState elementInstanceState;
 
   public ProcessInstanceCreationCreateWithAwaitingResultProcessor(
@@ -59,6 +61,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
+    caseCreationBehavior = new CaseCreationBehavior(commandWriter);
     this.elementInstanceState = elementInstanceState;
   }
 
@@ -129,6 +132,10 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
       helper.activateElementsForStartInstructions(
           record.startInstructions(), process, processInstance);
     }
+
+    // must be written after the process activation, as the case requires the process instance
+    caseCreationBehavior.createCaseIfMarked(
+        process.getProcess(), processInstanceKey, record.getVariablesBuffer());
 
     helper.updateCreationRecord(record, processInstance);
 
