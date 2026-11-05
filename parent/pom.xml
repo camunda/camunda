@@ -87,6 +87,9 @@
     <version.json-flattener>0.18.6</version.json-flattener>
     <version.jspecify>1.0.1</version.jspecify>
     <version.junit>6.1.3</version.junit>
+    <version.pitest-junit5-plugin>1.2.3</version.pitest-junit5-plugin>
+    <!-- optional mutation engine for PIT, see docs/testing/mutation-testing.md -->
+    <version.descartes>1.3.4</version.descartes>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.26.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -266,6 +269,11 @@
     <plugin.version.jacoco>0.8.16</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
     <plugin.version.openapi-generator>7.26.0</plugin.version.openapi-generator>
+    <!-- PIT mutation testing; the Maven plugin version also selects the PIT core version -->
+    <plugin.version.pitest>1.30.1</plugin.version.pitest>
+    <!-- Gradle counterpart of pitest-maven, read by the Gradle build only -->
+    <!-- renovate: datasource=maven depName=info.solidsoft.gradle.pitest:gradle-pitest-plugin -->
+    <plugin.version.pitest-gradle>1.19.0</plugin.version.pitest-gradle>
     <plugin.version.protobuf-maven-plugin>5.1.11</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
@@ -330,6 +338,15 @@
     <junit.parallel.classes.configurationParameters>junit.jupiter.execution.parallel.enabled = true
       junit.jupiter.execution.parallel.mode.default = same_thread
       junit.jupiter.execution.parallel.mode.classes.default = concurrent</junit.parallel.classes.configurationParameters>
+
+    <!--
+      Defaults for PIT mutation testing (pitest-maven in pluginManagement); override on the command
+      line with -Dpit.<name>=... Mutation testing is never bound to a lifecycle phase.
+    -->
+    <pit.threads>8</pit.threads>
+    <pit.timeoutConstant>4000</pit.timeoutConstant>
+    <pit.engine>gregor</pit.engine>
+    <pit.crossModule>true</pit.crossModule>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2958,6 +2975,51 @@
           </configuration>
         </plugin>
 
+        <!-- PIT mutation testing. Inert: not bound to any phase, run it on demand, see docs/testing/mutation-testing.md -->
+        <plugin>
+          <groupId>org.pitest</groupId>
+          <artifactId>pitest-maven</artifactId>
+          <version>${plugin.version.pitest}</version>
+          <configuration>
+            <threads>${pit.threads}</threads>
+            <timeoutConstant>${pit.timeoutConstant}</timeoutConstant>
+            <mutationEngine>${pit.engine}</mutationEngine>
+            <targetClasses>${pit.targetClasses}</targetClasses>
+            <targetTests>${pit.targetTests}</targetTests>
+            <excludedClasses>
+              <param>*Metrics*</param>
+              <param>*MetricsDoc*</param>
+            </excludedClasses>
+            <!-- mirrors the surefire excludedGroups -->
+            <excludedGroups>
+              <param>performance</param>
+              <param>randomized</param>
+              <param>slow</param>
+              <param>strace</param>
+              <param>io.camunda.zeebe.test.util.junit.SlowTest</param>
+            </excludedGroups>
+            <jvmArgs>
+              <value>--add-opens=java.base/java.io=ALL-UNNAMED</value>
+              <value>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</value>
+              <value>--enable-native-access=ALL-UNNAMED</value>
+            </jvmArgs>
+            <outputFormats>
+              <param>XML</param>
+              <param>HTML</param>
+            </outputFormats>
+            <timestampedReports>false</timestampedReports>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.pitest</groupId>
+              <artifactId>pitest-junit5-plugin</artifactId>
+              <version>${version.pitest-junit5-plugin}</version>
+            </dependency>
+            <!-- Descartes is added by the pit-descartes profile only: on the classpath, its filters
+            apply to the default engine too and drop mutants. -->
+          </dependencies>
+        </plugin>
+
         <!-- JaCoCo Plugin -->
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -3133,6 +3195,38 @@
         <error-prone.checks>-XepDisableAllChecks</error-prone.checks>
       </properties>
     </profile>
+    <!--
+      Adds the Descartes mutation engine to PIT when it is selected with -Dpit.engine=descartes.
+      Descartes registers its filters (e.g. "stop methods") as soon as it is on the plugin classpath,
+      even for the default gregor engine, which would silently drop mutants from regular runs.
+    -->
+    <profile>
+      <id>pit-descartes</id>
+      <activation>
+        <property>
+          <name>pit.engine</name>
+          <value>descartes</value>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.pitest</groupId>
+              <artifactId>pitest-maven</artifactId>
+              <dependencies>
+                <dependency>
+                  <groupId>eu.stamp-project</groupId>
+                  <artifactId>descartes</artifactId>
+                  <version>${version.descartes}</version>
+                </dependency>
+              </dependencies>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+
     <!--
       This plugin's configuration is used to store Eclipse m2e settings only. It has no
       influence on the Maven build itself, and org.eclipse.m2e:lifecycle-mapping is not

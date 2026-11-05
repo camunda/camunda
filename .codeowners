@@ -59,6 +59,7 @@ camunda.Dockerfile          @camunda/orchestration-cluster
 /gradle/                    @camunda/orchestration-cluster
 # Convention-plugin exceptions (domain team owns, last match wins)
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.mutation-testing-conventions.gradle.kts              @camunda/zeebe-distributed-platform
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
@@ -199,6 +200,10 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/stream-platform/     @camunda/zeebe-distributed-platform
 /zeebe/transport/           @camunda/zeebe-distributed-platform
 /zeebe/zb-db/               @camunda/zeebe-distributed-platform
+
+# Mutation testing agentic workflow
+/.github/workflows/mutation-testing-pr-review.md @camunda/zeebe-distributed-platform
+/.github/workflows/mutation-testing-pr-review.lock.yml @camunda/zeebe-distributed-platform
 
 /zeebe/test-util/ @camunda/core-features @camunda/zeebe-distributed-platform
 /zeebe/util/ @camunda/core-features @camunda/zeebe-distributed-platform
@@ -349,6 +354,7 @@ optimize.Dockerfile         @camunda/core-features
 
 # Agents skills
 /.agents/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/mutation-testing/ @camunda/zeebe-distributed-platform
 
 ################################
 ## @camunda/data-layer

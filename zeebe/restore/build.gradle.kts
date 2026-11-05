@@ -4,6 +4,7 @@ plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.test-jar-conventions")
   id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 dependencies {

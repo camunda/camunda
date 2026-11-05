@@ -25,4 +25,26 @@
     <module>openapi</module>
     <module>rest</module>
   </modules>
+
+  <properties>
+    <!-- PIT scope for this module, see docs/testing/mutation-testing.md -->
+    <pit.targetClasses>io.camunda.zeebe.dynamic.config.*</pit.targetClasses>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.pitest</groupId>
+          <artifactId>pitest-maven</artifactId>
+          <configuration>
+            <excludedClasses combine.children="append">
+              <!-- generated protocol classes -->
+              <param>io.camunda.zeebe.dynamic.config.impl.protocol.*</param>
+            </excludedClasses>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

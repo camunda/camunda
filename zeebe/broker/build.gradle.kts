@@ -3,6 +3,7 @@ import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.sbe-conventions")
   id("buildlogic.test-jar-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 sbe {

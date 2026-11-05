@@ -38,6 +38,7 @@
 /gradle/                                                 @camunda/orchestration-cluster
 # Convention-plugin exceptions (owned by the domain team, last match wins)
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/gradle/build-logic/conventions/src/main/kotlin/buildlogic.mutation-testing-conventions.gradle.kts              @camunda/zeebe-distributed-platform
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
 /gradle/build-logic/conventions/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
@@ -117,6 +118,8 @@
 /zeebe/stream-platform @camunda/zeebe-distributed-platform
 /zeebe/transport @camunda/zeebe-distributed-platform
 /zeebe/dynamic-node-id-provider @camunda/zeebe-distributed-platform
+/.github/workflows/mutation-testing-pr-review.md @camunda/zeebe-distributed-platform
+/.github/workflows/mutation-testing-pr-review.lock.yml @camunda/zeebe-distributed-platform
 
 # Broker packages
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/backup @camunda/zeebe-distributed-platform
@@ -191,6 +194,7 @@
 /.agents/skills/create-issue/ @camunda/orchestration-cluster
 /.agents/skills/grill-me/    @camunda/orchestration-cluster
 /.agents/skills/load-test-ops/ @camunda/reliability-testing
+/.agents/skills/mutation-testing/ @camunda/zeebe-distributed-platform
 
 # CI skills
 /.agents/skills/act-testing/**                   @camunda/engineering-operations
