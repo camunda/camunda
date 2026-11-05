@@ -24,7 +24,7 @@ import java.util.Set;
  * suspend each job once. Jobs of terminating element instances are skipped: the termination waits
  * for them, e.g. a canceling task listener job.
  */
-final class JobSuspensionVisitor implements ElementInstanceVisitor {
+public final class JobSuspensionVisitor implements ElementInstanceVisitor {
 
   /**
    * States {@link JobIntent#SUSPENDED} may leave from; includes secret-waiting so a later
@@ -37,7 +37,7 @@ final class JobSuspensionVisitor implements ElementInstanceVisitor {
   private final JobState jobState;
   private final SuspensionMetrics suspensionMetrics;
 
-  JobSuspensionVisitor(
+  public JobSuspensionVisitor(
       final StateWriter stateWriter,
       final JobState jobState,
       final SuspensionMetrics suspensionMetrics) {

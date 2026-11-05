@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -299,6 +300,51 @@ public final class MessageSuspensionGateTest {
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();
+  }
+
+  @Test
+  public void shouldIgnoreDuplicateReopenOfOpenSubscription() {
+    // given - a suspend and resume cycle reopened the subscription
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+    final var reopened =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3) // initial open, restore after the close ack, reopen ack
+            .getLast();
+
+    // when - the second REOPEN that a double close for suspend leaves behind
+    ENGINE.writeCommandOnPartition(
+        1,
+        reopened.getKey(),
+        ProcessMessageSubscriptionIntent.REOPEN,
+        (ProcessMessageSubscriptionRecord) reopened.getValue());
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(3)
+        .await();
+    ENGINE.message().withName(messageName).withCorrelationKey(correlationKey).publish();
+
+    // then - the message correlates once and the instance completes
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .processMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CORRELATED))
+        .hasSize(1);
   }
 
   @Test

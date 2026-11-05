@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 
-interface ElementInstanceVisitor {
+public interface ElementInstanceVisitor {
 
   boolean shouldVisit(ElementInstance elementInstance);
 
