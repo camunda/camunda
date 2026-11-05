@@ -42,28 +42,28 @@ Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.ym
 
 ### Inputs
 
-| Input | Description | Required | Default |
-|---|---|---|---|
-| `github-token` | Token with `contents: read` and `actions: read` | true | |
-| `max-age-hours` | Maximum run age for a re-run of the branch head; keep in sync with the `retention-days` of downloaded artifacts | false | `48` |
+|      Input      |                                                   Description                                                   | Required | Default |
+|-----------------|-----------------------------------------------------------------------------------------------------------------|----------|---------|
+| `github-token`  | Token with `contents: read` and `actions: read`                                                                 | true     |         |
+| `max-age-hours` | Maximum run age for a re-run of the branch head; keep in sync with the `retention-days` of downloaded artifacts | false    | `48`    |
 
 ### Outputs
 
-| Output | Description |
-|---|---|
-| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'` |
-| `stale` | `'true'` when this is a re-run of the branch head older than `max-age-hours`, otherwise `'false'` |
+|  Output  |                                            Description                                            |
+|----------|---------------------------------------------------------------------------------------------------|
+| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'`                          |
+| `stale`  | `'true'` when this is a re-run of the branch head older than `max-age-hours`, otherwise `'false'` |
 
 ### Behavior
 
-| Situation | Result |
-|---|---|
-| First attempt (`run_attempt == 1`) | Passes, `deploy=true`, no API call |
-| Re-run, commit is no longer the branch head | Passes with a notice and a step-summary note, `deploy=false` |
-| Re-run of the branch head within `max-age-hours` | Passes, `deploy=true` |
+|                      Situation                       |                                     Result                                      |
+|------------------------------------------------------|---------------------------------------------------------------------------------|
+| First attempt (`run_attempt == 1`)                   | Passes, `deploy=true`, no API call                                              |
+| Re-run, commit is no longer the branch head          | Passes with a notice and a step-summary note, `deploy=false`                    |
+| Re-run of the branch head within `max-age-hours`     | Passes, `deploy=true`                                                           |
 | Re-run of the branch head older than `max-age-hours` | Fails with an `::error::` and a step-summary note, `deploy=false`, `stale=true` |
-| GitHub API unreachable | Passes with a warning, `deploy=true` (fail open) |
-| `github-token` empty | Fails |
+| GitHub API unreachable                               | Passes with a warning, `deploy=true` (fail open)                                |
+| `github-token` empty                                 | Fails                                                                           |
 
 ## Notes
 
