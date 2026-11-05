@@ -21,10 +21,10 @@ import (
 
 // runEnvMode runs a secrets operation in C8RUN_SECRETS_MODE=env, where the environment c8run
 // started from holds the secrets: list reads this shell's environment, and nothing can be written.
-func (c *secretsCommand) runEnvMode(args []string) error {
+func (c *secretsCommand) runEnvMode(baseDir string, args []string) error {
 	switch args[0] {
 	case "list":
-		return c.listFromEnvironment(args[1:])
+		return c.listFromEnvironment(baseDir, args[1:])
 	case "set", "delete":
 		return envModeWriteError(args[0], c.tenantScoped, firstName(args[1:]))
 	case "import", "path":
@@ -63,13 +63,17 @@ func firstName(args []string) string {
 // under the rules EnvVarSecretStore applies: the prefix matches case included, empty values are
 // no secret, and names outside the reference charset are skipped. c8run snapshots its environment
 // at start, so this matches what it resolves when it was started from this environment.
-func (c *secretsCommand) listFromEnvironment(args []string) error {
+func (c *secretsCommand) listFromEnvironment(baseDir string, args []string) error {
 	if len(args) != 0 {
 		return errors.New("usage: c8run secrets list")
 	}
 	prefix, err := localsecrets.EnvPrefix()
 	if err != nil {
 		return err
+	}
+	if c.tenantScoped != "" && !knownTenant(baseDir, c.tenantScoped) {
+		_, _ = fmt.Fprintf(c.errorOutput, "Warning: physical tenant %q is not saved and was not in the last c8run start, so c8run resolves none of its secrets. Add it with `c8run physical-tenants add %s` or start with --physical-tenants.\n",
+			c.tenantScoped, c.tenantScoped)
 	}
 	for _, name := range environmentSecretNames(os.Environ(), physicaltenants.SecretVariablePrefix(prefix, c.listTenant())) {
 		_, _ = fmt.Fprintln(c.output, name)
@@ -90,6 +94,28 @@ func environmentSecretNames(env []string, tenantPrefix string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// knownTenant reports whether c8run has the physical tenant saved or started it last time. An
+// unreadable saved file counts as known, so the warning never rests on a guess.
+func knownTenant(baseDir, id string) bool {
+	if _, active := physicaltenants.LastStartState(baseDir).Tenants[id]; active {
+		return true
+	}
+	path, err := physicaltenants.ResolvePath(baseDir)
+	if err != nil {
+		return true
+	}
+	tenants, _, err := physicaltenants.NewStore(path).Snapshot()
+	if err != nil {
+		return true
+	}
+	for _, tenant := range tenants {
+		if tenant.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *secretsCommand) listTenant() string {

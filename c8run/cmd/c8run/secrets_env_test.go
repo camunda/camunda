@@ -9,9 +9,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
+	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,13 +37,15 @@ func TestEnvModeListPrintsTheDefaultTenantsNamesFromTheEnvironment(t *testing.T)
 	assert.NotContains(t, output.String(), "s3cr3t")
 }
 
-func TestEnvModeListPrintsAPhysicalTenantsNames(t *testing.T) {
+func TestEnvModeListPrintsASavedPhysicalTenantsNames(t *testing.T) {
 	// given
 	t.Setenv(localsecrets.ModeEnv, "env")
 	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	require.NoError(t, pt.NewStore(os.Getenv(pt.FileEnv)).Add([]pt.Tenant{{ID: "tenanta"}}, nil))
 	t.Setenv("C8_DEFAULT_DB_PASSWORD", "s3cr3t")
 	t.Setenv("C8_TENANTA_HR_KEY", "hr")
-	command, output, _ := testSecretsCommand("", false)
+	command, output, errorOutput := testSecretsCommand("", false)
 
 	// when
 	err := command.run(t.TempDir(), []string{"--physical-tenant", "tenanta", "list"})
@@ -49,6 +53,24 @@ func TestEnvModeListPrintsAPhysicalTenantsNames(t *testing.T) {
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, "HR_KEY\n", output.String())
+	assert.Empty(t, errorOutput.String())
+}
+
+func TestEnvModeListWarnsAboutAnUnknownPhysicalTenant(t *testing.T) {
+	// given
+	t.Setenv(localsecrets.ModeEnv, "env")
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("C8_NOPE_KEY", "x")
+	command, output, errorOutput := testSecretsCommand("", false)
+
+	// when
+	err := command.run(t.TempDir(), []string{"--physical-tenant", "nope", "list"})
+
+	// then
+	require.NoError(t, err, "listing stays usable; the warning only explains why c8run resolves nothing")
+	assert.Equal(t, "KEY\n", output.String())
+	assert.Contains(t, errorOutput.String(), `physical tenant "nope"`)
 }
 
 func TestEnvironmentSecretNamesFollowTheEnvStoresRules(t *testing.T) {
