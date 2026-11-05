@@ -8,8 +8,6 @@ shadow_mode: true
 
 vault:
   anthropic_api_key:
-    # TODO: the pod's Anthropic key is not in Vault yet. The repo's Vault role
-    # (github-actions-camunda-ci) can read products/camunda/*.
     path: secret/data/products/camunda/ci/ai-pr-review
     field: TASKLIST_ANTHROPIC_API_KEY
 
@@ -18,6 +16,7 @@ triggers:
   skip_authors:
     - renovate[bot]
     - dependabot[bot]
+  max_auto_reviews: 7
 
 policy:
   # Read from the PR base commit, never the PR head.

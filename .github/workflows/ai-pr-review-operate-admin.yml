@@ -47,7 +47,7 @@ jobs:
       checks: read
       statuses: read
     # No release tag exists yet; pinned to main.
-    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@db54401cbcea61e9464656d7e9f760b4bec2f2b5 # main
+    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@28ddf6918c6742e26986990fb5eddbb963fb66d9 # main
     with:
       config: operate-admin
       force_shadow_mode: true
