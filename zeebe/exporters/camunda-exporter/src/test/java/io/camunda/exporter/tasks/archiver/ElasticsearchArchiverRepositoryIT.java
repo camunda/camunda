@@ -653,7 +653,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             batchOperationIndex,
             destIndexName,
-            new FilterByKeysQuery(Map.of("id", List.of("1", "2"))),
+            FilterByKeysQuery.of(Map.of("id", List.of("1", "2"))),
             Runnable::run)
         .join();
 
@@ -680,7 +680,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             batchOperationIndex,
             destIndexName,
-            new FilterByKeysQuery(Map.of("id", List.of("3", "4"))),
+            FilterByKeysQuery.of(Map.of("id", List.of("3", "4"))),
             Runnable::run)
         .join();
 
@@ -988,7 +988,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111"))),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 null,
                 config.getReindexBatchSize())
             .join();
@@ -1012,7 +1012,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("999"))),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("999"))),
                 null,
                 config.getReindexBatchSize())
             .join();
@@ -1027,7 +1027,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111"))),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 null,
                 2)
             .join();
@@ -1045,7 +1045,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111"))),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 batchPg1.searchAfter(),
                 2)
             .join();
@@ -1061,7 +1061,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111"))),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 batchPg2.searchAfter(),
                 2)
             .join();
@@ -1076,7 +1076,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111")))
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111")))
                     .exclusion("joinRelation", "activity"),
                 null,
                 100)
@@ -1093,7 +1093,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111")))
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111")))
                     .inclusion("joinRelation", "variable")
                     .exclusion("joinRelation", "activity"),
                 null,
@@ -1296,7 +1296,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             processInstanceIndex,
             processInstanceIndex + "_dest",
-            new FilterByKeysQuery(Map.of("processInstanceKey", List.of("111", "333"))),
+            FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111", "333"))),
             executor)
         .join(); // wait for completion
 

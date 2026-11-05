@@ -49,7 +49,7 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final FilterByKeysQuery filter,
+      final FilterByKeysQuery<String> filter,
       final Executor executor);
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();

@@ -21,34 +21,42 @@ import java.util.Map;
  * @param inclusionFilters extra filters that much be applied
  * @param exclusionFilters filter to exclude results
  */
-public record FilterByKeysQuery(
-    Map<String, List<String>> keysByField,
+public record FilterByKeysQuery<T>(
+    Map<String, List<T>> keysByField,
     Map<String, String> inclusionFilters,
     Map<String, String> exclusionFilters) {
 
-  public FilterByKeysQuery(final Map<String, List<String>> keysByField) {
+  private FilterByKeysQuery(final Map<String, List<T>> keysByField) {
     this(keysByField, Map.of(), Map.of());
   }
 
-  public FilterByKeysQuery(final String keyFieldName, final List<String> keyValues) {
+  private FilterByKeysQuery(final String keyFieldName, final List<T> keyValues) {
     this(Map.of(keyFieldName, keyValues));
   }
 
-  public FilterByKeysQuery inclusion(final String fieldName, final String fieldValue) {
+  public static <T> FilterByKeysQuery<T> of(final Map<String, List<T>> keysByField) {
+    return new FilterByKeysQuery<>(keysByField);
+  }
+
+  public static <T> FilterByKeysQuery<T> of(final String keyFieldName, final List<T> keyValues) {
+    return new FilterByKeysQuery<>(keyFieldName, keyValues);
+  }
+
+  public FilterByKeysQuery<T> inclusion(final String fieldName, final String fieldValue) {
     return inclusions(Map.of(fieldName, fieldValue));
   }
 
-  public FilterByKeysQuery inclusions(final Map<String, String> inclusionFilters) {
-    return new FilterByKeysQuery(
+  public FilterByKeysQuery<T> inclusions(final Map<String, String> inclusionFilters) {
+    return new FilterByKeysQuery<>(
         keysByField, addToMap(this.inclusionFilters, inclusionFilters), exclusionFilters);
   }
 
-  public FilterByKeysQuery exclusion(final String fieldName, final String fieldValue) {
+  public FilterByKeysQuery<T> exclusion(final String fieldName, final String fieldValue) {
     return exclusions(Map.of(fieldName, fieldValue));
   }
 
-  public FilterByKeysQuery exclusions(final Map<String, String> exclusionFilters) {
-    return new FilterByKeysQuery(
+  public FilterByKeysQuery<T> exclusions(final Map<String, String> exclusionFilters) {
+    return new FilterByKeysQuery<>(
         keysByField, inclusionFilters, addToMap(this.exclusionFilters, exclusionFilters));
   }
 

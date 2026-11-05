@@ -207,7 +207,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var filter =
-        new FilterByKeysQuery(idsMap).inclusions(inclusionFilters).exclusions(exclusionFilters);
+        FilterByKeysQuery.of(idsMap).inclusions(inclusionFilters).exclusions(exclusionFilters);
     final var finishDate = batch.finishDate();
     return getArchiverRepository()
         .moveDocumentsById(sourceIdxName, sourceIdxName + finishDate, filter, getExecutor())

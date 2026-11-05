@@ -127,7 +127,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -161,7 +161,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -210,7 +210,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -237,7 +237,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // when
     ((OpenSearchArchiverRepository) repository)
         .getArchiveDocIdsBatch(
-            "source-index", new FilterByKeysQuery(Map.of("key", List.of("1"))), null, 10)
+            "source-index", FilterByKeysQuery.of(Map.of("key", List.of("1"))), null, 10)
         .join();
 
     // then
