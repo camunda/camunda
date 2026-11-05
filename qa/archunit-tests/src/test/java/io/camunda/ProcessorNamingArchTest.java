@@ -140,7 +140,10 @@ public final class ProcessorNamingArchTest {
                   private static final Set<String> WHITELIST =
                       Set.of(
                           "BpmnStreamProcessor", // special case
-                          "UserTaskProcessor"); // will be refactored in the future
+                          "UserTaskProcessor", // will be refactored in the future
+                          "AbstractProcessDefinitionSuspensionProcessor"); // shared base of the
+                  // suspend and resume
+                  // processors
                   private static volatile boolean initialized = false;
 
                   private static void ensureInitialized() {

@@ -51,11 +51,6 @@ public class ProcessDefinitionSuspensionStartEventTest {
     TIMER
   }
 
-  @Parameters(name = "{0}")
-  public static Object[] startTypes() {
-    return StartType.values();
-  }
-
   @Parameter public StartType startType;
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
@@ -65,6 +60,11 @@ public class ProcessDefinitionSuspensionStartEventTest {
       new RecordingExporterTestWatcher();
 
   private String processId;
+
+  @Parameters(name = "{0}")
+  public static Object[] startTypes() {
+    return StartType.values();
+  }
 
   private void init() {
     processId = Strings.newRandomValidBpmnId();
@@ -143,6 +143,7 @@ public class ProcessDefinitionSuspensionStartEventTest {
                 r.getIntent() == TimerIntent.CANCELED);
           }
         }
+        default -> throw new IllegalStateException("Unexpected start type " + startType);
       }
     }
     final Set<Long> result = new HashSet<>();
@@ -286,6 +287,7 @@ public class ProcessDefinitionSuspensionStartEventTest {
       case TIMER -> {
         return; // timers are covered by the owner assertions; the clock is not advanced here
       }
+      default -> throw new IllegalStateException("Unexpected start type " + startType);
     }
 
     // then

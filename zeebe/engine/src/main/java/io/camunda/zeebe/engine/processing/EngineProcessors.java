@@ -78,8 +78,8 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
-import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionResumeProcessor;
-import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspendProcessor;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionResumeProcessor;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionSuspendProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
@@ -924,7 +924,7 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_SUSPENSION,
         ProcessDefinitionSuspensionIntent.SUSPEND,
-        new ProcessDefinitionSuspendProcessor(
+        new ProcessDefinitionSuspensionSuspendProcessor(
             writers,
             processingState.getKeyGenerator(),
             processingState,
@@ -934,7 +934,7 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_SUSPENSION,
         ProcessDefinitionSuspensionIntent.RESUME,
-        new ProcessDefinitionResumeProcessor(
+        new ProcessDefinitionSuspensionResumeProcessor(
             writers,
             processingState.getKeyGenerator(),
             processingState,

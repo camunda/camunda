@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processdefinition;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
@@ -37,7 +38,9 @@ import org.jspecify.annotations.Nullable;
  * and distribute the command to the other partitions.
  */
 @NullMarked
-abstract class AbstractProcessDefinitionSuspensionProcessor
+// POC: authorization (SUSPEND_PROCESS_DEFINITION) is not implemented yet, see the POC findings.
+@ExcludeAuthorizationCheck
+public abstract class AbstractProcessDefinitionSuspensionProcessor
     implements DistributedTypedRecordProcessor<ProcessDefinitionSuspensionRecord> {
 
   private final StateWriter stateWriter;

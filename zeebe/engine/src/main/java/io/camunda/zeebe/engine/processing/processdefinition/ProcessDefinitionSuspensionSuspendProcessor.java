@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processdefinition;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
@@ -18,10 +19,12 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public final class ProcessDefinitionResumeProcessor
+// POC: authorization (SUSPEND_PROCESS_DEFINITION) is not implemented yet, see the POC findings.
+@ExcludeAuthorizationCheck
+public final class ProcessDefinitionSuspensionSuspendProcessor
     extends AbstractProcessDefinitionSuspensionProcessor {
 
-  public ProcessDefinitionResumeProcessor(
+  public ProcessDefinitionSuspensionSuspendProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
@@ -29,8 +32,8 @@ public final class ProcessDefinitionResumeProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final StartEventSubscriptions startEventSubscriptions) {
     super(
-        "resume",
-        ProcessDefinitionSuspensionIntent.RESUMED,
+        "suspend",
+        ProcessDefinitionSuspensionIntent.SUSPENDED,
         writers,
         keyGenerator,
         processingState,
@@ -42,8 +45,8 @@ public final class ProcessDefinitionResumeProcessor
   @Override
   @Nullable String validateMarker(final long processDefinitionKey, final boolean suspended) {
     return suspended
-        ? null
-        : "Expected to resume process definition with key '%d', but it is not suspended"
-            .formatted(processDefinitionKey);
+        ? "Expected to suspend process definition with key '%d', but it is already suspended"
+            .formatted(processDefinitionKey)
+        : null;
   }
 }
