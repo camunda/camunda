@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -55,13 +57,16 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public GroupDeleteProcessor(
       final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final MembershipStateAdapter membershipStateAdapter) {
     groupState = processingState.getGroupState();
     roleState = processingState.getRoleState();
     tenantState = processingState.getTenantState();
@@ -73,6 +78,8 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    sideEffectWriter = writers.sideEffect();
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -107,6 +114,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
     responseWriter.writeAcceptedResponseOnCommand(groupKey, GroupIntent.DELETED, record, command);
+    invalidateMembershipCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -126,6 +134,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               removeMemberships(command.getValue());
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+              invalidateMembershipCache();
             },
             () -> {
               final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
@@ -133,6 +142,17 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes {@link MembershipStateAdapter}'s membership cache after the group deletion is
+   * committed, so that no authorization check uses the memberships that the deletion removed.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          membershipStateAdapter.invalidateAll();
+        });
   }
 
   private void removeAssignedEntities(final GroupRecord record) {

@@ -78,6 +78,7 @@ public class GroupProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            membershipStateAdapter));
   }
 }
