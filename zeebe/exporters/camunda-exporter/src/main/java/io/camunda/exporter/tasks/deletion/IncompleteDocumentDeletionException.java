@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
-public class DocumentDeletionException extends RuntimeException {
+public class IncompleteDocumentDeletionException extends RuntimeException {
 
-  DocumentDeletionException(final String message) {
+  IncompleteDocumentDeletionException(final String message) {
     super(message);
   }
 }

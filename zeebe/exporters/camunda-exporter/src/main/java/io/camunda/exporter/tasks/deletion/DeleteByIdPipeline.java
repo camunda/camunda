@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.deletion;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.SearchAfter;
@@ -44,12 +45,12 @@ class DeleteByIdPipeline {
     final BatchSupplier<DocToDelete, SearchAfter> idsSupplier =
         (searchAfter, batchSize) ->
             support.searchDocumentsToDelete(indexName, filter, searchAfter, batchSize);
-    return AsyncDocumentPipeline.builder(idsSupplier, support::deleteDocBatch, executor)
+    return AsyncDocumentPipeline.builder(idsSupplier, this::deleteDocBatch, executor)
         .statsConsumer(statsConsumer::set)
         .logger(logger)
         .minBatchSize(MINIMUM_BATCH_SIZE)
         .batchSize(config.getDocumentBatchSize())
-        .addRetryableException(DocumentDeletionException.class)
+        .addRetryableException(IncompleteDocumentDeletionException.class)
         .maxRetryAttempts(config.getMaxRetryAttempts())
         .retryDelayMs(config.getRetryDelayMs())
         .retryRecorder(metrics::recordDeletionBatchRetry)
@@ -61,8 +62,6 @@ class DeleteByIdPipeline {
                   indexName,
                   stats.totalDocumentsProcessed(),
                   stats.totalTimeTakenMs() / 1000);
-
-              // TODO add metrics
             })
         .whenComplete(
             (val, err) -> {
@@ -76,6 +75,24 @@ class DeleteByIdPipeline {
                     err.getMessage(),
                     err);
               }
+            });
+  }
+
+  private CompletableFuture<Integer> deleteDocBatch(
+      final DocumentBatch<DocToDelete, SearchAfter> batch) {
+    return support
+        .deleteDocBatch(batch)
+        .thenApply(
+            deleted -> {
+              final var batchSize = batch.documents().size();
+              // it's possible something else has already deleted the
+              // docs, but we will trigger a retry so we can do the search
+              // and try again (just in case)
+              if (deleted < batchSize) {
+                throw new IncompleteDocumentDeletionException(
+                    "Only %d/%d docs were deleted".formatted(deleted, batchSize));
+              }
+              return deleted;
             });
   }
 }
