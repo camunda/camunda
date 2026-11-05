@@ -759,6 +759,11 @@ jobs:
 
       - name: Resolve this area's triage owner
         id: triage-owner
+        # always(), because the steps that consume this run on always() too.
+        # The agent failing is precisely the case with no fix PR and a thread
+        # that needs a person -- the default success() would skip the lookup
+        # exactly when the owner matters most.
+        if: always()
         # Best-effort by contract: emits found=false rather than failing, so a
         # roster that is missing or stale leaves the thread unmentioned and the
         # PR unassigned instead of turning a nightly red.
@@ -774,7 +779,12 @@ jobs:
         if: always()
         env:
           TRIAGE_OWNER_LOGIN: ${{ steps.triage-owner.outputs.login }}
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          # The job's own token, not the App token minted at the start of the
+          # job: the agent can run past that token's one-hour life, and the
+          # refresh below happens later still -- so both edits would fail auth
+          # and leave the PRs unlabelled and unassigned. The workflow already
+          # grants pull-requests: write, which is all this step needs.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           if [ -f /tmp/fix-meta.json ]; then
