@@ -65,8 +65,6 @@
           <ignoreAllNonTestScoped>true</ignoreAllNonTestScoped>
           <ignoreUnusedRuntime>true</ignoreUnusedRuntime>
           <ignoredUnusedDeclaredDependencies combine.children="append">
-            <dep>org.apache.maven.surefire:surefire-junit4</dep>
-            <dep>org.apache.maven.surefire:surefire-junit47</dep>
             <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
             <dep>org.codehaus.plexus:plexus-utils</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
