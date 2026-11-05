@@ -129,9 +129,6 @@
           "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
         },
         {
-          "$ref": "#/definitions/ReleaseJobInstruction"
-        },
-        {
           "$ref": "#/definitions/TriggerTimerInstruction"
         },
         {
@@ -200,21 +197,30 @@
                 "additionalProperties": false
               },
               {
-                "description": "An instruction to configure instance-wide execution switches on the process instance.",
+                "description": "An instruction to reserve the process instance's jobs of the listed job types for the test, so that no job worker is served them. Jobs of any other type run for real. Selection is by job type: every job of a listed type is reserved.",
                 "type": "object",
                 "properties": {
                   "type": {
                     "description": "The type of the runtime instruction.",
                     "type": "string",
-                    "const": "CONFIGURE_EXECUTION"
+                    "const": "RESERVE_JOBS"
                   },
-                  "reserveJobs": {
-                    "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
-                    "type": "boolean"
+                  "jobTypes": {
+                    "description": "The job types whose jobs are reserved. A job is reserved when its type is in this list.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "jobReservationToken": {
+                    "description": "The token that reserves the listed jobs. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. The same token must be given on every job instruction that acts on a reserved job.",
+                    "type": "string"
                   }
                 },
                 "required": [
-                  "type"
+                  "type",
+                  "jobTypes",
+                  "jobReservationToken"
                 ],
                 "additionalProperties": false
               },
@@ -682,6 +688,10 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
+        "jobReservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
           "type": "object",
@@ -711,6 +721,10 @@
         "jobSelector": {
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
+        },
+        "jobReservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
         },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
@@ -768,6 +782,10 @@
         "jobSelector": {
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
+        },
+        "jobReservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
         },
         "denied": {
           "description": "Whether the worker denies the work. Defaults to false.",
@@ -1351,6 +1369,10 @@
           "description": "The selector to identify the job to throw the error from.",
           "$ref": "#/definitions/JobSelector"
         },
+        "jobReservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
+        },
         "errorCode": {
           "description": "The error code to throw.",
           "type": "string"
@@ -1369,26 +1391,6 @@
         "type",
         "jobSelector",
         "errorCode"
-      ],
-      "additionalProperties": false
-    },
-    "ReleaseJobInstruction": {
-      "description": "An instruction to release a reserved job, so that the job worker it was hidden from runs it after all.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "description": "The type of the instruction.",
-          "type": "string",
-          "const": "RELEASE_JOB"
-        },
-        "jobSelector": {
-          "description": "The selector to identify the job to release.",
-          "$ref": "#/definitions/JobSelector"
-        }
-      },
-      "required": [
-        "type",
-        "jobSelector"
       ],
       "additionalProperties": false
     },

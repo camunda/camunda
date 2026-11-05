@@ -303,33 +303,21 @@ public interface CamundaProcessTestContext {
       final Map<String, Object> variables);
 
   /**
-   * Returns the reservation token of this test, minting one on first access (alpha).
+   * Sets the reservation token that the job commands this context issues carry from now on (alpha).
    *
-   * <p>Pass it to {@link
-   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String)
-   * reserveJobs} to hold a process instance's jobs back from the cluster's job workers. Every job
-   * command this context then issues carries the token, so the test drives those jobs itself.
-   *
-   * <p>One token is used for every instance this test reserves. Two tests on one cluster never
-   * share a token.
+   * <p>Use it to drive a reserved job: pass the token the process instance reserved the job with
+   * (see {@link
+   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String,
+   * String...) reserveJobs}). The complete and throw-error commands this context then issues carry
+   * the token, so the test drives those jobs itself. The context never mints a token; pass {@code
+   * null} to send none again.
    *
    * <p>A reserved job is hidden from every worker, including a {@link #mockJobWorker(String) mock
-   * job worker} this test opens, so do not mock and reserve the same job.
+   * job worker} this test opens, so do not mock and reserve the same job type.
    *
-   * @return the reservation token of this test
+   * @param jobReservationToken the token to send, or {@code null} to send none
    */
-  String getJobReservationToken();
-
-  /**
-   * Releases a reserved job that matches the specified selector, so that the job worker it was
-   * hidden from runs it after all (alpha).
-   *
-   * <p>Releasing is one-way: the job is no longer reserved afterwards, and the test cannot take it
-   * back.
-   *
-   * @param jobSelector the selector to identify the job to release
-   */
-  void releaseJob(final JobSelector jobSelector);
+  void setJobReservationToken(final String jobReservationToken);
 
   /**
    * Fires a waiting timer of the selected process instance immediately, without waiting for its due

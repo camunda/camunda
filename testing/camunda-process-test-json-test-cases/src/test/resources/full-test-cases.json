@@ -101,8 +101,9 @@
           },
           "runtimeInstructions": [
             {
-              "type": "CONFIGURE_EXECUTION",
-              "reserveJobs": true
+              "type": "RESERVE_JOBS",
+              "jobTypes": ["charge-card", "send-invoice"],
+              "jobReservationToken": "${jobReservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -115,14 +116,9 @@
           "jobSelector": {
             "elementId": "charge-card"
           },
+          "jobReservationToken": "${jobReservationToken}",
           "variables": {
             "paymentStatus": "APPROVED"
-          }
-        },
-        {
-          "type": "RELEASE_JOB",
-          "jobSelector": {
-            "elementId": "send-invoice"
           }
         },
         {

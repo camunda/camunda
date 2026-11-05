@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -388,29 +387,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public String getJobReservationToken() {
-    if (jobReservationToken == null) {
-      jobReservationToken = "cpt-" + UUID.randomUUID();
-    }
-    return jobReservationToken;
-  }
-
-  @Override
-  public void releaseJob(final JobSelector jobSelector) {
-    final CamundaClient client = createClient();
-
-    awaitJob(
-        jobSelector,
-        job -> {
-          LOGGER.debug(
-              "Mock: Release job [{}, jobKey: '{}']", jobSelector.describe(), job.getJobKey());
-
-          client
-              .newReleaseJobCommand(job.getJobKey())
-              .withJobReservationToken(getJobReservationToken())
-              .send()
-              .join();
-        });
+  public void setJobReservationToken(final String jobReservationToken) {
+    this.jobReservationToken = jobReservationToken;
   }
 
   @Override

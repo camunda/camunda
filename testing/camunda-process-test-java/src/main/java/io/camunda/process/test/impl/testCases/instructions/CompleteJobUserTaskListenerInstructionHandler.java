@@ -38,6 +38,17 @@ public class CompleteJobUserTaskListenerInstructionHandler
       final CamundaProcessTestContext context,
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
+    JobReservationTokenScope.run(
+        context,
+        runContext,
+        instruction.getJobReservationToken(),
+        () -> executeInstruction(instruction, context, camundaClient));
+  }
+
+  private void executeInstruction(
+      final CompleteJobUserTaskListenerInstruction instruction,
+      final CamundaProcessTestContext context,
+      final CamundaClient camundaClient) {
 
     final JobSelector jobSelector =
         InstructionSelectorFactory.buildJobSelector(
