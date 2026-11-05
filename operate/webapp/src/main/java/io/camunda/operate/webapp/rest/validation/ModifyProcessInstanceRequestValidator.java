@@ -8,12 +8,15 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.findViolation;
 
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
+import java.util.List;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -23,9 +26,13 @@ import org.springframework.util.StringUtils;
 public class ModifyProcessInstanceRequestValidator {
 
   private final ProcessInstanceReader processInstanceReader;
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
 
-  public ModifyProcessInstanceRequestValidator(final ProcessInstanceReader processInstanceReader) {
+  public ModifyProcessInstanceRequestValidator(
+      final ProcessInstanceReader processInstanceReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.processInstanceReader = processInstanceReader;
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
   }
 
   public void validate(final ModifyProcessInstanceRequestDto modifyRequest) {
@@ -60,6 +67,16 @@ public class ModifyProcessInstanceRequestValidator {
                         "Unknown Modification.Type given for process instance with key %s.",
                         processInstanceKey));
               }
+            });
+    validateKeysBelongToProcessInstance(processInstanceKey, modifyRequest.getModifications());
+  }
+
+  private void validateKeysBelongToProcessInstance(
+      final Long processInstanceKey, final List<Modification> modifications) {
+    findViolation(flowNodeInstanceReader, processInstanceKey, modifications)
+        .ifPresent(
+            message -> {
+              throw new InvalidRequestException(message);
             });
   }
 

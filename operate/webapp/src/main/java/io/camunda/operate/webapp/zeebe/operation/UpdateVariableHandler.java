@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.belongsToProcessInstance;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
@@ -38,10 +39,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
       failOperation(operation, "The scope of the operation is not a number.");
       return;
     }
-    if (!scopeKey.equals(processInstanceKey)
-        && !flowNodeInstanceReader
-            .findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(scopeKey))
-            .contains(scopeKey)) {
+    if (!belongsToProcessInstance(flowNodeInstanceReader, processInstanceKey, scopeKey)) {
       failOperation(
           operation,
           String.format(

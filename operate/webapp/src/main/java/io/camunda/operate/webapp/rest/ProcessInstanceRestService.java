@@ -131,8 +131,8 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String id,
       @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
     modifyRequest.setProcessInstanceKey(id);
-    modifyProcessInstanceRequestValidator.validate(modifyRequest);
     checkIdentityPermission(Long.valueOf(id), PermissionType.MODIFY_PROCESS_INSTANCE);
+    modifyProcessInstanceRequestValidator.validate(modifyRequest);
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 

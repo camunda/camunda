@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
+import static io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceKeyOwnership.belongsToProcessInstance;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
@@ -122,10 +123,7 @@ public class CreateRequestOperationValidator {
       return false;
     }
     final long processInstanceKey = Long.parseLong(processInstanceId);
-    return scopeKey == processInstanceKey
-        || flowNodeInstanceReader
-            .findFlowNodeInstanceKeysOwnedBy(processInstanceKey, Set.of(scopeKey))
-            .contains(scopeKey);
+    return belongsToProcessInstance(flowNodeInstanceReader, processInstanceKey, scopeKey);
   }
 
   private static boolean isVariableOperation(final CreateOperationRequestDto request) {
