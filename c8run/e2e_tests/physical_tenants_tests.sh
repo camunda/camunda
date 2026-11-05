@@ -102,14 +102,20 @@ printf "\nTest: process is isolated from the default tenant\n"
 default_after="$(count_definitions "$base" "$default_auth")"
 [[ "$default_after" == "$default_before" ]] || fail "process leaked into the default tenant"
 
-# Runs the secrets process in a tenant and prints the secret its job received.
-resolve_secret() {
-        local api="$1" login="$2" resolved=""
+# Deploys the secrets processes to a tenant, starts one of them and prints its instance key.
+start_secrets_process() {
+        local api="$1" login="$2" process_id="$3"
         curl --silent --show-error --fail -u "$login" -X POST "$api/deployments" \
                 -F "resources=@$script_dir/centralized_secrets.bpmn" >/dev/null || fail "secrets process deployment to $api failed"
         curl --silent --show-error --fail -u "$login" -X POST "$api/process-instances" \
-                -H 'Content-Type: application/json' --data-raw '{"processDefinitionId":"c8runSecretPresent"}' >/dev/null \
-                || fail "secrets process instance creation in $api failed"
+                -H 'Content-Type: application/json' --data-raw "{\"processDefinitionId\":\"$process_id\"}" \
+                | jq -r '.processInstanceKey' || fail "$process_id instance creation in $api failed"
+}
+
+# Runs the secrets process in a tenant and prints the secret its job received.
+resolve_secret() {
+        local api="$1" login="$2" resolved=""
+        start_secrets_process "$api" "$login" c8runSecretPresent >/dev/null
         for _ in $(seq 1 10); do
                 resolved="$(curl --silent --show-error --fail -u "$login" -X POST "$api/jobs/activation" \
                         -H 'Content-Type: application/json' \
@@ -136,11 +142,7 @@ fi
 if [[ "${CHECK_MISSING_SECRET:-0}" == "1" ]]; then
         tenant_api="$base/physical-tenants/$tenant/v2"
         printf "\nTest: a missing secret in %s raises a secret resolution incident\n" "$tenant"
-        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/deployments" \
-                -F "resources=@$script_dir/centralized_secrets.bpmn" >/dev/null || fail "secrets process deployment failed"
-        instance_key="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/process-instances" \
-                -H 'Content-Type: application/json' --data-raw '{"processDefinitionId":"c8runSecretMissing"}' \
-                | jq -r '.processInstanceKey')"
+        instance_key="$(start_secrets_process "$tenant_api" "$auth" c8runSecretMissing)"
         jobs="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/jobs/activation" \
                 -H 'Content-Type: application/json' \
                 --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":5000}' \
