@@ -92,23 +92,23 @@ final class PendingSubscriptionRecoverySchedulerTest {
   }
 
   @Test
-  void shouldRetryFailedChunkFromTheSameKey() {
+  void shouldStopOnlyTheFailedSide() {
     // given
     when(processSubscriptionState.recoverPending(eq(NO_ELEMENT_INSTANCE), anyInt())).thenReturn(5L);
     when(processSubscriptionState.recoverPending(eq(5L), anyInt()))
-        .thenThrow(new RuntimeException("expected"))
-        .thenReturn(NO_ELEMENT_INSTANCE);
-    when(messageSubscriptionState.recoverPending(eq(NO_ELEMENT_INSTANCE), anyInt()))
-        .thenReturn(NO_ELEMENT_INSTANCE);
+        .thenThrow(new RuntimeException("expected"));
+    when(messageSubscriptionState.recoverPending(eq(NO_ELEMENT_INSTANCE), anyInt())).thenReturn(7L);
+    when(messageSubscriptionState.recoverPending(eq(7L), anyInt())).thenReturn(NO_ELEMENT_INSTANCE);
 
     // when
     scheduler.onRecovered(context);
     runScheduledTasks();
 
     // then
-    verify(processSubscriptionState, times(2)).recoverPending(eq(5L), anyInt());
-    verify(scheduleService)
-        .runDelayedAsync(eq(PendingSubscriptionRecoveryScheduler.RETRY_DELAY), any(Task.class));
+    verify(processSubscriptionState, times(1)).recoverPending(eq(5L), anyInt());
+    verify(messageSubscriptionState).recoverPending(eq(7L), anyInt());
+    // two initial tasks, then one reschedule per side before the failure
+    verify(scheduleService, times(4)).runDelayedAsync(any(Duration.class), any(Task.class));
   }
 
   @Test
