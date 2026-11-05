@@ -308,6 +308,8 @@ You are probably reaching for `T | undefined` in JS, and `T | Unset` in Python. 
 
 The exception to this is a PATCH operation where sending an explicit `null` is semantically meaningful: it erases any previous set value.
 
+This is enforced by the `no-nullable-request-properties` Spectral rule. The rule has no built-in PATCH exemption: none of the existing PATCH fields erase a value on `null` (they treat it like omission), so exempting PATCH by method would approve exactly those. A field where an explicit `null` genuinely erases the stored value is added to the rule's allowlist, `zeebe/gateway-protocol/spectral-functions/verifyNoNullableRequestProperties.allowlist.json`, keyed by operationId and normalized field path (e.g. `changeset.dueDate`, `items[].name`). Each entry belongs to a group carrying a `reason` that explains the erase semantics, and needs API Governance review. Request fields that were already released as `nullable` are grandfathered in the same file.
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
 Every operation **should** declare `x-eventually-consistent` explicitly:
@@ -1604,6 +1606,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                               |
 | `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                 |
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                 |
+| `no-nullable-request-properties`           | error    | Request body fields must not be `nullable` (see §2.4). Released contracts and approved PATCH "null erases" fields are allowlisted               |
 | `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                |
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                 |
 | `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                   |

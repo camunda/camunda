@@ -130,6 +130,38 @@ schema:
 
 See [#46224](https://github.com/camunda/camunda/issues/46224) for details.
 
+### Request Body Fields Must Not Be Nullable
+
+Request fields express optionality by being left out of `required`, not through `nullable`. A nullable request field makes SDK generators emit a three-state type (`T | undefined | null` in JS, `T | Unset | None` in Python). The `no-nullable-request-properties` rule fails on any `nullable: true` inside a request body schema. Existing released fields, and PATCH fields where an explicit `null` erases the stored value, are listed in `spectral-functions/verifyNoNullableRequestProperties.allowlist.json` after API Governance review. Each entry belongs to a group carrying a `reason`.
+
+**Wrong:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+            nullable: true
+```
+
+**Correct:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+# Optional: simply leave `name` out of the required array
+```
+
+See [#66952](https://github.com/camunda/camunda/issues/66952) for details.
+
 ### Missing `x-added-in-version` on an Operation
 
 Every operation must declare the Camunda version in which it was first introduced via the `x-added-in-version` extension. The `require-added-in-version` rule fails the build if this annotation is missing.
