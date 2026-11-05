@@ -395,6 +395,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  @SuppressWarnings("ReturnValueIgnored")
   public CompletableFuture<Void> verifyConnection() {
     return CompletableFuture.runAsync(
             () -> {

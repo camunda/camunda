@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -28,20 +28,20 @@ import org.opensearch.client.opensearch.core.search.SourceConfig;
 public final class SearchRequestTransformer
     extends OpensearchTransformer<SearchQueryRequest, SearchRequest> {
 
-  private final Function<SearchRequest.Builder, SearchRequest.Builder> customizer;
+  private final Consumer<SearchRequest.Builder> customizer;
 
   public SearchRequestTransformer(final OpensearchTransformers transformers) {
     this(transformers, null);
   }
 
   public SearchRequestTransformer(
-      final OpensearchTransformers transformers, final Function<Builder, Builder> customizer) {
+      final OpensearchTransformers transformers, final Consumer<Builder> customizer) {
     super(transformers);
     this.customizer = customizer;
   }
 
   public SearchRequestTransformer withSearchRequestCustomizer(
-      final Function<SearchRequest.Builder, SearchRequest.Builder> customizer) {
+      final Consumer<SearchRequest.Builder> customizer) {
     return new SearchRequestTransformer(transformers, customizer);
   }
 
@@ -77,7 +77,7 @@ public final class SearchRequestTransformer
 
     applySearchAggregations(value, builder);
 
-    Optional.ofNullable(customizer).ifPresent(customizer -> customizer.apply(builder));
+    Optional.ofNullable(customizer).ifPresent(customizer -> customizer.accept(builder));
 
     return builder;
   }

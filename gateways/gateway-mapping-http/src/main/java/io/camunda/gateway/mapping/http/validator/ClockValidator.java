@@ -56,6 +56,7 @@ public class ClockValidator {
                     () -> violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timestamp"))));
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private static boolean fitsIntoMillis(final Duration duration) {
     try {
       duration.toMillis();

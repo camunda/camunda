@@ -22,13 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public final class SearchRequestTransformer
     extends ElasticsearchTransformer<SearchQueryRequest, SearchRequest> {
 
-  private final Function<SearchRequest.Builder, SearchRequest.Builder> customizer;
+  private final Consumer<Builder> customizer;
 
   public SearchRequestTransformer(final ElasticsearchTransformers transformers) {
     this(transformers, null);
@@ -36,13 +36,13 @@ public final class SearchRequestTransformer
 
   public SearchRequestTransformer(
       final ElasticsearchTransformers transformers,
-      final Function<SearchRequest.Builder, SearchRequest.Builder> customizer) {
+      final Consumer<SearchRequest.Builder> customizer) {
     super(transformers);
     this.customizer = customizer;
   }
 
   public SearchRequestTransformer withSearchRequestCustomizer(
-      final Function<SearchRequest.Builder, SearchRequest.Builder> customizer) {
+      final Consumer<SearchRequest.Builder> customizer) {
     return new SearchRequestTransformer(transformers, customizer);
   }
 
@@ -79,7 +79,7 @@ public final class SearchRequestTransformer
 
     applySearchAggregations(value, builder);
 
-    Optional.ofNullable(customizer).ifPresent(customizer -> customizer.apply(builder));
+    Optional.ofNullable(customizer).ifPresent(customizer -> customizer.accept(builder));
 
     return builder;
   }

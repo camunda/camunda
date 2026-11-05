@@ -624,6 +624,7 @@ public final class ProcessInstanceServices
         authentication);
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
       final BrokerRequest<R> brokerRequest,
       final ProcessDefinitionIdentifier identifier,
