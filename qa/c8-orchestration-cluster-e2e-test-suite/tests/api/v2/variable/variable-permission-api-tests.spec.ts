@@ -19,7 +19,10 @@ import {
   encode,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {setupVariableTest} from '../../../../utils/requestHelpers/variable-requestHelpers';
 import {
@@ -42,7 +45,7 @@ type TestUser = {
   password: string;
 };
 
-test.describe.serial('Variable Permission API - Forbidden', () => {
+test.describe('Variable Permission API - Forbidden', () => {
   // Variable of a process the restricted users have no access to at all.
   let unauthorizedProcessInstanceKey: string;
   let unauthorizedVariableKey: string;
@@ -74,10 +77,14 @@ test.describe.serial('Variable Permission API - Forbidden', () => {
       })
     ).processInstanceKey;
     readableVariableKey = (
-      await searchVariableByNameAndProcessInstanceKey(request, {
-        processInstanceKey: readableProcessInstanceKey,
-        name: READABLE_VARIABLE_NAME,
-      })
+      await searchVariableByNameAndProcessInstanceKey(
+        request,
+        {
+          processInstanceKey: readableProcessInstanceKey,
+          name: READABLE_VARIABLE_NAME,
+        },
+        extendedAssertionOptions,
+      )
     ).variableKey;
 
     userWithoutPermissions = await createUser(request);
