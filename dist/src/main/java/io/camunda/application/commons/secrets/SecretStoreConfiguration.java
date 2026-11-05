@@ -24,6 +24,7 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
 import io.camunda.secretstore.env.EnvVarSecretStore;
+import io.camunda.secretstore.env.EnvVarSecretStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
@@ -330,7 +331,7 @@ public class SecretStoreConfiguration {
     final var prefix = config.getPrefix();
     final SecretStore store;
     try {
-      store = EnvVarSecretStore.fromSystemEnvironment(prefix);
+      store = EnvVarSecretStore.fromConfig(new EnvVarSecretStoreConfig(prefix, System.getenv()));
     } catch (final IllegalArgumentException invalidPrefix) {
       throw new IllegalStateException(
           "Environment-variable store '%s' for physical tenant '%s' has an invalid %s.%s.prefix: %s"

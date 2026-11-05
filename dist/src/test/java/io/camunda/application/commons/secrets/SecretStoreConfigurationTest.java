@@ -567,6 +567,33 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldHandOutTheEnvVarStoreWithoutACacheInFrontOfIt() {
+    // given an env store, which already holds every value in memory
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.env.default.prefix", "APP_SECRET_"));
+    final var meterRegistry = new SimpleMeterRegistry();
+
+    // when it is resolved through
+    final var store =
+        CONFIG
+            .secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry)
+            .byPhysicalTenant()
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .getStores()
+            .get(SecretStoreRegistry.DEFAULT_STORE_ID);
+    store.resolve(Set.of("token"));
+
+    // then the registry hands out the store itself, so no second cache holds its values and none of
+    // the cache meters exist for it
+    assertThat(store).isInstanceOf(EnvVarSecretStore.class);
+    assertThat(
+            meterRegistry.getMeters().stream()
+                .map(meter -> meter.getId().getName())
+                .filter(name -> name.startsWith("camunda.secret.cache.")))
+        .isEmpty();
+  }
+
+  @Test
   void shouldThrowWhenFileAndEnvStoresCombinedExceedOne() {
     // given one file store and one env store for the same tenant
     final var resolver =

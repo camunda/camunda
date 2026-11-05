@@ -108,6 +108,7 @@ dependencies {
   testImplementation(libs.org.springframework.security.spring.security.oauth2.jose)
   testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
   testImplementation(project(":camunda-service"))
+  testImplementation(project(":camunda-secret-store-env"))
   testImplementation(project(":camunda-search-client"))
   testImplementation(project(":camunda-search-client-query-transformer"))
   testImplementation(project(":camunda-testcontainer"))
