@@ -207,7 +207,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -241,7 +241,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -288,7 +288,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         repository.moveDocumentsById(
             "from-index",
             "to-index",
-            new FilterByKeysQuery(Map.of("key", List.of("1", "2", "3"))),
+            FilterByKeysQuery.of(Map.of("key", List.of("1", "2", "3"))),
             Runnable::run);
 
     // then
@@ -312,7 +312,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
 
     // when
     ((ElasticsearchArchiverRepository) repository)
-        .getArchiveDocIdsBatch("source-index", new FilterByKeysQuery("key", List.of("1")), null, 10)
+        .getArchiveDocIdsBatch("source-index", FilterByKeysQuery.of("key", List.of("1")), null, 10)
         .join();
 
     // then

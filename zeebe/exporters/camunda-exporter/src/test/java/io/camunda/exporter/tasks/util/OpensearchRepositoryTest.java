@@ -29,7 +29,7 @@ class OpensearchRepositoryTest {
 
   @ParameterizedTest
   @MethodSource("filtersAndQueries")
-  void shouldConvertFilterToQuery(final FilterByKeysQuery filter, final String expectedJsonQuery)
+  void shouldConvertFilterToQuery(final FilterByKeysQuery<?> filter, final String expectedJsonQuery)
       throws JsonProcessingException {
     // given/when
     final var query = OpenSearchArchiverRepository.toQuery(filter);
@@ -46,7 +46,7 @@ class OpensearchRepositoryTest {
   static Stream<Arguments> filtersAndQueries() {
     return Stream.of(
         Arguments.of(
-            new FilterByKeysQuery("key", List.of("1", "2", "3")),
+            FilterByKeysQuery.of("key", List.of("1", "2", "3")),
             """
             {
               "bool" : {
@@ -63,7 +63,7 @@ class OpensearchRepositoryTest {
               }
             }"""),
         Arguments.of(
-            new FilterByKeysQuery(
+            FilterByKeysQuery.of(
                 // using immutable map to ensure sort order is consistent for the test
                 ImmutableMap.of("piKey", List.of("1", "2", "3"), "rpiKey", List.of("1", "4", "5"))),
             """
@@ -86,7 +86,7 @@ class OpensearchRepositoryTest {
               }
             }"""),
         Arguments.of(
-            new FilterByKeysQuery("key", List.of("4", "5")).inclusion("joinRelation", "variable"),
+            FilterByKeysQuery.of("key", List.of("4", "5")).inclusion("joinRelation", "variable"),
             """
             {
               "bool" : {
@@ -109,7 +109,7 @@ class OpensearchRepositoryTest {
               }
             }"""),
         Arguments.of(
-            new FilterByKeysQuery("key", List.of("4", "5"))
+            FilterByKeysQuery.of("key", List.of("4", "5"))
                 .exclusion("joinRelation", "processInstance"),
             """
             {
@@ -120,6 +120,57 @@ class OpensearchRepositoryTest {
                     "should" : [ {
                       "terms" : {
                         "key" : [ "4", "5" ]
+                      }
+                    } ]
+                  }
+                } ],
+                "must_not" : [ {
+                  "term" : {
+                    "joinRelation" : {
+                      "value" : "processInstance"
+                    }
+                  }
+                } ]
+              }
+            }"""),
+        // check with long key values
+        Arguments.of(
+            FilterByKeysQuery.of("key", List.of(1L, 2L))
+                .exclusion("joinRelation", "processInstance"),
+            """
+            {
+              "bool" : {
+                "filter" : [ {
+                  "bool" : {
+                    "minimum_should_match" : "1",
+                    "should" : [ {
+                      "terms" : {
+                        "key" : [ 1, 2 ]
+                      }
+                    } ]
+                  }
+                } ],
+                "must_not" : [ {
+                  "term" : {
+                    "joinRelation" : {
+                      "value" : "processInstance"
+                    }
+                  }
+                } ]
+              }
+            }"""),
+        // check with int key values
+        Arguments.of(
+            FilterByKeysQuery.of("key", List.of(6, 7)).exclusion("joinRelation", "processInstance"),
+            """
+            {
+              "bool" : {
+                "filter" : [ {
+                  "bool" : {
+                    "minimum_should_match" : "1",
+                    "should" : [ {
+                      "terms" : {
+                        "key" : [ 6, 7 ]
                       }
                     } ]
                   }
