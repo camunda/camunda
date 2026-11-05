@@ -24,15 +24,18 @@ import org.junit.jupiter.api.Test;
 class EnvVarSecretStoreTest {
 
   @Test
-  void shouldNotResolveAnUnprefixedVariableFromTheSystemEnvironment() {
-    // given a store over the real environment, where PATH is set but carries no prefix
+  void shouldResolveFromTheConfiguredEnvironment() {
+    // given
     try (final SecretStore store =
-        EnvVarSecretStore.fromConfig(new EnvVarSecretStoreConfig("SECRET_", System.getenv()))) {
+        EnvVarSecretStore.fromConfig(
+            new EnvVarSecretStoreConfig(
+                "SECRET_", Map.of("SECRET_API_KEY", "s3cr3t", "PATH", "/usr/bin")))) {
 
       // when
-      final var result = store.resolve(Set.of("PATH"));
+      final var result = store.resolve(Set.of("API_KEY", "PATH"));
 
       // then
+      assertResolved(result, "API_KEY", "s3cr3t");
       assertFailed(result, "PATH", NOT_FOUND);
     }
   }
