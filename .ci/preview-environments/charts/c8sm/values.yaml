@@ -232,39 +232,6 @@ camunda-platform:
     security:
       authentication:
         method: basic
-    env:
-    - name: CAMUNDA_SECURITY_AUTHENTICATION_METHOD
-      value: BASIC
-    - name: CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI
-      value: "false"
-    - name: CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED
-      value: "true"
-    - name: CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED
-      value: "false"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME
-      value: demo
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD
-      value: demo
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME
-      value: Demo
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL
-      value: demo@example.com
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0
-      value: demo
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME
-      value: lisa
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD
-      value: lisa
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME
-      value: lisa
-    - name: CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL
-      value: lisa@example.com
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1
-      value: lisa
-    - name: CAMUNDA_SECURITY_CLUSTERADMIN_BASIC_USERS_0_NAME
-      value: cluster-operator
-    - name: CAMUNDA_SECURITY_CLUSTERADMIN_BASIC_USERS_0_PASSWORD
-      value: cluster-secret
     data:
       disk:
         ## Adjustement required due to PVC size
