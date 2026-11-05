@@ -94,8 +94,8 @@ public class ElasticsearchRepository implements AutoCloseable {
             executor);
   }
 
-  protected static Query toQuery(final FilterByKeysQuery filterByKeys) {
-    final Map<String, List<String>> keysByField = filterByKeys.keysByField();
+  protected static <T> Query toQuery(final FilterByKeysQuery<T> filterByKeys) {
+    final Map<String, List<T>> keysByField = filterByKeys.keysByField();
     final Map<String, String> inclusionFilters = filterByKeys.inclusionFilters();
     final Map<String, String> exclusionFilters = filterByKeys.exclusionFilters();
 
@@ -126,8 +126,8 @@ public class ElasticsearchRepository implements AutoCloseable {
     return boolBuilder.build()._toQuery();
   }
 
-  private static TermsQuery buildIdTermsQuery(
-      final String idFieldName, final List<String> idValues) {
+  private static <T> TermsQuery buildIdTermsQuery(
+      final String idFieldName, final List<T> idValues) {
     return QueryBuilders.terms()
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))

@@ -294,7 +294,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final FilterByKeysQuery filter,
+      final FilterByKeysQuery<String> filter,
       final Executor executor) {
     return archiveByIdPipeline.moveBetweenIndexes(
         (searchAfter, size) -> getArchiveDocIdsBatch(sourceIndexName, filter, searchAfter, size),

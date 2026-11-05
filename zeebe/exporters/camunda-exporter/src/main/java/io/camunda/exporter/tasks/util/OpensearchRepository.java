@@ -95,8 +95,8 @@ public class OpensearchRepository implements AutoCloseable {
     }
   }
 
-  protected static Query toQuery(final FilterByKeysQuery filterByKeys) {
-    final Map<String, List<String>> keysByField = filterByKeys.keysByField();
+  protected static <T> Query toQuery(final FilterByKeysQuery<T> filterByKeys) {
+    final Map<String, List<T>> keysByField = filterByKeys.keysByField();
     final Map<String, String> inclusionFilters = filterByKeys.inclusionFilters();
     final Map<String, String> exclusionFilters = filterByKeys.exclusionFilters();
     final var boolBuilder = QueryBuilders.bool();
@@ -126,12 +126,26 @@ public class OpensearchRepository implements AutoCloseable {
     return boolBuilder.build().toQuery();
   }
 
-  private static TermsQuery buildIdTermsQuery(
-      final String idFieldName, final List<String> idValues) {
+  private static <T> TermsQuery buildIdTermsQuery(
+      final String idFieldName, final List<T> idValues) {
     return QueryBuilders.terms()
         .field(idFieldName)
-        .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
+        .terms(
+            terms -> terms.value(idValues.stream().map(OpensearchRepository::fieldValue).toList()))
         .build();
+  }
+
+  private static FieldValue fieldValue(final Object value) {
+    // OS client does not have a generic FieldValue.of(Object)
+    // so we'll do some basic translation here
+    if (value instanceof final String s) {
+      return FieldValue.of(s);
+    } else if (value instanceof final Long l) {
+      return FieldValue.of(l);
+    } else if (value instanceof final Integer i) {
+      return FieldValue.of(i);
+    }
+    throw new IllegalArgumentException("Unsupported type: " + value.getClass() + " " + value);
   }
 
   private <T> CompletionStage<T> clearScrollOnComplete(
