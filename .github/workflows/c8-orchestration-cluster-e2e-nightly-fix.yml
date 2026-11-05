@@ -793,12 +793,16 @@ jobs:
             #
             # `if`, not `[ ... ] && ...`: Actions runs run-steps under `bash -e`,
             # and an empty owner is the expected state, not an error.
-            assignee=""
+            # An array, not a string: the flag and its value are two argv
+            # entries, so an unquoted string would rely on word splitting
+            # (SC2086) and a quoted one would pass "--add-assignee login" as a
+            # single argument.
+            assignee=()
             if [ -n "${TRIAGE_OWNER_LOGIN:-}" ]; then
-              assignee="--add-assignee ${TRIAGE_OWNER_LOGIN}"
+              assignee=(--add-assignee "${TRIAGE_OWNER_LOGIN}")
             fi
             jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_num; do
-              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" $assignee 2>/dev/null \
+              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" "${assignee[@]}" 2>/dev/null \
                 || gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null \
                 || true
             done
