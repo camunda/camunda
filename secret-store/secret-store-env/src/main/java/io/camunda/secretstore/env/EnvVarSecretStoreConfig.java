@@ -14,6 +14,13 @@ import java.util.Map;
  *
  * @param prefix the prefix every secret variable carries; must not be blank, malformed, or start
  *     with a reserved prefix, see {@link EnvVarSecretStore}
- * @param environment the variables the store snapshots, normally {@link System#getenv()}
+ * @param environment the variables the store snapshots, normally {@link System#getenv()}; left out
+ *     of {@link #toString()}, as it holds the secrets and the platform's own credentials
  */
-public record EnvVarSecretStoreConfig(String prefix, Map<String, String> environment) {}
+public record EnvVarSecretStoreConfig(String prefix, Map<String, String> environment) {
+
+  @Override
+  public String toString() {
+    return "EnvVarSecretStoreConfig[prefix=" + prefix + ", environment=***]";
+  }
+}
