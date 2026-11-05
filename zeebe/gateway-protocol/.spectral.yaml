@@ -12,6 +12,7 @@ functions:
   - verifyNoRedundantRequired
   - verifyArrayPropertiesRequired
   - verifyResponsePropertiesRequired
+  - verifyNoNullableRequestProperties
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
   - verifyScope
@@ -149,6 +150,17 @@ rules:
     message: "{{error}}"
     then:
       function: verifyResponsePropertiesRequired
+
+  # Request body fields must not be `nullable` (camunda/camunda#66952).
+  # Exceptions live in spectral-functions/verifyNoNullableRequestProperties.allowlist.json;
+  # new entries need API Governance review.
+  no-nullable-request-properties:
+    description: "Request body fields must not be `nullable`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoNullableRequestProperties
 
   no-eventually-consistent-on-commands:
     description: "Command (mutating) operations must not have x-eventually-consistent: true."

@@ -26,10 +26,15 @@ spectral-tests/
         ├── rest-api.yaml         # Entry point (mirrors real spec structure)
         ├── things.yaml           # Domain schemas with valid + invalid cases
         ├── search-models.yaml    # Shared models (allOf composition targets)
-        └── semantic-kinds.json   # Optional: fixture-local semantic-kinds
-                                  # registry (auto-loaded via the
-                                  # SPECTRAL_SEMANTIC_KINDS_REGISTRY env
-                                  # var by helpers.js when present).
+        ├── semantic-kinds.json   # Optional: fixture-local semantic-kinds
+        │                         # registry (auto-loaded via the
+        │                         # SPECTRAL_SEMANTIC_KINDS_REGISTRY env
+        │                         # var by helpers.js when present).
+        └── nullable-request-allowlist.json
+                                  # Optional: fixture-local allowlist for
+                                  # no-nullable-request-properties (auto-loaded
+                                  # via the SPECTRAL_NULLABLE_REQUEST_ALLOWLIST
+                                  # env var by helpers.js when present).
 ```
 
 ## Adding tests for a new rule
