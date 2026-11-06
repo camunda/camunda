@@ -12,14 +12,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+<<<<<<< HEAD
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+=======
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
@@ -28,17 +30,19 @@ import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
+<<<<<<< HEAD
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Counter;
+=======
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -72,26 +76,31 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Profile("starter")
 public class Starter implements CommandLineRunner {
 
-  private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final CamundaClient loaderClient;
   private final CamundaClient queryClient;
   private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
+<<<<<<< HEAD
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
   private final StarterLivenessIndicator livenessIndicator;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
+=======
+  private final StarterLivenessIndicator livenessIndicator;
+  private final WebClient.Builder webClientBuilder;
+  private final ObjectMapper objectMapper;
+  private final ProcessDeployer processDeployer;
+  private final ProcessInstanceCreator processInstanceCreator;
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
   private final AtomicReference<Error> fatalError = new AtomicReference<>();
@@ -108,27 +117,41 @@ public class Starter implements CommandLineRunner {
   private OptimizeReportEvaluator optimizeReportEvaluator;
 
   public Starter(
-      final CamundaClient loaderClient,
       @Qualifier("queryCamundaClient") final CamundaClient queryClient,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
+<<<<<<< HEAD
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final StarterLivenessIndicator livenessIndicator,
       final WebClient.Builder webClientBuilder,
       final ObjectMapper objectMapper,
+=======
+      final StarterLivenessIndicator livenessIndicator,
+      final WebClient.Builder webClientBuilder,
+      final ObjectMapper objectMapper,
+      final ProcessDeployer processDeployer,
+      final ProcessInstanceCreator processInstanceCreator,
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
       final ApplicationContext applicationContext) {
-    this.loaderClient = loaderClient;
     this.queryClient = queryClient;
     this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
+<<<<<<< HEAD
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
     this.livenessIndicator = livenessIndicator;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
+=======
+    this.livenessIndicator = livenessIndicator;
+    this.webClientBuilder = webClientBuilder;
+    this.objectMapper = objectMapper;
+    this.processDeployer = processDeployer;
+    this.processInstanceCreator = processInstanceCreator;
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -144,6 +167,7 @@ public class Starter implements CommandLineRunner {
 
   @Override
   public void run(final String... args) {
+<<<<<<< HEAD
     connectionMonitor.awaitAndPrintTopology();
     livenessIndicator.recordStarted();
 
@@ -154,6 +178,8 @@ public class Starter implements CommandLineRunner {
     processInstancesSkippedCounter = registerSubmissionCounter("skipped");
     resultMetrics = new StarterResultMetrics(registry);
 
+=======
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
@@ -170,9 +196,10 @@ public class Starter implements CommandLineRunner {
       setupOptimizeReportEvaluator();
     }
 
-    deployProcess();
+    final long processDefinitionKey = processDeployer.deploy();
 
     if (properties.isPerformReadBenchmarks()) {
+      dataReadMeter.setContextProcessDefinitionKey(processDefinitionKey);
       dataReadMeter.start();
     }
 
@@ -433,6 +460,7 @@ public class Starter implements CommandLineRunner {
       throw new RuntimeException(e);
     }
   }
+<<<<<<< HEAD
 
   private void deployProcess() {
     final var deployCmd = constructDeploymentCommand();
@@ -490,4 +518,6 @@ public class Starter implements CommandLineRunner {
       return () -> true;
     }
   }
+=======
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
 }

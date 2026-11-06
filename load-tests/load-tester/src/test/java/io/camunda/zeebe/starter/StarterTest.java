@@ -53,14 +53,21 @@ class StarterTest {
     // when
     new Starter(
         mock(CamundaClient.class),
-        mock(CamundaClient.class),
         properties,
         registry,
+<<<<<<< HEAD
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
         mock(WebClient.Builder.class),
         new ObjectMapper(),
+=======
+        mock(StarterLivenessIndicator.class),
+        mock(WebClient.Builder.class),
+        new ObjectMapper(),
+        mock(ProcessDeployer.class),
+        mock(ProcessInstanceCreator.class),
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
         mock(ApplicationContext.class));
 
     // then
@@ -102,15 +109,25 @@ class StarterTest {
 
     final var starter =
         new Starter(
-            loaderClient,
             queryClient,
             properties,
+<<<<<<< HEAD
             new SimpleMeterRegistry(),
             payloadReader,
             mock(ConnectionMonitor.class),
             mock(StarterLivenessIndicator.class),
             mock(WebClient.Builder.class),
             new ObjectMapper(),
+=======
+            registry,
+            livenessIndicator,
+            mock(WebClient.Builder.class),
+            new ObjectMapper(),
+            new ProcessDeployer(
+                loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator),
+            new ProcessInstanceCreator(
+                loaderClient, properties, registry, payloadReader, livenessIndicator),
+>>>>>>> ce230099e (refactor: extract process deployment from Starter)
             mock(ApplicationContext.class));
 
     // when
