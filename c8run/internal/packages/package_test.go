@@ -1844,7 +1844,7 @@ Owner: CN=DigiCert Global Root G2, OU=www.digicert.com, O=DigiCert Inc, C=US
 
 	got := findDistrustedAliases(listing)
 
-	want := []string{"cn_emsign_ecc_root_ca__g3"}
+	want := []string{"comodoaaaca [jdk]", "cn_emsign_ecc_root_ca__g3", "emsignrootcag1 [jdk]"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected %v, got %v", want, got)
 	}
@@ -1876,7 +1876,7 @@ func keystoreHasAlias(keystore, alias string) bool {
 		"-keystore", keystore, "-storepass", cacertsStorePass).Run() == nil
 }
 
-func TestRemoveDistrustedCACertsDeletesOnlyEMudhraG3Roots(t *testing.T) {
+func TestRemoveDistrustedCACertsDeletesOnlyCVE2026114820Roots(t *testing.T) {
 	if _, err := exec.LookPath("keytool"); err != nil {
 		t.Skip("keytool not available")
 	}
@@ -1884,13 +1884,16 @@ func TestRemoveDistrustedCACertsDeletesOnlyEMudhraG3Roots(t *testing.T) {
 	// given
 	cacerts := filepath.Join(t.TempDir(), "cacerts")
 	distrusted := map[string]string{
-		"ecc-g3": "CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
-		"tls-g3": "CN=emSign Root TLS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
-		"cs-g3":  "CN=emSign Root CS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"emsign-g1": "CN=emSign Root CA - G1, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"emsign-g2": "CN=emSign Root CA - G2, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"ecc-g3":    "CN=emSign ECC Root CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"aaa":       "CN=AAA Certificate Services, O=Comodo CA Limited, C=GB",
+		"tls-g3":    "CN=emSign Root TLS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"cs-g3":     "CN=emSign Root CS CA - G3, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
 	}
 	kept := map[string]string{
-		"aaa":       "CN=AAA Certificate Services, O=Comodo CA Limited, C=GB",
-		"emsign-g1": "CN=emSign Root CA - G1, O=eMudhra Technologies Limited, OU=emSign PKI, C=IN",
+		"emsign-c1": "CN=emSign Root CA - C1, O=eMudhra Inc, OU=emSign PKI, C=US",
+		"usertrust": "CN=USERTrust RSA Certification Authority, O=The USERTRUST Network, C=US",
 	}
 	for alias, dname := range distrusted {
 		addTrustedCert(t, cacerts, alias, dname)
