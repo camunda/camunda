@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -90,6 +92,8 @@ public final class TestCluster implements CloseableSilently {
   private final int replicationFactor;
   private final int partitionsCount;
 
+  private ExecutorService nodeExecutor;
+
   /**
    * Creates a new cluster from the given parameters.
    *
@@ -142,7 +146,7 @@ public final class TestCluster implements CloseableSilently {
 
     final var started =
         nodes().values().stream()
-            .map(node -> CompletableFuture.runAsync(node::start))
+            .map(node -> CompletableFuture.runAsync(node::start, nodeExecutor()))
             .toArray(CompletableFuture[]::new);
     try {
       CompletableFuture.allOf(started).get(2, TimeUnit.MINUTES);
@@ -163,7 +167,7 @@ public final class TestCluster implements CloseableSilently {
   public TestCluster shutdown() {
     final var stopped =
         nodes().values().stream()
-            .map(node -> CompletableFuture.runAsync(node::stop))
+            .map(node -> CompletableFuture.runAsync(node::stop, nodeExecutor()))
             .toArray(CompletableFuture[]::new);
 
     try {
@@ -397,8 +401,28 @@ public final class TestCluster implements CloseableSilently {
 
   @Override
   public void close() {
-    //noinspection resource
-    shutdown();
+    try {
+      //noinspection resource
+      shutdown();
+    } finally {
+      if (nodeExecutor != null) {
+        nodeExecutor.shutdownNow();
+      }
+    }
+  }
+
+  /**
+   * Executor for the blocking start/stop of the nodes. Not the common pool, which the nodes need to
+   * start up and which holds fewer workers than the cluster has nodes on small hosts. Recreated
+   * after {@link #close()}, as a rerun of a failed test class restarts the same cluster.
+   */
+  private ExecutorService nodeExecutor() {
+    if (nodeExecutor == null || nodeExecutor.isShutdown()) {
+      nodeExecutor =
+          Executors.newThreadPerTaskExecutor(
+              Thread.ofVirtual().name("test-cluster-" + name + "-node-", 0).factory());
+    }
+    return nodeExecutor;
   }
 
   /** Makes the ports of all nodes available to other applications again. */
