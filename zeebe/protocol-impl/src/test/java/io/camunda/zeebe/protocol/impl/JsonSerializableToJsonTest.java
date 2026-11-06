@@ -1342,6 +1342,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "messageId": "test-id",
                   "name": "test-message",
                   "deadline": 22,
@@ -1373,6 +1374,7 @@ final class JsonSerializableToJsonTest {
                   "timeToLive": 12,
                   "correlationKey": "test-key",
                   "variables": {},
+                  "variablesMetadata": {},
                   "messageId": "",
                   "name": "test-message",
                   "deadline": -1,
@@ -1434,6 +1436,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 6
                 }
@@ -1465,6 +1468,7 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "businessId": "",
                   "variables": {},
+                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 0
                 }
@@ -1518,6 +1522,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "biz-42",
@@ -1554,6 +1559,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "variables": {},
+                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "",
@@ -1614,6 +1620,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "bpmnProcessId": "process",
                   "messageKey": 3,
                   "correlationKey": "key",
@@ -1653,6 +1660,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1345,
                   "processDefinitionKey": -1,
                   "variables": {},
+                  "variablesMetadata": {},
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "correlationKey": "",
@@ -2674,6 +2682,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "tenantId": "acme"
                 }
                 """
@@ -2696,6 +2705,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "signalName":"test-signal",
                   "variables": {},
+                  "variablesMetadata": {},
                   "tenantId": "<default>"
                 }
                 """
@@ -3175,6 +3185,7 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {"foo": 1},
+                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3215,6 +3226,7 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {},
+                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3312,6 +3324,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "customHeaders": {
                     "foo": "bar"
                   },
@@ -3355,6 +3368,7 @@ final class JsonSerializableToJsonTest {
                   "changedAttributes": [],
                   "externalFormReference": "",
                   "variables": {},
+                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
@@ -3401,6 +3415,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": null
                   },
+                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
@@ -3585,7 +3600,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
-                  }
+                  },
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -3611,7 +3627,8 @@ final class JsonSerializableToJsonTest {
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
                   "storageOrdinal": 0,
-                  "variables": {}
+                  "variables": {},
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -4998,7 +5015,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
-                  }
+                  },
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -5016,7 +5034,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "startedProcessInstances": [],
                   "tenantId": "<default>",
-                  "variables": {}
+                  "variables": {},
+                  "variablesMetadata": {}
                 }
                 """
       },

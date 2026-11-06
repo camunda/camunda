@@ -11,17 +11,17 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -38,7 +38,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
   private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
@@ -58,7 +57,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
   private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
 
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
@@ -71,7 +70,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
 
   public MessageSubscriptionRecord() {
-    super(16);
+    super(15);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -80,7 +79,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
         .declareProperty(businessIdProp)
         .declareProperty(elementIdProp)
@@ -88,6 +86,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(elementTypeProp)
         .declareProperty(subscriptionKeyProp);
+    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -99,7 +98,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setInterrupting(record.isInterrupting());
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
-    setVariables(record.getVariablesBuffer());
+    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
     setTenantId(record.getTenantId());
     setBusinessId(record.getBusinessIdBuffer());
     setElementId(record.getElementIdBuffer());
@@ -256,17 +255,28 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public MessageSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public MessageSubscriptionRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 
   @Override

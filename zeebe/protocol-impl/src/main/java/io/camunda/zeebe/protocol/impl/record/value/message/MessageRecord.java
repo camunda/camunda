@@ -10,14 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -28,7 +28,6 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
   private static final StringValue TIME_TO_LIVE_KEY = new StringValue("timeToLive");
   private static final StringValue DEADLINE_KEY = new StringValue("deadline");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue MESSAGE_ID_KEY = new StringValue("messageId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
@@ -38,22 +37,22 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final LongProperty timeToLiveProp = new LongProperty(TIME_TO_LIVE_KEY);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
 
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final StringProperty messageIdProp = new StringProperty(MESSAGE_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
   public MessageRecord() {
-    super(8);
+    super(7);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
-        .declareProperty(variablesProp)
         .declareProperty(messageIdProp)
         .declareProperty(deadlineProp)
         .declareProperty(tenantIdProp)
         .declareProperty(businessIdProp);
+    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final MessageRecord record) {
@@ -61,7 +60,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setTimeToLive(record.getTimeToLive());
     setDeadline(record.getDeadline());
-    setVariables(record.getVariablesBuffer());
+    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
     setMessageId(record.getMessageIdBuffer());
     setTenantId(record.getTenantId());
     setBusinessId(record.getBusinessIdBuffer());
@@ -153,17 +152,28 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public MessageRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public MessageRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 
   @Override
