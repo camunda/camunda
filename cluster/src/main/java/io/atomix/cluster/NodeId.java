@@ -17,7 +17,6 @@
 package io.atomix.cluster;
 
 import io.atomix.utils.AbstractIdentifier;
-import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
 
@@ -58,9 +57,11 @@ public class NodeId extends AbstractIdentifier<String> implements Comparable<Nod
     return new NodeId(id);
   }
 
+  // Declared only because checkstyle's EqualsHashCode rule requires equals() and hashCode() to
+  // live together; the inherited implementation already hashes the backing identifier.
   @Override
   public int hashCode() {
-    return Objects.hashCode(id());
+    return super.hashCode();
   }
 
   @Override
