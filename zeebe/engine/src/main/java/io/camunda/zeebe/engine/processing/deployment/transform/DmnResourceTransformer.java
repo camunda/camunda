@@ -171,6 +171,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var decisionRequirementsId = parsedDrg.getId();
     final var decisionRequirementsName = parsedDrg.getName();
 
+    if (Strings.isNullOrEmpty(decisionRequirementsId)) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "The ID of a DRG must be set, but was missing in resource '%s'",
+                  resource.getResourceName())));
+    }
+
     return checkFieldLength(
             Stream.of(decisionRequirementsId),
             config.maxIdFieldLength(),
