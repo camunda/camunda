@@ -771,11 +771,13 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
-          <!-- read by PhysicalTenantEnvSecretIsolationIT's environment-variable secret stores -->
+          <!-- read by the environment-variable secret stores of PhysicalTenantEnvSecretIsolationIT
+               and EnvSecretStoreProcessIT -->
           <environmentVariables>
             <PT_ENV_SECRET_IT_TENANTA_API_KEY>value-of-tenant-a</PT_ENV_SECRET_IT_TENANTA_API_KEY>
             <PT_ENV_SECRET_IT_TENANTB_API_KEY>value-of-tenant-b</PT_ENV_SECRET_IT_TENANTB_API_KEY>
             <PT_ENV_SECRET_IT_TENANTB_ONLY_B>only-tenant-b</PT_ENV_SECRET_IT_TENANTB_ONLY_B>
+            <ENV_SECRET_PROCESS_IT_STORED>stored-value-that-must-not-leak</ENV_SECRET_PROCESS_IT_STORED>
           </environmentVariables>
         </configuration>
       </plugin>
