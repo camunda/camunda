@@ -687,8 +687,11 @@ jobs:
           # run, so the regions can be installed one after the other. With Elasticsearch, each region
           # also exports to the one of the other; B goes first so that A's exporter finds B's. The
           # load generators run in region A only; both regions' brokers serve the same cluster.
+          # Region B runs no load generators (starter/workers or k6), and its leader balancer is
+          # suspended as region A's already rebalances the shared cluster. --load-test-load comes
+          # last, so it can turn them back on, e.g. --set k6.tests.default.enabled=true.
           install_namespace "${NAMESPACE}-rb" \
-            --load-test-load "--set load-tester.enabled=false ${LOAD_TEST_LOAD}" \
+            --load-test-load "--set load-tester.enabled=false --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false --set leaderBalancer.suspend=true ${LOAD_TEST_LOAD}" \
             --dual-region-zone region-b \
             --dual-region-peer-namespace "${NAMESPACE}-ra" \
             --dual-region-cluster-name "${NAMESPACE}"
