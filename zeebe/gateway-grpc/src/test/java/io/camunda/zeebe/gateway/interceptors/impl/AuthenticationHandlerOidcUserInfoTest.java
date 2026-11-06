@@ -16,11 +16,13 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
+import io.grpc.Status;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 
 class AuthenticationHandlerOidcUserInfoTest {
 
@@ -109,5 +111,33 @@ class AuthenticationHandlerOidcUserInfoTest {
     final String decodeDescription = decodeFail.getLeft().getDescription();
     assertThat(decodeDescription).doesNotContain("wrong.example").doesNotContain("2024-01-01");
     assertThat(decodeFail.getLeft().getCause()).isNull();
+  }
+
+  @Test
+  void shouldReturnUnavailableWithoutLeakingIssuerWhenDecoderInitializationFails() {
+    // given
+    final var jwtDecoder = mock(JwtDecoder.class);
+    final var claimsProvider = mock(OidcClaimsProvider.class);
+    final var oidc = new OidcConfiguration();
+    oidc.setUsernameClaim("sub");
+
+    when(jwtDecoder.decode("token-abc"))
+        .thenThrow(
+            new JwtDecoderInitializationException(
+                "Failed to lazily resolve the supplied JwtDecoder instance",
+                new IllegalArgumentException(
+                    "Unable to resolve Configuration with the provided Issuer of \"https://unreachable.idp.example\"")));
+
+    final var handler = new Oidc(jwtDecoder, claimsProvider, oidc);
+
+    // when
+    final var result = handler.authenticate("Bearer token-abc");
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getCode()).isEqualTo(Status.UNAVAILABLE.getCode());
+    final String description = result.getLeft().getDescription();
+    assertThat(description).doesNotContain("unreachable.idp.example").doesNotContain("resolve");
+    assertThat(result.getLeft().getCause()).isNull();
   }
 }
