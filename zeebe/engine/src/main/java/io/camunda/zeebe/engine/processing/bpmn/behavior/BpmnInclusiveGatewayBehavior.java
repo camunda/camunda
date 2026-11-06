@@ -17,12 +17,15 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInt
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
 public class BpmnInclusiveGatewayBehavior {
@@ -57,9 +60,39 @@ public class BpmnInclusiveGatewayBehavior {
 
     // activate element in flow scope
     return childInstanceContents.stream()
+        .flatMap(
+            child ->
+                isAdHocSubProcessInnerInstance(child)
+                    ? stateBehavior.getChildInstanceContexts(child).stream()
+                    : Stream.of(child))
         .map(BpmnElementContext::getElementId)
         .filter(elementId -> !elementId.equals(targetElementId))
         .collect(Collectors.toSet());
+  }
+
+  /**
+   * A shared join of an ad-hoc sub-process lives in the ad-hoc sub-process instance, but the paths
+   * leading to it are active in the inner instances below.
+   */
+  private boolean isAdHocSubProcessInnerInstance(final BpmnElementContext context) {
+    return context.getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE;
+  }
+
+  private List<DirectBuffer> getActiveSequenceFlowIds(final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    final var activeSequenceFlowIds = flowScopeInstance.getActiveSequenceFlowIds();
+    if (flowScopeInstance.getValue().getBpmnElementType() != BpmnElementType.AD_HOC_SUB_PROCESS) {
+      return activeSequenceFlowIds;
+    }
+
+    final List<DirectBuffer> allActiveSequenceFlowIds = new ArrayList<>(activeSequenceFlowIds);
+    stateBehavior.getChildInstanceContexts(stateBehavior.getFlowScopeContext(context)).stream()
+        .filter(this::isAdHocSubProcessInnerInstance)
+        .forEach(
+            innerInstance ->
+                allActiveSequenceFlowIds.addAll(
+                    stateBehavior.getElementInstance(innerInstance).getActiveSequenceFlowIds()));
+    return allActiveSequenceFlowIds;
   }
 
   private boolean hasActiveSequenceFlowToTheGateway(
@@ -67,8 +100,7 @@ public class BpmnInclusiveGatewayBehavior {
       final ExecutableProcess process,
       final DirectBuffer targetElementId,
       final Set<DirectBuffer> takenSequenceFlowIds) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
-    final var activeSequenceFlowIds = flowScopeInstance.getActiveSequenceFlowIds();
+    final var activeSequenceFlowIds = getActiveSequenceFlowIds(context);
     // ignore pending incoming sequence flows to the gateway
     return activeSequenceFlowIds.stream()
         .anyMatch(

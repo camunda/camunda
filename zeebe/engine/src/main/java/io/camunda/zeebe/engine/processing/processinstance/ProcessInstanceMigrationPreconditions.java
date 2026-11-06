@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
@@ -216,6 +217,14 @@ public final class ProcessInstanceMigrationPreconditions {
       but target gateway with id '%s' has less incoming sequence flows \
       than the source gateway with id '%s'. \
       Target gateway must have at least the same number of incoming sequence flows as the source gateway.""";
+
+  private static final String ERROR_SHARED_JOIN_CHANGED =
+      """
+      Expected to migrate process instance '%s' \
+      but joining gateway with id '%s' has at least one incoming sequence flow taken, \
+      and target gateway with id '%s' changes whether it joins the paths of multiple ad-hoc \
+      activities. Such a gateway counts its taken sequence flows in the ad-hoc sub-process \
+      instance instead of an inner instance, so this cannot be changed during migration.""";
 
   private static final String ERROR_SUSPENDED_PROCESS_INSTANCE =
       """
@@ -830,7 +839,12 @@ public final class ProcessInstanceMigrationPreconditions {
         }
       }
 
-      actualFlowScopeId = targetFlowElement.getFlowScope().getId();
+      if (isSharedJoinOfAdHocSubProcess(targetFlowElement)) {
+        // a shared join lives in the ad-hoc sub-process instance, not in an inner instance
+        actualFlowScopeId = targetFlowElement.getFlowScope().getFlowScope().getId();
+      } else {
+        actualFlowScopeId = targetFlowElement.getFlowScope().getId();
+      }
       if (expectedFlowScopeId.equals(actualFlowScopeId)) {
         return;
       }
@@ -1204,6 +1218,44 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_ARGUMENT);
     }
+  }
+
+  /**
+   * Throws an exception if the taken sequence flows of a joining gateway wait in a different kind
+   * of flow scope than the target gateway counts them in. A joining gateway that merges the paths
+   * of multiple ad-hoc activities counts its taken sequence flows in the ad-hoc sub-process
+   * instance, any other joining gateway in its own flow scope (e.g. an inner instance).
+   *
+   * @param flowScopeInstance the flow scope instance in which the sequence flows were taken
+   * @param sourceGateway the gateway in the source process definition
+   * @param targetGateway the gateway in the target process definition
+   * @param processInstanceKey the key of the process instance
+   */
+  public static void requireUnchangedSharedJoin(
+      final ElementInstance flowScopeInstance,
+      final ExecutableFlowNode sourceGateway,
+      final ExecutableFlowNode targetGateway,
+      final long processInstanceKey) {
+    final boolean isWaitingInAdHocSubProcessInstance =
+        flowScopeInstance.getValue().getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS;
+    if (isWaitingInAdHocSubProcessInstance != isSharedJoinOfAdHocSubProcess(targetGateway)) {
+      final var reason =
+          String.format(
+              ERROR_SHARED_JOIN_CHANGED,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()),
+              BufferUtil.bufferAsString(targetGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  private static boolean isSharedJoinOfAdHocSubProcess(final AbstractFlowElement element) {
+    final var flowScope = element.getFlowScope();
+    return flowScope != null
+        && flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+        && flowScope.getFlowScope() instanceof final ExecutableAdHocSubProcess adHocSubProcess
+        && adHocSubProcess.isSharedJoin(element);
   }
 
   public static void requireValidTargetIncomingFlowCount(
