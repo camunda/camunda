@@ -602,8 +602,10 @@ same guarantee.)
 #### Troubleshooting
 
 1. Check the failed step's log — it prints the gh-pages commit SHA and the API status (`errored`
-   or `building` timeout). Note: the API only exposes the generic `"Page build failed."` message;
-   the underlying reason is not surfaced through the API.
+   or `building` timeout). The step already requests one Pages rebuild after an `errored` build
+   and waits up to 600s per attempt, so a failure means two consecutive errored builds or a build
+   that did not finish in time. Note: the API only exposes the generic `"Page build failed."`
+   message; the underlying reason is not surfaced through the API.
 2. Inspect recent Pages build history
 3. Verify the `gh-pages` branch only contains build artifacts.
 
