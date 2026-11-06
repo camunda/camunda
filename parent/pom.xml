@@ -67,7 +67,7 @@
     <version.nullaway>0.14.3</version.nullaway>
     <!-- override with -Derrorprone.skip, see the errorprone-skip profile -->
     <!-- off-by-default checks promoted to errors; keep in sync with buildlogic.java-conventions -->
-    <error-prone.checks>-XepDisableAllWarnings -Xep:LockNotBeforeTry:ERROR -Xep:HashCodeInObjectsHash:ERROR</error-prone.checks>
+    <error-prone.checks>-XepDisableAllWarnings -Xep:LockNotBeforeTry:ERROR -Xep:HashCodeInObjectsHash:ERROR -Xep:ObjectsHashCodePrimitive:ERROR</error-prone.checks>
     <version.grpc>1.85.1</version.grpc>
     <version.gson>2.15.0</version.gson>
     <version.guava>33.8.0-jre</version.guava>
