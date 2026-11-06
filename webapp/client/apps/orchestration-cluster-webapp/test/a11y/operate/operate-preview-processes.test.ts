@@ -157,7 +157,7 @@ test('should have no accessibility violations on the processes page with a selec
 	await operatePreviewProcessesPage.goto('?active=true&process=order&version=1');
 	const panel = operatePreviewProcessesPage.diagramPanel;
 	await expect(panel.getByRole('button', {name: /Process ID/})).toBeVisible();
-	await expect(panel.getByTestId('diagram-canvas')).toBeVisible();
+	await expect(panel.getByRole('region', {name: 'Diagram', exact: true})).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
@@ -203,7 +203,7 @@ test('should have no accessibility violations with the process definition deleti
 	await operatePreviewProcessesPage.goto('?active=true&process=order&version=1');
 	const panel = operatePreviewProcessesPage.diagramPanel;
 	await expect(panel.getByRole('button', {name: /Process ID/})).toBeVisible();
-	await expect(panel.getByTestId('diagram-canvas')).toBeVisible();
+	await expect(panel.getByRole('region', {name: 'Diagram', exact: true})).toBeVisible();
 	await panel.getByRole('button', {name: 'Delete Process Definition "Order process - Version 1"'}).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 
