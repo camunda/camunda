@@ -84,6 +84,8 @@ const config = defineConfig(({mode}) => ({
 			'/v2': 'http://localhost:8080',
 			'/admin/config.js': 'http://localhost:8080',
 			'/operate/client-config.js': 'http://localhost:8080',
+			'/oauth2': {target: 'http://localhost:8080'},
+			'/sso-callback': {target: 'http://localhost:8080'},
 			'/login': {
 				target: 'http://localhost:8080',
 				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),
