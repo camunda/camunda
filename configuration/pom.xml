@@ -306,6 +306,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
+          <!-- The configuration processor rewrites spring-configuration-metadata.json from the
+               sources it sees. After a partial recompile it drops the untouched classes, which
+               corrupts the generated defaults.yaml. Recompile the whole module instead. -->
+          <useIncrementalCompilation>true</useIncrementalCompilation>
           <annotationProcessorPaths>
             <path>
               <groupId>org.springframework.boot</groupId>
