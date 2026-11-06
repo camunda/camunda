@@ -28,6 +28,7 @@ public class VariableDocumentReader extends DocumentBasedReader implements Varia
   @Override
   public List<String> searchVariableNames(
       final VariableNameQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    // Invoke decode method to reject malformed cursors with an error.
     Cursor.decode(query.page().after());
     Cursor.decode(query.page().before());
     if (query.filter().processDefinitionKeyOperations().isEmpty()) {

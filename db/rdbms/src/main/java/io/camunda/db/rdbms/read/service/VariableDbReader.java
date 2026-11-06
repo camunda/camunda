@@ -96,6 +96,7 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
   @Override
   public List<String> searchVariableNames(
       final VariableNameQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    // Invoke decode method to reject malformed cursors with an error.
     Cursor.decode(query.page().after(), List.of(VariableSearchColumn.VAR_NAME));
     Cursor.decode(query.page().before(), List.of(VariableSearchColumn.VAR_NAME));
     if (query.filter().processDefinitionKeyOperations().isEmpty()
