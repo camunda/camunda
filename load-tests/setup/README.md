@@ -437,22 +437,22 @@ values.
 
 #### Optional dual region cluster
 
-A load test can run as **one zone-aware cluster spread over two namespaces**, `<name>-region-a` and
-`<name>-region-b`, to exercise cross-namespace replication and Elasticsearch export between regions.
+A load test can run as **one zone-aware cluster spread over two namespaces**, `<name>-ra` and
+`<name>-rb`, to exercise cross-namespace replication and Elasticsearch export between regions.
 Each namespace is scaffolded and installed like a normal load test (3 brokers, its own Elasticsearch);
 the settings that join them come from `generate-dual-region-values.sh`.
 
 ```sh
 # the namespaces are scaffolded one by one, the same way as for a single namespace
-./newLoadTest.sh c8-demo-region-a elasticsearch 1 false
-./newLoadTest.sh c8-demo-region-b elasticsearch 1 false
+./newLoadTest.sh c8-demo-ra elasticsearch 1 false
+./newLoadTest.sh c8-demo-rb elasticsearch 1 false
 
 # region-b first, so that the Elasticsearch region-a exports to is up (with elasticsearch)
-make -C c8-demo-region-b install dual_region=true dual_region_zone=region-b \
-  dual_region_peer_namespace=c8-demo-region-a dual_region_cluster_name=c8-demo \
+make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
+  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo \
   additional_load_test_configuration="--set load-tester.enabled=false"
-make -C c8-demo-region-a install dual_region=true dual_region_zone=region-a \
-  dual_region_peer_namespace=c8-demo-region-b dual_region_cluster_name=c8-demo
+make -C c8-demo-ra install dual_region=true dual_region_zone=region-a \
+  dual_region_peer_namespace=c8-demo-rb dual_region_cluster_name=c8-demo
 ```
 
 The `dual_region_*` variables of `common.mk`:
@@ -486,7 +486,7 @@ Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physic
 brokers only become ready once both namespaces are installed.
 
 In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
-`c8-<name>-region-a` and `c8-<name>-region-b`, with the load generators in region A only. Delete both
+`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only. Delete both
 namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
 each one on its own.
 
