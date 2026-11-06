@@ -138,7 +138,7 @@ public class GroupController {
       @PathVariable final String groupId,
       @PathVariable final String mappingRuleId) {
     return mappingRuleMembershipPolicy
-        .requireManageable()
+        .requireManageable(physicalTenantId)
         .flatMap(
             manageable ->
                 groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
@@ -177,7 +177,7 @@ public class GroupController {
       @PathVariable final String groupId,
       @PathVariable final String mappingRuleId) {
     return mappingRuleMembershipPolicy
-        .requireManageable()
+        .requireManageable(physicalTenantId)
         .flatMap(
             manageable ->
                 groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
