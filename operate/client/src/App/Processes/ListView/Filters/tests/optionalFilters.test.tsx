@@ -605,4 +605,39 @@ describe('Optional Filters', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^business id$/i)).not.toBeInTheDocument();
   });
+
+  it('should keep the variable filter when other filters change until reset', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&suspended=true&incidents=true'),
+    });
+    const openVariableFilter = async () => {
+      await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+      await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    };
+    const completed = screen.getByRole('checkbox', {name: 'Completed'});
+
+    await openVariableFilter();
+    await user.type(screen.getByTestId('single-condition-name'), 'foo');
+    await user.type(screen.getByTestId('single-condition-value'), '"bar"');
+    await vi.advanceTimersByTimeAsync(1000);
+    await user.click(completed);
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent('completed=true'),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('foo');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('"bar"');
+
+    await user.click(completed);
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).not.toHaveTextContent('completed'),
+    );
+    await user.click(screen.getByRole('button', {name: /reset filters/i}));
+    await openVariableFilter();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('');
+  });
 });
