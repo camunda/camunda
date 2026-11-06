@@ -208,7 +208,7 @@ services:
       - zeebe_network
 
   postgres-primary:
-    image: bitnamilegacy/postgresql:17
+    image: soldevelo/postgresql:17
     container_name: pg-primary
     depends_on:
       - postgres-replica-1
@@ -235,7 +235,7 @@ services:
       start_period: 10s
 
   postgres-replica-1:
-    image: bitnamilegacy/postgresql:17
+    image: soldevelo/postgresql:17
     container_name: pg-replica1
     ports:
       - "5433:5432"
@@ -257,7 +257,7 @@ services:
       start_period: 10s
 
   postgres-replica-2:
-    image: bitnamilegacy/postgresql:17
+    image: soldevelo/postgresql:17
     container_name: pg-replica2
     ports:
       - "5434:5432"
