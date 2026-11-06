@@ -97,6 +97,25 @@ final class JobResumedV2ApplierTest {
   }
 
   @Test
+  void shouldMakeSuspendedJobWithOtherIncidentActivatable() {
+    // given - resolving any other incident type does not hand out a waiting job, so resume must
+    // not park it
+    final long jobKey = 5L;
+    final var record = jobRecord();
+    createActivatableJob(jobKey, record);
+    incidentCreatedApplier.applyState(
+        11L, secretIncident(jobKey).setErrorType(ErrorType.JOB_NO_RETRIES));
+    suspendedApplier.applyState(jobKey, record);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.ACTIVATABLE);
+    assertThat(isServedAsActivatable(jobKey)).isTrue();
+  }
+
+  @Test
   void shouldNotModifyJobNotInSuspendedState() {
     // given
     final long jobKey = 4L;
