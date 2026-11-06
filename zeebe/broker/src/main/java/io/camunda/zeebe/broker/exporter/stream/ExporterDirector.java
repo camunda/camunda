@@ -272,7 +272,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
-    container.close();
+    container.remove();
     containers.remove(container);
     updateEventFilter();
     state.removeExporterState(exporterId);

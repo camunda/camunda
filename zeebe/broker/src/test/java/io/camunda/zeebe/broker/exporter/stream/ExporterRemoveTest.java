@@ -90,6 +90,36 @@ public class ExporterRemoveTest {
   }
 
   @Test
+  public void shouldNotKeepPositionAcknowledgedByExporterWhileItIsRemoved() {
+    // given - like the RDBMS exporter, exporter-1 acknowledges its position when flushing on close
+    final var exporter = exporters.get(EXPORTER_ID_1);
+    exporter.shouldAutoUpdatePosition(false);
+    exporter.onClose(
+        () ->
+            exporter
+                .getController()
+                .updateLastExportedRecordPosition(
+                    exporter.getExportedRecords().getLast().getPosition()));
+    rule.startExporterDirector(exporterDescriptors);
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    Awaitility.await("exporter-1 exported a record")
+        .untilAsserted(() -> assertThat(exporter.getExportedRecords()).hasSize(1));
+
+    // when
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
+    final long expectedLastExportedPosition =
+        rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // then - the removed exporter's position no longer holds back the lowest position
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_2).getExportedRecords()).hasSize(2));
+    assertThat(rule.getDirector().getLowestPosition().join())
+        .describedAs("The lowest position should not include the removed exporter's position")
+        .isEqualTo(expectedLastExportedPosition);
+  }
+
+  @Test
   public void shouldSucceedWhenDisablingAlreadyRemovedExporter() {
     // given
     rule.startExporterDirector(exporterDescriptors);
