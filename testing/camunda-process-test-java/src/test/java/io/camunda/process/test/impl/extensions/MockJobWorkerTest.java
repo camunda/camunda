@@ -22,8 +22,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
@@ -41,6 +39,7 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -142,10 +141,11 @@ public class MockJobWorkerTest {
 
     processTestContext
         .mockJobWorker(JOB_TYPE)
-        .thenComplete(variables -> {
-          capturedInput.putAll(variables);
-          return outputVariables;
-        });
+        .thenComplete(
+            variables -> {
+              capturedInput.putAll(variables);
+              return outputVariables;
+            });
 
     // then: the client opened the job worker with the expected job type
     verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
@@ -461,7 +461,38 @@ public class MockJobWorkerTest {
 
     final VariablesTable variablesTable =
         VariablesTable.when(
-                Collections.singletonMap("address", Collections.singletonMap("city", "Berlin")))
+                Collections.singletonMap("address", Collections.singletonMap("city", "London")))
+            .thenReturn(Collections.singletonMap("partially", true))
+            .when(Collections.singletonMap("address", Collections.singletonMap("city", "Berlin")))
+            .thenReturn(Collections.singletonMap("matched", true));
+
+    // when
+    processTestContext.mockJobWorker(JOB_TYPE).thenComplete(variablesTable);
+
+    // then
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
+    verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
+
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(
+            camundaClient
+                .newCompleteCommand(activatedJob)
+                .variables(Collections.singletonMap("matched", true)))
+        .send();
+  }
+
+  @Test
+  void shouldMatchNestedListOnlyOnEqualWholeValueForVariablesTable() throws Exception {
+    // given
+    when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(new CamundaObjectMapper());
+    when(activatedJob.getVariablesAsMap())
+        .thenReturn(Collections.singletonMap("sampleTypes", Arrays.asList("regolith", "basalt")));
+
+    final VariablesTable variablesTable =
+        VariablesTable.when(
+                Collections.singletonMap("sampleTypes", Collections.singletonList("regolith")))
+            .thenReturn(Collections.singletonMap("partially", true))
+            .when(Collections.singletonMap("sampleTypes", Arrays.asList("regolith", "basalt")))
             .thenReturn(Collections.singletonMap("matched", true));
 
     // when
