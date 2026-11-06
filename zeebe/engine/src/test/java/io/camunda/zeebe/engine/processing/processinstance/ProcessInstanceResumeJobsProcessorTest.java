@@ -31,12 +31,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,6 +149,32 @@ public final class ProcessInstanceResumeJobsProcessorTest {
             any(ProcessInstanceRecord.class));
     verify(commandWriter, never())
         .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.COMPLETE_RESUMING), any());
+  }
+
+  @Test
+  void shouldResumeJobWithOpenSecretIncidentWithoutPublishingIt() {
+    // given - the parked job still has an open secret resolution incident
+    rootInstance(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    parkJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+    processingState
+        .getIncidentState()
+        .createIncident(
+            300L,
+            new IncidentRecord()
+                .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+                .setJobKey(JOB_KEY));
+
+    // when
+    processor.processRecord(resumeJobsCommand());
+
+    // then - the job is resumed, but only resolving the incident hands it out; the loop continues
+    verify(stateWriter).appendFollowUpEvent(eq(JOB_KEY), eq(JobIntent.RESUMED), any());
+    verify(jobActivationBehavior, never()).publishWork(anyLong(), any(), any());
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(ProcessInstanceIntent.RESUME_JOBS),
+            any(ProcessInstanceRecord.class));
   }
 
   @Test
