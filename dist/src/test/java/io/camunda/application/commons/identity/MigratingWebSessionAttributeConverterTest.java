@@ -13,7 +13,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.ConditionalMembership;
 import io.camunda.security.api.model.authz.MembershipCondition;
 import io.camunda.security.api.model.authz.Operand;
-import io.camunda.security.api.model.authz.PrincipalAttribute;
 import io.camunda.security.api.model.authz.ResourceAttribute;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,7 +20,6 @@ import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class MigratingWebSessionAttributeConverterTest {
@@ -97,16 +95,15 @@ class MigratingWebSessionAttributeConverterTest {
 
   @Test
   void shouldRoundTripConditionalRoleMemberships() {
-    // given both operand variants
+    // given conditions on both resource attributes
     final var reviewerInPaymentsOnOwnTasks =
         new ConditionalMembership(
             "reviewer",
             List.of(
                 new MembershipCondition(
-                    ResourceAttribute.WORKSPACE, new Operand.Values(Set.of("payments"))),
+                    ResourceAttribute.WORKSPACE_ID, new Operand.Equals("payments")),
                 new MembershipCondition(
-                    ResourceAttribute.ASSIGNEE,
-                    new Operand.Principal(PrincipalAttribute.USERNAME))));
+                    ResourceAttribute.PROJECT_ID, new Operand.Equals("invoicing"))));
     final var auth =
         CamundaAuthentication.of(
             b ->
