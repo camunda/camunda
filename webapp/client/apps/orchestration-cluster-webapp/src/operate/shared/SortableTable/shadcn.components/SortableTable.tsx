@@ -84,6 +84,10 @@ type BaseProps<TRow> = {
 	 */
 	className?: string;
 	onSort?: (sortKey: string, order: QuerySortOrder) => void;
+	/** Content shown below a row once its expand toggle is opened; return `null` for rows without details. */
+	expansion?: (row: TRow) => React.ReactNode;
+	expandRowLabel?: string;
+	collapseRowLabel?: string;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
 	'data-testid'?: string;
@@ -196,7 +200,14 @@ function readRowHeights(scrollContainer: HTMLElement): number[] {
 		scrollContainer.querySelectorAll<HTMLElement>(
 			`[data-slot="table-body"] [data-slot="table-row"]:not(:has([${SKELETON_EDGE_ATTRIBUTE}]))`,
 		),
-	).map((rowElement) => rowElement.getBoundingClientRect().height);
+	).map((rowElement) => {
+		const expansionRow = rowElement.nextElementSibling;
+		const expansionHeight =
+			expansionRow?.getAttribute('data-slot') === 'data-table-expansion-row'
+				? expansionRow.getBoundingClientRect().height
+				: 0;
+		return rowElement.getBoundingClientRect().height + expansionHeight;
+	});
 }
 
 function sumRowHeights(heights: number[], count: number): number {
@@ -584,6 +595,9 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		hideHeaderWhenEmpty = false,
 		className,
 		onSort,
+		expansion,
+		expandRowLabel,
+		collapseRowLabel,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
 		'data-testid': dataTestId,
@@ -836,6 +850,18 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			batchActionsCancelLabel={selection?.batchActionsCancelLabel}
 			selectionCountLabel={selection?.selectionCountLabel}
 			getSelectedRows={selection === undefined ? undefined : getSelectedDisplayRows}
+			expansion={
+				expansion === undefined
+					? undefined
+					: (displayRow) => (displayRow.kind === 'row' ? expansion(displayRow.row) : null)
+			}
+			getRowCanExpand={
+				expansion === undefined
+					? undefined
+					: (displayRow) => displayRow.kind === 'row' && expansion(displayRow.row) != null
+			}
+			expandRowLabel={expandRowLabel}
+			collapseRowLabel={collapseRowLabel}
 			sorting={hasSortableColumns ? {manual: true, sortState, onSortingChange: handleSortingChange} : undefined}
 		/>
 	);
