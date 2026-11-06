@@ -74,7 +74,7 @@ additional_load_test_configuration ?=
 helm_chart_platform = charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, custom-model
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -83,6 +83,9 @@ _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.w
 _scenario_platform_flags =
 else ifeq ($(scenario),realistic)
 _scenario_load_test_flags = -f load-tester-values-realistic-benchmark.yaml
+_scenario_platform_flags =
+else ifeq ($(scenario),custom-model)
+_scenario_load_test_flags = -f load-tester-values-custom-model.yaml
 _scenario_platform_flags =
 else ifeq ($(scenario),typical)
 _scenario_load_test_flags = --set load-tester.starter.rate=50 --set load-tester.workers.worker.replicas=6 --set load-tester.starter.bpmnXmlPath=bpmn/typical_process.bpmn
