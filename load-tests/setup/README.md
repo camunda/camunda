@@ -450,7 +450,8 @@ the settings that join them come from `generate-dual-region-values.sh`.
 # region-b first, so that the Elasticsearch region-a exports to is up (with elasticsearch)
 make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
   dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo \
-  additional_load_test_configuration="--set load-tester.enabled=false"
+  additional_load_test_configuration="--set load-tester.enabled=false --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false \
+  --set leaderBalancer.suspend=true"
 make -C c8-demo-ra install dual_region=true dual_region_zone=region-a \
   dual_region_peer_namespace=c8-demo-rb dual_region_cluster_name=c8-demo
 ```
@@ -486,7 +487,7 @@ Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physic
 brokers only become ready once both namespaces are installed.
 
 In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
-`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only. Delete both
+`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only and region B's leader balancer suspended. Delete both
 namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
 each one on its own.
 
