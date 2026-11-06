@@ -8,14 +8,14 @@
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -48,13 +48,12 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty compensableActivityInstanceKeyProperty =
       new LongProperty("compensableActivityInstanceKey", -1);
 
-  private final IntegerProperty storageOrdinalProperty =
-      new IntegerProperty("storageOrdinal", 0);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
 
   public CompensationSubscriptionRecord() {
-    super(12);
+    super(11);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -65,8 +64,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(compensationHandlerInstanceKeyProperty)
         .declareProperty(compensableActivityScopeKeyProperty)
         .declareProperty(compensableActivityInstanceKeyProperty)
-        .declareProperty(storageOrdinalProperty)
-        .declareProperty(variablesProperty);
+        .declareProperty(storageOrdinalProperty);
+    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final CompensationSubscriptionRecord record) {
@@ -81,7 +80,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
     compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
     storageOrdinalProperty.setValue(record.getStorageOrdinal());
-    variablesProperty.setValue(record.getVariablesBuffer());
+    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
   }
 
   @Override
@@ -161,11 +160,11 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
     return this;
   }
 
@@ -211,6 +210,17 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public CompensationSubscriptionRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 }

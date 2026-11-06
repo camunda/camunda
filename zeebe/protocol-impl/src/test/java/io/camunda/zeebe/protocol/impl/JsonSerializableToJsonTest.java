@@ -2682,6 +2682,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "tenantId": "acme"
                 }
                 """
@@ -2704,6 +2705,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "signalName":"test-signal",
                   "variables": {},
+                  "variablesMetadata": {},
                   "tenantId": "<default>"
                 }
                 """
@@ -3593,7 +3595,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
-                  }
+                  },
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -3619,7 +3622,8 @@ final class JsonSerializableToJsonTest {
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
                   "storageOrdinal": 0,
-                  "variables": {}
+                  "variables": {},
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -5006,7 +5010,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
-                  }
+                  },
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -5024,7 +5029,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "startedProcessInstances": [],
                   "tenantId": "<default>",
-                  "variables": {}
+                  "variables": {},
+                  "variablesMetadata": {}
                 }
                 """
       },

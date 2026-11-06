@@ -8,14 +8,14 @@
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -25,7 +25,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     implements ProcessEventRecordValue {
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId");
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty("processDefinitionKey", -1);
   private final LongProperty processInstanceKeyProperty =
@@ -34,24 +34,23 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProperty =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  private final IntegerProperty storageOrdinalProperty =
-      new IntegerProperty("storageOrdinal", 0);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public ProcessEventRecord() {
-    super(7);
+    super(6);
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
-        .declareProperty(variablesProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(storageOrdinalProperty);
+    declareProperties(variablesPropertyGroup);
   }
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
     scopeKeyProperty.setValue(record.getScopeKey());
     targetElementIdProperty.setValue(record.getTargetElementIdBuffer());
-    variablesProperty.setValue(record.getVariablesBuffer());
+    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
     tenantIdProperty.setValue(record.getTenantId());
@@ -72,17 +71,28 @@ public final class ProcessEventRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public ProcessEventRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 
   public ProcessEventRecord setVariablesBuffer(final DirectBuffer variablesBuffer) {
-    variablesProperty.setValue(variablesBuffer);
+    variablesPropertyGroup.setVariables(variablesBuffer);
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(getVariablesBuffer());
+    return variablesPropertyGroup.getVariables();
   }
 
   @Override
