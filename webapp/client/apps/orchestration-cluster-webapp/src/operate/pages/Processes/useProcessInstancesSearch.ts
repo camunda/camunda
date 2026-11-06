@@ -59,6 +59,8 @@ function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = t
 
 	const {
 		data,
+		error,
+		refetch,
 		status,
 		isFetching,
 		isPlaceholderData,
@@ -72,6 +74,8 @@ function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = t
 
 	return {
 		status,
+		error,
+		refetch,
 		isFetching,
 		isPlaceholderData,
 		isFetchingPreviousPage,

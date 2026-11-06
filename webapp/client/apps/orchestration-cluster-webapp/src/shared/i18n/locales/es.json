@@ -1343,7 +1343,9 @@
 					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
 					"tableLabel": "Instancias de proceso",
 					"loadingPreviousPage": "Cargando instancias de proceso anteriores",
-					"loadingNextPage": "Cargando instancias de proceso siguientes"
+					"loadingNextPage": "Cargando instancias de proceso siguientes",
+					"errorTitle": "No se pudieron obtener los datos",
+					"errorDescription": "Algo salió mal al cargar las instancias. Inténtalo de nuevo."
 				},
 				"diagramHeader": {
 					"title": "Proceso",

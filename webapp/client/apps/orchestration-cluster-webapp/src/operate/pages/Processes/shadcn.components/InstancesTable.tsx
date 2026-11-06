@@ -12,6 +12,7 @@ import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {Link, Skeleton} from '@camunda/design-system';
+import {Compass, ShieldAlert} from '@camunda/design-system/icons';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
@@ -23,7 +24,8 @@ import type {
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
+import {ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
@@ -105,6 +107,8 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		totalCount,
 		hasMoreTotalItems,
 		status,
+		error,
+		refetch,
 		isFetching,
 		isPlaceholderData,
 		isFetchingPreviousPage,
@@ -325,7 +329,21 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
 	const emptyState =
 		status === 'error' ? (
-			<ErrorMessage />
+			error instanceof ForbiddenError ? (
+				<EmptyState
+					icon={<ShieldAlert aria-hidden />}
+					heading={t('forbiddenPageTitle')}
+					description={t('forbiddenPageDesc')}
+					button={{label: t('errorGenericErrorPageButtonLabel'), onClick: () => void refetch()}}
+				/>
+			) : (
+				<EmptyState
+					icon={<Compass aria-hidden />}
+					heading={t('operate.processes.instancesTable.errorTitle')}
+					description={t('operate.processes.instancesTable.errorDescription')}
+					button={{label: t('errorGenericErrorPageButtonLabel'), onClick: () => void refetch()}}
+				/>
+			)
 		) : (
 			<>
 				<p>{t('operate.processes.instancesTable.emptyMessage')}</p>
