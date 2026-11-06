@@ -47,6 +47,7 @@ spec:
     camunda.io/broker-generation: zoned
     
     camunda.io/zone: "region-b"
+
 ---
 # Source: camunda-platform/templates/orchestration/service-headless.yaml
 apiVersion: v1
