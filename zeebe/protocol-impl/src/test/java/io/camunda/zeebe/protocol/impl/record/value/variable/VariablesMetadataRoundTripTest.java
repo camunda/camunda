@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
@@ -396,6 +397,34 @@ final class VariablesMetadataRoundTripTest {
     assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
     assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
         .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfUserTask() {
+    // given
+    final var record = new UserTaskRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new UserTaskRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfUserTask() {
+    // given
+    final var record = new UserTaskRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new UserTaskRecord();
+    copy.wrap(record);
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
   }
 
   @Test
