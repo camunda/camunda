@@ -69,6 +69,7 @@ public final class AgentHistoryBatchCleanUpProcessor
   @Override
   public void processRecord(final TypedRecord<AgentHistoryBatchRecord> command) {
     final long agentInstanceKey = command.getKey();
+    final int storageOrdinal = command.getValue().getStorageOrdinal();
 
     final var idsToDelete = new HashSet<String>();
     final var hasMore = new AtomicBoolean(false);
@@ -91,13 +92,16 @@ public final class AgentHistoryBatchCleanUpProcessor
         AgentHistoryBatchIntent.CLEANED,
         new AgentHistoryBatchRecord()
             .setAgentInstanceKey(agentInstanceKey)
-            .setHistoryItemIds(idsToDelete.stream().toList()));
+            .setHistoryItemIds(idsToDelete.stream().toList())
+            .setStorageOrdinal(storageOrdinal));
 
     if (hasMore.get()) {
       commandWriter.appendFollowUpCommand(
           agentInstanceKey,
           AgentHistoryBatchIntent.CLEAN_UP,
-          new AgentHistoryBatchRecord().setAgentInstanceKey(agentInstanceKey));
+          new AgentHistoryBatchRecord()
+              .setAgentInstanceKey(agentInstanceKey)
+              .setStorageOrdinal(storageOrdinal));
     }
   }
 
