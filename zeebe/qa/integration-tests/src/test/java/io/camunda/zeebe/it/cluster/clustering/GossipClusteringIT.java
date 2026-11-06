@@ -16,12 +16,14 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class GossipClusteringIT {
+  @AutoClose private @Nullable CamundaClient client;
+
   @TestZeebe
   private final TestCluster cluster =
       new TestClusterBuilder()
@@ -36,13 +38,6 @@ final class GossipClusteringIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoClose private CamundaClient client;
-
-  @BeforeEach
-  void beforeEach() {
-    client = cluster.newClientBuilder().build();
-  }
-
   @Test
   void shouldStartCluster() {
     // given - when - then
@@ -51,7 +46,9 @@ final class GossipClusteringIT {
 
   @Test
   void shouldDistributePartitionsAndLeaderInformationInCluster() {
-    // when - then
+    // when
+    newClient();
+    // then
     TopologyAssert.assertThat(client.newTopologyRequest().send().join())
         .hasLeaderForEachPartition(1);
   }
@@ -65,15 +62,15 @@ final class GossipClusteringIT {
     stoppedBroker.stop();
 
     // then
+    newClient();
     Awaitility.await("until broker is removed from topology")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(250))
         .pollInSameThread()
-        .untilAsserted(
-            () ->
-                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                    .doesNotContainBroker(2)
-                    .hasLeaderForEachPartition(1));
+        .untilAsserted(() ->
+            TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                .doesNotContainBroker(2)
+                .hasLeaderForEachPartition(1));
   }
 
   @Test
@@ -86,14 +83,18 @@ final class GossipClusteringIT {
     leader.stop();
 
     // then
+    newClient();
     Awaitility.await("until leader is removed from topology")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(250))
         .pollInSameThread()
-        .untilAsserted(
-            () ->
-                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                    .doesNotContainBroker(leaderId)
-                    .hasLeaderForEachPartition(1));
+        .untilAsserted(() ->
+            TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                .doesNotContainBroker(leaderId)
+                .hasLeaderForEachPartition(1));
+  }
+
+  private void newClient() {
+    client = cluster.newClientBuilder().build();
   }
 }
