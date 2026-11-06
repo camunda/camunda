@@ -50,6 +50,7 @@ import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
+import io.camunda.zeebe.engine.processing.processdefinition.AbstractProcessDefinitionSuspensionProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScaleMarkPartitionBootstrappedProcessor;
@@ -87,6 +88,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -558,6 +560,27 @@ public class CommandDistributionIdempotencyTest {
                       .delete();
                 }),
             ResourceDeletionDeleteProcessor.class
+          },
+          {
+            "ProcessDefinitionSuspension.SUSPEND is idempotent",
+            new Scenario(
+                ValueType.PROCESS_DEFINITION_SUSPENSION,
+                ProcessDefinitionSuspensionIntent.SUSPEND,
+                () ->
+                    ENGINE.processDefinitionSuspension().withKey(deployUniqueProcess()).suspend()),
+            AbstractProcessDefinitionSuspensionProcessor.class
+          },
+          {
+            "ProcessDefinitionSuspension.RESUME is idempotent",
+            new Scenario(
+                ValueType.PROCESS_DEFINITION_SUSPENSION,
+                ProcessDefinitionSuspensionIntent.RESUME,
+                () -> {
+                  final long key = deployUniqueProcess();
+                  ENGINE.processDefinitionSuspension().withKey(key).suspend();
+                  return ENGINE.processDefinitionSuspension().withKey(key).resume();
+                }),
+            AbstractProcessDefinitionSuspensionProcessor.class
           },
           {
             "Process.DELETE_COMPLETE is idempotent",
@@ -1057,6 +1080,22 @@ public class CommandDistributionIdempotencyTest {
             "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
         .expectCreated()
         .deploy();
+  }
+
+  private static long deployUniqueProcess() {
+    return ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(Strings.newRandomValidBpmnId())
+                .startEvent()
+                .endEvent()
+                .done())
+        .expectCreated()
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .getFirst()
+        .getProcessDefinitionKey();
   }
 
   private static Record<DeploymentRecordValue> deployProcessWithAgentDefinition() {

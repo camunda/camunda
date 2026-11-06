@@ -122,8 +122,10 @@ public final class TimerTriggerProcessor
             timer.getTargetElementIdBuffer(),
             ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
-      if (deployedProcess.isDraining()) {
-        // The definition is draining: never spawn a new instance. Still mark the timer as
+      if (deployedProcess.isDraining()
+          || processState.isProcessDefinitionSuspended(processDefinitionKey)) {
+        // The definition is draining or suspended: never spawn a new instance. Still mark the timer
+        // as
         // triggered so the command is consumed
         stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
         // skip rescheduling since instances can't be created anymore

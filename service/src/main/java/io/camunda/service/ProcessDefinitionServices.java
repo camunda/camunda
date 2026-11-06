@@ -32,8 +32,12 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessDefinitionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class ProcessDefinitionServices
     extends SearchQueryService<
@@ -58,6 +62,20 @@ public class ProcessDefinitionServices
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.formServices = formServices;
+  }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> suspendProcessDefinition(
+      final long processDefinitionKey, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerSuspendProcessDefinitionRequest().setProcessDefinitionKey(processDefinitionKey),
+        authentication);
+  }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> resumeProcessDefinition(
+      final long processDefinitionKey, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerResumeProcessDefinitionRequest().setProcessDefinitionKey(processDefinitionKey),
+        authentication);
   }
 
   @Override

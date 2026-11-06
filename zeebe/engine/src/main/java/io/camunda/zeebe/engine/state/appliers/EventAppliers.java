@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -154,6 +155,7 @@ public final class EventAppliers implements EventApplier {
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
+    registerProcessDefinitionSuspensionAppliers(state);
 
     registerAdHocSubProcessInstructionAppliers(state);
 
@@ -1015,6 +1017,12 @@ public final class EventAppliers implements EventApplier {
   private void registerEscalationAppliers() {
     register(EscalationIntent.ESCALATED, NOOP_EVENT_APPLIER);
     register(EscalationIntent.NOT_ESCALATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProcessDefinitionSuspensionAppliers(final MutableProcessingState state) {
+    register(
+        ProcessDefinitionSuspensionIntent.SUSPENDED, new ProcessDefinitionSuspendedApplier(state));
+    register(ProcessDefinitionSuspensionIntent.RESUMED, new ProcessDefinitionResumedApplier(state));
   }
 
   private void registerResourceDeletionAppliers() {

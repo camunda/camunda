@@ -122,6 +122,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -312,6 +313,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(USER_TASK_LOOKUP, this::summarizeUserTaskLookup);
+    valueLoggers.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, this::summarizeProcessDefinitionSuspension);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
@@ -1114,6 +1117,15 @@ public class CompactRecordLogger {
         + shortenKey(value.getParentKey())
         + " idx:"
         + shortenKey(value.getIndex());
+  }
+
+  private String summarizeProcessDefinitionSuspension(final Record<?> record) {
+    final var value = (ProcessDefinitionSuspensionRecordValue) record.getValue();
+    return "%s v%d key:%s"
+        .formatted(
+            formatId(value.getBpmnProcessId()),
+            value.getVersion(),
+            shortenKey(value.getProcessDefinitionKey()));
   }
 
   String summarizeUserTaskLookup(final Record<?> record) {

@@ -87,6 +87,105 @@ paths:
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
+  /process-definitions/{processDefinitionKey}/suspension:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process definition
+      operationId: suspendProcessDefinition
+      x-required-permissions:
+        # POC placeholder: replace with a dedicated SUSPEND_PROCESS_DEFINITION permission
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Suspend process definition
+      description: |
+        Suspends one process definition version. No new process instances can be created for a
+        suspended version until it is resumed. Running process instances are not affected.
+        Only a version that is not already suspended and not being deleted can be suspended.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The key of the process definition version to suspend.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      responses:
+        "204":
+          description: The process definition is suspended.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process definition is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process definition is already suspended or is being deleted.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+  /process-definitions/{processDefinitionKey}/resumption:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process definition
+      operationId: resumeProcessDefinition
+      x-required-permissions:
+        # POC placeholder: replace with a dedicated SUSPEND_PROCESS_DEFINITION permission
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Resume process definition
+      description: |
+        Resumes a suspended process definition version, so that process instances can be created
+        for it again.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The key of the process definition version to resume.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      responses:
+        "204":
+          description: The process definition is resumed.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process definition is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process definition is not suspended or is being deleted.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /process-definitions/{processDefinitionKey}/xml:
     get:
       x-eventually-consistent: true

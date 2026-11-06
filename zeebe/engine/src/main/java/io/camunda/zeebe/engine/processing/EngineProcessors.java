@@ -47,6 +47,7 @@ import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcess
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationEvaluateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
+import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
@@ -77,6 +78,8 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionResumeProcessor;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionSuspendProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
@@ -86,6 +89,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
+import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
@@ -115,6 +119,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -433,6 +438,13 @@ public final class EngineProcessors {
         tenantCheck,
         processDefinitionMetrics,
         routingInfo);
+    addProcessDefinitionSuspensionProcessors(
+        typedRecordProcessors,
+        writers,
+        processingState,
+        commandDistributionBehavior,
+        tenantCheck,
+        bpmnBehaviors);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -893,6 +905,42 @@ public final class EngineProcessors {
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
         decisionEvaluationEvaluateProcessor);
+  }
+
+  private static void addProcessDefinitionSuspensionProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final MutableProcessingState processingState,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final CslTenantCheck tenantCheck,
+      final BpmnBehaviors bpmnBehaviors) {
+    final var startEventSubscriptions =
+        new StartEventSubscriptions(
+            bpmnBehaviors.expressionProcessor(),
+            bpmnBehaviors.catchEventBehavior(),
+            new StartEventSubscriptionManager(
+                processingState, processingState.getKeyGenerator(), writers.state()),
+            processingState.getTimerState());
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        ProcessDefinitionSuspensionIntent.SUSPEND,
+        new ProcessDefinitionSuspensionSuspendProcessor(
+            writers,
+            processingState.getKeyGenerator(),
+            processingState,
+            tenantCheck,
+            commandDistributionBehavior,
+            startEventSubscriptions));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        ProcessDefinitionSuspensionIntent.RESUME,
+        new ProcessDefinitionSuspensionResumeProcessor(
+            writers,
+            processingState.getKeyGenerator(),
+            processingState,
+            tenantCheck,
+            commandDistributionBehavior,
+            startEventSubscriptions));
   }
 
   private static void addResourceDeletionProcessors(

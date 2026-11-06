@@ -80,6 +80,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -3133,6 +3134,40 @@ final class JsonSerializableToJsonTest {
                   "parentKey": -1,
                   "index": -1,
                   "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessDefinitionSuspensionRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionSuspensionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ProcessDefinitionSuspensionRecord()
+                    .setProcessDefinitionKey(123)
+                    .setBpmnProcessId("process")
+                    .setVersion(2)
+                    .setTenantId("tenant"),
+        """
+                {
+                  "processDefinitionKey": 123,
+                  "bpmnProcessId": "process",
+                  "version": 2,
+                  "tenantId": "tenant"
+                }
+                """
+      },
+      {
+        "Empty ProcessDefinitionSuspensionRecord",
+        (Supplier<UnifiedRecordValue>) ProcessDefinitionSuspensionRecord::new,
+        """
+                {
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "version": -1,
+                  "tenantId": "<default>"
                 }
                 """
       },

@@ -32,8 +32,8 @@ import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 
 public class StartEventSubscriptionManager {
 
@@ -168,20 +168,12 @@ public class StartEventSubscriptionManager {
   private DeployedProcess findPreviousVersionOfProcess(
       final ProcessMetadata processRecord,
       final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
-    final Optional<Integer> processVersionBefore =
-        processState.findProcessVersionBefore(
-            processRecord.getBpmnProcessId(),
-            processRecord.getVersion(),
-            processRecord.getTenantId());
-    if (processVersionBefore.isEmpty()) {
+    // The subscriptions belong to the latest active, non-suspended version below the new one. That
+    // is not necessarily the version directly below, e.g. when that one is suspended.
+    final var previousVersionOfProcess = findOwnerBelow(processRecord);
+    if (previousVersionOfProcess == null) {
       return null;
     }
-
-    final var previousVersionOfProcess =
-        processState.getProcessByProcessIdAndVersion(
-            processRecord.getBpmnProcessIdBuffer(),
-            processVersionBefore.get(),
-            processRecord.getTenantId());
     final var hasMatchingStartEvent =
         previousVersionOfProcess.getProcess().getStartEvents().stream()
             .anyMatch(hasStartEventMatching);
@@ -189,6 +181,29 @@ public class StartEventSubscriptionManager {
       return null;
     }
     return previousVersionOfProcess;
+  }
+
+  private @Nullable DeployedProcess findOwnerBelow(final ProcessMetadata processRecord) {
+    final var knownVersions =
+        processState.getKnownProcessVersions(
+            processRecord.getBpmnProcessId(), processRecord.getTenantId());
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= processRecord.getVersion()) {
+        continue;
+      }
+      final var candidate =
+          processState.getProcessByProcessIdAndVersion(
+              processRecord.getBpmnProcessIdBuffer(),
+              candidateVersion,
+              processRecord.getTenantId());
+      if (candidate != null
+          && candidate.isActive()
+          && !processState.isProcessDefinitionSuspended(candidate.getKey())) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   private void openStartEventSubscriptions(final ProcessMetadata processRecord) {

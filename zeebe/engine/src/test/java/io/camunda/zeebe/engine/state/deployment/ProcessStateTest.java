@@ -1901,4 +1901,55 @@ public final class ProcessStateTest {
     assertThatThrownBy(() -> processState.removePendingDeletion(1L, 99))
         .isInstanceOf(ZeebeDbInconsistentException.class);
   }
+
+  @Test
+  public void shouldMarkAndRemoveSuspended() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    processState.putProcess(v1.getKey(), v1);
+
+    // when
+    processState.markProcessDefinitionSuspended(v1.getKey());
+    final var suspended = processState.isProcessDefinitionSuspended(v1.getKey());
+    processState.removeProcessDefinitionSuspended(v1.getKey());
+
+    // then
+    assertThat(suspended).isTrue();
+    assertThat(processState.isProcessDefinitionSuspended(v1.getKey())).isFalse();
+  }
+
+  @Test
+  public void shouldSkipSuspendedLatestVersion() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+
+    // when
+    processState.markProcessDefinitionSuspended(v2.getKey());
+    final var afterSuspendingV2 =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+    processState.markProcessDefinitionSuspended(v1.getKey());
+    final var afterSuspendingAll =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(afterSuspendingV2.getKey()).isEqualTo(v1.getKey());
+    assertThat(afterSuspendingAll).isNull();
+  }
+
+  @Test
+  public void shouldRemoveMarkerWhenDraining() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    processState.putProcess(v1.getKey(), v1);
+    processState.markProcessDefinitionSuspended(v1.getKey());
+
+    // when
+    processState.markDraining(v1);
+
+    // then
+    assertThat(processState.isProcessDefinitionSuspended(v1.getKey())).isFalse();
+  }
 }
