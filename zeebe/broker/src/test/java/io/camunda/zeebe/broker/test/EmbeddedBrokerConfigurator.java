@@ -10,7 +10,9 @@ package io.camunda.zeebe.broker.test;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
@@ -75,5 +77,26 @@ public final class EmbeddedBrokerConfigurator {
 
   public static Consumer<BrokerCfg> setInternalApiPort(final int port) {
     return cfg -> cfg.getNetwork().getInternalApi().setPort(port);
+  }
+
+  /**
+   * Makes a cluster of brokers started in the same test form quickly. By default every broker waits
+   * for the 5s cluster configuration sync initializer delay because no other broker has an
+   * initialized configuration yet, and the first Raft election waits for the 2.5s election timeout.
+   * Same settings as {@code TestStandaloneBroker} applies for integration tests.
+   */
+  public static Consumer<BrokerCfg> useFastClusterBootstrap() {
+    return cfg -> {
+      final var cluster = cfg.getCluster();
+      cluster.setElectionTimeout(Duration.ofMillis(500));
+      cluster.setConfigManager(
+          new ConfigManagerCfg(
+              new ClusterConfigurationGossiperConfig(
+                  Duration.ofMillis(500),
+                  Duration.ofMillis(500),
+                  null,
+                  Duration.ofMillis(500),
+                  Duration.ofSeconds(5))));
+    };
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.useFastClusterBootstrap;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 
 import io.atomix.cluster.MemberId;
@@ -81,8 +82,7 @@ final class PartitionJoinTest {
     try (final var existing = existingBroker.start().join();
         final var joining = joiningBroker.start().join()) {
       Awaitility.await("Joining broker knows about existing broker")
-          .pollDelay(Duration.ofSeconds(1))
-          .pollInterval(Duration.ofMillis(500))
+          .pollInterval(Duration.ofMillis(100))
           .until(
               () ->
                   joining
@@ -119,6 +119,7 @@ final class PartitionJoinTest {
   Broker buildBroker(final Path tmp, final Consumer<BrokerCfg> configure) {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
+    useFastClusterBootstrap().accept(brokerCfg);
     configure.accept(brokerCfg);
     brokerCfg.init(tmp.toAbsolutePath().toString());
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
