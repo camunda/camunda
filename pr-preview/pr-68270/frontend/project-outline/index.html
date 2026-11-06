@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Project outline | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/project-outline/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Project outline | Camunda Platform"><meta data-rh="true" name="description" content="webapp/client is an npm workspaces monorepo that holds the unified"><meta data-rh="true" property="og:description" content="webapp/client is an npm workspaces monorepo that holds the unified"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-68270/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/project-outline/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/project-outline/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/project-outline/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Frontend","item":"https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/"},{"@type":"ListItem","position":2,"name":"Project outline","item":"https://camunda.github.io/camunda/pr-preview/pr-68270/frontend/project-outline"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-68270/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-68270/assets/js/runtime~main.43ec7cfc.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-68270/assets/js/main.750cf9ee.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68270/assets/js/runtime~main.21b48372.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68270/assets/js/main.560869cd.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -30,9 +30,10 @@ installation, usage, and publishing.</p>
 <p>Shared mock data fixtures (e.g., current user, license) for
 use in webapp tests.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="camundalint-config"><code>@camunda/lint-config</code><a href="#camundalint-config" class="hash-link" aria-label="Direct link to camundalint-config" title="Direct link to camundalint-config" translate="no">​</a></h3>
-<p>ESLint and Prettier configuration shared across
-the Camunda frontends — also consumed outside this workspace by
-<code>operate/client</code> and <code>identity/client</code>. Consumers
+<p>ESLint and Prettier configuration for the Camunda
+frontends outside this workspace, such as <code>operate/client</code> and
+<code>identity/client</code>. The workspace itself lints with oxlint
+(<code>webapp/client/oxlint.config.ts</code>). Consumers
 compose only the eslint variants they need (<code>base</code>, <code>typescript</code>,
 <code>react</code>, <code>testing</code>, <code>license</code>, <code>tanstack-query</code>).</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="camundaoc-saas-notifications"><code>@camunda/oc-saas-notifications</code><a href="#camundaoc-saas-notifications" class="hash-link" aria-label="Direct link to camundaoc-saas-notifications" title="Direct link to camundaoc-saas-notifications" translate="no">​</a></h3>
