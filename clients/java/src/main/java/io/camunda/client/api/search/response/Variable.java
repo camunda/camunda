@@ -45,6 +45,13 @@ public interface Variable {
   /* The tenant id of the variable */
   String getTenantId();
 
+  /**
+   * Returns how the variable is treated, for example which protections apply to its value.
+   *
+   * @return the variable metadata, or {@code null} if the server did not return any
+   */
+  VariableMetadata getVariableMetadata();
+
   /* Check if the variable is truncated */
   Boolean isTruncated();
 
