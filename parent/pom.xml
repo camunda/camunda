@@ -274,7 +274,7 @@
     <!-- Gradle counterpart of pitest-maven, read by the Gradle build only -->
     <!-- renovate: datasource=maven depName=info.solidsoft.gradle.pitest:gradle-pitest-plugin -->
     <plugin.version.pitest-gradle>1.19.0</plugin.version.pitest-gradle>
-    <plugin.version.protobuf-maven-plugin>5.1.11</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>5.1.12</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
