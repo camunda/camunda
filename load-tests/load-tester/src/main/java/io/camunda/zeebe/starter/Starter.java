@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.starter;
 
+<<<<<<< HEAD
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,8 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+=======
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -25,6 +28,7 @@ import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+<<<<<<< HEAD
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.PayloadReader;
@@ -33,10 +37,15 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Counter;
+=======
+import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
+import io.camunda.zeebe.read.DataReadMeter;
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
+<<<<<<< HEAD
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -46,6 +55,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+=======
+import java.util.Optional;
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,10 +65,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+<<<<<<< HEAD
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.apache.commons.lang3.tuple.Pair;
+=======
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -77,27 +92,41 @@ public class Starter implements CommandLineRunner {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+<<<<<<< HEAD
   private final CamundaClient client;
   private final CamundaClientConfiguration clientConfiguration;
+=======
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
   private final ApplicationContext applicationContext;
-  private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
   private final StarterLivenessIndicator livenessIndicator;
+<<<<<<< HEAD
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
   private final AtomicReference<Error> fatalError = new AtomicReference<>();
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
+=======
+  private final ProcessDeployer processDeployer;
+  private final ProcessInstanceCreator processInstanceCreator;
+  private final AtomicInteger runFinished = new AtomicInteger(0);
+
+  // Temporary: Starter starts and stops these meters until they react to application events.
+  private final Optional<ProcessInstanceStartMeter> processInstanceStartMeter;
+  private final Optional<DataReadMeter> dataReadMeter;
+  private final Optional<OptimizeReportEvaluator> optimizeReportEvaluator;
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 
   private Timer responseLatencyTimer;
   private Counter processInstancesSubmittedCounter;
   private Counter processInstancesSkippedCounter;
   private StarterResultMetrics resultMetrics;
   private ScheduledExecutorService executorService;
+<<<<<<< HEAD
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
   private CamundaClient queryClient;
@@ -105,21 +134,41 @@ public class Starter implements CommandLineRunner {
   public Starter(
       final CamundaClient client,
       final CamundaClientConfiguration clientConfiguration,
+=======
+
+  public Starter(
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final StarterLivenessIndicator livenessIndicator,
+<<<<<<< HEAD
       final ApplicationContext applicationContext) {
     this.client = client;
     this.clientConfiguration = clientConfiguration;
+=======
+      final ProcessDeployer processDeployer,
+      final ProcessInstanceCreator processInstanceCreator,
+      final Optional<ProcessInstanceStartMeter> processInstanceStartMeter,
+      final Optional<DataReadMeter> dataReadMeter,
+      final Optional<OptimizeReportEvaluator> optimizeReportEvaluator,
+      final ApplicationContext applicationContext) {
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
     this.applicationContext = applicationContext;
-    this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
     this.livenessIndicator = livenessIndicator;
+<<<<<<< HEAD
+=======
+    this.processDeployer = processDeployer;
+    this.processInstanceCreator = processInstanceCreator;
+    this.processInstanceStartMeter = processInstanceStartMeter;
+    this.dataReadMeter = dataReadMeter;
+    this.optimizeReportEvaluator = optimizeReportEvaluator;
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -149,6 +198,7 @@ public class Starter implements CommandLineRunner {
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
 
+<<<<<<< HEAD
     if (properties.isMonitorDataAvailability() || properties.isPerformReadBenchmarks()) {
       // Has its own connections, but shares the executor service of the configuration and shuts it
       // down on close, so the starter must not run in the same JVM as job workers.
@@ -168,6 +218,19 @@ public class Starter implements CommandLineRunner {
     if (properties.isPerformReadBenchmarks()) {
       dataReadMeter.start();
     }
+=======
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::start);
+
+    final long processDefinitionKey = processDeployer.deploy();
+
+    dataReadMeter.ifPresent(
+        meter -> {
+          // Temporary: the meter receives the key from Starter until the deployer blocks startup.
+          meter.setContextProcessDefinitionKey(processDefinitionKey);
+          meter.start();
+        });
+    optimizeReportEvaluator.ifPresent(OptimizeReportEvaluator::start);
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
@@ -206,6 +269,7 @@ public class Starter implements CommandLineRunner {
         LOG.error("Shutdown executor service was interrupted", e);
       }
     }
+<<<<<<< HEAD
     if (processInstanceStartMeter != null) {
       processInstanceStartMeter.close();
     }
@@ -469,5 +533,10 @@ public class Starter implements CommandLineRunner {
     } else {
       return () -> true;
     }
+=======
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::close);
+    dataReadMeter.ifPresent(DataReadMeter::close);
+    optimizeReportEvaluator.ifPresent(OptimizeReportEvaluator::close);
+>>>>>>> cb0914fd (refactor: make the data meters and the Optimize evaluator Spring components)
   }
 }
