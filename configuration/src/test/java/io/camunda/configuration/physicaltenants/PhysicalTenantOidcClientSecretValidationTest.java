@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -169,16 +171,22 @@ class PhysicalTenantOidcClientSecretValidationTest {
         .doesNotThrowAnyException();
   }
 
-  @Test
-  void shouldAcceptIssuerThatOnlyAddsATrailingSlash() {
-    // given — the same issuer, written with a trailing slash
+  @ParameterizedTest
+  @CsvSource({"https://root-idp, https://root-idp/", "https://root-idp/, https://root-idp"})
+  void shouldAcceptIssuerThatOnlyAddsOrRemovesATrailingSlash(
+      final String rootIssuer, final String tenantIssuer) {
+    // given — the same issuer, written with or without a trailing slash
     final var environment =
         environmentWith(
             Map.of(
-                ROOT + "oidc.issuer-uri", "https://root-idp",
-                ROOT + "oidc.client-secret", "root-secret",
-                TENANT + "oidc.issuer-uri", "https://root-idp/",
-                TENANT + "providers.assigned[0]", "oidc"));
+                ROOT + "oidc.issuer-uri",
+                rootIssuer,
+                ROOT + "oidc.client-secret",
+                "root-secret",
+                TENANT + "oidc.issuer-uri",
+                tenantIssuer,
+                TENANT + "providers.assigned[0]",
+                "oidc"));
 
     // when / then
     assertThatCode(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))

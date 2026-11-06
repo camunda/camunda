@@ -495,7 +495,8 @@ class PhysicalTenantAssignedProvidersValidationTest {
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("tenanta")
         .withMessageContaining("same issuer URI")
-        .withMessageContaining("https://idp.example.com");
+        .withMessageContaining("https://idp.example.com")
+        .withMessageNotContaining("trailing slash");
   }
 
   @Test
@@ -519,7 +520,8 @@ class PhysicalTenantAssignedProvidersValidationTest {
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("tenanta")
         .withMessageContaining("same issuer URI")
-        .withMessageContaining("[a, b]");
+        .withMessageContaining("[a, b]")
+        .withMessageContaining("differ only by a trailing slash");
   }
 
   @Test
