@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +24,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.EventApplyingStateWriter;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
@@ -30,6 +34,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -46,11 +51,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Uses real element-instance/job/suspension state (via {@link ProcessingStateExtension}), mocking
- * only the writers and {@link BpmnJobActivationBehavior} — the same split {@code
- * BufferedCommandDrainProcessorTest} uses for the sibling processor in this resume chain. The
- * hand-out-declines-room case still needs the behavior mock to return false; everything about the
- * element and job state itself is real.
+ * Uses real state (via {@link ProcessingStateExtension}) and a state writer that applies events
+ * with the real event appliers, so publishing sees the job state {@code Job.RESUMED} leaves. Only
+ * the other writers and {@link BpmnJobActivationBehavior} are mocked; the hand-out-declines-room
+ * case needs the behavior mock to return false.
  */
 @ExtendWith(ProcessingStateExtension.class)
 public final class ProcessInstanceResumeJobsProcessorTest {
@@ -77,7 +81,9 @@ public final class ProcessInstanceResumeJobsProcessorTest {
     elementInstanceState = processingState.getElementInstanceState();
     jobState = processingState.getJobState();
     suspensionState = processingState.getSuspensionState();
-    stateWriter = mock(StateWriter.class);
+    final var eventAppliers = new EventAppliers();
+    eventAppliers.registerEventAppliers(processingState);
+    stateWriter = spy(new EventApplyingStateWriter(new RecordingTypedEventWriter(), eventAppliers));
     commandWriter = mock(TypedCommandWriter.class);
     rejectionWriter = mock(TypedRejectionWriter.class);
     jobActivationBehavior = mock(BpmnJobActivationBehavior.class);
@@ -169,6 +175,7 @@ public final class ProcessInstanceResumeJobsProcessorTest {
 
     // then - the job is resumed, but only resolving the incident hands it out; the loop continues
     verify(stateWriter).appendFollowUpEvent(eq(JOB_KEY), eq(JobIntent.RESUMED), any());
+    assertThat(jobState.getState(JOB_KEY)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
     verify(jobActivationBehavior, never()).publishWork(anyLong(), any(), any());
     verify(commandWriter)
         .appendFollowUpCommand(
@@ -367,8 +374,7 @@ public final class ProcessInstanceResumeJobsProcessorTest {
     jobState.insertJobRecordActivatable(jobKey, jobRecord);
     jobState.makeJobActivatableByPriority(
         jobRecord.getTypeBuffer(), jobKey, jobRecord.getTenantId(), jobRecord.getPriority());
-    jobState.updateJobState(
-        jobKey, io.camunda.zeebe.engine.state.immutable.JobState.State.SUSPENDED);
+    jobState.updateJobState(jobKey, State.SUSPENDED);
     jobState.makeJobNotActivatable(jobKey, jobRecord);
     elementInstanceState.updateInstance(elementKey, ei -> ei.setJobKey(jobKey));
   }
