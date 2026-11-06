@@ -7,7 +7,8 @@
     "build:artefacts": "node build-artefacts.mjs",
     "verify:specs": "npm run build:artefacts && node verify-specs.mjs",
     "verify:specs:ci": "node verify-specs-ci.mjs",
-    "verify:specs:workflow": "node verify-specs-workflow.mjs"
+    "verify:specs:workflow": "node verify-specs-workflow.mjs",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "camunda-schema-bundler": "^2.4.1",
