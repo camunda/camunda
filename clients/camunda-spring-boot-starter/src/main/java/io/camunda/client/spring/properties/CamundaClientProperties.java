@@ -43,6 +43,9 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
 
+  @NestedConfigurationProperty
+  private CamundaClientMtlsProperties mtls = new CamundaClientMtlsProperties();
+
   /** The number of threads for invocation of job workers. */
   private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
@@ -310,6 +313,14 @@ public class CamundaClientProperties {
 
   public void setAuth(final CamundaClientAuthProperties auth) {
     this.auth = auth;
+  }
+
+  public CamundaClientMtlsProperties getMtls() {
+    return mtls;
+  }
+
+  public void setMtls(final CamundaClientMtlsProperties mtls) {
+    this.mtls = mtls;
   }
 
   public boolean getEnabled() {

@@ -420,6 +420,8 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionMessageSubscri
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceWaitStateStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
+import io.camunda.client.impl.tls.MtlsMaterial;
+import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
@@ -430,11 +432,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -523,6 +523,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
+    // Resolve and validate the mTLS material up front, before any transport's plaintext branch
+    // can silently skip it: configuring CAMUNDA_MTLS_* against plaintext-only addresses must fail
+    // here instead of building a plaintext client that ignores the material.
+    MtlsMaterial.fromConfiguration(config);
+
     final URI address;
     address = config.getGrpcAddress();
 
@@ -569,20 +574,15 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI grpcAddress = config.getGrpcAddress();
     if (!AddressUtil.isPlaintextConnection(grpcAddress)) {
       final String certificatePath = config.getCaCertificatePath();
-      SslContext sslContext = null;
-
-      if (certificatePath != null) {
-        if (certificatePath.isEmpty()) {
-          throw new IllegalArgumentException(
-              "Expected valid certificate path but found empty path instead.");
-        }
-
-        try (final FileInputStream certInputStream = new FileInputStream(certificatePath)) {
-          sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
+      if (certificatePath != null && certificatePath.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Expected valid certificate path but found empty path instead.");
       }
+
+      // Builds the mTLS-aware context when CAMUNDA_MTLS_* material is configured, the legacy
+      // CA-certificate context when only caCertificatePath is set, and null (gRPC defaults)
+      // otherwise.
+      final SslContext sslContext = TlsContexts.createGrpcSslContext(config);
 
       channelBuilder.useTransportSecurity().sslContext(sslContext);
       if (config.getOverrideAuthority() != null) {

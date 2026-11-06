@@ -17,6 +17,22 @@ package io.camunda.client.impl;
 
 public final class CamundaClientEnvironmentVariables {
   public static final String CA_CERTIFICATE_VAR = "CAMUNDA_CA_CERTIFICATE_PATH";
+
+  /** Mutual TLS (cluster transport) environment variables, aligned with the other Camunda SDKs. */
+  public static final String MTLS_CERT_PATH_VAR = "CAMUNDA_MTLS_CERT_PATH";
+
+  public static final String MTLS_CERT_VAR = "CAMUNDA_MTLS_CERT";
+  public static final String MTLS_KEY_PATH_VAR = "CAMUNDA_MTLS_KEY_PATH";
+  public static final String MTLS_KEY_VAR = "CAMUNDA_MTLS_KEY";
+  public static final String MTLS_KEY_PASSPHRASE_VAR = "CAMUNDA_MTLS_KEY_PASSPHRASE";
+  public static final String MTLS_CA_PATH_VAR = "CAMUNDA_MTLS_CA_PATH";
+  public static final String MTLS_CA_VAR = "CAMUNDA_MTLS_CA";
+  public static final String MTLS_KEYSTORE_PATH_VAR = "CAMUNDA_MTLS_KEYSTORE_PATH";
+  public static final String MTLS_KEYSTORE_PASSWORD_VAR = "CAMUNDA_MTLS_KEYSTORE_PASSWORD";
+  public static final String MTLS_KEYSTORE_KEY_PASSWORD_VAR = "CAMUNDA_MTLS_KEYSTORE_KEY_PASSWORD";
+  public static final String MTLS_TRUSTSTORE_PATH_VAR = "CAMUNDA_MTLS_TRUSTSTORE_PATH";
+  public static final String MTLS_TRUSTSTORE_PASSWORD_VAR = "CAMUNDA_MTLS_TRUSTSTORE_PASSWORD";
+
   public static final String KEEP_ALIVE_VAR = "CAMUNDA_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "CAMUNDA_OVERRIDE_AUTHORITY";
   public static final String CAMUNDA_CLIENT_WORKER_STREAM_ENABLED =
