@@ -6,7 +6,7 @@
   "dependencies": {
     "@axe-core/playwright": "4.13.0",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
-    "@camunda/camunda-api-zod-schemas": "0.0.96",
+    "@camunda/camunda-api-zod-schemas": "0.0.93",
     "@camunda/camunda-composite-components": "0.25.5",
     "@camunda/design-system": "0.81.0",
     "@camunda/session-heartbeat": "0.0.1",
@@ -89,15 +89,15 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/react-transition-group": "4.4.12",
-    "@typescript-eslint/eslint-plugin": "8.72.1",
+    "@typescript-eslint/eslint-plugin": "8.72.0",
     "@typescript-eslint/parser": "8.72.1",
-    "@vitejs/plugin-react": "6.2.1",
-    "@vitest/browser": "4.1.12",
-    "@vitest/browser-playwright": "4.1.12",
-    "@vitest/coverage-istanbul": "4.1.12",
-    "@vitest/coverage-v8": "4.1.12",
-    "@vitest/eslint-plugin": "1.6.28",
-    "@vitest/ui": "4.1.12",
+    "@vitejs/plugin-react": "6.2.0",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
+    "@vitest/coverage-istanbul": "4.1.11",
+    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/eslint-plugin": "1.6.20",
+    "@vitest/ui": "4.1.11",
     "cross-env": "10.1.0",
     "eslint": "10.13.0",
     "eslint-plugin-import-x": "4.17.1",
@@ -119,7 +119,7 @@
     "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vite-plugin-svgr": "5.2.0",
-    "vitest": "4.1.12",
+    "vitest": "4.1.11",
     "vitest-browser-react": "2.3.0"
   },
   "scarfSettings": {
@@ -128,7 +128,7 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@12.2.1",
+  "packageManager": "npm@12.2.0",
   "overrides": {
     "monaco-editor": {
       "dompurify": "3.4.16"
