@@ -19,7 +19,7 @@ import {
 	TooltipTrigger,
 	useMediaQuery,
 } from '@camunda/design-system';
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useTranslation} from 'react-i18next';
 import {Info, X} from '@camunda/design-system/icons';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
@@ -31,7 +31,7 @@ import {useMemo} from 'react';
 
 type Props = {
 	task: UserTask;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	assignButton: React.ReactNode;
 	children: React.ReactNode;
 };

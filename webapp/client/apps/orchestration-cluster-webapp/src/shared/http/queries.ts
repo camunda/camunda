@@ -8,7 +8,7 @@
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
-	CurrentUser,
+	AuthenticatedCurrentUser,
 	License,
 	Form,
 	UserTask,
@@ -181,7 +181,7 @@ const queries = {
 	getCurrentUser: () =>
 		queryOptions({
 			queryKey: queryKeys.currentUser(),
-			queryFn: async (): Promise<CurrentUser> => {
+			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
 				const {response, error} = await request(endpoints.getCurrentUser());
 				if (error !== null) {
 					throw mapQueryError(error);
