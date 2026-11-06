@@ -280,10 +280,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    processorActorService.close();
+    // Both are only created once recovery from the snapshot succeeded.
+    if (processorActorService != null) {
+      processorActorService.close();
+    }
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
-    replayStateMachine.close();
+    if (replayStateMachine != null) {
+      replayStateMachine.close();
+    }
     scheduledCommandCache.clear();
   }
 
@@ -389,34 +394,38 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    asyncScheduleServiceContext
-        .closeActors(actor)
-        .onComplete(
-            (v, t) -> {
-              actor.fail(throwable);
-              if (!openFuture.isDone()) {
-                openFuture.completeExceptionally(throwable);
-              }
+    // The context does not exist yet if we fail while recovering from the snapshot; there are no
+    // async actors to close then, but we must still fail the actor and notify everyone waiting.
+    final ActorFuture<Void> actorsClosed =
+        asyncScheduleServiceContext != null
+            ? asyncScheduleServiceContext.closeActors(actor)
+            : CompletableActorFuture.completed();
 
-              if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
-                  && !(throwable instanceof UnrecoverableException)) {
-                // If the stream processor is in replay mode, we do not want to report it as dead
-                // because it is not critical. The leaders are still active and able to process
-                // requests.
-                final var report =
-                    HealthReport.unhealthy(this)
-                        .withIssue(throwable, ActorClock.current().instant());
-                failureListeners.forEach(l -> l.onFailure(report));
-              } else {
+    actorsClosed.onComplete(
+        (v, t) -> {
+          actor.fail(throwable);
+          if (!openFuture.isDone()) {
+            openFuture.completeExceptionally(throwable);
+          }
 
-                // If it is a leader, we always want to report it as dead so that all related
-                // services
-                // are shutdown. (https://github.com/camunda/camunda/issues/16180)
-                final var report =
-                    HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
-                failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-              }
-            });
+          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
+              && !(throwable instanceof UnrecoverableException)) {
+            // If the stream processor is in replay mode, we do not want to report it as dead
+            // because it is not critical. The leaders are still active and able to process
+            // requests.
+            final var report =
+                HealthReport.unhealthy(this).withIssue(throwable, ActorClock.current().instant());
+            failureListeners.forEach(l -> l.onFailure(report));
+          } else {
+
+            // If it is a leader, we always want to report it as dead so that all related
+            // services
+            // are shutdown. (https://github.com/camunda/camunda/issues/16180)
+            final var report =
+                HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
+            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+          }
+        });
   }
 
   public boolean isOpened() {
