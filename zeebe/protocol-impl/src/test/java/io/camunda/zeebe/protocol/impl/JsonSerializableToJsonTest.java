@@ -3195,6 +3195,7 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {"foo": 1},
+                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3235,6 +3236,7 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {},
+                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3332,6 +3334,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "customHeaders": {
                     "foo": "bar"
                   },
@@ -3375,6 +3378,7 @@ final class JsonSerializableToJsonTest {
                   "changedAttributes": [],
                   "externalFormReference": "",
                   "variables": {},
+                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
@@ -3421,6 +3425,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": null
                   },
+                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
