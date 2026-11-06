@@ -62,6 +62,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   @Override
   public void reset() {
     chunksView = new TreeSet<>(chunks);
+    offset = 0;
   }
 
   @Override
