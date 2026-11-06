@@ -47,6 +47,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.generic.Body;
@@ -67,6 +68,45 @@ public class OpensearchEngineClientIT {
     objectMapper =
         ((JacksonJsonpMapper) openSearchClient._transport().jsonpMapper()).objectMapper();
     opensearchEngineClient = new OpensearchEngineClient(openSearchClient, objectMapper);
+  }
+
+  @Test
+  void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
+    // given
+    final var indexName = "await_active-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(indexName));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)));
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason =
+          "Creates an unallocatable primary shard, which turns the shared cluster red; unsafe for shared AWS OpenSearch")
+  void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
+    // given an index that exists but whose primary can never be allocated, like one whose
+    // creation request timed out on the client while its shards were still initializing
+    final var indexName = "await_unassigned-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient
+        .indices()
+        .create(
+            req ->
+                req.index(indexName)
+                    .waitForActiveShards(w -> w.count(0))
+                    .settings(
+                        s ->
+                            s.customSettings(
+                                "index.routing.allocation.require._name",
+                                JsonData.of("no-such-node"))));
+
+    // when / then
+    assertThatThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)))
+        .isInstanceOf(SearchEngineException.class)
+        .hasMessageContaining(indexName);
   }
 
   @Test
