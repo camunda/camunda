@@ -1377,9 +1377,7 @@
 					"none": "Aucune",
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
-					"tableLabel": "Instances de processus",
-					"loadingPreviousPage": "Chargement des instances de processus précédentes",
-					"loadingNextPage": "Chargement des instances de processus suivantes"
+					"tableLabel": "Instances de processus"
 				},
 				"diagramHeader": {
 					"title": "Processus",
@@ -1480,9 +1478,7 @@
 					"selectRow": "Sélectionner la ligne {{key}}",
 					"stateEvaluated": "Évaluée",
 					"stateFailed": "Échouée",
-					"tableLabel": "Instances de décision",
-					"loadingPreviousPage": "Chargement des instances de décision précédentes",
-					"loadingNextPage": "Chargement des instances de décision suivantes"
+					"tableLabel": "Instances de décision"
 				},
 				"toolbar": {
 					"delete": "Supprimer",

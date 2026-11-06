@@ -1386,9 +1386,7 @@
 					"none": "None",
 					"emptyMessage": "There are no Instances matching this filter set",
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
-					"tableLabel": "Process instances",
-					"loadingPreviousPage": "Loading previous process instances",
-					"loadingNextPage": "Loading next process instances"
+					"tableLabel": "Process instances"
 				},
 				"diagramHeader": {
 					"title": "Process",
@@ -1489,9 +1487,7 @@
 					"selectRow": "Select row {{key}}",
 					"stateEvaluated": "Evaluated",
 					"stateFailed": "Failed",
-					"tableLabel": "Decision instances",
-					"loadingPreviousPage": "Loading previous decision instances",
-					"loadingNextPage": "Loading next decision instances"
+					"tableLabel": "Decision instances"
 				},
 				"toolbar": {
 					"delete": "Delete",

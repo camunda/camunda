@@ -185,8 +185,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				rows={decisionInstances}
 				rowKey={(row) => row.decisionEvaluationInstanceKey}
 				ariaLabel={t('operate.decisions.instancesTable.tableLabel')}
-				loadingPreviousPageLabel={t('operate.decisions.instancesTable.loadingPreviousPage')}
-				loadingNextPageLabel={t('operate.decisions.instancesTable.loadingNextPage')}
 				isFetching={isRefreshing}
 				emptyState={emptyState}
 				selectionType={filter === undefined ? undefined : 'checkbox'}
