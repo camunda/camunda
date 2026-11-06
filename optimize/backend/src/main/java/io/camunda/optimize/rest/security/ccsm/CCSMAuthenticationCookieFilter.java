@@ -12,6 +12,7 @@ import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -28,7 +29,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,10 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CCSMAuthenticationCookieFilter.class);
+  private static final Pattern REST_STATUS_CODE_PATTERN = Pattern.compile("status code '(\\d+)'");
+  // Other messages, like the Entra version check, can embed token claims.
+  private static final Set<String> SAFE_NOT_AUTHORIZED_MESSAGES =
+      Set.of("User is not authorized to access Optimize", "Token could not be verified");
   private final ConfigurationService configurationService;
   private final CCSMTokenService ccsmTokenService;
 
@@ -85,7 +93,8 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       } catch (final NotAuthorizedException notAuthorizedException) {
         // During token verification, it could be that the user is no longer authorized to access
         // Optimize, in which case we delete any existing cookies
-        LOGGER.debug(notAuthorizedException.getMessage());
+        LOGGER.debug(
+            "User is not authorized: {}", describeVerificationFailure(notAuthorizedException));
         deleteCookies(response);
       }
     }
@@ -121,9 +130,31 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
     try {
       ccsmTokenService.verifyToken(token);
     } catch (final Exception e) {
+      LOGGER.debug("Token verification failed: {}", describeVerificationFailure(e));
       return Optional.empty();
     }
     return Optional.ofNullable(token);
+  }
+
+  // Exception messages can carry token claims or Identity response bodies, so only safe parts are
+  // logged.
+  private static String describeVerificationFailure(final Exception e) {
+    final String type = e.getClass().getSimpleName();
+    if (e instanceof NotAuthorizedException) {
+      final String reason =
+          SAFE_NOT_AUTHORIZED_MESSAGES.contains(e.getMessage()) ? e.getMessage() : "reason hidden";
+      final Throwable cause = e.getCause();
+      return cause == null
+          ? String.format("%s (%s)", type, reason)
+          : String.format("%s (%s, cause: %s)", type, reason, cause.getClass().getSimpleName());
+    }
+    if (e instanceof RestException && e.getMessage() != null) {
+      final Matcher matcher = REST_STATUS_CODE_PATTERN.matcher(e.getMessage());
+      if (matcher.find()) {
+        return String.format("%s (status code %s)", type, matcher.group(1));
+      }
+    }
+    return type;
   }
 
   private void tryCookieRenewal(
