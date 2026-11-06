@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -115,7 +116,10 @@ public final class MultiInstanceOutputCollectionBehavior {
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final var expression = element.getLoopCharacteristics().getOutputElement().orElseThrow();
     return expressionProcessor.evaluateAnyExpressionToBuffer(
-        expression, context.getElementInstanceKey(), context.getTenantId());
+        expression,
+        context.getElementInstanceKey(),
+        context.getTenantId(),
+        ExpressionLabel.outputElementExpression(context.getElementId()));
   }
 
   private Either<Failure, DirectBuffer> replaceAt(

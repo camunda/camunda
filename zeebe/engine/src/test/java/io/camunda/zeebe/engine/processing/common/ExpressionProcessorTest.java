@@ -272,6 +272,58 @@ class ExpressionProcessorTest {
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateArrayExpressionWithLabelTest {
+
+    @Test
+    void shouldUseLabelKindAndTargetInArrayTypeMismatchMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=\"a\"");
+      final var label =
+          new ExpressionLabel("input collection expression", "multi-instance activity 't'");
+
+      // when
+      final var result =
+          processor.evaluateArrayExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the input collection expression '"a"' of multi-instance \
+              activity 't' to be 'ARRAY', but was 'STRING'.""");
+    }
+
+    @Test
+    void shouldUseLabelKindAndTargetInArrayOfStringsItemTypeMismatchMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=[1]");
+      final var label =
+          new ExpressionLabel("active elements collection expression", "ad-hoc sub-process 'a'");
+
+      // when
+      final var result =
+          processor.evaluateArrayOfStringsExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the active elements collection expression '[1]' of ad-hoc \
+              sub-process 'a' to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' \
+              containing at least one non-'STRING' item.""");
+    }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
   class EvaluateBooleanExpressionWithLabelTest {
 
     @Test
