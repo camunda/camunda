@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** Executable* prefix in order to avoid confusion with model API classes. */
 public class ExecutableProcess extends ExecutableFlowElementContainer {
@@ -23,6 +24,7 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
   private Expression defaultJobPriority;
   private boolean agentic;
+  private @Nullable CaseProperties caseProperties;
 
   public ExecutableProcess(final String id) {
     super(id);
@@ -35,6 +37,22 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   public void setDefaultJobPriority(final Expression defaultJobPriority) {
     this.defaultJobPriority = defaultJobPriority;
+  }
+
+  /**
+   * @return the case properties, or {@code null} if the process is not marked as a case via {@code
+   *     zeebe:case}
+   */
+  public @Nullable CaseProperties getCaseProperties() {
+    return caseProperties;
+  }
+
+  public void setCaseProperties(final @Nullable CaseProperties caseProperties) {
+    this.caseProperties = caseProperties;
+  }
+
+  public boolean isCase() {
+    return caseProperties != null;
   }
 
   public void addFlowElement(final AbstractFlowElement element) {
