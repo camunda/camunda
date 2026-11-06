@@ -209,7 +209,8 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME,
-        new ProcessInstanceResumeProcessor(processingState, writers, cslCheck, suspensionMetrics));
+        new ProcessInstanceResumeProcessor(
+            processingState, writers, asyncRequestBehavior, cslCheck, suspensionMetrics));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME_JOBS,
@@ -225,6 +226,7 @@ public final class BpmnProcessors {
         new ProcessInstanceCompleteResumingProcessor(
             processingState.getElementInstanceState(),
             processingState.getSuspensionState(),
+            processingState.getAsyncRequestState(),
             writers,
             suspensionMetrics));
     typedRecordProcessors.onCommand(

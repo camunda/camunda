@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumedWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
@@ -50,7 +51,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
-  private final StateWriter stateWriter;
+  private final ProcessInstanceResumedWriter resumedWriter;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -72,7 +73,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     this.asyncRequestState = asyncRequestState;
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
-    this.stateWriter = stateWriter;
+    resumedWriter = new ProcessInstanceResumedWriter(stateWriter, asyncRequestState);
   }
 
   @Override
@@ -177,7 +178,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     }
 
     final int droppedCommands = suspensionState.countBufferedCommands(piKey);
-    stateWriter.appendFollowUpEvent(piKey, ProcessInstanceIntent.RESUMED, context.getRecordValue());
+    resumedWriter.writeResumed(piKey, context.getRecordValue());
     return OptionalInt.of(droppedCommands);
   }
 
