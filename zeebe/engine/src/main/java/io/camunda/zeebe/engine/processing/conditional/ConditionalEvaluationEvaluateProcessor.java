@@ -64,6 +64,7 @@ public class ConditionalEvaluationEvaluateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final ExpressionProcessor expressionProcessor;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public ConditionalEvaluationEvaluateProcessor(
       final Writers writers,
@@ -84,6 +85,7 @@ public class ConditionalEvaluationEvaluateProcessor
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.expressionProcessor = expressionProcessor;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -135,6 +137,7 @@ public class ConditionalEvaluationEvaluateProcessor
 
     for (final var match : matchedStartEvents) {
       final long processInstanceKey = keyGenerator.nextKey();
+      final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
 
       final var activated =
           eventHandle.activateProcessInstanceForStartEvent(
@@ -142,12 +145,15 @@ public class ConditionalEvaluationEvaluateProcessor
               processInstanceKey,
               match.startEventId(),
               record.getVariablesBuffer(),
-              record.getTenantId());
+              record.getTenantId(),
+              null,
+              storageOrdinal);
 
       if (activated) {
         // Only report instances that were actually started; a draining definition is skipped and
         // must not appear in the EVALUATED event or the response.
-        record.addStartedProcessInstance(match.processDefinitionKey(), processInstanceKey);
+        record.addStartedProcessInstance(
+            match.processDefinitionKey(), processInstanceKey, storageOrdinal);
       }
     }
 

@@ -353,8 +353,8 @@ public class ConditionalControllerTest extends RestControllerTest {
             new BrokerResponse<>(
                 new ConditionalEvaluationRecord()
                     .setTenantId("<default>")
-                    .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
-                    .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+                    .addStartedProcessInstance(2251799813685249L, 2251799813685250L, 0)
+                    .addStartedProcessInstance(2251799813685251L, 2251799813685252L, 0),
                 1,
                 12345L),
             """

@@ -18,10 +18,14 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import org.immutables.value.Value;
 
-/** Represents a process instance that was started during conditional evaluation. */
+/**
+ * Represents a process instance that was started during conditional evaluation.
+ *
+ * @see StorageOrdinalRelated
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableConditionalStartedProcessInstanceValue.Builder.class)
-public interface ConditionalStartedProcessInstanceValue {
+public interface ConditionalStartedProcessInstanceValue extends StorageOrdinalRelated {
   /**
    * @return the process definition key of the started instance
    */
