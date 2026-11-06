@@ -298,8 +298,8 @@ profile change without a corresponding Gradle task/CI audit is a parity regressi
   dependency or task is wrong or missing.
 - Prefer minimal, module-scoped Gradle fixes over broad refactors.
 - Configuration cache is enabled — keep build logic compatible with it.
-- Backend parity work should skip frontend builds by default with `-Pskip.fe.build=true` for
-  compile/test, dependency-validation, and distribution-parity tasks. This keeps the inner loop
+- Frontend builds are skipped by default (`-Pskip.fe.build=false` or `buildDockerImageRelease`
+  turns them on), which suits compile/test, dependency-validation, and distribution-parity tasks. This keeps the inner loop
   focused on backend behavior and matches the Maven CI distball, which is built with
   `-PskipFrontendBuild`; frontend bundles are produced separately where needed.
 - Build frontend assets only for explicit frontend parity work or when validating a deliberately

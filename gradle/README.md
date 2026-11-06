@@ -46,18 +46,22 @@ work should be skipped and the active project graph should remain unchanged.
 ## Packaging and frontend assets
 
 ```bash
-# Builds frontend assets as dependencies of the distribution assembly
+# Backend-only archives: frontend assets are not built unless asked for
 ./gradlew buildDistball      # alias for :camunda-zeebe:distTar
 ./gradlew buildDistballZip   # alias for :camunda-zeebe:distZip
 ./gradlew -Pdist.tar.gzip=true buildDistball   # tar.gz instead of an uncompressed tar
 
-# Backend-only archive: does not build fresh frontend assets
-./gradlew -Pskip.fe.build=true :camunda-zeebe:distZip
+# Archive with fresh frontend assets, built as a dependency of the distribution assembly
+./gradlew -Pskip.fe.build=false :camunda-zeebe:distZip
 
 # Container image from the distribution tar (default tag camunda/camunda:current-test).
 # distTar is uncompressed.
 # Uses docker if installed, otherwise podman; force one with -Pcontainer.cli=podman.
+# Test image: no frontend assets unless -Pskip.fe.build=false is passed.
 ./gradlew buildDockerImage -Pdocker.image=camunda/camunda:my-tag
+
+# Release image: builds the frontend assets, and fails if -Pskip.fe.build=true is passed.
+./gradlew buildDockerImageRelease -Pdocker.image=camunda/camunda:my-tag
 ```
 
 Always qualify the task with its project: an unqualified `./gradlew distTar` also runs
@@ -66,10 +70,13 @@ Container tests build the image first: `:camunda-zeebe:dockerIt` runs the `*Dock
 `it` task of every module that applies `buildlogic.docker-image-test-conventions` (schema-manager,
 the acceptance, testcontainer, Zeebe integration and update tests) runs after `buildDockerImage` and
 reruns when the image changes. They read the image from `-Pdocker.image`.
+These tests only exercise the backend, so the frontend build is skipped by default. Use
+`buildDockerImageRelease` or pass `-Pskip.fe.build=false` to build it.
 
-Frontend builds are triggered by distribution assembly, not by compilation, tests, or a standalone
-webjar `jar` task. An archive built with `-Pskip.fe.build=true` is **not frontend-complete** and must
-not be treated as a user-ready distribution.
+Frontend builds are skipped by default and only run as part of distribution assembly, never for
+compilation, tests, or a standalone webjar `jar` task. Pass `-Pskip.fe.build=false` or request
+`buildDockerImageRelease` to build them. An archive built without them is **not frontend-complete**
+and must not be treated as a user-ready distribution.
 
 For backend parity, the dependency manifest and archive can be built with:
 
