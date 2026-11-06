@@ -35,8 +35,7 @@ final class BrokerVariablesMetadataValidationTest {
     assertThatThrownBy(
             () ->
                 new BrokerCreateProcessInstanceRequest()
-                    .setVariables(asMsgPack("name", "x"))
-                    .setVariablesMetadata(METADATA))
+                    .setVariables(asMsgPack("name", "x"), METADATA))
         .isInstanceOf(InvalidVariableRequestException.class)
         .hasMessageContaining("only describe variables set in the request")
         .hasMessageContaining("'ssn'");
@@ -48,8 +47,7 @@ final class BrokerVariablesMetadataValidationTest {
     assertThatThrownBy(
             () ->
                 new BrokerCreateProcessInstanceWithResultRequest()
-                    .setVariables(asMsgPack("name", "x"))
-                    .setVariablesMetadata(METADATA))
+                    .setVariables(asMsgPack("name", "x"), METADATA))
         .isInstanceOf(InvalidVariableRequestException.class)
         .hasMessageContaining("'ssn'");
   }
@@ -58,10 +56,7 @@ final class BrokerVariablesMetadataValidationTest {
   void shouldRejectSetVariablesMetadataOfUnknownVariable() {
     // when/then
     assertThatThrownBy(
-            () ->
-                new BrokerSetVariablesRequest()
-                    .setVariables(asMsgPack("name", "x"))
-                    .setVariablesMetadata(METADATA))
+            () -> new BrokerSetVariablesRequest().setVariables(asMsgPack("name", "x"), METADATA))
         .isInstanceOf(InvalidVariableRequestException.class)
         .hasMessageContaining("'ssn'");
   }
@@ -72,8 +67,8 @@ final class BrokerVariablesMetadataValidationTest {
     assertThatThrownBy(
             () ->
                 new BrokerSetVariablesRequest()
-                    .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
-                    .setVariablesMetadata(METADATA))
+                    .setVariables(
+                        new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")), METADATA))
         .isInstanceOf(InvalidVariableRequestException.class)
         .hasMessageContaining("'ssn'");
   }
@@ -88,8 +83,7 @@ final class BrokerVariablesMetadataValidationTest {
     assertThatThrownBy(
             () ->
                 new BrokerCreateProcessInstanceRequest()
-                    .setVariables(asMsgPack("name", "x"))
-                    .setVariablesMetadata(metadata))
+                    .setVariables(asMsgPack("name", "x"), metadata))
         .isInstanceOf(InvalidVariableRequestException.class)
         .hasMessageEndingWith("'a', 'b'");
   }
@@ -100,21 +94,17 @@ final class BrokerVariablesMetadataValidationTest {
     assertThatCode(
             () ->
                 new BrokerCreateProcessInstanceRequest()
-                    .setVariables(asMsgPack("ssn", "123"))
-                    .setVariablesMetadata(METADATA))
+                    .setVariables(asMsgPack("ssn", "123"), METADATA))
         .doesNotThrowAnyException();
     assertThatCode(
-            () ->
-                new BrokerSetVariablesRequest()
-                    .setVariables(asMsgPack("ssn", "123"))
-                    .setVariablesMetadata(METADATA))
+            () -> new BrokerSetVariablesRequest().setVariables(asMsgPack("ssn", "123"), METADATA))
         .doesNotThrowAnyException();
   }
 
   @Test
   void shouldAcceptEmptyMetadataWithoutVariables() {
     // when/then
-    assertThatCode(() -> new BrokerSetVariablesRequest().setVariablesMetadata(Map.of()))
+    assertThatCode(() -> new BrokerSetVariablesRequest().setVariables(new UnsafeBuffer(), Map.of()))
         .doesNotThrowAnyException();
   }
 }

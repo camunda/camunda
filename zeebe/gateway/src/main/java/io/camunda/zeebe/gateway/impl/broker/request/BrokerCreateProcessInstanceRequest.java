@@ -58,21 +58,21 @@ public class BrokerCreateProcessInstanceRequest
   }
 
   public BrokerCreateProcessInstanceRequest setVariables(final DirectBuffer variables) {
+    return setVariables(variables, Map.of());
+  }
+
+  public BrokerCreateProcessInstanceRequest setVariables(
+      final DirectBuffer variables,
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
     VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
+    VariablesMetadataValidator.validateVariablesMetadata(variables, variablesMetadata);
     requestDto.setVariables(variables);
+    requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
 
   public BrokerCreateProcessInstanceRequest setTenantId(final String tenantId) {
     requestDto.setTenantId(tenantId);
-    return this;
-  }
-
-  public BrokerCreateProcessInstanceRequest setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    VariablesMetadataValidator.validateVariablesMetadata(
-        requestDto.getVariablesBuffer(), variablesMetadata);
-    requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
 
