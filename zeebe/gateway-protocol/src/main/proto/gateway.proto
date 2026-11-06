@@ -331,7 +331,8 @@ message CreateProcessInstanceRequest {
   optional string versionTag = 11;
 
   // metadata of the variables, keyed by variable name. Use it to set how a variable is treated,
-  // for example to protect its value. A variable without an entry has no metadata.
+  // for example to protect its value. Each key must be the name of a variable set in the same
+  // request. A variable without an entry has no metadata.
   // Requires 8.11 or later; not supported by older gateways or brokers.
   map<string, VariableMetadata> variablesMetadata = 12;
 }
@@ -896,7 +897,8 @@ message SetVariablesRequest {
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 4;
   // metadata of the variables, keyed by variable name. Use it to set how a variable is treated,
-  // for example to protect its value. A variable without an entry has no metadata.
+  // for example to protect its value. Each key must be the name of a variable set in the same
+  // request. A variable without an entry has no metadata.
   // Requires 8.11 or later; not supported by older gateways or brokers.
   map<string, VariableMetadata> variablesMetadata = 5;
 }
