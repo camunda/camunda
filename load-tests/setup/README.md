@@ -448,15 +448,16 @@ the settings that join them come from `generate-dual-region-values.sh`. Any scen
 ./newLoadTest.sh c8-demo-ra elasticsearch 1 false
 ./newLoadTest.sh c8-demo-rb elasticsearch 1 false
 
-# the order doesn't matter; region B runs no load generators and no leader balancer
 make -C c8-demo-ra install dual_region=true dual_region_zone=region-a \
   dual_region_peer_namespace=c8-demo-rb dual_region_cluster_name=c8-demo
 make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
-  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo \
-  additional_load_test_configuration="--set load-tester.enabled=false \
-    --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false \
-    --set leaderBalancer.suspend=true"
+  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo
 ```
+
+Region A runs the load generators and the leader balancer for the whole cluster. Region B starts
+without the load tester and the k6 tests, and with its leader balancer CronJob suspended. To turn
+them on, pass e.g. `additional_load_test_configuration="--set k6.tests.default.enabled=true"`, or
+resume the CronJob with `kubectl patch cronjob leader-balancer -p '{"spec":{"suspend":false}}'`.
 
 The install order doesn't matter. Each partition has half its replicas in each region and needs a
 majority of them, so no partition elects a leader, and nothing is processed or exported, until
