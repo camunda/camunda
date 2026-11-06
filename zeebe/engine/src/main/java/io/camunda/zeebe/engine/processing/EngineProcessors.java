@@ -101,6 +101,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskLookupFetchProcessor;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -410,7 +411,8 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.USER_TASK_LOOKUP,
         UserTaskLookupIntent.FETCH,
-        new UserTaskLookupFetchProcessor(processingState, writers, tenantCheck));
+        new UserTaskLookupFetchProcessor(
+            processingState, writers, tenantCheck, new UserTaskAuthorizationCheck(cslCheck)));
 
     addIncidentProcessors(
         processingState,
