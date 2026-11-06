@@ -216,10 +216,14 @@ components:
       properties:
         value:
           description: |
-            The value of this variable. Can be truncated.
+            The value of this variable. Can be truncated or redacted.
 
-            Check `metadata.protectionModes` before you use the value. If it contains `REDACT`, the
-            variable is redacted and the value is an empty string instead of the real value.
+            If the value is truncated, `isTruncated` is `true` and the value contains only the
+            beginning of the full value.
+
+            If the variable is redacted, the value is set to `""` instead of the real value. Check
+            `metadata.protectionModes` before you use the value: it contains `REDACT` for a redacted
+            variable.
           type: string
         isTruncated:
           description: Whether the value is truncated or not.
@@ -235,10 +239,10 @@ components:
       properties:
         value:
           description: |
-            The full value of this variable.
+            The full value of this variable, or `""` if the variable is redacted.
 
-            Check `metadata.protectionModes` before you use the value. If it contains `REDACT`, the
-            variable is redacted and the value is an empty string instead of the real value.
+            Check `metadata.protectionModes` before you use the value: it contains `REDACT` for a
+            redacted variable.
           type: string
 
     VariableResultBase:

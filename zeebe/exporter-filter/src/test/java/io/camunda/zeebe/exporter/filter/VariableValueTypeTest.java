@@ -27,6 +27,17 @@ final class VariableValueTypeTest {
   }
 
   @Test
+  void shouldInferUnknownFromEmptyRawValue() {
+    // given a redacted variable value, which is exported as an empty string
+
+    // when
+    final var type = VariableValueType.infer(MAPPER, "");
+
+    // then
+    assertThat(type).isEqualTo(VariableValueType.UNKNOWN);
+  }
+
+  @Test
   void shouldInferNullTypeFromJsonNullLiteral() {
     assertThat(VariableValueType.infer(MAPPER, "null")).isEqualTo(VariableValueType.NULL);
   }
