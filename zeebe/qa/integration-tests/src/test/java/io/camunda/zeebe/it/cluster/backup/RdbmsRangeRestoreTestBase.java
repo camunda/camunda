@@ -280,27 +280,25 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   @Test
   void shouldNotRestoreOverAGapBetweenBackups() throws Exception {
     // given - three backups spanning multiple segments, with snapshots compacting the log between
-    final long firstBackup;
-    final long thirdBackup;
+    final BackupInfo firstBackup;
+    final BackupInfo lastBackup;
     try (final var client = broker.newClientBuilder().build()) {
       deployTestProcess(client);
       disableRdbmsExporter();
 
       createLargeInstances(client);
-      firstBackup = takeAndAwaitBackup().getBackupId();
+      firstBackup = takeAndAwaitBackup();
 
       PartitionsActuator.of(broker).takeSnapshot();
       createLargeInstances(client);
       takeAndAwaitBackup();
 
-      PartitionsActuator.of(broker).takeSnapshot();
-      createLargeInstances(client);
-      thirdBackup = takeAndAwaitBackup().getBackupId();
+      lastBackup = awaitBackupWithLogStartingAfter(firstBackup);
     }
 
-    // when / then - skipping the second backup leaves a gap in the restored log
+    // when / then - skipping the backups in between leaves a gap in the restored log
     assertRestoreNotApplied(
-        RestoreTarget.backups(firstBackup, thirdBackup),
+        RestoreTarget.backups(firstBackup.getBackupId(), lastBackup.getBackupId()),
         "Cannot find a record at checkpoint position");
   }
 
@@ -918,6 +916,38 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   private static List<Long> createInstancesOnEveryPartition(final CamundaClient client) {
     return InProcessRestoreTestUtil.createInstancesOnEveryPartition(
         client, PROCESS_ID, PARTITION_COUNT);
+  }
+
+  /**
+   * Takes snapshots and backups until one backup's log starts after the given backup's checkpoint
+   * on every partition, so restoring both leaves a gap between them.
+   *
+   * <p>Taking a snapshot only triggers it, and with continuous backups its position is capped at
+   * the latest backup position the engine has seen, which can still be the earlier backup's. Until
+   * a snapshot past that checkpoint compacts the log, a new backup still contains the checkpoint.
+   */
+  private BackupInfo awaitBackupWithLogStartingAfter(final BackupInfo earlier) {
+    final Map<Integer, Long> checkpointPositions =
+        earlier.getDetails().stream()
+            .collect(
+                Collectors.toMap(
+                    PartitionBackupInfo::getPartitionId,
+                    PartitionBackupInfo::getCheckpointPosition));
+    return await("a backup whose log starts after backup %d".formatted(earlier.getBackupId()))
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofMinutes(2))
+        .until(
+            () -> {
+              PartitionsActuator.of(broker).takeSnapshot();
+              return takeAndAwaitBackup();
+            },
+            backup ->
+                backup.getDetails().stream()
+                    .allMatch(
+                        details ->
+                            details.getFirstLogPosition() != null
+                                && details.getFirstLogPosition()
+                                    > checkpointPositions.get(details.getPartitionId())));
   }
 
   /** Creates enough data to span multiple log segments, so a snapshot can compact some away. */

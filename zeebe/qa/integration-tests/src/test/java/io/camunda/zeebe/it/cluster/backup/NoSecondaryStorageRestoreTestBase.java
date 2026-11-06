@@ -16,6 +16,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.CheckpointType;
+import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -191,7 +193,7 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
   void shouldNotRestoreOverAGapBetweenBackups() throws Exception {
     // given - three backups spanning multiple segments, with snapshots compacting the log between
     final long firstBackup;
-    final long thirdBackup;
+    final long lastBackup;
     try (final var client = broker.newClientBuilder().build()) {
       deployTestProcess(client);
       createLargeInstances(client);
@@ -201,14 +203,12 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
       createLargeInstances(client);
       takeAndAwaitBackup();
 
-      PartitionsActuator.of(broker).takeSnapshot();
-      createLargeInstances(client);
-      thirdBackup = takeAndAwaitBackup();
+      lastBackup = awaitBackupWithLogStartingAfter(firstBackup);
     }
 
-    // when / then - skipping the second backup leaves a gap in the restored log
+    // when / then - skipping the backups in between leaves a gap in the restored log
     assertRestoreNotApplied(
-        RestoreRequest.backups(firstBackup, thirdBackup),
+        RestoreRequest.backups(firstBackup, lastBackup),
         "Cannot find a record at checkpoint position");
   }
 
@@ -657,6 +657,38 @@ abstract class NoSecondaryStorageRestoreTestBase implements ClockSupport {
   }
 
   /** Creates enough data to span multiple log segments, so a snapshot can compact some away. */
+  /**
+   * Takes snapshots and backups until one backup's log starts after the given backup's checkpoint
+   * on every partition, so restoring both leaves a gap between them.
+   *
+   * <p>Taking a snapshot only triggers it, and with continuous backups its position is capped at
+   * the latest backup position the engine has seen, which can still be the earlier backup's. Until
+   * a snapshot past that checkpoint compacts the log, a new backup still contains the checkpoint.
+   */
+  private long awaitBackupWithLogStartingAfter(final long earlierId) {
+    final Map<Integer, Long> checkpointPositions =
+        backupActuator.status(earlierId).getDetails().stream()
+            .collect(
+                Collectors.toMap(
+                    PartitionBackupInfo::getPartitionId,
+                    PartitionBackupInfo::getCheckpointPosition));
+    return await("a backup whose log starts after backup %d".formatted(earlierId))
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofMinutes(2))
+        .until(
+            () -> {
+              PartitionsActuator.of(broker).takeSnapshot();
+              return takeAndAwaitBackup();
+            },
+            backupId ->
+                backupActuator.status(backupId).getDetails().stream()
+                    .allMatch(
+                        details ->
+                            details.getFirstLogPosition() != null
+                                && details.getFirstLogPosition()
+                                    > checkpointPositions.get(details.getPartitionId())));
+  }
+
   private static void createLargeInstances(final CamundaClient client) {
     for (int i = 0; i < 100; i++) {
       client
