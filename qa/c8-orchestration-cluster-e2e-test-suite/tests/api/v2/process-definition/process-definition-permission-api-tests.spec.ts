@@ -8,11 +8,7 @@
 
 import {randomUUID} from 'node:crypto';
 import {APIRequestContext, expect, test} from '@playwright/test';
-import {
-  createInstances,
-  deploy,
-  deployWithSubstitutions,
-} from '../../../../utils/zeebeClient';
+import {deploy, deployWithSubstitutions} from '../../../../utils/zeebeClient';
 import {
   assertForbiddenRequest,
   assertStatusCode,
@@ -25,6 +21,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {
   createComponentAuthorization,
+  createInstanceOnceDeployed,
   createUser,
   grantUserResourceAuthorization,
 } from '@requestHelpers';
@@ -63,7 +60,7 @@ async function deployUniqueProcess(
   );
   expect(response.processes).toHaveLength(1);
   const {processDefinitionKey} = response.processes[0];
-  await createInstances(processDefinitionId, 1, 1);
+  await createInstanceOnceDeployed(processDefinitionId, 1);
   return {processDefinitionId, processDefinitionKey};
 }
 
