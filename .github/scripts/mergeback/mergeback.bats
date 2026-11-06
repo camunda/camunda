@@ -249,12 +249,69 @@ make_remote() {
   [ "$output" = $'release-8.9.0\tstable/8.9' ]
 }
 
-@test "resolve: the final release tag retires the branch (drops out of active set)" {
-  # Once 8.9.0 itself is tagged the version equals the highest tag -> inactive, so nothing is emitted.
-  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0
+# release_tip <remote> <branch> <tag> [commit-date] [annotated] — add a release-only commit on
+# <branch> and tag it, so the branch is NOT merged into its target. The date backdates the commit;
+# "annotated" makes an annotated tag dated now instead of a lightweight one.
+release_tip() {
+  git -C "$1" checkout -q "$2"
+  GIT_COMMITTER_DATE="${4:-$(date -R)}" git -C "$1" commit -q --allow-empty -m "[maven-release-plugin] prepare release $3"
+  if [ "${5:-}" = annotated ]; then git -C "$1" tag -a -m "$3" "$3"; else git -C "$1" tag "$3"; fi
+  git -C "$1" checkout -q main
+}
+
+@test "resolve: by default the final release tag retires the branch, merge-back pending or not" {
+  # The nightly-fix backport gate reads the default output as "where do fixes still ship"; a tagged
+  # release must not appear there, even before its merge-back.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 release-8.9.1 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
   run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
   [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.1\tstable/8.9' ]
+}
+
+@test "resolve: a released branch already merged back drops out of the active set" {
+  # 8.9.0 is tagged and its tip is already in stable/8.9 (make_remote points both at base) -> merged
+  # back, so nothing is emitted.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
   [ -z "$output" ]
+}
+
+@test "resolve: a just-released branch stays active until merged back" {
+  # 8.10.0 shape: the tag landed, the merge-back has not. Conflicts added on release day (late
+  # backports, the release version bump) only show up after the tag, so the check must keep watching.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.0\tstable/8.9' ]
+}
+
+@test "resolve: the grace window starts when the release is tagged, not at the tagged commit" {
+  # An annotated tag cut today on an older commit is a fresh release; its merge-back is still due.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0 "2020-01-01T00:00:00Z" annotated
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.0\tstable/8.9' ]
+}
+
+@test "resolve: a released branch never merged back goes quiet after the grace window" {
+  # Old leftovers like release-8.3.20 were never merged back; they must not alert forever.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0 "2020-01-01T00:00:00Z"
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "resolve: a pending merge-back and a newer in-flight release on one line are both checked" {
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 release-8.9.1 stable/8.9
+  release_tip "${BATS_TEST_TMPDIR}/remote" release-8.9.0 8.9.0
+  run bash "$RESOLVE" --include-pending-merge-back "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.0\tstable/8.9\nrelease-8.9.1\tstable/8.9' ]
 }
 
 # ── triage: automation-author / release-plugin noise filter (what kills the noise) ────────────
@@ -318,6 +375,15 @@ make_remote() {
   [[ "$output" != *"<!channel>"* ]]
   [[ "$output" != *"<@U1>"* ]]
   [[ "$output" == *"act now on a missing required change"* ]]
+}
+
+@test "render: discloses unlisted conflicts and leaves unclear ones to the release manager" {
+  # 8.10.0 shape: one actionable path, but the merge-back also hit a mechanical pom conflict.
+  echo '{"release_ref":"release-8.10.0","target_ref":"stable/8.10","conflicting_paths":2,"action_count":1,"verdict":"v","source_missing":[{"path":"ci.yml","owner":"","commits":[]}],"version_build_gap":[],"needs_review":[],"source_drift":[],"version_build":["pom.xml"]}' > t.json
+  run_json "$RENDER" t.json
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1 more conflicting path(s)"* ]]
+  [[ "$output" == *"left to the release manager to resolve at merge-back"* ]]
 }
 
 @test "render: flags truncation when a path carries more than max_commits" {
