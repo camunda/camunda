@@ -17,25 +17,25 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.context.ApplicationContext;
-import org.springframework.web.reactive.function.client.WebClient;
 
 class StarterTest {
 
@@ -52,15 +52,26 @@ class StarterTest {
 
     // when
     new Starter(
+<<<<<<< HEAD
         mock(CamundaClient.class),
         mock(CamundaClient.class),
+=======
+>>>>>>> cb0914fd2 (refactor: make the data meters and the Optimize evaluator Spring components)
         properties,
         registry,
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
+<<<<<<< HEAD
         mock(WebClient.Builder.class),
         new ObjectMapper(),
+=======
+        mock(ProcessDeployer.class),
+        mock(ProcessInstanceCreator.class),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+>>>>>>> cb0914fd2 (refactor: make the data meters and the Optimize evaluator Spring components)
         mock(ApplicationContext.class));
 
     // then
@@ -100,6 +111,7 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+<<<<<<< HEAD
     final var starter =
         new Starter(
             loaderClient,
@@ -111,6 +123,24 @@ class StarterTest {
             mock(StarterLivenessIndicator.class),
             mock(WebClient.Builder.class),
             new ObjectMapper(),
+=======
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient, properties, registry, payloadReader, livenessIndicator);
+    final var starter =
+        new Starter(
+            properties,
+            registry,
+            livenessIndicator,
+            new ProcessDeployer(
+                loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator),
+            creator,
+            Optional.of(new ProcessInstanceStartMeter(registry, properties, queryClient, creator)),
+            Optional.empty(),
+            Optional.empty(),
+>>>>>>> cb0914fd2 (refactor: make the data meters and the Optimize evaluator Spring components)
             mock(ApplicationContext.class));
 
     // when

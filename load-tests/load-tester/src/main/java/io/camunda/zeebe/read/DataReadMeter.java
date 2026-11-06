@@ -9,27 +9,41 @@ package io.camunda.zeebe.read;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.metrics.ErrorType;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
+@Component
+@Profile("starter")
+@ConditionalOnProperty(name = "load-tester.perform-read-benchmarks", havingValue = "true")
 public class DataReadMeter implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
@@ -41,10 +55,37 @@ public class DataReadMeter implements AutoCloseable {
   private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();
   private final CamundaClient client;
   private final List<ReadQuery> queries;
+  private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
+  private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
+      new AtomicReference<>(Instant.now());
   private volatile boolean closed;
   private final AtomicReference<ReadQueryContext> queryContext =
       new AtomicReference<>(new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L)));
 
+  @Autowired
+  public DataReadMeter(
+      final MeterRegistry meterRegistry,
+      @Qualifier("queryCamundaClient") final CamundaClient client,
+      final LoadTesterProperties properties,
+      final ProcessInstanceCreator processInstanceCreator) {
+    this(
+        meterRegistry,
+        Executors.newScheduledThreadPool(2),
+        client,
+        DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
+    final var starterCfg = properties.getStarter();
+    setContextProcessDefinitionId(starterCfg.getProcessId());
+    setContextBusinessKeySupplier(
+        () ->
+            Pair.of(
+                starterCfg.getBusinessKey(),
+                processInstanceCreator.currentBusinessKey()
+                    - (long) (starterCfg.getRatePerSecond() * 60.0)));
+    processInstanceCreator.addStartListener(
+        (processInstanceKey, startTimeNanos) -> recordProcessInstanceStart(processInstanceKey));
+  }
+
+  // Could be merged with the constructor above if the executor and the queries were beans.
   public DataReadMeter(
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
@@ -137,6 +178,14 @@ public class DataReadMeter implements AutoCloseable {
   public void close() {
     closed = true;
     executorService.shutdownNow();
+  }
+
+  private void recordProcessInstanceStart(final long processInstanceKey) {
+    if (lastProcessInstanceKeyTimestamp.get().plus(1, ChronoUnit.MINUTES).isBefore(Instant.now())) {
+      lastProcessInstanceKeyTimestamp.set(Instant.now());
+      final var oldValue = lastProcessInstanceKey.getAndSet(processInstanceKey);
+      setContextProcessInstanceKey(oldValue == 0 ? processInstanceKey : oldValue);
+    }
   }
 
   public void setContextProcessInstanceKey(final long processInstanceKey) {
