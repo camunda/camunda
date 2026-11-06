@@ -209,18 +209,6 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
     .withoutVersion()
   library("org-apache-logging-log4j-log4j-bom", "org.apache.logging.log4j", "log4j-bom")
     .versionRef("log4j")
-  library(
-      "org-apache-maven-surefire-maven-surefire-common",
-      "org.apache.maven.surefire",
-      "maven-surefire-common",
-    )
-    .versionRef("org-apache-maven-surefire-maven-surefire-common")
-  library(
-      "org-apache-maven-surefire-surefire-myextensions-api",
-      "org.apache.maven.surefire",
-      "surefire-extensions-api",
-    )
-    .versionRef("org-apache-maven-surefire-surefire-myextensions-api")
   // version managed by buildlogic.optimize-conventions
   library(
       "org-glassfish-jersey-core-jersey-client",
