@@ -70,7 +70,7 @@ physical_tenant_count ?= 0
 # Make this namespace one half of a cluster that spans two namespaces, "region-a" and "region-b"
 # (see generate-dual-region-values.sh). Run `make install` in both namespaces, each with the
 # zone of its own brokers and the namespace of the other region:
-#   make install dual_region=true dual_region_zone=region-a dual_region_peer_namespace=c8-x-region-b \
+#   make install dual_region=true dual_region_zone=region-a dual_region_peer_namespace=c8-x-rb \
 #       dual_region_cluster_name=c8-x
 # Needs secondary_storage=elasticsearch or none, and no Optimize or physical tenants; with
 # elasticsearch, every broker exports to the Elasticsearch of both regions.
