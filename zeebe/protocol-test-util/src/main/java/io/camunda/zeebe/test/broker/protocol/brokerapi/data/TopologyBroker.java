@@ -9,7 +9,6 @@ package io.camunda.zeebe.test.broker.protocol.brokerapi.data;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 
 public final class TopologyBroker {
@@ -49,7 +48,7 @@ public final class TopologyBroker {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(nodeId);
+    return Integer.hashCode(nodeId);
   }
 
   @Override

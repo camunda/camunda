@@ -9,7 +9,6 @@ package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import java.util.Objects;
 
 public class ProcessDigestResponseDto implements OptimizeDto {
 
@@ -46,7 +45,7 @@ public class ProcessDigestResponseDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(enabled);
+    return Boolean.hashCode(enabled);
   }
 
   @Override

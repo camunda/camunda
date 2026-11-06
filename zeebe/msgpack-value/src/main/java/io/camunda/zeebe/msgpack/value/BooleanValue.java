@@ -9,7 +9,6 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.Objects;
 
 public final class BooleanValue extends BaseValue {
   private boolean val = false;
@@ -57,7 +56,7 @@ public final class BooleanValue extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(val);
+    return Boolean.hashCode(val);
   }
 
   @Override

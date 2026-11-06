@@ -9,7 +9,6 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.Objects;
 
 public final class IntegerValue extends BaseValue {
   private int value;
@@ -64,7 +63,7 @@ public final class IntegerValue extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getValue());
+    return Integer.hashCode(getValue());
   }
 
   @Override

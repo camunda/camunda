@@ -9,7 +9,6 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.Objects;
 
 public final class LongValue extends BaseValue {
   private long value;
@@ -57,7 +56,7 @@ public final class LongValue extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getValue());
+    return Long.hashCode(getValue());
   }
 
   @Override

@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.dto.engine;
 
-import java.util.Objects;
-
 public class CountDto {
 
   protected long count;
@@ -29,7 +27,7 @@ public class CountDto {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(count);
+    return Long.hashCode(count);
   }
 
   @Override

@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.util.configuration.cleanup;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Objects;
 
 public class ExternalVariableCleanupConfiguration {
 
@@ -36,7 +35,7 @@ public class ExternalVariableCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(enabled);
+    return Boolean.hashCode(enabled);
   }
 
   @Override
