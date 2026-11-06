@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -232,6 +235,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(feelResult);
 
+    clearInvocations(evaluationClient);
+
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
@@ -247,6 +252,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // the stub only returns feelResult for the exact expression/variables combination, so a
     // matching result proves the right expression and variables were sent
     assertThat(result).isEqualTo(feelResult);
+
+    verify(evaluationClient).newEvaluateExpressionCommand();
   }
 
   @Test
@@ -273,6 +280,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(feelResult);
 
+    clearInvocations(evaluationClient);
+
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // when the runner has finished and closed its client before the job is activated
@@ -282,6 +291,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // then
     assertThat(result).isEqualTo(feelResult);
     verify(camundaClient, never()).newEvaluateExpressionCommand();
+    verify(evaluationClient).newEvaluateExpressionCommand();
   }
 
   @Test
@@ -307,6 +317,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(Collections.singletonMap("result", 1));
 
+    clearInvocations(evaluationClient.newEvaluateExpressionCommand());
+
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
     final Map<String, Object> result = functionCaptor.getValue().apply(jobVariables);
@@ -314,6 +326,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // then: the expression was evaluated as-is, not prefixed with a second '=' (the stub only
     // matches the single-'=' expression)
     assertThat(result).isEqualTo(Collections.singletonMap("result", 1));
+    verify(evaluationClient.newEvaluateExpressionCommand()).expression("={ result: 1 }");
   }
 
   @Test
