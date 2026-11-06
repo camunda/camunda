@@ -119,10 +119,15 @@ jobs:
           echo "is_rc=$is_rc" >> "$GITHUB_OUTPUT"
           echo "is_alpha=$is_alpha" >> "$GITHUB_OUTPUT"
 
-      - name: Install common tooling (buildx) # required on self-hosted runners
+      - name: Install common tooling (buildx and QEMU) # required on self-hosted runners
         uses: camunda/infra-global-github-actions/common-tooling@main
         with:
           buildx-enabled: true
+          # The multi-arch image build (linux/arm64) runs RUN steps under emulation. Without the
+          # QEMU binfmt handlers, only the plain shell is emulated and any step that spawns
+          # another program fails with "Exec format error".
+          qemu-enabled: true
+          qemu-platforms: arm64
           java-enabled: false
           node-enabled: false
           python-enabled: false
