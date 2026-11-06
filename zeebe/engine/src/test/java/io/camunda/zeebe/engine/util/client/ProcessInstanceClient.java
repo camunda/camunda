@@ -566,6 +566,19 @@ public final class ProcessInstanceClient {
                 .getPartitionId();
       }
 
+      if (batchOperationReference != -1) {
+        writer.writeCommandOnPartition(
+            partition,
+            builder ->
+                builder
+                    .key(processInstanceKey)
+                    .intent(ProcessInstanceIntent.RESUME)
+                    .authorizations(authorizedTenants)
+                    .batchOperationReference(batchOperationReference)
+                    .event(new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey)));
+        return;
+      }
+
       writer.writeCommandOnPartition(
           partition,
           processInstanceKey,
