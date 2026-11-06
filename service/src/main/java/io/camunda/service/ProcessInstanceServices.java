@@ -328,8 +328,9 @@ public final class ProcessInstanceServices
             .setVersion(request.version())
             .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
-            .setVariables(getDocumentOrEmpty(request.variables()))
-            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
+            .setVariables(
+                getDocumentOrEmpty(request.variables()),
+                getMetadataOrEmpty(request.variablesMetadata()))
             .setStartInstructionsFromRecord(request.startInstructions())
             .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
@@ -360,8 +361,9 @@ public final class ProcessInstanceServices
             .setVersion(request.version())
             .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
-            .setVariables(getDocumentOrEmpty(request.variables()))
-            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
+            .setVariables(
+                getDocumentOrEmpty(request.variables()),
+                getMetadataOrEmpty(request.variablesMetadata()))
             .setInstructions(request.startInstructions())
             .setFetchVariables(request.fetchVariables())
             .setTags(request.tags());
