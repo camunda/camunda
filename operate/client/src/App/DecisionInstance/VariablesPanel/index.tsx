@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {TabView} from 'modules/components/TabView';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
@@ -21,6 +21,10 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({
   decisionEvaluationInstanceKey,
   decisionDefinitionType,
 }) => {
+  const [lastSelectedTabId, setLastSelectedTabId] = useState<
+    string | undefined
+  >(undefined);
+
   const tabs = useMemo(() => {
     let tabs: React.ComponentProps<typeof TabView>['tabs'] = [
       {
@@ -51,11 +55,25 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({
     return tabs;
   }, [decisionDefinitionType, decisionEvaluationInstanceKey]);
 
+  // Preserve the previously selected tab (e.g. "Result") when switching
+  // between decisions. Left undefined until the user actually picks a tab,
+  // so the default tab order (Inputs and Outputs first) is unaffected; once
+  // set, falls back to letting TabView pick the default again if the newly
+  // selected decision doesn't have that tab (e.g. a literal expression
+  // decision, which has no "Inputs and Outputs" tab).
+  const activeTabId =
+    lastSelectedTabId !== undefined &&
+    tabs.some(({id}) => id === lastSelectedTabId)
+      ? lastSelectedTabId
+      : undefined;
+
   return (
     <TabView
       dataTestId="decision-instance-variables-panel"
       tabs={tabs}
       eventName="variables-panel-used"
+      activeTabId={activeTabId}
+      onTabChange={setLastSelectedTabId}
     />
   );
 };

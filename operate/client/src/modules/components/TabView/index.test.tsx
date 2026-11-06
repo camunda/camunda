@@ -6,8 +6,37 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {TabView} from './index';
+
+const ControlledTabView: React.FC = () => {
+  const [activeTabId, setActiveTabId] = useState<string | undefined>(undefined);
+
+  return (
+    <>
+      <button type="button" onClick={() => setActiveTabId(undefined)}>
+        Reset
+      </button>
+      <TabView
+        tabs={[
+          {
+            id: 'tab-1',
+            label: 'First Tab',
+            content: <div>Content of the first tab</div>,
+          },
+          {
+            id: 'tab-2',
+            label: 'Second Tab',
+            content: <div>Content of the second tab</div>,
+          },
+        ]}
+        activeTabId={activeTabId}
+        onTabChange={setActiveTabId}
+      />
+    </>
+  );
+};
 
 describe('TabView', () => {
   it('should render panel header if there is only one tab', () => {
@@ -81,6 +110,17 @@ describe('TabView', () => {
     expect(screen.getByText('Content of the second tab')).toBeVisible();
 
     await user.click(screen.getByRole('tab', {name: 'First Tab'}));
+    expect(screen.getByText('Content of the first tab')).toBeVisible();
+    expect(screen.queryByText('Content of the second tab')).not.toBeVisible();
+  });
+
+  it('should select the first tab when a controlled caller resets activeTabId to undefined', async () => {
+    const {user} = render(<ControlledTabView />);
+
+    await user.click(screen.getByRole('tab', {name: 'Second Tab'}));
+    expect(screen.getByText('Content of the second tab')).toBeVisible();
+
+    await user.click(screen.getByRole('button', {name: 'Reset'}));
     expect(screen.getByText('Content of the first tab')).toBeVisible();
     expect(screen.queryByText('Content of the second tab')).not.toBeVisible();
   });
