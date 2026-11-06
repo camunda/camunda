@@ -20,8 +20,8 @@
 #     What the chart leaves to the user once a cluster spans more than one zone. It fills
 #     orchestration.extraConfiguration[1] (application-override.yml) through `--set-file`, the
 #     same slot scenario=max uses, so the scenario=max overrides are folded in here.
-#       - the initial contact points: one per zone, the zone's headless service, which publishes
-#         not-ready addresses so it resolves during a cold start
+#       - the initial contact points: every broker of both zones, addressed through its zone's
+#         headless service, which publishes not-ready addresses so they resolve during a cold start
 #       - with elasticsearch, one Camunda exporter per region instead of the autoconfigured one.
 #         Exporter positions are replicated per exporter id, so each id must write to the same
 #         Elasticsearch on every broker: camundaregiona always writes to region A,
@@ -161,11 +161,15 @@ EOF
   cat <<EOF
 camunda:
   cluster:
-    # one contact point per zone is enough: membership gossip discovers the other brokers
+    # every broker, as the chart lists them for a single zone
     initial-contact-points:
-      - ${ORCHESTRATION_FULLNAME}-region-a.${namespace_a}.svc.cluster.local:${INTERNAL_API_PORT}
-      - ${ORCHESTRATION_FULLNAME}-region-b.${namespace_b}.svc.cluster.local:${INTERNAL_API_PORT}
 EOF
+  for region in "region-a:${namespace_a}" "region-b:${namespace_b}"; do
+    service="${ORCHESTRATION_FULLNAME}-${region%%:*}"
+    for ((i = 0; i < BROKERS_PER_REGION; i++)); do
+      echo "      - ${service}-${i}.${service}.${region#*:}.svc.cluster.local:${INTERNAL_API_PORT}"
+    done
+  done
   if [[ "$secondary_storage" == "elasticsearch" ]]; then
     cat <<EOF
   # every exporter id writes to the same Elasticsearch on every broker, in both regions, so a
