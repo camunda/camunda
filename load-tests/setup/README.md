@@ -464,17 +464,24 @@ The `dual_region_*` variables of `common.mk`:
 | `dual_region_peer_namespace` | the namespace of the other region                                        |
 | `dual_region_cluster_name`   | cluster name, identical in both namespaces (brokers only join their own) |
 
-With `dual_region=true` the Makefile generates `camunda-platform-dual-region-override.yaml` and
-passes it as `application-override.yml`. It sets zone-aware partitioning with one zone per
-namespace, the cluster size, replication factor and initial contact points spanning both
-namespaces (by pod FQDN), the shared cluster name, a FQDN advertised host, and, with
-`secondary_storage=elasticsearch`, a second Camunda exporter writing to the Elasticsearch of the
-other region, so each region's records land in both. With `secondary_storage=none` there is no
-exporter to add. Because it takes the place of the
-`application-override.yml` of `scenario=max`, it carries that scenario's overrides itself.
+With `dual_region=true` the Makefile generates two files, following the documented
+[zone-aware Helm setup](https://docs.camunda.io/docs/self-managed/deployment/helm/configure/multi-region-zone-awareness/):
 
-Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and `main` only
-(`dual_region_supported`). The brokers only become ready once both namespaces are installed.
+- `camunda-platform-dual-region-values.yaml`, passed with `-f`: the platform chart's own
+  `orchestration.partitioning` (zone-aware scheme, one zone per namespace) and the shared cluster
+  name. The chart derives the cluster size, replication factor and the namespace-qualified
+  advertised host from it, and names the broker StatefulSet `camunda-<zone>`, so the pods are
+  `camunda-region-a-0`, …. The `camunda` and `camunda-gateway` services keep their names.
+- `camunda-platform-dual-region-override.yaml`, passed as `application-override.yml`: what the chart
+  leaves to the user for a cluster spanning more than one zone. That is the initial contact points
+  (the headless service of each zone) and, with `secondary_storage=elasticsearch`, a second Camunda
+  exporter writing to the Elasticsearch of the other region, so each region's records land in
+  both. Because it takes the place of the `application-override.yml` of `scenario=max`, it
+  carries that scenario's overrides itself.
+
+Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and
+`main` only (`dual_region_supported`: the zone-aware chart values need chart v15). The
+brokers only become ready once both namespaces are installed.
 
 In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
 `c8-<name>-region-a` and `c8-<name>-region-b`, with the load generators in region A only. Delete both
