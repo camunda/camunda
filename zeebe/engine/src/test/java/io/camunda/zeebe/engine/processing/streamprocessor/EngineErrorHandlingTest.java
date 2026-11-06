@@ -310,6 +310,83 @@ public final class EngineErrorHandlingTest {
   }
 
   @Test
+  public void shouldAssignOrdinalOfPersistedInstanceToErrorRecordOnBan() {
+    // given
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              processingState
+                  .getElementInstanceState()
+                  .newInstance(
+                      1,
+                      Records.processInstance(1).setStorageOrdinal(7),
+                      ProcessInstanceIntent.ELEMENT_ACTIVATED);
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      new ErrorProneProcessor());
+            });
+
+    // a client command arrives with the default ordinal 0
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(1);
+    assertThat(errorRecord.getStorageOrdinal()).isEqualTo(7);
+  }
+
+  @Test
+  public void shouldAssignCommandOrdinalToErrorRecordOnBanWhenInstanceIsNotPersisted() {
+    // given
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      new ErrorProneProcessor());
+            });
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1).setStorageOrdinal(7))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // when
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getProcessInstanceKey()).isEqualTo(1);
+    assertThat(errorRecord.getStorageOrdinal()).isEqualTo(7);
+  }
+
+  @Test
   public void shouldWriteErrorEventWithNoMessage() {
     // given
     streamProcessor =
