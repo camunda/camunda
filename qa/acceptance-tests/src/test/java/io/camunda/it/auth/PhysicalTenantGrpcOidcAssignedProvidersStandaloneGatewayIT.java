@@ -40,9 +40,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Standalone-gateway counterpart of {@link PhysicalTenantGrpcOidcAssignedProvidersIT}: the root
- * declares a default slot (realm-k) and a named provider {@code okta} (realm-o); {@code tenanta} is
- * assigned only {@code okta}, {@code tenantb} only the default slot.
+ * Standalone-gateway counterpart of the gRPC cases of {@link
+ * PhysicalTenantOidcAssignedProvidersIT}: the root declares a default slot (realm-k) and a named
+ * provider {@code okta} (realm-o); {@code tenanta} is assigned only {@code okta}, {@code tenantb}
+ * only the default slot.
  */
 @Testcontainers
 @ZeebeIntegration
