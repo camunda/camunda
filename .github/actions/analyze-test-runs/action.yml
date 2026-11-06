@@ -27,6 +27,7 @@ runs:
       paths: |
         **/target/failsafe-reports/TEST-*.xml
         **/target/surefire-reports/TEST-*.xml
+        **/build/test-results/*/TEST-*.xml
   - name: Find flaky tests
     id: find-flakes
     shell: bash
@@ -77,8 +78,8 @@ runs:
       running=$(mktemp)
       finished=$(mktemp)
       unfinished=$(mktemp)
-      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running"
-      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished"
+      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running" || true
+      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished" || true
       sort $running $finished | uniq -u > "$unfinished"
       if [ -s "$unfinished" ]; then
         echo "### ⚠️ Unfinished test runs" >> $GITHUB_STEP_SUMMARY

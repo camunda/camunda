@@ -16,6 +16,13 @@ on:
           When true, skip uploading the distball/m2 tarball to the GitHub artifact API.
           Only ci.yml's docker-checks job consumes that artifact; standalone callers with no
           such consumer should set this to true to skip the unused upload.
+      skip:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, every step is skipped so the job succeeds immediately. Set it for Gradle
+          runs, whose jobs build their own distribution and consume no Maven distball.
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
@@ -38,13 +45,16 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ !inputs.skip }}
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for fork
+        if: ${{ !inputs.skip }}
         id: is-fork
         uses: ./.github/actions/is-fork
       - uses: ./.github/actions/setup-build
+        if: ${{ !inputs.skip }}
         with:
           maven-cache-key-modifier: build-shared
           dockerhub-readonly: true
@@ -54,14 +64,17 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ !inputs.skip }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Log distball size
+        if: ${{ !inputs.skip }}
         run: ls -lh "${{ steps.build-zeebe.outputs.distball }}"
       # build-zeebe installs this run's io.camunda SNAPSHOTs into ~/.m2; consumers
       # resolve them via `mvn verify`, but the GHA Maven cache never propagates
       # locally-installed SNAPSHOTs between jobs, so archive them for the consumers.
       - name: Archive local Maven SNAPSHOT artifacts
+        if: ${{ !inputs.skip }}
         shell: bash
         run: |
           set -euo pipefail
@@ -81,7 +94,7 @@ jobs:
           ls -lh m2-installed.tar
       # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
       - name: Upload distball (artifact)
-        if: ${{ !inputs.skip-artifact-upload }}
+        if: ${{ !inputs.skip && !inputs.skip-artifact-upload }}
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: distball-${{ github.run_id }}
@@ -90,7 +103,7 @@ jobs:
           compression-level: 0  # tarball is already gzipped
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
-        if: ${{ !inputs.skip-artifact-upload }}
+        if: ${{ !inputs.skip && !inputs.skip-artifact-upload }}
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: m2-installed-${{ github.run_id }}
@@ -107,6 +120,7 @@ jobs:
       # them in sync. The last omits `continue-on-error` so exhausted retries fail the job.
       - name: Authenticate to GCS build-cache (attempt 1 of 3)
         id: gcs-auth-1
+        if: ${{ !inputs.skip }}
         continue-on-error: true
         timeout-minutes: 1
         uses: ./.github/actions/gcs-build-cache-auth
@@ -137,7 +151,7 @@ jobs:
         # gcs-build-cache-auth runs unconditionally, but its internal Vault/WIF/setup-gcloud
         # steps no-op on fork PRs (no Vault access -- see gcs-build-cache-auth/action.yml),
         # so gcloud is never installed. Guard this step the same way.
-        if: steps.is-fork.outputs.is-fork != 'true'
+        if: ${{ !inputs.skip && steps.is-fork.outputs.is-fork != 'true' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
@@ -153,7 +167,7 @@ jobs:
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
       - name: Upload SNAPSHOTs to GCS
         # Same fork-PR guard as "Upload distball to GCS" above.
-        if: steps.is-fork.outputs.is-fork != 'true'
+        if: ${{ !inputs.skip && steps.is-fork.outputs.is-fork != 'true' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
