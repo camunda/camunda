@@ -91,7 +91,7 @@ on:
         required: false
         default: 0
       dual-region:
-        description: 'Deploy a dual region cluster: two namespaces, <name>-ra and <name>-rb, forming one zone-aware cluster. With elasticsearch, each region also exports to the Elasticsearch of the other. Needs secondary storage elasticsearch or none; Optimize is not deployed.'
+        description: 'Deploy a dual region cluster: two namespaces, <name>-ra and <name>-rb, forming one zone-aware cluster. With elasticsearch, every record is exported to the Elasticsearch of both regions. Works with any scenario; needs secondary storage elasticsearch or none; Optimize is not deployed.'
         type: boolean
         required: false
         default: false
@@ -211,7 +211,7 @@ on:
         required: false
         default: 0
       dual-region:
-        description: 'Deploy a dual region cluster: two namespaces, <name>-ra and <name>-rb, forming one zone-aware cluster. With elasticsearch, each region also exports to the Elasticsearch of the other. Needs secondary storage elasticsearch or none; Optimize is not deployed.'
+        description: 'Deploy a dual region cluster: two namespaces, <name>-ra and <name>-rb, forming one zone-aware cluster. With elasticsearch, every record is exported to the Elasticsearch of both regions. Works with any scenario; needs secondary storage elasticsearch or none; Optimize is not deployed.'
         type: boolean
         required: false
         default: false
@@ -684,9 +684,9 @@ jobs:
           fi
 
           # The helm installs do not wait for the brokers, which only become ready once both regions
-          # run, so the regions can be installed one after the other. With Elasticsearch, each region
-          # also exports to the one of the other; B goes first so that A's exporter finds B's. The
-          # load generators run in region A only; both regions' brokers serve the same cluster.
+          # run, so the regions can be installed one after the other, in any order: no partition has
+          # a leader until both run. The load generators run in region A only; both regions' brokers
+          # serve the same cluster.
           # Region B runs no load generators (starter/workers or k6), and its leader balancer is
           # suspended as region A's already rebalances the shared cluster. --load-test-load comes
           # last, so it can turn them back on, e.g. --set k6.tests.default.enabled=true.
