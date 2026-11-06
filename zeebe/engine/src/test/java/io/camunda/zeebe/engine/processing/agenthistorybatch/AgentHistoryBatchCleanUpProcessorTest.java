@@ -200,6 +200,25 @@ public class AgentHistoryBatchCleanUpProcessorTest {
             any(AgentHistoryBatchRecord.class));
   }
 
+  @Test
+  void shouldCarryStorageOrdinalOnCleanedEventAndFollowUpCleanUpCommand() {
+    // given
+    agentHistoryState.putCommittedHistoryItemKey(AGENT_INSTANCE_KEY, "item-1", 101L);
+    agentHistoryState.putCommittedHistoryItemKey(AGENT_INSTANCE_KEY, "item-2", 102L);
+    agentHistoryState.putCommittedHistoryItemKey(AGENT_INSTANCE_KEY, "item-3", 103L);
+
+    // when
+    processor.processRecord(cleanUpCommand(7));
+
+    // then
+    assertThat(capturedCleanedEvent().getStorageOrdinal()).isEqualTo(7);
+    final var captor = ArgumentCaptor.forClass(AgentHistoryBatchRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(AGENT_INSTANCE_KEY), eq(AgentHistoryBatchIntent.CLEAN_UP), captor.capture());
+    assertThat(captor.getValue().getStorageOrdinal()).isEqualTo(7);
+  }
+
   private AgentHistoryBatchRecord capturedCleanedEvent() {
     final var captor = ArgumentCaptor.forClass(AgentHistoryBatchRecord.class);
     verify(stateWriter)
@@ -209,10 +228,16 @@ public class AgentHistoryBatchCleanUpProcessorTest {
   }
 
   private TypedRecord<AgentHistoryBatchRecord> cleanUpCommand() {
+    return cleanUpCommand(0);
+  }
+
+  private TypedRecord<AgentHistoryBatchRecord> cleanUpCommand(final int storageOrdinal) {
     return new UnwrittenRecord(
         AGENT_INSTANCE_KEY,
         1,
-        new AgentHistoryBatchRecord().setAgentInstanceKey(AGENT_INSTANCE_KEY),
+        new AgentHistoryBatchRecord()
+            .setAgentInstanceKey(AGENT_INSTANCE_KEY)
+            .setStorageOrdinal(storageOrdinal),
         new RecordMetadata());
   }
 }
