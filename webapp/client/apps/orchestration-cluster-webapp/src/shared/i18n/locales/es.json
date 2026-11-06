@@ -2051,6 +2051,8 @@
 					"imageAlt": "Página de detalles de la instancia de proceso con la pestaña de incidentes y el diagrama"
 				},
 				"incidents": {
+					"title": "Incidentes",
+					"list": "Lista de incidentes",
 					"filterByType": "Filtrar por tipo de incidente",
 					"resetFilters": "Restablecer filtros",
 					"errorMessage": "Mensaje de error",
@@ -2060,6 +2062,8 @@
 					"operations": "Operaciones",
 					"retryIncident": "Reintentar incidente",
 					"expandRow": "Expandir fila",
+					"collapseRow": "Contraer fila",
+					"selectedRow": "Seleccionado",
 					"jobId": "ID del job",
 					"more": "Más",
 					"errorModalTitle": "Error del elemento \"{{name}}\"",
@@ -2509,7 +2513,9 @@
 					"active_other": "{{count}} instancias activas"
 				},
 				"sortableTable": {
-					"sortBy": "Ordenar por {{label}}"
+					"sortBy": "Ordenar por {{label}}",
+					"loadingPreviousPage": "Cargando elementos anteriores",
+					"loadingNextPage": "Cargando elementos siguientes"
 				}
 			}
 		}
