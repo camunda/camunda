@@ -96,9 +96,9 @@ test.describe('Process Instances - Business ID', () => {
             instanceKeyA,
           );
           await expect(rowA).toBeVisible();
-          await expect(rowA.getByTestId('cell-businessId')).toHaveText(
-            BUSINESS_ID_A,
-          );
+          await expect(
+            rowA.getByRole('cell', {name: BUSINESS_ID_A, exact: true}),
+          ).toHaveText(BUSINESS_ID_A);
           await expect(
             OperateProcessesPage.getRowByProcessInstanceKey(page, instanceKeyB),
           ).toHaveCount(0);

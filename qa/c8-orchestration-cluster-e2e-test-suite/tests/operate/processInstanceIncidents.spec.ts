@@ -246,10 +246,9 @@ test.describe('Process Instance', () => {
       await page.goto(
         `operate/processes?canceled=true&processInstanceKey=${instanceId}`,
       );
-      await expect(operateProcessesPage.endDateCell).toBeVisible();
-      expect(await operateProcessesPage.endDateCell.innerText()).toMatch(
-        DATE_REGEX,
-      );
+      const endDateCell = await operateProcessesPage.getEndDateCell();
+      await expect(endDateCell).toBeVisible();
+      expect(await endDateCell.innerText()).toMatch(DATE_REGEX);
     });
   });
 

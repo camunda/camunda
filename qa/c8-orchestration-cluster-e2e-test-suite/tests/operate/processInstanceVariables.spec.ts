@@ -97,7 +97,7 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
       await operateProcessInstancePage.clickEditVariableButton('aa');
-      await operateProcessInstancePage.clickVariableValueInput();
+      await operateProcessInstancePage.clickVariableValueInput('aa');
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '"editedTestValue"',
@@ -369,9 +369,7 @@ test.describe('Process Instance Variables', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessInstancePage.variablesList.getByTestId(
-              `variable-${JSON_VARIABLE_NAME}`,
-            ),
+            operateProcessInstancePage.getVariableTestId(JSON_VARIABLE_NAME),
           ).toContainText('Bob');
         },
         onFailure: async () => {
