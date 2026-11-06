@@ -992,6 +992,7 @@
       <!-- Generate and verify defaults.yaml from Spring configuration metadata.
            To generate/update the file:
              mvn exec:java@generate-default-config
+           (local builds already do this through the update-default-config profile)
            To verify the file is up to date:
              mvn exec:java@verify-default-config
       -->
@@ -1358,4 +1359,48 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- Keeps the committed defaults.yaml in sync with the configuration module on every local
+           build. Not active in CI, where DefaultConfigTest fails on a stale committed copy
+           instead. -->
+      <id>update-default-config</id>
+      <activation>
+        <property>
+          <name>!env.CI</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>update-default-config</id>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <outputDirectory>${project.basedir}/src/main/config</outputDirectory>
+                  <overwrite>true</overwrite>
+                  <resources>
+                    <resource>
+                      <directory>${project.basedir}/../configuration/target/generated/default-config</directory>
+                      <includes>
+                        <include>defaults.yaml</include>
+                      </includes>
+                      <filtering>false</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
