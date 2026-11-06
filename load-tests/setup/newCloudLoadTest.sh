@@ -9,7 +9,7 @@ usage() {
 Usage: newCloudLoadTest.sh <namespace>
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace          Namespace name. Uppercase letters are lowercased; "c8-" is added if missing.
 
 Options:
   -h, --help         Show this help message.
@@ -36,15 +36,9 @@ fi
 ### For a new namespace a new folder will be created
 
 
-namespace=$1
+namespace="$(parse_namespace "$1")"
 
-# Add c8- prefix if not present
-if [[ ! "$namespace" =~ ^c8- ]]; then
-  namespace="c8-$namespace"
-  echo "Namespace prefix added: $namespace"
-fi
-
-kubectl create namespace $namespace
+kubectl create namespace "$namespace"
 
 # Label namespace with registry (required to inject image pull secrets)
 kubectl label namespace "$namespace" registry=harbor --overwrite

@@ -65,7 +65,6 @@ env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
-  NAME: ${{ inputs.name }}
 
 jobs:
   init:
@@ -77,6 +76,7 @@ jobs:
       name-prefix: ${{ steps.metadata.outputs.name-prefix }}
     env:
       POD: ${{ inputs.pod }}
+      NAME: ${{ inputs.name }}
     steps:
       # A specific pod (inputs.pod set) becomes the matrix's single entry; otherwise the
       # matrix defaults to all three pods. Every pod in the matrix gets all 3 events (cpu,
@@ -127,6 +127,7 @@ jobs:
 
     env:
       POD: ${{ matrix.pod }}
+      NAME: ${{ inputs.name }}
       OUTPUT_DIR: profiling/${{ inputs.name }}/${{ matrix.pod }}
       # The duration of the profiling sessions.
       PROFILING_DURATION: ${{ inputs.duration-seconds }}
@@ -165,7 +166,9 @@ jobs:
 
       - name: Set right namespace
         run: |
-          kubectl config set-context --current --namespace="${NAME}"
+          . load-tests/setup/utils.sh
+          namespace="$(parse_namespace "${NAME}")"
+          kubectl config set-context --current --namespace="${namespace}"
 
       # Profiling is best-effort: continue-on-error keeps a permanently-failing event from
       # failing this job, so a single flaky/preempted pod doesn't spuriously fail the whole

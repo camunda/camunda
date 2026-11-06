@@ -79,7 +79,7 @@ usage() {
 Usage: newLoadTest.sh ${prefix}<namespace> [secondary_storage] [ttl_days] [enable_optimize]
 
 Arguments:
-  namespace           Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace           Namespace name. Uppercase letters are lowercased; "c8-" is added if missing.
   secondary_storage   Optional. One of: ${allowed_storage[*]}. Default: elasticsearch.
   ttl_days            Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize     Optional. true|false to enable Optimize. Default: true.

@@ -120,6 +120,7 @@ contains() {
 # namespace name to stdout. Informational messages go to stderr. Exits on error.
 parse_namespace() {
   local namespace="$1"
+  namespace="$(printf '%s' "$namespace" | tr '[:upper:]' '[:lower:]')"
   if [[ ! "$namespace" =~ ^c8- ]]; then
     namespace="c8-$namespace"
     echo "Namespace prefix added: $namespace" >&2
