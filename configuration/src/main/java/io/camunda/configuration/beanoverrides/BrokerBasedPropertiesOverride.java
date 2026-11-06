@@ -355,6 +355,8 @@ public class BrokerBasedPropertiesOverride {
     final var messagesCfg = override.getExperimental().getEngine().getMessages();
     messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
     messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+    messagesCfg.setPendingSubscriptionRecoveryBatchLimit(
+        messages.getPendingSubscriptionRecoveryBatchLimit());
   }
 
   private static void populateFromValidators(
