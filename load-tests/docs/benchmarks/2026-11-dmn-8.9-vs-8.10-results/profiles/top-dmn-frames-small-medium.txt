@@ -1,0 +1,56 @@
+dmn810-s     0.840 0.002 0.109 0.000 0.104 0.001 0.029 0.596
+dmn89-l      1.614 0.045 0.931 0.000 0.015 0.001 0.401 0.222
+dmn89-m      0.679 0.016 0.376 0.000 0.031 0.001 0.020 0.235
+dmn89-s      1.360 0.004 0.371 0.000 0.148 0.001 0.072 0.764
+dmn89-s- dmn samples 11263
+  0.0374 cores scala/collection/immutable/HashMapBuilder.update
+  0.0244 cores itable stub
+  0.0209 cores jint_disjoint_arraycopy_avx3
+  0.0159 cores scala/collection/immutable/VectorMapBuilder.addOne
+  0.0157 cores scala/collection/immutable/ChampBaseIterator.hasNext
+  0.0122 cores scala/collection/immutable/BitmapIndexedMapNode.migrateFromInlineToNodeInPlace
+  0.0104 cores scala/collection/immutable/BitmapIndexedMapNode.filterImpl
+  0.0093 cores scala/reflect/ClassTag.unapply$'u2
+  0.0079 cores scala/collection/immutable/HashMapBuilder.insertValue
+  0.0077 cores scala/reflect/Statics.anyHash
+  0.0071 cores scala/collection/immutable/HashMapBuilder.addOne
+  0.0066 cores G1BarrierSetRuntime::write_ref_array_post_entry
+dmn810-s- dmn samples 3323
+  0.0080 cores itable stub
+  0.0037 cores java/util/ArrayList.grow
+  0.0025 cores scala/collection/immutable/HashMapBuilder.update
+  0.0021 cores scala/reflect/BoxesRunTime.equals2
+  0.0020 cores io/camunda/zeebe/msgpack/spec/MsgPackWriter.writeString
+  0.0016 cores scala/collection/StrictOptimizedIterableOps.strictOptimizedZip
+  0.0015 cores io/camunda/zeebe/msgpack/property/BaseProperty.getEncodedLength
+  0.0014 cores io/camunda/zeebe/msgpack/spec/MsgPackWriter.writeStringHeader
+  0.0013 cores /usr/java/packages/lib/librocksdbjni-linux64.so
+  0.0013 cores scala/collection/immutable/SeqMap$SeqMapBuilderImpl.addOne
+  0.0012 cores org/camunda/feel/impl/parser/ExpressionValidator.validate
+  0.0012 cores malloc
+dmn89-m- dmn samples 11767
+  0.0364 cores scala/collection/immutable/HashMapBuilder.update
+  0.0249 cores itable stub
+  0.0213 cores jint_disjoint_arraycopy_avx3
+  0.0186 cores scala/collection/immutable/VectorMapBuilder.addOne
+  0.0167 cores scala/collection/immutable/ChampBaseIterator.hasNext
+  0.0133 cores scala/collection/immutable/BitmapIndexedMapNode.migrateFromInlineToNodeInPlace
+  0.0120 cores jdk/jfr/internal/instrument/ThrowableTracer.traceThrowable
+  0.0116 cores org/camunda/feel/impl/parser/ExpressionValidator.validate
+  0.0108 cores scala/collection/immutable/BitmapIndexedMapNode.filterImpl
+  0.0094 cores org/camunda/feel/valuemapper/ValueMapper$CompositeValueMapper.$anonfun$toVal$1
+  0.0085 cores scala/reflect/ClassTag.unapply$'u2
+  0.0084 cores scala/collection/immutable/HashMapBuilder.insertValue
+dmn810-m- dmn samples 666
+  0.0023 cores scala/collection/StrictOptimizedIterableOps.strictOptimizedZip
+  0.0015 cores scala/collection/immutable/List.prependedAll
+  0.0010 cores itable stub
+  0.0007 cores scala/collection/StrictOptimizedIterableOps.strictOptimizedZip$
+  0.0005 cores scala/collection/mutable/ArrayBuffer.apply
+  0.0005 cores org/camunda/dmn/parser/ParsedRule.equals
+  0.0005 cores java/lang/Thread.interrupted
+  0.0004 cores io/camunda/zeebe/msgpack/property/BaseProperty.getEncodedLength
+  0.0003 cores java/util/ArrayList.grow
+  0.0003 cores io/camunda/zeebe/msgpack/spec/MsgPackWriter.writeString
+  0.0003 cores scala/collection/immutable/HashMapBuilder.update
+  0.0003 cores scala/runtime/BoxesRunTime.equals2

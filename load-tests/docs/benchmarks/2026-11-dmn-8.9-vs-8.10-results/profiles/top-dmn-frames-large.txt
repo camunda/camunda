@@ -1,0 +1,26 @@
+dmn89-l- dmn samples 29268
+  0.0684 cores scala/collection/immutable/HashMapBuilder.update
+  0.0548 cores itable stub
+  0.0502 cores jint_disjoint_arraycopy_avx3
+  0.0462 cores scala/collection/immutable/HashMapBuilder.insertValue
+  0.0415 cores scala/collection/immutable/VectorMapBuilder.addOne
+  0.0340 cores jdk/jfr/internal/instrument/ThrowableTracer.traceThrowable
+  0.0334 cores org/camunda/feel/impl/parser/ExpressionValidator.validate
+  0.0324 cores scala/collection/immutable/BitmapIndexedMapNode.migrateFromInlineToNodeInPlace
+  0.0309 cores scala/collection/immutable/ChampBaseIterator.hasNext
+  0.0287 cores org/camunda/feel/valuemapper/ValueMapper$CompositeValueMapper.$anonfun$toVal$1
+  0.0272 cores scala/collection/immutable/BitmapIndexedMapNode.filterImpl
+  0.0233 cores scala/collection/immutable/HashMapBuilder.addOne
+dmn810-l- dmn samples 554
+  0.0031 cores scala/collection/StrictOptimizedIterableOps.strictOptimizedZip
+  0.0028 cores scala/collection/immutable/List.prependedAll
+  0.0009 cores org/camunda/dmn/parser/ParsedRule.equals
+  0.0006 cores java/lang/Thread.interrupted
+  0.0006 cores itable stub
+  0.0005 cores org/camunda/dmn/evaluation/ConstantUnaryTests$.evaluate
+  0.0005 cores scala/collection/mutable/Growable.$plus$eq
+  0.0004 cores scala/collection/mutable/ArrayBuffer.apply
+  0.0004 cores org/camunda/dmn/evaluation/DecisionTableEvaluator.checkRule
+  0.0003 cores scala/collection/StrictOptimizedIterableOps.strictOptimizedZip$
+  0.0003 cores scala/collection/mutable/ArrayBuffer.ensureSize
+  0.0003 cores scala/collection/AbstractSeqView.<init>
