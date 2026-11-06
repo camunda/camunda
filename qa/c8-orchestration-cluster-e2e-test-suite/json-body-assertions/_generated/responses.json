@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "dd5ffdb2404cb872989d52e6627142d8fc667faf",
-    "generatedAt": "2026-11-05T12:08:35.279Z",
+    "commit": "d0a003a80c7b7dd3aefb0b796e94b7b3cd380492",
+    "generatedAt": "2026-11-06T06:45:25.361Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "aac0dfa23cdb955d21de78b40b65ad0b3afa005775f6c182bf6a98a84b3b6058"
+    "specSha256": "9ae44e56d810b8d1f8d5f440d7c71d4894d3cf57acf864f78de864cb72c2b3d5"
   },
   "responses": [
     {
@@ -6175,6 +6175,11 @@
                     "TIMEOUT_UPDATED",
                     "TIMED_OUT"
                   ]
+                },
+                {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
                 },
                 {
                   "name": "tenantId",
