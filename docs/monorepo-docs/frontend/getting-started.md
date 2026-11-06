@@ -51,14 +51,27 @@ npm run dev:oc
 ```
 
 The dev server opens `http://localhost:3000`. Vite proxies `/v2`, `/login`,
-`/logout`, and `/session/heartbeat` to `:8080`, so the frontend talks to the
-backend you started above.
+`/logout`, `/session/heartbeat`, `/oauth2`, and `/sso-callback` to `:8080`, so
+the frontend talks to the backend you started above.
 
 ## Verify
 
 - The dev page renders in the browser.
 - `npm run lint` exits clean.
 - `npm run typecheck` exits clean.
+
+## Optional: log in with OIDC
+
+Against a backend running with `camunda.security.authentication.method=oidc`,
+the dev login page cannot sign you in, because it only shows the username and
+password form. Start the login from the browser instead:
+
+1. Set the backend's `camunda.security.authentication.oidc.redirect-uri` to
+   `http://localhost:3000/sso-callback`, and register that URI as a valid
+   redirect URI for the client in your identity provider.
+2. Open `http://localhost:3000/oauth2/authorization/oidc`.
+3. Sign in at the identity provider. You are redirected back to
+   `http://localhost:3000` with a session.
 
 ## Optional: VS Code setup
 
