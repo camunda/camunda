@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.response;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.api.search.response.VariableMetadata;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.protocol.rest.VariableSearchResult;
@@ -32,6 +33,7 @@ public class VariableImpl implements Variable {
   private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
+  private final VariableMetadata variableMetadata;
   @JsonIgnore private final JsonMapper jsonMapper;
 
   public VariableImpl(final VariableSearchResult item, final JsonMapper jsonMapper) {
@@ -43,6 +45,8 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
+    variableMetadata =
+        item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
@@ -55,6 +59,8 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
+    variableMetadata =
+        item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
@@ -91,6 +97,11 @@ public class VariableImpl implements Variable {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public VariableMetadata getVariableMetadata() {
+    return variableMetadata;
   }
 
   @Override

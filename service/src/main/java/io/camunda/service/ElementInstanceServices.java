@@ -118,8 +118,9 @@ public final class ElementInstanceServices
     final var brokerRequest =
         new BrokerSetVariablesRequest()
             .setElementInstanceKey(request.elementInstanceKey())
-            .setVariables(getDocumentOrEmpty(request.variables()))
-            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
+            .setVariables(
+                getDocumentOrEmpty(request.variables()),
+                getMetadataOrEmpty(request.variablesMetadata()))
             .setLocal(request.local());
 
     if (request.operationReference() != null) {

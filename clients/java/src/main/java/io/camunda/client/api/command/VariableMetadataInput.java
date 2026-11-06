@@ -1,0 +1,130 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.api.command;
+
+import io.camunda.client.api.search.enums.ProtectionMode;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Declares how a variable is treated when it is written, for example which protections apply to its
+ * value.
+ *
+ * <p>Only what is explicitly declared is sent. A variable whose metadata declares nothing is sent
+ * without metadata, so it keeps the metadata it already has.
+ */
+public final class VariableMetadataInput {
+
+  private final List<ProtectionMode> protectionModes;
+
+  private VariableMetadataInput(final List<ProtectionMode> protectionModes) {
+    this.protectionModes =
+        protectionModes == null
+            ? null
+            : Collections.unmodifiableList(new ArrayList<>(protectionModes));
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * Shortcut for metadata that declares the given protection modes, for example {@code
+   * VariableMetadataInput.of(ProtectionMode.REDACT)}. Declaring no modes at all is explicit and
+   * removes the protections the variable has.
+   */
+  public static VariableMetadataInput of(final ProtectionMode... protectionModes) {
+    return builder().protectionModes(protectionModes).build();
+  }
+
+  /** Like {@link #of(ProtectionMode...)}, for a collection of protection modes. */
+  public static VariableMetadataInput of(final Collection<ProtectionMode> protectionModes) {
+    return builder().protectionModes(protectionModes).build();
+  }
+
+  /** Shortcut for metadata that irrecoverably redacts the variable value before it is stored. */
+  public static VariableMetadataInput redacted() {
+    return builder().protectionModes(ProtectionMode.REDACT).build();
+  }
+
+  /**
+   * Applies this metadata to each of the given variables, for the commands that take the variables
+   * metadata keyed by variable name, for example {@code variables(map,
+   * VariableMetadataInput.redacted().forVariables("password", "token"))}.
+   *
+   * @param variableNames the names of the variables this metadata applies to
+   * @return the metadata keyed by variable name
+   */
+  public Map<String, VariableMetadataInput> forVariables(final String... variableNames) {
+    final Map<String, VariableMetadataInput> result = new LinkedHashMap<>();
+    for (final String variableName : variableNames) {
+      result.put(variableName, this);
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  /**
+   * The protections applied to the variable.
+   *
+   * @return the protections, or {@code null} if none were declared
+   */
+  public List<ProtectionMode> getProtectionModes() {
+    return protectionModes;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    return o instanceof VariableMetadataInput
+        && Objects.equals(protectionModes, ((VariableMetadataInput) o).protectionModes);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(protectionModes);
+  }
+
+  @Override
+  public String toString() {
+    return "VariableMetadataInput{protectionModes=" + protectionModes + '}';
+  }
+
+  public static final class Builder {
+    private List<ProtectionMode> protectionModes;
+
+    private Builder() {}
+
+    /** Declares the protections of the variable, replacing any declared before. */
+    public Builder protectionModes(final ProtectionMode... protectionModes) {
+      return protectionModes(Arrays.asList(protectionModes));
+    }
+
+    /** Declares the protections of the variable, replacing any declared before. */
+    public Builder protectionModes(final Collection<ProtectionMode> protectionModes) {
+      this.protectionModes = new ArrayList<>(protectionModes);
+      return this;
+    }
+
+    public VariableMetadataInput build() {
+      return new VariableMetadataInput(protectionModes);
+    }
+  }
+}

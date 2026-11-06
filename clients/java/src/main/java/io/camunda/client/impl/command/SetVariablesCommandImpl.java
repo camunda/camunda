@@ -21,11 +21,13 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
+import io.camunda.client.api.command.VariableMetadataInput;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.SetVariablesResponseImpl;
+import io.camunda.client.impl.util.VariableMetadataMapper;
 import io.camunda.client.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -33,6 +35,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest.Builder;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -134,9 +138,19 @@ public final class SetVariablesCommandImpl extends CommandWithVariables<SetVaria
 
   @Override
   public SetVariablesCommandStep2 setVariablesInternal(final String variables) {
+    return setVariablesInternal(variables, Collections.emptyMap());
+  }
+
+  @Override
+  protected SetVariablesCommandStep2 setVariablesInternal(
+      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     grpcRequestObjectBuilder.setVariables(variables);
+    grpcRequestObjectBuilder.clearVariablesMetadata();
+    grpcRequestObjectBuilder.putAllVariablesMetadata(
+        VariableMetadataMapper.toGrpc(variablesMetadata));
     if (useRest) {
       httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
+      httpRequestObject.setVariablesMetadata(VariableMetadataMapper.toRest(variablesMetadata));
     }
     return this;
   }
