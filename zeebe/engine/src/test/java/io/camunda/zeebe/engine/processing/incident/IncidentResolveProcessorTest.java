@@ -42,9 +42,11 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -121,19 +123,23 @@ final class IncidentResolveProcessorTest {
     // given - a job that was handed out with its secret incident still open, then failed with
     // retries left and a backoff. Only data written before #67521 was fixed can be in this state
     createJob();
-    jobState.fail(JOB_KEY, jobRecord().setRetryBackoff(1_000L).setRecurringTime(5_000L));
     stateWriter.appendFollowUpEvent(INCIDENT_KEY, IncidentIntent.CREATED, secretIncident());
+    stateWriter.appendFollowUpEvent(
+        JOB_KEY, JobIntent.FAILED, jobRecord().setRetryBackoff(1_000L).setRecurringTime(5_000L));
 
     // when
     processor.processRecord(resolveCommand());
 
     // then - the job stays failed, so only its backoff hands it out again
     assertThat(jobState.getState(JOB_KEY)).isEqualTo(State.FAILED);
+    final List<Long> backedOffJobs = new ArrayList<>();
+    jobState.findBackedOffJobs(Long.MAX_VALUE, (jobKey, job) -> backedOffJobs.add(jobKey));
+    assertThat(backedOffJobs).containsExactly(JOB_KEY);
     verify(jobActivationBehavior, never()).publishWork(anyLong(), any(JobRecord.class));
   }
 
   private void createJob() {
-    jobState.create(JOB_KEY, jobRecord());
+    stateWriter.appendFollowUpEvent(JOB_KEY, JobIntent.CREATED, jobRecord());
   }
 
   private static JobRecord jobRecord() {
