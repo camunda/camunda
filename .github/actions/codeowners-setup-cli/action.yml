@@ -28,9 +28,27 @@ runs:
         set -euo pipefail
 
         version="${{ inputs.version }}"
-        target_dir="${RUNNER_TEMP}/codeowners-cli/${version}"
-        archive_path="${RUNNER_TEMP}/codeowners-cli_${version}.tar.gz"
-        download_url="https://github.com/multimediallc/codeowners-plus/releases/download/${version}/codeowners-cli_${version#v}_Linux_x86_64.tar.gz"
+        temp_dir="${RUNNER_TEMP}"
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          temp_dir="$(cygpath -u "${RUNNER_TEMP}")"
+        fi
+
+        case "${RUNNER_OS}" in
+          Linux|Windows) release_os="${RUNNER_OS}" ;;
+          macOS) release_os="Darwin" ;;
+          *) echo "::error::Unsupported runner OS: ${RUNNER_OS}" >&2; exit 1 ;;
+        esac
+
+        case "${RUNNER_ARCH}" in
+          X64) release_arch="x86_64" ;;
+          ARM64) release_arch="arm64" ;;
+          *) echo "::error::Unsupported runner architecture: ${RUNNER_ARCH}" >&2; exit 1 ;;
+        esac
+
+        target_dir="${temp_dir}/codeowners-cli/${version}"
+        archive_path="${temp_dir}/codeowners-cli_${version}.tar.gz"
+        download_url="https://github.com/multimediallc/codeowners-plus/releases/download/${version}/codeowners-cli_${version#v}_${release_os}_${release_arch}.tar.gz"
+        binary="codeowners-cli"
 
         mkdir -p "${target_dir}"
         echo "Downloading codeowners-cli ${version} from ${download_url}"
@@ -40,7 +58,14 @@ runs:
         curl -fsSL --retry 5 --retry-delay 2 --retry-max-time 60 --retry-all-errors \
           "${download_url}" -o "${archive_path}"
         tar -xzf "${archive_path}" -C "${target_dir}"
-        chmod +x "${target_dir}/codeowners-cli"
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          # Upstream's Windows archive ships codeowners-cli.exe.exe; skip the rename once fixed.
+          if [[ -f "${target_dir}/codeowners-cli.exe.exe" ]]; then
+            mv "${target_dir}/codeowners-cli.exe.exe" "${target_dir}/codeowners-cli.exe"
+          fi
+          binary="codeowners-cli.exe"
+        fi
+        chmod +x "${target_dir}/${binary}"
         rm -f "${archive_path}"
 
     - name: Add codeowners-cli to PATH
@@ -49,5 +74,9 @@ runs:
 
     - name: Verify installation
       shell: bash
-      run: codeowners-cli --version
-
+      run: |
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          codeowners-cli.exe --version
+        else
+          codeowners-cli --version
+        fi
