@@ -2,10 +2,10 @@
 //  1. Uses Yarn, not npm (convention uses NpmTask)
 //  2. No webjar packaging — processResources is not wired to copy build output into a JAR
 
+import buildlogic.frontendBuildSkipped
 import buildlogic.skipWhen
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.yarn.task.YarnTask
-import io.camunda.gradle.flags.asEnabledFlag
 import io.camunda.gradle.pom.PomResolver
 import io.camunda.gradle.pom.resolvePomProperty
 
@@ -29,12 +29,13 @@ extensions.configure<NodeExtension> {
   nodeProjectDir.set(layout.projectDirectory)
 }
 
-val skipFrontendBuild =
-  providers
-    .gradleProperty("skip.fe.build")
-    .orElse(providers.gradleProperty("quickly"))
-    .asEnabledFlag()
-    .orElse(false)
+val skipFrontendBuild = frontendBuildSkipped()
+
+// The plugin's setup tasks are dependencies of the guarded tasks below and would still download
+// Node and Yarn when those are skipped.
+tasks.named("nodeSetup") { skipWhen(skipFrontendBuild) }
+
+tasks.named("yarnSetup") { skipWhen(skipFrontendBuild) }
 
 val yarnInstall =
   tasks.register<YarnTask>("yarnInstall") {

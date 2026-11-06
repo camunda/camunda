@@ -73,8 +73,9 @@ reruns when the image changes. They read the image from `-Pdocker.image`.
 These tests only exercise the backend, so the frontend build is skipped by default. Use
 `buildDockerImageRelease` or pass `-Pskip.fe.build=false` to build it.
 
-Frontend builds are skipped by default and only run as part of distribution assembly, never for
-compilation, tests, or a standalone webjar `jar` task. Pass `-Pskip.fe.build=false` or request
+Frontend builds (the webjars, the Optimize client and the process test coverage UI) are skipped by
+default. When enabled they run before any `jar` that packages them, so they also run for a
+distribution, but never for compilation. Pass `-Pskip.fe.build=false` or request
 `buildDockerImageRelease` to build them. An archive built without them is **not frontend-complete**
 and must not be treated as a user-ready distribution.
 

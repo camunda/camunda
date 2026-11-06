@@ -24,8 +24,15 @@ tasks.named<ProcessResources>("processTestResources") {
 }
 
 tasks.named<Jar>("jar") {
-  dependsOn(":optimize-client:yarnBuild")
-  from(layout.settingsDirectory.dir("optimize/client/dist")) { into("META-INF/resources") }
+  // builtBy makes every consumer of the jar, such as the distribution, wait for the yarn build.
+  from(
+    objects
+      .fileCollection()
+      .from(layout.settingsDirectory.dir("optimize/client/dist"))
+      .builtBy(":optimize-client:yarnBuild")
+  ) {
+    into("META-INF/resources")
+  }
 }
 
 sourceSets { main { resources { srcDir("src/main/ssl") } } }
