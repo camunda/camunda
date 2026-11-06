@@ -820,7 +820,7 @@ class ProcessingScheduleServiceTest {
     }
 
     @Test
-    void shouldNotExecuteScheduledTaskBeforeTimestamp() {
+    void shouldExecuteScheduledTaskScheduledInPast() {
       // given
       final var mockedTask = spy(new DummyTask());
 
@@ -830,6 +830,67 @@ class ProcessingScheduleServiceTest {
 
       // then
       verify(mockedTask).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskBeforeTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(200, mockedTask);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(99));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofMillis(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, times(1)).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, times(1)).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskBeforeTimestampWhenCheckedPeriodically() {
+      // given
+      actorScheduler.getClock().reset();
+      actorScheduler.getClock().pinCurrentTime();
+      final var mockedTask = spy(new DummyTask());
+      final var timestamp = actorScheduler.getClock().millis() + 2000;
+
+      // when
+      scheduleService.runAt(timestamp, mockedTask);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(1999));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofMillis(1001));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, times(1)).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, times(1)).execute(any());
     }
 
     @Test

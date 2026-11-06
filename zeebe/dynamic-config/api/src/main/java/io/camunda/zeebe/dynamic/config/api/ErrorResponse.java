@@ -37,6 +37,6 @@ public record ErrorResponse(ErrorCode code, @Nullable String message) {
     CONCURRENT_MODIFICATION,
     INTERNAL_ERROR,
     INVALID_STATE,
-    NOT_FOUND;
+    NOT_FOUND
   }
 }

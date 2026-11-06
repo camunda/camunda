@@ -47,23 +47,23 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.SnowflakeIdGenerator;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@MethodSource("data")
 public class AtomixTransportTest {
 
-  @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
+  private static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
+  private static boolean schedulerStarted;
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   private static final Duration REQUEST_TIMEOUT_NO_SUCCESS = Duration.ofMillis(200);
@@ -93,7 +93,6 @@ public class AtomixTransportTest {
   private PartitionId partitionId;
   private Request request;
 
-  @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
     final SnowflakeIdGenerator requestIdGenerator = new SnowflakeIdGenerator(0);
     return Arrays.asList(
@@ -174,8 +173,10 @@ public class AtomixTransportTest {
     }
   }
 
-  @BeforeClass
+  @BeforeAll
   public static void setup() {
+    SCHEDULER_RULE.before();
+    schedulerStarted = true;
     final var socketAddress = SocketUtil.getNextAddress();
     serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
     nodeAddressSupplier = () -> serverAddress;
@@ -190,7 +191,7 @@ public class AtomixTransportTest {
     transportFactory = new TransportFactory(SCHEDULER_RULE.get());
   }
 
-  @Before
+  @BeforeEach
   public void beforeTest() {
     clientTransport = clientTransportFunction.apply(cluster);
     serverTransport = serverTransportFunction.apply(cluster);
@@ -198,20 +199,38 @@ public class AtomixTransportTest {
     request = new Request(MESSAGE_CONTENT).withPartitionGroup(topicPrefix);
   }
 
-  @After
+  @AfterEach
   public void afterTest() throws Exception {
-    serverTransport.close();
-    clientTransport.close();
+    try {
+      if (serverTransport != null) {
+        serverTransport.close();
+      }
+    } finally {
+      if (clientTransport != null) {
+        clientTransport.close();
+      }
+    }
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() {
-    if (nettyMessagingService != null) {
-      nettyMessagingService.stop().join();
-      nettyMessagingService = null;
+    try {
+      if (nettyMessagingService != null) {
+        nettyMessagingService.stop().join();
+        nettyMessagingService = null;
+      }
+    } finally {
+      try {
+        if (cluster != null) {
+          cluster.stop().join();
+          cluster = null;
+        }
+      } finally {
+        if (schedulerStarted) {
+          SCHEDULER_RULE.after();
+        }
+      }
     }
-    cluster.stop().join();
-    cluster = null;
   }
 
   @Test
@@ -305,7 +324,7 @@ public class AtomixTransportTest {
   @Test
   public void shouldReceiveRequestOnLegacyTopicForDefaultGroup() {
     // given
-    Assume.assumeTrue(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
+    Assumptions.assumeTrue(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
     serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // when -- requests are sent on the legacy, non-prefixed topic
@@ -322,7 +341,7 @@ public class AtomixTransportTest {
   @Test
   public void shouldNotReceiveRequestOnLegacyTopicForNonDefaultGroup() {
     // given
-    Assume.assumeFalse(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
+    Assumptions.assumeFalse(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
     serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // when -- requests are sent on the legacy, non-prefixed topic
@@ -338,12 +357,11 @@ public class AtomixTransportTest {
   }
 
   @Test
-  public void shouldNotReceiveRequestOnLegacyTopicWhenLegacyReceiveIsDisabled() {
+  public void shouldNotReceiveRequestOnLegacyTopicWhenLegacyReceiveIsDisabled() throws Exception {
     // given -- a server transport that doesn't receive on legacy subjects
-    final var transport =
+    try (final var transport =
         transportFactory.createServerTransport(
-            cluster.getMessagingService(), new SnowflakeIdGenerator(1), false);
-    try {
+            cluster.getMessagingService(), new SnowflakeIdGenerator(1), false)) {
       final var partition = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 5);
       transport.subscribe(partition, RequestType.COMMAND, new DirectlyResponder()).join();
       final var serverAddress = cluster.getMessagingService().address();
@@ -362,12 +380,6 @@ public class AtomixTransportTest {
       assertThatThrownBy(legacyResponseFuture::join)
           .hasCauseInstanceOf(MessagingException.NoRemoteHandler.class);
       assertThat(prefixedResponseFuture.join()).isEqualTo(MESSAGE_CONTENT.getBytes());
-    } finally {
-      try {
-        transport.close();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 
@@ -414,7 +426,9 @@ public class AtomixTransportTest {
             REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
+    assertThat(retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS))
+        .as("node resolution retries")
+        .isTrue();
     nodeAddressRef.set(serverAddress);
 
     // then
@@ -442,7 +456,9 @@ public class AtomixTransportTest {
             REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
+    assertThat(retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS))
+        .as("invalid response retries")
+        .isTrue();
     responseValidation.set(true);
 
     // then
@@ -477,7 +493,9 @@ public class AtomixTransportTest {
             REQUEST_TIMEOUT);
 
     // when
-    retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
+    assertThat(retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS))
+        .as("unsubscribed request retries")
+        .isTrue();
     serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // then

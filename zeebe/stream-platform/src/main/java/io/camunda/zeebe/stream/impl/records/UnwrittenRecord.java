@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public class UnwrittenRecord implements TypedRecord {
   private final long key;
@@ -93,7 +94,7 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
-  public ChannelType getRequestChannelType() {
+  public @Nullable ChannelType getRequestChannelType() {
     return metadata.getRequestChannelType();
   }
 

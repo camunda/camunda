@@ -86,7 +86,7 @@ interface JournalIndex {
    * returns false, it is likely that calling {@link JournalIndex#index(JournalRecord, int)} with
    * the entry at this index is useful.
    *
-   * @param index
+   * @param index the index to check
    * @return true if this index likely have been already indexed. false if otherwise.
    */
   boolean hasIndexed(long index);

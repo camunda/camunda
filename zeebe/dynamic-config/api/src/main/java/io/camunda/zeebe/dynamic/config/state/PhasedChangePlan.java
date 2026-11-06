@@ -172,7 +172,7 @@ public record PhasedChangePlan(
   }
 
   /**
-   * A phase whose operations are activated into {@link GlobalConfiguration#pendingChanges} when
+   * A phase whose operations are activated into {@link GlobalConfiguration#pendingChanges()} when
    * this phase starts.
    */
   public record GlobalPhase(List<GlobalChangeOperation> operations) implements Phase {

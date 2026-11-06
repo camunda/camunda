@@ -307,5 +307,5 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION};
     }
-  };
+  }
 }

@@ -211,7 +211,7 @@ final class SegmentLoader {
     }
 
     try (final var raf = new RandomAccessFile(segmentPath.toFile(), "rw");
-        final var channel = raf.getChannel(); ) {
+        final var channel = raf.getChannel()) {
       allocateSegment(maxSegmentSize, channel, raf.getFD());
       raf.setLength(maxSegmentSize);
     }
