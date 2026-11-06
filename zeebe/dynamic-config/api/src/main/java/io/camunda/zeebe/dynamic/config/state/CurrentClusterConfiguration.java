@@ -504,7 +504,7 @@ public record CurrentClusterConfiguration(
    * <p>Consecutive phases must not target the same sub-configuration: activating a phase starts a
    * configuration change on the affected sub-config, and a later phase targeting the same
    * sub-config can only be activated once that change has been fully advanced (drained) — otherwise
-   * {@link #activateNextPhase()} throws because a change is still in progress.
+   * {@link #activateNextPhase(long)} throws because a change is still in progress.
    *
    * @throws IllegalArgumentException if {@code phases} is empty
    * @throws IllegalStateException if a plan is already pending
