@@ -19,9 +19,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import java.util.Set;
 
 public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler
-    extends AbstractCorrelatedMessageSubscriptionHandler<MessageStartEventSubscriptionRecordValue>
-    implements MainIndexExporterHandler<
-        CorrelatedMessageSubscriptionEntity, MessageStartEventSubscriptionRecordValue> {
+    extends AbstractCorrelatedMessageSubscriptionHandler<MessageStartEventSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MessageStartEventSubscriptionIntent.CORRELATED);

@@ -43,12 +43,13 @@ import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfi
 import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class AbstractEventHandler<R extends RecordValue>
-    implements ExportHandler<MessageSubscriptionEntity, R> {
+public abstract class AbstractEventHandler<R extends RecordValue & StorageOrdinalRelated>
+    implements OrdinalIndexExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
   protected final ExtensionPropertyConfiguration extensionPropertyConfig;

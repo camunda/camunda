@@ -10,12 +10,18 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -32,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableMessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,19 +124,64 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdFromRecordKey() {
+  void shouldThrowExceptionIfOrdinalControlledWhenExtractingIdAndIndexesFromRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+
+    final ImmutableMessageStartEventSubscriptionRecordValue value =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder()
+            .withStorageOrdinal(2)
+            .withProcessInstanceKey(-1L)
+            .build();
+
     final long key = 12345L;
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            r -> r.withIntent(MessageStartEventSubscriptionIntent.CREATED).withKey(key));
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                    .withKey(key)
+                    .withValue(value));
 
     // when
-    final List<String> ids = underTest.generateIds(record);
+    final var thrown =
+        assertThatThrownBy(() -> underTest.extractIdAndIndexes(indexLocator, record));
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(key));
+    thrown
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("key: " + key + " on partition")
+        .hasMessageContaining("that should not be ordinal controlled")
+        .hasMessageContaining("Storage ordinal was: 2");
+  }
+
+  @Test
+  void shouldExtractIdAndIndexesFromRecordKey() {
+    // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
+    final ImmutableMessageStartEventSubscriptionRecordValue value =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder()
+            .withStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED)
+            .withProcessInstanceKey(-1L)
+            .build();
+
+    final long key = 12345L;
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                    .withKey(key)
+                    .withValue(value));
+
+    // when
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
+
+    // then
+    assertThat(idAndIndexes).containsExactly(new IdAndIndex(String.valueOf(key), index));
   }
 
   @Test

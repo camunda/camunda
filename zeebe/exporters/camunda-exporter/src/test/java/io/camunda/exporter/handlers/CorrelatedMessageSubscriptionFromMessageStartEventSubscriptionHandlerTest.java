@@ -8,11 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -90,8 +95,12 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
   }
 
   @Test
-  void shouldGenerateCompositeId() {
+  void shouldExtractIdAndIndexesWithCompositeId() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
@@ -105,10 +114,10 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
                             .build()));
 
     // when
-    final List<String> ids = underTest.generateIds(record);
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).hasSize(1).containsExactly("67890_12345");
+    assertThat(idAndIndexes).hasSize(1).containsExactly(new IdAndIndex("67890_12345", index));
   }
 
   @Test
