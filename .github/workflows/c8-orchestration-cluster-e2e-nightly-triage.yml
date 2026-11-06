@@ -595,21 +595,58 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # camunda/team-test-automation is internal and this repository is public,
+      # so `uses: camunda/team-test-automation/...` cannot resolve and fails the
+      # whole job at setup, before continue-on-error can apply. Check the action
+      # out with an App token and run it as a local action instead.
+      - name: Generate team-test-automation read token
+        id: owner-action-token
+        if: always()
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: team-test-automation
+          read-only: true
+
+      - name: Check out the triage-owner action
+        id: owner-action
+        if: always() && steps.owner-action-token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/team-test-automation
+          # main, not a SHA: the assignment data ships inside the action, so a
+          # pin would freeze ownership at whoever held the area that day.
+          ref: main
+          token: ${{ steps.owner-action-token.outputs.token }}
+          path: team-test-automation
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/actions/resolve-triage-owner/
+            /.github/workflows/triage-assignments.json
+
       - name: Resolve this area's triage owner
         id: triage-owner
         # always(), because the steps that consume this run on always() too.
         # The agent failing is precisely the case with no fix PR and a thread
         # that needs a person -- the default success() would skip the lookup
         # exactly when the owner matters most.
-        if: always()
+        if: always() && steps.owner-action.outcome == 'success'
         # Best-effort by contract: emits found=false rather than failing, so a
         # roster that is missing or stale leaves the thread unmentioned and the
         # PR unassigned instead of turning a nightly red.
-        #
-        # @main, not a SHA: the assignment data ships inside the action, so a
-        # pin would freeze ownership at whoever held the area that day.
         continue-on-error: true
-        uses: camunda/team-test-automation/.github/actions/resolve-triage-owner@main
+        uses: ./team-test-automation/.github/actions/resolve-triage-owner
         with:
           area: oc
 

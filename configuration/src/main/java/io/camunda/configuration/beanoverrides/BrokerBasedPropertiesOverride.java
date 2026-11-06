@@ -369,6 +369,8 @@ public class BrokerBasedPropertiesOverride {
     final var messagesCfg = override.getExperimental().getEngine().getMessages();
     messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
     messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+    messagesCfg.setPendingSubscriptionRecoveryBatchLimit(
+        messages.getPendingSubscriptionRecoveryBatchLimit());
   }
 
   private static void populateFromValidators(
@@ -932,6 +934,7 @@ public class BrokerBasedPropertiesOverride {
     s3BackupStoreConfig.setBasePath(s3.getBasePath());
     s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
     s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
+    s3BackupStoreConfig.setDefaultsMode(s3.getDefaultsMode());
 
     override.getData().getBackup().setS3(s3BackupStoreConfig);
   }
@@ -945,6 +948,9 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
     gcsBackupStoreConfig.setMaxConcurrentTransfers(gcs.getMaxConcurrentTransfers());
     gcsBackupStoreConfig.setBufferSize(gcs.getBufferSize());
+    gcsBackupStoreConfig.setRetry(
+        new GcsBackupStoreConfig.Retry(
+            gcs.getRetry().getTotalTimeout(), gcs.getRetry().getMaxAttempts()));
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
@@ -959,6 +965,8 @@ public class BrokerBasedPropertiesOverride {
     azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
     azureBackupStoreConfig.setBasePath(azure.getBasePath());
     azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
+    azureBackupStoreConfig.setRetry(
+        new AzureBackupStoreConfig.Retry(azure.getRetry().getMaxAttempts()));
     populateFromSasToken(override, camunda);
 
     override.getData().getBackup().setAzure(azureBackupStoreConfig);

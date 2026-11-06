@@ -200,8 +200,39 @@ export async function deployResourceAndGetMetadata(
   const body = await res.json();
   expect(body.deployments.length).toBeGreaterThan(deploymentIndex);
 
-  const deployment = body.deployments[deploymentIndex];
+  return resourceMetadataOf(body.deployments[deploymentIndex]);
+}
 
+interface DeployedEntity {
+  resourceName: string;
+  version: number;
+}
+
+// One entry of the `deployments` array of a POST /deployments response.
+export interface DeploymentEntry {
+  processDefinition?: DeployedEntity & {
+    processDefinitionKey: string;
+    processDefinitionId: string;
+  };
+  form?: DeployedEntity & {formKey: string; formId: string};
+  decisionDefinition?: Omit<DeployedEntity, 'resourceName'> & {
+    decisionDefinitionKey: string;
+    decisionDefinitionId: string;
+    name: string;
+  };
+  decisionRequirements?: DeployedEntity & {
+    decisionRequirementsKey: string;
+    decisionRequirementsId: string;
+  };
+  resource?: DeployedEntity & {resourceKey: string; resourceId: string};
+}
+
+// Maps one entry of a POST /deployments response to the key and id of the
+// resource it deployed. For a DMN file, pass the `decisionRequirements` entry to
+// get the key POST /resources/:key/deletion takes.
+export function resourceMetadataOf(
+  deployment: DeploymentEntry,
+): ResourceMetadata {
   if (deployment.processDefinition) {
     return {
       resourceKey: deployment.processDefinition.processDefinitionKey,
@@ -244,6 +275,7 @@ export async function deployResourceAndGetMetadata(
 
 export interface DeployedResource extends ResourceMetadata {
   deploymentKey: string;
+  resourceId: string;
 }
 
 export interface InlineResource {
@@ -269,6 +301,44 @@ export function uniqueResourceName(prefix: string, extension: string): string {
   return `${prefix}-${generateUniqueId()}.${extension}`;
 }
 
+export function inlineBpmnProcess(processId: string): InlineResource {
+  return {
+    fileName: `${processId}.bpmn`,
+    content: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_${processId}" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${processId}" isExecutable="true">
+    <bpmn:startEvent id="start" />
+  </bpmn:process>
+</bpmn:definitions>`,
+  };
+}
+
+export function inlineDmnDecision(drdId: string): InlineResource {
+  return {
+    fileName: `${drdId}.dmn`,
+    content: `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="${drdId}" name="${drdId}" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision_${drdId}" name="decision_${drdId}">
+    <literalExpression>
+      <text>"ok"</text>
+    </literalExpression>
+  </decision>
+</definitions>`,
+  };
+}
+
+export function inlineGenericResource(
+  prefix: string = 'generic-resource',
+  content: string = `# ${prefix}`,
+): InlineResource {
+  return {fileName: uniqueResourceName(prefix, 'md'), content};
+}
+
+export function inlineRpaResource(): InlineResource {
+  const rpaId = `rpa_${generateUniqueId()}`;
+  return {fileName: `${rpaId}.rpa`, content: rpaResourceContent(rpaId)};
+}
+
 export function createInlineFormData(files: InlineResource[]): FormData {
   const formData = new FormData();
   for (const {fileName, content} of files) {
@@ -287,9 +357,10 @@ export function createInlineFormData(files: InlineResource[]): FormData {
 export function deployInlineFilesRaw(
   request: APIRequestContext,
   files: InlineResource[],
+  headers: Record<string, string> = defaultHeaders(),
 ): Promise<APIResponse> {
   return request.post(buildUrl('/deployments'), {
-    headers: defaultHeaders(),
+    headers,
     multipart: createInlineFormData(files),
   });
 }

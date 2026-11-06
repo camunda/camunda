@@ -9,6 +9,7 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -146,6 +147,13 @@ public class S3 {
 
   /** Enable s3 md5 plugin for legacy support */
   private boolean supportLegacyMd5;
+
+  /**
+   * Defaults mode of the AWS SDK S3 client, e.g. 'standard' or 'in-region'. When not set, the SDK
+   * uses 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment
+   * and can block for a couple of seconds when not running on AWS.
+   */
+  private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
   /**
    * Maximum number of connections allowed in a connection pool. This is used to restrict the
@@ -317,6 +325,14 @@ public class S3 {
 
   public void setSupportLegacyMd5(final boolean supportLegacyMd5) {
     this.supportLegacyMd5 = supportLegacyMd5;
+  }
+
+  public DefaultsMode getDefaultsMode() {
+    return defaultsMode;
+  }
+
+  public void setDefaultsMode(final DefaultsMode defaultsMode) {
+    this.defaultsMode = defaultsMode;
   }
 
   public String getBasePath() {

@@ -449,6 +449,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BRANCH:   ${{ steps.push.outputs.branch }}
+          MERGE_TODAY_LABEL: automation-team-needs-merge-today
         run: |
           set -euo pipefail
           printf '%s\n' \
@@ -475,12 +476,16 @@ jobs:
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
 
+          gh pr edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "$MERGE_TODAY_LABEL" \
+            || echo "::warning::could not add the ${MERGE_TODAY_LABEL} label to #${number}"
+
       - name: Open pull request (API paths)
         id: pr-paths
         if: steps.diff-paths.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BRANCH:   ${{ steps.push-paths.outputs.branch }}
+          MERGE_TODAY_LABEL: automation-team-needs-merge-today
         run: |
           set -euo pipefail
           printf '%s\n' \
@@ -505,6 +510,9 @@ jobs:
           number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
+
+          gh pr edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "$MERGE_TODAY_LABEL" \
+            || echo "::warning::could not add the ${MERGE_TODAY_LABEL} label to #${number}"
 
       # Both pipelines have finished, so each has had its chance to open a PR;
       # anything swallowed above becomes a red job here.

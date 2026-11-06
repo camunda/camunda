@@ -53,6 +53,24 @@ describe('<AdminClusterVariablesPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first cluster variable when there are no cluster variables', async () => {
+		const {screen} = await renderPage({clusterVariables: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No cluster variables created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about cluster variables'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create cluster variable'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no cluster variables', async () => {
+		const {screen} = await renderPage({clusterVariables: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No cluster variables created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list the cluster variables with their scope', async () => {
 		const {screen} = await renderPage({
 			clusterVariables: [
@@ -67,12 +85,6 @@ describe('<AdminClusterVariablesPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'Global'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'tenant-variable'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Tenant: tenant-a'})).toBeVisible();
-	});
-
-	it('should show an empty state when there are no cluster variables', async () => {
-		const {screen} = await renderPage({clusterVariables: [], totalItems: 0});
-
-		await expect.element(screen.getByText('No cluster variables found.')).toBeVisible();
 	});
 
 	it('should search by name once the reader stops typing', async () => {

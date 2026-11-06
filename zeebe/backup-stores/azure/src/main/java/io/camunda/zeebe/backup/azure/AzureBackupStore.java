@@ -21,6 +21,8 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.batch.BlobBatchClientBuilder;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import com.azure.storage.common.policy.RequestRetryOptions;
+import com.azure.storage.common.policy.RetryPolicyType;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -118,11 +120,27 @@ public final class AzureBackupStore implements BackupStore {
     manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
+  /**
+   * Retry options bounding the attempts of a failing request, or empty to leave the SDK defaults in
+   * place. The SDK default of 4 attempts with exponential backoff delays reporting an unreachable
+   * endpoint.
+   */
+  static Optional<RequestRetryOptions> retryOptions(final AzureBackupConfig config) {
+    return config
+        .retry()
+        .maxAttempts()
+        .map(
+            maxAttempts ->
+                new RequestRetryOptions(
+                    RetryPolicyType.EXPONENTIAL, maxAttempts, (Integer) null, null, null, null));
+  }
+
   public static BlobServiceClient buildClient(
       final AzureBackupConfig config, final ExecutorService credentialExecutor) {
     final var builder = new BlobServiceClientBuilder();
 
     httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
+    retryOptions(config).ifPresent(builder::retryOptions);
 
     // BlobServiceClientBuilder has their own validations, for building the client
     if (config.sasTokenConfig() != null) {

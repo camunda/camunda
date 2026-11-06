@@ -38,6 +38,7 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
@@ -731,6 +732,36 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailCreateProcessInstanceWithBadRequestWhenMetadataHasNoVariable() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      final var message =
+          "Expected variables metadata to only describe variables set in the request, but found no variable for: 'ssn'";
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
+          .thenThrow(new InvalidVariableRequestException(message));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("createProcessInstance")
+                  .arguments(Map.of("processDefinitionId", "processId"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail()).isEqualTo(message);
 
       assertTextContentFallback(result);
     }

@@ -1,10 +1,8 @@
 # description: Profiles a running load test cluster using async-profiler.
 #              Profiles all 3 pods (camunda-0, camunda-1, camunda-2) in parallel when no pod
-#              is specified, or just the given pod otherwise. Every pod gets all 3 profile
-#              types (cpu, wall, alloc events), run *sequentially*, since async-profiler only
-#              supports one active profiling session per JVM and the profiling script writes
-#              to fixed intermediate paths on the pod -- profiling the same pod with two
-#              events at once would collide.
+#              is specified, or just the given pod otherwise. Every pod gets the cpu and alloc profile
+#              types, run *sequentially*, since async-profiler only supports one active profiling
+#              session per JVM and the profiling script writes to fixed intermediate paths on the pod.
 #              Uploads flamegraph artifacts named
 #              {name-prefix}{pod}, where name-prefix defaults to flamegraph-{name}-{date}-.
 # called-by: camunda-pr-load-test.yml, stress-load-test.yml (itself called by
@@ -79,8 +77,8 @@ jobs:
       POD: ${{ inputs.pod }}
     steps:
       # A specific pod (inputs.pod set) becomes the matrix's single entry; otherwise the
-      # matrix defaults to all three pods. Every pod in the matrix gets all 3 events (cpu,
-      # wall, alloc) below. name-prefix is computed once here so every "Profile ..." step
+      # matrix defaults to all three pods. Every pod in the matrix gets the cpu and alloc events below.
+      # name-prefix is computed once here so every "Profile ..." step
       # below (across every pod in the matrix) writes its flamegraph with the same prefix,
       # matching the date in the uploaded artifact name.
       - name: Compute metadata
@@ -100,29 +98,26 @@ jobs:
     name: Profile ${{ matrix.pod }}
     needs: init
     runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes must cover cpu, wall and alloc running *sequentially*
-    # against the pod (see the matrix comment below for why they can't run in
-    # parallel), including retries, etc.
+    # INVARIANT: timeout-minutes must cover cpu and alloc running *sequentially* against the pod,
+    # including retries (PROFILE_RETRY_MAX_ATTEMPTS attempts of PROFILE_RETRY_TIMEOUT_MINUTES each
+    # plus the wait between them, per event), etc.
     # Bump this manually if a caller raises duration-seconds or the retry
     # settings below change -- GitHub Actions doesn't support arithmetic in
     # `timeout-minutes` expressions.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
     # timeout.
-    timeout-minutes: 90
+    timeout-minutes: 70
     permissions:
       contents: read
       id-token: write # Teleport cluster auth
     strategy:
       fail-fast: false
       matrix:
-        # Events (cpu/wall/alloc) are intentionally NOT a matrix dimension:
-        # async-profiler only supports one active profiling session per JVM,
-        # and executeProfiling.sh copies/removes a fixed-path asprof binary and
-        # libasyncProfiler.so on the pod. Two events profiling the *same* pod
-        # at the same time would collide (attach failures and/or one event's
-        # cleanup deleting files the other event is still using). Events are
-        # instead run via separate sequential steps below.
+        # One pod per matrix entry, each with the cpu and alloc events. async-profiler allows one
+        # active session per JVM and executeProfiling.sh copies/removes a fixed-path asprof binary
+        # and libasyncProfiler.so on the pod, so events on the same pod must never run at the same
+        # time. executeProfiling.sh supports wall for manual runs.
         pod: ${{ fromJSON(needs.init.outputs.pods) }}
 
     env:
@@ -167,10 +162,10 @@ jobs:
         run: |
           kubectl config set-context --current --namespace="${NAME}"
 
-      # Profiling is best-effort: continue-on-error keeps a permanently-failing event from
-      # failing this job, so a single flaky/preempted pod doesn't spuriously fail the whole
-      # load test run -- the remaining "Profile ..." steps below still run regardless, and
-      # whichever flamegraphs did succeed are still published by the upload-artifact steps.
+      # Profiling is best-effort: continue-on-error keeps a permanently-failing profile from
+      # failing this job, so a single flaky/preempted pod does not spuriously fail the whole
+      # load test run -- the flamegraph is still published by the upload-artifact step if it
+      # succeeded.
       - name: Profile cpu on ${{ matrix.pod }}
         continue-on-error: true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -180,15 +175,6 @@ jobs:
           retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
           timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
           command: ./load-tests/docs/scripts/executeProfiling.sh --prefix "${{ needs.init.outputs.name-prefix }}" "${POD}" cpu "${PROFILER_OPTIONS}"
-      - name: Profile wall on ${{ matrix.pod }}
-        continue-on-error: true
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: ${{ env.PROFILE_RETRY_MAX_ATTEMPTS }}
-          retry_on: error
-          retry_wait_seconds: ${{ env.PROFILE_RETRY_WAIT_SECONDS }}
-          timeout_minutes: ${{ env.PROFILE_RETRY_TIMEOUT_MINUTES }}
-          command: ./load-tests/docs/scripts/executeProfiling.sh --prefix "${{ needs.init.outputs.name-prefix }}" "${POD}" wall "${PROFILER_OPTIONS}"
       - name: Profile alloc on ${{ matrix.pod }}
         continue-on-error: true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -213,7 +199,7 @@ jobs:
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Profiling \`${NAME}\` on \`${POD}\`
-            Async profiling (\`cpu\`, \`wall\`, \`alloc\`) has been executed sequentially on \`${NAME}\`/\`${POD}\`. Please download [the artifacts](${{ steps.upload-artifact.outputs.artifact-url }}).
+            Async profiling (\`cpu\`, \`alloc\`) has been executed sequentially on \`${NAME}\`/\`${POD}\`. Please download [the artifacts](${{ steps.upload-artifact.outputs.artifact-url }}).
           EOF
       - name: Observe build status
         if: always()

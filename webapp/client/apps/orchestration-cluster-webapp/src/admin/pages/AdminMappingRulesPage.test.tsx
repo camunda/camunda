@@ -53,6 +53,24 @@ describe('<AdminMappingRulesPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first mapping rule when there are no mapping rules', async () => {
+		const {screen} = await renderPage({mappingRules: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No mapping rules created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about mapping rules'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create mapping rule'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no mapping rules', async () => {
+		const {screen} = await renderPage({mappingRules: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No mapping rules created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list the mapping rules', async () => {
 		const {screen} = await renderPage({
 			mappingRules: [

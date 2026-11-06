@@ -5,7 +5,7 @@ dependencies {
   // The generator declares assertj-core as a range; the catalog's strict version overrides it.
   constraints { compileOnly(libs.assertj.core) }
   implementation(project(":pom-resolution"))
-  implementation("com.diffplug.spotless:spotless-plugin-gradle:8.10.4")
+  implementation("com.diffplug.spotless:spotless-plugin-gradle:8.11.0")
   implementation("com.github.node-gradle:gradle-node-plugin:7.1.0")
   implementation("net.ltgt.gradle:gradle-errorprone-plugin:4.3.0")
   implementation("com.google.protobuf:protobuf-gradle-plugin:0.10.0")

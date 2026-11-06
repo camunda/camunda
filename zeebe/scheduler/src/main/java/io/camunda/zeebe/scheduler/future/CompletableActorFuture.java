@@ -428,8 +428,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   private void notifyAllBlocked() {
     notifyBlockedCallBacks();
 
+    completionLock.lock();
     try {
-      completionLock.lock();
       if (isDoneCondition != null) {
         // condition is null if the future was created with `completed` or `completedExceptionally`,
         // i.e. the future was never waiting for a result.

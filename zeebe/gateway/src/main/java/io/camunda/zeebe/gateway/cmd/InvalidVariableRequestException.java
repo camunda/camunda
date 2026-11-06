@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.cmd;
 
-public class InvalidVariableRequestException extends ClientException {
+public class InvalidVariableRequestException extends InvalidRequestException {
 
   public InvalidVariableRequestException(final String message) {
     super(message);

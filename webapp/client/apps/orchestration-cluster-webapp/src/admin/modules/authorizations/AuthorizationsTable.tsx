@@ -20,6 +20,7 @@ import {
 import type {Authorization, ResourceType} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {AdminClientConfig} from '#/shared/http/adminClientConfig';
 import {queries} from '#/shared/http/queries';
+import {NoAuthorizationsEmptyState} from './NoAuthorizationsEmptyState';
 import {getAuthorizationsRequestBody} from './getAuthorizationsRequestBody';
 import {DEFAULT_PAGE_SIZE, getEffectiveSort, PAGE_SIZES, type AuthorizationsSearch} from './searchSchema';
 
@@ -31,6 +32,7 @@ type AuthorizationsTableProps = {
 	clientConfig: AdminClientConfig;
 	onSearchChange: (next: Partial<AuthorizationsSearch>) => void;
 	onDelete: (authorization: Authorization) => void;
+	onCreate: () => void;
 };
 
 const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
@@ -39,6 +41,7 @@ const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
 	clientConfig,
 	onSearchChange,
 	onDelete,
+	onCreate,
 }) => {
 	const {t} = useTranslation();
 	const isUserTask = resourceType === 'USER_TASK';
@@ -127,6 +130,10 @@ const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
 				))}
 			</div>
 		);
+	}
+
+	if (data.page.totalItems === 0 && !search.ownerId && !isPlaceholderData) {
+		return <NoAuthorizationsEmptyState onCreate={onCreate} />;
 	}
 
 	return (

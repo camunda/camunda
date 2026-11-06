@@ -23,7 +23,8 @@ public record GcsBackupConfig(
     int maxConcurrentTransfers,
     int bufferSize,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    Retry retry) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
@@ -31,7 +32,8 @@ public record GcsBackupConfig(
       final int maxConcurrentTransfers,
       final int bufferSize,
       final Optional<Duration> readTimeout,
-      final Optional<Duration> writeTimeout) {
+      final Optional<Duration> writeTimeout,
+      final Retry retry) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
@@ -42,6 +44,7 @@ public record GcsBackupConfig(
     this.bufferSize = bufferSize;
     this.readTimeout = readTimeout;
     this.writeTimeout = writeTimeout;
+    this.retry = requireNonNull(retry);
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -59,6 +62,23 @@ public record GcsBackupConfig(
     }
   }
 
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the library
+   * defaults in place.
+   */
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {
+    public Retry {
+      // gax treats 0 as "no limit on attempts", which would silently not bound the retries
+      maxAttempts.ifPresent(
+          attempts -> {
+            if (attempts <= 0) {
+              throw new ConfigurationException(
+                  "Expected retry maxAttempts to be > 0, but got " + attempts);
+            }
+          });
+    }
+  }
+
   public static final class Builder {
     private String bucketName;
     private String basePath;
@@ -66,6 +86,8 @@ public record GcsBackupConfig(
     private GcsConnectionConfig.Authentication auth;
     private Duration readTimeout;
     private Duration writeTimeout;
+    private Optional<Duration> retryTotalTimeout = Optional.empty();
+    private Optional<Integer> retryMaxAttempts = Optional.empty();
     // 2MiB matches the default used by the GCS library's Path-based upload
     private int bufferSize = 2 * 1024 * 1024;
 
@@ -118,6 +140,16 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withRetryTotalTimeout(final Optional<Duration> retryTotalTimeout) {
+      this.retryTotalTimeout = retryTotalTimeout;
+      return this;
+    }
+
+    public Builder withRetryMaxAttempts(final Optional<Integer> retryMaxAttempts) {
+      this.retryMaxAttempts = retryMaxAttempts;
+      return this;
+    }
+
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
           bucketName,
@@ -126,7 +158,8 @@ public record GcsBackupConfig(
           maxConcurrentTransfers,
           bufferSize,
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          new Retry(retryTotalTimeout, retryMaxAttempts));
     }
   }
 }

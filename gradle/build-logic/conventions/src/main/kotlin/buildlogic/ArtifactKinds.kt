@@ -21,6 +21,7 @@ object ArtifactKind {
   const val MAIN_OUTPUT = "main-output"
   const val GENERATED_ASSERTIONS = "generated-assertions"
   const val DISTRIBUTION_RESOURCES = "distribution-resources"
+  const val DEFAULT_CONFIG = "default-config"
 }
 
 /**

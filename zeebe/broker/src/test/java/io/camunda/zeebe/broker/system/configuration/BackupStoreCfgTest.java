@@ -102,6 +102,29 @@ final class BackupStoreCfgTest {
   }
 
   @Test
+  void canConfigureStoreRetrySettings() {
+    // given
+    final var env =
+        Map.of(
+            "zeebe.broker.data.backup.gcs.retry.totalTimeout",
+            "5s",
+            "zeebe.broker.data.backup.gcs.retry.maxAttempts",
+            "2",
+            "zeebe.broker.data.backup.azure.retry.maxAttempts",
+            "3");
+
+    // when
+    final var backup = TestConfigReader.readConfig("empty", env).getData().getBackup();
+
+    // then
+    assertThat(backup.getGcs().getRetry())
+        .isEqualTo(
+            new GcsBackupStoreConfig.Retry(Optional.of(Duration.ofSeconds(5)), Optional.of(2)));
+    assertThat(backup.getAzure().getRetry())
+        .isEqualTo(new AzureBackupStoreConfig.Retry(Optional.of(3)));
+  }
+
+  @Test
   void shouldPassConfiguredTimeoutsToEveryStore() {
     // given
     final var env =

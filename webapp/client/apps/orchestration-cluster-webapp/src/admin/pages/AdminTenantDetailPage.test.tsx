@@ -211,7 +211,12 @@ describe('<AdminTenantDetailPage />', () => {
 
 		const {screen} = await renderPage({search: {tab: 'roles'}});
 
-		await expect.element(screen.getByText('No roles assigned to this tenant.')).toBeVisible();
+		await expect.element(screen.getByText('No roles assigned to this tenant yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about roles'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign role'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 	});
 
 	it('should assign a user picked from the user search', async ({worker}) => {

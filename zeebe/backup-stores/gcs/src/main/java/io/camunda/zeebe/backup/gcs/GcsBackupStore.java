@@ -13,6 +13,7 @@ import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
 import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
 
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.http.HttpTransportOptions;
 import com.google.cloud.storage.BlobId;
@@ -354,6 +355,22 @@ public final class GcsBackupStore implements BackupStore {
             .orElseGet(optionsBuilder::build));
   }
 
+  /**
+   * Retry settings bounding how long the client keeps retrying a failing request, or empty to leave
+   * the library defaults in place. The defaults retry for up to 50s, which delays reporting an
+   * unreachable endpoint.
+   */
+  static Optional<RetrySettings> retrySettings(final GcsBackupConfig config) {
+    if (config.retry().totalTimeout().isEmpty() && config.retry().maxAttempts().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var settings = ServiceOptions.getDefaultRetrySettings().toBuilder();
+    config.retry().totalTimeout().ifPresent(settings::setTotalTimeoutDuration);
+    config.retry().maxAttempts().ifPresent(settings::setMaxAttempts);
+    return Optional.of(settings.build());
+  }
+
   private static HttpTransportOptions writeTimeoutOptions(
       final HttpTransportOptions.Builder optionsBuilder, final int writeTimeoutMillis) {
     return new HttpTransportOptions(optionsBuilder) {
@@ -380,6 +397,7 @@ public final class GcsBackupStore implements BackupStore {
             .setCredentials(config.connection().auth().credentials());
 
     transportOptions(config).ifPresent(builder::setTransportOptions);
+    retrySettings(config).ifPresent(builder::setRetrySettings);
 
     // Without authentication, we need to set the project ID explicitly
     if (config.connection().auth() instanceof None(final String projectId)) {

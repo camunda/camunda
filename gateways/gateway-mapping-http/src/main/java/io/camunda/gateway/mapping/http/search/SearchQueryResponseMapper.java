@@ -1627,7 +1627,10 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
         .metadata(toVariableMetadata(variableEntity))
         .isTruncated(truncateValues && variableEntity.isPreview())
-        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
+        .value(
+            withRedaction(
+                variableEntity,
+                !truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value()))
         .build();
   }
 
@@ -1658,8 +1661,19 @@ public final class SearchQueryResponseMapper {
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
         .metadata(toVariableMetadata(variableEntity))
-        .value(getFullValueIfPresent(variableEntity))
+        .value(withRedaction(variableEntity, getFullValueIfPresent(variableEntity)))
         .build();
+  }
+
+  /**
+   * A redacted variable is stored with the JSON empty string {@code ""} as its value. The API
+   * returns an empty string instead, so that clients check {@code metadata.protectionModes} rather
+   * than read a value that looks real.
+   */
+  private static String withRedaction(final VariableEntity variableEntity, final String value) {
+    return variableEntity.protectionModes().contains(VariableEntity.ProtectionMode.REDACT)
+        ? ""
+        : value;
   }
 
   private static VariableMetadata toVariableMetadata(final VariableEntity variableEntity) {

@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateVariablesMetadata;
 
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public class ElementRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
           }
           validateOperationReference(variableRequest.getOperationReference(), violations);
+          validateVariablesMetadata(variableRequest.getVariablesMetadata(), violations);
         });
   }
 }

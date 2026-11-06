@@ -54,7 +54,7 @@ tasks.named<ProcessResources>("processResources") {
       "io.camunda.process.test.camundaDockerImageVersion" to project.version.toString(),
       "io.camunda.process.test.connectorsDockerImageName" to "camunda/connectors-bundle",
       // Fixed version as Connectors follow a different release cycle than Camunda.
-      "io.camunda.process.test.connectorsDockerImageVersion" to "8.10.2",
+      "io.camunda.process.test.connectorsDockerImageVersion" to "8.10.3",
     ),
   )
   from(generateGitProperties.map { it.outputFile })

@@ -18,6 +18,8 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateSimpleVariablesMetadata;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateVariablesMetadata;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -89,6 +91,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -105,6 +108,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -119,6 +123,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -169,6 +174,7 @@ public class ProcessInstanceRequestValidator {
           }
 
           validateBusinessId(request.getBusinessId(), violations);
+          validateSimpleVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 

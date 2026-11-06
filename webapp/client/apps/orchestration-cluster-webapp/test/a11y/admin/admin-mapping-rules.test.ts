@@ -78,7 +78,7 @@ test('should have no accessibility violations in the empty state', async ({
 	);
 
 	await adminMappingRulesPage.goto();
-	await expect(page.getByText('No mapping rules found.')).toBeVisible();
+	await expect(page.getByText('No mapping rules created yet')).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().disableRules([DS_ACTIONS_COLUMN_HEADER_RULE]).analyze();
 

@@ -39,8 +39,8 @@ import {
 	isValidResourceId,
 	isValidSecretResourceId,
 } from './authorizationValidation';
+import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 
-const AUTHORIZATIONS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/authorization/';
 const OIDC_OWNER_TYPES: OwnerType[] = ['USER', 'GROUP', 'ROLE', 'MAPPING_RULE', 'CLIENT'];
 const INTERNAL_OWNER_TYPES: OwnerType[] = ['USER', 'GROUP', 'ROLE'];
 const USER_TASK_PROPERTY_NAMES = ['assignee', 'candidateGroups', 'candidateUsers'] as const;
@@ -169,7 +169,7 @@ const AddAuthorizationModal: React.FC<Props> = ({
 										<p className="text-sm leading-5 text-muted-foreground">
 											{t('admin.authorizations.addAuthorizationIntro')}
 											<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
-												<a href={AUTHORIZATIONS_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+												<a href={GUIDE_URLS.authorizations} target="_blank" rel="noopener noreferrer">
 													{t('admin.authorizations.learnMoreLinkLabel')}
 												</a>
 											</Button>

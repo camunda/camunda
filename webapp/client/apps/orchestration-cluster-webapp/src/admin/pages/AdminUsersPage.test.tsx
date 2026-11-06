@@ -42,6 +42,24 @@ describe('<AdminUsersPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first user when there are no users', async () => {
+		const {screen} = await renderPage({users: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No users created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about users'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no users', async () => {
+		const {screen} = await renderPage({users: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No users created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list users', async () => {
 		const user: User = createUser({username: 'john.doe', name: 'John Doe', email: 'john.doe@example.com'});
 

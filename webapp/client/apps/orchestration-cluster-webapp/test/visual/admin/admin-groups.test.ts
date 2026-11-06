@@ -112,7 +112,7 @@ test('should match the empty groups page snapshot', async ({adminGroupsPage, pag
 	network.use(mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createQueryGroupsResponse({items: []}))}));
 
 	await adminGroupsPage.goto();
-	await expect(adminGroupsPage.table.getByText('No groups found.')).toBeVisible();
+	await expect(page.getByText('No groups created yet')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

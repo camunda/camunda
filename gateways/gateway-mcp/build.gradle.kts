@@ -39,6 +39,7 @@ dependencies {
   api(libs.org.github.victools.jsonschema.module.jackson)
   api(libs.org.github.victools.jsonschema.module.swagger2)
   api(libs.io.projectreactor.reactor.core)
+  testImplementation(project(":zeebe-gateway"))
   testImplementation(libs.org.springframework.boot.spring.boot.test)
   testImplementation(libs.org.springframework.spring.test)
   testImplementation(libs.org.mockito.mockito.core)
