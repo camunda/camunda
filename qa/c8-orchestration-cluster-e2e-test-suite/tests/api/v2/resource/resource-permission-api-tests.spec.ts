@@ -36,8 +36,6 @@ import {
   getFormByKey,
   deployInlineFiles,
   deployInlineFilesRaw,
-  deployInlineResources,
-  DeployedResource,
   DeploymentEntry,
   getResource,
   getResourceContent,
@@ -69,17 +67,101 @@ const READ_FORBIDDEN_DETAIL =
   "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
 const GENERIC_PREFIX = 'permission-test';
 
-function deployedAs<T extends {resourceName: string}>(
-  deployed: T[],
+type Deployed = ResourceMetadata & {resourceId: string};
+
+// One deployment for all fixtures of a group. A DMN file yields a decision entry
+// next to its decision requirements entry; only the latter carries the key
+// POST /resources/:key/deletion takes, so decision entries are dropped.
+async function deployAll(
+  request: APIRequestContext,
+  files: InlineResource[],
+): Promise<ResourceMetadata[]> {
+  const {deployments} = (await deployInlineFiles(request, files)) as {
+    deployments: DeploymentEntry[];
+  };
+  return deployments
+    .filter((deployment) => !deployment.decisionDefinition)
+    .map(resourceMetadataOf);
+}
+
+function deployedAs(
+  deployed: ResourceMetadata[],
   file: InlineResource,
-): T {
+): Deployed {
   const match = deployed.find((d) => d.resourceName === file.fileName);
   expect(
-    match,
+    match?.resourceId,
     `${file.fileName} is missing from the deployment`,
   ).toBeDefined();
-  return match!;
+  return match as Deployed;
 }
+
+type DeletableType = {
+  name: string;
+  permission: Permission;
+  file: () => InlineResource;
+  expectStillPresent: (
+    request: APIRequestContext,
+    resourceKey: string,
+  ) => Promise<void>;
+};
+
+const PROCESS: DeletableType = {
+  name: 'process definition',
+  permission: 'DELETE_PROCESS',
+  file: () => inlineBpmnProcess(generateUniqueProcessDefinitionId()),
+  expectStillPresent: (request, processDefinitionKey) =>
+    expectProcessDefinitionState(request, processDefinitionKey, 'ACTIVE'),
+};
+
+const DECISION_REQUIREMENTS: DeletableType = {
+  name: 'decision requirements',
+  permission: 'DELETE_DRD',
+  file: () => inlineDmnDecision(`drd_${generateUniqueId()}`),
+  expectStillPresent: (request, decisionRequirementsKey) =>
+    expect(async () => {
+      const res = await request.get(
+        buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+          decisionRequirementsKey,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 200);
+    }).toPass(defaultAssertionOptions),
+};
+
+const FORM: DeletableType = {
+  name: 'form',
+  permission: 'DELETE_FORM',
+  file: () => {
+    const formId = `form_${generateUniqueId()}`;
+    return {
+      fileName: `${formId}.form`,
+      content: formResourceContent(formId, 'permission test'),
+    };
+  },
+  expectStillPresent: (request, formKey) =>
+    expect(async () => {
+      await assertStatusCode(await getFormByKey(request, formKey), 200);
+    }).toPass(defaultAssertionOptions),
+};
+
+const GENERIC: DeletableType = {
+  name: 'generic resource',
+  permission: 'DELETE_RESOURCE',
+  file: () => inlineGenericResource(GENERIC_PREFIX),
+  expectStillPresent: (request, resourceKey) =>
+    expect(async () => {
+      await assertStatusCode(await getResource(request, resourceKey), 200);
+    }).toPass(defaultAssertionOptions),
+};
+
+const RPA: DeletableType = {
+  name: 'RPA resource',
+  permission: 'DELETE_RESOURCE',
+  file: inlineRpaResource,
+  expectStillPresent: GENERIC.expectStillPresent,
+};
 
 // A new user answers 401 until it is indexed. Retry only that, so a command
 // that should be rejected is judged on its first real answer instead of being
@@ -129,46 +211,23 @@ test.describe('Resource Permission API', () => {
   });
 
   test.describe('Forbidden without permission', () => {
-    let processDefinition: ResourceMetadata;
-    let decisionRequirements: ResourceMetadata;
-    let deployedForm: ResourceMetadata;
-    let generic: DeployedResource;
-    let rpa: DeployedResource;
+    const deletions = [PROCESS, DECISION_REQUIREMENTS, FORM, GENERIC, RPA];
+    const targets = new Map<DeletableType, Deployed>();
+    let generic: Deployed;
+    let rpa: Deployed;
     let userWithoutPermissionsToken: string;
 
     test.beforeAll(async ({request}) => {
-      const formId = `form_${generateUniqueId()}`;
-      const genericFile = inlineGenericResource(GENERIC_PREFIX);
-      const rpaFile = inlineRpaResource();
-      const {deployments} = (await deployInlineFiles(request, [
-        inlineBpmnProcess(generateUniqueProcessDefinitionId()),
-        // A DMN deployment lists its decisions too; the decision requirements
-        // entry carries the key POST /resources/:key/deletion takes.
-        inlineDmnDecision(`drd_${generateUniqueId()}`),
-        {
-          fileName: `${formId}.form`,
-          content: formResourceContent(formId, 'permission test'),
-        },
-        genericFile,
-        rpaFile,
-      ])) as {deployments: DeploymentEntry[]};
-      const entryWith = (field: keyof DeploymentEntry) =>
-        resourceMetadataOf(deployments.find((d) => d[field])!);
-      processDefinition = entryWith('processDefinition');
-      decisionRequirements = entryWith('decisionRequirements');
-      deployedForm = entryWith('form');
-      const resources = deployments
-        .filter((d) => d.resource)
-        .map((d) => resourceMetadataOf(d) as DeployedResource);
-      generic = deployedAs(resources, genericFile);
-      rpa = deployedAs(resources, rpaFile);
-      resourceKeysToCleanUp.push(
-        processDefinition.resourceKey,
-        decisionRequirements.resourceKey,
-        deployedForm.resourceKey,
-        generic.resourceKey,
-        rpa.resourceKey,
+      const files = deletions.map((type) => type.file());
+      const deployed = await deployAll(request, files);
+      deletions.forEach((type, i) =>
+        targets.set(type, deployedAs(deployed, files[i])),
       );
+      resourceKeysToCleanUp.push(
+        ...[...targets.values()].map((target) => target.resourceKey),
+      );
+      generic = targets.get(GENERIC)!;
+      rpa = targets.get(RPA)!;
 
       // No authorization at all: every RESOURCE permission is missing.
       const user = await createUser(request);
@@ -197,79 +256,13 @@ test.describe('Resource Permission API', () => {
       await assertForbiddenRequest(res, forbiddenDetail('CREATE'));
     });
 
-    const deletions: {
-      name: string;
-      permission: Permission;
-      target: () => {resourceKey: string};
-      expectStillPresent: (
-        request: APIRequestContext,
-        resourceKey: string,
-      ) => Promise<void>;
-    }[] = [
-      {
-        name: 'process definition',
-        permission: 'DELETE_PROCESS',
-        target: () => processDefinition,
-        expectStillPresent: (request, processDefinitionKey) =>
-          expectProcessDefinitionState(request, processDefinitionKey, 'ACTIVE'),
-      },
-      {
-        name: 'decision requirements',
-        permission: 'DELETE_DRD',
-        target: () => decisionRequirements,
-        expectStillPresent: (request, decisionRequirementsKey) =>
-          expect(async () => {
-            const res = await request.get(
-              buildUrl('/decision-requirements/{decisionRequirementsKey}', {
-                decisionRequirementsKey,
-              }),
-              {headers: jsonHeaders()},
-            );
-            await assertStatusCode(res, 200);
-          }).toPass(defaultAssertionOptions),
-      },
-      {
-        name: 'form',
-        permission: 'DELETE_FORM',
-        target: () => deployedForm,
-        expectStillPresent: (request, formKey) =>
-          expect(async () => {
-            await assertStatusCode(await getFormByKey(request, formKey), 200);
-          }).toPass(defaultAssertionOptions),
-      },
-      {
-        name: 'generic resource',
-        permission: 'DELETE_RESOURCE',
-        target: () => generic,
-        expectStillPresent: (request, resourceKey) =>
-          expect(async () => {
-            await assertStatusCode(
-              await getResource(request, resourceKey),
-              200,
-            );
-          }).toPass(defaultAssertionOptions),
-      },
-      {
-        name: 'RPA resource',
-        permission: 'DELETE_RESOURCE',
-        target: () => rpa,
-        expectStillPresent: (request, resourceKey) =>
-          expect(async () => {
-            await assertStatusCode(
-              await getResource(request, resourceKey),
-              200,
-            );
-          }).toPass(defaultAssertionOptions),
-      },
-    ];
-
-    for (const {name, permission, target, expectStillPresent} of deletions) {
+    for (const type of deletions) {
       // eslint-disable-next-line playwright/expect-expect
-      test(`Delete ${name} - forbidden without ${permission} permission`, async ({
+      test(`Delete ${type.name} - forbidden without ${type.permission} permission`, async ({
         request,
       }) => {
         // given
-        const {resourceKey} = target();
+        const {resourceKey} = targets.get(type)!;
 
         // when
         const res = await firstAuthenticatedResponse(() =>
@@ -280,10 +273,10 @@ test.describe('Resource Permission API', () => {
 
         // then
         // Deleting it requires the type-specific DELETE_* permission on RESOURCE; the command is rejected.
-        await assertForbiddenRequest(res, forbiddenDetail(permission));
+        await assertForbiddenRequest(res, forbiddenDetail(type.permission));
 
         // and the rejected deletion left the resource in place
-        await expectStillPresent(request, resourceKey);
+        await type.expectStillPresent(request, resourceKey);
       });
     }
 
@@ -374,36 +367,42 @@ test.describe('Resource Permission API', () => {
   });
 
   test.describe('Allowed with the required permission', () => {
-    let readable: DeployedResource;
-    let readableRpa: DeployedResource;
-    let deletable: DeployedResource;
-    let other: DeployedResource;
-    let otherRpa: DeployedResource;
+    const deletionGrants = [PROCESS, DECISION_REQUIREMENTS, FORM, GENERIC];
+    const grantTargets = new Map<
+      DeletableType,
+      {granted: Deployed; outside: Deployed}
+    >();
+    let readable: Deployed;
+    let readableRpa: Deployed;
+    let other: Deployed;
+    let otherRpa: Deployed;
 
     test.beforeAll(async ({request}) => {
       const readableFile = inlineGenericResource(GENERIC_PREFIX);
-      const deletableFile = inlineGenericResource(GENERIC_PREFIX);
       const readableRpaFile = inlineRpaResource();
       const otherFile = inlineGenericResource(GENERIC_PREFIX);
       const otherRpaFile = inlineRpaResource();
-      const {resources} = await deployInlineResources(request, [
+      const deletionFiles = deletionGrants.map((type) => ({
+        granted: type.file(),
+        outside: type.file(),
+      }));
+      const deployed = await deployAll(request, [
         readableFile,
-        deletableFile,
         readableRpaFile,
         otherFile,
         otherRpaFile,
+        ...deletionFiles.flatMap(({granted, outside}) => [granted, outside]),
       ]);
-      readable = deployedAs(resources, readableFile);
-      deletable = deployedAs(resources, deletableFile);
-      readableRpa = deployedAs(resources, readableRpaFile);
-      other = deployedAs(resources, otherFile);
-      otherRpa = deployedAs(resources, otherRpaFile);
-      resourceKeysToCleanUp.push(
-        readable.resourceKey,
-        readableRpa.resourceKey,
-        deletable.resourceKey,
-        other.resourceKey,
-        otherRpa.resourceKey,
+      resourceKeysToCleanUp.push(...deployed.map((d) => d.resourceKey));
+      readable = deployedAs(deployed, readableFile);
+      readableRpa = deployedAs(deployed, readableRpaFile);
+      other = deployedAs(deployed, otherFile);
+      otherRpa = deployedAs(deployed, otherRpaFile);
+      deletionGrants.forEach((type, i) =>
+        grantTargets.set(type, {
+          granted: deployedAs(deployed, deletionFiles[i].granted),
+          outside: deployedAs(deployed, deletionFiles[i].outside),
+        }),
       );
     });
 
@@ -432,42 +431,40 @@ test.describe('Resource Permission API', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    test('Delete resource - allowed only on the resource DELETE_RESOURCE is granted on', async ({
-      request,
-    }) => {
-      // given
-      const token = await createUserWith(
+    for (const type of deletionGrants) {
+      test(`Delete ${type.name} - allowed only on the ${type.name} ${type.permission} is granted on`, async ({
         request,
-        'DELETE_RESOURCE',
-        deletable.resourceId,
-      );
+      }) => {
+        // given
+        const {granted, outside} = grantTargets.get(type)!;
+        const token = await createUserWith(
+          request,
+          type.permission,
+          granted.resourceId,
+        );
 
-      await expect(async () => {
+        await expect(async () => {
+          // when
+          const res = await deleteResource(request, granted.resourceKey, {
+            headers: jsonHeaders(token),
+          });
+
+          // then
+          await assertStatusCode(res, 200);
+        }).toPass(defaultAssertionOptions);
+
         // when
-        const res = await deleteResource(request, deletable.resourceKey, {
+        const res = await deleteResource(request, outside.resourceKey, {
           headers: jsonHeaders(token),
         });
 
         // then
-        await assertStatusCode(res, 200);
-      }).toPass(defaultAssertionOptions);
-
-      // when
-      const res = await deleteResource(request, other.resourceKey, {
-        headers: jsonHeaders(token),
+        // The DELETE_* grant is scoped to one resource id; another resource of
+        // the same type is rejected and stays in place.
+        await assertForbiddenRequest(res, forbiddenDetail(type.permission));
+        await type.expectStillPresent(request, outside.resourceKey);
       });
-
-      // then
-      // DELETE_RESOURCE is scoped to one resourceId; any other resource is rejected
-      // and stays in place.
-      await assertForbiddenRequest(res, forbiddenDetail('DELETE_RESOURCE'));
-      await expect(async () => {
-        await assertStatusCode(
-          await getResource(request, other.resourceKey),
-          200,
-        );
-      }).toPass(defaultAssertionOptions);
-    });
+    }
 
     test('Get resource - allowed only on the resource READ is granted on', async ({
       request,
