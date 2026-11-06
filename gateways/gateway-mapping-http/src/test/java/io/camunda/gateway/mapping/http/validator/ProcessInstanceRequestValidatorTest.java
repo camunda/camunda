@@ -31,9 +31,10 @@ import org.springframework.http.ProblemDetail;
 @DisplayName("ProcessInstanceRequestValidator Tests")
 class ProcessInstanceRequestValidatorTest {
 
+  // The variables rules are covered once in RequestValidatorTest; these only check the wiring.
   @Test
-  @DisplayName("Should reject a null variablesMetadata entry on create")
-  void shouldRejectNullVariablesMetadataEntryOnCreate() {
+  @DisplayName("Should validate variables metadata on create")
+  void shouldValidateVariablesMetadataOnCreate() {
     // given
     final var request =
         ProcessInstanceCreationInstructionByKey.Builder.create()
@@ -51,8 +52,8 @@ class ProcessInstanceRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should reject a null variablesMetadata entry on simple create")
-  void shouldRejectNullVariablesMetadataEntryOnSimpleCreate() {
+  @DisplayName("Should validate variables metadata on simple create")
+  void shouldValidateVariablesMetadataOnSimpleCreate() {
     // given
     final var request = new ProcessInstanceCreationInstruction();
     request.setProcessDefinitionId("process");

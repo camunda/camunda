@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
+import io.camunda.zeebe.gateway.cmd.InvalidRequestException;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -63,10 +63,10 @@ public class GatewayErrorMapper {
           HttpStatus.FORBIDDEN,
           Objects.requireNonNullElse(ade.getMessage(), ""),
           HttpStatus.FORBIDDEN.name());
-    } else if (exception instanceof final InvalidVariableRequestException ive) {
+    } else if (exception instanceof final InvalidRequestException ire) {
       return createProblemDetail(
           mapStatus(Status.INVALID_ARGUMENT),
-          Objects.requireNonNullElse(ive.getMessage(), ""),
+          Objects.requireNonNullElse(ire.getMessage(), ""),
           Status.INVALID_ARGUMENT.name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);

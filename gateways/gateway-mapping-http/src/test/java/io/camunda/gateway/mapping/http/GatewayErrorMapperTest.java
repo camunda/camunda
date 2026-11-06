@@ -246,7 +246,7 @@ public class GatewayErrorMapperTest {
   }
 
   @Test
-  void shouldMapInvalidVariableRequestExceptionToBadRequestProblemDetail() {
+  void shouldMapInvalidRequestExceptionToBadRequestProblemDetail() {
     // given
     final var message =
         "Expected variables metadata to only describe variables set in the request, but found no variable for: 'ssn'";

@@ -13,7 +13,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateVariablesMetadata;
 
 import io.camunda.gateway.protocol.model.SetVariableRequest;
-import io.camunda.gateway.protocol.model.VariableMetadata;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -27,10 +26,7 @@ public class ElementRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
           }
           validateOperationReference(variableRequest.getOperationReference(), violations);
-          validateVariablesMetadata(
-              variableRequest.getVariablesMetadata(),
-              VariableMetadata::getProtectionModes,
-              violations);
+          validateVariablesMetadata(variableRequest.getVariablesMetadata(), violations);
         });
   }
 }

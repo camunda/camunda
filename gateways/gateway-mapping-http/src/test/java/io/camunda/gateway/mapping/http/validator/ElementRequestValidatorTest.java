@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class ElementRequestValidatorTest {
 
   @Test
-  void shouldRejectNullVariablesMetadataEntry() {
+  void shouldValidateVariablesMetadata() {
     // given
     final Map<String, VariableMetadata> metadata = new HashMap<>();
     metadata.put("card", null);

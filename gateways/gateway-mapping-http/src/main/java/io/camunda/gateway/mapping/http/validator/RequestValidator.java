@@ -21,6 +21,7 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.Changeset;
+import io.camunda.gateway.protocol.model.VariableMetadata;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -117,14 +118,31 @@ public final class RequestValidator {
 
   /**
    * Validates the per-variable metadata of a request, so that a malformed entry is rejected with a
-   * 400 instead of failing with a {@link NullPointerException} while the request is mapped.
+   * 400 instead of failing with a {@link NullPointerException} while the request is mapped. Whether
+   * the metadata keys name variables of the request is checked later, for all APIs, by the broker
+   * request's {@code VariablesMetadataValidator}.
    *
    * @param variablesMetadata the metadata keyed by variable name, may be {@code null}
-   * @param protectionModes reads the protection modes of an entry, as the strict and the simple
-   *     request models use different entry types
    * @param violations the list to add validation errors to
    */
-  public static <V> void validateVariablesMetadata(
+  public static void validateVariablesMetadata(
+      final @Nullable Map<String, VariableMetadata> variablesMetadata,
+      final List<String> violations) {
+    validateVariablesMetadata(variablesMetadata, VariableMetadata::getProtectionModes, violations);
+  }
+
+  /** Same as {@code validateVariablesMetadata} for the simple request model's entry type. */
+  public static void validateSimpleVariablesMetadata(
+      final @Nullable Map<String, io.camunda.gateway.protocol.model.simple.VariableMetadata>
+          variablesMetadata,
+      final List<String> violations) {
+    validateVariablesMetadata(
+        variablesMetadata,
+        io.camunda.gateway.protocol.model.simple.VariableMetadata::getProtectionModes,
+        violations);
+  }
+
+  private static <V> void validateVariablesMetadata(
       final @Nullable Map<String, V> variablesMetadata,
       final Function<? super V, ? extends @Nullable Collection<?>> protectionModes,
       final List<String> violations) {

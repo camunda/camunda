@@ -24,8 +24,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("RequestValidator Tests")
 class RequestValidatorTest {
 
-  private static List<ProtectionModeEnum> protectionModes(final VariableMetadata metadata) {
-    return metadata.getProtectionModes();
+  private static VariableMetadata redact() {
+    return VariableMetadata.Builder.create()
+        .protectionModes(List.of(ProtectionModeEnum.REDACT))
+        .build();
   }
 
   @Test
@@ -33,16 +35,23 @@ class RequestValidatorTest {
   void shouldAcceptVariablesMetadataWithProtectionModes() {
     // given
     final List<String> violations = new ArrayList<>();
-    final var metadata =
-        Map.of(
-            "card",
-            VariableMetadata.Builder.create()
-                .protectionModes(List.of(ProtectionModeEnum.REDACT))
-                .build());
 
     // when
-    RequestValidator.validateVariablesMetadata(
-        metadata, RequestValidatorTest::protectionModes, violations);
+    RequestValidator.validateVariablesMetadata(Map.of("card", redact()), violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept an empty list of protection modes")
+  void shouldAcceptEmptyProtectionModes() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final var entry = VariableMetadata.Builder.create().protectionModes(List.of()).build();
+
+    // when
+    RequestValidator.validateVariablesMetadata(Map.of("card", entry), violations);
 
     // then
     assertThat(violations).isEmpty();
@@ -55,8 +64,7 @@ class RequestValidatorTest {
     final List<String> violations = new ArrayList<>();
 
     // when
-    RequestValidator.validateVariablesMetadata(
-        null, RequestValidatorTest::protectionModes, violations);
+    RequestValidator.validateVariablesMetadata(null, violations);
 
     // then
     assertThat(violations).isEmpty();
@@ -71,8 +79,7 @@ class RequestValidatorTest {
     metadata.put("card", null);
 
     // when
-    RequestValidator.validateVariablesMetadata(
-        metadata, RequestValidatorTest::protectionModes, violations);
+    RequestValidator.validateVariablesMetadata(metadata, violations);
 
     // then
     assertThat(violations).singleElement().asString().contains("'card'");
@@ -86,8 +93,7 @@ class RequestValidatorTest {
     final var entry = VariableMetadata.Builder.create().protectionModes(null).build();
 
     // when
-    RequestValidator.validateVariablesMetadata(
-        Map.of("card", entry), RequestValidatorTest::protectionModes, violations);
+    RequestValidator.validateVariablesMetadata(Map.of("card", entry), violations);
 
     // then
     assertThat(violations).singleElement().asString().contains("'card'");
@@ -104,8 +110,23 @@ class RequestValidatorTest {
             .build();
 
     // when
-    RequestValidator.validateVariablesMetadata(
-        Map.of("card", entry), RequestValidatorTest::protectionModes, violations);
+    RequestValidator.validateVariablesMetadata(Map.of("card", entry), violations);
+
+    // then
+    assertThat(violations).singleElement().asString().contains("'card'");
+  }
+
+  @Test
+  @DisplayName("Should validate the simple request model the same way")
+  void shouldValidateSimpleVariables() {
+    // given
+    final List<String> violations = new ArrayList<>();
+    final Map<String, io.camunda.gateway.protocol.model.simple.VariableMetadata> metadata =
+        new HashMap<>();
+    metadata.put("card", null);
+
+    // when
+    RequestValidator.validateSimpleVariablesMetadata(metadata, violations);
 
     // then
     assertThat(violations).singleElement().asString().contains("'card'");

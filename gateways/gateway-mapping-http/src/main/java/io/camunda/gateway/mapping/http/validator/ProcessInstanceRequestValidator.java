@@ -18,6 +18,7 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateSimpleVariablesMetadata;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateVariablesMetadata;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
@@ -44,7 +45,6 @@ import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
 import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
-import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -91,8 +91,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
-          validateVariablesMetadata(
-              request.getVariablesMetadata(), VariableMetadata::getProtectionModes, violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -109,8 +108,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
-          validateVariablesMetadata(
-              request.getVariablesMetadata(), VariableMetadata::getProtectionModes, violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -125,8 +123,7 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
-          validateVariablesMetadata(
-              request.getVariablesMetadata(), VariableMetadata::getProtectionModes, violations);
+          validateVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
@@ -177,10 +174,7 @@ public class ProcessInstanceRequestValidator {
           }
 
           validateBusinessId(request.getBusinessId(), violations);
-          validateVariablesMetadata(
-              request.getVariablesMetadata(),
-              metadata -> metadata.getProtectionModes(),
-              violations);
+          validateSimpleVariablesMetadata(request.getVariablesMetadata(), violations);
         });
   }
 
