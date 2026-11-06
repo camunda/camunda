@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
@@ -116,7 +117,7 @@ public final class RebalanceRun {
   }
 
   /**
-   * The partitions this rebalance covers, in the order it works through them, each with where the
+   * The partitions this rebalance covers, by physical tenant then partition id, each with where the
    * rebalance has got to with it. Empty until the runner has planned the rebalance.
    */
   public List<PartitionRebalance> partitions() {
@@ -127,6 +128,14 @@ public final class RebalanceRun {
   public void plan(final List<PartitionRebalance> planned) {
     partitions.clear();
     partitions.addAll(planned);
+  }
+
+  /**
+   * The index of the pending partition to transfer next (see {@link TransferOrder}), or empty if
+   * none is pending.
+   */
+  public OptionalInt nextToTransfer() {
+    return TransferOrder.next(partitions);
   }
 
   /**
