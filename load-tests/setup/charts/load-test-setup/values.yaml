@@ -46,6 +46,11 @@ leaderBalancer:
   #   Required for Camunda versions before 8.10, which don't ship `/cluster/v2/rebalance`.
   endpoint: v2
 
+  # -- Suspend the CronJob: no rebalance runs until it is resumed, e.g. with
+  # `kubectl patch cronjob leader-balancer -p '{"spec":{"suspend":false}}'`. For the second namespace
+  # of a dual region cluster, which shares its cluster with the first.
+  suspend: false
+
   # -- Dedicated OIDC client for the CronJob, isolated from `loadTest.client.oidc`.
   client:
     oidc:

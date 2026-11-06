@@ -30,6 +30,11 @@
 #   support, so physical_tenant_count > 0 fails fast instead of silently
 #   rendering an incomplete overlay.
 #
+# - dual_region_supported
+#   Set to `true` for versions whose platform chart supports the zone-aware
+#   `orchestration.partitioning` values that generate-dual-region-values.sh writes (chart v15,
+#   Camunda 8.10, and later), so dual_region=true fails fast elsewhere instead of failing the render.
+#
 # - prefer_rest
 #   Whether the load testers prefer REST over gRPC (matches the load-tester
 #   application default). Set to `false` on versions that should keep gRPC (8.7).
@@ -47,6 +52,7 @@ optimize_self_sufficient_storages ?= elasticsearch opensearch
 scenario_max_override_key ?= orchestration.extraConfiguration[1].content=
 install_storage_target ?= install-storage
 physical_tenants_supported ?= true
+dual_region_supported ?= false
 prefer_rest ?= true
 cluster_rebalance_supported ?= true
 k6_data_read_supported ?= true
@@ -61,6 +67,18 @@ chaos ?= false
 # by REST-routing/authorization only).
 # Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
 physical_tenant_count ?= 0
+# Make this namespace one half of a cluster that spans two namespaces, "region-a" and "region-b"
+# (see generate-dual-region-values.sh). Run `make install` in both namespaces, each with the
+# zone of its own brokers and the namespace of the other region:
+#   make install dual_region=true dual_region_zone=region-a dual_region_peer_namespace=c8-x-rb \
+#       dual_region_cluster_name=c8-x
+# Needs secondary_storage=elasticsearch or none, and no Optimize or physical tenants; with
+# elasticsearch, every broker exports to the Elasticsearch of both regions.
+dual_region ?= false
+dual_region_zone ?=
+dual_region_peer_namespace ?=
+# Must be the same in both namespaces: brokers only join a cluster of their own name.
+dual_region_cluster_name ?=
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -107,6 +125,16 @@ _scenario_load_test_flags =
 _scenario_platform_flags =
 endif
 
+# A dual region cluster fills the application-override.yml slot that scenario=max would set, through
+# the same key; generate-dual-region-values.sh folds the scenario=max overrides into its file. The
+# zone topology itself goes through chart values (camunda-platform-dual-region-values.yaml, below).
+ifeq ($(dual_region),true)
+ifeq ($(scenario_max_override_key),)
+$(error dual_region=true requires scenario_max_override_key to be declared by the version Makefile)
+endif
+_scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-dual-region-override.yaml'
+endif
+
 # Construct platform values files based on configuration
 # Starting with the defaults, which are always applied and set common baseline configuration for all
 # set ups. The other values files are focused and only contain the necessary overrides for each storage type.
@@ -151,6 +179,40 @@ $(error physical_tenant_count > 0 is not supported for this Camunda version)
 endif
 endif
 
+# dual_region=true needs a version whose chart supports it, and the settings that tell this
+# namespace which half it is. (Nested conditionals are left-aligned, see above.)
+ifeq ($(dual_region),true)
+ifneq ($(dual_region_supported),true)
+$(error dual_region=true is not supported for this Camunda version)
+endif
+ifeq ($(filter $(dual_region_zone),region-a region-b),)
+$(error dual_region=true requires dual_region_zone to be region-a or region-b)
+endif
+ifeq ($(dual_region_peer_namespace),)
+$(error dual_region=true requires dual_region_peer_namespace)
+endif
+ifeq ($(dual_region_cluster_name),)
+$(error dual_region=true requires dual_region_cluster_name)
+endif
+ifeq ($(filter $(secondary_storage),elasticsearch none),)
+$(error dual_region=true requires secondary_storage=elasticsearch or none)
+endif
+ifeq ($(enable_optimize),true)
+$(error dual_region=true does not support enable_optimize=true)
+endif
+ifneq ($(physical_tenant_count),0)
+$(error dual_region=true does not support physical_tenant_count > 0)
+endif
+# Region A runs the load generators and the leader balancer for the whole cluster, so region B starts
+# without them: no load tester or k6 tests, and a suspended leader balancer CronJob.
+# additional_load_test_configuration comes after these flags, so it can turn them back on.
+ifeq ($(dual_region_zone),region-b)
+_load_test_setup_flags += --set load-tester.enabled=false
+_load_test_setup_flags += --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false
+_load_test_setup_flags += --set leaderBalancer.suspend=true
+endif
+endif
+
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
@@ -170,6 +232,12 @@ platform_values += -f camunda-platform-physical-tenants.yaml
 # The broker fetches the OIDC discovery document from the issuer URL, so with tenants the pinned
 # Keycloak hostname must be reachable from inside the cluster (see generate-physical-tenant-values.sh).
 _load_test_setup_flags += --set keycloak.hostname=keycloak
+endif
+
+# Layer the zone-aware topology of a dual region cluster on top, generated at install/template time
+# by generate-dual-region-values.sh (see the generate-dual-region-values target below).
+ifeq ($(dual_region),true)
+platform_values += -f camunda-platform-dual-region-values.yaml
 endif
 
 # Disable Optimize if not enabled
@@ -225,6 +293,13 @@ install: check-deadline install-load-test-setup $(install_storage_target) instal
 
 .PHONY: install-stable
 install-stable: check-deadline install-load-test-setup $(install_storage_target) install-platform-stable
+
+ifeq ($(dual_region),true)
+install-platform: generate-dual-region-values
+install-platform-stable: generate-dual-region-values
+template: generate-dual-region-values
+template-stable: generate-dual-region-values
+endif
 
 # When physical_tenant_count > 0, also deploy pt1..ptN's own load testers. Appended as the
 # last prerequisite so it runs after the platform is up and the load-test-credentials secret
@@ -333,6 +408,13 @@ install-load-test-physical-tenants:
 	    | kubectl apply -n $(namespace) -f - ; \
 	done
 endif
+
+# Generates camunda-platform-dual-region-values.yaml and camunda-platform-dual-region-override.yaml
+# (see generate-dual-region-values.sh).
+.PHONY: generate-dual-region-values
+generate-dual-region-values:
+	../generate-dual-region-values.sh "$(dual_region_zone)" "$(namespace)" "$(dual_region_peer_namespace)" \
+		"$(dual_region_cluster_name)" "$(secondary_storage)" "$(scenario)"
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
