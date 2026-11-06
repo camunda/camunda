@@ -13,7 +13,11 @@ type StatePayload = {elementState?: string; count?: number};
 const anchorStateOverlaysToCorners = (overlays: OverlayData[]): OverlayData[] =>
 	overlays.map((overlay) => {
 		const {elementState, count} = (overlay.payload ?? {}) as StatePayload;
-		if (overlay.type !== 'instance-state' || count === undefined || elementState === 'completedEndEvents') {
+		if (
+			(overlay.type !== 'instance-state' && !overlay.type.startsWith('statistics-')) ||
+			count === undefined ||
+			elementState === 'completedEndEvents'
+		) {
 			return overlay;
 		}
 		const {position} = overlay;

@@ -24,6 +24,18 @@ describe('anchorStateOverlaysToCorners', () => {
 	});
 
 	it.for([
+		{type: 'statistics-active', position: {bottom: 9, left: 0}, expected: {bottom: 0, left: 0}},
+		{type: 'statistics-incidents', position: {bottom: 9, right: 0}, expected: {bottom: 0, right: 0}},
+		{type: 'statistics-canceled', position: {top: -16, left: 0}, expected: {top: 0, left: 0}},
+	])('should anchor the $type overlay to the element corner', ({type, position, expected}) => {
+		const [overlay] = anchorStateOverlaysToCorners([
+			{type, elementId: 'task', position, payload: {elementState: 'active', count: 1}},
+		]);
+
+		expect(overlay?.position).toEqual(expected);
+	});
+
+	it.for([
 		{type: 'instance-state', payload: {elementState: 'completedEndEvents', count: 1}},
 		{type: 'instance-state', payload: {elementState: 'active'}},
 		{type: 'instance-waiting', payload: {waitingCount: 1}},
