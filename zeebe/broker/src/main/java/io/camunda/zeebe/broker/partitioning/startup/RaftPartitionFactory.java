@@ -11,6 +11,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
+import io.atomix.raft.storage.log.CoalescedFlusher;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.cluster.PartitionId;
@@ -134,7 +135,7 @@ public final class RaftPartitionFactory {
       final FlushConfig config, final ExperimentalCfg experimental) {
     // for backwards compatibility; remove this and flatten when this is removed
     if (experimental.isDisableExplicitRaftFlush()) {
-      return createFlusherFactory(new FlushConfig(false, Duration.ZERO));
+      return createFlusherFactory(new FlushConfig(false, Duration.ZERO, false));
     }
 
     return createFlusherFactory(config);
@@ -142,6 +143,10 @@ public final class RaftPartitionFactory {
 
   private RaftLogFlusher.Factory createFlusherFactory(final FlushConfig config) {
     if (config.enabled()) {
+      if (config.coalesced()) {
+        return threadFactory -> new CoalescedFlusher(threadFactory.createContext());
+      }
+
       final Duration delayTime = config.delayTime();
       if (delayTime.isZero()) {
         return RaftLogFlusher.Factory::direct;

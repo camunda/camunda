@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalMetaStore;
@@ -35,7 +36,10 @@ final class SegmentedJournalWriter {
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
   private final JournalMetrics journalMetrics;
-  private long lastFlushedIndex;
+  // Volatile, as it may be read and advanced by flushing threads other than the writing thread.
+  // Flushes advance it while holding the journal's read lock, truncations lower it while holding
+  // the write lock, so the two never interleave.
+  private volatile long lastFlushedIndex;
 
   private Segment currentSegment;
   private SegmentWriter currentWriter;
@@ -126,9 +130,10 @@ final class SegmentedJournalWriter {
    */
   void deleteAfter(final long index, final boolean preserveDeletedRecords) {
     // reset the last flushed index first to avoid corruption on restart in case of partial
-    // truncation (e.g. the node crashed while deleting segments)
-    lastFlushedIndex = index;
-    metaStore.storeLastFlushedIndex(index);
+    // truncation (e.g. the node crashed while deleting segments). Only ever lower it: deleting
+    // records flushes nothing, so records up to the given index may still not be flushed.
+    lastFlushedIndex = Math.min(lastFlushedIndex, index);
+    metaStore.storeLastFlushedIndex(lastFlushedIndex);
 
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
@@ -147,6 +152,9 @@ final class SegmentedJournalWriter {
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
     currentWriter.truncate(index);
+    if (overwritesDeletedRecords) {
+      currentSegment.markTruncated(index);
+    }
 
     if (overwritesDeletedRecords && preserveDeletedRecords) {
       LOGGER.debug(
@@ -157,10 +165,7 @@ final class SegmentedJournalWriter {
         // unmapped once the last reader let go of it.
         currentSegment = segments.resetSegments(index + 1);
       } else {
-        // Recovery finds the end of a segment's records by the invalidated frame that truncating
-        // left behind. Flush it before the next segment exists, or a restart can find records after
-        // it and resurrect the records deleted here.
-        currentWriter.flushEndOfRecords();
+        // flushes the truncation before the next segment exists, see #createNewSegment
         journalMetrics.observeSegmentCreation(this::createNewSegment);
       }
       currentWriter = currentSegment.writer();
@@ -178,6 +183,8 @@ final class SegmentedJournalWriter {
    * Fetches all segments with a last index greater than or equal to current {@link
    * #getLastFlushedIndex()}. These are then flushed in order. The {@link Segment#lastIndex()} of
    * the last successful segment to be flushed will be stored in the given {@link JournalMetaStore}.
+   * This relies on the given segments not including segments created while flushing, see {@link
+   * SegmentsManager#getTailSegments(long)}.
    *
    * @param dirtySegments the list of segments which need to be flushed
    */
@@ -198,21 +205,50 @@ final class SegmentedJournalWriter {
         flushedIndex = lastSegmentIndex;
       }
     } finally {
-      // store whatever we managed to flush to avoid doing it again
-      if (flushedIndex > lastFlushedIndex) {
-        lastFlushedIndex = flushedIndex;
+      advanceLastFlushedIndex(flushedIndex, segmentsCount);
+    }
+  }
 
-        LOGGER.trace(
-            "Flushed {} segment(s), from index {} to index {}",
-            segmentsCount,
-            lastFlushedIndex,
-            flushedIndex);
-      }
+  /**
+   * Stores whatever we managed to flush to avoid doing it again. Concurrent flushes may race here,
+   * so the index is only ever advanced, and stored together with the in-memory index. As this is
+   * called while holding the journal's read lock, it cannot overtake a truncation, which lowers the
+   * index while holding the write lock. The index is stored before it is published in memory: if
+   * storing fails, the next flush stores it again, instead of skipping it as already flushed.
+   */
+  private synchronized void advanceLastFlushedIndex(
+      final long flushedIndex, final int segmentsCount) {
+    if (flushedIndex > lastFlushedIndex) {
+      // only checked when assertions are enabled, i.e. in tests
+      assert segments.firstSegmentNotForcedUpTo(flushedIndex) == null
+          : "Expected all records up to index %d to be forced, but segment %s was not"
+              .formatted(flushedIndex, segments.firstSegmentNotForcedUpTo(flushedIndex));
+      LOGGER.trace(
+          "Flushed {} segment(s), from index {} to index {}",
+          segmentsCount,
+          lastFlushedIndex,
+          flushedIndex);
+      metaStore.storeLastFlushedIndex(flushedIndex);
+      lastFlushedIndex = flushedIndex;
     }
   }
 
   private void createNewSegment() {
     currentSegment.updateDescriptor();
+
+    // Recovery finds the end of a segment's records by the invalidated frame that truncating left
+    // behind. Flush a truncated segment before the next segment exists, or a restart can find the
+    // deleted records after it, and discard the next segment as overlapping, although its records
+    // may be acknowledged. Flushes do not cover it otherwise: they start from the segment after the
+    // flushed index, which is the next segment once its records are appended.
+    if (currentSegment.hasUnforcedTruncation()) {
+      try {
+        currentSegment.flush();
+      } catch (final FlushException e) {
+        throw new JournalException("Failed to flush truncated segment before rolling over", e);
+      }
+    }
+
     currentSegment = segments.getNextSegment();
     currentWriter = currentSegment.writer();
   }
