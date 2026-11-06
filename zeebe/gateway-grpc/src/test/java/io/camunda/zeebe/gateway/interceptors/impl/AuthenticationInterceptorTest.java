@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.C
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.GROUPS_CLAIMS;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -22,6 +23,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.service.UserServices;
@@ -58,6 +60,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 final class AuthenticationInterceptorTest {
@@ -68,6 +71,7 @@ final class AuthenticationInterceptorTest {
   @Mock private UserServices userServices;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private JwtDecoder jwtDecoder;
+  @Mock private OidcClaimsProvider claimsProvider;
 
   private AuthenticationMetrics metrics;
   private SimpleMeterRegistry meterRegistry;
@@ -964,6 +968,12 @@ final class AuthenticationInterceptorTest {
     return metadata;
   }
 
+  private Metadata createAuthHeader(final String authorization) {
+    final Metadata metadata = new Metadata();
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), authorization);
+    return metadata;
+  }
+
   private String generateToken() {
     final Algorithm algorithm = Algorithm.HMAC256("secret-key");
     return JWT.create()
@@ -1034,5 +1044,65 @@ final class AuthenticationInterceptorTest {
     public MethodDescriptor<ReqT, RespT> getMethodDescriptor() {
       return mock(MethodDescriptor.class);
     }
+  }
+
+  @Test
+  void closesCallAsUnavailableWithoutThrowingWhenDecoderInitializationFails() {
+    // given
+    when(jwtDecoder.decode("token-abc"))
+        .thenThrow(
+            new JwtDecoderInitializationException(
+                "Failed to lazily resolve the supplied JwtDecoder instance",
+                new IllegalArgumentException(
+                    "Unable to resolve Configuration with the provided Issuer of \"https://unreachable.idp.example\"")));
+    final var interceptor = oidcInterceptor();
+    final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
+    final var metadata = createAuthHeader("Bearer token-abc");
+
+    // when: the reported bug was the exception escaping interceptCall (#68254); it must close
+    // the call with UNAVAILABLE instead
+    assertThatCode(() -> interceptor.interceptCall(closedCall, metadata, failingNextHandler()))
+        .doesNotThrowAnyException();
+
+    // then
+    assertThat(closedCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.UNAVAILABLE.getCode());
+              assertThat(status.getDescription()).isEqualTo("Identity provider unavailable");
+            });
+  }
+
+  @Test
+  void closesCallAsInternalWithoutThrowingWhenDecoderFailsUnexpectedly() {
+    // given: any non-Jwt decode failure must not escape the interceptor either; retrying it
+    // would loop on the same bug, so it reports INTERNAL
+    when(jwtDecoder.decode("token-abc")).thenThrow(new IllegalStateException("decode exploded"));
+    final var interceptor = oidcInterceptor();
+    final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
+    final var metadata = createAuthHeader("Bearer token-abc");
+
+    // when
+    assertThatCode(() -> interceptor.interceptCall(closedCall, metadata, failingNextHandler()))
+        .doesNotThrowAnyException();
+
+    // then
+    assertThat(closedCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.INTERNAL.getCode());
+              assertThat(status.getDescription()).isEqualTo("Internal authentication error");
+            });
+  }
+
+  private AuthenticationInterceptor oidcInterceptor() {
+    final var oidc = new OidcConfiguration();
+    oidc.setUsernameClaim("sub");
+    return new AuthenticationInterceptor(
+        Set.of(DEFAULT_PHYSICAL_TENANT_ID),
+        Map.of(DEFAULT_PHYSICAL_TENANT_ID, new Oidc(jwtDecoder, claimsProvider, oidc)),
+        true,
+        Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+        meterRegistry);
   }
 }
