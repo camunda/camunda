@@ -21,7 +21,14 @@ import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+<<<<<<< HEAD
 import org.springframework.context.ApplicationContext;
+=======
+import org.junit.jupiter.api.Timeout;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+>>>>>>> 47764c53 (fix: report a fatal creation error as not live instead of exiting)
 
 class StarterTest {
 
@@ -59,4 +66,95 @@ class StarterTest {
             Tag.of(StarterMetricKeyNames.PROCESS_ID.asString(), "foobar"),
             Tag.of(StarterMetricKeyNames.NB_THREADS.asString(), "2"));
   }
+<<<<<<< HEAD
+=======
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldSeparateLoadGenerationFromDataAvailabilityQueries() {
+    // given
+    final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
+    final var queryClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
+    final var instance = mock(ProcessInstanceEvent.class);
+    when(instance.getProcessInstanceKey()).thenReturn(1L);
+    when(loaderClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(anyString())
+            .latestVersion()
+            .variables(any(Map.class))
+            .send())
+        .thenReturn(CompletedFuture.of(instance));
+
+    final var starterProperties = new StarterProperties();
+    starterProperties.setDurationLimit(1);
+    final var properties = new LoadTesterProperties();
+    properties.setStarter(starterProperties);
+    properties.getOptimize().setReportEvaluationEnabled(false);
+    final var payloadReader = mock(PayloadReader.class);
+    when(payloadReader.readPayload(any())).thenReturn("{}");
+
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.initialize();
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var deployer =
+        new ProcessDeployer(
+            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient, properties, registry, payloadReader, livenessIndicator);
+    final var availabilityMeter =
+        new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
+    final var starter =
+        new Starter(
+            properties,
+            registry,
+            livenessIndicator,
+            scheduler,
+            event -> {
+              creator.close();
+              availabilityMeter.close();
+            });
+
+    // when
+    availabilityMeter.start();
+    creator.start();
+    starter.scheduleFinish();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(20))
+        .until(
+            () -> {
+              final var gauge = registry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
+              return gauge != null && gauge.value() == 1.0;
+            });
+    scheduler.shutdown();
+    verify(loaderClient, atLeastOnce()).newCreateInstanceCommand();
+    verify(loaderClient, never()).newProcessInstanceSearchRequest();
+    verify(queryClient, atLeastOnce()).newProcessInstanceSearchRequest();
+    verify(queryClient, never()).newCreateInstanceCommand();
+    verify(queryClient, never()).newDeployResourceCommand();
+  }
+
+  private static final class CompletedFuture<T> extends CompletableFuture<T>
+      implements CamundaFuture<T> {
+
+    static <T> CompletedFuture<T> of(final T value) {
+      final var future = new CompletedFuture<T>();
+      future.complete(value);
+      return future;
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
+      return super.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public T join(final long timeout, final TimeUnit unit) {
+      return super.join();
+    }
+  }
+>>>>>>> 47764c53 (fix: report a fatal creation error as not live instead of exiting)
 }
