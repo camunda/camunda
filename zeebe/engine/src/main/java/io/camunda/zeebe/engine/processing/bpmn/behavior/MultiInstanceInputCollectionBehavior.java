@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -58,6 +59,9 @@ public class MultiInstanceInputCollectionBehavior {
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final var inputCollectionExpression = element.getLoopCharacteristics().getInputCollection();
     return expressionProcessor.evaluateArrayExpression(
-        inputCollectionExpression, context.getElementInstanceKey(), context.getTenantId());
+        inputCollectionExpression,
+        context.getElementInstanceKey(),
+        context.getTenantId(),
+        ExpressionLabel.inputCollectionExpression(context.getElementId()));
   }
 }
