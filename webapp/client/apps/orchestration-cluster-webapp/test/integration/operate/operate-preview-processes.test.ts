@@ -87,4 +87,51 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 
 		await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toBeVisible();
 	});
+
+	test('should show an error state in the table when the search fails and recover on try again', async ({
+		network,
+		operatePreviewProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+		await operatePreviewProcessesPage.goto('?active=true');
+		await expect(operatePreviewProcessesPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
+			timeout: 15000,
+		});
+
+		network.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '2251799813685249', processDefinitionName: 'Order process'}),
+						],
+					}),
+				),
+			}),
+		);
+		await operatePreviewProcessesPage.instancesTable.getByRole('button', {name: 'Try again'}).click();
+
+		await expect(operatePreviewProcessesPage.instancesTable.getByText('Order process')).toBeVisible();
+	});
+
+	test('should show a permission state in the table when the search is forbidden', async ({
+		network,
+		operatePreviewProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json({}, {status: 403}),
+			}),
+		);
+		await operatePreviewProcessesPage.goto('?active=true');
+
+		await expect(operatePreviewProcessesPage.instancesTable.getByText('You need permission')).toBeVisible({
+			timeout: 15000,
+		});
+		await expect(operatePreviewProcessesPage.instancesTable.getByRole('button', {name: 'Try again'})).toBeVisible();
+	});
 });

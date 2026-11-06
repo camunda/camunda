@@ -243,6 +243,36 @@ describe('<InstancesTable /> (design system)', () => {
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
+	it('should show a permission state when the search is forbidden', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json({}, {status: 403}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByText('You need permission')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+	});
+
+	it('should show the instances after trying again', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+		const screen = await renderInstancesTable();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+
+		worker.use(
+			mockInstances([createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order process'})]),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+
+		await expect.element(screen.getByText('Order process')).toBeVisible();
+	});
+
 	it('should select a row and reflect it in the selection count', async ({worker}) => {
 		worker.use(mockInstances([createProcessInstance({processInstanceKey: '1'})]));
 

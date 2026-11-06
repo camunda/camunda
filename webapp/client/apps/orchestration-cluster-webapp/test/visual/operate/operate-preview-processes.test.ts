@@ -128,3 +128,39 @@ test('should match the instances table snapshot with a selected instance and the
 	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 item selected')).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
+
+test('should match the instances table snapshot when the search fails', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+}) => {
+	network.use(
+		mockQueryProcessInstancesEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
+
+	await expect(operatePreviewProcessesPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
+		timeout: 15000,
+	});
+	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});
+
+test('should match the instances table snapshot when the search is forbidden', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+}) => {
+	network.use(
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json({}, {status: 403}),
+		}),
+	);
+	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
+
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('You need permission')).toBeVisible({
+		timeout: 15000,
+	});
+	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});
