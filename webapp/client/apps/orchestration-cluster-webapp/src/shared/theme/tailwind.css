@@ -219,6 +219,36 @@
 	}
 }
 
+@keyframes instance-agent-shine {
+	0%,
+	100% {
+		background-position: 0% 0%;
+	}
+	50% {
+		background-position: 100% 100%;
+	}
+}
+
+.instance-agent-shine {
+	background-image: linear-gradient(120deg, transparent, var(--primary-action-default), transparent);
+	background-size: 300% 300%;
+	animation: instance-agent-shine 8s linear infinite;
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.instance-agent-shine {
+		animation: none;
+	}
+}
+
 /*
  * The shared BpmnJS renderer emits Carbon variable names, so they are mapped to DS tokens here.
  * Same approach as .dmn-viewer-theme for the BPMN diagram: plain unlayered rules

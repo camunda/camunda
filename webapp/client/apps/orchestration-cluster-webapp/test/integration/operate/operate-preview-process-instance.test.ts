@@ -25,6 +25,7 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
+import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -36,6 +37,7 @@ test.beforeEach(async ({network, page}) => {
 		}),
 	);
 	network.use(
+		...processInstanceDiagramHandlers(),
 		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
@@ -59,14 +61,32 @@ test.beforeEach(async ({network, page}) => {
 });
 
 test.describe('Operate Process Instance DS preview (/operate-preview/processes/:processInstanceId)', () => {
-	test('should render the placeholder shell', async ({operatePreviewProcessInstancePage}) => {
+	test('should render the instance diagram with state overlays', async ({operatePreviewProcessInstancePage}) => {
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(operatePreviewProcessInstancePage.heading).toBeAttached();
 		await expect(operatePreviewProcessInstancePage.header).toBeVisible();
-		await expect(operatePreviewProcessInstancePage.diagramPanelPlaceholder).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagram).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Incidents: 1')).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.bottomPanelPlaceholder).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.variablesTab).toBeVisible();
+	});
+
+	test('should keep the selected element in the URL and clear it on a second canvas click', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(operatePreviewProcessInstancePage.diagram).toBeVisible();
+
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+
+		await expect(page).toHaveURL(/elementId=task-1/);
+
+		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
+
+		await expect(page).not.toHaveURL(/elementId=/);
 	});
 
 	test('should redirect to the default tab and switch tabs through the URL', async ({

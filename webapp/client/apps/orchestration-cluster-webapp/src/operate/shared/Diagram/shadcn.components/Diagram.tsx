@@ -13,6 +13,7 @@ import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from '../Bpm
 import type {OverlayData, OverlayEntry} from '../overlayTypes';
 import {DiagramControls} from './DiagramControls';
 import {DiagramOverlayContext} from '../DiagramOverlayContext';
+import {useFullscreen} from '../useFullscreen';
 
 type OnRootChange = (rootElementId: string, getSelectionRootId: (elementId: string) => string | undefined) => void;
 
@@ -38,46 +39,6 @@ type Props = {
 	customElementClasses?: [elementId: string, className: string][];
 	download?: {xml: string; filename: string};
 	onRenderError?: (error: unknown) => void;
-};
-
-const useFullscreen = (
-	diagramRef: React.RefObject<HTMLDivElement | null>,
-	viewerRef: React.RefObject<BpmnJS | null>,
-) => {
-	const [isFullscreen, setIsFullscreen] = useState(false);
-
-	const handleFullscreen = useCallback(() => {
-		const el = diagramRef.current;
-		if (el === null) {
-			return;
-		}
-
-		if (document.fullscreenElement) {
-			document.exitFullscreen();
-			return;
-		}
-
-		el.requestFullscreen().catch(() => undefined);
-	}, [diagramRef]);
-
-	useEffect(() => {
-		const handleFullscreenChange = () => {
-			setIsFullscreen(document.fullscreenElement === diagramRef.current);
-
-			requestAnimationFrame(() => {
-				viewerRef.current?.notifyResize();
-				viewerRef.current?.zoomReset();
-			});
-		};
-
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-		return () => {
-			document.removeEventListener('fullscreenchange', handleFullscreenChange);
-		};
-	}, [diagramRef, viewerRef]);
-
-	return {isFullscreen, handleFullscreen};
 };
 
 const useMinimap = (
@@ -270,13 +231,11 @@ function Diagram({
 	return (
 		<DiagramOverlayContext.Provider value={activeOverlays}>
 			<div
-				data-testid="diagram"
 				ref={diagramRef}
 				className={cn('bpmn-viewer-theme relative h-full w-full', isFullscreen && 'bg-neutral-background-subtle')}
 			>
 				<div
 					ref={diagramCanvasRef}
-					data-testid="diagram-canvas"
 					role="region"
 					aria-label={t('operate.shared.diagram.label')}
 					className="absolute top-0 left-0 h-full min-h-[200px] w-full"

@@ -19,10 +19,11 @@ type Props = {
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
+	topPanel?: React.ReactNode;
 	children?: React.ReactNode;
 };
 
-const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, header, children}) => {
+const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, header, topPanel, children}) => {
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -47,11 +48,15 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, h
 							direction={SplitDirection.Vertical}
 							minHeights={[panelMinHeight, panelMinHeight]}
 						>
-							<section className="flex h-full flex-col">
-								<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
-								<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-									{t('operate.processInstance.scaffold.diagramPanelPlaceholder')}
-								</Text>
+							<section className="flex h-full min-h-0 flex-col">
+								{topPanel ?? (
+									<>
+										<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
+										<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
+											{t('operate.processInstance.scaffold.diagramPanelPlaceholder')}
+										</Text>
+									</>
+								)}
 							</section>
 							<section className="flex h-full flex-col overflow-hidden">
 								<Tabs
