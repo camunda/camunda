@@ -681,7 +681,7 @@ class SearchQueryResponseMapperTest {
         new VariableEntity(
             123L,
             "cardNumber",
-            "",
+            "\"\"",
             null,
             false,
             456L,
@@ -708,7 +708,7 @@ class SearchQueryResponseMapperTest {
         new VariableEntity(
             123L,
             "cardNumber",
-            "",
+            "\"\"",
             null,
             false,
             456L,

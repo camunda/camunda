@@ -91,9 +91,6 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   @Override
   public String getValue() {
-    if (valueProp.getValue().capacity() == 0) {
-      return "";
-    }
     if (cachedJsonValue == null) {
       cachedJsonValue = MsgPackConverter.convertToJson(valueProp.getValue());
     }

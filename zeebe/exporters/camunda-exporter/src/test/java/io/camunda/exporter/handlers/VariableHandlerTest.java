@@ -232,7 +232,7 @@ public class VariableHandlerTest {
   }
 
   @Test
-  void shouldStoreEmptyValueWhenRecordValueIsRedacted() {
+  void shouldStoreRedactedValueAsIs() {
     // given
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -242,7 +242,7 @@ public class VariableHandlerTest {
                     .withValue(
                         ImmutableVariableRecordValue.builder()
                             .from(factory.generateObject(VariableRecordValue.class))
-                            .withValue("")
+                            .withValue("\"\"")
                             .withMetadata(
                                 ImmutableVariableMetadataValue.builder()
                                     .addProtectionModes(ProtectionMode.REDACT)
@@ -254,7 +254,7 @@ public class VariableHandlerTest {
     underTest.updateEntity(variableRecord, variableEntity);
 
     // then
-    assertThat(variableEntity.getValue()).isEmpty();
+    assertThat(variableEntity.getValue()).isEqualTo("\"\"");
     assertThat(variableEntity.getFullValue()).isNull();
     assertThat(variableEntity.getIsPreview()).isFalse();
   }
