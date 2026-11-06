@@ -10,9 +10,7 @@ import {expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
-import {
-  generateUniqueId,
-} from '../../utils/constants';
+import {generateUniqueId} from '../../utils/constants';
 
 type DeploymentItem = Record<string, Record<string, unknown> | undefined>;
 
@@ -298,8 +296,12 @@ export function rpaResourceContent(rpaId: string, versionTag?: string): string {
   });
 }
 
-export function uniqueResourceName(prefix: string, extension: string): string {
-  return `${prefix}-${generateUniqueId()}.${extension}`;
+export function formResourceContent(formId: string, label: string): string {
+  return JSON.stringify({
+    type: 'default',
+    id: formId,
+    components: [{key: 'applicant', label, type: 'textfield'}],
+  });
 }
 
 export function inlineBpmnProcess(processId: string): InlineResource {
@@ -326,13 +328,6 @@ export function inlineDmnDecision(drdId: string): InlineResource {
   </decision>
 </definitions>`,
   };
-}
-
-export function inlineGenericResource(
-  prefix: string = 'generic-resource',
-  content: string = `# ${prefix}`,
-): InlineResource {
-  return {fileName: uniqueResourceName(prefix, 'md'), content};
 }
 
 export function inlineRpaResource(): InlineResource {
@@ -486,18 +481,40 @@ export async function deployInlineResource(
 // The endpoint constants are exported because a spec needs the same literal a
 // second time for `validateResponse({path, ...})`. Reusing the constant keeps
 // the requested path and the validated path from drifting apart.
-export const RESOURCE_SEARCH_ENDPOINT = '/resources/search';
 export const RESOURCE_ENDPOINT = '/resources/{resourceKey}';
 export const RESOURCE_CONTENT_ENDPOINT = '/resources/{resourceKey}/content';
-export const RESOURCE_CONTENT_BINARY_ENDPOINT =
-  '/resources/{resourceKey}/content/binary';
 export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
+
+export interface ResourceRequestOptions {
+  headers?: Record<string, string>;
+}
+
+export function getResource(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
+  });
+}
+
+export function getResourceContent(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_CONTENT_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
+  });
+}
 
 export function deleteResource(
   request: APIRequestContext,
   resourceKey: string,
+  options: ResourceRequestOptions = {},
 ): Promise<APIResponse> {
   return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
-    headers: defaultHeaders(),
+    headers: options.headers ?? defaultHeaders(),
   });
 }

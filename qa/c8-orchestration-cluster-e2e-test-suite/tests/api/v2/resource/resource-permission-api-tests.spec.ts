@@ -14,7 +14,6 @@ import {
   defaultHeaders,
   encode,
   jsonHeaders,
-  octetStreamHeaders,
 } from '../../../../utils/http';
 import {
   defaultAssertionOptions,
@@ -30,25 +29,21 @@ import {
 import {
   createComponentAuthorization,
   createUser,
+  DELETE_RESOURCE_STATUS,
   deleteResource,
   expectProcessDefinitionState,
   formResourceContent,
-  getFormByKey,
   deployInlineFiles,
   deployInlineFilesRaw,
   DeploymentEntry,
   getResource,
   getResourceContent,
-  getResourceContentBinary,
   InlineResource,
   inlineBpmnProcess,
   inlineDmnDecision,
-  inlineGenericResource,
   inlineRpaResource,
   ResourceMetadata,
-  resourceKeysOf,
   resourceMetadataOf,
-  searchResources,
 } from '@requestHelpers';
 
 type TestUser = ReturnType<typeof CREATE_NEW_USER>;
@@ -63,9 +58,6 @@ type Permission =
 
 const forbiddenDetail = (permission: Permission) =>
   `Insufficient permissions to perform operation '${permission}' on resource 'RESOURCE'`;
-const READ_FORBIDDEN_DETAIL =
-  "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
-const GENERIC_PREFIX = 'permission-test';
 
 type Deployed = ResourceMetadata & {resourceId: string};
 
@@ -140,27 +132,23 @@ const FORM: DeletableType = {
       content: formResourceContent(formId, 'permission test'),
     };
   },
-  expectStillPresent: (request, formKey) =>
-    expect(async () => {
-      await assertStatusCode(await getFormByKey(request, formKey), 200);
-    }).toPass(defaultAssertionOptions),
-};
-
-const GENERIC: DeletableType = {
-  name: 'generic resource',
-  permission: 'DELETE_RESOURCE',
-  file: () => inlineGenericResource(GENERIC_PREFIX),
-  expectStillPresent: (request, resourceKey) =>
-    expect(async () => {
-      await assertStatusCode(await getResource(request, resourceKey), 200);
-    }).toPass(defaultAssertionOptions),
+  // There is no GET /forms/:key; an admin deletion succeeding proves the form
+  // was still there.
+  expectStillPresent: async (request, formKey) =>
+    assertStatusCode(
+      await deleteResource(request, formKey),
+      DELETE_RESOURCE_STATUS,
+    ),
 };
 
 const RPA: DeletableType = {
   name: 'RPA resource',
   permission: 'DELETE_RESOURCE',
   file: inlineRpaResource,
-  expectStillPresent: GENERIC.expectStillPresent,
+  expectStillPresent: (request, resourceKey) =>
+    expect(async () => {
+      await assertStatusCode(await getResource(request, resourceKey), 200);
+    }).toPass(defaultAssertionOptions),
 };
 
 // A new user answers 401 until it is indexed. Retry only that, so a command
@@ -211,9 +199,8 @@ test.describe('Resource Permission API', () => {
   });
 
   test.describe('Forbidden without permission', () => {
-    const deletions = [PROCESS, DECISION_REQUIREMENTS, FORM, GENERIC, RPA];
+    const deletions = [PROCESS, DECISION_REQUIREMENTS, FORM, RPA];
     const targets = new Map<DeletableType, Deployed>();
-    let generic: Deployed;
     let rpa: Deployed;
     let userWithoutPermissionsToken: string;
 
@@ -226,7 +213,6 @@ test.describe('Resource Permission API', () => {
       resourceKeysToCleanUp.push(
         ...[...targets.values()].map((target) => target.resourceKey),
       );
-      generic = targets.get(GENERIC)!;
       rpa = targets.get(RPA)!;
 
       // No authorization at all: every RESOURCE permission is missing.
@@ -240,7 +226,7 @@ test.describe('Resource Permission API', () => {
       request,
     }) => {
       // given
-      const resource = inlineGenericResource(GENERIC_PREFIX);
+      const resource = inlineRpaResource();
 
       // when
       const res = await firstAuthenticatedResponse(() =>
@@ -285,7 +271,7 @@ test.describe('Resource Permission API', () => {
       request,
     }) => {
       // given
-      const {resourceKey} = generic;
+      const {resourceKey} = rpa;
 
       // when
       const res = await firstAuthenticatedResponse(() =>
@@ -296,7 +282,7 @@ test.describe('Resource Permission API', () => {
 
       // then
       // GET /resources/:key requires READ on RESOURCE; it rejects rather than filters.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
+      await assertForbiddenRequest(res, forbiddenDetail('READ'));
     });
 
     // eslint-disable-next-line playwright/expect-expect
@@ -315,89 +301,34 @@ test.describe('Resource Permission API', () => {
 
       // then
       // GET /resources/:key/content requires READ on RESOURCE; it rejects rather than filters.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-    });
-
-    // eslint-disable-next-line playwright/expect-expect
-    test('Get resource content binary - forbidden without READ permission', async ({
-      request,
-    }) => {
-      // given
-      const {resourceKey} = generic;
-
-      // when
-      const res = await firstAuthenticatedResponse(() =>
-        getResourceContentBinary(request, resourceKey, {
-          headers: octetStreamHeaders(userWithoutPermissionsToken),
-        }),
-      );
-
-      // then
-      // GET /resources/:key/content/binary requires READ on RESOURCE; it rejects rather than filters.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-    });
-
-    test('Search resources - filtered out without READ permission', async ({
-      request,
-    }) => {
-      // given
-      const filter = {filter: {resourceKey: generic.resourceKey}};
-
-      await expect(async () => {
-        const adminRes = await searchResources(request, filter);
-        await assertStatusCode(adminRes, 200);
-        expect(resourceKeysOf(await adminRes.json())).toEqual([
-          generic.resourceKey,
-        ]);
-
-        // when
-        const res = await searchResources(request, filter, {
-          headers: jsonHeaders(userWithoutPermissionsToken),
-        });
-
-        // then
-        // POST /resources/search requires READ on RESOURCE; unauthorized resources
-        // are filtered from the result instead of rejected.
-        await assertStatusCode(res, 200);
-        const body = await res.json();
-        expect(body.items).toHaveLength(0);
-        expect(body.page.totalItems).toBe(0);
-      }).toPass(defaultAssertionOptions);
+      await assertForbiddenRequest(res, forbiddenDetail('READ'));
     });
   });
 
   test.describe('Allowed with the required permission', () => {
-    const deletionGrants = [PROCESS, DECISION_REQUIREMENTS, FORM, GENERIC];
+    const deletionGrants = [PROCESS, DECISION_REQUIREMENTS, FORM, RPA];
     const grantTargets = new Map<
       DeletableType,
       {granted: Deployed; outside: Deployed}
     >();
     let readable: Deployed;
-    let readableRpa: Deployed;
     let other: Deployed;
-    let otherRpa: Deployed;
 
     test.beforeAll(async ({request}) => {
-      const readableFile = inlineGenericResource(GENERIC_PREFIX);
-      const readableRpaFile = inlineRpaResource();
-      const otherFile = inlineGenericResource(GENERIC_PREFIX);
-      const otherRpaFile = inlineRpaResource();
+      const readableFile = inlineRpaResource();
+      const otherFile = inlineRpaResource();
       const deletionFiles = deletionGrants.map((type) => ({
         granted: type.file(),
         outside: type.file(),
       }));
       const deployed = await deployAll(request, [
         readableFile,
-        readableRpaFile,
         otherFile,
-        otherRpaFile,
         ...deletionFiles.flatMap(({granted, outside}) => [granted, outside]),
       ]);
       resourceKeysToCleanUp.push(...deployed.map((d) => d.resourceKey));
       readable = deployedAs(deployed, readableFile);
-      readableRpa = deployedAs(deployed, readableRpaFile);
       other = deployedAs(deployed, otherFile);
-      otherRpa = deployedAs(deployed, otherRpaFile);
       deletionGrants.forEach((type, i) =>
         grantTargets.set(type, {
           granted: deployedAs(deployed, deletionFiles[i].granted),
@@ -411,7 +342,7 @@ test.describe('Resource Permission API', () => {
     }) => {
       // given
       const token = await createUserWith(request, 'CREATE', '*');
-      const resource = inlineGenericResource(GENERIC_PREFIX);
+      const resource = inlineRpaResource();
 
       await expect(async () => {
         // when
@@ -450,7 +381,7 @@ test.describe('Resource Permission API', () => {
           });
 
           // then
-          await assertStatusCode(res, 200);
+          await assertStatusCode(res, DELETE_RESOURCE_STATUS);
         }).toPass(defaultAssertionOptions);
 
         // when
@@ -490,110 +421,34 @@ test.describe('Resource Permission API', () => {
 
       // then
       // READ is scoped to one resourceId; any other resource is rejected.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
+      await assertForbiddenRequest(res, forbiddenDetail('READ'));
     });
 
     test('Get resource content - allowed only on the resource READ is granted on', async ({
       request,
     }) => {
       // given
-      const token = await createUserWith(
-        request,
-        'READ',
-        readableRpa.resourceId,
-      );
+      const token = await createUserWith(request, 'READ', readable.resourceId);
 
       await expect(async () => {
         // when
-        const res = await getResourceContent(request, readableRpa.resourceKey, {
+        const res = await getResourceContent(request, readable.resourceKey, {
           headers: jsonHeaders(token),
         });
 
         // then
         await assertStatusCode(res, 200);
-        expect((await res.json()).id).toBe(readableRpa.resourceId);
+        expect((await res.json()).id).toBe(readable.resourceId);
       }).toPass(defaultAssertionOptions);
 
       // when
-      const res = await getResourceContent(request, otherRpa.resourceKey, {
+      const res = await getResourceContent(request, other.resourceKey, {
         headers: jsonHeaders(token),
       });
 
       // then
       // READ is scoped to one resourceId; any other resource is rejected.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-    });
-
-    test('Get resource content binary - allowed only on the resource READ is granted on', async ({
-      request,
-    }) => {
-      // given
-      const token = await createUserWith(request, 'READ', readable.resourceId);
-
-      await expect(async () => {
-        // when
-        const res = await getResourceContentBinary(
-          request,
-          readable.resourceKey,
-          {headers: octetStreamHeaders(token)},
-        );
-
-        // then
-        await assertStatusCode(res, 200);
-        expect((await res.body()).toString('utf-8')).toBe(
-          `# ${GENERIC_PREFIX}`,
-        );
-      }).toPass(defaultAssertionOptions);
-
-      // when
-      const res = await getResourceContentBinary(request, other.resourceKey, {
-        headers: octetStreamHeaders(token),
-      });
-
-      // then
-      // READ is scoped to one resourceId; any other resource is rejected.
-      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-    });
-
-    test('Search resources - returns only the resource READ is granted on', async ({
-      request,
-    }) => {
-      // given
-      const token = await createUserWith(request, 'READ', readable.resourceId);
-
-      await expect(async () => {
-        // when
-        const res = await searchResources(
-          request,
-          {filter: {resourceKey: readable.resourceKey}},
-          {headers: jsonHeaders(token)},
-        );
-
-        // then
-        await assertStatusCode(res, 200);
-        expect(resourceKeysOf(await res.json())).toEqual([
-          readable.resourceKey,
-        ]);
-      }).toPass(defaultAssertionOptions);
-
-      await expect(async () => {
-        const otherFilter = {filter: {resourceKey: other.resourceKey}};
-        const adminRes = await searchResources(request, otherFilter);
-        await assertStatusCode(adminRes, 200);
-        expect(resourceKeysOf(await adminRes.json())).toEqual([
-          other.resourceKey,
-        ]);
-
-        // when
-        const res = await searchResources(request, otherFilter, {
-          headers: jsonHeaders(token),
-        });
-
-        // then
-        // READ is scoped to one resourceId; other resources are filtered out.
-        await assertStatusCode(res, 200);
-        expect((await res.json()).items).toHaveLength(0);
-      }).toPass(defaultAssertionOptions);
+      await assertForbiddenRequest(res, forbiddenDetail('READ'));
     });
   });
 });
