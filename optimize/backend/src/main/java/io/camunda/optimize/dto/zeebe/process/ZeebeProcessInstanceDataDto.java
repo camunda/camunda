@@ -11,6 +11,8 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CaseDataValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceKind;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -133,6 +135,16 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   @Override
   public String getBusinessId() {
     return ""; // not used in Optimize
+  }
+
+  @Override
+  public ProcessInstanceKind getKind() {
+    return null; // not used in Optimize
+  }
+
+  @Override
+  public CaseDataValue getCaseData() {
+    return null; // not used in Optimize
   }
 
   @Override

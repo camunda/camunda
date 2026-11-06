@@ -210,6 +210,28 @@ public interface ProcessInstanceRecordValue
   String getBusinessId();
 
   /**
+   * Returns whether this instance is an ordinary process instance or a case instance.
+   *
+   * <p>The kind is set once when the instance is created and never changes. It is carried on every
+   * record of the instance, including the records of its elements.
+   *
+   * @return the kind of the instance
+   * @since 8.11
+   */
+  ProcessInstanceKind getKind();
+
+  /**
+   * Returns the case data of this instance.
+   *
+   * <p>Only the records of the process element itself (bpmnElementType {@code PROCESS}) of a case
+   * instance carry case data. The records of the other elements of the instance do not.
+   *
+   * @return the case data of the instance
+   * @since 8.11
+   */
+  CaseDataValue getCaseData();
+
+  /**
    * Returns the resume cursor carried by a {@code RESUME_JOBS} command: the job key of the last job
    * a previous resume cycle re-activated, so the next cycle can seek past already-resumed jobs
    * instead of re-scanning from the beginning. A negative value means "start from the beginning."

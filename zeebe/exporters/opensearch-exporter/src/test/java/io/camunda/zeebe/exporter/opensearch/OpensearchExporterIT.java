@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
@@ -76,8 +77,8 @@ final class OpensearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
-  // the records during serialization
+  // omit authorizations, agent, requestChannelType, requestToolName and the kind and case data of
+  // process instances since they are removed from the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -85,6 +86,12 @@ final class OpensearchExporterIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
+              random -> null)
+          .registerRandomizer(
+              field ->
+                  ("kind".equals(field.getName()) || "caseData".equals(field.getName()))
+                      && ProcessInstanceRecordValue.class.isAssignableFrom(
+                          field.getDeclaringClass()),
               random -> null);
 
   @BeforeEach
