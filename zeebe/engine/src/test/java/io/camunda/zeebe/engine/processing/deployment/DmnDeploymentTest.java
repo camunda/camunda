@@ -52,6 +52,8 @@ public final class DmnDeploymentTest {
 
   private static final String DMN_MISSING_DECISION_NAME =
       "/dmn/decision-table-with-missing-decision-name.dmn";
+  private static final String DMN_MISSING_DECISION_ID = "/dmn/decision-without-id.dmn";
+  private static final String DRG_MISSING_ID = "/dmn/drg-with-missing-id.dmn";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -166,6 +168,48 @@ public final class DmnDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
     assertThat(deploymentEvent.getRejectionReason()).contains("because \"value\" is null");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDrgId() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DRG_MISSING_ID).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the DRG to have an ID, but it has none in resource '%s'",
+                DRG_MISSING_ID));
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDecisionId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_MISSING_DECISION_ID)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the decision 'No ID' to have an ID, but it has none in resource '%s'",
+                DMN_MISSING_DECISION_ID));
   }
 
   @Test

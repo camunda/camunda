@@ -76,7 +76,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkForDuplicateIds(resource, parsedDrg, deployment)
+      return checkDrgId(resource, parsedDrg)
+          .flatMap(valid -> checkForDuplicateIds(resource, parsedDrg, deployment))
           .map(
               noDuplicates -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
@@ -157,6 +158,19 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                                 .setDeploymentKey(decision.getDeploymentKey()));
                       });
             });
+  }
+
+  private Either<Failure, ?> checkDrgId(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+    final var decisionRequirementsId = parsedDrg.getId();
+    if (decisionRequirementsId == null || decisionRequirementsId.isEmpty()) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected the DRG to have an ID, but it has none in resource '%s'",
+                  resource.getResourceName())));
+    }
+    return NO_DUPLICATES;
   }
 
   private Either<Failure, ?> checkForDuplicateIds(
