@@ -37,6 +37,8 @@ const PROCESS_DEFINITION_STATISTICS_ENDPOINT =
   '/process-definitions/{processDefinitionKey}/statistics/element-instances';
 const READ_FORBIDDEN_DETAIL =
   "Unauthorized to perform operation 'READ_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'";
+const FORM_READ_FORBIDDEN_DETAIL =
+  "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
 const LINKED_START_FORM_ID = 'sign_up_form';
 
 type TestUser = {
@@ -107,6 +109,10 @@ test.describe('Process Definition Permission API - Forbidden', () => {
   let userWithoutPermissionsToken: string;
   let userWithReadPermission: TestUser;
   let userWithReadPermissionToken: string;
+  // Holds READ_PROCESS_DEFINITION only, without the wildcard RESOURCE READ
+  // that would also grant form reads.
+  let userWithProcessReadOnly: TestUser;
+  let userWithProcessReadOnlyToken: string;
 
   test.beforeAll(async ({request}) => {
     await deploy([`./resources/${LINKED_START_FORM_ID}.form`]);
@@ -131,12 +137,25 @@ test.describe('Process Definition Permission API - Forbidden', () => {
     userWithReadPermissionToken = encode(
       `${userWithReadPermission.username}:${userWithReadPermission.password}`,
     );
+
+    userWithProcessReadOnly = await createUser(request);
+    await createComponentAuthorization(request, {
+      ownerId: userWithProcessReadOnly.username,
+      ownerType: 'USER',
+      resourceId: readableProcessId,
+      resourceType: 'PROCESS_DEFINITION',
+      permissionTypes: ['READ_PROCESS_DEFINITION'],
+    });
+    userWithProcessReadOnlyToken = encode(
+      `${userWithProcessReadOnly.username}:${userWithProcessReadOnly.password}`,
+    );
   });
 
   test.afterAll(async ({request}) => {
     await cleanupUsers(request, [
       userWithoutPermissions.username,
       userWithReadPermission.username,
+      userWithProcessReadOnly.username,
     ]);
   });
 
@@ -346,15 +365,23 @@ test.describe('Process Definition Permission API - Forbidden', () => {
       // when
       const res = await request.get(
         buildUrl(PROCESS_DEFINITION_FORM_ENDPOINT, {processDefinitionKey}),
-        {headers: jsonHeaders(userWithReadPermissionToken)},
+        {headers: jsonHeaders(userWithProcessReadOnlyToken)},
       );
 
       // then
       // Only READ_PROCESS_DEFINITION is checked; the linked form is returned
-      // without any permission on the FORM resource.
+      // to a user holding no RESOURCE permission at all.
       await assertStatusCode(res, 200);
       const body = await res.json();
       expect(body.formId).toBe(LINKED_START_FORM_ID);
+
+      // The same user is rejected when reading the form directly, proving
+      // it has no form read permission.
+      const formRes = await request.get(
+        buildUrl('/forms/{formKey}', {formKey: body.formKey}),
+        {headers: jsonHeaders(userWithProcessReadOnlyToken)},
+      );
+      await assertForbiddenRequest(formRes, FORM_READ_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });
 
