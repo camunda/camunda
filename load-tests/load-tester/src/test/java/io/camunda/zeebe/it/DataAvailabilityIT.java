@@ -8,14 +8,19 @@
 package io.camunda.zeebe.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+<<<<<<< HEAD
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+=======
+import static org.awaitility.Awaitility.await;
+>>>>>>> e477398e (refactor: start the starter components from application events)
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -36,10 +41,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>This test relies on the {@link CamundaContainer}'s built-in H2 database and RDBMS exporter,
  * which flush immediately (PT0S), making process instances queryable almost instantly.
  *
- * <p>The starter runs for {@code duration-limit} seconds (blocking Spring Boot startup). During
- * that time, it creates instances and the {@link
- * io.camunda.zeebe.metrics.ProcessInstanceStartMeter} periodically checks if they are queryable. By
- * the time this test method executes, the data availability latency metric should have recordings.
+ * <p>The starter runs for {@code duration-limit} seconds in the background. During that time, it
+ * creates instances and the {@link io.camunda.zeebe.metrics.ProcessInstanceStartMeter} periodically
+ * checks if they are queryable. The test waits until the data availability latency metric has
+ * recordings.
  */
 @Testcontainers
 @SpringBootTest(
@@ -69,18 +74,29 @@ class DataAvailabilityIT {
 
   @Test
   void shouldMeasureDataAvailabilityLatency() {
+<<<<<<< HEAD
     // given - starter has run for duration-limit seconds with data availability monitoring, while
     // searches on the default client are rejected: only the separate query client can measure it
+=======
+    // given - starter runs in the background with data availability monitoring
+>>>>>>> e477398e (refactor: start the starter components from application events)
 
     // then - verify that data availability latency was recorded
-    final var timer =
-        meterRegistry.find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName()).timer();
-    assertThat(timer)
-        .describedAs("Data availability latency timer should be registered")
-        .isNotNull();
-    assertThat(timer.count())
-        .describedAs("At least one data availability measurement should be recorded")
-        .isGreaterThan(0);
+    await()
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              final var timer =
+                  meterRegistry
+                      .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                      .timer();
+              assertThat(timer)
+                  .describedAs("Data availability latency timer should be registered")
+                  .isNotNull();
+              assertThat(timer.count())
+                  .describedAs("At least one data availability measurement should be recorded")
+                  .isGreaterThan(0);
+            });
   }
 
   @TestConfiguration
