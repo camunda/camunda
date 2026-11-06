@@ -1,0 +1,38 @@
+[project]
+name = "load_test"
+version = "0.1.0"
+description = "Add your description here"
+authors = []
+requires-python = ">=3.13"
+dependencies = [
+    "asyncclick>=8.4.2.1",
+    "httpx>=0.28.1",
+    "pyyaml>=6.0.3",
+    "rich>=15.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "ty",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13"]
+build-backend = "uv_build"
+
+[project.scripts]
+load-test-tool = "load_test.cli:main"
+
+[tool.ruff.lint]
+ignore = [
+    # It's OK to have long line
+    "E501",
+]
+extend-select = [
+    # Sort imports
+    "I",
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
