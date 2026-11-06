@@ -20,6 +20,8 @@ import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.transport.TransportException;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
@@ -124,6 +126,67 @@ public class ElasticsearchRepository implements AutoCloseable {
     }
 
     return boolBuilder.build()._toQuery();
+  }
+
+  /**
+   * Build a query to find process instances that have completed with an endDate older than the
+   * provided endDateTimePoint (e.g. "now-1h")
+   *
+   * @param endDateTimePoint cutoff time
+   * @param partitionId the partition we are looking at
+   * @param retentionMode controls whether we use PI hierarchy or not when deciding which PIs we
+   *     look for
+   * @return an ES Query that can be used to find those process instances
+   */
+  protected static Query finishedProcessInstancesQuery(
+      final String endDateTimePoint,
+      final int partitionId,
+      final ProcessInstanceRetentionMode retentionMode) {
+    final var endDateQ =
+        QueryBuilders.range(
+            q -> q.date(d -> d.field(ListViewTemplate.END_DATE).lte(endDateTimePoint)));
+    final var isProcessInstanceQ =
+        QueryBuilders.term(
+            q ->
+                q.field(ListViewTemplate.JOIN_RELATION)
+                    .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
+
+    final Query hierarchyQ;
+
+    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
+        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+      final var rootExists =
+          QueryBuilders.exists(e -> e.field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY));
+      final var parentExists =
+          QueryBuilders.exists(e -> e.field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY));
+
+      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
+      final var newHierarchy = QueryBuilders.bool(b -> b.mustNot(parentExists).must(rootExists));
+
+      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
+        // (rootPI IS NULL) (Legacy)
+        final var legacyPiFilter = QueryBuilders.bool(b -> b.mustNot(rootExists));
+        hierarchyQ =
+            QueryBuilders.bool(
+                b -> b.should(newHierarchy).should(legacyPiFilter).minimumShouldMatch("1"));
+      } else {
+        // when ignoring legacy, only use hierarchy filter
+        hierarchyQ = newHierarchy;
+      }
+    } else {
+      hierarchyQ = null;
+    }
+
+    return QueryBuilders.bool(
+        q -> {
+          q.filter(endDateQ, isProcessInstanceQ, partitionQ);
+          if (hierarchyQ != null) {
+            q.filter(hierarchyQ);
+          }
+          return q;
+        });
   }
 
   private static <T> TermsQuery buildIdTermsQuery(
