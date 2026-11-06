@@ -440,21 +440,27 @@ values.
 A load test can run as **one zone-aware cluster spread over two namespaces**, `<name>-ra` and
 `<name>-rb`, to exercise cross-namespace replication and Elasticsearch export between regions.
 Each namespace is scaffolded and installed like a normal load test (3 brokers, its own Elasticsearch);
-the settings that join them come from `generate-dual-region-values.sh`.
+the settings that join them come from `generate-dual-region-values.sh`. Any scenario works
+(`realistic`, `typical`, `max`, …): the load generators run in region A and drive the whole cluster.
 
 ```sh
 # the namespaces are scaffolded one by one, the same way as for a single namespace
 ./newLoadTest.sh c8-demo-ra elasticsearch 1 false
 ./newLoadTest.sh c8-demo-rb elasticsearch 1 false
 
-# region-b first, so that the Elasticsearch region-a exports to is up (with elasticsearch)
-make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
-  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo \
-  additional_load_test_configuration="--set load-tester.enabled=false --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false \
-  --set leaderBalancer.suspend=true"
+# the order doesn't matter; region B runs no load generators and no leader balancer
 make -C c8-demo-ra install dual_region=true dual_region_zone=region-a \
   dual_region_peer_namespace=c8-demo-rb dual_region_cluster_name=c8-demo
+make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
+  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo \
+  additional_load_test_configuration="--set load-tester.enabled=false \
+    --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false \
+    --set leaderBalancer.suspend=true"
 ```
+
+The install order doesn't matter. Each partition has half its replicas in each region and needs a
+majority of them, so no partition elects a leader, and nothing is processed or exported, until
+both namespaces run.
 
 The `dual_region_*` variables of `common.mk`:
 
@@ -475,20 +481,20 @@ With `dual_region=true` the Makefile generates two files, following the document
   `camunda-region-a-0`, …. The `camunda` and `camunda-gateway` services keep their names.
 - `camunda-platform-dual-region-override.yaml`, passed as `application-override.yml`: what the chart
   leaves to the user for a cluster spanning more than one zone. That is the initial contact points
-  (the headless service of each zone) and, with `secondary_storage=elasticsearch`, one Camunda
+  (every broker of both zones, e.g. `camunda-region-a-0.camunda-region-a.<namespace>.svc`) and, with `secondary_storage=elasticsearch`, one Camunda
   exporter per region (`camundaregiona`, `camundaregionb`) in place of the autoconfigured one. Each
   exporter id writes to the same Elasticsearch on every broker, so both regions get every record
   and a leadership change between regions never resumes an exporter against the other
-  Elasticsearch. Because it takes the place of the `application-override.yml` of `scenario=max`, it
-  carries that scenario's overrides itself.
+  Elasticsearch. `scenario=max` sets its consistency checks through the same `application-override.yml`
+  slot, so with `scenario=max` this file also carries those overrides; other scenarios don't touch it.
 
 Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and
 `main`/`stable-810` only (`dual_region_supported`: the zone-aware chart values need chart v15). The
 brokers only become ready once both namespaces are installed.
 
 In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
-`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only and region B's leader balancer suspended. Delete both
-namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
+`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only and region B's leader
+balancer suspended. Delete both namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
 each one on its own.
 
 ### Running specific scenarios
