@@ -37,11 +37,10 @@ class DatabaseImportJobExecutorTest {
         final var client =
             RestClient.builder(new HttpHost("localhost", unresponsiveDatabase.getLocalPort()))
                 .build()) {
-      final var job = new SearchingImportJob(client);
-      job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+      final var job = new SearchOnceImportJob(client);
       executor.executeImportJob(job);
 
-      try (final var inFlightRequest = unresponsiveDatabase.accept()) {
+      try (final var pendingRequest = unresponsiveDatabase.accept()) {
         // when
         executor.stopExecutingImportJobs();
       }
@@ -51,21 +50,21 @@ class DatabaseImportJobExecutorTest {
     }
   }
 
-  private static final class SearchingImportJob extends DatabaseImportJob<OptimizeDto> {
-
-    private static final int MAX_ATTEMPTS = 1_000;
+  /** Sends a search on the first attempt; any retry succeeds immediately. */
+  private static final class SearchOnceImportJob extends DatabaseImportJob<OptimizeDto> {
 
     private final RestClient client;
     private final AtomicInteger attempts = new AtomicInteger();
 
-    private SearchingImportJob(final RestClient client) {
+    private SearchOnceImportJob(final RestClient client) {
       super(() -> {}, mock(DatabaseClient.class), ValueType.VARIABLE.name(), 1);
       this.client = client;
+      setEntitiesToImport(List.of(mock(OptimizeDto.class)));
     }
 
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) throws Exception {
-      if (attempts.incrementAndGet() < MAX_ATTEMPTS) {
+      if (attempts.incrementAndGet() == 1) {
         client.performRequest(new Request("GET", "/_search"));
       }
     }
