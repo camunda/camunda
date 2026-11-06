@@ -31,7 +31,7 @@ describe('C3ThemePersister', () => {
 		await render(<C3ThemePersister />);
 
 		expect(themeStore.selectedTheme).toBe('dark');
-		expect(getStateLocally('theme')).toBeNull();
+		expect(getStateLocally('themeChoice')).toBeNull();
 	});
 
 	it('should keep the stored theme over the profile theme', async () => {
@@ -41,6 +41,6 @@ describe('C3ThemePersister', () => {
 		await render(<C3ThemePersister />);
 
 		expect(themeStore.selectedTheme).toBe('dark');
-		expect(getStateLocally('theme')).toBe('dark');
+		expect(getStateLocally('themeChoice')).toBe('dark');
 	});
 });

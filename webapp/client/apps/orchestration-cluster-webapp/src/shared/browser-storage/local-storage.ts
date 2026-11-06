@@ -16,6 +16,7 @@ const {
 	clear: clearStateLocally,
 } = createBrowserStorage(localStorage, {
 	theme: z.enum(['light', 'dark', 'system']),
+	themeChoice: z.enum(['light', 'dark', 'system']),
 	wasReloaded: z.boolean(),
 	'tasklist.areNativeNotificationsEnabled': z.boolean(),
 	'tasklist.autoSelectNextTask': z.boolean(),

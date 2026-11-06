@@ -15,7 +15,7 @@ const C3ThemePersister: React.FC = () => {
 	const {theme} = useC3Profile();
 
 	useEffect(() => {
-		if (getStateLocally('theme') === null) {
+		if (getStateLocally('themeChoice') === null) {
 			themeStore.seedTheme(theme);
 		}
 	}, [theme]);
