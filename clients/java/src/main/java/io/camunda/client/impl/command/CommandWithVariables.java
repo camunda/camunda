@@ -16,66 +16,124 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.VariableMetadataInput;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class CommandWithVariables<T> {
 
   protected final JsonMapper objectMapper;
   private final Map<String, Object> accumulatedVariables = new HashMap<>();
+  private final Map<String, VariableMetadataInput> accumulatedVariablesMetadata =
+      new LinkedHashMap<>();
 
   public CommandWithVariables(final JsonMapper jsonMapper) {
     objectMapper = jsonMapper;
   }
 
   public T variables(final InputStream variables) {
+    return variables(variables, Collections.emptyMap());
+  }
+
+  public T variables(
+      final InputStream variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
+    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     final String validatedVariables = objectMapper.validateJson("variables", variables);
     replaceAccumulatedVariables(validatedVariables);
-    return setVariablesInternal(validatedVariables);
+    replaceAccumulatedVariablesMetadata(variablesMetadata);
+    return setVariables(validatedVariables);
   }
 
   public T variables(final String variables) {
+    return variables(variables, Collections.emptyMap());
+  }
+
+  public T variables(
+      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
+    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     final String validatedVariables = objectMapper.validateJson("variables", variables);
     replaceAccumulatedVariables(validatedVariables);
-    return setVariablesInternal(validatedVariables);
+    replaceAccumulatedVariablesMetadata(variablesMetadata);
+    return setVariables(validatedVariables);
   }
 
   public T variables(final Map<String, Object> variables) {
+    return variables(variables, Collections.emptyMap());
+  }
+
+  public T variables(
+      final Map<String, Object> variables,
+      final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
+    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     final String serializedVariables = objectMapper.toJson(variables);
     replaceAccumulatedVariables(variables);
-    return setVariablesInternal(serializedVariables);
+    replaceAccumulatedVariablesMetadata(variablesMetadata);
+    return setVariables(serializedVariables);
   }
 
   public T variables(final Object variables) {
+    return variables(variables, Collections.emptyMap());
+  }
+
+  public T variables(
+      final Object variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
+    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     final String serializedVariables = objectMapper.toJson(variables);
     final Object transformedVariables = objectMapper.transform(variables, Object.class);
     replaceAccumulatedVariables(ArgumentUtil.ensureJsonObject("variables", transformedVariables));
-    return setVariablesInternal(serializedVariables);
+    replaceAccumulatedVariablesMetadata(variablesMetadata);
+    return setVariables(serializedVariables);
   }
 
   public T variable(final String key, final Object value) {
+    return variable(key, value, null);
+  }
+
+  public T variable(
+      final String key, final Object value, final VariableMetadataInput variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
     accumulatedVariables.clear();
     accumulatedVariables.put(key, value);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    replaceAccumulatedVariablesMetadata(
+        variableMetadata == null
+            ? Collections.emptyMap()
+            : Collections.singletonMap(key, variableMetadata));
+    return setVariables(objectMapper.toJson(accumulatedVariables));
   }
 
   public T addVariable(final String key, final Object value) {
+    return addVariable(key, value, null);
+  }
+
+  public T addVariable(
+      final String key, final Object value, final VariableMetadataInput variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
     accumulatedVariables.put(key, value);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    if (variableMetadata != null) {
+      accumulatedVariablesMetadata.put(key, variableMetadata);
+    }
+    return setVariables(objectMapper.toJson(accumulatedVariables));
   }
 
   public T addVariables(final Map<String, Object> variables) {
+    return addVariables(variables, Collections.emptyMap());
+  }
+
+  public T addVariables(
+      final Map<String, Object> variables,
+      final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
+    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     accumulatedVariables.putAll(variables);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    accumulatedVariablesMetadata.putAll(validatedVariablesMetadata(variablesMetadata));
+    return setVariables(objectMapper.toJson(accumulatedVariables));
   }
 
   private void replaceAccumulatedVariables(final String variables) {
@@ -94,6 +152,7 @@ public abstract class CommandWithVariables<T> {
 
   protected final void resetAccumulatedVariables() {
     accumulatedVariables.clear();
+    accumulatedVariablesMetadata.clear();
   }
 
   protected final void replaceAccumulatedVariables(final Map<String, Object> variables) {
@@ -101,5 +160,48 @@ public abstract class CommandWithVariables<T> {
     accumulatedVariables.putAll(variables);
   }
 
+  private void replaceAccumulatedVariablesMetadata(
+      final Map<String, VariableMetadataInput> variablesMetadata) {
+    final Map<String, VariableMetadataInput> replacement =
+        validatedVariablesMetadata(variablesMetadata);
+    accumulatedVariablesMetadata.clear();
+    accumulatedVariablesMetadata.putAll(replacement);
+  }
+
+  private static Map<String, VariableMetadataInput> validatedVariablesMetadata(
+      final Map<String, VariableMetadataInput> variablesMetadata) {
+    final Map<String, VariableMetadataInput> result = new LinkedHashMap<>();
+    variablesMetadata.forEach(
+        (name, value) -> {
+          ArgumentUtil.ensureNotNull("variable name in variablesMetadata", name);
+          ArgumentUtil.ensureNotNull("variablesMetadata of variable '" + name + "'", value);
+          result.put(name, value);
+        });
+    return result;
+  }
+
+  private T setVariables(final String variables) {
+    return setVariablesInternal(
+        variables, Collections.unmodifiableMap(accumulatedVariablesMetadata));
+  }
+
   protected abstract T setVariablesInternal(String variables);
+
+  /**
+   * Called on every change of the variables, with the complete variables metadata of the command,
+   * keyed by variable name. The map is empty when none was given, in which case the request should
+   * not carry any variables metadata.
+   *
+   * <p>Commands whose request supports variables metadata override this. By default non-empty
+   * variables metadata is rejected rather than silently dropped, as a dropped protection would leak
+   * the value.
+   */
+  protected T setVariablesInternal(
+      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+    if (!variablesMetadata.isEmpty()) {
+      throw new UnsupportedOperationException(
+          getClass().getSimpleName() + " does not support variables metadata");
+    }
+    return setVariablesInternal(variables);
+  }
 }
