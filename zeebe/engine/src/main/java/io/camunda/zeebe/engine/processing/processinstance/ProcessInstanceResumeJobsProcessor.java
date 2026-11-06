@@ -17,13 +17,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -38,6 +41,10 @@ import org.jspecify.annotations.NullMarked;
  * about the job only from that call — then appends the next {@code RESUME_JOBS}. Once none are
  * left, it appends {@code COMPLETE_RESUMING} to hand the resume finalization off to {@link
  * ProcessInstanceCompleteResumingProcessor}.
+ *
+ * <p>A job with an open secret resolution incident is resumed but not published: {@link
+ * JobIntent#RESUMED} puts it back to waiting for the incident (see {@code JobResumedV2Applier}),
+ * and resolving the incident hands it out.
  *
  * <p>One job per cycle instead of all of them in this command's own batch: resuming a job that a
  * stream is waiting for also appends a {@code JobBatch.ACTIVATED} with its fetched variables.
@@ -85,6 +92,7 @@ public final class ProcessInstanceResumeJobsProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
+  private final IncidentState incidentState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SuspensionMetrics suspensionMetrics;
@@ -99,6 +107,7 @@ public final class ProcessInstanceResumeJobsProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     suspensionState = processingState.getSuspensionState();
+    incidentState = processingState.getIncidentState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
             elementInstanceState, processingState.getJobState(), stateWriter);
@@ -166,12 +175,25 @@ public final class ProcessInstanceResumeJobsProcessor
         processInstance,
         startAfterJobKey,
         (jobKey, job) -> {
+          final boolean waitsForIncident = hasOpenSecretResolutionIncident(jobKey);
           stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
-          jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
+          if (!waitsForIncident) {
+            jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
+          }
           resumedJobKey.set(jobKey);
           return false;
         });
     return resumedJobKey.get();
+  }
+
+  /** Same check as {@code JobResumedV2Applier}, which keeps such a job waiting on resume. */
+  private boolean hasOpenSecretResolutionIncident(final long jobKey) {
+    final long incidentKey = incidentState.getJobIncidentKey(jobKey);
+    if (incidentKey == IncidentState.MISSING_INCIDENT) {
+      return false;
+    }
+    final IncidentRecord incident = incidentState.getIncidentRecord(incidentKey);
+    return incident != null && incident.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR;
   }
 
   @Override
