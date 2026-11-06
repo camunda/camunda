@@ -53,6 +53,7 @@ final class ExporterContainer implements Controller {
   private final ExporterInitializationInfo initializationInfo;
   private final ExporterReplayControl replayControl;
   private boolean replayAcceptedOnReopen;
+  private boolean removed;
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
@@ -168,6 +169,14 @@ final class ExporterContainer implements Controller {
   }
 
   private void updateExporterState(final long eventPosition, final byte[] metadata) {
+    // A removed exporter may still acknowledge a position while closing, e.g. when flushing, and
+    // that update runs only after the director removed the exporter's state. Writing it would
+    // re-add
+    // a position that never advances again, and holds back compaction until the next restart.
+    if (removed) {
+      return;
+    }
+
     if (position < eventPosition) {
       lastAcknowledgedPosition = eventPosition;
       lastExportedMetadata = metadata;
@@ -320,6 +329,12 @@ final class ExporterContainer implements Controller {
     ThreadContextUtil.runWithClassLoader(
         () -> exporter.export(record), exporter.getClass().getClassLoader());
     lastUnacknowledgedPosition = record.getPosition();
+  }
+
+  /** Closes the exporter for good, ignoring any position it acknowledges from now on. */
+  void remove() {
+    removed = true;
+    close();
   }
 
   public void close() {
