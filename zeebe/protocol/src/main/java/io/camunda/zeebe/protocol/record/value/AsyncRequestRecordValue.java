@@ -30,10 +30,12 @@ import org.immutables.value.Value;
  * intermediate operations like user task listener execution.
  *
  * <p>See {@link AsyncRequestIntent} for intents.
+ *
+ * @see StorageOrdinalRelated
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAsyncRequestRecordValue.Builder.class)
-public interface AsyncRequestRecordValue extends RecordValue {
+public interface AsyncRequestRecordValue extends RecordValue, StorageOrdinalRelated {
 
   /**
    * Returns the key of the element instance the request was made against.
