@@ -53,7 +53,8 @@ jobs:
     name: Build and Deploy Documentation
     needs: detect-changes
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Covers build/deploy plus up to two Pages build waits in "Verify Pages build"
+    timeout-minutes: 25
     # Serializes every writer to the gh-pages branch. The group name must stay identical
     # in docs-preview.yml and docs-preview-cleanup.yml, or the mutual exclusion breaks.
     concurrency:
@@ -62,7 +63,8 @@ jobs:
       queue: max
     permissions:
       contents: write
-      pages: read
+      # write is needed to request a Pages rebuild in "Verify Pages build"
+      pages: write
     environment:
       name: github-pages
       url: https://camunda.github.io/camunda/
@@ -101,44 +103,73 @@ jobs:
       # build runs separately and its outcome is not surfaced anywhere in the Actions UI
       # (legacy Pages mode). Poll the Pages build API so a failed build becomes a visible
       # job failure rather than a green workflow with a dead docs site.
+      # Pages builds occasionally fail transiently with a generic "Page build failed." and
+      # succeed when rebuilt unchanged (INC-9039), so an errored build is retried once.
       - name: Verify Pages build
         env:
           GH_TOKEN: ${{ github.token }}
+          # Pages builds of this site have been observed taking ~8 minutes
+          TIMEOUT_SECONDS: 600
+          MAX_ATTEMPTS: 2
         run: |
           set -euo pipefail
           expected_sha=$(gh api "repos/${GITHUB_REPOSITORY}/branches/gh-pages" --jq '.commit.sha')
           echo "Expecting Pages build for gh-pages HEAD: ${expected_sha}"
-          deadline=$(( $(date +%s) + 300 ))
-          while :; do
-            response=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest")
-            status=$(jq -r '.status' <<< "${response}")
-            commit=$(jq -r '.commit' <<< "${response}")
-            error=$(jq -r '.error.message // ""' <<< "${response}")
-            if [[ "${commit}" != "${expected_sha}" ]]; then
-              echo "Latest build is for ${commit:0:12} (status=${status}); waiting for ${expected_sha:0:12}..."
-            else
-              echo "Pages build for ${commit:0:12}: status=${status}"
-              case "${status}" in
-                built)
-                  echo "::notice::Pages build succeeded for ${commit}"
-                  exit 0 ;;
-                errored)
-                  echo "::error::Pages build FAILED for ${commit}: ${error}"
-                  echo "::error::The API only exposes the generic message above; check Settings → Pages in the repo UI for any additional detail."
-                  exit 1 ;;
-                building|queued|"")
-                  : ;;
-                *)
-                  echo "::warning::Unknown Pages build status: ${status} — treating as failure"
-                  exit 1 ;;
-              esac
+
+          # Polls until a build of expected_sha other than $1 (an already-errored build URL)
+          # finishes or times out; sets build_status, build_url and build_error.
+          wait_for_build() {
+            local ignore_url=$1 response commit
+            local deadline=$(( $(date +%s) + TIMEOUT_SECONDS ))
+            while :; do
+              response=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest")
+              build_status=$(jq -r '.status' <<< "${response}")
+              build_url=$(jq -r '.url' <<< "${response}")
+              build_error=$(jq -r '.error.message // ""' <<< "${response}")
+              commit=$(jq -r '.commit' <<< "${response}")
+              if [[ "${commit}" != "${expected_sha}" || "${build_url}" == "${ignore_url}" ]]; then
+                echo "Latest build ${build_url##*/} is for ${commit:0:12} (status=${build_status}); waiting for a new build of ${expected_sha:0:12}..."
+              else
+                echo "Pages build ${build_url##*/} for ${commit:0:12}: status=${build_status}"
+                case "${build_status}" in
+                  built|errored)
+                    return 0 ;;
+                  building|queued|"")
+                    : ;;
+                  *)
+                    echo "::error::Unknown Pages build status: ${build_status} — treating as failure"
+                    exit 1 ;;
+                esac
+              fi
+              if (( $(date +%s) >= deadline )); then
+                build_status=timeout
+                return 0
+              fi
+              sleep 10
+            done
+          }
+
+          ignore_url=""
+          for (( attempt = 1; attempt <= MAX_ATTEMPTS; attempt++ )); do
+            wait_for_build "${ignore_url}"
+            case "${build_status}" in
+              built)
+                echo "::notice::Pages build succeeded for ${expected_sha} (attempt ${attempt}/${MAX_ATTEMPTS})"
+                exit 0 ;;
+              timeout)
+                echo "::error::Timed out after ${TIMEOUT_SECONDS}s waiting for Pages build to complete (attempt ${attempt}/${MAX_ATTEMPTS})."
+                exit 1 ;;
+            esac
+            echo "::warning::Pages build failed for ${expected_sha} (attempt ${attempt}/${MAX_ATTEMPTS}): ${build_error}"
+            if (( attempt < MAX_ATTEMPTS )); then
+              ignore_url=${build_url}
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" > /dev/null
+              echo "Requested a Pages rebuild of ${expected_sha:0:12}"
             fi
-            if (( $(date +%s) >= deadline )); then
-              echo "::error::Timed out after 300s waiting for Pages build to complete."
-              exit 1
-            fi
-            sleep 10
           done
+          echo "::error::Pages build FAILED for ${expected_sha} after ${MAX_ATTEMPTS} attempts: ${build_error}"
+          echo "::error::The API only exposes the generic message above; check Settings → Pages in the repo UI for any additional detail."
+          exit 1
 
       - name: Observe build status
         if: always()
