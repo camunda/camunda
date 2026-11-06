@@ -106,7 +106,8 @@ public final class MultiInstanceIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'. \
+            Expected result of the input collection expression 'items' of multi-instance \
+            activity 'task' to be 'ARRAY', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'items'""");
   }
@@ -136,9 +137,9 @@ public final class MultiInstanceIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
-                + INPUT_COLLECTION
-                + "' to be 'ARRAY', but was 'STRING'.");
+            """
+            Expected result of the input collection expression 'items' of multi-instance \
+            activity 'task' to be 'ARRAY', but was 'STRING'.""");
   }
 
   @Test
@@ -173,6 +174,7 @@ public final class MultiInstanceIncidentTest {
             Assertion failure on evaluate the expression \
             '{x: assert(undefined_var, undefined_var != null)}': \
             The condition is not fulfilled \
+            (output element expression of multi-instance activity 'task') \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'
             [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'
@@ -375,7 +377,8 @@ public final class MultiInstanceIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+            Expected result of the completion condition expression 'x' of multi-instance \
+            activity 'task' to be 'BOOLEAN', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'x'""")
         .hasProcessInstanceKey(processInstanceKey)

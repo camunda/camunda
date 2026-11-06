@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -419,7 +420,10 @@ public final class MultiInstanceBodyProcessor
             (variableName -> Either.left(getVariable(context.getFlowScopeKey(), variableName))));
     if (completionCondition.isPresent()) {
       return primaryContextExpressionProcessor.evaluateBooleanExpression(
-          completionCondition.get(), context.getElementInstanceKey(), context.getTenantId());
+          completionCondition.get(),
+          context.getElementInstanceKey(),
+          context.getTenantId(),
+          ExpressionLabel.completionConditionExpression(context.getElementId()));
     }
     return Either.right(false);
   }

@@ -80,8 +80,9 @@ public class AdHocSubProcessIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Failed to activate ad-hoc elements. Expected result of the expression 'activeElements' \
-            to be 'ARRAY', but was 'NULL'.""");
+            Failed to activate ad-hoc elements. Expected result of the active elements \
+            collection expression 'activeElements' of ad-hoc sub-process 'ad-hoc' to be 'ARRAY', \
+            but was 'NULL'.""");
   }
 
   @Test
@@ -116,9 +117,10 @@ public class AdHocSubProcessIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Failed to activate ad-hoc elements. Expected result of the expression 'activeElements' \
-            to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' containing at least one \
-            non-'STRING' item.""");
+            Failed to activate ad-hoc elements. Expected result of the active elements \
+            collection expression 'activeElements' of ad-hoc sub-process 'ad-hoc' to be 'ARRAY' \
+            containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' \
+            item.""");
   }
 
   @Test
@@ -280,7 +282,10 @@ public class AdHocSubProcessIncidentTest {
         .hasElementId(AHSP_INNER_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to evaluate completion condition. Expected result of the expression 'completionCondition' to be 'BOOLEAN', but was 'STRING'.");
+            """
+            Failed to evaluate completion condition. Expected result of the completion \
+            condition expression 'completionCondition' of ad-hoc sub-process 'ad-hoc' to be \
+            'BOOLEAN', but was 'STRING'.""");
 
     // when
     ENGINE
@@ -301,6 +306,46 @@ public class AdHocSubProcessIncidentTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfOutputElementExpressionEvaluationFailed() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("activeElements")
+                  .zeebeOutputCollection("results")
+                  .zeebeOutputElementExpression("assert(result, result != null)");
+              adHocSubProcess.task("A");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activeElements", List.of("A"))
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression 'assert(result, result != null)': \
+            The condition is not fulfilled (output element expression of ad-hoc sub-process \
+            'ad-hoc') The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'result'
+            [NO_VARIABLE_FOUND] No variable found with name 'result'
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
