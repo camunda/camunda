@@ -14,7 +14,6 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = 100;
   public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
-  // ~15ms per chunk at ~1.5us per subscription (cold RocksDB caches)
   public static final int DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT = 10_000;
 
   public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
