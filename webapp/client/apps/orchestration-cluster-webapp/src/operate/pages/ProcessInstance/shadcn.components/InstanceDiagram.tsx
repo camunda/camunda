@@ -29,7 +29,7 @@ import {
 import {useInstanceDiagramOverlays, type ModificationBadge} from '../useInstanceDiagramOverlays';
 import {InstanceHistoryContext} from '../useInstanceHistory';
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
-import {anchorStateOverlaysToCorners} from './anchorStateOverlaysToCorners';
+import {anchorStateOverlaysToCorners} from '#/operate/shared/StateOverlay/shadcn.components/anchorStateOverlaysToCorners';
 
 const NO_MODIFICATION_BADGES: ModificationBadge[] = [];
 
@@ -42,6 +42,7 @@ const InstanceDiagram: React.FC = () => {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const [pendingDrillDownElementId, setPendingDrillDownElementId] = useState<string | null>(null);
+	const [failedXml, setFailedXml] = useState<string>();
 	const drillDownVersion = useRef(0);
 	const previousInstanceId = useRef(processInstanceId);
 	const currentInstanceId = useRef<string | null>(processInstanceId);
@@ -268,7 +269,7 @@ const InstanceDiagram: React.FC = () => {
 			? 'loading'
 			: xmlError instanceof ForbiddenError
 				? 'forbidden'
-				: isXmlError
+				: isXmlError || (failedXml !== undefined && failedXml === diagram?.xml)
 					? 'error'
 					: !hasDiagram
 						? 'empty'
@@ -313,6 +314,7 @@ const InstanceDiagram: React.FC = () => {
 						highlightedElementIds={highlightedElementIds}
 						customElementClasses={customElementClasses}
 						onElementDoubleClick={(elementId) => void handleDrillDown(elementId)}
+						onRenderError={() => setFailedXml(diagram.xml)}
 					>
 						<InstanceDiagramOverlays businessObjects={diagram.businessObjects} />
 					</Diagram>
