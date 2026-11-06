@@ -25,6 +25,7 @@ const sidebars = {
     },
     'infrastructure-services',
     'processes',
+    'physical-tenant-isolation-tests',
     {
       type: 'category',
       label: 'Release Process',

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -41,9 +44,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Verifies that gRPC honors {@code providers.assigned}: a physical tenant only trusts the OIDC
- * providers assigned to it, and resolves a token with the claim settings of the provider that
- * issued it. The root declares a default slot (realm-k) and a named provider {@code okta}
+ * Verifies that gRPC and REST honor {@code providers.assigned}: a physical tenant only trusts the
+ * OIDC providers assigned to it. gRPC also resolves a token with the claim settings of the provider
+ * that issued it. The root declares a default slot (realm-k) and a named provider {@code okta}
  * (realm-o); {@code tenanta} is assigned only {@code okta}, {@code tenantb} only the default slot.
  *
  * <p>{@code okta} maps the client id from a custom claim, and only that claim's value is an admin
@@ -57,7 +60,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
-final class PhysicalTenantGrpcOidcAssignedProvidersIT {
+final class PhysicalTenantOidcAssignedProvidersIT {
 
   @Container
   static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
@@ -88,14 +91,15 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
               .withAuthenticationMethod(AuthenticationMethod.OIDC)
               .withAuthorizationsEnabled());
 
-  private static CamundaClient keycloakOnTenantA;
   private static CamundaClient oktaOnTenantA;
   private static CamundaClient keycloakOnTenantB;
-  private static CamundaClient oktaOnTenantB;
   private static CamundaClient oktaMemberOnTenantA;
+
+  private static Path cacheDir;
 
   @BeforeAll
   static void startBroker(@TempDir final Path tempDir) {
+    cacheDir = tempDir;
     createRealm(REALM_K, serviceClient(CLIENT_K));
     createRealm(
         REALM_O,
@@ -141,11 +145,9 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
 
     BROKER.start();
 
-    keycloakOnTenantA = client(REALM_K, CLIENT_K, TENANT_A, tempDir);
-    oktaOnTenantA = client(REALM_O, CLIENT_O, TENANT_A, tempDir);
-    keycloakOnTenantB = client(REALM_K, CLIENT_K, TENANT_B, tempDir);
-    oktaOnTenantB = client(REALM_O, CLIENT_O, TENANT_B, tempDir);
-    oktaMemberOnTenantA = client(REALM_O, CLIENT_O_MEMBER, TENANT_A, tempDir);
+    oktaOnTenantA = client(REALM_O, CLIENT_O, TENANT_A, false);
+    keycloakOnTenantB = client(REALM_K, CLIENT_K, TENANT_B, false);
+    oktaMemberOnTenantA = client(REALM_O, CLIENT_O_MEMBER, TENANT_A, false);
 
     Awaitility.await("broker ready")
         .atMost(Duration.ofSeconds(60))
@@ -155,19 +157,23 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
 
   @AfterAll
   static void closeClients() {
-    CloseHelper.quietCloseAll(
-        keycloakOnTenantA, oktaOnTenantA, keycloakOnTenantB, oktaOnTenantB, oktaMemberOnTenantA);
+    CloseHelper.quietCloseAll(oktaOnTenantA, keycloakOnTenantB, oktaMemberOnTenantA);
   }
 
-  @Test
-  void shouldAcceptTokenOfAssignedProvider() {
-    // when / then
-    assertThatNoException()
-        .as("okta token is accepted on tenanta")
-        .isThrownBy(() -> oktaOnTenantA.newTopologyRequest().send().join());
-    assertThatNoException()
-        .as("default-slot token is accepted on tenantb")
-        .isThrownBy(() -> keycloakOnTenantB.newTopologyRequest().send().join());
+  /** The control for {@link #shouldRejectTokenOfProviderNotAssignedToTenant}: both tokens work. */
+  @ParameterizedTest(name = "over REST = {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldAcceptTokenOfAssignedProvider(final boolean rest) {
+    try (final var oktaOnA = client(REALM_O, CLIENT_O, TENANT_A, rest);
+        final var keycloakOnB = client(REALM_K, CLIENT_K, TENANT_B, rest)) {
+      // when / then
+      assertThatNoException()
+          .as("okta token is accepted on tenanta")
+          .isThrownBy(() -> oktaOnA.newTopologyRequest().send().join());
+      assertThatNoException()
+          .as("default-slot token is accepted on tenantb")
+          .isThrownBy(() -> keycloakOnB.newTopologyRequest().send().join());
+    }
   }
 
   @Test
@@ -194,22 +200,36 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
         .isThrownBy(() -> TENANTS.deploy(oktaMemberOnTenantA, process, "okta_group_process"));
   }
 
-  @Test
-  void shouldRejectTokenOfProviderNotAssignedToTenant() {
-    // when / then
-    assertUnauthenticated(keycloakOnTenantA, "default-slot token on tenanta (assigned only okta)");
-    assertUnauthenticated(oktaOnTenantB, "okta token on tenantb (assigned only the default slot)");
+  @ParameterizedTest(name = "over REST = {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldRejectTokenOfProviderNotAssignedToTenant(final boolean rest) {
+    try (final var keycloakOnA = client(REALM_K, CLIENT_K, TENANT_A, rest);
+        final var oktaOnB = client(REALM_O, CLIENT_O, TENANT_B, rest)) {
+      // when / then
+      assertUnauthenticated(
+          keycloakOnA, rest, "default-slot token on tenanta (assigned only okta)");
+      assertUnauthenticated(
+          oktaOnB, rest, "okta token on tenantb (assigned only the default slot)");
+    }
   }
 
-  private static void assertUnauthenticated(final CamundaClient client, final String description) {
-    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
-        .as(description)
-        .hasRootCauseInstanceOf(StatusRuntimeException.class)
-        .rootCause()
-        .satisfies(
-            e ->
-                assertThat(((StatusRuntimeException) e).getStatus().getCode())
-                    .isEqualTo(Status.Code.UNAUTHENTICATED));
+  /** REST answers {@code 401}, gRPC {@code UNAUTHENTICATED}. */
+  private static void assertUnauthenticated(
+      final CamundaClient client, final boolean rest, final String description) {
+    final var thrown =
+        assertThatThrownBy(() -> client.newTopologyRequest().send().join()).as(description);
+    if (rest) {
+      thrown.isInstanceOfSatisfying(
+          ClientHttpException.class, e -> assertThat(e.code()).isEqualTo(401));
+    } else {
+      thrown
+          .hasRootCauseInstanceOf(StatusRuntimeException.class)
+          .rootCause()
+          .satisfies(
+              e ->
+                  assertThat(((StatusRuntimeException) e).getStatus().getCode())
+                      .isEqualTo(Status.Code.UNAUTHENTICATED));
+    }
   }
 
   private static void assign(final String tenantId, final String providerId) {
@@ -256,10 +276,10 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
   }
 
   private static CamundaClient client(
-      final String realm, final String clientId, final String tenantId, final Path cacheDir) {
+      final String realm, final String clientId, final String tenantId, final boolean rest) {
     return TENANTS
         .newClientBuilder(BROKER, tenantId)
-        .preferRestOverGrpc(false)
+        .preferRestOverGrpc(rest)
         .credentialsProvider(
             new OAuthCredentialsProviderBuilder()
                 .clientId(clientId)
@@ -270,7 +290,8 @@ final class PhysicalTenantGrpcOidcAssignedProvidersIT {
                         + "/realms/"
                         + realm
                         + "/protocol/openid-connect/token")
-                .credentialsCachePath(cacheDir.resolve(realm + "-on-" + tenantId).toString())
+                .credentialsCachePath(
+                    cacheDir.resolve(clientId + "-on-" + tenantId + "-" + rest).toString())
                 .build())
         .build();
   }

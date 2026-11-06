@@ -69,6 +69,12 @@ used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
 - Renovate PR Handling
 - (CI) Incident Management Process
 
+### Testing
+
+**[Rejection tests for physical tenant isolation](./physical-tenant-isolation-tests.md)** - The
+rule that every physical tenant isolation criterion links to a test that proves the rejection on
+each path: REST, gRPC (embedded and standalone gateway), browser login and session, and MCP.
+
 ### Release Process
 
 **[Release Process](./release/index.md)** - Complete software release procedures and guidelines including:
