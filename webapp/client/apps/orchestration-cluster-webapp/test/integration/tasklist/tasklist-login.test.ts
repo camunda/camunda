@@ -15,7 +15,7 @@ import {
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
@@ -124,4 +124,17 @@ test.describe('redirect validation', () => {
 			await expect(tasklistLoginPage.genericErrorHeading).toBeVisible();
 		});
 	}
+});
+
+test('should redirect to Tasklist login when the API answers with an anonymous user', async ({
+	network,
+	page,
+	tasklistLoginPage,
+}) => {
+	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createAnonymousCurrentUser())}));
+
+	await tasklistLoginPage.gotoTasklist();
+
+	await expect(page).toHaveURL('/tasklist/login');
+	await expect(tasklistLoginPage.usernameInput).toBeVisible();
 });

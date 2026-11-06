@@ -9,7 +9,6 @@
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
 	GetSystemConfigurationResponseBody,
-	CurrentUser,
 	License,
 	Form,
 	UserTask,
@@ -33,6 +32,7 @@ import type {
 	GetProcessStartFormResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
+import type {AuthenticatedCurrentUser} from './currentUser';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
 
@@ -73,7 +73,7 @@ const queries = {
 	getCurrentUser: () =>
 		queryOptions({
 			queryKey: queryKeys.currentUser(),
-			queryFn: async (): Promise<CurrentUser> => {
+			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
 				const {response, error} = await request(endpoints.getCurrentUser());
 				if (error !== null) {
 					throw mapQueryError(error);

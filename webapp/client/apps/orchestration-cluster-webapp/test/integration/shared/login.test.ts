@@ -19,7 +19,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
@@ -186,4 +186,23 @@ test('should show the Admin heading when redirected from the Admin app', async (
 	await loginPage.goto('/admin');
 
 	await expect(loginPage.heading).toHaveText('Admin');
+});
+
+test('should redirect to login when the API answers with an anonymous user', async ({network, page, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createAnonymousCurrentUser()),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+	);
+
+	await page.goto('/operate');
+
+	await expect(page).toHaveURL((url) => url.pathname === '/login');
+	await expect(loginPage.usernameInput).toBeVisible();
 });
