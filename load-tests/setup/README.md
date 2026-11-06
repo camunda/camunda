@@ -482,7 +482,7 @@ With `dual_region=true` the Makefile generates two files, following the document
   carries that scenario's overrides itself.
 
 Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and
-`main` only (`dual_region_supported`: the zone-aware chart values need chart v15). The
+`main`/`stable-810` only (`dual_region_supported`: the zone-aware chart values need chart v15). The
 brokers only become ready once both namespaces are installed.
 
 In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
