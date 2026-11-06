@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -19,7 +20,24 @@ public record AzureBackupConfig(
     boolean createContainer,
     SasTokenConfig sasTokenConfig,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    Retry retry) {
+
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the SDK defaults
+   * in place.
+   */
+  public record Retry(Optional<Integer> maxAttempts) {
+    public Retry {
+      maxAttempts.ifPresent(
+          attempts -> {
+            if (attempts <= 0) {
+              throw new ConfigurationException(
+                  "Expected retry maxAttempts to be > 0, but got " + attempts);
+            }
+          });
+    }
+  }
 
   public static class Builder {
 
@@ -33,6 +51,7 @@ public record AzureBackupConfig(
     private String containerName;
     private Duration readTimeout;
     private Duration writeTimeout;
+    private Optional<Integer> retryMaxAttempts = Optional.empty();
 
     public Builder withEndpoint(final String endpoint) {
       this.endpoint = endpoint;
@@ -79,6 +98,11 @@ public record AzureBackupConfig(
       return this;
     }
 
+    public Builder withRetryMaxAttempts(final Optional<Integer> retryMaxAttempts) {
+      this.retryMaxAttempts = retryMaxAttempts;
+      return this;
+    }
+
     public AzureBackupConfig build() {
 
       return new AzureBackupConfig(
@@ -90,7 +114,8 @@ public record AzureBackupConfig(
           createContainer,
           sasToken,
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          new Retry(retryMaxAttempts));
     }
   }
 }

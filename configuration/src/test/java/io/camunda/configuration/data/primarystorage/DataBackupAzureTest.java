@@ -13,6 +13,8 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -431,6 +433,23 @@ public class DataBackupAzureTest {
     @Test
     void shouldSetCreateContainerFromPrimaryStorage() {
       assertThat(brokerCfg.getData().getBackup().getAzure().isCreateContainer()).isTrue();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.data.primary-storage.backup.azure.retry.max-attempts=3"})
+  class WithRetrySettings {
+    final BrokerBasedProperties brokerCfg;
+
+    WithRetrySettings(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetRetry() {
+      assertThat(brokerCfg.getData().getBackup().getAzure().getRetry())
+          .isEqualTo(new AzureBackupStoreConfig.Retry(Optional.of(3)));
     }
   }
 }

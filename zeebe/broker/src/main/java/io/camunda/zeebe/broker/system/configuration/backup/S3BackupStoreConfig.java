@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
@@ -25,6 +26,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private boolean forcePathStyleAccess = false;
   private String compression;
   private boolean supportLegacyMd5;
+  private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
   /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
   private int maxConcurrentConnections = 50;
@@ -144,6 +146,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.ssecKey = ssecKey;
   }
 
+  public DefaultsMode getDefaultsMode() {
+    return defaultsMode;
+  }
+
+  public void setDefaultsMode(final DefaultsMode defaultsMode) {
+    this.defaultsMode = defaultsMode;
+  }
+
   public static S3BackupConfig toStoreConfig(
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
@@ -162,7 +172,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
             .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
             .withSupportLegacyMd5(config.isSupportLegacyMd5())
-            .withSsecKey(config.getSsecKey());
+            .withSsecKey(config.getSsecKey())
+            .withDefaultsMode(config.getDefaultsMode());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -182,6 +193,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (basePath != null ? basePath.hashCode() : 0);
     result = 31 * result + (ssecKey != null ? ssecKey.hashCode() : 0);
     result = 31 * result + maxConcurrentConnections;
+    result = 31 * result + defaultsMode.hashCode();
     result =
         31 * result
             + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
@@ -211,6 +223,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(ssecKey, that.ssecKey)
         && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
+        && Objects.equals(defaultsMode, that.defaultsMode)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
@@ -246,6 +259,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + connectionAcquisitionTimeout
         + ", supportLegacyMd5="
         + supportLegacyMd5
+        + ", defaultsMode="
+        + defaultsMode
         + ", ssecKey='"
         + (ssecKey != null ? "<redacted>" : "null")
         + '\''

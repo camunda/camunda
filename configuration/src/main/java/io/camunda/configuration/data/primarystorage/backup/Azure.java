@@ -11,6 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.data.primarystorage.backup.azure.SasToken;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -91,6 +92,12 @@ public class Azure {
    * href="https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature">...</a>
    */
   @NestedConfigurationProperty private SasToken sasToken = new SasToken();
+
+  /**
+   * Limits on how the Azure client retries failing requests. When not set, the Azure SDK defaults
+   * apply.
+   */
+  @NestedConfigurationProperty private Retry retry = new Retry();
 
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
@@ -176,5 +183,26 @@ public class Azure {
 
   public void setSasToken(final SasToken sasToken) {
     this.sasToken = sasToken;
+  }
+
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
+  public static class Retry {
+    /** Maximum number of attempts the client makes for a failing request. */
+    private Optional<Integer> maxAttempts = Optional.empty();
+
+    public Optional<Integer> getMaxAttempts() {
+      return maxAttempts;
+    }
+
+    public void setMaxAttempts(final Optional<Integer> maxAttempts) {
+      this.maxAttempts = maxAttempts;
+    }
   }
 }

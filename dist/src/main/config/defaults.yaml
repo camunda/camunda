@@ -446,6 +446,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           create-container: true # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_CREATECONTAINER
           # Azure endpoint to connect to. Required unless a connection string is specified.
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_ENDPOINT
+          retry: # Type: io.camunda.configuration.data.primarystorage.backup.Azure$Retry  
+            # Maximum number of attempts the client makes for a failing request.
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_RETRY_MAXATTEMPTS
+          
           sas-token: # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken  
             # The SAS token must be of the following types: "delegation", "service" or "account".
             type: null # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken$SasTokenType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_SASTOKEN_TYPE
@@ -480,6 +484,11 @@ camunda: # Type: io.camunda.configuration.Camunda
           host: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_HOST
           # Maximum number of concurrent file transfers (uploads and downloads) using virtual threads.
           max-concurrent-transfers: 8 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_MAXCONCURRENTTRANSFERS
+          retry: # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$Retry  
+            # Maximum number of attempts the client makes for a failing request.
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_MAXATTEMPTS
+            # Maximum total time the client keeps retrying a failing request.
+            total-timeout: null # Type: Optional<Duration>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_TOTALTIMEOUT
         
         offset: 0 # Type: Long, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_OFFSET
         read-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_READTIMEOUT
@@ -512,6 +521,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           compression: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_COMPRESSION
           # Timeout for acquiring an already-established connection from a connection pool to a remote service.
           connection-acquisition-timeout: "45s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_CONNECTIONACQUISITIONTIMEOUT
+          # Defaults mode of the AWS SDK S3 client, e.g. 'standard' or 'in-region'. When not set, the SDK uses
+          # 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment and can
+          # block for a couple of seconds when not running on AWS.
+          defaults-mode: null # Type: io.camunda.zeebe.backup.s3.S3BackupConfig$DefaultsMode, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_DEFAULTSMODE
           # Configure URL endpoint for the store. If no endpoint is provided, it will be determined based on the
           # configured region.
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_ENDPOINT
