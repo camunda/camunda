@@ -10,13 +10,13 @@ package io.camunda.zeebe.protocol.impl.record.value.signal;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -24,23 +24,22 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
 
   // Static StringValue keys for property names
   private static final StringValue SIGNAL_NAME_KEY = new StringValue("signalName");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
   private final StringProperty signalNameProp = new StringProperty(SIGNAL_NAME_KEY);
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public SignalRecord() {
-    super(3);
-    declareProperty(signalNameProp).declareProperty(variablesProp).declareProperty(tenantIdProp);
+    super(2);
+    declareProperty(signalNameProp).declareProperty(tenantIdProp);
+    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final SignalRecord record) {
-    setSignalName(record.getSignalNameBuffer())
-        .setVariables(record.getVariablesBuffer())
-        .setTenantId(record.getTenantId());
+    setSignalName(record.getSignalNameBuffer()).setTenantId(record.getTenantId());
+    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
   }
 
   @Override
@@ -65,17 +64,28 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public SignalRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public SignalRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 
   @Override
