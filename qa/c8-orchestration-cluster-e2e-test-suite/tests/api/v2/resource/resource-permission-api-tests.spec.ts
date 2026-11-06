@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {APIRequestContext, expect, test} from '@playwright/test';
+import {APIRequestContext, APIResponse, expect, test} from '@playwright/test';
 import {
   assertForbiddenRequest,
   assertStatusCode,
-  authHeaders,
   buildUrl,
+  defaultHeaders,
   encode,
   jsonHeaders,
   octetStreamHeaders,
@@ -36,8 +36,9 @@ import {
   getFormByKey,
   deployInlineFiles,
   deployInlineFilesRaw,
-  deployInlineResource,
+  deployInlineResources,
   DeployedResource,
+  DeploymentEntry,
   getResource,
   getResourceContent,
   getResourceContentBinary,
@@ -68,25 +69,30 @@ const READ_FORBIDDEN_DETAIL =
   "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
 const GENERIC_PREFIX = 'permission-test';
 
-// A DMN deployment lists its decisions before its decision requirements; the
-// latter carries the key POST /resources/:key/deletion takes.
-async function deployModel(
-  request: APIRequestContext,
-  resource: InlineResource,
-): Promise<ResourceMetadata> {
-  const {deployments} = (await deployInlineFiles(request, [resource])) as {
-    deployments: Record<string, unknown>[];
-  };
-  return resourceMetadataOf(
-    deployments.find((d) => d.decisionRequirements) ?? deployments[0],
-  );
+function deployedAs<T extends {resourceName: string}>(
+  deployed: T[],
+  file: InlineResource,
+): T {
+  const match = deployed.find((d) => d.resourceName === file.fileName);
+  expect(
+    match,
+    `${file.fileName} is missing from the deployment`,
+  ).toBeDefined();
+  return match!;
 }
 
-async function deployFile(
-  request: APIRequestContext,
-  {fileName, content}: InlineResource,
-): Promise<DeployedResource> {
-  return deployInlineResource(request, fileName, content);
+// A new user answers 401 until it is indexed. Retry only that, so a command
+// that should be rejected is judged on its first real answer instead of being
+// resent until the assertion happens to pass.
+async function firstAuthenticatedResponse(
+  send: () => Promise<APIResponse>,
+): Promise<APIResponse> {
+  let res!: APIResponse;
+  await expect(async () => {
+    res = await send();
+    expect(res.status()).not.toBe(401);
+  }).toPass(defaultAssertionOptions);
+  return res;
 }
 
 function tokenOf(user: TestUser): string {
@@ -131,24 +137,31 @@ test.describe('Resource Permission API', () => {
     let userWithoutPermissionsToken: string;
 
     test.beforeAll(async ({request}) => {
-      processDefinition = await deployModel(
-        request,
-        inlineBpmnProcess(generateUniqueProcessDefinitionId()),
-      );
-      decisionRequirements = await deployModel(
-        request,
-        inlineDmnDecision(`drd_${generateUniqueId()}`),
-      );
       const formId = `form_${generateUniqueId()}`;
-      deployedForm = await deployModel(request, {
-        fileName: `${formId}.form`,
-        content: formResourceContent(formId, 'permission test'),
-      });
-      generic = await deployFile(
-        request,
-        inlineGenericResource(GENERIC_PREFIX),
-      );
-      rpa = await deployFile(request, inlineRpaResource());
+      const genericFile = inlineGenericResource(GENERIC_PREFIX);
+      const rpaFile = inlineRpaResource();
+      const {deployments} = (await deployInlineFiles(request, [
+        inlineBpmnProcess(generateUniqueProcessDefinitionId()),
+        // A DMN deployment lists its decisions too; the decision requirements
+        // entry carries the key POST /resources/:key/deletion takes.
+        inlineDmnDecision(`drd_${generateUniqueId()}`),
+        {
+          fileName: `${formId}.form`,
+          content: formResourceContent(formId, 'permission test'),
+        },
+        genericFile,
+        rpaFile,
+      ])) as {deployments: DeploymentEntry[]};
+      const entryWith = (field: keyof DeploymentEntry) =>
+        resourceMetadataOf(deployments.find((d) => d[field])!);
+      processDefinition = entryWith('processDefinition');
+      decisionRequirements = entryWith('decisionRequirements');
+      deployedForm = entryWith('form');
+      const resources = deployments
+        .filter((d) => d.resource)
+        .map((d) => resourceMetadataOf(d) as DeployedResource);
+      generic = deployedAs(resources, genericFile);
+      rpa = deployedAs(resources, rpaFile);
       resourceKeysToCleanUp.push(
         processDefinition.resourceKey,
         decisionRequirements.resourceKey,
@@ -163,23 +176,25 @@ test.describe('Resource Permission API', () => {
       userWithoutPermissionsToken = tokenOf(user);
     });
 
+    // eslint-disable-next-line playwright/expect-expect
     test('Deploy resources - forbidden without CREATE permission', async ({
       request,
     }) => {
       // given
       const resource = inlineGenericResource(GENERIC_PREFIX);
 
-      await expect(async () => {
-        // when
-        const res = await deployInlineFilesRaw(request, [resource], {
-          Accept: 'application/json',
-          ...authHeaders(userWithoutPermissionsToken),
-        });
+      // when
+      const res = await firstAuthenticatedResponse(() =>
+        deployInlineFilesRaw(
+          request,
+          [resource],
+          defaultHeaders(userWithoutPermissionsToken),
+        ),
+      );
 
-        // then
-        // POST /deployments requires CREATE on RESOURCE '*'; the command is rejected.
-        await assertForbiddenRequest(res, forbiddenDetail('CREATE'));
-      }).toPass(defaultAssertionOptions);
+      // then
+      // POST /deployments requires CREATE on RESOURCE '*'; the command is rejected.
+      await assertForbiddenRequest(res, forbiddenDetail('CREATE'));
     });
 
     const deletions: {
@@ -249,80 +264,84 @@ test.describe('Resource Permission API', () => {
     ];
 
     for (const {name, permission, target, expectStillPresent} of deletions) {
+      // eslint-disable-next-line playwright/expect-expect
       test(`Delete ${name} - forbidden without ${permission} permission`, async ({
         request,
       }) => {
         // given
         const {resourceKey} = target();
 
-        await expect(async () => {
-          // when
-          const res = await deleteResource(request, resourceKey, {
+        // when
+        const res = await firstAuthenticatedResponse(() =>
+          deleteResource(request, resourceKey, {
             headers: jsonHeaders(userWithoutPermissionsToken),
-          });
+          }),
+        );
 
-          // then
-          // Deleting it requires the type-specific DELETE_* permission on RESOURCE; the command is rejected.
-          await assertForbiddenRequest(res, forbiddenDetail(permission));
-        }).toPass(defaultAssertionOptions);
+        // then
+        // Deleting it requires the type-specific DELETE_* permission on RESOURCE; the command is rejected.
+        await assertForbiddenRequest(res, forbiddenDetail(permission));
 
         // and the rejected deletion left the resource in place
         await expectStillPresent(request, resourceKey);
       });
     }
 
+    // eslint-disable-next-line playwright/expect-expect
     test('Get resource - forbidden without READ permission', async ({
       request,
     }) => {
       // given
       const {resourceKey} = generic;
 
-      await expect(async () => {
-        // when
-        const res = await getResource(request, resourceKey, {
+      // when
+      const res = await firstAuthenticatedResponse(() =>
+        getResource(request, resourceKey, {
           headers: jsonHeaders(userWithoutPermissionsToken),
-        });
+        }),
+      );
 
-        // then
-        // GET /resources/:key requires READ on RESOURCE; it rejects rather than filters.
-        await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-      }).toPass(defaultAssertionOptions);
+      // then
+      // GET /resources/:key requires READ on RESOURCE; it rejects rather than filters.
+      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
     });
 
+    // eslint-disable-next-line playwright/expect-expect
     test('Get resource content - forbidden without READ permission', async ({
       request,
     }) => {
       // given
       const {resourceKey} = rpa;
 
-      await expect(async () => {
-        // when
-        const res = await getResourceContent(request, resourceKey, {
+      // when
+      const res = await firstAuthenticatedResponse(() =>
+        getResourceContent(request, resourceKey, {
           headers: jsonHeaders(userWithoutPermissionsToken),
-        });
+        }),
+      );
 
-        // then
-        // GET /resources/:key/content requires READ on RESOURCE; it rejects rather than filters.
-        await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-      }).toPass(defaultAssertionOptions);
+      // then
+      // GET /resources/:key/content requires READ on RESOURCE; it rejects rather than filters.
+      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
     });
 
+    // eslint-disable-next-line playwright/expect-expect
     test('Get resource content binary - forbidden without READ permission', async ({
       request,
     }) => {
       // given
       const {resourceKey} = generic;
 
-      await expect(async () => {
-        // when
-        const res = await getResourceContentBinary(request, resourceKey, {
+      // when
+      const res = await firstAuthenticatedResponse(() =>
+        getResourceContentBinary(request, resourceKey, {
           headers: octetStreamHeaders(userWithoutPermissionsToken),
-        });
+        }),
+      );
 
-        // then
-        // GET /resources/:key/content/binary requires READ on RESOURCE; it rejects rather than filters.
-        await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
-      }).toPass(defaultAssertionOptions);
+      // then
+      // GET /resources/:key/content/binary requires READ on RESOURCE; it rejects rather than filters.
+      await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
     });
 
     test('Search resources - filtered out without READ permission', async ({
@@ -362,17 +381,23 @@ test.describe('Resource Permission API', () => {
     let otherRpa: DeployedResource;
 
     test.beforeAll(async ({request}) => {
-      readable = await deployFile(
-        request,
-        inlineGenericResource(GENERIC_PREFIX),
-      );
-      deletable = await deployFile(
-        request,
-        inlineGenericResource(GENERIC_PREFIX),
-      );
-      readableRpa = await deployFile(request, inlineRpaResource());
-      other = await deployFile(request, inlineGenericResource(GENERIC_PREFIX));
-      otherRpa = await deployFile(request, inlineRpaResource());
+      const readableFile = inlineGenericResource(GENERIC_PREFIX);
+      const deletableFile = inlineGenericResource(GENERIC_PREFIX);
+      const readableRpaFile = inlineRpaResource();
+      const otherFile = inlineGenericResource(GENERIC_PREFIX);
+      const otherRpaFile = inlineRpaResource();
+      const {resources} = await deployInlineResources(request, [
+        readableFile,
+        deletableFile,
+        readableRpaFile,
+        otherFile,
+        otherRpaFile,
+      ]);
+      readable = deployedAs(resources, readableFile);
+      deletable = deployedAs(resources, deletableFile);
+      readableRpa = deployedAs(resources, readableRpaFile);
+      other = deployedAs(resources, otherFile);
+      otherRpa = deployedAs(resources, otherRpaFile);
       resourceKeysToCleanUp.push(
         readable.resourceKey,
         readableRpa.resourceKey,
@@ -391,10 +416,11 @@ test.describe('Resource Permission API', () => {
 
       await expect(async () => {
         // when
-        const res = await deployInlineFilesRaw(request, [resource], {
-          Accept: 'application/json',
-          ...authHeaders(token),
-        });
+        const res = await deployInlineFilesRaw(
+          request,
+          [resource],
+          defaultHeaders(token),
+        );
 
         // then
         await assertStatusCode(res, 200);
