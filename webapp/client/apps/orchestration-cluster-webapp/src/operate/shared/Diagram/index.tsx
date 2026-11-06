@@ -13,6 +13,7 @@ import type {OverlayData, OverlayEntry} from './overlayTypes';
 import {DiagramControls} from './DiagramControls';
 import {DiagramContainer, DiagramCanvas} from './styled';
 import {DiagramOverlayContext} from './DiagramOverlayContext';
+import {useFullscreen} from './useFullscreen';
 
 type OnRootChange = (rootElementId: string, getSelectionRootId: (elementId: string) => string | undefined) => void;
 
@@ -37,48 +38,6 @@ type Props = {
 	onElementDoubleClick?: OnElementDoubleClick;
 	customElementClasses?: [elementId: string, className: string][];
 	download?: {xml: string; filename: string};
-};
-
-const useFullscreen = (
-	diagramRef: React.RefObject<HTMLDivElement | null>,
-	viewerRef: React.RefObject<BpmnJS | null>,
-) => {
-	const [isFullscreen, setIsFullscreen] = useState(false);
-
-	const handleFullscreen = useCallback(() => {
-		const el = diagramRef.current;
-		if (el === null) {
-			return;
-		}
-
-		if (document.fullscreenElement) {
-			document.exitFullscreen();
-			return;
-		}
-
-		el.requestFullscreen().catch(() => {
-			// Fullscreen blocked by Permissions Policy — silently ignore
-		});
-	}, [diagramRef]);
-
-	useEffect(() => {
-		const handleFullscreenChange = () => {
-			setIsFullscreen(document.fullscreenElement === diagramRef.current);
-
-			requestAnimationFrame(() => {
-				viewerRef.current?.notifyResize();
-				viewerRef.current?.zoomReset();
-			});
-		};
-
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-		return () => {
-			document.removeEventListener('fullscreenchange', handleFullscreenChange);
-		};
-	}, [diagramRef, viewerRef]);
-
-	return {isFullscreen, handleFullscreen};
 };
 
 const useMinimap = (

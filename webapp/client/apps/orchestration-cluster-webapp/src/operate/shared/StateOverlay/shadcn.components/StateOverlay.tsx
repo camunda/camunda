@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLayoutEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
 import {Badge} from '@camunda/design-system';
@@ -37,7 +36,6 @@ const STATE_VARIANTS: Partial<Record<OverlayState, 'success' | 'danger' | 'neutr
 	canceled: 'neutral',
 };
 
-// Pill backgrounds must stay solid: the default Badge variants are too faint against the diagram canvas.
 const VARIANT_CLASS_NAMES = {
 	success:
 		'border-transparent bg-[var(--success-foreground-subtle)] text-[var(--background)] [--pulse:var(--success-foreground-subtle)]',
@@ -45,37 +43,6 @@ const VARIANT_CLASS_NAMES = {
 		'border-transparent bg-[var(--danger-foreground-subtle)] text-[var(--background)] [--pulse:var(--danger-foreground-subtle)]',
 	neutral:
 		'border-transparent bg-[var(--neutral-foreground-subtle)] text-[var(--background)] [--pulse:var(--neutral-foreground-subtle)]',
-};
-
-// bpmn-js places the overlay with pixel offsets tuned for the larger legacy pill. Statistic pills anchored to a plain
-// element corner are re-centred on that corner using their own size. Pills with a deliberate horizontal offset
-// (such as completed end events) keep their position. The centred flag is set on the container instead of
-// React state, so a re-created overlay never paints (or animates) an uncentred frame.
-const EDGE_TOLERANCE_PX = 0.5;
-
-const centreOnCorner = (container: HTMLElement): void => {
-	const overlay = container.parentElement;
-	const elementId = overlay?.parentElement?.getAttribute('data-container-id');
-	if (!overlay || !elementId) {
-		return;
-	}
-	const visual = overlay
-		.closest('.djs-container')
-		?.querySelector<SVGGraphicsElement>(`[data-element-id="${elementId}"] .djs-visual`);
-	if (!visual) {
-		return;
-	}
-	const {x, y, width, height} = visual.getBBox();
-	const left = parseFloat(overlay.style.left);
-	const top = parseFloat(overlay.style.top);
-	const isLeftEdge = Math.abs(left - x) < EDGE_TOLERANCE_PX;
-	const isRightEdge = Math.abs(left - (x + width)) < EDGE_TOLERANCE_PX;
-	if (Number.isNaN(top) || (!isLeftEdge && !isRightEdge)) {
-		return;
-	}
-	overlay.style.left = `${isLeftEdge ? x : x + width}px`;
-	overlay.style.top = `${top > y + height / 2 ? y + height : y}px`;
-	container.dataset.centred = 'true';
 };
 
 type Props = {
@@ -98,11 +65,6 @@ const StateOverlay: React.FC<Props> = ({
 	elementName,
 }) => {
 	const {t, i18n} = useTranslation();
-	useLayoutEffect(() => {
-		if (count !== undefined) {
-			centreOnCorner(container);
-		}
-	}, [container, count]);
 	const showStatistic = count !== undefined;
 	const labelKey = STATE_LABEL_KEYS[state];
 	const label = title ?? (labelKey === undefined ? state : t(labelKey));
@@ -112,6 +74,7 @@ const StateOverlay: React.FC<Props> = ({
 		: undefined;
 	const baseLabel = showStatistic ? `${label}: ${fullCount}` : label;
 	const statisticLabel = isFaded ? `${baseLabel}, ${t('operate.shared.stateOverlay.pending')}` : baseLabel;
+	const isCornerAnchored = showStatistic && state !== 'completedEndEvents';
 	const variant = STATE_VARIANTS[state] ?? 'neutral';
 	const accessibleLabel = elementName === undefined ? statisticLabel : `${elementName}, ${statisticLabel}`;
 
@@ -124,7 +87,8 @@ const StateOverlay: React.FC<Props> = ({
 			className={cn(
 				'align-top',
 				VARIANT_CLASS_NAMES[variant],
-				showStatistic ? 'gap-1.5 pl-1 pr-2 -translate-x-1/2 in-data-[centred]:-translate-y-1/2' : 'px-1',
+				showStatistic ? 'gap-1.5 pl-1 pr-2 -translate-x-1/2' : 'px-1',
+				isCornerAnchored && '-translate-y-1/2',
 				isFaded && 'state-overlay-pending-ring overflow-visible',
 			)}
 		>

@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useContext, useState} from 'react';
+import {useContext, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
 import {StateOverlay} from '#/operate/shared/StateOverlay/shadcn.components/StateOverlay';
+import {anchorStateOverlaysToCorners} from '#/operate/shared/StateOverlay/shadcn.components/anchorStateOverlaysToCorners';
 import {useDiagramXml} from '../useDiagramXml';
 import {useDiagramStatisticsOverlays} from '../useDiagramStatisticsOverlays';
 import {getStatisticsFilter} from '../getStatisticsFilter';
@@ -89,6 +90,11 @@ const DiagramPanel: React.FC<Props> = ({
 		enabled: statisticsFilter !== undefined,
 	});
 
+	const anchoredOverlaysData = useMemo(
+		() => (overlaysData ? anchorStateOverlaysToCorners(overlaysData) : undefined),
+		[overlaysData],
+	);
+
 	const getStatus = () => {
 		if (isDefinitionSelectionLoading || isXmlFetching) {
 			return 'loading';
@@ -135,7 +141,7 @@ const DiagramPanel: React.FC<Props> = ({
 						selectedElementIds={search.elementId ? [search.elementId] : undefined}
 						onElementSelection={onElementSelection}
 						onRenderError={() => setFailedXml(diagramData.xml)}
-						overlaysData={overlaysData}
+						overlaysData={anchoredOverlaysData}
 						selectableElements={diagramData.selectableElements}
 					>
 						<StatisticsOverlays businessObjects={diagramData.businessObjects} />
