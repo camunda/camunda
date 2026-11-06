@@ -110,7 +110,7 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 		const panel = operatePreviewProcessesPage.diagramPanel;
 		await expect(panel.getByText('Order process')).toBeVisible();
 		await expect(panel.getByRole('button', {name: /Process ID/})).toBeVisible();
-		await expect(panel.getByTestId('diagram-canvas')).toBeVisible();
+		await expect(panel.getByRole('region', {name: 'Diagram', exact: true})).toBeVisible();
 		await expect(panel.getByText('There is no Process selected')).toBeHidden();
 	});
 
