@@ -142,7 +142,11 @@ public class Engine implements RecordProcessor {
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
     bufferingBehavior =
-        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
+        new CommandBufferingBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            processingState.getElementInstanceState(),
+            suspensionMetrics);
 
     // Replay only rebuilds the state, so the clock is set from the state once replay is done.
     // This listener is added first, so the other listeners already see this clock when they
