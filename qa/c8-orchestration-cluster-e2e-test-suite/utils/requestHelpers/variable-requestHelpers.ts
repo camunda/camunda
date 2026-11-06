@@ -22,6 +22,9 @@ export async function searchVariableByNameAndProcessInstanceKey(
     processInstanceKey: string;
     name: string;
   },
+  // Newly created variables have to propagate through the secondary-storage
+  // indexer, which can exceed 30s on a loaded RDBMS nightly cluster.
+  assertionOptions = extendedAssertionOptions,
 ) {
   const localState: Record<string, unknown> = {};
 
@@ -53,9 +56,7 @@ export async function searchVariableByNameAndProcessInstanceKey(
     const json = await res.json();
     expect(json.items.length).toBeGreaterThan(0);
     localState['variable'] = json.items[0];
-    // Newly created variables have to propagate through the secondary-storage
-    // indexer, which can exceed 30s on a loaded RDBMS nightly cluster.
-  }).toPass(extendedAssertionOptions);
+  }).toPass(assertionOptions);
 
   return localState['variable'] as {
     variableKey: string;
