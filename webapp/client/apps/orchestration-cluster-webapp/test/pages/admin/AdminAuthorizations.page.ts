@@ -68,7 +68,7 @@ class AdminAuthorizationsPage extends BasePage {
 	}
 
 	get addButton() {
-		return this.page.getByRole('button', {name: 'Create authorization'});
+		return this.page.getByRole('button', {name: 'Create authorization'}).first();
 	}
 
 	get resourceTypeSelect() {
@@ -88,7 +88,7 @@ class AdminAuthorizationsPage extends BasePage {
 	}
 
 	get emptyState() {
-		return this.page.getByText('No authorizations found.');
+		return this.page.getByText("You don't have any authorizations for this resource type yet");
 	}
 
 	row(text: string) {

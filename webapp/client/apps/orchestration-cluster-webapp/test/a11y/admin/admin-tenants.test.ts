@@ -78,7 +78,7 @@ test('should have no accessibility violations in the empty state', async ({
 	network.use(mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}));
 
 	await adminTenantsPage.goto();
-	await expect(page.getByText('No tenants found.')).toBeVisible();
+	await expect(page.getByText('No tenants created yet')).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().disableRules([DS_ACTIONS_COLUMN_HEADER_RULE]).analyze();
 

@@ -69,7 +69,7 @@ test('should have no accessibility violations in the empty state', async ({
 	);
 
 	await adminClusterVariablesPage.goto();
-	await expect(page.getByText('No cluster variables found.')).toBeVisible();
+	await expect(page.getByText('No cluster variables created yet')).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().disableRules([DS_ACTIONS_COLUMN_HEADER_RULE]).analyze();
 
