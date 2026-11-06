@@ -72,8 +72,8 @@ physical_tenant_count ?= 0
 # zone of its own brokers and the namespace of the other region:
 #   make install dual_region=true dual_region_zone=region-a dual_region_peer_namespace=c8-x-region-b \
 #       dual_region_cluster_name=c8-x
-# Needs secondary_storage=elasticsearch or none; with elasticsearch, each region also exports to the
-# Elasticsearch of the other.
+# Needs secondary_storage=elasticsearch or none; with elasticsearch, every broker exports to the
+# Elasticsearch of both regions.
 dual_region ?= false
 dual_region_zone ?=
 dual_region_peer_namespace ?=
