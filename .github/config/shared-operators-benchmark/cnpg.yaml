@@ -1,0 +1,16 @@
+# CloudNativePG Cluster CR for the shared-operators showcase on camunda-benchmark.
+# Proves the cluster-wide CNPG operator reconciles a team-owned Postgres cluster
+# in a c8-* namespace. The image is pulled through the benchmark GAR cache for
+# ghcr.io. See infra-core docs/shared-operators.md.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: c8-shared-operators-test
+  namespace: c8-shared-operators-test
+  annotations:
+    janitor/ttl: 1h # backstop: the workflow trap-deletes on exit; this catches leaked runs
+spec:
+  instances: 1
+  imageName: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/cloudnative-pg/postgresql:17
+  storage:
+    size: 1Gi
