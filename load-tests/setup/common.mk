@@ -72,8 +72,8 @@ physical_tenant_count ?= 0
 # zone of its own brokers and the namespace of the other region:
 #   make install dual_region=true dual_region_zone=region-a dual_region_peer_namespace=c8-x-region-b \
 #       dual_region_cluster_name=c8-x
-# Needs secondary_storage=elasticsearch or none; with elasticsearch, every broker exports to the
-# Elasticsearch of both regions.
+# Needs secondary_storage=elasticsearch or none, and no Optimize or physical tenants; with
+# elasticsearch, every broker exports to the Elasticsearch of both regions.
 dual_region ?= false
 dual_region_zone ?=
 dual_region_peer_namespace ?=
@@ -196,6 +196,12 @@ $(error dual_region=true requires dual_region_cluster_name)
 endif
 ifeq ($(filter $(secondary_storage),elasticsearch none),)
 $(error dual_region=true requires secondary_storage=elasticsearch or none)
+endif
+ifeq ($(enable_optimize),true)
+$(error dual_region=true does not support enable_optimize=true)
+endif
+ifneq ($(physical_tenant_count),0)
+$(error dual_region=true does not support physical_tenant_count > 0)
 endif
 endif
 
