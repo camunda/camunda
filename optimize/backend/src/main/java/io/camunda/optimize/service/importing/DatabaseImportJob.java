@@ -62,6 +62,8 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
             Thread.sleep(sleepTime);
           } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
+            logger.info("Import job interrupted, aborting import to database");
+            return;
           }
         }
       } while (!success);
