@@ -79,6 +79,7 @@ import io.camunda.client.api.command.GloballyScopedClusterVariableCreationComman
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ListSecretsCommandStep1;
+import io.camunda.client.api.command.LookupUserTaskCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -280,6 +281,7 @@ import io.camunda.client.impl.command.JobUpdatePriorityCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.ListSecretsCommandImpl;
+import io.camunda.client.impl.command.LookupUserTaskCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PinClockCommandImpl;
@@ -1384,6 +1386,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
     return new UserTaskGetRequestImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public LookupUserTaskCommandStep1 newLookupUserTaskCommand(final long userTaskKey) {
+    return new LookupUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
