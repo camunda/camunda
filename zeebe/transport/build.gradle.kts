@@ -82,8 +82,6 @@ dependencies {
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
-  testImplementation(libs.junit.junit)
-  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.mockito.mockito.core)
