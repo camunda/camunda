@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.ColumnFamily;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -64,6 +64,7 @@ class TransactionalColumnFamily<
   private final ColumnFamilyContext columnFamilyContext;
   private final ForeignKeyChecker foreignKeyChecker;
   private final ColumnFamilyMetrics metrics;
+  private final ArrayDeque<PrefixBoundedReadOptions> boundedReadOptions = new ArrayDeque<>(2);
 
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
@@ -436,6 +437,45 @@ class TransactionalColumnFamily<
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
+  /**
+   * Every prefix iteration bounds its iterator to the prefix, see {@link PrefixBoundedReadOptions}.
+   * Iterations can nest (a visitor may iterate again), so each open iterator takes its own instance
+   * from this small free list; instances are created on demand and closed with the database. It
+   * never holds more than two, since {@link ColumnFamilyContext#withPrefixKey} allows one level of
+   * nesting.
+   */
+  private PrefixBoundedReadOptions acquireReadOptions() {
+    final var readOptions = boundedReadOptions.poll();
+    return readOptions != null ? readOptions : transactionDb.newPrefixBoundedReadOptions();
+  }
+
+  private void releaseReadOptions(final PrefixBoundedReadOptions readOptions) {
+    boundedReadOptions.push(readOptions);
+  }
+
+  @FunctionalInterface
+  private interface PrefixIteration {
+    void iterate(RocksIterator iterator);
+  }
+
+  /**
+   * Opens an iterator bounded to the given prefix, see {@link PrefixBoundedReadOptions}, runs the
+   * iteration with it, and closes it afterwards.
+   */
+  private void withPrefixIterator(final DbKey prefix, final PrefixIteration iteration) {
+    columnFamilyContext.withPrefixKey(
+        prefix,
+        (prefixKey, prefixLength) -> {
+          final var readOptions = acquireReadOptions();
+          try (final RocksIterator iterator =
+              newIterator(context, readOptions.bound(prefixKey, prefixLength))) {
+            iteration.iterate(iterator);
+          } finally {
+            releaseReadOptions(readOptions);
+          }
+        });
+  }
+
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
@@ -457,7 +497,7 @@ class TransactionalColumnFamily<
    * This is the preferred method to implement methods that iterate over a column family.
    *
    * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
-   *     instead.
+   *     instead. Must lie within {@code prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
@@ -471,33 +511,15 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      /*
-       * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
-       * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
-       * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
-       * over all keys contained in those files, so we still need to make sure the key actually
-       * matches the prefix.
-       *
-       * <p>While iterating over subsequent keys we have to validate it.
-       */
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+          iterator -> {
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.next()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
-              }
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                iterator.isValid() && shouldVisitNext;
+                iterator.next()) {
+              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
     }
@@ -507,7 +529,8 @@ class TransactionalColumnFamily<
    * Reverse counterpart of {@link #forEachInPrefix(DbKey, DbKey, KeyValuePairVisitor)}. Iterates
    * backward over key-value pairs within the given prefix.
    *
-   * @param startAt seek to this key before starting reverse iteration.
+   * @param startAt seek to this key before starting reverse iteration. Must lie within {@code
+   *     prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
@@ -521,26 +544,17 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+          iterator -> {
+            final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
-              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seekForPrev(seekTarget);
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.prev()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
-              }
+            for (iterator.seekForPrev(seekTarget);
+                iterator.isValid() && shouldVisitNext;
+                iterator.prev()) {
+              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           });
     }
@@ -561,31 +575,13 @@ class TransactionalColumnFamily<
 
     final var count = new MutableLong(0);
 
-    /*
-     * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
-     * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
-     * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
-     * over all keys contained in those files, so we still need to make sure the key actually
-     * matches the prefix.
-     *
-     * <p>While iterating over subsequent keys we have to validate it.
-     */
-    columnFamilyContext.withPrefixKey(
+    withPrefixIterator(
         prefix,
-        (prefixKey, prefixLength) -> {
-          try (final RocksIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
-
-            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                iterator.isValid();
-                iterator.next()) {
-              final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
-              }
-
-              count.increment();
-            }
+        iterator -> {
+          for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+              iterator.isValid();
+              iterator.next()) {
+            count.increment();
           }
         });
 
@@ -609,7 +605,7 @@ class TransactionalColumnFamily<
    * over keys within the given prefix without reading values from the database.
    *
    * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
-   *     instead.
+   *     instead. Must lie within {@code prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all keys that match the given prefix. The visitor can indicate
    *     whether iteration should continue or not, see {@link KeyVisitor}.
@@ -621,24 +617,16 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+          iterator -> {
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.next()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
-              }
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                iterator.isValid() && shouldVisitNext;
+                iterator.next()) {
+              final byte[] keyBytes = iterator.key();
+              shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });
     }
@@ -648,7 +636,8 @@ class TransactionalColumnFamily<
    * Key-only counterpart of {@link #forEachInPrefixReverse(DbKey, DbKey, KeyValuePairVisitor)}.
    * Iterates backward over keys within the given prefix without reading values from the database.
    *
-   * @param startAt seek to this key before starting reverse iteration.
+   * @param startAt seek to this key before starting reverse iteration. Must lie within {@code
+   *     prefix}, as the iterator is bounded to it.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all keys that match the given prefix. The visitor can indicate
    *     whether iteration should continue or not, see {@link KeyVisitor}.
@@ -660,26 +649,18 @@ class TransactionalColumnFamily<
       requireNonNull(prefix);
       requireNonNull(visitor);
 
-      columnFamilyContext.withPrefixKey(
+      withPrefixIterator(
           prefix,
-          (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+          iterator -> {
+            final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
-              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+            boolean shouldVisitNext = true;
 
-              boolean shouldVisitNext = true;
-
-              for (iterator.seekForPrev(seekTarget);
-                  iterator.isValid() && shouldVisitNext;
-                  iterator.prev()) {
-                final byte[] keyBytes = iterator.key();
-                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                  break;
-                }
-
-                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
-              }
+            for (iterator.seekForPrev(seekTarget);
+                iterator.isValid() && shouldVisitNext;
+                iterator.prev()) {
+              final byte[] keyBytes = iterator.key();
+              shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
             }
           });
     }
