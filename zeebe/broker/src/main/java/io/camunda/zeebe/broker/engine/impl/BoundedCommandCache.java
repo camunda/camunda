@@ -28,6 +28,11 @@ import org.agrona.collections.LongHashSet;
 public final class BoundedCommandCache {
   private static final int DEFAULT_CAPACITY = 100_000;
 
+  /** Returns the default capacity of the command cache. */
+  public static int defaultCapacity() {
+    return DEFAULT_CAPACITY;
+  }
+
   private final Lock lock = new ReentrantLock();
 
   private final int capacity;
