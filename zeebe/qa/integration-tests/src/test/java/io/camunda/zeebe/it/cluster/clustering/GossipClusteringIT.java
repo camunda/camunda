@@ -26,10 +26,7 @@ final class GossipClusteringIT {
 
   @TestZeebe
   private final TestCluster cluster =
-      new TestClusterBuilder()
-          .withBrokersCount(3)
-          .withReplicationFactor(3)
-          .build();
+      new TestClusterBuilder().withBrokersCount(3).withReplicationFactor(3).build();
 
   @Test
   void shouldStartCluster() {
@@ -60,10 +57,11 @@ final class GossipClusteringIT {
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(250))
         .pollInSameThread()
-        .untilAsserted(() ->
-            TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                .doesNotContainBroker(2)
-                .hasLeaderForEachPartition(1));
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                    .doesNotContainBroker(2)
+                    .hasLeaderForEachPartition(1));
   }
 
   @Test
@@ -81,10 +79,11 @@ final class GossipClusteringIT {
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(250))
         .pollInSameThread()
-        .untilAsserted(() ->
-            TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                .doesNotContainBroker(leaderId)
-                .hasLeaderForEachPartition(1));
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                    .doesNotContainBroker(leaderId)
+                    .hasLeaderForEachPartition(1));
   }
 
   private void newClient() {
