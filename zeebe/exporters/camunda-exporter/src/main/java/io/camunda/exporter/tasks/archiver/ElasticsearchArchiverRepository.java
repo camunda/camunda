@@ -313,7 +313,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 cr.index(listViewTemplateDescriptor.getFullQualifiedName())
                     .query(
                         finishedProcessInstancesQuery(
-                            config.getArchivingTimePoint(), partitionId)));
+                            config.getArchivingTimePoint(),
+                            partitionId,
+                            config.getProcessInstanceRetentionMode())));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
   }
@@ -485,60 +487,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .formatted(sourceIndex, totalConflicts));
   }
 
-  private Query finishedProcessInstancesQuery(
-      final String archivingTimePoint, final int partitionId) {
-    final var endDateQ =
-        QueryBuilders.range(
-            q -> q.date(d -> d.field(ListViewTemplate.END_DATE).lte(archivingTimePoint)));
-    final var isProcessInstanceQ =
-        QueryBuilders.term(
-            q ->
-                q.field(ListViewTemplate.JOIN_RELATION)
-                    .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    final var partitionQ =
-        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
-
-    final var retentionMode = config.getProcessInstanceRetentionMode();
-    final Query hierarchyQ;
-
-    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
-        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
-      final var rootExists =
-          QueryBuilders.exists(e -> e.field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY));
-      final var parentExists =
-          QueryBuilders.exists(e -> e.field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY));
-
-      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
-      final var newHierarchy = QueryBuilders.bool(b -> b.mustNot(parentExists).must(rootExists));
-
-      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
-        // (rootPI IS NULL) (Legacy)
-        final var legacyPiFilter = QueryBuilders.bool(b -> b.mustNot(rootExists));
-        hierarchyQ =
-            QueryBuilders.bool(
-                b -> b.should(newHierarchy).should(legacyPiFilter).minimumShouldMatch("1"));
-      } else {
-        // when ignoring legacy, only use hierarchy filter
-        hierarchyQ = newHierarchy;
-      }
-    } else {
-      hierarchyQ = null;
-    }
-
-    return QueryBuilders.bool(
-        q -> {
-          q.filter(endDateQ, isProcessInstanceQ, partitionQ);
-          if (hierarchyQ != null) {
-            q.filter(hierarchyQ);
-          }
-          return q;
-        });
-  }
-
   private SearchRequest createFinishedInstancesSearchRequest(final int size) {
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
-        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        finishedProcessInstancesQuery(
+            config.getArchivingTimePoint(), partitionId, config.getProcessInstanceRetentionMode()),
         size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
